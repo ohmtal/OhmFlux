@@ -35,10 +35,10 @@ bool FluxRenderObject::pointCollide(const Point2F& lPoint)
 	return pointCollide(lPoint.x, lPoint.y);
 }
 
-bool FluxRenderObject::pointCollide(const float& lX, const float& lY)
+bool FluxRenderObject::pointCollide(const F32& lX, const F32& lY)
 {
-	float halfWidth = (float)getWidth() / 2.f;
-	float halfHeight = (float) getHeight() / 2.f;
+	F32 halfWidth = getWidthF() / 2.f;
+	F32 halfHeight =  getHeightF() / 2.f;
  	if (lX >= getX() - halfWidth && lX <= getX()+halfWidth
 		&& lY >= getY() - halfHeight && lY <= getY() + halfHeight)
 		return true;

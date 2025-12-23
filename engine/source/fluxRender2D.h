@@ -21,24 +21,27 @@
 struct DrawParams2D {
     FluxTexture* image = nullptr;
     S32 imgId = 0;   // frame
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;  //layer
+    F32 x = 0.0f;
+    F32 y = 0.0f;
+    F32 z = 0.0f;  //layer
     S32 w = 0;
     S32 h = 0;
-    float rot = 0.0f; //rotation
+    F32 rot = 0.0f; //rotation
     bool flipX = false;
     bool flipY = false;
-    float alpha = 0.1f;
+    F32 alpha = 0.1f;
     Color4F color = {1.0f, 1.0f, 1.0f, 1.0f};
-    float horizontalScrollSpeed = 0.f;
+    F32 horizontalScrollSpeed = 0.f;
     bool  isGuiElement = false; //not effected by camera
 
     // for TrueType Font >>>>
     bool  useUV = false;
-    float u0 = 0.0f; float v0 = 0.0f;
-    float u1 = 1.0f; float v1 = 1.0f;
+    F32 u0 = 0.0f; F32 v0 = 0.0f;
+    F32 u1 = 1.0f; F32 v1 = 1.0f;
     // <<<
+
+    F32 getWidthF() const { return static_cast<F32>(w); }
+    F32 getHeightF() const { return static_cast<F32>(h); }
 
     FluxTexture* getTexture() { return image; }
     F32 getFrame() const { return imgId; }
@@ -46,10 +49,10 @@ struct DrawParams2D {
 
     RectF getRectF() const {
         return {
-            x - (static_cast<F32>(w) * 0.5f), // Shift from center to left
-            y - (static_cast<F32>(h) * 0.5f), // Shift from center to top
-            static_cast<F32>(w),
-            static_cast<F32>(h)
+            x - (getWidthF() * 0.5f), // Shift from center to left
+            y - (getHeightF() * 0.5f), // Shift from center to top
+            getWidthF(),
+            getHeightF()
         };
     }
 
@@ -79,7 +82,7 @@ struct PrimitiveCommand {
     Type type;
     Point3F points[3]; // Used for Triangle corners
     Point3F p1, p2;    // Used for Lines
-    float radius;      // For circles
+    F32 radius;      // For circles
     U32 segments;
     Color4F color;
     bool filled;       // NEW: Toggle for Triangle fill mode
@@ -87,7 +90,7 @@ struct PrimitiveCommand {
 
 
 
-static const float IDENTITY_MATRIX[16] = {
+static const F32 IDENTITY_MATRIX[16] = {
     1,0,0,0,
     0,1,0,0,
     0,0,1,0,
@@ -115,8 +118,8 @@ private:
 
     // orto and viewmatrix setup for screen
     //  alignas => matrix is aligned for SIMD operations (webGL performance)
-    alignas(16) float mOrtho[16] = {0.0f};
-    alignas(16) float mCurrentCameraViewMatrix[16] {0.0f};;
+    alignas(16) F32 mOrtho[16] = {0.0f};
+    alignas(16) F32 mCurrentCameraViewMatrix[16] {0.0f};;
 
 
     // ------  RENDER BATCH -------
@@ -163,7 +166,7 @@ public:
 
     // this batch the draws NOT draw
     bool drawSprite(const DrawParams2D& dp);
-    void drawWithTransform(FluxTexture* texture, const Point2F& position, float rotation, float scale, const Color4F& color);
+    void drawWithTransform(FluxTexture* texture, const Point2F& position, F32 rotation, F32 scale, const Color4F& color);
     void renderBatch();
 
 
@@ -171,12 +174,12 @@ public:
     bool uglyDraw2DStretch(
         FluxTexture* limg,
         const S32& limgId,
-        const float& lx,
-        const float& ly,
-        const float& lz,
+        const F32& lx,
+        const F32& ly,
+        const F32& lz,
         const S32& lw,
         const S32& lh,
-        const float& lrot,
+        const F32& lrot,
         const bool& lflipX,
         const bool& lflipY,
         const F32& lAlpha = 0.1f,
@@ -189,8 +192,8 @@ public:
     void setCamera(FluxCamera* cam) { mActiveCamera = cam; }
     FluxCamera* getCamera() { return mActiveCamera; }
 
-    void setViewMatrix(const float* matrix) {
-        memcpy(mCurrentCameraViewMatrix, matrix, sizeof(float) * 16);
+    void setViewMatrix(const F32* matrix) {
+        memcpy(mCurrentCameraViewMatrix, matrix, sizeof(F32) * 16);
     }
 
     void setCulling(bool value) { mUseCulling = value; }

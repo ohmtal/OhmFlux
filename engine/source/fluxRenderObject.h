@@ -70,7 +70,9 @@ public:
 	F32 getX() const {return mDrawParams.x; }
 	F32 getY() const {return mDrawParams.y; }
 	S32 getWidth() const { return mDrawParams.w; }
+	F32 getWidthF() const { return mDrawParams.getWidthF(); }
 	S32 getHeight() const { return mDrawParams.h; }
+	F32 getHeightF() const { return mDrawParams.getHeightF(); }
 	RectI getRectI() const { return mDrawParams.getRectI(); }
 	F32 getRotation() const {return mDrawParams.rot; }
 	F32 getLayer() const {return mDrawParams.getLayer(); }
