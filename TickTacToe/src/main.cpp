@@ -310,9 +310,7 @@ int main(int argc, char** argv)
     game->mSettings.ScreenWidth = 900;
     game->mSettings.ScreenHeight = 600;
     game->mSettings.ScaleScreen = true;
-    game->mSettings.Vsync = true;
-    game->mSettings.minDt = 16;
-    game->mSettings.Fsaa = 0;
+    game->mSettings.initialVsync = true;
     game->mSettings.minWindowSize = { 300, 200 };
     game->Execute();
     SAFE_DELETE(game);

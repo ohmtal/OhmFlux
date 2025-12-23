@@ -293,7 +293,7 @@ void DemoGame::Update(const double& dt)
 		spawnFish();
 	}
 
-	mLabel1->setCaption("%zu fishes, dt: %02.f / %02.f, FPS:%8.1f FrameTime:%8.6f GameTime:%8.6f", mFishes.size(), mSettings.minDt, dt, getFPS(), getFrameTime(), getGameTime());
+	mLabel1->setCaption("%zu fishes, FPS:%8.1f, FrameLimiter:%5.2f FrameTime:%8.6f GameTime:%8.6f", mFishes.size(),  getFPS(), mSettings.frameLimiter, getFrameTime(), getGameTime());
 
 	mLabel2->setCaption( "MOUSE x:%d (%d), y:%d (%d)"
 	  , getStatus().getMousePosI().x, getStatus().getWorldMousePosI().x
@@ -476,7 +476,12 @@ void DemoGame::onKeyEvent(SDL_KeyboardEvent event)
 		{
 			switch (key) {
 				case SDLK_PLUS:
-					spawnFish();
+					mSettings.frameLimiter += 1.f;
+					break;
+				case SDLK_MINUS:
+					mSettings.frameLimiter -= 1.f;
+					if (mSettings.frameLimiter < 0.f)
+						mSettings.frameLimiter = 0.f;
 					break;
 				case SDLK_RETURN:
 					for (Uint32 i = 0; i < 1000; i++)
@@ -490,14 +495,9 @@ void DemoGame::onKeyEvent(SDL_KeyboardEvent event)
 				case SDLK_F1:
 					listFishes();
 					break;
-
 				case SDLK_F2:
-					if (mSettings.minDt > 0 )
-						mSettings.minDt = 0;
-					else
-						mSettings.minDt = 16;
-					Log("Set new default dt to %2.1f", mSettings.minDt);
-				break;
+					getScreen()->setVSync(!getScreen()->getVsync());
+					break;
 				case SDLK_F3:
 					mLabel1->setVisible(!mLabel1->getVisible());
 					mLabel2->setVisible(!mLabel2->getVisible());
@@ -587,10 +587,7 @@ int main(int argc, char **argv)
 	lDemoGame->mSettings.CursorFilename = "fishArt/fishnet.bmp";
 	lDemoGame->mSettings.cursorHotSpotX = 11;
 	lDemoGame->mSettings.cursorHotSpotY = 3;
-	lDemoGame->mSettings.Vsync = false;
-
-	lDemoGame->mSettings.minDt = 16.f;
-
+	lDemoGame->mSettings.initialVsync = false;
 
 	lDemoGame->mSettings.maxSprites = 100000;
 

@@ -35,9 +35,7 @@ FluxMain::FluxMain()
 	mSettings.ScreenWidth  = 1152; //800;
 	mSettings.ScreenHeight = 648; //600;
 	mSettings.FullScreen   = false;
-	mSettings.Vsync		   = true;
-	mSettings.Fsaa		   = 0;
-	mSettings.minDt		   = 16; // max 32 ?
+	mSettings.initialVsync = true;
 	mSettings.ScaleScreen  = true;
 
 	mSettings.Caption        = "Flux";
@@ -102,14 +100,14 @@ bool FluxMain::Initialize()
 
 	if (!mScreen->prepareMode(mSettings))
 	{
-		Log("Failed to prepareMode(%d,%d,%d,%d,%d)",mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen, mSettings.Vsync,mSettings.Fsaa);
+		Log("Failed to prepareMode(%d,%d,%d,%d)",mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen, mSettings.initialVsync);
 		return false;
 	}
 	if (!mScreen->init())
 		return false;
 
 
-	mScreen->setVSync(mSettings.Vsync);
+	mScreen->setVSync(mSettings.initialVsync);
 
 	mScreen->setScaleScreen(mSettings.ScaleScreen);
 
@@ -552,12 +550,12 @@ void FluxMain::IterateFrame()
 	mTickCount = SDL_GetPerformanceCounter();
 	gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency * 1000.0;
 	//  Delta Time Cap (Prevent logic jumps if browser tab was suspended)
-	if (gFrameTime > 200.0f) gFrameTime = 16.66f;
+	if (gFrameTime > 200.0f) gFrameTime = mSettings.updateDt;
 
 	//  Frame Limiter (Native only)
-	if (mSettings.minDt > 0.f && gFrameTime < mSettings.minDt) {
+	if (mSettings.frameLimiter > 0.f && gFrameTime < mSettings.frameLimiter) {
 		#ifndef __EMSCRIPTEN__
-		SDL_Delay((Uint32)(mSettings.minDt - gFrameTime));
+		SDL_Delay((Uint32)(mSettings.frameLimiter - gFrameTime));
 		#endif
 		mTickCount = SDL_GetPerformanceCounter();
 		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency * 1000.0;
@@ -568,14 +566,13 @@ void FluxMain::IterateFrame()
 
 	// fixed update: >>>>>>>>>>>>>>>>>>>>>>>>>
 	static double accumulator = 0.0;
-	const double FIXED_DT_MS = 16.666; // Target 60 FPS logic rate
 	accumulator += gFrameTime;
 
 	// 4. Fixed Timestep Loop
 	// Consume time in chunks of exactly 16.66ms.
-	while (accumulator >= FIXED_DT_MS) {
-		Update(FIXED_DT_MS);
-		accumulator -= FIXED_DT_MS;
+	while (accumulator >= mSettings.updateDt) {
+		Update(mSettings.updateDt);
+		accumulator -= mSettings.updateDt;
 	}
 
 	//  Render

@@ -39,11 +39,10 @@ FluxScreen::FluxScreen(VideoMode lVM)
 	setHeight(648);
 	mColor_depth = 32;
 	mFullScreen	 = false;
-	mVsync		 = true;  // better use minDT!
-	mScaleScreen = true; // Scale the screen when resized
-	mFsaa		 = 0;    // XXTH not used anymore
+	mVsync		 = true;
+	mScaleScreen = true;
 
-	mCaption 	 = "flux game engine";
+	mCaption 	 = "OhmFlux game engine";
 	mScaleX 	 = 1.f;
 	mScaleY		 = 1.f;
 	mMinWindowSize = { 320, 200 };
@@ -147,8 +146,7 @@ bool  FluxScreen::prepareMode(const FluxSettings& lSettings )
 	setHeight(lSettings.ScreenHeight);
 	mColor_depth = 32;
 	mFullScreen	 = lSettings.FullScreen;
-	mVsync = lSettings.Vsync;
-	mFsaa		 = lSettings.Fsaa;
+	mVsync = lSettings.initialVsync;
 	mMinWindowSize = lSettings.minWindowSize;
 
 	mMaxSprites = lSettings.maxSprites;

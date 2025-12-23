@@ -389,10 +389,11 @@ struct FluxSettings
     U32 ScreenWidth  = 800;
     U32	ScreenHeight = 600;
     bool FullScreen  = false;
-    bool Vsync       = true;
+    bool initialVsync = true; //only used when screen starts
     bool ScaleScreen = true;
-    U32 Fsaa         = 0;
-    double minDt        = 16.f;
+    double updateDt        = 16.666f; //fixed update Dt
+    double frameLimiter = 0.f; //sleep milliseconds
+
     Point2I minWindowSize = { 320, 200 };
     const char* Caption;
     const char* Version;

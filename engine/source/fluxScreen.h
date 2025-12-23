@@ -39,7 +39,6 @@ private:
 	float mScaleX, mScaleY;
 
 	const char* mCaption;
-	S32  mFsaa;
 	Point2I mMinWindowSize;
 
 	U32 mMaxSprites = DEFAULT_MAX_SPRITES;
@@ -87,7 +86,6 @@ public:
 	bool getFullScreen() const { return mFullScreen; }
 	bool getVsync()		 const { return mVsync; }
 	void setVSync(const bool& lEnabled);
-	S32  getFsaa()		 const { return mFsaa; }
 
     bool toggleFullScreen();
 
