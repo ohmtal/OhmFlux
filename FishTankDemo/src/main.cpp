@@ -1,0 +1,606 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2012..2025 Ohmtal Game Studio
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
+// Includes
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <stdio.h>
+#include <stdlib.h>
+#endif
+#include <SDL3/SDL.h>
+#include <assert.h>
+#include <vector>
+#include <algorithm>
+
+
+#include "source/fluxGlobals.h"
+#include "source/fluxRender2D.h"
+#include "source/misc.h"
+
+
+#include "main.h"
+#include "globals.h"
+#include "myFish.h"
+#include "GuiFishLabel.h"
+
+
+
+//--------------------------------------------------------------------------------------
+
+DemoGame::DemoGame() {
+	mFishCount = 40;
+
+	//init variables 
+	mScore = 0;
+	mScoreInc = 0;
+	mChallengeTime = 0;
+	mChallengeRunning = false;
+	mFishGoalReached = false;
+	for (int i = 0; i < FishTypeCount; i++)
+		mFishGoals[i] = 0;
+
+}
+//--------------------------------------------------------------------------------------
+bool DemoGame::Initialize() {
+	if (!Parent::Initialize()) return false;
+
+
+
+	//load a texture - flux main cares about destroying them 
+	mBackTex     = loadTexture("fishArt/backgrounds/background.bmp");
+	mRockFarTex  = loadTexture("fishArt/backgrounds/rocksfar.bmp");
+	mRockNearTex = loadTexture("fishArt/backgrounds/rocksnear.bmp");
+	mWaveTex 	 = loadTexture("fishArt/backgrounds/wave.bmp", 1, 1, true);
+
+
+
+
+	/*
+	 *  change FishTypeCount if you add remove a texture !!!!!!!!!!!
+	 */
+	int i = 0;
+	mFishTextures[i] =  loadTexture("fishArt/fish/triggerfish1sheet.bmp",2,2);i++;
+	// mFishTextures[i] =  loadTexture("fishArt/fish/triggerfish2sheet.bmp",2,2);i++;
+
+	// mFishTextures[i] =  loadTexture("fishArt/fish/seahorse1sheet.bmp",4,1);i++;
+	// mFishTextures[i] =  loadTexture("fishArt/fish/seahorse2sheet.bmp",4,1);i++;
+
+	mFishTextures[i] =  loadTexture("fishArt/fish/rockfish2sheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("fishArt/fish/rockfish1sheet.bmp",2,2);i++;
+
+	// mFishTextures[i] =  loadTexture("fishArt/fish/pufferfishpuffsheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("fishArt/fish/pufferfishswimsheet.bmp",2,2);i++;
+
+	// mFishTextures[i] =  loadTexture("fishArt/fish/eelsheet.bmp",1,4);i++;
+
+	mFishTextures[i] =  loadTexture("fishArt/fish/butterflyfishsheet.bmp",2,2);i++;
+
+	mFishTextures[i] =  loadTexture("fishArt/fish/angelfish2sheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("fishArt/fish/angelfish1sheet.bmp",2,2);i++;
+	
+
+	/* Font Texture
+	 *
+	 */
+	mHackNerdTex = loadTexture("fishArt/fonts/hackNerd_13x25.bmp", 10,10, false);
+	mMono16Tex   = loadTexture("fishArt/fonts/monoSpace_13x28.bmp", 10,10, false);
+
+
+
+
+	if (!getScreen())
+	{
+		Log("Failed to get screen!!!");
+		return false;
+	}
+
+	
+	// test BitMapFonr
+	//mLabel1 = new FluxBitmapFont(mHackNerdTex, getScreen());
+	mLabel1 = new FluxBitmapFont(mMono16Tex, getScreen());
+	mLabel1->set("XX XX XX", 7, getScreen()->getHeight() - 14,  13, 28, { 1.f, 0.f, 1.f, LabelAlpha} );
+	mLabel1->setLayer(0.f); //push to front
+	mLabel1->setIsGuiElement(true);
+	queueObject(mLabel1);
+
+	mLabel2 = new FluxBitmapFont(mMono16Tex, getScreen());
+	mLabel2->set("XX XX XX", 250,13, 13, 28, { 1.f, 1.f, 1.f, LabelAlpha });
+	mLabel2->setLayer(0.f); //push to front
+	mLabel2->setIsGuiElement(true);
+	queueObject(mLabel2);
+
+	mLabel1->setVisible(false);
+	mLabel2->setVisible(false);
+
+	//mobile webGL debug i want to see whats going on
+#if defined(__EMSCRIPTEN__) && defined(FLUX_DEBUG)
+	mLabel2->setVisible(true);
+#endif
+
+	// ************ SOUNDS ******************
+	mPling = new FluxAudioStream("fishArt/sound/pling.wav");
+	mPling->setGain(0.2f);
+	//optional : only needed when looping , but also does cleanup on exit!
+	queueObject(mPling);
+
+	mPlingeling = new FluxAudioStream("fishArt/sound/plingeling.wav");
+	mPlingeling->setGain(0.2f);
+	queueObject(mPlingeling);
+
+	mBrrooii = new FluxAudioStream("fishArt/sound/brrooii.wav");
+	// mBrrooii->setGain(0.2f);
+	queueObject(mBrrooii);
+
+	mFailSound = new FluxAudioStream("fishArt/sound/fail.wav");
+	// mFailSound->setGain(0.2f);
+	queueObject(mFailSound);
+
+
+	// ************* Game Labels *********************
+	mScoreLabel = new FluxBitmapFont(mHackNerdTex, getScreen());
+	mScoreLabel->set("000000", getScreen()->getWidth() - 6 * 13 ,13, 13, 25, { 0.5f, 0.5f, 1.f, LabelAlpha });
+	mScoreLabel->setLayer(0.f); //push to front
+	mScoreLabel->setCaption("%06d", 0);
+	mScoreLabel->setIsGuiElement(true);
+	queueObject(mScoreLabel);
+
+
+	mChallengeTimeLabel = new FluxBitmapFont(mHackNerdTex, getScreen());
+	mChallengeTimeLabel->set("000000",
+							getScreen()->getWidth() - 6 * 13 ,
+							getScreen()->getHeight() - 13,
+							13, 25,
+							{ 1.f, 0.f, 1.f, LabelAlpha });
+	mChallengeTimeLabel->setLayer(0.f); //push to front
+	mChallengeTimeLabel->setCaption("%06d", 0);
+	mChallengeTimeLabel->setIsGuiElement(true);
+	queueObject(mChallengeTimeLabel);
+
+
+	int y = 13;
+	for (int i = 0; i < FishTypeCount; i++)
+	{
+		// counter of current fishes
+		mFishLabel[i] = new GuiFishLabel(mFishTextures[i], mMono16Tex, getScreen());
+		mFishLabel[i]->setIsGuiElement(true);
+		mFishLabel[i]->set("XXXX", 15, y, 13, 28, { 1.f, 1.f, 1.f, LabelAlpha });
+		queueObject(mFishLabel[i]);
+		// goal display
+		mFishGoalDisplay[i] = new FluxBitmapFont( mMono16Tex, getScreen());
+		mFishGoalDisplay[i]->set("XXX", 15 + (4*13), y, 13, 28,  { 0.f, 0.f, 1.f, LabelAlpha });
+		mFishGoalDisplay[i]->setVisible(false);
+		queueObject(mFishGoalDisplay[i]);
+
+		//---
+		y+=28;
+
+	}
+	mScore = 0;
+	mChallengeTime = 0;
+
+	// must be on bottom !!
+	respawnFishes();
+
+	SDL_ShowCursor();
+
+
+    return true;
+}
+//--------------------------------------------------------------------------------------
+void DemoGame::respawnFishes(int setNewCount )
+{
+	if (setNewCount > 0)
+		mFishCount = setNewCount;
+
+	static std::vector<myFish *>::iterator curObj;
+	for (curObj=mFishes.begin(); curObj!=mFishes.end(); ++curObj) {
+		queueDelete((*curObj));
+	}
+	mFishes.clear();
+
+	for (Uint32 i = 0; i < mFishCount; i++)
+	{
+		spawnFish();
+	}
+
+}
+
+//--------------------------------------------------------------------------------------
+void DemoGame::spawnFish()
+{
+	int rTex = RandInt(0,FishTypeCount - 1 );
+	myFish* f = new myFish(mFishTextures[rTex], mMono16Tex, getScreen(), rTex);
+	queueObject(f);
+	mFishes.push_back(f);
+	updateFishCounter();
+
+}
+//--------------------------------------------------------------------------------------
+void DemoGame::updateFishCounter(){
+	//count the different fishes
+
+	for (int i = 0 ; i < FishTypeCount; i++) {
+		mFishCounter[i] = 0;
+	}
+
+	static std::vector<myFish *>::iterator curObj;
+	for (curObj=mFishes.begin(); curObj!=mFishes.end(); ++curObj) {
+		mFishCounter[(*curObj)->mFishType]++;
+	}
+
+	// compare goals
+	mScoreInc = 0;
+	int goalOKCounter = 0;
+	int diff = 0;
+	for (int i = 0 ; i < FishTypeCount; i++) {
+		if (mFishCounter[i] == mFishGoals[i]) {
+			mFishGoalDisplay[i]->setColor({0.f,1.f,0.f,LabelAlpha});
+			goalOKCounter++;
+			mScoreInc+=2;
+			mFishGoalDisplay[i]->setCaption(" OK");
+		} else {
+			diff = abs(mFishCounter[i] - mFishGoals[i]);
+			if (mFishCounter[i] > mFishGoals[i]) {
+				mFishGoalDisplay[i]->setColor({1.f,0.2f,0.2f,LabelAlpha});
+				mFishGoalDisplay[i]->setCaption("-%2d",diff);
+				mScoreInc--;
+			} else {
+				mFishGoalDisplay[i]->setColor({0.7f,0.1f,0.7f,LabelAlpha});
+				mFishGoalDisplay[i]->setCaption("+%2d",diff);
+			}
+
+		}
+
+	}
+	mFishGoalReached = goalOKCounter == FishTypeCount;
+	if (mFishGoalReached)
+		mScoreInc = FishTypeCount * 3; //tripple score
+}
+//--------------------------------------------------------------------------------------
+void DemoGame::listFishes()
+{
+	Log("~~~~~~~~~~ FISHES: (screen size is: %d,%d)", getScreen()->getWidth(), getScreen()->getHeight());
+
+
+	static std::vector<myFish*>::iterator curObj;
+	for (curObj = mFishes.begin(); curObj != mFishes.end(); ++curObj) {
+		Log("Fish (%d) pos:%7.2f, %7.2f, flipX:%d, layer:%5.2f, speed: %5.2f",
+			(*curObj)->mFishType
+			, (*curObj)->getX(), (*curObj)->getY()
+			, (*curObj)->getFlipX()
+			, (*curObj)->getLayer()
+			, (*curObj)->getSpeed()
+		);
+	}
+	Log("--------------------------------------------");
+
+}
+//--------------------------------------------------------------------------------------
+void DemoGame::Deinitialize() {
+	Parent::Deinitialize();
+
+}
+//--------------------------------------------------------------------------------------
+void DemoGame::Update(const double& dt)
+{
+
+	static float lSpawnTimer = 0;
+	lSpawnTimer += dt / 3000;
+	if (lSpawnTimer > 1) {
+		lSpawnTimer -= 1;
+		spawnFish();
+	}
+
+	mLabel1->setCaption("%zu fishes, dt: %02.f / %02.f, FPS:%8.1f FrameTime:%8.6f GameTime:%8.6f", mFishes.size(), mSettings.minDt, dt, getFPS(), getFrameTime(), getGameTime());
+
+	mLabel2->setCaption( "MOUSE x:%d (%d), y:%d (%d)"
+	  , getStatus().getMousePosI().x, getStatus().getWorldMousePosI().x
+	  , getStatus().getMousePosI().y, getStatus().getWorldMousePosI().y
+	);
+
+	// update display fishcount
+	for (int i = 0 ; i < FishTypeCount; i++) {
+		mFishLabel[i]->setCaption("%4d", mFishCounter[i]);
+	}
+
+
+
+	static float lScoreTimer = 0.f;
+	static float lChallengeTimer = 0.f;
+
+	if (mChallengeRunning)
+	{
+		lScoreTimer += dt / 200.f;
+		if (lScoreTimer > 1) {
+			lScoreTimer -= 1;
+			mScore += mScoreInc;
+			mScoreLabel->setCaption("%06d", mScore);
+		}
+
+		lChallengeTimer += dt / 1000.f;
+		if (lChallengeTimer > 1) {
+			lChallengeTimer -= 1;
+			mChallengeTime++;
+			mChallengeTimeLabel->setCaption("%06d", mChallengeTime);
+		}
+
+	}
+
+	Parent::Update(dt);
+}
+//--------------------------------------------------------------------------------------
+// An optimized version of Bubble Sort
+// void DemoGame::sortFishes()
+// {
+//     int n = mFishes.size();
+// 	if (n < 2)
+// 		return;
+//
+//     bool swapped;
+//
+//     for (int i = 0; i < n - 1; i++) {
+//         swapped = false;
+//         for (int j = 0; j < n - i - 1; j++) {
+//             if (mFishes[j]->getLayer() > mFishes[j + 1]->getLayer()) {
+//                 std::swap(mFishes[j], mFishes[j+1] );
+//                 swapped = true;
+//             }
+//         }
+//
+//         // If no two elements were swapped, then break
+//         if (!swapped)
+//             break;
+//     }
+// }
+void DemoGame::sortFishes()
+{
+	// Check size is good practice, but std::sort handles empty/small lists efficiently anyway
+	if (mFishes.size() < 2)
+		return;
+
+	// Use std::sort to efficiently sort the vector of pointers
+	// We use a lambda function to define the custom comparison logic based on getLayer()
+	std::sort(mFishes.begin(), mFishes.end(),
+			  [](const myFish* a, const myFish* b) {
+				  // This returns true if 'a' has a smaller layer than 'b', sorting them in ASCENDING order.
+				  return a->getLayer() < b->getLayer();
+			  }
+	);
+
+	// The vector mFishes is now sorted by layer.
+}
+//--------------------------------------------------------------------------------------
+void DemoGame::onChallengeKey()
+{
+	if (mChallengeRunning)
+	{
+		if (mFishGoalReached)
+		{
+			mChallengeRunning = false;
+			for (int i = 0; i < FishTypeCount; i++)
+			{
+				mFishGoalDisplay[i]->setVisible(false);
+			}
+			mBrrooii->play();
+		} else {
+			mFailSound->play();
+		}
+
+		// FIXME display fail or win
+	} else {
+		// new challenge
+		mScore = 0;
+		mChallengeTime = 0;
+
+		mPlingeling->play();
+		respawnFishes(100);
+		mFishGoalReached = false;
+		for (int i = 0; i < FishTypeCount; i++)
+		{
+			mFishGoals[i] = RandInt(5,25);
+			mFishGoalDisplay[i]->setCaption("%3d", mFishGoals[i]);
+			mFishGoalDisplay[i]->setVisible(true);
+		}
+		updateFishCounter();
+		mChallengeRunning = true;
+	}
+}
+
+
+//--------------------------------------------------------------------------------------
+void DemoGame::onEvent(SDL_Event event)
+{
+	//TESTING camera
+	#if defined(FLUX_DEBUG)
+
+	if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+		// Zoom speed is usually much higher for the wheel
+		float scrollZoom = event.wheel.y *  0.01f ; // * getFrameTime();
+		Render2D.getCamera()->moveZoom(scrollZoom);
+	}
+
+	if ( event.type ==  SDL_EVENT_KEY_UP )
+	{
+		F32 camSpeed = 16.f; // * getFrameTime();
+		switch ( event.key.key ) {
+			case SDLK_RIGHT: 	Render2D.getCamera()->move({camSpeed, 0.0f}); break;
+			case SDLK_LEFT: 	Render2D.getCamera()->move({-camSpeed, 0.0f}); break;
+			case SDLK_UP:   	Render2D.getCamera()->move({0.0f, -camSpeed}); break;
+			case SDLK_DOWN: 	Render2D.getCamera()->move({0.0f, camSpeed}); break;
+		}
+	}
+
+	#endif
+
+}
+
+//--------------------------------------------------------------------------------------
+void DemoGame::onKeyEvent(SDL_KeyboardEvent event)
+{
+	const bool isKeyUp = (event.type == SDL_EVENT_KEY_UP);
+	const SDL_Keymod mods = event.mod;
+	const SDL_Keycode key = event.key;
+	const SDL_Keymod modAlt = SDL_KMOD_LALT;
+	const SDL_Keymod modShift = SDL_KMOD_LSHIFT;
+	const SDL_Keycode pauseKey = SDLK_P;
+
+	if (isKeyUp){
+		switch (key) {
+			case SDLK_ESCAPE:
+				TerminateApplication();
+				break;
+			case SDLK_RETURN:
+				if (mods & modAlt)
+					toggleFullScreen();
+				break;
+			case pauseKey:
+				if (togglePause()) {
+					Log("Now paused....");
+				}
+
+				else
+					Log("pause off");
+				break;
+
+			//Launch an finish a challenge
+			case SDLK_SPACE:
+				if (!getPause())
+					onChallengeKey();
+				break;
+		} //switch
+
+		// debug inputs with left shift key
+		if (mods & modShift)
+		{
+			switch (key) {
+				case SDLK_PLUS:
+					spawnFish();
+					break;
+				case SDLK_RETURN:
+					for (Uint32 i = 0; i < 1000; i++)
+					{
+						spawnFish();
+					}
+					//disable culling ! :P
+					Render2D.setCulling(false);
+
+					break;
+				case SDLK_F1:
+					listFishes();
+					break;
+
+				case SDLK_F2:
+					if (mSettings.minDt > 0 )
+						mSettings.minDt = 0;
+					else
+						mSettings.minDt = 16;
+					Log("Set new default dt to %2.1f", mSettings.minDt);
+				break;
+				case SDLK_F3:
+					mLabel1->setVisible(!mLabel1->getVisible());
+					mLabel2->setVisible(!mLabel2->getVisible());
+					break;
+
+			} //switch
+		} //left ctrl
+	} //event keyup
+}
+
+void DemoGame::onMouseButtonEvent(SDL_MouseButtonEvent event)
+{
+	const bool isDown = event.down;
+	const Uint8 button = event.button;
+
+	if (isDown && !getPause())
+	{
+		switch (button)
+		{
+			case SDL_BUTTON_LEFT:
+
+				sortFishes(); //sort by layer
+				static std::vector<myFish *>::iterator curObj;
+				for (curObj=mFishes.begin(); curObj!=mFishes.end(); ++curObj) {
+
+					if ((*curObj) && (*curObj)->pointCollide(getStatus().WorldMousePos)) {
+
+						//remove from render/updatequeue and add it to delete
+						if (!queueDelete((*curObj)))
+							Log("FAILED TO DELETE FROM QUEUE!!!!!!!!!!!!!!!!!");
+						else {
+							mFishes.erase(curObj); //remove from fishes
+							mPling->play();
+							updateFishCounter();
+						}
+						break;
+					}
+				}
+
+				break;
+		}
+	}
+}
+//--------------------------------------------------------------------------------------
+void DemoGame::onDraw()
+{
+	// init shared dp
+	DrawParams2D dp;
+	dp.image = nullptr;
+	dp.imgId = 0;
+	dp.x = getScreen()->getCenterX();
+	dp.y = getScreen()->getCenterY();
+	dp.z = 0.f;
+	dp.w = getScreen()->getWidth();
+	dp.h = getScreen()->getHeight();
+
+	dp.image = mBackTex;		dp.z 	 = 0.99f; dp.alpha=0.1f;	Render2D.drawSprite(dp);
+	dp.image = mRockFarTex;		dp.z 	 = 0.50f; dp.alpha=0.1f;	Render2D.drawSprite(dp);
+	dp.image = mRockNearTex;	dp.z 	 = 0.05f; dp.alpha=0.1f;	Render2D.drawSprite(dp);
+
+	dp.image = mWaveTex;
+	dp.z = 0.06f;
+	dp.alpha 	= 0.0f;
+	dp.horizontalScrollSpeed = 0.005f;
+	Render2D.drawSprite(dp);
+	dp.horizontalScrollSpeed = false;
+
+}
+
+
+//--------------------------------------------------------------------------------------
+int main(int argc, char **argv)
+{
+#if defined (WIN32) && ! defined (_DEBUG)  
+	ShowWindow(GetConsoleWindow(), SW_HIDE);
+#endif // def WIN32 and not _DEBUG
+
+	atexit(SDL_Quit);
+
+	DemoGame* lDemoGame = new DemoGame;
+	lDemoGame->mSettings.Caption="Fish Tank";
+	lDemoGame->mSettings.Version="Demo 4.241221";
+	lDemoGame->mSettings.ScreenWidth=1152;
+	lDemoGame->mSettings.ScreenHeight=648;
+	lDemoGame->mSettings.ScaleScreen = true; //default true
+	lDemoGame->mSettings.IconFilename = "fishArt/icon.bmp";
+	lDemoGame->mSettings.CursorFilename = "fishArt/fishnet.bmp";
+	lDemoGame->mSettings.cursorHotSpotX = 11;
+	lDemoGame->mSettings.cursorHotSpotY = 3;
+	lDemoGame->mSettings.Vsync = false;
+
+	lDemoGame->mSettings.minDt = 16.f;
+
+
+	lDemoGame->mSettings.maxSprites = 100000;
+
+
+	lDemoGame->Execute();
+	SAFE_DELETE(lDemoGame);
+
+	exit(0);
+	return 0;
+}
+
+
+

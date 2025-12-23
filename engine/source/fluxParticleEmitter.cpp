@@ -1,0 +1,174 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2025 Ohmtal Game Studio
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
+#include "fluxParticleEmitter.h"
+#include <algorithm>
+#include <cmath>
+#include "fluxGlobals.h"
+//-----------------------------------------------------------------------------
+FluxParticleEmitter::FluxParticleEmitter(const EmitterProperties& props)
+: mProperties(props),
+mSpawnTimer(0.0f),
+mRng(std::random_device{}()),
+mDist(0.0f, 1.0f)
+{
+    mParticles.reserve(props.maxParticles);
+    mActive = mProperties.autoActivate;
+}
+//-----------------------------------------------------------------------------
+FluxParticleEmitter::~FluxParticleEmitter() {}
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::update(F32 dt)
+{
+    // 1. Update and Clean up particles using Swap-and-Pop (O(1) deletion)
+    for (size_t i = 0; i < mParticles.size(); )
+    {
+        mParticles[i].update(dt);
+
+        if (mParticles[i].lifeRemaining <= 0.0f)
+        {
+            // Move last element to current position and shrink
+            mParticles[i] = mParticles.back();
+            mParticles.pop_back();
+            // Don't increment i; check the swapped particle next iteration
+        }
+        else
+        {
+            ++i;
+        }
+    }
+
+    if ( !mActive ) {
+        return;
+    }
+
+    // 2. Spawn new particles
+    if (mParticles.size() < mProperties.maxParticles)
+    {
+        mSpawnTimer += dt;
+        F32 spawnInterval = 1.0f / mProperties.spawnRate;
+
+        while (mSpawnTimer >= spawnInterval)
+        {
+            if (mParticles.size() >= mProperties.maxParticles) {
+                if (mProperties.playOnce)
+                    mActive = false;
+                break;
+            }
+
+            emitParticle();
+            mSpawnTimer -= spawnInterval;
+        }
+    }
+}
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::render()
+{
+    for (const auto& particle : mParticles)
+    {
+        // Particle is guaranteed alive by the update loop cleanup
+        if (particle.texture)
+        {
+            // Use the lerped color based on life
+            Color4F currentColor = particle.getCurrentColor();
+
+            Render2D.drawWithTransform(
+                particle.texture,
+                particle.position,
+                particle.rotation,
+                particle.scale,
+                currentColor
+            );
+        }
+    }
+}
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::emitParticle()
+{
+    // Re-check bounds to be safe
+    if (mParticles.size() < mProperties.maxParticles)
+    {
+        mParticles.emplace_back();
+        initializeParticle(mParticles.back());
+    }
+}
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
+{
+    // Helper lambda for range-based randoms
+    auto randRange = [&](F32 min, F32 max) {
+        return min + mDist(mRng) * (max - min);
+    };
+
+    particle.position = mProperties.position;
+
+    particle.lifetime = randRange(mProperties.minLifetime, mProperties.maxLifetime);
+    particle.lifeRemaining = particle.lifetime;
+
+    F32 speed = randRange(mProperties.minSpeed, mProperties.maxSpeed);
+    F32 angle = randRange(mProperties.minAngle, mProperties.maxAngle);
+
+    // Use cosf/sinf for F32 precision and performance
+    particle.velocity = Point2F{ std::cosf(angle), std::sinf(angle) } * speed;
+    particle.acceleration = { 0.0f, 0.0f };
+
+    particle.rotation = mDist(mRng) * 2.0f * FLUX_PI;
+    particle.rotationSpeed = (mDist(mRng) - 0.5f) * 2.0f;
+
+    particle.scale = randRange(mProperties.minScale, mProperties.maxScale);
+
+    // Initializing Colors
+    particle.startColor = {
+        randRange(mProperties.startColorMin.r, mProperties.startColorMax.r),
+        randRange(mProperties.startColorMin.g, mProperties.startColorMax.g),
+        randRange(mProperties.startColorMin.b, mProperties.startColorMax.b),
+        randRange(mProperties.startColorMin.a, mProperties.startColorMax.a)
+    };
+
+    particle.endColor = {
+        randRange(mProperties.endColorMin.r, mProperties.endColorMax.r),
+        randRange(mProperties.endColorMin.g, mProperties.endColorMax.g),
+        randRange(mProperties.endColorMin.b, mProperties.endColorMax.b),
+        randRange(mProperties.endColorMin.a, mProperties.endColorMax.a)
+    };
+
+    particle.texture = mProperties.texture;
+}
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::play()
+{
+    mSpawnTimer = 1.0f; // Force instant burst for explosions
+    mActive = true;
+};
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::stop()
+{
+    mActive = false;
+}
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::reset()
+{
+    // 1. Clear existing particles so the new effect starts fresh
+    mParticles.clear();
+
+    // 2. Reset the timer.
+    // Setting this to 1.0f ensures that 'while (mSpawnTimer >= spawnInterval)'
+    // triggers immediately on the next update call for a burst effect.
+    mSpawnTimer = 1.0f;
+
+    // 3. Re-activate the emitter
+    mActive = true;
+}
+//-----------------------------------------------------------------------------
+void FluxParticleEmitter::setProperties(const EmitterProperties& props)
+{
+    mProperties = props;
+    // Always call reset when changing properties to ensure
+    // playOnce and spawnTimer are in the correct state
+    reset();
+
+    // overwrite the reset activation if the Properties dont want autostart
+    mActive = props.autoActivate;
+}
+
