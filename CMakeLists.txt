@@ -76,7 +76,10 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${STB_DIR}>
 )
 target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile)
-target_compile_definitions(ohmFlux_engine PRIVATE $<$<CONFIG:Debug>:FLUX_DEBUG>)
+target_compile_definitions(ohmFlux_engine PUBLIC
+    $<$<OR:$<CONFIG:Debug>,$<CONFIG:DEBUG>>:FLUX_DEBUG>
+)
+
 
 
 # --- Unified Demo Macro ---
