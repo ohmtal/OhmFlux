@@ -97,7 +97,8 @@ void FluxAudioStream::Update(const double& dt)
 
     while (SDL_GetAudioStreamAvailable(mStream) < targetBytes)
     {
-        if (mIsOgg && mVorbis) {
+        if (mIsOgg && mVorbis)
+        {
             // Read 1024 samples per channel at a time
             const int samplesToRead = 1024;
             const int totalFloats = samplesToRead * mSpec.channels;
@@ -130,13 +131,21 @@ void FluxAudioStream::Update(const double& dt)
                     break;
                 }
             }
-        }  else if (!mIsOgg && mLooping) {
-            // Only add data if the stream is almost empty to prevent RAM bloat
-            if (SDL_GetAudioStreamAvailable(mStream) < (int)mWaveDataLen) {
-                SDL_PutAudioStreamData(mStream, mWavData, (int)mWaveDataLen);
+        }  // if (mIsOgg && mVorbis)
+        else if (!mIsOgg)
+        {
+            if (mLooping) {
+                if (SDL_GetAudioStreamAvailable(mStream) < (int)mWaveDataLen) {
+                    SDL_PutAudioStreamData(mStream, mWavData, (int)mWaveDataLen);
+                }
+            } else {
+                mPlaying = false;
+                SDL_FlushAudioStream(mStream);
             }
-        }
-    }
+            break;
+        } // if (!mIsOgg)
+
+    } //  while (SDL_GetAudioStreamAvailable(mStream) < targetBytes)
 }
 
 //-----------------------------------------------------------------------------
