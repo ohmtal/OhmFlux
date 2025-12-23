@@ -110,7 +110,7 @@ void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
     F32 angle = randRange(mProperties.minAngle, mProperties.maxAngle);
 
     // Use cosf/sinf for F32 precision and performance
-    particle.velocity = Point2F{ std::cosf(angle), std::sinf(angle) } * speed;
+    particle.velocity = Point2F{ cosf(angle), sinf(angle) } * speed;
     particle.acceleration = { 0.0f, 0.0f };
 
     particle.rotation = mDist(mRng) * 2.0f * FLUX_PI;
