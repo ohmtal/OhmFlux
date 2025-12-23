@@ -20,6 +20,7 @@ layout (location = 2) in vec4 aColor;    // Per-sprite Tint and Alpha
 
 out vec2 TexCoord;
 out vec4 TintColor; // Pass to Fragment Shader
+out vec3 fragWorldPos; // Pass world position to fragment shader
 
 uniform mat4 view;       // Camera View Matrix (Shared by batch)
 uniform mat4 projection; // Ortho Matrix (Shared by batch)

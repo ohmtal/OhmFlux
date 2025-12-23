@@ -69,6 +69,11 @@ void FluxShader::setVec2(const std::string& name, float x, float y)
     glUniform2f(getLoc(name), x, y);
 }
 //-------------------------------------------------------------------------------
+void FluxShader::setVec3(const std::string& name, float x, float y, float z)
+{
+    glUniform3f(getLoc(name), x, y, z);
+}
+//-------------------------------------------------------------------------------
 void FluxShader::setFloat(const std::string& name, float value)
 {
     glUniform1f(getLoc(name), value);
