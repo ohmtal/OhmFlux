@@ -481,7 +481,8 @@ void FluxMain::setupWorldMousePositions(  )
 
 }
 //--------------------------------------------------------------------------------------
-void FluxMain::IterateFrame() {
+void FluxMain::IterateFrame()
+{
 	SDL_Event E;
 
 	// 1. Process ALL pending events in a loop to avoid input lag
@@ -550,9 +551,8 @@ void FluxMain::IterateFrame() {
 	//  Time Calculation
 	mTickCount = SDL_GetPerformanceCounter();
 	gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency * 1000.0;
-
 	//  Delta Time Cap (Prevent logic jumps if browser tab was suspended)
-	if (gFrameTime > 200.0) gFrameTime = 16.66;
+	if (gFrameTime > 200.0f) gFrameTime = 16.66f;
 
 	//  Frame Limiter (Native only)
 	if (mSettings.minDt > 0.f && gFrameTime < mSettings.minDt) {
@@ -566,8 +566,20 @@ void FluxMain::IterateFrame() {
 	mFPS = 1000.f / (float)gFrameTime;
 	gGameTime += (float)gFrameTime / 1000.f;
 
-	//  Update & Render
-	Update(gFrameTime);
+	// fixed update: >>>>>>>>>>>>>>>>>>>>>>>>>
+	static double accumulator = 0.0;
+	const double FIXED_DT_MS = 16.666; // Target 60 FPS logic rate
+	accumulator += gFrameTime;
+
+	// 4. Fixed Timestep Loop
+	// Consume time in chunks of exactly 16.66ms.
+	while (accumulator >= FIXED_DT_MS) {
+		Update(FIXED_DT_MS);
+		accumulator -= FIXED_DT_MS;
+	}
+
+	//  Render
+	// FIXME ?   Draw(accumulator / FIXED_DT_MS);
 	Draw();
 	SDL_GL_SwapWindow(mScreen->getWindow());
 

@@ -36,8 +36,10 @@ Done!
 Done. 
 
 ## Update/Draw
-Update should be not bind to Draw frequency 
- => Update all 16.6 ms for example 
+Done. 
+
+- Update should be not bind to Draw frequency 
+
 
 ## Lights 
 TODO
