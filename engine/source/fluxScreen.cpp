@@ -139,7 +139,7 @@ void FluxScreen::setVSync(const bool& lEnabled)
 
 }
 //-------------------------------------------------------------------------------
-bool  FluxScreen::prepareMode(const S_Settings& lSettings )
+bool  FluxScreen::prepareMode(const FluxSettings& lSettings )
 {
 
 	// if(!mScreen->prepareMode(mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen, mSettings.Vsync, mSettings.Fsaa))

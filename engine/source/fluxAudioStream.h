@@ -47,10 +47,11 @@ private:
     bool mIsOgg = false;
     std::vector<float> mConversionBuffer;
 
+    void clearResources();
+    void FillOggBuffer();
 public:
     FluxAudioStream( const char* lFilename);
     ~FluxAudioStream();
-    void clearResources() ;
     bool loadWAV(const char * lFilename);
     bool loadOGG(const char* lFilename);
 

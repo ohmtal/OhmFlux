@@ -359,7 +359,7 @@ struct Vertex2D {
 //-------------------------------------- game parameter structs
 
 // Data Types
-struct S_AppStatus
+struct FluxAppStatus
 {
     bool Visible;
     bool Paused;
@@ -384,7 +384,7 @@ struct S_AppStatus
 
 const U32 DEFAULT_MAX_SPRITES = 4000;
 
-struct S_Settings
+struct FluxSettings
 {
     U32 ScreenWidth  = 800;
     U32	ScreenHeight = 600;
@@ -404,6 +404,8 @@ struct S_Settings
     RectI WorldBounds = { -2000, -2000, 4000, 4000 };
 
     U32 maxSprites = DEFAULT_MAX_SPRITES; // this need to be set since we use Batchrendering
+
+    bool enableLogFile = true;
 
 } ;
 

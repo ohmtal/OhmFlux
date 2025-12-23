@@ -1,5 +1,6 @@
 //-----------------------------------------------------------------------------
 // ohmFlux TestBed
+// !!! Warning ugly code style ahead !!!
 //-----------------------------------------------------------------------------
 #include "source/fluxMain.h"
 #include "source/fluxBitmapFont.h"
@@ -13,6 +14,7 @@
 #include <fluxParticlePresets.h>
 #include <fluxTrueTypeFont.h>
 #include <fluxAudioStream.h>
+#include <fluxScheduler.h>
 
 class TestBed : public FluxMain
 {
@@ -35,12 +37,10 @@ private:
     FluxTrueTypeFont* mMonoFont;
 
     FluxAudioStream* mTomsGuitarSample = nullptr;
-/*
- mBasicGroundTiles
+    FluxAudioStream* mClickSound = nullptr;
+    FluxAudioStream* mBrrooiiSound = nullptr;
 
- 64x64
- assets/maps/ohmtal_1.map
-*/
+    FluxScheduler::TaskID mScheduleTestId = 0;
 
 
 public:
@@ -97,7 +97,7 @@ public:
         // Zoom (Page keys and +/-)
         // Note: SDL_SCANCODE_EQUALS is the key usually physically associated with '+'
         mInput.bindKey("ZoomIn",    SDL_SCANCODE_PAGEUP);
-        mInput.bindKey("ZoomIn",    SDL_SCANCODE_EQUALS);
+        mInput.bindKey("ZoomOut",    SDL_SCANCODE_PAGEDOWN);
 
         mInput.bindKey("ZoomOut",   SDL_SCANCODE_PAGEDOWN);
         mInput.bindKey("ZoomOut",   SDL_SCANCODE_MINUS);
@@ -167,8 +167,33 @@ public:
          mTomsGuitarSample->setPositon({ 0.f, 0.f });
          mTomsGuitarSample->play();
 
+         mClickSound = new FluxAudioStream("assets/sounds/pling.ogg");
+         queueObject(mClickSound);
+
+         queueObject(mClickSound); //<< fail safe test
+
+
+         mBrrooiiSound = new FluxAudioStream("assets/sounds/brrooii.ogg");
+         mBrrooiiSound->setPositon( getScreen()->getCenterF());
+         queueObject(mBrrooiiSound);
+
+         mScheduleTestId = FluxSchedule.add(3.0, [this]() {
+                          this->Brrooii(); // Calls method with arguments
+         });
+         Log("ScheduleTestId is: %d", mScheduleTestId);
+
 
         return true;
+    }
+
+    void Brrooii()
+    {
+        mBrrooiiSound->play();
+        mScheduleTestId = FluxSchedule.add(3.0, [this]() {
+            this->Brrooii(); // Calls method with arguments
+        });
+        Log("ScheduleTestId is: %d", mScheduleTestId);
+
     }
 
     void Deinitialize() override
@@ -217,6 +242,7 @@ public:
             case SDL_BUTTON_LEFT:
                 mSparkEmitter->setPosition(getStatus().getWorldMousePos());
                 mSparkEmitter->play();
+                mClickSound->play();
         }
 
 
@@ -326,6 +352,7 @@ int main(int argc, char** argv)
     (void)argc; (void)argv;
     TestBed* game = new TestBed();
     game->mSettings.Caption = "TestBed";
+    game->mSettings.enableLogFile = true;
     game->Execute();
     SAFE_DELETE(game);
     return 0;

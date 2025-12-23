@@ -20,6 +20,8 @@
 #include "errorlog.h"
 #include "fluxRender2D.h"
 #include "fluxParticleManager.h"
+#include "fluxScheduler.h"
+#include "misc.h"
 
 float gFrameTime = 0.f; // we need that Global for timming
 float gGameTime  = 0.f;
@@ -69,7 +71,12 @@ FluxMain* FluxMain::_instance = nullptr;
 bool FluxMain::Initialize()
 {
 #ifndef __EMSCRIPTEN__
-	InitErrorLog("ohmFlux.log",this->mSettings.Caption,this->mSettings.Version);
+	if (mSettings.enableLogFile)
+	{
+		std::string lLogFileString = sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+		InitErrorLog(lLogFileString.c_str(),this->mSettings.Caption,this->mSettings.Version);
+	}
+
 #endif
 	Log("Running on SDL3");
 
@@ -153,6 +160,9 @@ bool FluxMain::Initialize()
 //--------------------------------------------------------------------------------------
 void FluxMain::Deinitialize()
 {
+	// Shutdown scheduler
+	FluxSchedule.shutdown();
+
 
 	// Cleanup Textures
 	for (auto* tex : mTextures) {
@@ -166,6 +176,8 @@ void FluxMain::Deinitialize()
 		SAFE_DELETE(baseObj);
 	}
 	mQueueObjects.clear();
+
+
 
 	SAFE_DELETE(mScreen);
 
@@ -182,9 +194,22 @@ void FluxMain::Deinitialize()
  * add to queue
  *
  */
+// void FluxMain::queueObject(FluxBaseObject* lObject)
+// {
+// 	mQueueObjects.push_back(lObject);
+// }
 void FluxMain::queueObject(FluxBaseObject* lObject)
 {
-	mQueueObjects.push_back(lObject);
+	if (lObject == nullptr) return;
+
+	// Check if it already exists in the queue
+	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
+
+	if (it == mQueueObjects.end()) {
+		mQueueObjects.push_back(lObject);
+	} else {
+		Log(">>>>>>>>>>> FluxMain::queueObject :: Object already queued, skipping. <<<<<<<<<<<<<<<<<<<<<<");
+	}
 }
 
 /**
@@ -273,6 +298,8 @@ bool FluxMain::toggleFullScreen()
 //--------------------------------------------------------------------------------------
 void FluxMain::Update(const double& dt)
 {
+	FluxSchedule.update(dt);
+
 	for (U32 i = 0; i < mQueueObjects.size(); )
 	{
 		FluxBaseObject* obj = mQueueObjects[i];

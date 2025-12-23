@@ -32,6 +32,13 @@ Done!
 - looping Music 
 - ogg support via stb
 
+## Scheduler
+Done. 
+
+## Update/Draw
+Update should be not bind to Draw frequency 
+ => Update all 16.6 ms for example 
+
 ## Lights 
 TODO
 

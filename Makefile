@@ -84,7 +84,7 @@ distclean:
 	# Clean up Demo directories
 	@for dir in $(DEMO_DIRS); do \
 		echo "  Cleaning $$dir..."; \
-		rm -f $$dir/ohmFlux.log; \
+		rm -f $$dir/*.log; \
 		rm -f $$dir/$$dir_*.x86_64; \
 		rm -f $$dir/index.html $$dir/index.js $$dir/index.wasm $$dir/index.data; \
 		rm -f $$dir/index.wasm.br $$dir/index.js.br $$dir/index.data.br; \

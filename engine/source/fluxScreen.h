@@ -60,7 +60,7 @@ public:
 	SDL_Window * getWindow() { return mWindow; }
 
 	bool getVideoFailed() { return mSDLVideoFailed; }
-	bool prepareMode(const S_Settings& lSettings );
+	bool prepareMode(const FluxSettings& lSettings );
 	bool init();
 	bool updateWindowSize(S32 lWidth, S32 lHeight);
 	bool setCaption(const char* lCaption);
@@ -73,6 +73,7 @@ public:
 	S32  getHeight()	 const { return _mHeight; }
 	S32  getCenterX()	 const { return _mCenterX; }
 	S32  getCenterY()	 const { return _mCenterY; }
+	Point2F getCenterF() const { return { static_cast<F32>(_mCenterX ), static_cast<F32>(_mCenterX ) }; }
 	Point2F getScreenSizeF() const { return { static_cast<F32>(_mWidth ), static_cast<F32>(_mHeight ) }; }
 	Point2F getScreenCenterF() const { return { static_cast<F32>(_mWidth ) / 2.f , static_cast<F32>(_mHeight ) / 2.f }; }
 	Point2I getRealScreenSize() const { return mRealScreenSize; }

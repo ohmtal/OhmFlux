@@ -102,8 +102,8 @@ The build system uses a unified macro to make adding new games extremely fast.
     ```cmake
     option(BUILD_MYGAME "Build MyGame demo" ON)
     if(BUILD_MYGAME)
-        set(DEMO_SOURCES "${MYGAME_DIR}/src/main.cpp") 
-        configure_demo_target(MyGame ${MYGAME_DIR} "${MYGAME_DIR}/assets@assets" "${DEMO_SOURCES}")
+        set(GAME_SOURCES "${MYGAME_DIR}/src/main.cpp") 
+        configure_demo_target(MyGame ${MYGAME_DIR} "${MYGAME_DIR}/assets@assets" "${GAME_SOURCES}")
     endif()
     ``` 
 

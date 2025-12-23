@@ -43,7 +43,7 @@ int Log(const char *szFormat, ...)						// Add A Line To The Log
 
 	if(ErrorLog)									// If The Log Is Open
 	{
-		fprintf(ErrorLog, "%s", targetStr);			// We Use vprintf To Perform Substituctions
+		fprintf(ErrorLog, "%s\n", targetStr);			// We Use vprintf To Perform Substituctions
 		fflush(ErrorLog);							// And Ensure The Line Is Written, The Log Must Be Quick
 	}
 

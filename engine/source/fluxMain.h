@@ -41,7 +41,7 @@ private:
 
 	FluxQuadtree* mEngineQuadtree;
 
-	S_AppStatus mAppStatus;
+	FluxAppStatus mAppStatus;
 
 	bool mRunning;
 
@@ -68,11 +68,11 @@ public:
 	FluxTexture* loadTexture(const char* filename, int cols = 1, int rows = 1, bool setColorKeyAtZeroPixel = false, bool usePixelPerfect  = false);
 
 	bool toggleFullScreen();
-	S_Settings mSettings;
+	FluxSettings mSettings;
 
 	void TerminateApplication();
 
-	S_AppStatus getStatus() { return mAppStatus; }
+	FluxAppStatus getStatus() { return mAppStatus; }
 
 	// SDL_AudioDeviceID getAudioDevice() { return mAudioDevice; }
 
