@@ -42,6 +42,10 @@ Done.
 
 
 ## Lights 
+- pointLight Done
+- spotLight Done
+
+## Shadows
 TODO
 
 ## PostEffects

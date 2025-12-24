@@ -348,16 +348,21 @@ void FluxRender2D::beginFrame() //FluxCamera* cam)
         mDefaultShader.setMat4("view", identity);
     }
 
-    // FIXME LIGHTS
-    // // Pass Light Data to Shader
-    // const std::vector<FluxLight>& lights = LightManager.getLights();
-    // mDefaultShader.setInt("uNumLights", (S32)lights.size());
-    // for (size_t i = 0; i < lights.size(); ++i) {
-    //     std::string lightPrefix = "uLights[" + std::to_string(i) + "]";
-    //     mDefaultShader.setVec3((lightPrefix + ".position").c_str(), lights[i].position.x, lights[i].position.y, lights[i].position.z);
-    //     mDefaultShader.setVec4((lightPrefix + ".color").c_str(), lights[i].color.r, lights[i].color.g, lights[i].color.b, lights[i].color.a);
-    //     mDefaultShader.setFloat((lightPrefix + ".radius").c_str(), lights[i].radius);
-    // }
+    mDefaultShader.setVec3("uAmbientColor", mAmbientColor.r, mAmbientColor.g, mAmbientColor.b);
+
+    // Pass Light Data to Shader
+    const std::vector<FluxLight>& lights = LightManager.getLights();
+    mDefaultShader.setInt("uNumLights", (S32)lights.size());
+    for (size_t i = 0; i < lights.size(); ++i) {
+        std::string lightPrefix = "uLights[" + std::to_string(i) + "]";
+        mDefaultShader.setVec3((lightPrefix + ".position").c_str(), lights[i].position.x, lights[i].position.y, lights[i].position.z);
+        mDefaultShader.setVec4((lightPrefix + ".color").c_str(), lights[i].color);
+        mDefaultShader.setFloat((lightPrefix + ".radius").c_str(), lights[i].radius);
+
+        mDefaultShader.setVec2((lightPrefix + ".direction").c_str(), lights[i].direction.x, lights[i].direction.y);
+        mDefaultShader.setFloat((lightPrefix + ".cutoff").c_str(), lights[i].cutoff);
+
+    }
 
     if (mCommandList.capacity() < mMaxSprites) {
         mCommandList.reserve(mMaxSprites);
@@ -402,6 +407,7 @@ void FluxRender2D::renderCurrentBuffer(std::vector<Vertex2D>& vertexBuffer, GLui
     mDefaultShader.use();
     mDefaultShader.setMat4("projection", mOrtho);
     mDefaultShader.setMat4("view", isGui ? IDENTITY_MATRIX : mCurrentCameraViewMatrix);
+    mDefaultShader.setInt("uIsGui", isGui);
 
     // 1. Upload vertices (This stays here as the Renderer owns the CPU data)
     mQuadMesh.updateDynamic(vertexBuffer.data(), (U32)vertexBuffer.size());

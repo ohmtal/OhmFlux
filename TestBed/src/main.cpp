@@ -186,13 +186,19 @@ public:
 
         // lights testing:
 
-         LightManager.addLight(FluxLight({100.0f, 100.0f, 0.0f}, cl_Red * 0.8f, 200.0f));
-         LightManager.addLight(FluxLight({500.0f, 300.0f, 0.0f}, cl_Green * 0.8f, 150.0f));
-         LightManager.addLight(FluxLight({300.0f, 500.0f, 0.0f}, cl_Blue * 0.8f, 250.0f));
-         LightManager.addLight(FluxLight({700.0f, 150.0f, 0.0f}, cl_Yellow * 0.8f, 180.0f));
+         Render2D.setAmbientColor(cl_DeepSea);
+         LightManager.addLight(FluxLight({100.0f, 100.0f, 0.0f}, cl_Red , 200.0f));
+         LightManager.addLight(FluxLight({500.0f, 100.0f, 0.0f}, cl_Green, 150.0f));
+         LightManager.addLight(FluxLight({100.0f, 500.0f, 0.0f}, cl_LightGray , 200.0f));
+         LightManager.addLight(FluxLight({500.0f, 500.0f, 0.0f}, cl_Yellow, 180.0f));
 
-
-
+         // FluxLight flashlight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f);
+         // flashlight.setAsSpotlight({0.0f, 1.0f}, 45.0f); //
+         // LightManager.addLight(flashlight);
+         LightManager.addLight(
+             FluxLight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f)
+             .setAsSpotlight({0.0f, 1.0f}, 45.0f)
+         );
         return true;
     }
 

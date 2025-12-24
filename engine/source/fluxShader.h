@@ -26,6 +26,7 @@ public:
     void setVec2(const std::string& name, float x, float y);
     void setVec3(const std::string& name, float x, float y, float z);
     void setFloat(const std::string& name, float value);
+    void setInt(const std::string& name, float value);
 
 private:
     GLuint mProgram;

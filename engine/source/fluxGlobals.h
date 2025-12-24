@@ -107,6 +107,7 @@ struct Color4F {
     F32 b = 1.f;
     F32 a = 1.f;
 
+
     // --- Arithmetic Operators ---
 
     // Add a scalar to all color channels

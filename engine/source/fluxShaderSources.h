@@ -26,30 +26,18 @@ uniform mat4 view;       // Camera View Matrix (Shared by batch)
 uniform mat4 projection; // Ortho Matrix (Shared by batch)
 
 void main() {
-    // Note: 'model' is gone! aPos is already transformed.
+    // 1. For the GPU screen position, we need View and Projection
     gl_Position = projection * view * vec4(aPos, 1.0);
-    fragWorldPos = (view * vec4(aPos, 1.0)).xyz; // Calculate world position for lighting
+
+    // 2. For lighting, we need the STATIC world position.
+    // If aPos is already world-space from the CPU, just pass it through:
+    fragWorldPos = aPos;
 
     TexCoord = aTexCoord;
     TintColor = aColor;
 }
 )";
 
-// hackfest
-// inline const char* fragmentShaderSource = GLSL_VERSION R"(
-// out vec4 FragColor;
-//
-// in vec2 TexCoord;
-// in vec4 TintColor; // Received from Vertex Shader
-//
-// uniform sampler2D texture1;
-//
-// void main() {
-//     // Multiply texture color by the vertex tint (TintColor)
-//     vec4 texColor = texture(texture1, TexCoord);
-//     FragColor = texColor * TintColor;
-// }
-// )";
 
 inline const char* fragmentShaderSource = GLSL_VERSION R"(
 out vec4 FragColor;
@@ -59,48 +47,64 @@ in vec4 TintColor;
 in vec3 fragWorldPos;
 
 uniform sampler2D texture1;
+uniform vec3 uAmbientColor; // New Uniform: RGB for color, Magnitude for intensity
 
-// Define a struct for our 2D lights
 struct Light {
-    vec3 position; // xy for position, z is unused in 2D
+    vec3 position;
     vec4 color;    // rgb, alpha for intensity
-    float radius;  // Affected area
+    float radius;
+    vec2 direction;
+    float cutoff;
 };
 
-// Declare an array of lights and the number of active lights
-#define MAX_LIGHTS 8 // Must match C++ define
+#define MAX_LIGHTS 8
 uniform Light uLights[MAX_LIGHTS];
 uniform int uNumLights;
-
+uniform bool uIsGui;
 void main() {
     vec4 texColor = texture(texture1, TexCoord);
 
-    // Gamma Correction: sRGB to Linear
-    texColor.rgb = pow(texColor.rgb, vec3(2.2));
+    if (!uIsGui) {
+        texColor.rgb = pow(texColor.rgb, vec3(2.2));
+        vec3 lightAccum = uAmbientColor;
 
-    // Base ambient light, so unlit areas aren't completely black
-    vec3 lightAccum = vec3(0.1); // Small ambient light
+        for (int i = 0; i < uNumLights; ++i) {
+            vec2 lightToFrag = fragWorldPos.xy - uLights[i].position.xy;
+            float dist = length(lightToFrag);
 
-    for (int i = 0; i < uNumLights; ++i) {
-        // Calculate distance from fragment to light source
-        float dist = distance(fragWorldPos.xy, uLights[i].position.xy);
+            if (dist < uLights[i].radius) {
+                float intensity = 1.0; // Default for Omni-lights
 
-        // Only calculate if within radius
-        if (dist < uLights[i].radius) {
-            // Simple inverse square attenuation or linear falloff
-            // Linear falloff: 1.0 at center, 0.0 at radius edge
-            float attenuation = 1.0 - (dist / uLights[i].radius);
-            attenuation = max(0.0, attenuation); // Ensure it doesn't go negative
+                // Only calculate spotlight logic if it's NOT an Omni-light
+                // AND we aren't exactly on top of the light source
+                if (uLights[i].cutoff > -0.99 && dist > 0.001) {
+                    vec2 normLightToFrag = normalize(lightToFrag);
+                    float theta = dot(normLightToFrag, normalize(uLights[i].direction));
 
-            // Apply light color and intensity (alpha channel of light.color)
-            lightAccum += uLights[i].color.rgb * uLights[i].color.a * attenuation;
+                    if (theta > uLights[i].cutoff) {
+                        // Smooth the edge of the spotlight cone
+                        float epsilon = 0.1;
+                        intensity = clamp((theta - uLights[i].cutoff) / epsilon, 0.0, 1.0);
+                    } else {
+                        intensity = 0.0; // Outside the cone
+                    }
+                }
+
+                if (intensity > 0.0) {
+                    float attenuation = 1.0 - (dist / uLights[i].radius);
+                    lightAccum += uLights[i].color.rgb * uLights[i].color.a * attenuation * intensity;
+                }
+            }
         }
-    }
-    // Clamp light accumulation to prevent super bright areas
-    lightAccum = min(lightAccum, vec3(1.0));
 
-//FIXME LIGHT
-    // texColor.rgb *= lightAccum;
+        // Clamp light to 1.0 to prevent over-exposure before final Tint
+        lightAccum = min(lightAccum, vec3(1.0));
+
+        texColor.rgb *= lightAccum;
+    }
+
+    // Linear to sRGB (Optional: recommended if your textures are sRGB)
+    // texColor.rgb = pow(texColor.rgb, vec3(1.0/2.2));
 
     if (texColor.a < 0.1) {
         discard;
@@ -110,60 +114,6 @@ void main() {
 }
 )";
 
-
-//-----------------------------------------------------------
-// pre batch renamed to vertexShaderSourceDirectDraw2D
-// inline const char* vertexShaderSourceDirectDraw2D = GLSL_VERSION R"(
-// layout (location = 0) in vec3 aPos;
-// layout (location = 1) in vec2 aTexCoord;
-//
-// out vec2 TexCoord;
-//
-// uniform mat4 model;
-// uniform mat4 view; //Camera
-// uniform mat4 projection;
-//
-// void main() {
-//     gl_Position = projection * view * model * vec4(aPos, 1.0);
-//     TexCoord = aTexCoord;
-// }
-// )";
-//
-// // pre batch renamed to vertexShaderSourceDirectDraw2D
-// inline const char* fragmentShaderSourceDirectDraw2D = GLSL_VERSION R"(
-// out vec4 FragColor;
-// in vec2 TexCoord;
-//
-// uniform sampler2D ourTexture;
-// uniform vec4 uTint;
-// uniform float uAlphaThreshold;
-// uniform vec2 uTexOffset;
-// uniform vec2 uTexSize;
-// uniform vec2 uFlip;
-// uniform float uTime;
-//
-// void main() {
-//     // Calculate final UV with tile offset and size
-//     vec2 finalUV = uTexOffset + (TexCoord * uTexSize);
-//
-//     // Apply horizontal scrolling
-//     finalUV.x += uTime;
-//
-//     // Apply UV Flip logic
-//     finalUV = mix(finalUV, 1.0 - finalUV, step(uFlip, vec2(0.0)));
-//
-//     vec4 texColor = texture(ourTexture, finalUV);
-//
-//     // Gamma Correction: sRGB to Linear
-//     texColor.rgb = pow(texColor.rgb, vec3(2.2));
-//
-//     if (texColor.a <= uAlphaThreshold) {
-//         discard;
-//     }
-//
-//     FragColor = texColor * uTint;
-// }
-// )";
 
 // --- Flat Color Shader (for Primitives) ---
 inline const char* flatVertexShaderSource = GLSL_VERSION R"(

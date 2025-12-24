@@ -137,6 +137,7 @@ private:
 
     std::vector<Vertex2D> _VertexBuffer; //
 
+    Color4F mAmbientColor = cl_White;
 
 public:
     static FluxRender2D& getInstance() {
@@ -199,6 +200,9 @@ public:
     void setCulling(bool value) { mUseCulling = value; }
     bool getCulling() { return mUseCulling; }
 
+    // for lighting
+    void setAmbientColor( const Color4F& value ) { mAmbientColor = value; }
+    const Color4F& getAmbientColor() const { return mAmbientColor; }
 
 private:
     FluxRender2D() : mShaderFailed(true) {}
