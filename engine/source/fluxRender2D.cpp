@@ -16,6 +16,7 @@
 #include "fluxMath.h"
 #include "errorlog.h"
 #include "misc.h"
+#include "fluxLightManager.h"
 //-------------------------------------------------------------------------------
 bool FluxRender2D::init(U32 maxSprites)
 {
@@ -341,12 +342,22 @@ void FluxRender2D::beginFrame() //FluxCamera* cam)
     mDefaultShader.setMat4("projection", mOrtho);
 
     if (mActiveCamera) {
-        // We only upload the View matrix ONCE here
         mDefaultShader.setMat4("view", mActiveCamera->getViewMatrix());
     } else {
         float identity[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
         mDefaultShader.setMat4("view", identity);
     }
+
+    // FIXME LIGHTS
+    // // Pass Light Data to Shader
+    // const std::vector<FluxLight>& lights = LightManager.getLights();
+    // mDefaultShader.setInt("uNumLights", (S32)lights.size());
+    // for (size_t i = 0; i < lights.size(); ++i) {
+    //     std::string lightPrefix = "uLights[" + std::to_string(i) + "]";
+    //     mDefaultShader.setVec3((lightPrefix + ".position").c_str(), lights[i].position.x, lights[i].position.y, lights[i].position.z);
+    //     mDefaultShader.setVec4((lightPrefix + ".color").c_str(), lights[i].color.r, lights[i].color.g, lights[i].color.b, lights[i].color.a);
+    //     mDefaultShader.setFloat((lightPrefix + ".radius").c_str(), lights[i].radius);
+    // }
 
     if (mCommandList.capacity() < mMaxSprites) {
         mCommandList.reserve(mMaxSprites);

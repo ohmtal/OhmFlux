@@ -28,6 +28,7 @@ uniform mat4 projection; // Ortho Matrix (Shared by batch)
 void main() {
     // Note: 'model' is gone! aPos is already transformed.
     gl_Position = projection * view * vec4(aPos, 1.0);
+    fragWorldPos = (view * vec4(aPos, 1.0)).xyz; // Calculate world position for lighting
 
     TexCoord = aTexCoord;
     TintColor = aColor;
@@ -55,24 +56,56 @@ out vec4 FragColor;
 
 in vec2 TexCoord;
 in vec4 TintColor;
+in vec3 fragWorldPos;
 
 uniform sampler2D texture1;
 
+// Define a struct for our 2D lights
+struct Light {
+    vec3 position; // xy for position, z is unused in 2D
+    vec4 color;    // rgb, alpha for intensity
+    float radius;  // Affected area
+};
+
+// Declare an array of lights and the number of active lights
+#define MAX_LIGHTS 8 // Must match C++ define
+uniform Light uLights[MAX_LIGHTS];
+uniform int uNumLights;
+
 void main() {
-    // 1. Sample the texture (UVs are already calculated on CPU now)
     vec4 texColor = texture(texture1, TexCoord);
 
-    // 2. 2025 Standard: Gamma Correction (sRGB to Linear)
-    // Your old shader used this; without it, colors look wrong.
+    // Gamma Correction: sRGB to Linear
     texColor.rgb = pow(texColor.rgb, vec3(2.2));
 
-    // 3. Alpha Threshold (Replaces uAlphaThreshold)
-    // We use a fixed small value or pass it via TintColor.a
+    // Base ambient light, so unlit areas aren't completely black
+    vec3 lightAccum = vec3(0.1); // Small ambient light
+
+    for (int i = 0; i < uNumLights; ++i) {
+        // Calculate distance from fragment to light source
+        float dist = distance(fragWorldPos.xy, uLights[i].position.xy);
+
+        // Only calculate if within radius
+        if (dist < uLights[i].radius) {
+            // Simple inverse square attenuation or linear falloff
+            // Linear falloff: 1.0 at center, 0.0 at radius edge
+            float attenuation = 1.0 - (dist / uLights[i].radius);
+            attenuation = max(0.0, attenuation); // Ensure it doesn't go negative
+
+            // Apply light color and intensity (alpha channel of light.color)
+            lightAccum += uLights[i].color.rgb * uLights[i].color.a * attenuation;
+        }
+    }
+    // Clamp light accumulation to prevent super bright areas
+    lightAccum = min(lightAccum, vec3(1.0));
+
+//FIXME LIGHT
+    // texColor.rgb *= lightAccum;
+
     if (texColor.a < 0.1) {
         discard;
     }
 
-    // 4. Final Color (Multiply by the vertex color/tint)
     FragColor = texColor * TintColor;
 }
 )";

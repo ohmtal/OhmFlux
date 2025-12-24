@@ -15,6 +15,8 @@
 #include <fluxTrueTypeFont.h>
 #include <fluxAudioStream.h>
 #include <fluxScheduler.h>
+#include <fluxLight.h>
+#include <fluxLightManager.h>
 
 class TestBed : public FluxMain
 {
@@ -181,6 +183,14 @@ public:
                           this->Brrooii(); // Calls method with arguments
          });
          Log("ScheduleTestId is: %d", mScheduleTestId);
+
+        // lights testing:
+
+         LightManager.addLight(FluxLight({100.0f, 100.0f, 0.0f}, cl_Red * 0.8f, 200.0f));
+         LightManager.addLight(FluxLight({500.0f, 300.0f, 0.0f}, cl_Green * 0.8f, 150.0f));
+         LightManager.addLight(FluxLight({300.0f, 500.0f, 0.0f}, cl_Blue * 0.8f, 250.0f));
+         LightManager.addLight(FluxLight({700.0f, 150.0f, 0.0f}, cl_Yellow * 0.8f, 180.0f));
+
 
 
         return true;

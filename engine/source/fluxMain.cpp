@@ -111,7 +111,6 @@ bool FluxMain::Initialize()
 
 	mScreen->setScaleScreen(mSettings.ScaleScreen);
 
-
 	if (mSettings.Caption)
 		mScreen->setCaption(mSettings.Caption);
 
