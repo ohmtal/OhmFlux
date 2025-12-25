@@ -61,8 +61,8 @@ struct Light {
 uniform Light uLights[MAX_LIGHTS];
 uniform int uNumLights;
 uniform bool uIsGui;
-uniform float uExposure = 1.0;
-uniform int uToneMappingType = 2; //default=none, 1=Reinhard, 2=Filmic
+uniform float uExposure; // = 1.0;
+uniform int uToneMappingType; // = 2; //default=none, 1=Reinhard, 2=Filmic
 
 void main() {
     vec4 texColor = texture(texture1, TexCoord);
