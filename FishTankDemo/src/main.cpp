@@ -578,13 +578,13 @@ void DemoGame::onDraw()
 	dp.image = mRockFarTex;		dp.z 	 = 0.50f; dp.alpha=0.1f;	Render2D.drawSprite(dp);
 	dp.image = mRockNearTex;	dp.z 	 = 0.05f; dp.alpha=0.1f;	Render2D.drawSprite(dp);
 
-	// dont like that anymore
-	// dp.image = mWaveTex;
-	// dp.z = 0.09f;
-	// dp.alpha 	= 0.0f;
-	// dp.horizontalScrollSpeed = 0.005f;
-	// Render2D.drawSprite(dp);
-	// dp.horizontalScrollSpeed = false;
+	dp.image = mWaveTex;
+	dp.z = 0.75f;
+	dp.color = { 1.f,1.f,1.f, 0.75f };
+	dp.horizontalScrollSpeed = 20.f;
+
+	Render2D.drawSprite(dp);
+
 
 }
 

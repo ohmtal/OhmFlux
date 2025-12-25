@@ -457,7 +457,7 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
 {
     float umin, vmin, umax, vmax;
 
-    // 1. Get UVs
+    // Get UVs
     if (dp.u0 != 0.0f || dp.v0 != 0.0f || dp.u1 != 1.0f || dp.v1 != 1.0f) {
         umin = dp.u0; vmin = dp.v0; umax = dp.u1; vmax = dp.v1;
     } else {
@@ -467,11 +467,11 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
         umax = lTexPos.x + lTexSize.x; vmax = lTexPos.y + lTexSize.y;
     }
 
-    // 2. Flip Logic
+    // Flip Logic
     if (dp.flipX) std::swap(umin, umax);
     if (dp.flipY) std::swap(vmin, vmax);
 
-    // 3. Vertex Positions (Top-Left 0,0 system)
+    // Vertex Positions (Top-Left 0,0 system)
     float halfW = dp.w * 0.5f;
     float halfH = dp.h * 0.5f;
 
@@ -498,7 +498,16 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
         buffer[startSize + i].color = dp.color;
     }
 
-    // 4. THE FIX: Match Top-Texture (vmin) to Top-Vertices
+    //FIXME
+    // F32 horizontalScrollSpeed = 0.f;
+    // F32 verticalScollSpeed = 0.f;
+    float timeOffsetX = (dp.horizontalScrollSpeed != 0.f) ? (getGameTime() * dp.horizontalScrollSpeed / 1000.f) : 0.0f;
+    umin += timeOffsetX; umax += timeOffsetX;
+    float timeOffsetY = (dp.verticalScollSpeed != 0.f) ? (getGameTime() * dp.verticalScollSpeed / 1000.f) : 0.0f;
+    vmin += timeOffsetY; vmax += timeOffsetY;
+
+
+    // Match Top-Texture (vmin) to Top-Vertices
     // This assumes your texture was loaded so that v=0 is the top
     buffer[startSize + 0].uv = { umin, vmin }; // Top Left
     buffer[startSize + 1].uv = { umax, vmin }; // Top Right

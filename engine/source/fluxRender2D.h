@@ -32,6 +32,7 @@ struct DrawParams2D {
     F32 alpha = 0.1f;
     Color4F color = {1.0f, 1.0f, 1.0f, 1.0f};
     F32 horizontalScrollSpeed = 0.f;
+    F32 verticalScollSpeed = 0.f;
     bool  isGuiElement = false; //not effected by camera
 
     // for TrueType Font >>>>
