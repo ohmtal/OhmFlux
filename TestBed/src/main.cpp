@@ -186,11 +186,11 @@ public:
 
         // lights testing:
 
-         Render2D.setAmbientColor(cl_DeepSea);
-         LightManager.addLight(FluxLight({100.0f, 100.0f, 0.0f}, cl_Red , 200.0f));
-         LightManager.addLight(FluxLight({500.0f, 100.0f, 0.0f}, cl_Green, 150.0f));
-         LightManager.addLight(FluxLight({100.0f, 500.0f, 0.0f}, cl_LightGray , 200.0f));
-         LightManager.addLight(FluxLight({500.0f, 500.0f, 0.0f}, cl_Yellow, 180.0f));
+         // Render2D.setAmbientColor({ 1.f,0.5f,0.5f,0.5f });
+          Render2D.setAmbientColor({ 0.01f, 0.01f, 0.01f, 1.f });
+          LightManager.addLight(FluxLight({100.0f, 400.0f, 0.0f}, cl_Red , 100.0f));
+          LightManager.addLight(FluxLight({250.0f, 400.0f, 0.0f}, cl_Green, 100.0f));
+          LightManager.addLight(FluxLight({175.0f, 450.0f, 10.0f}, { 0.f,0.f,1.f,3.f}, 100.0f));
 
          // FluxLight flashlight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f);
          // flashlight.setAsSpotlight({0.0f, 1.0f}, 45.0f); //
@@ -199,7 +199,23 @@ public:
              FluxLight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f)
              .setAsSpotlight({0.0f, 1.0f}, 45.0f)
          );
-        return true;
+         LightManager.addLight(
+             FluxLight({ 900.0f, 0.0f,0.0f}, cl_White, 500.f)
+             .setAsSpotlight({0.0f, 1.0f}, 45.0f)
+         );
+         // LightManager.addLight(
+         //     FluxLight({ 1100.0f, 0.0f,0.0f}, cl_White, 500.f)
+         //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
+         // );
+         // LightManager.addLight(
+         //     FluxLight({ 1300.0f, 0.0f,0.0f}, cl_White, 500.f)
+         //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
+         // );
+         // LightManager.addLight(
+         //     FluxLight({ 1500.0f, 0.0f,0.0f}, cl_White, 500.f)
+         //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
+         // );
+         return true;
     }
 
     void Brrooii()

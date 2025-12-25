@@ -61,12 +61,23 @@ struct Light {
 uniform Light uLights[MAX_LIGHTS];
 uniform int uNumLights;
 uniform bool uIsGui;
+uniform float uExposure = 1.0;
+uniform int uToneMappingType = 2; //0=none, 1=Reinhard, 2=Filmic
+
 void main() {
     vec4 texColor = texture(texture1, TexCoord);
 
-    if (!uIsGui) {
+    if (uIsGui) {
+        FragColor = texColor * TintColor;
+    } else if ( uNumLights == 0)
+    {
+        texColor.rgb = pow(texColor.rgb, vec3(2.2));
+        FragColor = texColor * TintColor;
+
+    } else {
         texColor.rgb = pow(texColor.rgb, vec3(2.2));
         vec3 lightAccum = uAmbientColor;
+
 
         for (int i = 0; i < uNumLights; ++i) {
             vec2 lightToFrag = fragWorldPos.xy - uLights[i].position.xy;
@@ -95,13 +106,32 @@ void main() {
                     lightAccum += uLights[i].color.rgb * uLights[i].color.a * attenuation * intensity;
                 }
             }
+        } // Light loop
+
+
+
+        vec3 result = texColor.rgb * lightAccum;
+        result *= uExposure;
+
+        switch (uToneMappingType)
+        {
+            case 1: // Reinhard Tonemapping
+                result = result / (result + vec3(1.0));
+                FragColor = vec4(pow(result, vec3(1.0/2.2)), texColor.a) * TintColor;
+                break;
+            case 2: // Filmic Tonemapping (Simplified ACES)
+                vec3 x = result;
+                result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
+                FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
+                break;
+            default: //none
+                // Clamp light to 1.0 to prevent over-exposure before final Tint
+                lightAccum = min(lightAccum, vec3(1.0));
+                texColor.rgb *= lightAccum;
+                FragColor = texColor * TintColor;
+                break;
         }
-
-        // Clamp light to 1.0 to prevent over-exposure before final Tint
-        lightAccum = min(lightAccum, vec3(1.0));
-
-        texColor.rgb *= lightAccum;
-    }
+    } //<<< Lights
 
     // Linear to sRGB (Optional: recommended if your textures are sRGB)
     // texColor.rgb = pow(texColor.rgb, vec3(1.0/2.2));
@@ -110,7 +140,6 @@ void main() {
         discard;
     }
 
-    FragColor = texColor * TintColor;
 }
 )";
 

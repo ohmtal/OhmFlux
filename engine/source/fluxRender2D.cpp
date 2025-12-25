@@ -331,6 +331,43 @@ bool FluxRender2D::uglyDraw2DStretch (
     return drawSprite(dp);
 }
 //-------------------------------------------------------------------------------
+void FluxRender2D::renderLights()
+{
+    const std::vector<FluxLight>& lights = LightManager.getLights();
+    RectF view = Render2D.getCamera()->getVisibleWorldRect(false);
+
+    int activeLightCount = 0;
+
+    for (size_t i = 0; i < lights.size(); ++i) {
+        //  Safety check: Stop if we've filled the shader's available slots
+        if (activeLightCount >= MAX_LIGHTS) {
+            break;
+        }
+
+        //  Frustum/Visibility Culling
+        if (!checkAABBIntersectionF(view, lights[i].getRectF())) {
+            continue;
+        }
+
+        //  Pass data using the activeLightCount index, NOT the loop index i
+        std::string lightPrefix = "uLights[" + std::to_string(activeLightCount) + "]";
+
+        mDefaultShader.setVec3((lightPrefix + ".position").c_str(), lights[i].position.x, lights[i].position.y, lights[i].position.z);
+        mDefaultShader.setVec4((lightPrefix + ".color").c_str(), lights[i].color);
+        mDefaultShader.setFloat((lightPrefix + ".radius").c_str(), lights[i].radius);
+        mDefaultShader.setVec2((lightPrefix + ".direction").c_str(), lights[i].direction.x, lights[i].direction.y);
+        mDefaultShader.setFloat((lightPrefix + ".cutoff").c_str(), lights[i].cutoff);
+
+        activeLightCount++;
+    }
+
+    //  Tell the shader exactly how many lights were actually uploaded
+    mDefaultShader.setInt("uNumLights", activeLightCount);
+
+    // dLog("current Light count %d", activeLightCount);
+}
+
+//-------------------------------------------------------------------------------
 void FluxRender2D::beginFrame() //FluxCamera* cam)
 {
 
@@ -348,21 +385,11 @@ void FluxRender2D::beginFrame() //FluxCamera* cam)
         mDefaultShader.setMat4("view", identity);
     }
 
-    mDefaultShader.setVec3("uAmbientColor", mAmbientColor.r, mAmbientColor.g, mAmbientColor.b);
-
     // Pass Light Data to Shader
-    const std::vector<FluxLight>& lights = LightManager.getLights();
-    mDefaultShader.setInt("uNumLights", (S32)lights.size());
-    for (size_t i = 0; i < lights.size(); ++i) {
-        std::string lightPrefix = "uLights[" + std::to_string(i) + "]";
-        mDefaultShader.setVec3((lightPrefix + ".position").c_str(), lights[i].position.x, lights[i].position.y, lights[i].position.z);
-        mDefaultShader.setVec4((lightPrefix + ".color").c_str(), lights[i].color);
-        mDefaultShader.setFloat((lightPrefix + ".radius").c_str(), lights[i].radius);
-
-        mDefaultShader.setVec2((lightPrefix + ".direction").c_str(), lights[i].direction.x, lights[i].direction.y);
-        mDefaultShader.setFloat((lightPrefix + ".cutoff").c_str(), lights[i].cutoff);
-
-    }
+    mDefaultShader.setVec3("uAmbientColor", mAmbientColor.r, mAmbientColor.g, mAmbientColor.b);
+    mDefaultShader.setFloat("uExposure", mLightExposure);
+    renderLights();
+    // ---
 
     if (mCommandList.capacity() < mMaxSprites) {
         mCommandList.reserve(mMaxSprites);
@@ -370,6 +397,7 @@ void FluxRender2D::beginFrame() //FluxCamera* cam)
     mCommandList.clear();
 }
 //-------------------------------------------------------------------------------
+// renamed from >> draw2D <<
 bool FluxRender2D::drawSprite(const DrawParams2D& dp)
 {
     if (!dp.image || mShaderFailed) return false;

@@ -325,7 +325,8 @@ struct RectI{
 
 };
 
-struct RectF{
+struct RectF
+{
     F32 x, y, w, h;
 
     Point2F getPoint() const { return {x,y}; }

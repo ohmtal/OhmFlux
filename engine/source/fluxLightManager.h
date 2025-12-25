@@ -18,13 +18,18 @@ public:
     FluxLightManager(const FluxLightManager&) = delete;
     void operator=(const FluxLightManager&) = delete;
 
-    void addLight(const FluxLight& light) {
-        if (mLights.size() < MAX_LIGHTS) {
-            mLights.push_back(light);
-        } else {
-            // Log or handle error: too many lights
-            // For now, silently ignore or replace oldest light
-        }
+    void addLight(const FluxLight& light)
+    {
+
+        // Ignore MAX_LIGHTS handle this later
+        mLights.push_back(light);
+        // if (mLights.size() < MAX_LIGHTS)
+        // {
+        //     mLights.push_back(light);
+        // } else {
+        //     // Log or handle error: too many lights
+        //     // For now, silently ignore or replace oldest light
+        // }
     }
 
     void clearLights() {

@@ -65,8 +65,6 @@ struct DrawParams2D {
         };
     }
     DrawParams2D& setPositionAndLayer( Point3F value ) { x=value.x, y=value.y; z=value.z; return *this; }
-
-
 };
 
 //batch rendering
@@ -137,7 +135,10 @@ private:
 
     std::vector<Vertex2D> _VertexBuffer; //
 
-    Color4F mAmbientColor = cl_White;
+    // Lights
+    Color4F mAmbientColor = { 0.4f,0.4f,0.4f, 1.f}; // cl_White; //only have effect when lights in scene
+    F32 mLightExposure = 1.f; //only have effect when lights in scene
+    void renderLights();
 
 public:
     static FluxRender2D& getInstance() {
