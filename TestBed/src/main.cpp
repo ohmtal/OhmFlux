@@ -84,7 +84,6 @@ public:
         mStatusLabel->setAlign(FontAlign_Center);
         mStatusLabel->setLayer(0.05f);
         mStatusLabel->setColor( cl_Blue );
-        // mStatusLabel->setIsGuiElement(true); //should be default true
         queueObject(mStatusLabel);
 
 
@@ -150,6 +149,15 @@ public:
                         // .setScaleMinMax( 0.01f, 0.1f)
          );
 
+         FluxTexture* lBubble = loadTexture( "assets/particles/Skull.png" );
+         ParticleManager.addEmitter(
+             ParticlePresets::waterBubblePreset
+             .setTexture(lBubble)
+             .setScaleMinMax( 0.3f, 0.3f)
+             .setLifeTimeMinMax(6.f,10.f)
+             .setRotationSpeedMinMax(10.f, 20.f)
+         )->setPosition({ 700.f ,550.f, 0.10f })->play();
+
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         // FluxTrueTypeFont
 
@@ -157,6 +165,7 @@ public:
          if (mMonoFont)
          {
              mMonoFont->set("Alder Babsack", { 200.f,200.f }, cl_Crimson, 2.f);
+
              // mMonoFont->setPos(200,200);
              // mMonoFont->setCaption("Alder Babsack!");
              queueObject(mMonoFont);
@@ -187,7 +196,7 @@ public:
         // lights testing:
 
          // Render2D.setAmbientColor({ 1.f,0.5f,0.5f,0.5f });
-          Render2D.setAmbientColor({ 0.01f, 0.01f, 0.01f, 1.f });
+          Render2D.setAmbientColor({ 0.1f, 0.1f, 0.1f, 1.f });
           LightManager.addLight(FluxLight({100.0f, 400.0f, 0.0f}, cl_Red , 100.0f));
           LightManager.addLight(FluxLight({250.0f, 400.0f, 0.0f}, cl_Green, 100.0f));
           LightManager.addLight(FluxLight({175.0f, 450.0f, 10.0f}, { 0.f,0.f,1.f,3.f}, 100.0f));
@@ -331,26 +340,27 @@ public:
     void onDraw() override
     {
 
-        // if (mBackgroundTex)
-        // {
-        //     //FIXME uglyDraw2DStretch
-        //     Render2D.uglyDraw2DStretch(
-        //         mBackgroundTex, 0,
-        //         getScreen()->getCenterX(),
-        //         getScreen()->getCenterY(),
-        //         0.95f,
-        //         getScreen()->getWidth(),
-        //         getScreen()->getHeight(),
-        //         0.f, false, false, 0.0f, false);
-        // }
+        if (mBackgroundTex)
+        {
+            //FIXME uglyDraw2DStretch
+            Render2D.uglyDraw2DStretch(
+                mBackgroundTex, 0,
+                getScreen()->getCenterX(),
+                getScreen()->getCenterY(),
+                0.95f,
+                64.f,
+                64.f,
+                45.f, false, false, 0.0f, false);
+        }
+
+
+        // Debug Primitives:
+        // for (S32 i = 20 ; i < 100; i+=10 )
+        //     Render2D.drawCircle(getScreen()->getCenterX(),getScreen()->getCenterY(),i);
         //
-
-        for (S32 i = 20 ; i < 100; i+=10 )
-            Render2D.drawCircle(getScreen()->getCenterX(),getScreen()->getCenterY(),i);
-
-        Render2D.drawRect(100,100,200,200, { 0.3f, 0.3f,0.3f,0.7f});
-        Render2D.drawRect(200,200,300,300, { 1.f, 0.f,0.f,1.f}, false);
-        Render2D.drawLine(0,0,100,100, { 1.f, 0.3f,0.3f,1.f});
+        // Render2D.drawRect(100,100,200,200, { 0.3f, 0.3f,0.3f,0.7f});
+        // Render2D.drawRect(200,200,300,300, { 1.f, 0.f,0.f,1.f}, false);
+        // Render2D.drawLine(0,0,100,100, { 1.f, 0.3f,0.3f,1.f});
 
         // drawTriangle(Point3F p1, Point3F p2, Point3F p3, const Color4F& color, bool filled = true);
         Render2D.drawTriangle( { 600,0 }, { 650, 20 }, { 400, 200 }, cl_Blue, false);

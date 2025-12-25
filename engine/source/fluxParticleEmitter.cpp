@@ -9,9 +9,7 @@
 //-----------------------------------------------------------------------------
 FluxParticleEmitter::FluxParticleEmitter(const EmitterProperties& props)
 : mProperties(props),
-mSpawnTimer(0.0f),
-mRng(std::random_device{}()),
-mDist(0.0f, 1.0f)
+mSpawnTimer(0.0f)
 {
     mParticles.reserve(props.maxParticles);
     mActive = mProperties.autoActivate;
@@ -96,41 +94,39 @@ void FluxParticleEmitter::emitParticle()
 //-----------------------------------------------------------------------------
 void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
 {
-    // Helper lambda for range-based randoms
-    auto randRange = [&](F32 min, F32 max) {
-        return min + mDist(mRng) * (max - min);
-    };
 
     particle.position = mProperties.position;
 
-    particle.lifetime = randRange(mProperties.minLifetime, mProperties.maxLifetime);
+    particle.lifetime = RandInRange(mProperties.minLifetime, mProperties.maxLifetime);
     particle.lifeRemaining = particle.lifetime;
 
-    F32 speed = randRange(mProperties.minSpeed, mProperties.maxSpeed);
-    F32 angle = randRange(mProperties.minAngle, mProperties.maxAngle);
+    F32 speed = RandInRange(mProperties.minSpeed, mProperties.maxSpeed);
+    F32 angle = RandInRange(mProperties.minAngle, mProperties.maxAngle);
 
     // Use cosf/sinf for F32 precision and performance
     particle.velocity = Point2F{ cosf(angle), sinf(angle) } * speed;
     particle.acceleration = { 0.0f, 0.0f };
 
-    particle.rotation = mDist(mRng) * 2.0f * FLUX_PI;
-    particle.rotationSpeed = (mDist(mRng) - 0.5f) * 2.0f;
 
-    particle.scale = randRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
+
+    particle.rotation = particle.rotation = mProperties.rotation; // RandFloat() * 2.0f * FLUX_PI ;
+    particle.rotationSpeed = RandInRange(mProperties.minRotationSpeed, mProperties.maxRotationSpeed); //(RandFloat() - 0.5f) * 2.0f;
+
+    particle.scale = RandInRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
 
     // Initializing Colors
     particle.startColor = {
-        randRange(mProperties.startColorMin.r, mProperties.startColorMax.r),
-        randRange(mProperties.startColorMin.g, mProperties.startColorMax.g),
-        randRange(mProperties.startColorMin.b, mProperties.startColorMax.b),
-        randRange(mProperties.startColorMin.a, mProperties.startColorMax.a)
+        RandInRangeF(mProperties.startColorMin.r, mProperties.startColorMax.r),
+        RandInRangeF(mProperties.startColorMin.g, mProperties.startColorMax.g),
+        RandInRangeF(mProperties.startColorMin.b, mProperties.startColorMax.b),
+        RandInRangeF(mProperties.startColorMin.a, mProperties.startColorMax.a)
     };
 
     particle.endColor = {
-        randRange(mProperties.endColorMin.r, mProperties.endColorMax.r),
-        randRange(mProperties.endColorMin.g, mProperties.endColorMax.g),
-        randRange(mProperties.endColorMin.b, mProperties.endColorMax.b),
-        randRange(mProperties.endColorMin.a, mProperties.endColorMax.a)
+        RandInRangeF(mProperties.endColorMin.r, mProperties.endColorMax.r),
+        RandInRangeF(mProperties.endColorMin.g, mProperties.endColorMax.g),
+        RandInRangeF(mProperties.endColorMin.b, mProperties.endColorMax.b),
+        RandInRangeF(mProperties.endColorMin.a, mProperties.endColorMax.a)
     };
 
     particle.texture = mProperties.texture;

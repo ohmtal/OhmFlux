@@ -322,7 +322,7 @@ bool FluxRender2D::uglyDraw2DStretch (
     dp.z = lz;
     dp.w = lw;
     dp.h = lh;
-    dp.rot = lrot;
+    dp.rotation = lrot;
     dp.flipX = lflipX;
     dp.flipY = lflipY;
     dp.alpha = lAlpha;
@@ -485,8 +485,8 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
         { -halfW,  halfH }  // 3: Bottom Left
     };
 
-    float cosR = cosf(dp.rot);
-    float sinR = sinf(dp.rot);
+    float cosR = cosf(dp.rotation);
+    float sinR = sinf(dp.rotation);
 
     size_t startSize = buffer.size();
     buffer.resize(startSize + 4);
@@ -513,53 +513,6 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
     buffer[startSize + 3].uv = { umin, vmax }; // Bottom Left
 }
 
-// pre UV for TrueType
-// void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const DrawParams2D& dp)
-// {
-//     Point2F lTexPos, lTexSize;
-//     dp.image->getTextureRectById(dp.imgId, lTexPos, lTexSize);
-//
-//     float umin = lTexPos.x;
-//     float vmin = lTexPos.y;
-//     float umax = lTexPos.x + lTexSize.x;
-//     float vmax = lTexPos.y + lTexSize.y;
-//
-//     if (dp.flipX) std::swap(umin, umax);
-//     if (dp.flipY) std::swap(vmin, vmax);
-//
-//     float timeOffset = (dp.horizontalScrollSpeed != 0.f) ? (getGameTime() * dp.horizontalScrollSpeed) : 0.0f;
-//     umin += timeOffset; umax += timeOffset;
-//
-//     float halfW = dp.w * 0.5f;
-//     float halfH = dp.h * 0.5f;
-//
-//     Point2F corners[4] = {
-//         { -halfW,  halfH }, // Oben Links
-//         {  halfW,  halfH }, // Oben Rechts
-//         {  halfW, -halfH }, // Unten Rechts
-//         { -halfW, -halfH }  // Unten Links
-//     };
-//
-//     float cosR = cosf(dp.rot);
-//     float sinR = sinf(dp.rot);
-//
-//     Vertex2D v[4];
-//     for (int i = 0; i < 4; i++) {
-//         float rx = corners[i].x * cosR - corners[i].y * sinR;
-//         float ry = corners[i].x * sinR + corners[i].y * cosR;
-//         v[i].pos = { rx + dp.x, ry + dp.y, -dp.z };
-//         v[i].color = dp.color;
-//     }
-//
-//     v[0].uv = { umin, vmax };
-//     v[1].uv = { umax, vmax };
-//     v[2].uv = { umax, vmin };
-//     v[3].uv = { umin, vmin };
-//
-//     for (int i = 0; i < 4; i++) {
-//         buffer.push_back(v[i]);
-//     }
-// }
 
 //-------------------------------------------------------------------------------
 void FluxRender2D::drawWithTransform(FluxTexture* texture, const Point3F& position, float rotation, float scale, const Color4F& color)
@@ -574,7 +527,7 @@ void FluxRender2D::drawWithTransform(FluxTexture* texture, const Point3F& positi
     dp.z = position.z;
     dp.w = static_cast<S32>(texture->getWidth() * scale);
     dp.h = static_cast<S32>(texture->getHeight() * scale);
-    dp.rot = rotation;
+    dp.rotation = rotation;
     dp.flipX = false; // Default
     dp.flipY = false; // Default
     dp.alpha = color.a; // Use the alpha from the provided color

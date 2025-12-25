@@ -53,7 +53,7 @@ public:
 		mDrawParams.z = 0.f;
 		mDrawParams.w = 0;
 		mDrawParams.h = 0;
-		mDrawParams.rot = 0.f;
+		mDrawParams.rotation = 0.f;
 		mDrawParams.flipX = false;
 		mDrawParams.flipY = false;
 		mDrawParams.imgId = 0;
@@ -74,7 +74,7 @@ public:
 	S32 getHeight() const { return mDrawParams.h; }
 	F32 getHeightF() const { return mDrawParams.getHeightF(); }
 	RectI getRectI() const { return mDrawParams.getRectI(); }
-	F32 getRotation() const {return mDrawParams.rot; }
+	F32 getRotation() const {return mDrawParams.rotation; }
 	F32 getLayer() const {return mDrawParams.getLayer(); }
 	F32 getSpeed() const { return mSpeed; }
 	F32 getDirX() const {return mDirX; }
@@ -91,7 +91,7 @@ public:
 	void setHeight(const S32& h) { mDrawParams.h = h; }
 	void setPos(const F32& x, const F32& y) { mDrawParams.x = x; mDrawParams.y = y; }
 	void setPos( const Point2F lPos ) { mDrawParams.x = lPos.x; mDrawParams.y = lPos.y; }
-	void setRotation(const F32& rotation) { mDrawParams.rot = rotation; }
+	void setRotation(const F32& rotation) { mDrawParams.rotation = rotation; }
 	void setLayer(const F32& layer) { mDrawParams.z = layer; }
 	void setSpeed(const F32& speed) { this->mSpeed = speed; }
 	void setDirX(const F32& dirX) { this->mDirX = dirX; }

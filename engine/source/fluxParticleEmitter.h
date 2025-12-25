@@ -7,7 +7,6 @@
 #define _FLUX_PARTICLEEMITTER_H
 
 #include <vector>
-#include <random>
 
 #include "fluxParticle.h"
 #include "fluxRender2D.h" // For rendering particles
@@ -33,9 +32,11 @@ struct EmitterProperties
     F32 minAngle = 0.0f;             // 0 radians (Right)
     F32 maxAngle = 6.283185f;        // 2 * PI (Full Circle)
 
-    // FIXME unused at the moment
-    F32 minRotation = 0.0f;
-    F32 maxRotation = 0.0f;
+
+    // FIXME it's good but can be better
+    F32 rotation         = 0.0f; //degree
+    F32 minRotationSpeed = 0.1f;
+    F32 maxRotationSpeed = 2.0f;
 
     // Visuals
     F32 minScale = 1.0f;
@@ -57,10 +58,8 @@ struct EmitterProperties
     EmitterProperties& setLifeTimeMinMax( F32 lMin, F32 lMax ) { minLifetime = lMin;  maxLifetime = lMax; return *this;}
     EmitterProperties& setSpeedMinMax( F32 lMin, F32 lMax ) { minSpeed = lMin;  maxSpeed = lMax; return *this;}
     EmitterProperties& setAngleMinMax( F32 lMin, F32 lMax ) { minAngle = lMin;  maxAngle = lMax; return *this;}
-
-    // FIXME unused at the moment :
-    EmitterProperties& setRotationMinMax( F32 lMin, F32 lMax ) { minRotation = lMin;  maxRotation = lMax; return *this;}
-
+    EmitterProperties& setRotation( F32 lValue ) { rotation = lValue; return *this;}
+    EmitterProperties& setRotationSpeedMinMax( F32 lMin, F32 lMax ) { minRotationSpeed = lMin;  maxRotationSpeed = lMax; return *this;}
     EmitterProperties& setStartEndColorMinMax( Color4F lStartMin, Color4F lStartMax,Color4F lEndMin, Color4F lEndMax ) {
         startColorMin = lStartMin;
         startColorMax = lStartMax;
@@ -98,8 +97,6 @@ private:
     std::vector<FluxParticle> mParticles;
     F32 mSpawnTimer;
 
-    std::mt19937 mRng;
-    std::uniform_real_distribution<F32> mDist;
 
     bool mActive = true; // enable disable
 public:

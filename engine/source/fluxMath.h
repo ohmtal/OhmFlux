@@ -97,6 +97,12 @@ inline double RandInRange(double x, double y)
     return x + RandFloat()*(y-x);
 }
 
+inline F32 RandInRangeF(F32 x, F32 y)
+{
+    return static_cast<F32>(RandInRange(x,y));
+}
+
+
 //returns a random bool
 inline bool   RandBool()
 {

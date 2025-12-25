@@ -26,7 +26,7 @@ struct DrawParams2D {
     F32 z = 0.0f;  //layer
     S32 w = 0;
     S32 h = 0;
-    F32 rot = 0.0f; //rotation
+    F32 rotation = 0.0f; //rotation in degree!
     bool flipX = false;
     bool flipY = false;
     F32 alpha = 0.1f;
