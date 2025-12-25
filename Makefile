@@ -3,7 +3,7 @@
 # Configuration
 WEBDIST_DIR = dist_web
 EMSCRIPTEN_TOOLCHAIN = /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake
-DEMO_DIRS = FishTankDemo TickTacToe TestBed
+DEMO_DIRS = FishTankDemo TickTacToe TestBed LuaTest
 
 # Parallel Build Detection
 # Uses all available cores on Linux/FreeBSD, defaults to 4 if detection fails

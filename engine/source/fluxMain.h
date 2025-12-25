@@ -56,7 +56,7 @@ public:
 	// fake singelton
 	static FluxMain* Instance() {
 		// Optional: add your assert here to ensure a game was created
-		assert(_instance != nullptr && "No game instance created! Did you call new TestBed()?");
+		assert(_instance != nullptr && "No game instance created! Did you call new [YourGameClass]()?");
 		return _instance;
 	}
 

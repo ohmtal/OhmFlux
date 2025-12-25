@@ -134,12 +134,42 @@ endif()
 # --- 4. LuaTest ---
 # Work in Progess
 option(BUILD_LUATEST "Build LuaTest application" OFF)
+
 if(BUILD_LUATEST)
+    # Fetch dependencies
+    include(FetchContent)
+
+    FetchContent_Declare(
+        lua
+        GIT_REPOSITORY https://github.com/lua/lua.git
+        GIT_TAG v5.4.7
+    )
+
+    FetchContent_Declare(
+        sol2
+        GIT_REPOSITORY https://github.com/ThePhD/sol2.git
+        GIT_TAG v3.5.0
+    )
+
+    # This command downloads and adds the subprojects to the build tree
+    FetchContent_MakeAvailable(lua sol2)
+
+    # Define your sources
     set(DEMO_SOURCES
         ${LUATEST_DIR}/src/main.cpp
-        ${LUATEST_DIR}/src/luabind/luaFluxMain.cpp
+        # ${LUATEST_DIR}/src/luabind/luaFluxMain.cpp
     )
+
+    # Configure the target
     configure_demo_target(LuaTest ${LUATEST_DIR} "${LUATEST_DIR}/assets@assets" "${DEMO_SOURCES}")
+
+    # Link Lua and sol2 specifically to this target
+    # target_link_libraries ensures these are only linked to LuaTest
+    target_link_libraries(LuaTest PRIVATE lua sol2::sol2)
+
+    # sol2 requires C++17 or higher
+    target_compile_features(LuaTest PRIVATE cxx_std_17)
+    target_compile_definitions(LuaTest PRIVATE SOL_ALL_SAFETIES_ON=1)
 endif()
 # =============================================================================
 # <<<<< PROJECTS SECTION
