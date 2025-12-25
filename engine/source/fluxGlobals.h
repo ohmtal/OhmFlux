@@ -308,6 +308,9 @@ struct Point3F {
 
     Point3F operator+(const Point3F& v) const { return {x + v.x, y + v.y, z + v.z}; }
     Point3F operator-(const Point3F& v) const { return {x - v.x, y - v.y, z - v.z}; }
+
+    Point3F& operator+=(const Point2F& v) { x += v.x; y += v.y; return *this; }
+
 };
 //------------------------------------- Rects
 

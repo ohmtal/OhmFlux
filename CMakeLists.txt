@@ -114,7 +114,7 @@ endmacro()
 option(BUILD_FISHTANK "Build FishTank demo" ON)
 if(BUILD_FISHTANK)
     set(DEMO_SOURCES "${DEMO_DIR}/src/main.cpp")
-    configure_demo_target(FishTankDemo ${DEMO_DIR} "${DEMO_DIR}/fishArt@fishArt" "${DEMO_SOURCES}")
+    configure_demo_target(FishTankDemo ${DEMO_DIR} "${DEMO_DIR}/assets@assets" "${DEMO_SOURCES}")
 endif()
 
 # --- 2. TicTacToe ---

@@ -128,8 +128,8 @@ public:
         lFireProps.maxSpeed = 150.0f;
 
         // Visuals
-        lFireProps.minScale = 0.05f;
-        lFireProps.maxScale = 0.2f;
+        lFireProps.minScale = 0.5f;
+        lFireProps.maxScale = 2.f;
         lFireProps.texture = loadTexture("assets/particles/Star-Texture.png");
 
         // Color Gradient: Bright Orange to Faded Red
@@ -147,7 +147,7 @@ public:
          mSparkEmitter = ParticleManager.addEmitter(
                     ParticlePresets::sparkPreset
                         .setTexture(loadTexture( "assets/particles/SnowFlake1.png" ))
-                        .setScaleMinMax( 0.01f, 0.1f)
+                        // .setScaleMinMax( 0.01f, 0.1f)
          );
 
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -272,7 +272,7 @@ public:
             return;
         switch ( button) {
             case SDL_BUTTON_LEFT:
-                mSparkEmitter->setPosition(getStatus().getWorldMousePos());
+                mSparkEmitter->setPosition({ getStatus().getWorldMousePos().x, getStatus().getWorldMousePos().y, 0.f});
                 mSparkEmitter->play();
                 mClickSound->play();
         }
@@ -322,7 +322,7 @@ public:
 
         // emitter test
         // FIXME emitter need a manager!
-        mFireEmitter->getProperties().position = getStatus().getWorldMousePos(); //getMousePos();
+        mFireEmitter->getProperties().position = { getStatus().getWorldMousePos().x, getStatus().getWorldMousePos().y, 0.f};
         // mFireEmitter->update(dt / 1000.f);
 
         Parent::Update(dt);

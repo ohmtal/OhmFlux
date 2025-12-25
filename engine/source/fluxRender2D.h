@@ -170,7 +170,7 @@ public:
 
     // this batch the draws NOT draw
     bool drawSprite(const DrawParams2D& dp);
-    void drawWithTransform(FluxTexture* texture, const Point2F& position, F32 rotation, F32 scale, const Color4F& color);
+    void drawWithTransform(FluxTexture* texture, const Point3F& position, F32 rotation, F32 scale, const Color4F& color);
     void renderBatch();
 
 

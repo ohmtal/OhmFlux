@@ -498,9 +498,7 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
         buffer[startSize + i].color = dp.color;
     }
 
-    //FIXME
-    // F32 horizontalScrollSpeed = 0.f;
-    // F32 verticalScollSpeed = 0.f;
+    // Scroll
     float timeOffsetX = (dp.horizontalScrollSpeed != 0.f) ? (getGameTime() * dp.horizontalScrollSpeed / 1000.f) : 0.0f;
     umin += timeOffsetX; umax += timeOffsetX;
     float timeOffsetY = (dp.verticalScollSpeed != 0.f) ? (getGameTime() * dp.verticalScollSpeed / 1000.f) : 0.0f;
@@ -564,7 +562,7 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
 // }
 
 //-------------------------------------------------------------------------------
-void FluxRender2D::drawWithTransform(FluxTexture* texture, const Point2F& position, float rotation, float scale, const Color4F& color)
+void FluxRender2D::drawWithTransform(FluxTexture* texture, const Point3F& position, float rotation, float scale, const Color4F& color)
 {
     if (!texture || mShaderFailed) return;
 
@@ -573,7 +571,7 @@ void FluxRender2D::drawWithTransform(FluxTexture* texture, const Point2F& positi
     dp.imgId = 0; // Assuming particles use the whole texture or first frame
     dp.x = position.x;
     dp.y = position.y;
-    dp.z = 0.0f; // Default layer for particles, can be customized if needed
+    dp.z = position.z;
     dp.w = static_cast<S32>(texture->getWidth() * scale);
     dp.h = static_cast<S32>(texture->getHeight() * scale);
     dp.rot = rotation;

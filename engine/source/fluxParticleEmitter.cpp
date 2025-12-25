@@ -116,7 +116,7 @@ void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
     particle.rotation = mDist(mRng) * 2.0f * FLUX_PI;
     particle.rotationSpeed = (mDist(mRng) - 0.5f) * 2.0f;
 
-    particle.scale = randRange(mProperties.minScale, mProperties.maxScale);
+    particle.scale = randRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
 
     // Initializing Colors
     particle.startColor = {

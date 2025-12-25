@@ -59,6 +59,7 @@ private:
 	FluxAudioStream* mFailSound;
 
 	void sortFishes();
+
 public:
 	virtual bool Initialize();
 	virtual void Deinitialize();
@@ -75,6 +76,20 @@ public:
 	void updateFishCounter();
 
 	void listFishes(); //<<debug stuff
+
+	// wrapper for sounds
+	bool loadSound(FluxAudioStream* &object, const char * fileName, F32 gain=1.f)
+	{
+		char fileNameWithPath[255];
+		sprintf(fileNameWithPath, "assets/sound/%s",fileName);
+		object = new FluxAudioStream(fileNameWithPath);
+		if (!object->getInitDone())
+			return false;
+		object->setGain(gain);
+		queueObject(object);
+		return true;
+	}
+
 
 };
 #endif

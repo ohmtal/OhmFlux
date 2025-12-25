@@ -17,7 +17,7 @@ class FluxTexture;
 struct EmitterProperties
 {
     // Position in 2D space
-    Point2F position = { 0.0f, 0.0f };
+    Point3F position = { 0.f, 0.f, 0.f };
 
     // Emission Logic
     F32 spawnRate = 10.0f;           // 10 particles per second
@@ -32,6 +32,10 @@ struct EmitterProperties
     F32 maxSpeed = 50.0f;
     F32 minAngle = 0.0f;             // 0 radians (Right)
     F32 maxAngle = 6.283185f;        // 2 * PI (Full Circle)
+
+    // FIXME unused at the moment
+    F32 minRotation = 0.0f;
+    F32 maxRotation = 0.0f;
 
     // Visuals
     F32 minScale = 1.0f;
@@ -53,6 +57,10 @@ struct EmitterProperties
     EmitterProperties& setLifeTimeMinMax( F32 lMin, F32 lMax ) { minLifetime = lMin;  maxLifetime = lMax; return *this;}
     EmitterProperties& setSpeedMinMax( F32 lMin, F32 lMax ) { minSpeed = lMin;  maxSpeed = lMax; return *this;}
     EmitterProperties& setAngleMinMax( F32 lMin, F32 lMax ) { minAngle = lMin;  maxAngle = lMax; return *this;}
+
+    // FIXME unused at the moment :
+    EmitterProperties& setRotationMinMax( F32 lMin, F32 lMax ) { minRotation = lMin;  maxRotation = lMax; return *this;}
+
     EmitterProperties& setStartEndColorMinMax( Color4F lStartMin, Color4F lStartMax,Color4F lEndMin, Color4F lEndMax ) {
         startColorMin = lStartMin;
         startColorMax = lStartMax;
@@ -74,7 +82,7 @@ public:
     void update(F32 dt);
     void render();
 
-    void setPosition( Point2F lPosition ) { mProperties.position = lPosition;};
+    FluxParticleEmitter*  setPosition( Point3F lPosition ) { mProperties.position = lPosition; return this; };
     void play();        //activate
     void stop();        // deactivate like pause
     void reset();       // like play but reset the particles

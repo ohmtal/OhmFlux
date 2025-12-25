@@ -4,7 +4,7 @@
 
 namespace ParticlePresets
 {
-    // you can better do evil thinks like:
+    // you can do thinks like:
     /*
         mSparkEmitter = ParticleManager.addEmitter(
             ParticlePresets::sparkPreset
@@ -12,15 +12,6 @@ namespace ParticlePresets
             .setScaleMinMax( 0.01f, 0.1f)
         );
     */
-
-    // so this is useless.....
-    // EmitterProperties getPreset(const EmitterProperties& preset , FluxTexture* lTextrue )
-    // {
-    //     EmitterProperties result = preset;
-    //     result.texture = lTextrue;
-    //     return result;
-    // }
-
     // ------------- playOnce particles --------------------
     EmitterProperties explosionPreset = {
         .spawnRate = 10000.0f, // High rate to ensure instant burst via your update loop
@@ -134,4 +125,22 @@ namespace ParticlePresets
         .endColorMin = {0.0f, 0.0f, 0.0f, 0.0f},   // Fades to nothing
         .endColorMax = {0.1f, 0.1f, 0.1f, 0.0f}
     };
+
+
+
+    EmitterProperties waterBubblePreset = {
+        .spawnRate = 45.0f,
+        .maxParticles = 450,
+        .playOnce = false,
+        .minLifetime = 2.f,   .maxLifetime = 10.0f,
+        .minSpeed = 50.0f,    .maxSpeed = 75.0f,
+        // .minAngle = -1.65f,    .maxAngle = -1.48f, // Steady upward jet
+        .minAngle = -1.85f,    .maxAngle = -1.28f, // Steady upward jet
+        .minScale = 1.0f,      .maxScale = 2.0f,
+        .startColorMin = cl_White,
+        .startColorMax = cl_White,
+        .endColorMin = cl_White,
+        .endColorMax = cl_White
+    };
+
 } //nameSpace

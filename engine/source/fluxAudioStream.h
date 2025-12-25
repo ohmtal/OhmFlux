@@ -68,6 +68,7 @@ public:
         mPosition = lPos;
         mUsePostion = true;
     }
+    bool getInitDone() { return mInitDone; }
 
 }; //class
 

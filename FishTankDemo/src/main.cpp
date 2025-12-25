@@ -28,6 +28,10 @@
 #include <misc.h>
 #include <fluxLight.h>
 #include <fluxLightManager.h>
+#include <fluxParticleEmitter.h>
+#include <fluxParticleManager.h>
+#include <fluxParticlePresets.h>
+
 
 
 
@@ -53,10 +57,10 @@ bool DemoGame::Initialize() {
 
 
 	//load a texture - flux main cares about destroying them 
-	mBackTex     = loadTexture("fishArt/backgrounds/background.bmp");
-	mRockFarTex  = loadTexture("fishArt/backgrounds/rocksfar.bmp");
-	mRockNearTex = loadTexture("fishArt/backgrounds/rocksnear.bmp");
-	mWaveTex 	 = loadTexture("fishArt/backgrounds/wave.bmp", 1, 1, true);
+	mBackTex     = loadTexture("assets/backgrounds/background.bmp");
+	mRockFarTex  = loadTexture("assets/backgrounds/rocksfar.bmp");
+	mRockNearTex = loadTexture("assets/backgrounds/rocksnear.bmp");
+	mWaveTex 	 = loadTexture("assets/backgrounds/wave.bmp", 1, 1, true);
 
 
 
@@ -65,31 +69,31 @@ bool DemoGame::Initialize() {
 	 *  change FishTypeCount if you add remove a texture !!!!!!!!!!!
 	 */
 	int i = 0;
-	mFishTextures[i] =  loadTexture("fishArt/fish/triggerfish1sheet.bmp",2,2);i++;
-	// mFishTextures[i] =  loadTexture("fishArt/fish/triggerfish2sheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("assets/fish/triggerfish1sheet.bmp",2,2);i++;
+	// mFishTextures[i] =  loadTexture("assets/fish/triggerfish2sheet.bmp",2,2);i++;
 
-	// mFishTextures[i] =  loadTexture("fishArt/fish/seahorse1sheet.bmp",4,1);i++;
-	// mFishTextures[i] =  loadTexture("fishArt/fish/seahorse2sheet.bmp",4,1);i++;
+	// mFishTextures[i] =  loadTexture("assets/fish/seahorse1sheet.bmp",4,1);i++;
+	// mFishTextures[i] =  loadTexture("assets/fish/seahorse2sheet.bmp",4,1);i++;
 
-	mFishTextures[i] =  loadTexture("fishArt/fish/rockfish2sheet.bmp",2,2);i++;
-	mFishTextures[i] =  loadTexture("fishArt/fish/rockfish1sheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("assets/fish/rockfish2sheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("assets/fish/rockfish1sheet.bmp",2,2);i++;
 
-	// mFishTextures[i] =  loadTexture("fishArt/fish/pufferfishpuffsheet.bmp",2,2);i++;
-	mFishTextures[i] =  loadTexture("fishArt/fish/pufferfishswimsheet.bmp",2,2);i++;
+	// mFishTextures[i] =  loadTexture("assets/fish/pufferfishpuffsheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("assets/fish/pufferfishswimsheet.bmp",2,2);i++;
 
-	// mFishTextures[i] =  loadTexture("fishArt/fish/eelsheet.bmp",1,4);i++;
+	// mFishTextures[i] =  loadTexture("assets/fish/eelsheet.bmp",1,4);i++;
 
-	mFishTextures[i] =  loadTexture("fishArt/fish/butterflyfishsheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("assets/fish/butterflyfishsheet.bmp",2,2);i++;
 
-	mFishTextures[i] =  loadTexture("fishArt/fish/angelfish2sheet.bmp",2,2);i++;
-	mFishTextures[i] =  loadTexture("fishArt/fish/angelfish1sheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("assets/fish/angelfish2sheet.bmp",2,2);i++;
+	mFishTextures[i] =  loadTexture("assets/fish/angelfish1sheet.bmp",2,2);i++;
 	
 
 	/* Font Texture
 	 *
 	 */
-	mHackNerdTex = loadTexture("fishArt/fonts/hackNerd_13x25.bmp", 10,10, false);
-	mMono16Tex   = loadTexture("fishArt/fonts/monoSpace_13x28.bmp", 10,10, false);
+	mHackNerdTex = loadTexture("assets/fonts/hackNerd_13x25.bmp", 10,10, false);
+	mMono16Tex   = loadTexture("assets/fonts/monoSpace_13x28.bmp", 10,10, false);
 
 
 
@@ -124,22 +128,10 @@ bool DemoGame::Initialize() {
 #endif
 
 	// ************ SOUNDS ******************
-	mPling = new FluxAudioStream("fishArt/sound/pling.wav");
-	mPling->setGain(0.2f);
-	//optional : only needed when looping , but also does cleanup on exit!
-	queueObject(mPling);
-
-	mPlingeling = new FluxAudioStream("fishArt/sound/plingeling.wav");
-	mPlingeling->setGain(0.2f);
-	queueObject(mPlingeling);
-
-	mBrrooii = new FluxAudioStream("fishArt/sound/brrooii.wav");
-	// mBrrooii->setGain(0.2f);
-	queueObject(mBrrooii);
-
-	mFailSound = new FluxAudioStream("fishArt/sound/fail.wav");
-	// mFailSound->setGain(0.2f);
-	queueObject(mFailSound);
+	loadSound(mPling, "pling.wav", 0.2f);
+	loadSound(mPlingeling, "plingeling.wav", 0.2f);
+	loadSound(mBrrooii, "brrooii.wav", 1.f);
+	loadSound(mFailSound, "fail.wav", 1.f);
 
 
 	// ************* Game Labels *********************
@@ -199,6 +191,23 @@ bool DemoGame::Initialize() {
 
 	//<<< lights
 
+	// paricles >>>
+	FluxTexture* lBubble = loadTexture( "assets/particles2/bubble.png" );
+	ParticleManager.addEmitter(
+		ParticlePresets::waterBubblePreset
+		.setTexture(lBubble)
+		.setScaleMinMax( 1.f, 3.f)
+		.setLifeTimeMinMax(6.f,10.f)
+	)->setPosition({ 400.f ,550.f, 0.10f })->play();
+
+	ParticleManager.addEmitter(
+		ParticlePresets::waterBubblePreset
+		.setTexture(lBubble)
+		.setScaleMinMax( 1.f, 3.f)
+		.setLifeTimeMinMax(6.f,10.f)
+	)->setPosition({ 960.f ,550.f, 0.10f })->play();
+
+	//<<< paricles
 
 	// must be on bottom !!
 	respawnFishes();
@@ -604,8 +613,8 @@ int main(int argc, char **argv)
 	lDemoGame->mSettings.ScreenWidth=1152;
 	lDemoGame->mSettings.ScreenHeight=648;
 	lDemoGame->mSettings.ScaleScreen = true; //default true
-	lDemoGame->mSettings.IconFilename = "fishArt/icon.bmp";
-	lDemoGame->mSettings.CursorFilename = "fishArt/fishnet.bmp";
+	lDemoGame->mSettings.IconFilename = "assets/icon.bmp";
+	lDemoGame->mSettings.CursorFilename = "assets/fishnet.bmp";
 	lDemoGame->mSettings.cursorHotSpotX = 11;
 	lDemoGame->mSettings.cursorHotSpotY = 3;
 	lDemoGame->mSettings.initialVsync = false;

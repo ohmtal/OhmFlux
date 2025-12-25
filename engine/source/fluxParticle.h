@@ -11,7 +11,7 @@
 
 struct FluxParticle
 {
-    Point2F position;
+    Point3F position;
     Point2F velocity;
     Point2F acceleration;
     F32 rotation;
