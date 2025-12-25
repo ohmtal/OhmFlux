@@ -28,6 +28,7 @@ set(STB_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/engine/stb")
 set(DEMO_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/FishTankDemo")
 set(TTT_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/TickTacToe")
 set(TESTBED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TestBed")
+set(LUATEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/LuaTest")
 # =============================================================================
 # <<<< PROJECTS SECTION
 # =============================================================================
@@ -128,6 +129,17 @@ option(BUILD_TESTBED "Build TestBed application" ON)
 if(BUILD_TESTBED)
     set(DEMO_SOURCES "${TESTBED_DIR}/src/main.cpp")
     configure_demo_target(TestBed ${TESTBED_DIR} "${TESTBED_DIR}/assets@assets" "${DEMO_SOURCES}")
+endif()
+
+# --- 4. LuaTest ---
+# Work in Progess
+option(BUILD_LUATEST "Build LuaTest application" OFF)
+if(BUILD_LUATEST)
+    set(DEMO_SOURCES
+        ${LUATEST_DIR}/src/main.cpp
+        ${LUATEST_DIR}/src/luabind/luaFluxMain.cpp
+    )
+    configure_demo_target(LuaTest ${LUATEST_DIR} "${LUATEST_DIR}/assets@assets" "${DEMO_SOURCES}")
 endif()
 # =============================================================================
 # <<<<< PROJECTS SECTION
