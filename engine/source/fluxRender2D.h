@@ -138,6 +138,7 @@ private:
     // Lights
     Color4F mAmbientColor = { 0.4f,0.4f,0.4f, 1.f}; // cl_White; //only have effect when lights in scene
     F32 mLightExposure = 1.f; //only have effect when lights in scene
+    S32 mToneMappingType = 2; //default=none, 1=Reinhard, 2=Filmic
     void renderLights();
 
 public:

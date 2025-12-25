@@ -15,15 +15,19 @@
 #include <algorithm>
 
 
-#include "source/fluxGlobals.h"
-#include "source/fluxRender2D.h"
-#include "source/misc.h"
 
 
 #include "main.h"
 #include "globals.h"
 #include "myFish.h"
 #include "GuiFishLabel.h"
+
+
+#include <fluxGlobals.h>
+#include <fluxRender2D.h>
+#include <misc.h>
+#include <fluxLight.h>
+#include <fluxLightManager.h>
 
 
 
@@ -179,6 +183,22 @@ bool DemoGame::Initialize() {
 	}
 	mScore = 0;
 	mChallengeTime = 0;
+
+	// lights >>>
+	const Color4F cl_seaLight = {1.f,1.f,0.8f,3.f};
+	const Point2F pt_LightVector = {0.15f, 0.25f};
+	const F32 f_LightAngle = 25.f;
+	const F32 f_LightRadius = 1000.f;
+
+	Render2D.setAmbientColor( { 0.05f,0.051f,0.15f,1.f} );
+	for ( S32 i = 880; i > -300; i -= 220)
+		LightManager.addLight(
+			FluxLight({ (F32)i, -100.0f,0.0f}, cl_seaLight, f_LightRadius)
+			.setAsSpotlight(pt_LightVector, f_LightAngle)
+		);
+
+	//<<< lights
+
 
 	// must be on bottom !!
 	respawnFishes();
