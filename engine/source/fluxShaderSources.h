@@ -12,6 +12,7 @@
 #define GLSL_VERSION "#version 330 core\n"
 #endif
 
+//------------------------------------------------------------------------------
 // --- Default Sprite Shader ---
 inline const char* vertexShaderSource = GLSL_VERSION R"(
 layout (location = 0) in vec3 aPos;      // Final position calculated on CPU
@@ -37,8 +38,7 @@ void main() {
     TintColor = aColor;
 }
 )";
-
-
+//------------------------------------------------------------------------------
 inline const char* fragmentShaderSource = GLSL_VERSION R"(
 out vec4 FragColor;
 
@@ -62,7 +62,7 @@ uniform Light uLights[MAX_LIGHTS];
 uniform int uNumLights;
 uniform bool uIsGui;
 uniform float uExposure; // = 1.0;
-uniform int uToneMappingType; // = 2; //default=none, 1=Reinhard, 2=Filmic
+// uniform int uToneMappingType; // = 2; //default=none, 1=Reinhard, 2=Filmic
 
 void main() {
     vec4 texColor = texture(texture1, TexCoord);
@@ -113,24 +113,29 @@ void main() {
         vec3 result = texColor.rgb * lightAccum;
         result *= uExposure;
 
-        switch (uToneMappingType)
-        {
-            case 1: // Reinhard Tonemapping
-                result = result / (result + vec3(1.0));
-                FragColor = vec4(pow(result, vec3(1.0/2.2)), texColor.a) * TintColor;
-                break;
-            case 2: // Filmic Tonemapping (Simplified ACES)
-                vec3 x = result;
-                result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
-                FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
-                break;
-            default: //none
-                // Clamp light to 1.0 to prevent over-exposure before final Tint
-                lightAccum = min(lightAccum, vec3(1.0));
-                texColor.rgb *= lightAccum;
-                FragColor = texColor * TintColor;
-                break;
-        }
+        //----------------- Filmic by default !! ---------------
+        vec3 x = result;
+        result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
+        FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
+
+        // switch (uToneMappingType)
+        // {
+        //     case 1: // Reinhard Tonemapping
+        //         result = result / (result + vec3(1.0));
+        //         FragColor = vec4(pow(result, vec3(1.0/2.2)), texColor.a) * TintColor;
+        //         break;
+        //     case 2: // Filmic Tonemapping (Simplified ACES)
+        //         vec3 x = result;
+        //         result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
+        //         FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
+        //         break;
+        //     default: //none
+        //         // Clamp light to 1.0 to prevent over-exposure before final Tint
+        //         lightAccum = min(lightAccum, vec3(1.0));
+        //         texColor.rgb *= lightAccum;
+        //         FragColor = texColor * TintColor;
+        //         break;
+        // }
     } //<<< Lights
 
     // Linear to sRGB (Optional: recommended if your textures are sRGB)
@@ -143,7 +148,7 @@ void main() {
 }
 )";
 
-
+//------------------------------------------------------------------------------
 // --- Flat Color Shader (for Primitives) ---
 inline const char* flatVertexShaderSource = GLSL_VERSION R"(
 layout (location = 0) in vec3 aPos;

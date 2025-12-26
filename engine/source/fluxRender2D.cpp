@@ -388,7 +388,7 @@ void FluxRender2D::beginFrame() //FluxCamera* cam)
     // Pass Light Data to Shader
     mDefaultShader.setVec3("uAmbientColor", mAmbientColor.r, mAmbientColor.g, mAmbientColor.b);
     mDefaultShader.setFloat("uExposure", mLightExposure);
-    mDefaultShader.setInt("uToneMappingType", mToneMappingType);
+    // mDefaultShader.setInt("uToneMappingType", mToneMappingType);
 
     renderLights();
     // ---
