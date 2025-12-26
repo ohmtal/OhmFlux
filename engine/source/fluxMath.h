@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include <cassert>
+#include <random>
 
 #include "fluxGlobals.h"
 
@@ -82,71 +83,49 @@ inline void calculateModelMatrix(float x, float y, float z, float angleDeg, floa
 //  some random number functions.
 //----------------------------------------------------------------------------
 
-//returns a random integer between x and y
-inline int   RandInt(int x,int y)
-{
-    assert(y>=x && "<RandInt>: y is less than x");
-    return rand()%(y-x+1)+x;
+// Optimized Integer Range
+inline int RandInt(int x, int y) {
+    static thread_local std::mt19937 gen(std::random_device{}());
+    static thread_local std::uniform_int_distribution<int> dist;
+    return dist(gen, std::uniform_int_distribution<int>::param_type{x, y});
 }
 
-//returns a random double between zero and 1
-inline double RandFloat()      {return ((rand())/(RAND_MAX+1.0));}
-
-inline double RandInRange(double x, double y)
-{
-    return x + RandFloat()*(y-x);
+// Optimized Float Range
+inline float RandInRange(float min, float max) {
+    static thread_local std::mt19937 gen(std::random_device{}());
+    static thread_local std::uniform_real_distribution<float> dist;
+    return dist(gen, std::uniform_real_distribution<float>::param_type{min, max});
 }
 
-inline F32 RandInRangeF(F32 x, F32 y)
-{
-    return static_cast<F32>(RandInRange(x,y));
+// Zero to One Float
+inline float RandFloat() {
+    static thread_local std::mt19937 gen(std::random_device{}());
+    static thread_local std::uniform_real_distribution<float> dist(0.f, 1.f);
+    return dist(gen);
 }
 
-
-//returns a random bool
-inline bool   RandBool()
-{
-    if (RandFloat() > 0.5)
-        return true;
-    else
-        return false;
+//  RandBool: Uses 1 bit of entropy instead of a full float
+inline bool RandBool() {
+    static thread_local std::mt19937 gen(std::random_device{}());
+    static thread_local std::bernoulli_distribution dist(0.5); // 50/50 chance
+    return dist(gen);
 }
 
-//returns a random double in the range -1 < n < 1
-inline double RandomClamped()    {return RandFloat() - RandFloat();}
-
-
-//returns a random number with a normal distribution. See method at
-//http://www.taygeta.com/random/gaussian.html
-inline double RandGaussian(double mean = 0.0, double standard_deviation = 1.0)
-{
-    double x1, x2, w, y1;
-    static double y2;
-    static int use_last = 0;
-
-    if (use_last)		        /* use value from previous call */
-    {
-        y1 = y2;
-        use_last = 0;
-    }
-    else
-    {
-        do
-        {
-            x1 = 2.0 * RandFloat() - 1.0;
-            x2 = 2.0 * RandFloat() - 1.0;
-            w = x1 * x1 + x2 * x2;
-        }
-        while ( w >= 1.0 );
-
-        w = sqrt( (-2.0 * log( w ) ) / w );
-        y1 = x1 * w;
-        y2 = x2 * w;
-        use_last = 1;
-    }
-
-    return( mean + y1 * standard_deviation );
+// Faster & Correct RandomClamped: One call, perfectly uniform distribution
+inline double RandomClamped() {
+    static thread_local std::mt19937 gen(std::random_device{}());
+    static thread_local std::uniform_real_distribution<double> dist(-1.0, 1.0);
+    return dist(gen);
 }
 
+//returns a random number with a normal distribution.
+inline double RandGaussian(double mean = 0.0, double std_dev = 1.0) {
+    // Thread-local generator and distribution for maximum speed and safety
+    static thread_local std::mt19937 gen(std::random_device{}());
+    static thread_local std::normal_distribution<double> dist;
+
+    // Use param_type to update mean/std_dev without re-initialization cost
+    return dist(gen, std::normal_distribution<double>::param_type{mean, std_dev});
+}
 
 #endif // _FLUX_MATH_H_
