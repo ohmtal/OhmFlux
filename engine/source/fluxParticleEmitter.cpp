@@ -116,17 +116,17 @@ void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
 
     // Initializing Colors
     particle.startColor = {
-        RandInRangeF(mProperties.startColorMin.r, mProperties.startColorMax.r),
-        RandInRangeF(mProperties.startColorMin.g, mProperties.startColorMax.g),
-        RandInRangeF(mProperties.startColorMin.b, mProperties.startColorMax.b),
-        RandInRangeF(mProperties.startColorMin.a, mProperties.startColorMax.a)
+        RandInRange(mProperties.startColorMin.r, mProperties.startColorMax.r),
+        RandInRange(mProperties.startColorMin.g, mProperties.startColorMax.g),
+        RandInRange(mProperties.startColorMin.b, mProperties.startColorMax.b),
+        RandInRange(mProperties.startColorMin.a, mProperties.startColorMax.a)
     };
 
     particle.endColor = {
-        RandInRangeF(mProperties.endColorMin.r, mProperties.endColorMax.r),
-        RandInRangeF(mProperties.endColorMin.g, mProperties.endColorMax.g),
-        RandInRangeF(mProperties.endColorMin.b, mProperties.endColorMax.b),
-        RandInRangeF(mProperties.endColorMin.a, mProperties.endColorMax.a)
+        RandInRange(mProperties.endColorMin.r, mProperties.endColorMax.r),
+        RandInRange(mProperties.endColorMin.g, mProperties.endColorMax.g),
+        RandInRange(mProperties.endColorMin.b, mProperties.endColorMax.b),
+        RandInRange(mProperties.endColorMin.a, mProperties.endColorMax.a)
     };
 
     particle.texture = mProperties.texture;
