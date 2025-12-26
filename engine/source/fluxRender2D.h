@@ -74,6 +74,10 @@ struct RenderCommand {
     bool isGui;
     // We store the data needed to calculate vertices later
     DrawParams2D params;
+
+    // particle performance. add a customRenderCallback
+    void (*customRenderCallback)(const RenderCommand& cmd) = nullptr;
+    void* userData = nullptr;
 };
 
 struct PrimitiveCommand {
@@ -130,10 +134,6 @@ private:
     FluxTexture* mWhiteTextureWrapper;
 
     GLuint mWhiteTextureHandle;
-    void renderCurrentBuffer(std::vector<Vertex2D>& vertexBuffer, GLuint texture, bool isGui);
-    void appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const DrawParams2D& dp) ;
-
-
     std::vector<Vertex2D> _VertexBuffer; //
 
     // Lights
@@ -170,8 +170,12 @@ public:
 
     // this batch the draws NOT draw
     bool drawSprite(const DrawParams2D& dp);
-    void drawWithTransform(FluxTexture* texture, const Point3F& position, F32 rotation, F32 scale, const Color4F& color);
+    DrawParams2D generateDrawParams(FluxTexture* texture, const Point3F& position, float rotation, float scale, const Color4F& color);
+    void appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const DrawParams2D& dp) ;
     void renderBatch();
+    void renderCurrentBuffer(std::vector<Vertex2D>& vertexBuffer, GLuint texture, bool isGui);
+    void submitCustomCommand(const RenderCommand& cmd) { mCommandList.push_back(cmd); }
+
 
 
     //wrapper for drawSprite with ugly call ... parameters got added and added over time

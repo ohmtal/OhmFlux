@@ -138,6 +138,10 @@ struct Color4F {
     Color4F operator+(const Color4F& v) const { return { r + v.r, g + v.g, b + v.b, a + v.a }; }
 
 
+    bool operator==(const Color4F& other) const {
+        return r == other.r && g == other.g && b == other.b && a == other.a;
+    }
+
     // Helper to create a color from a Hex integer (e.g., 0xFF5733)
     static Color4F FromHex(U32 hex) {
         Color4F c;

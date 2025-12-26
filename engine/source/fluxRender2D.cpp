@@ -515,9 +515,9 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
 
 
 //-------------------------------------------------------------------------------
-void FluxRender2D::drawWithTransform(FluxTexture* texture, const Point3F& position, float rotation, float scale, const Color4F& color)
+// get a DrawParams2D filled from the parameters
+DrawParams2D FluxRender2D::generateDrawParams(FluxTexture* texture, const Point3F& position, float rotation, float scale, const Color4F& color)
 {
-    if (!texture || mShaderFailed) return;
 
     DrawParams2D dp;
     dp.image = texture;
@@ -535,7 +535,7 @@ void FluxRender2D::drawWithTransform(FluxTexture* texture, const Point3F& positi
     dp.isGuiElement = false; // Particles are usually in world space
     dp.horizontalScrollSpeed = 0.0f; // Default
 
-    drawSprite(dp);
+    return dp;
 }
 
 //-------------------------------------------------------------------------------
@@ -566,24 +566,63 @@ void FluxRender2D::renderBatch()
     GLuint currentTex = 0;
     bool currentGuiMode = false;
 
+    // enhanced version for customRenderCallback
     for (auto& cmd : mCommandList)
     {
+        // 1. Determine if we need to flush the current sprite buffer
+        // We flush if:
+        // - The next command is a custom callback (particle system)
+        // - The texture/GUI mode changed
+        // - The vertex buffer is full
+        bool isCustom = (cmd.customRenderCallback != nullptr);
+        bool textureChanged = (cmd.textureHandle != currentTex);
+        bool guiChanged = (cmd.isGui != currentGuiMode);
         bool bufferFull = (_VertexBuffer.size() >= 16000);
-        // If texture or GUI mode changes, we MUST draw the current accumulated vertices
-        if ( cmd.textureHandle != currentTex
-             || cmd.isGui != currentGuiMode
-             || bufferFull
-            )
+
+        if (isCustom || textureChanged || guiChanged || bufferFull)
         {
-            renderCurrentBuffer(_VertexBuffer, currentTex, currentGuiMode);
-            _VertexBuffer.clear();
+            // Draw what we have so far
+            if (!_VertexBuffer.empty()) {
+                renderCurrentBuffer(_VertexBuffer, currentTex, currentGuiMode);
+                _VertexBuffer.clear();
+            }
+
+            // Update state for the next batch of sprites
             currentTex = cmd.textureHandle;
             currentGuiMode = cmd.isGui;
         }
 
-        // Calculate the 4 vertices for this sprite (apply rotation, scale, flip, UVs here)
-        appendSpriteToBuffer(_VertexBuffer, cmd.params);
+        // 2. Now handle the command
+        if (cmd.customRenderCallback)
+        {
+            // Execute the particle system draw call directly
+            cmd.customRenderCallback(cmd);
+        }
+        else
+        {
+            // It's a normal sprite, add it to the buffer
+            appendSpriteToBuffer(_VertexBuffer, cmd.params);
+        }
     }
+    // version without customRenderCallback
+    // for (auto& cmd : mCommandList)
+    // {
+    //     bool bufferFull = (_VertexBuffer.size() >= 16000);
+    //     // If texture or GUI mode changes, we MUST draw the current accumulated vertices
+    //     if ( cmd.textureHandle != currentTex
+    //          || cmd.isGui != currentGuiMode
+    //          || bufferFull
+    //         )
+    //     {
+    //         renderCurrentBuffer(_VertexBuffer, currentTex, currentGuiMode);
+    //         _VertexBuffer.clear();
+    //         currentTex = cmd.textureHandle;
+    //         currentGuiMode = cmd.isGui;
+    //     }
+    //
+    //     // Calculate the 4 vertices for this sprite (apply rotation, scale, flip, UVs here)
+    //     appendSpriteToBuffer(_VertexBuffer, cmd.params);
+    // }
 
     // Final flush
     renderCurrentBuffer(_VertexBuffer, currentTex, currentGuiMode);

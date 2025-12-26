@@ -61,26 +61,114 @@ void FluxParticleEmitter::update(F32 dt)
     }
 }
 //-----------------------------------------------------------------------------
-void FluxParticleEmitter::render()
+void FluxParticleEmitter::appendParticleVertices
+(
+    std::vector<Vertex2D>& buffer,
+    FluxTexture* tex,
+    const Point3F& pos,
+    float rotation,
+    float scale,
+    const Color4F& color)
 {
-    for (const auto& particle : mParticles)
-    {
-        // Particle is guaranteed alive by the update loop cleanup
-        if (particle.texture)
-        {
-            // Use the lerped color based on life
-            Color4F currentColor = particle.getCurrentColor();
+    // 1. Get UVs ONCE (In a real emitter, you'd pass these in as params to save even more time)
+    // For now, let's assume full texture (0,0 to 1,1)
+    float umin = 0.0f, vmin = 0.0f, umax = 1.0f, vmax = 1.0f;
 
-            Render2D.drawWithTransform(
-                particle.texture,
-                particle.position,
-                particle.rotation,
-                particle.scale,
-                currentColor
-            );
-        }
+    // 2. Vertex Positions
+    float halfW = (tex->getWidth() * scale) * 0.5f;
+    float halfH = (tex->getHeight() * scale) * 0.5f;
+
+    float cosR = cosf(rotation);
+    float sinR = sinf(rotation);
+
+    // 3. Manual unrolling of the loop for speed
+    size_t i = buffer.size();
+    buffer.resize(i + 4);
+
+    // Corner offsets
+    float cornersX[4] = { -halfW,  halfW, halfW, -halfW };
+    float cornersY[4] = { -halfH, -halfH, halfH,  halfH };
+    float uvsU[4] = { umin, umax, umax, umin };
+    float uvsV[4] = { vmin, vmin, vmax, vmax };
+
+    for (int j = 0; j < 4; j++) {
+        buffer[i + j].pos.x = (cornersX[j] * cosR - cornersY[j] * sinR) + pos.x;
+        buffer[i + j].pos.y = (cornersX[j] * sinR + cornersY[j] * cosR) + pos.y;
+        buffer[i + j].pos.z = -pos.z;
+        buffer[i + j].color = color;
+        buffer[i + j].uv.x    = uvsU[j];
+        buffer[i + j].uv.y    = uvsV[j];
     }
 }
+
+//-----------------------------------------------------------------------------
+//enhanced batch version:
+void FluxParticleEmitter::render()
+{
+    if (mParticles.empty()) return;
+
+    // 1. Clear local cache
+    _VertexBuffer.clear();
+
+    // 2. Performance: Pre-reserve memory to avoid reallocations during the loop
+    if (_VertexBuffer.capacity() < mParticles.size() * 4) {
+        _VertexBuffer.reserve(mParticles.size() * 4);
+    }
+
+    for (const auto& particle : mParticles)
+    {
+        // Use the lerped color based on life
+        Color4F currentColor = particle.getCurrentColor();
+
+        // Optimized: Bypass the heavy generateDrawParams if possible
+        // and call the vertex-filling logic directly.
+        appendParticleVertices(
+            _VertexBuffer,
+            particle.texture,
+            particle.position,
+            particle.rotation,
+            particle.scale,
+            currentColor
+        );
+    }
+    // 3. Submit ONE command for the WHOLE system
+    RenderCommand cmd;
+    // fake draw params we only need Z layer but we fill em all
+    cmd.params.z = getLayer();
+    cmd.textureHandle = mProperties.texture->getHandle();
+    cmd.isGui = false;
+
+    // This callback will be called by FluxRender2D::renderBatch
+    cmd.userData = this;
+    cmd.customRenderCallback = [](const RenderCommand& c) {
+        auto* emitter = static_cast<FluxParticleEmitter*>(c.userData);
+        // Direct GPU Draw Call:
+        Render2D.renderCurrentBuffer(emitter->_VertexBuffer, c.textureHandle, false);
+    };
+
+    Render2D.submitCustomCommand(cmd);
+}
+
+// void FluxParticleEmitter::render()
+// {
+//     for (const auto& particle : mParticles)
+//     {
+//         // Particle is guaranteed alive by the update loop cleanup
+//         if (particle.texture)
+//         {
+//             // Use the lerped color based on life
+//             Color4F currentColor = particle.getCurrentColor();
+//
+//             Render2D.drawWithTransform(
+//                 particle.texture,
+//                 particle.position,
+//                 particle.rotation,
+//                 particle.scale,
+//                 currentColor
+//             );
+//         }
+//     }
+// }
 //-----------------------------------------------------------------------------
 void FluxParticleEmitter::emitParticle()
 {
@@ -115,19 +203,29 @@ void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
     particle.scale = RandInRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
 
     // Initializing Colors
-    particle.startColor = {
-        RandInRange(mProperties.startColorMin.r, mProperties.startColorMax.r),
-        RandInRange(mProperties.startColorMin.g, mProperties.startColorMax.g),
-        RandInRange(mProperties.startColorMin.b, mProperties.startColorMax.b),
-        RandInRange(mProperties.startColorMin.a, mProperties.startColorMax.a)
-    };
+    if (mProperties.startColorMin == mProperties.startColorMax)
+    {
+            particle.startColor = mProperties.startColorMin;
+    } else {
+        particle.startColor = {
+            RandInRange(mProperties.startColorMin.r, mProperties.startColorMax.r),
+            RandInRange(mProperties.startColorMin.g, mProperties.startColorMax.g),
+            RandInRange(mProperties.startColorMin.b, mProperties.startColorMax.b),
+            RandInRange(mProperties.startColorMin.a, mProperties.startColorMax.a)
+        };
+    }
 
-    particle.endColor = {
-        RandInRange(mProperties.endColorMin.r, mProperties.endColorMax.r),
-        RandInRange(mProperties.endColorMin.g, mProperties.endColorMax.g),
-        RandInRange(mProperties.endColorMin.b, mProperties.endColorMax.b),
-        RandInRange(mProperties.endColorMin.a, mProperties.endColorMax.a)
-    };
+    if ( mProperties.endColorMin ==  mProperties.endColorMax )
+    {
+        particle.endColor = mProperties.endColorMin;
+    } else {
+        particle.endColor = {
+            RandInRange(mProperties.endColorMin.r, mProperties.endColorMax.r),
+            RandInRange(mProperties.endColorMin.g, mProperties.endColorMax.g),
+            RandInRange(mProperties.endColorMin.b, mProperties.endColorMax.b),
+            RandInRange(mProperties.endColorMin.a, mProperties.endColorMax.a)
+        };
+    }
 
     particle.texture = mProperties.texture;
 }

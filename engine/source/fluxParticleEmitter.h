@@ -82,6 +82,9 @@ public:
     void render();
 
     FluxParticleEmitter*  setPosition( Point3F lPosition ) { mProperties.position = lPosition; return this; };
+    Point3F getPosition() const { return mProperties.position; }
+    F32 getLayer() const { return mProperties.position.z; }
+
     void play();        //activate
     void stop();        // deactivate like pause
     void reset();       // like play but reset the particles
@@ -90,8 +93,14 @@ public:
 private:
     void emitParticle();
     void initializeParticle(FluxParticle& particle);
+    void appendParticleVertices ( std::vector<Vertex2D>& buffer,
+                                FluxTexture* tex,
+                                const Point3F& pos,
+                                float rotation,
+                                float scale,
+                                const Color4F& color);
 
-
+    std::vector<Vertex2D> _VertexBuffer;
 
     EmitterProperties mProperties;
     std::vector<FluxParticle> mParticles;
