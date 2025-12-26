@@ -195,7 +195,8 @@ void FluxParticleEmitter::emitParticlesBatch(int count)
 {
     // 1. Strict Boundary Guard
     int spaceLeft = mProperties.maxParticles - static_cast<int>(mParticles.size());
-    int toSpawn = std::min(count, spaceLeft);
+    // int toSpawn = std::min(count, spaceLeft);
+    int toSpawn = (std::min)(count, spaceLeft);
 
     if (toSpawn <= 0) return;
 

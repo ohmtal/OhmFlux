@@ -3,7 +3,7 @@
 A lightweight, high-performance,  modern C++ game engine With ongoing optimizations for current development standards. Built around **SDL3**, it provides a streamlined pipeline for 2D graphics, particle simulations, and cross-platform deployment.
 
 ## 💻 Platforms
-- **Desktop**: tested on Linux and FreeBSD but should also work on Windows 
+- **Desktop**: tested on Linux. FreeBSD and Windows 
 - **WebAssembly**: using Emscripten
 
 ---
@@ -31,7 +31,7 @@ A lightweight, high-performance,  modern C++ game engine With ongoing optimizati
 
 ## 🏗 Build Instructions (Native Desktop)
 
-Requires a C++17 compiler, **SDL3**, and **GLEW**.
+Requires a C++20 compiler, **SDL3**, and **GLEW**.
 
 ```shell
 # 1. Configure the project
@@ -41,9 +41,9 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-Notes:
-The engine is built as a static library: libohmFlux_engine.a .
-Binaries are placed directly in their project folders alongside their assets.
+
+For Windows-build see also: **README_BUILD_WINDOWS.md**.
+
 
 ---
 

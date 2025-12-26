@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 project(ohmFlux LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # --- Cross-Platform Compatibility Fixes ---
 if(ANDROID)
@@ -191,11 +194,29 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
         )
     elseif(WIN32)
         # Windows standard: target.exe or target_Debug.exe
+        # 1. Define the base path
+        set(BASE_OUT_DIR "${SOURCE_DIR}")
+
+        # 2. Force MSVC (Visual Studio) to stop adding /Debug or /Release subfolders
+        # This has no negative effect on MinGW
         set_target_properties(${TARGET_NAME} PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${BASE_OUT_DIR}"
+            
+            # 3. Apply your naming logic
             OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>>"
         )
-    elseif(ANDROID)
+
+        # 4. For Visual Studio F5 "Run" support, set the working directory to find assets
+        if(MSVC)
+            set_target_properties(${TARGET_NAME} PROPERTIES
+                VS_DEBUGGER_WORKING_DIRECTORY "${SOURCE_DIR}"
+            )
+        endif()
+	elseif(ANDROID)
         # Android standard: libTARGET_NAME.so
         # No special suffix needed, CMake handles .so for libraries
         set_target_properties(${TARGET_NAME} PROPERTIES
@@ -271,7 +292,6 @@ if(BUILD_LUATEST)
     # target_link_libraries ensures these are only linked to LuaTest
     target_link_libraries(LuaTest PRIVATE lua sol2::sol2)
 
-    # sol2 requires C++17 or higher
     target_compile_features(LuaTest PRIVATE cxx_std_17)
     target_compile_definitions(LuaTest PRIVATE SOL_ALL_SAFETIES_ON=1)
 endif()

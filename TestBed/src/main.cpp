@@ -18,6 +18,8 @@
 #include <fluxLight.h>
 #include <fluxLightManager.h>
 
+#include <SDL3/SDL_main.h> //<<< Android! and Windows
+
 class TestBed : public FluxMain
 {
     typedef FluxMain Parent;
@@ -389,7 +391,7 @@ public:
 
 };
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
     TestBed* game = new TestBed();

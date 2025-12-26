@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------
 // Simple TicTacToe demo built on ohmFlux
 //-----------------------------------------------------------------------------
+#include <SDL3/SDL_main.h> //<<< Android! and Windows
 #include "source/fluxMain.h"
 #include "source/fluxBitmapFont.h"
 #include "source/misc.h"
@@ -301,7 +302,7 @@ public:
 
 };
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
     TicTacToeGame* game = new TicTacToeGame();

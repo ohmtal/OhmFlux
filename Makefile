@@ -9,7 +9,7 @@ DEMO_DIRS := FishTankDemo TickTacToe TestBed LuaTest
 #TODO change the path /opt/android to where you installed android studio !
 # Your assets must be in subdirectory assets!
 ANDROID_PROJ_DIR := android
-ANDROID_NDK_HOME := $(shell ls -d /opt/android/sdk/ndk/*/ | sort -V | tail -n 1)
+ANDROID_NDK_HOME := $(shell @ls -d /opt/android/sdk/ndk/*/ | sort -V | tail -n 1)
 ANDROID_PLATFORM := android-24
 
 # Parallel Build Detection

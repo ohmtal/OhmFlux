@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #endif
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h> //<<< Android!
+#include <SDL3/SDL_main.h> //<<< Android! and Windows
 #include <assert.h>
 #include <vector>
 #include <algorithm>
@@ -602,7 +602,7 @@ void DemoGame::onDraw()
 
 //--------------------------------------------------------------------------------------
 // int main(int argc, char **argv)
-int main(int argc, char *argv[]) // << android !!??
+int main(int argc, char *argv[]) 
 {
 #if defined (WIN32) && ! defined (_DEBUG)  
 	ShowWindow(GetConsoleWindow(), SW_HIDE);
