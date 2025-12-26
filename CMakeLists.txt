@@ -104,6 +104,10 @@ elseif(WIN32 AND NOT MSVC)
     # Force Static C++ Runtime (Fixes previous libstdc++ errors)
     add_link_options("-static-libgcc" "-static-libstdc++" "-static")
 
+    # This is the "Magic" for suppressing the console window in Release
+    # but keeping it in Debug so you can see your logs.
+    link_libraries("-Wl,--subsystem,windows") # Global for MinGW
+
     # 1. Force CMake to find .a files only
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 
@@ -158,11 +162,19 @@ target_compile_definitions(ohmFlux_engine PUBLIC
 # ---------------- Macro for Projects ------------------
 # Android and Windows build added:
 macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
+
+    # Determine if we need the WIN32 GUI flag (only for Windows Release)
+    set(GUI_TYPE "")
+    if(WIN32 AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(GUI_TYPE "WIN32")
+    endif()
+
     # Android uses shared libraries loaded by a Java/Kotlin wrapper
     if(ANDROID)
         add_library(${TARGET_NAME} SHARED ${SOURCES_LIST})
     else()
-        add_executable(${TARGET_NAME} ${SOURCES_LIST})
+        # add_executable(${TARGET_NAME} ${SOURCES_LIST})
+         add_executable(${TARGET_NAME} ${GUI_TYPE} ${SOURCES_LIST})
     endif()
 
     target_include_directories(${TARGET_NAME} PRIVATE ${SOURCE_DIR})
