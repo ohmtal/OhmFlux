@@ -51,10 +51,10 @@ build-info:
 	@echo "Nativ:      sudo pacman -S sdl3 glew opengl-headers"
 	@echo "Windows:    yay -S mingw-w64-sdl3 mingw-w64-glew"
 	@echo "Android:    download and install Android Studio and set the pathes like:"
-	@echo "            export ANDROID_HOME=/opt/android/sdk
-	@echo "            export ANDROID_SDK_ROOT=/opt/android/sdk
-	@echo "            export ANDROID_NDK_HOME=/opt/android/sdk/ndk/28.2.13676358  # Update version if different
-	@echo "            export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+	@echo "            export ANDROID_HOME=/opt/android/sdk"
+	@echo "            export ANDROID_SDK_ROOT=/opt/android/sdk"
+	@echo "            export ANDROID_NDK_HOME=/opt/android/sdk/ndk/28.2.13676358  # Update version if different"
+	@echo "            export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"
 	@echo "            sudo pacman -S gradle"
 	@echo "Emscripten: pkg install sdl3 glew"
 	@echo "            testing @bash:"
@@ -63,7 +63,8 @@ build-info:
 	@echo ""
 	@echo "--- [ FreeBSD Setup ] ---"
 	@echo "Nativ:   sudo pkg install cmake gcc sdl3 glew"
-	@echo "Windows: pkg install mingw-w64-gcc mingw-w64-binutils"
+	@echo ""
+	@echo ""
 
 # -----------------  D E S K T O P  --------------------
 debug:
