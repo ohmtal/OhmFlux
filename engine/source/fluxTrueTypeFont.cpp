@@ -8,41 +8,39 @@
 #include "errorlog.h"
 //-----------------------------------------------------------------------------
 FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
-    :Parent(nullptr, nullptr)
+: Parent(nullptr, nullptr)
 {
-
-
     mAlign = FontAlign_Left;
     mIsGuiElement = true;
     mColor = {1.0f, 1.0f, 1.0f, 1.0f};
 
-    // 1. Load TTF file
-    FILE* f = fopen(filename, "rb");
-    if (!f) {
-        Log("Can not load font %s", filename);
+    // 1. Load TTF file using SDL3 (Works on Android APK assets and Desktop)
+    size_t size;
+    void* ttfData = SDL_LoadFile(filename, &size);
+
+    if (!ttfData) {
+        Log("Can not load font %s: %s", filename, SDL_GetError());
         return;
     }
-    fseek(f, 0, SEEK_END);
-    size_t size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    std::vector<unsigned char> ttfBuffer(size);
-    fread(ttfBuffer.data(), 1, size, f);
-    fclose(f);
 
     // 2. Bake to Bitmap
+    // Note: stbtt_BakeFontBitmap does NOT keep a pointer to ttfData,
+    // it only reads it, so we can free ttfData safely after this step.
     std::vector<unsigned char> alphaBitmap(512 * 512);
-    // ASCII 32 (' ') to 126 ('~')
-    stbtt_BakeFontBitmap(ttfBuffer.data(), 0, (float)fontSize,
+    stbtt_BakeFontBitmap((unsigned char*)ttfData, 0, (float)fontSize,
                          alphaBitmap.data(), 512, 512,
                          32, 95, mFont.chardata);
 
-    // 3. Create Texture (Atlas)
-    // Ensure your texture class creates a GL_RED or GL_ALPHA texture
+    // 3. Free the file buffer immediately after baking
+    SDL_free(ttfData);
+
+    // 4. Create Texture (Atlas)
     FluxTexture* lTexture = new FluxTexture();
     lTexture->bindOpenGLAlphaDirect(alphaBitmap.data(), 512, 512);
     setTexture(lTexture);
-
 }
+
+
 //-----------------------------------------------------------------------------
 void FluxTrueTypeFont::setCaption(const char *szFormat, ...)
 {

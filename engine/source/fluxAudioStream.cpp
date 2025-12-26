@@ -48,6 +48,8 @@ void FluxAudioStream::clearResources()
     if (mStream) { SDL_DestroyAudioStream(mStream); mStream = nullptr; }
     if (mWavData) { SDL_free(mWavData); mWavData = nullptr; }
     if (mVorbis) { stb_vorbis_close(mVorbis); mVorbis = nullptr; }
+    if (mRawFileData) SDL_free(mRawFileData);
+
     mInitDone = false;
     mIsOgg = false;
 }
@@ -132,7 +134,6 @@ void FluxAudioStream::Update(const double& dt)
     }
 
 
-
     // <<<<<<<<<<<<<<
 
     if (mIsOgg) {
@@ -150,66 +151,29 @@ void FluxAudioStream::Update(const double& dt)
             }
         }
     }
-    // // Maintain a 500ms buffer to prevent stuttering
-    // int targetBytes = mSpec.freq * sizeof(float) * mSpec.channels / 2;
-    //
-    // while (SDL_GetAudioStreamAvailable(mStream) < targetBytes)
-    // {
-    //     if (mIsOgg && mVorbis)
-    //     {
-    //         // Read 1024 samples per channel at a time
-    //         const int samplesToRead = 1024;
-    //         const int totalFloats = samplesToRead * mSpec.channels;
-    //
-    //         // Ensure our conversion buffer is large enough
-    //         if (mConversionBuffer.size() < (size_t)totalFloats) {
-    //             mConversionBuffer.resize(totalFloats);
-    //         }
-    //
-    //         // stb_vorbis returns the number of samples per channel actually read
-    //         int samplesRead = stb_vorbis_get_samples_float_interleaved(
-    //             mVorbis,
-    //             mSpec.channels,
-    //             mConversionBuffer.data(),
-    //                                                                    totalFloats
-    //         );
-    //
-    //         if (samplesRead > 0) {
-    //             // Shove the interleaved LRLR data into the SDL stream
-    //             SDL_PutAudioStreamData(mStream, mConversionBuffer.data(),
-    //                                    samplesRead * mSpec.channels * sizeof(float));
-    //         }
-    //         else {
-    //             // End of file / Loop logic
-    //             if (mLooping) {
-    //                 stb_vorbis_seek_start(mVorbis);
-    //             } else {
-    //                 mPlaying = false;
-    //                 SDL_FlushAudioStream(mStream);
-    //                 break;
-    //             }
-    //         }
-    //     }  // if (mIsOgg && mVorbis)
-    //     else if (!mIsOgg)
-    //     {
-    //         if (mLooping) {
-    //             if (SDL_GetAudioStreamAvailable(mStream) < (int)mWaveDataLen) {
-    //                 SDL_PutAudioStreamData(mStream, mWavData, (int)mWaveDataLen);
-    //             }
-    //         } else {
-    //             mPlaying = false;
-    //             SDL_FlushAudioStream(mStream);
-    //         }
-    //         break;
-    //     } // if (!mIsOgg)
-    //
-    // } //  while (SDL_GetAudioStreamAvailable(mStream) < targetBytes)
 }
 
 //-----------------------------------------------------------------------------
 bool FluxAudioStream::loadOGG(const char* lFilename) {
     int error;
-    mVorbis = stb_vorbis_open_filename(lFilename, &error, nullptr);
+
+    // Android
+    size_t fileSize;
+    mRawFileData = SDL_LoadFile(lFilename, &fileSize);
+    if (!mRawFileData) {
+        Log("Failed to open OGG: %s", lFilename);
+        return false;
+    }
+
+    // Note: stb_vorbis_open_memory does NOT copy the buffer,
+    // so you must keep 'buffer' alive as long as you use mVorbis.
+    mVorbis = stb_vorbis_open_memory((unsigned char*)mRawFileData, (int)fileSize, &error, nullptr);
+
+
+    //---- prior Android
+    // mVorbis = stb_vorbis_open_filename(lFilename, &error, nullptr);
+
+
     if (!mVorbis) {
         Log("Failed to open OGG: %s", lFilename);
         return false;

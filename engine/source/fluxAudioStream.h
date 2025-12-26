@@ -43,6 +43,8 @@ private:
 
     //OGG
     stb_vorbis* mVorbis = nullptr;
+    void* mRawFileData = nullptr;  //for SDL_LoadFile
+
     SDL_AudioSpec mSpec;
     bool mIsOgg = false;
     std::vector<float> mConversionBuffer;

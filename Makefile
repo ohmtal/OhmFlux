@@ -1,4 +1,4 @@
-.PHONY: usage debug release webdebug webrelease webdist clean distclean
+.PHONY: usage help build-info debug release windebug winrelease android webdebug webrelease webdist clean distclean
 
 # Configuration
 WEBDIST_DIR = dist_web
@@ -13,18 +13,48 @@ JOBS := -j $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 BROTLI := $(shell command -v brotli 2> /dev/null)
 GZIP   := $(shell command -v gzip 2> /dev/null)
 
+# -----------------  H E L P  &  S E T U P  --------------------
+help: usage
+
 usage:
+	@echo "-----------------------------------------------------------------"
 	@echo "OhmFlux Build System - Usage"
 	@echo "-----------------------------------------------------------------"
 	@echo "make debug      : Build native Desktop (Debug)"
 	@echo "make release    : Build native Desktop (Release)"
-	@echo "make webdebug   : Build WebGL (Debug)"
-	@echo "make webrelease : Build WebGL (Release)"
+	@echo ""
+	@echo "make windebug   : Cross-compile Windows (Debug via MinGW)"
+	@echo "make winrelease : Cross-compile Windows (Release via MinGW)"
+	@echo ""
+	@echo "make android    : Cross-compile Android (Release ARM64)"
+	@echo ""
+	@echo "make webdebug   : Build WebGL (Debug via Emscripten)"
+	@echo "make webrelease : Build WebGL (Release via Emscripten)"
 	@echo "make webdist    : Build WebGL Release and deploy to $(WEBDIST_DIR)"
-	@echo "make clean      : Remove build artifacts"
-	@echo "make distclean  : Remove all build artifacts, logs, binaries, and $(WEBDIST_DIR)"
+	@echo ""
+	@echo "make build-info  : Show packages to install on Arch and FreeBSD "
+	@echo ""
+	@echo "make clean      : Remove build/ directory"
+	@echo "make distclean  : Remove all build artifacts, binaries, and $(WEBDIST_DIR)"
 	@echo "-----------------------------------------------------------------"
+	@echo ""
 
+build-info:
+	@echo "--- [ Arch Linux Setup ] ---"
+	@echo "Nativ:      sudo pacman -S sdl3 glew opengl-headers"
+	@echo "Windows:    yay -S mingw-w64-sdl3 mingw-w64-glew"
+	@echo "Android:    yay -S android-ndk"
+	@echo "            export ANDROID_NDK_HOME=/opt/android-ndk"
+	@echo "Emscripten: pkg install sdl3 glew"
+	@echo "            testing @bash:"
+	@echo "            source /etc/profile.d/emscripten.sh"
+	@echo "            emrun index.html"
+	@echo ""
+	@echo "--- [ FreeBSD Setup ] ---"
+	@echo "Nativ:   sudo pkg install cmake gcc sdl3 glew"
+	@echo "Windows: pkg install mingw-w64-gcc mingw-w64-binutils"
+
+# -----------------  D E S K T O P  --------------------
 debug:
 	cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug
 	cmake --build build/debug $(JOBS)
@@ -33,6 +63,26 @@ release:
 	cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 	cmake --build build/release $(JOBS)
 
+# ---------- C R O S S C O M P I L E for W I N ----------------
+windebug:
+	x86_64-w64-mingw32-cmake -S . -B build/win_debug -DCMAKE_BUILD_TYPE=Debug
+	cmake --build build/win_debug $(JOBS)
+
+winrelease:
+	x86_64-w64-mingw32-cmake -S . -B build/win_release -DCMAKE_BUILD_TYPE=Release
+	cmake --build build/win_release $(JOBS)
+
+# --------- C R O S S C O M P I L E ANDROID -------------
+# Ensure ANDROID_NDK_HOME is set in your environment
+# example: export ANDROID_NDK_HOME=/opt/android-ndk
+android:
+	cmake -S . -B build/android \
+		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=arm64-v8a \
+		-DANDROID_PLATFORM=android-24 \
+		-DCMAKE_BUILD_TYPE=Release
+	cmake --build build/android $(JOBS)
+# -----------------  W E B  --------------------
 webdebug:
 	cmake -S . -B build/web_debug \
 		-DCMAKE_TOOLCHAIN_FILE=$(EMSCRIPTEN_TOOLCHAIN) \
@@ -70,6 +120,9 @@ webdist: webrelease
 	@echo "-----------------------------------------------------------------"
 	@echo "WebGL Deployment complete! Files ready in: ./$(WEBDIST_DIR)"
 
+
+
+# -----------------  C L E A N --------------------
 clean:
 	@echo "Removing build directory..."
 	rm -rf build/
@@ -86,6 +139,7 @@ distclean:
 		echo "  Cleaning $$dir..."; \
 		rm -f $$dir/*.log; \
 		rm -f $$dir/$$dir_*.x86_64; \
+		rm -f $$dir/$$dir_*.exe; \
 		rm -f $$dir/index.html $$dir/index.js $$dir/index.wasm $$dir/index.data; \
 		rm -f $$dir/index.wasm.br $$dir/index.js.br $$dir/index.data.br; \
 		rm -f $$dir/index.wasm.gz $$dir/index.js.gz $$dir/index.data.gz; \

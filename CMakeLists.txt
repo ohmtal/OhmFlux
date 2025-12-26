@@ -4,10 +4,20 @@ project(ohmFlux LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+# --- Cross-Platform Compatibility Fixes ---
+if(ANDROID)
+    add_compile_definitions(ANDROID)
+    list(APPEND FLUX_LIBS GLESv3 EGL log android)
+elseif(WIN32 AND NOT MSVC)
+    # Ensure we link necessary windows libs for MinGW cross-compile
+    list(APPEND FLUX_LIBS opengl32 glu32)
+endif()
+
 # --- Speed Optimization (LTO) ---
 include(CheckIPOSupported)
 check_ipo_supported(RESULT ipo_supported)
-if(ipo_supported)
+if(ipo_supported AND NOT ANDROID) # Android NDK handles LTO differently via flags
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 endif()
 
@@ -15,7 +25,8 @@ add_library(flux_speed_profile INTERFACE)
 target_compile_options(flux_speed_profile INTERFACE
     $<$<CONFIG:Release>:
         $<$<CXX_COMPILER_ID:MSVC>:/O2 /Oi /Ot>
-        $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-O3 $<$<NOT:$<BOOL:${EMSCRIPTEN}>>:-march=native>>
+        $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-O3
+            $<$<AND:$<NOT:$<BOOL:${EMSCRIPTEN}>>,$<NOT:$<BOOL:${ANDROID}>>>:-march=native>>
     >
 )
 
@@ -55,12 +66,41 @@ set(ENGINE_SOURCES
     ${STB_DIR}/flux_stb_impl.cpp
 )
 
-# --- Dependencies (SDL3 Only) ---
+
+# ------------ Dependencies (SDL3 & Graphics) --------------
 set(FLUX_LIBS "")
+
 if(EMSCRIPTEN)
     add_compile_options("-sUSE_SDL=3")
     add_link_options("-sUSE_SDL=3" "-sFULL_ES3=1" "-sUSE_WEBGL2=1" "-sALLOW_MEMORY_GROWTH=1")
+elseif(ANDROID)
+    find_package(SDL3 REQUIRED CONFIG)
+    list(APPEND FLUX_LIBS SDL3::SDL3 GLESv3 EGL log android)
+elseif(WIN32 AND NOT MSVC)
+    # Force Static C++ Runtime (Fixes previous libstdc++ errors)
+    add_link_options("-static-libgcc" "-static-libstdc++" "-static")
+
+    # 1. Force CMake to find .a files only
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+    # 2. SDL3 Static
+    set(SDL3_SHARED FALSE CACHE BOOL "" FORCE)
+    find_package(SDL3 REQUIRED CONFIG COMPONENTS SDL3-static)
+
+    # 3. GLEW Static - Manual Search to avoid DLL import libs
+    # On Arch MinGW, the static lib is usually named 'glew32' or 'glew32s'
+    find_library(GLEW_STATIC_LIB NAMES glew32s glew32 glew32.a)
+
+    # 4. Collection of Windows libs
+    list(APPEND FLUX_LIBS
+        SDL3::SDL3-static
+        ${GLEW_STATIC_LIB}
+        opengl32 glu32 m dinput8 dxguid dxerr8
+        user32 gdi32 winmm imm32 ole32 oleaut32
+        shell32 setupapi version uuid
+    )
 else()
+    # Default Desktop (Linux)
     find_package(SDL3 REQUIRED CONFIG)
     list(APPEND FLUX_LIBS SDL3::SDL3)
     find_package(OpenGL REQUIRED)
@@ -76,16 +116,31 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/engine>
     $<BUILD_INTERFACE:${STB_DIR}>
 )
+
+# Apply Static Interface Properties for Windows/MinGW
+if(WIN32 AND NOT MSVC AND NOT EMSCRIPTEN AND NOT ANDROID)
+    set_property(TARGET ohmFlux_engine PROPERTY INTERFACE_SDL3_SHARED FALSE)
+    target_compile_definitions(ohmFlux_engine PUBLIC GLEW_STATIC)
+endif()
+
 target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile)
+
+# ------------------- Compiler Flags -------------------
+# Add debug flag
 target_compile_definitions(ohmFlux_engine PUBLIC
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:DEBUG>>:FLUX_DEBUG>
 )
 
-
-
-# --- Unified Demo Macro ---
+# ---------------- Macro for Projects ------------------
+# Android and Windows build added:
 macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
-    add_executable(${TARGET_NAME} ${SOURCES_LIST})
+    # Android uses shared libraries loaded by a Java/Kotlin wrapper
+    if(ANDROID)
+        add_library(${TARGET_NAME} SHARED ${SOURCES_LIST})
+    else()
+        add_executable(${TARGET_NAME} ${SOURCES_LIST})
+    endif()
+
     target_include_directories(${TARGET_NAME} PRIVATE ${SOURCE_DIR})
     target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine)
 
@@ -98,14 +153,27 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
             "-sUSE_SDL=3" "-sMAX_WEBGL_VERSION=2" "-sMIN_WEBGL_VERSION=2"
             "--preload-file=${PRELOAD_PATH}" "-sALLOW_MEMORY_GROWTH=1" "-sNO_EXIT_RUNTIME=1" "-sMINIFY_HTML=1"
         )
+    elseif(WIN32)
+        # Windows standard: target.exe or target_Debug.exe
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+            OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>>"
+        )
+    elseif(ANDROID)
+        # Android standard: libTARGET_NAME.so
+        # No special suffix needed, CMake handles .so for libraries
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+        )
     else()
+        # Linux standard (your original preference)
         set_target_properties(${TARGET_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
             OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}.x86_64>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>.x86_64>"
         )
-
     endif()
 endmacro()
+
 
 # =============================================================================
 # PROJECTS SECTION >>>>>

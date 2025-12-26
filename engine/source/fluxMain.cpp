@@ -68,7 +68,7 @@ FluxMain* FluxMain::_instance = nullptr;
 //--------------------------------------------------------------------------------------
 bool FluxMain::Initialize()
 {
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 	if (mSettings.enableLogFile)
 	{
 		std::string lLogFileString = sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";

@@ -5,7 +5,7 @@
 #pragma once
 
 // 1. Include the correct GL API header for the platform
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
 #include <GLES3/gl3.h>
 #else
 #include <GL/glew.h>

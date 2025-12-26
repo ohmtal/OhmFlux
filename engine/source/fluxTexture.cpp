@@ -56,7 +56,19 @@ void FluxTexture::setSize( const int& lW, const int& lH )
 SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
   int width, height, channels;
   // Force RGBA (4 channels)
-  unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
+
+  // Android:
+  size_t fileSize;
+  void* buffer = SDL_LoadFile(filename, &fileSize);
+  if (!buffer) { /* Handle error: SDL_GetError() */ }
+
+  unsigned char* data = stbi_load_from_memory((unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4);
+
+  SDL_free(buffer); // Free the temporary file buffer
+
+  // prior Android :
+  // unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
+
 
   if (!data) return nullptr;
 
@@ -217,7 +229,7 @@ void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
   // 4. Mipmaps
   if (mUseTrilinearFiltering) {
     glGenerateMipmap(GL_TEXTURE_2D);
-    #ifndef __EMSCRIPTEN__
+    #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
     if (mUseAnisotropy) {
       GLfloat max_aniso;
       glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
@@ -275,7 +287,7 @@ void FluxTexture::bindOpenGL(SDL_Surface* lSurface)
   {
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    #ifndef __EMSCRIPTEN__
+    #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
     // Anisotropy ONLY makes sense if we have mipmaps
     if (mUseAnisotropy) {
       GLfloat max_aniso;

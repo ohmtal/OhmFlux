@@ -6,7 +6,7 @@
 #ifndef _FLUXSHADERSOURCES_H_
 #define _FLUXSHADERSOURCES_H_
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
 #define GLSL_VERSION "#version 300 es\nprecision highp float;\n"
 #else
 #define GLSL_VERSION "#version 330 core\n"

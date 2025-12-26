@@ -53,7 +53,7 @@ FluxScreen::FluxScreen(VideoMode lVM)
 
 
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
 	static int lGL_Context = SDL_GL_CONTEXT_PROFILE_ES;
 	static int lGL_MajorVersion = 3;
 	static int lGL_MinorVersion = 0;
@@ -183,8 +183,7 @@ bool FluxScreen::init()
 		return false;
 	}
 
-	//XXTH_MODERN
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 	glewExperimental = GL_TRUE;
 	glewInit();
 
@@ -202,7 +201,7 @@ bool FluxScreen::init()
 		#define GL_CHECK_ERROR()
 		Log("Release Mode: Performance Optimized");
 	#endif
-#endif //__EMSCRIPTEN__
+#endif //#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 
 	//************ DEFAULT VM_OPENGL2D ********
 	if (mScreenMode == VM_OPENGL2D) {
