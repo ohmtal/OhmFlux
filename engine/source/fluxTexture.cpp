@@ -55,78 +55,181 @@ void FluxTexture::setSize( const int& lW, const int& lH )
 // STB Loader
 SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
   int width, height, channels;
-  // Force RGBA (4 channels)
-
-  // Android:
   size_t fileSize;
+
+  // 1. Read from APK/Filesystem
   void* buffer = SDL_LoadFile(filename, &fileSize);
-  if (!buffer) { /* Handle error: SDL_GetError() */ }
+  if (!buffer) {
+    SDL_Log("SDL_LoadFile failed for %s: %s", filename, SDL_GetError());
+    return nullptr;
+  }
 
-  unsigned char* data = stbi_load_from_memory((unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4);
+  // 2. Decode via STB (Force 4 channels for RGBA)
+  unsigned char* data = stbi_load_from_memory(
+    (unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4
+  );
 
-  SDL_free(buffer); // Free the temporary file buffer
+  // Free the raw file buffer immediately
+  SDL_free(buffer);
 
-  // prior Android :
-  // unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
+  if (!data) {
+    SDL_Log("STB failed to decode %s", filename);
+    return nullptr;
+  }
 
-
-  if (!data) return nullptr;
-
-  // SDL3: Wrap the pointer in a temporary surface
+  // 3. Create non-owning wrapper
+  // In SDL3, we use SDL_PIXELFORMAT_RGBA32 for stbi's 4-channel output
   SDL_Surface* tempSurface = SDL_CreateSurfaceFrom(
     width, height, SDL_PIXELFORMAT_RGBA32, data, width * 4
   );
 
   if (!tempSurface) {
+    SDL_Log("SDL_CreateSurfaceFrom failed: %s", SDL_GetError());
     stbi_image_free(data);
     return nullptr;
   }
 
-  // SDL3: Duplicate to create a surface that OWNS its own memory
+  // 4. Create an owning copy
+  // This allows us to free the 'data' pointer immediately
   SDL_Surface* finalSurface = SDL_DuplicateSurface(tempSurface);
 
-  // Clean up the stb buffer and the wrapper
+  // 5. Cleanup
   SDL_DestroySurface(tempSurface);
   stbi_image_free(data);
 
   return finalSurface;
 }
 
-//------------------------------------------------------------------------------
-bool FluxTexture::loadTextureDirect(const char* filename) {
-  int w, h, channels;
-  // Load raw pixels from disk to RAM
-  unsigned char* data = stbi_load(filename, &w, &h, &channels, 4);
+// SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
+//   int width, height, channels;
+//   // Force RGBA (4 channels)
+//
+//   // Android:
+//   size_t fileSize;
+//   void* buffer = SDL_LoadFile(filename, &fileSize);
+//   if (!buffer) { /* Handle error: SDL_GetError() */ }
+//
+//   unsigned char* data = stbi_load_from_memory((unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4);
+//
+//   SDL_free(buffer); // Free the temporary file buffer
+//
+//   // prior Android :
+//   // unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
+//
+//
+//   if (!data) return nullptr;
+//
+//   // SDL3: Wrap the pointer in a temporary surface
+//   SDL_Surface* tempSurface = SDL_CreateSurfaceFrom(
+//     width, height, SDL_PIXELFORMAT_RGBA32, data, width * 4
+//   );
+//
+//   if (!tempSurface) {
+//     stbi_image_free(data);
+//     return nullptr;
+//   }
+//
+//   // SDL3: Duplicate to create a surface that OWNS its own memory
+//   SDL_Surface* finalSurface = SDL_DuplicateSurface(tempSurface);
+//
+//   // Clean up the stb buffer and the wrapper
+//   SDL_DestroySurface(tempSurface);
+//   stbi_image_free(data);
+//
+//   return finalSurface;
+// }
 
-  if (!data) return false;
+//------------------------------------------------------------------------------
+// Load a Texture and bind it directly
+bool FluxTexture::loadTextureDirect(const char* filename)
+{
+  int width, height, channels;
+  size_t fileSize;
+
+  // SDL_LoadFile handles the Android APK 'assets/' abstraction for you
+  void* buffer = SDL_LoadFile(filename, &fileSize);
+
+  if (!buffer) {
+    SDL_Log("FluxTexture Error: Could not load %s - %s", filename, SDL_GetError());
+    return false;
+  }
+
+  // STB now reads from the memory buffer SDL successfully pulled from the APK
+  unsigned char* data = stbi_load_from_memory(
+    (unsigned char*)buffer,
+                                              (int)fileSize,
+                                              &width, &height, &channels,
+                                              4 // STBI_rgb_alpha
+  );
+
+  // Free the raw file data immediately after STB decodes it
+  SDL_free(buffer);
+
+  if (!data) {
+    SDL_Log("STB Error: Failed to decode image %s", filename);
+    return false;
+  }
 
   mFileName = filename;
-  setSize(w, h);
+  setSize(width, height);
 
-  dLog("* LoadTexture using bindOpenGLDirect for %s", filename);
+  // Bind to OpenGL VRAM
+  bindOpenGLDirect(data, width, height);
 
-  // Send RAM pixels to VRAM (only 1 copy)
-  bindOpenGLDirect(data, w, h);
-
-  // Free RAM pixels
+  // Free the decoded RAM pixels
   stbi_image_free(data);
 
   mLoaded = true;
   return true;
 }
 
+// bool FluxTexture::loadTextureDirect(const char* filename)
+// {
+//   int width, height, channels;
+//
+//   // Load raw pixels from disk to RAM
+//   // bad on adroid !! unsigned char* data = stbi_load(filename, &w, &h, &channels, 4);
+//   // Android:
+//   size_t fileSize;
+//   void* buffer = SDL_LoadFile(filename, &fileSize);
+//   if (!buffer) { /* Handle error: SDL_GetError() */ }
+//
+//   unsigned char* data = stbi_load_from_memory((unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4);
+//
+//   SDL_free(buffer); // Free the temporary file buffer
+//
+//
+//
+//   if (!data) return false;
+//
+//   mFileName = filename;
+//   setSize(width, height);
+//
+//   dLog("* LoadTexture using bindOpenGLDirect for %s", filename);
+//
+//   // Send RAM pixels to VRAM (only 1 copy)
+//   bindOpenGLDirect(data, width, height);
+//
+//   // Free RAM pixels
+//   stbi_image_free(data);
+//
+//   mLoaded = true;
+//   return true;
+// }
+
 //------------------------------------------------------------------------------
 bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
 {
-
+  // Try STB (which uses your new SDL_LoadFile logic)
   SDL_Surface* lSurface = loadWithSTB(filename);
 
-  //fallback to bmp
-  if (! lSurface )
-    lSurface = SDL_LoadBMP(filename);
-
-  // finnaly give up if we have no object
+  // Fallback to BMP (In SDL3, SDL_LoadBMP uses SDL_IO internally, so it works with APKs)
   if (!lSurface) {
+    lSurface = SDL_LoadBMP(filename);
+  }
+
+  if (!lSurface) {
+    SDL_Log("FluxTexture Error: Failed to load %s", filename);
     return false;
   }
 
@@ -137,34 +240,80 @@ bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
   SDL_Surface* finalSurface = nullptr;
 
   if (setColorKeyAtZeroPixel) {
-    // 1. Get the color components of the pixel at (0,0)
     Uint8 r, g, b, a;
+    // Safely read the top-left pixel
     if (SDL_ReadSurfacePixel(lSurface, 0, 0, &r, &g, &b, &a)) {
-      // 2. Map those components to a key compatible with the surface's format
-      Uint32 key = SDL_MapSurfaceRGB(lSurface, r, g, b);
-
-      // 3. Set the color key. This defines which color should be transparent.
-      SDL_SetSurfaceColorKey(lSurface, true, key);
+      // Set color key (transparency) based on that pixel
+      SDL_SetSurfaceColorKey(lSurface, true, SDL_MapSurfaceRGB(lSurface, r, g, b));
     }
-
-    // 4. Convert to RGBA32.
-    // SDL_ConvertSurface handles the transparency logic for you:
-    // Any pixel matching the color key is automatically assigned Alpha 0.
-    finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
-  } else {
-    // Just convert to a standard format for OpenGL even without a color key
-    finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
   }
+
+  // Always convert to a uniform format (RGBA32) for the GPU
+  // This also bakes the Color Key into the Alpha channel if set
+  finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
 
   if (finalSurface) {
     bindOpenGL(finalSurface);
     SDL_DestroySurface(finalSurface);
+    mLoaded = true;
+  } else {
+    SDL_Log("FluxTexture Error: Surface conversion failed for %s", filename);
+    mLoaded = false;
   }
 
   SDL_DestroySurface(lSurface);
-  mLoaded = true;
-  return true;
+  return mLoaded;
 }
+
+// bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
+// {
+//
+//   SDL_Surface* lSurface = loadWithSTB(filename);
+//
+//   //fallback to bmp
+//   if (! lSurface )
+//     lSurface = SDL_LoadBMP(filename);
+//
+//   // finnaly give up if we have no object
+//   if (!lSurface) {
+//     return false;
+//   }
+//
+//   mFileName = filename;
+//   mW = lSurface->w;
+//   mH = lSurface->h;
+//
+//   SDL_Surface* finalSurface = nullptr;
+//
+//   if (setColorKeyAtZeroPixel) {
+//     // 1. Get the color components of the pixel at (0,0)
+//     Uint8 r, g, b, a;
+//     if (SDL_ReadSurfacePixel(lSurface, 0, 0, &r, &g, &b, &a)) {
+//       // 2. Map those components to a key compatible with the surface's format
+//       Uint32 key = SDL_MapSurfaceRGB(lSurface, r, g, b);
+//
+//       // 3. Set the color key. This defines which color should be transparent.
+//       SDL_SetSurfaceColorKey(lSurface, true, key);
+//     }
+//
+//     // 4. Convert to RGBA32.
+//     // SDL_ConvertSurface handles the transparency logic for you:
+//     // Any pixel matching the color key is automatically assigned Alpha 0.
+//     finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
+//   } else {
+//     // Just convert to a standard format for OpenGL even without a color key
+//     finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
+//   }
+//
+//   if (finalSurface) {
+//     bindOpenGL(finalSurface);
+//     SDL_DestroySurface(finalSurface);
+//   }
+//
+//   SDL_DestroySurface(lSurface);
+//   mLoaded = true;
+//   return true;
+// }
 //------------------------------------------------------------------------------
 // for truetype fonts
 void FluxTexture::bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h)

@@ -1,10 +1,16 @@
 .PHONY: usage help build-info debug release windebug winrelease android webdebug webrelease webdist clean distclean
 
 # Configuration
+BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web
-ANDROID_PROJ_DIR := android
 EMSCRIPTEN_TOOLCHAIN := /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake
 DEMO_DIRS := FishTankDemo TickTacToe TestBed LuaTest
+
+#TODO change the path /opt/android to where you installed android studio !
+# Your assets must be in subdirectory assets!
+ANDROID_PROJ_DIR := android
+ANDROID_NDK_HOME := $(shell ls -d /opt/android/sdk/ndk/*/ | sort -V | tail -n 1)
+ANDROID_PLATFORM := android-24
 
 # Parallel Build Detection
 # Uses all available cores on Linux/FreeBSD, defaults to 4 if detection fails
@@ -35,7 +41,7 @@ usage:
 	@echo ""
 	@echo "make build-info  : Show packages to install on Arch and FreeBSD "
 	@echo ""
-	@echo "make clean      : Remove build/ directory"
+	@echo "make clean      : Remove $(BASE_BUILD_DIR)/ directory"
 	@echo "make distclean  : Remove all build artifacts, binaries, and $(WEBDIST_DIR)"
 	@echo "-----------------------------------------------------------------"
 	@echo ""
@@ -44,9 +50,11 @@ build-info:
 	@echo "--- [ Arch Linux Setup ] ---"
 	@echo "Nativ:      sudo pacman -S sdl3 glew opengl-headers"
 	@echo "Windows:    yay -S mingw-w64-sdl3 mingw-w64-glew"
-	@echo "Android:    yay -S android-ndk"
-	@echo "            add environment: export ANDROID_NDK_HOME=/opt/android-ndk"
-	@echo "            yay -S android-sdk android-sdk-build-tools android-sdk-platform-tools"
+	@echo "Android:    download and install Android Studio and set the pathes like:"
+	@echo "            export ANDROID_HOME=/opt/android/sdk
+	@echo "            export ANDROID_SDK_ROOT=/opt/android/sdk
+	@echo "            export ANDROID_NDK_HOME=/opt/android/sdk/ndk/28.2.13676358  # Update version if different
+	@echo "            export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
 	@echo "            sudo pacman -S gradle"
 	@echo "Emscripten: pkg install sdl3 glew"
 	@echo "            testing @bash:"
@@ -59,77 +67,97 @@ build-info:
 
 # -----------------  D E S K T O P  --------------------
 debug:
-	cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug
-	cmake --build build/debug $(JOBS)
+	cmake -S . -B $(BASE_BUILD_DIR)/debug -DCMAKE_BUILD_TYPE=Debug
+	cmake --build $(BASE_BUILD_DIR)/debug $(JOBS)
 
 release:
-	cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
-	cmake --build build/release $(JOBS)
+	cmake -S . -B $(BASE_BUILD_DIR)/release -DCMAKE_BUILD_TYPE=Release
+	cmake --build $(BASE_BUILD_DIR)/release $(JOBS)
 
 # ---------- C R O S S C O M P I L E for W I N ----------------
 windebug:
-	x86_64-w64-mingw32-cmake -S . -B build/win_debug -DCMAKE_BUILD_TYPE=Debug
-	cmake --build build/win_debug $(JOBS)
+	x86_64-w64-mingw32-cmake -S . -B $(BASE_BUILD_DIR)/win_debug -DCMAKE_BUILD_TYPE=Debug
+	cmake --build $(BASE_BUILD_DIR)/win_debug $(JOBS)
 
 winrelease:
-	x86_64-w64-mingw32-cmake -S . -B build/win_release -DCMAKE_BUILD_TYPE=Release
-	cmake --build build/win_release $(JOBS)
+	x86_64-w64-mingw32-cmake -S . -B $(BASE_BUILD_DIR)/win_release -DCMAKE_BUILD_TYPE=Release
+	cmake --build $(BASE_BUILD_DIR)/win_release $(JOBS)
 
 # --------- C R O S S C O M P I L E ANDROID -------------
 # Ensure ANDROID_NDK_HOME and ANDROID_HOME ate set in your environment
 # arch: export ANDROID_NDK_HOME=/opt/android-ndk
 # arch: export ANDROID_HOME=/opt/android-sdk
 # Define where your Android project template is located
+# Your assets must be in subdirectory assets!
 # --- Settings ---
 android:
 	# 1. Build the .so libraries (Engine + Demos)
-	cmake -S . -B build/android \
+	cmake -S . -B $(BASE_BUILD_DIR)/android \
 		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
 		-DANDROID_ABI=arm64-v8a \
-		-DANDROID_PLATFORM=android-24 \
+		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
 		-DCMAKE_BUILD_TYPE=Release
-	cmake --build build/android $(JOBS)
+	cmake --build $(BASE_BUILD_DIR)/android $(JOBS)
 
-	# 2. Initialize the SDL3 Android Project if missing
+	# 2. Initialize and Patch the SDL3 Android Project
+	mkdir -p $(ANDROID_PROJ_DIR)/app
 	@if [ ! -f $(ANDROID_PROJ_DIR)/gradlew ]; then \
-		echo "Initializing SDL3 Android Project from deps..."; \
-		cp -r build/android/_deps/sdl3-src/android-project/* $(ANDROID_PROJ_DIR)/; \
+		echo "Initializing SDL3 Project Template..."; \
+		cp -r $(BASE_BUILD_DIR)/android/_deps/sdl3-src/android-project/* $(ANDROID_PROJ_DIR)/; \
 		chmod +x $(ANDROID_PROJ_DIR)/gradlew; \
 	fi
+
+	# Overwrite the dynamic Gradle file with your static template
+	cp build.gradle.template $(ANDROID_PROJ_DIR)/app/build.gradle
+	rm -rf $(ANDROID_PROJ_DIR)/app/jni
 
 	# 3. Build an APK for each demo
 	@for target in $(DEMO_DIRS); do \
 		echo "--- Packaging APK for: $$target ---"; \
-		# Ensure jniLibs dir exists and copy .so files \
-		mkdir -p $(ANDROID_PROJ_DIR)/app/src/main/jniLibs/arm64-v8a/; \
-		cp build/android/lib$$target.so $(ANDROID_PROJ_DIR)/app/src/main/jniLibs/arm64-v8a/; \
-		find build/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/src/main/jniLibs/arm64-v8a/ \; ; \
-		\
-		# 2025 WAY: Tell SDL3 which .so to load by editing its strings.xml \
-		sed -i "s/<string name=\"SDL_DEFAULT_LIBRARY\">.*<\/string>/<string name=\"SDL_DEFAULT_LIBRARY\">$$target<\/string>/g" \
+		rm -rf $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/*; \
+		mkdir -p $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/; \
+		cp $(BASE_BUILD_DIR)/android/lib$$target.so $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/libmain.so; \
+		echo "----- copy assets ----"; \
+		ASSET_DIR=$(ANDROID_PROJ_DIR)/app/src/main/assets/; \
+		rm -rf $$ASSET_DIR; \
+		mkdir -p $$ASSET_DIR; \
+		cp -r $$target/assets p $$ASSET_DIR; \
+		echo "----- copy SDL ----"; \
+		find $(BASE_BUILD_DIR)/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/ \; ; \
+		sed -i "s/<string name=\"SDL_DEFAULT_LIBRARY\">.*<\/string>/<string name=\"SDL_DEFAULT_LIBRARY\">main<\/string>/g" \
 			$(ANDROID_PROJ_DIR)/app/src/main/res/values/strings.xml; \
-		\
-		# Build the APK via Gradle \
-		cd $(ANDROID_PROJ_DIR) && ./gradlew assembleDebug; \
+		cd $(ANDROID_PROJ_DIR) && ./gradlew assembleDebug -Pandroid.sdk.dir=$(ANDROID_HOME); \
 		cd ..; \
-		\
-		# Move and rename the result \
-		mkdir -p build/apks/; \
-		cp $(ANDROID_PROJ_DIR)/app/build/outputs/apk/debug/app-debug.apk build/apks/$$target.apk; \
+		mkdir -p $(BASE_BUILD_DIR)/apks/; \
+		cp $(ANDROID_PROJ_DIR)/app/build/outputs/apk/debug/app-debug.apk $(BASE_BUILD_DIR)/apks/$$target.apk; \
 	done
+
+	@echo "---------------------------------------------------------------------------------"
+	@echo "Finished! hopefully"
+	@echo "---------------------------------------------------------------------------------"
+	@echo "# 1. Install it to your phone example:"
+	@echo "    adb install ./_build/apks/FishTankDemo.apk"
+	@echo "# 2. Launch it"
+	@echo "# (Assuming your package name in the template was org.libsdl.app)"
+	@echo "# adb shell am start -n org.libsdl.app/org.libsdl.app.SDLActivity"
+	@echo "DEBUG WITH:"
+	@echo "adb logcat '*:F' | grep -Ei "SDL|libmain|DEBUG"
+	@echo "Check content example:"
+	@echo "unzip -l ./_build/apks/FishTankDemo.apk"
+	@echo "---------------------------------------------------------------------------------"
 
 # -----------------  W E B  --------------------
 webdebug:
-	cmake -S . -B build/web_debug \
+	cmake -S . -B $(BASE_BUILD_DIR)/web_debug \
 		-DCMAKE_TOOLCHAIN_FILE=$(EMSCRIPTEN_TOOLCHAIN) \
 		-DCMAKE_BUILD_TYPE=Debug
-	cmake --build build/web_debug $(JOBS)
+	cmake --build $(BASE_BUILD_DIR)/web_debug $(JOBS)
 
 webrelease:
-	cmake -S . -B build/web_release \
+	cmake -S . -B $(BASE_BUILD_DIR)/web_release \
 		-DCMAKE_TOOLCHAIN_FILE=$(EMSCRIPTEN_TOOLCHAIN) \
 		-DCMAKE_BUILD_TYPE=Release
-	cmake --build build/web_release $(JOBS)
+	cmake --build $(BASE_BUILD_DIR)/web_release $(JOBS)
 
 webdist: webrelease
 	@echo "--- Preparing Distribution Directory: $(WEBDIST_DIR) ---"
@@ -161,15 +189,18 @@ webdist: webrelease
 # -----------------  C L E A N --------------------
 clean:
 	@echo "Removing build directory..."
-	rm -rf build/
+	rm -rf build
+	rm -rf $(BASE_BUILD_DIR)
 	echo "done"
 
 distclean:
 	@echo "Performing deep clean..."
 	# Remove temporary build folders
-	rm -rf build/
+	rm -rf build
+	rm -rf $(BASE_BUILD_DIR)
 	# Remove distribution folder
 	rm -rf $(WEBDIST_DIR)
+	rm -rf $(ANDROID_PROJ_DIR)
 	# Clean up Demo directories
 	@for dir in $(DEMO_DIRS); do \
 		echo "  Cleaning $$dir..."; \

@@ -213,7 +213,7 @@ endif()
 option(BUILD_TICTACTOE "Build TicTacToe demo" ON)
 if(BUILD_TICTACTOE)
     set(DEMO_SOURCES "${TTT_DIR}/src/main.cpp")
-    configure_demo_target(TicTacToeDemo ${TTT_DIR} "${TTT_DIR}/art@art" "${DEMO_SOURCES}")
+    configure_demo_target(TicTacToeDemo ${TTT_DIR} "${TTT_DIR}/assets@assets" "${DEMO_SOURCES}")
 endif()
 
 # --- 3. TestBed ---

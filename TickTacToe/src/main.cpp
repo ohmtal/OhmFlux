@@ -37,12 +37,12 @@ public:
     {
         if (!Parent::Initialize()) return false;
 
-        // Use a monospace font from local art.
-        mFontTex = loadTexture("art/fonts/monoSpace_13x28.bmp", 10, 10, false);
+        // Use a monospace font from local assets.
+        mFontTex = loadTexture("assets/fonts/monoSpace_13x28.bmp", 10, 10, false);
         if (!mFontTex)
             return false;
 
-        mBackgroundTex = loadTexture("art/background.bmp", 1, 1, false);
+        mBackgroundTex = loadTexture("assets/background.bmp", 1, 1, false);
 
         mBoardSize = mCellSize * 3;
         mBoardLeft = (int)(getScreen()->getCenterX() - (mBoardSize / 2));

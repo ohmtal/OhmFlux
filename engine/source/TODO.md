@@ -37,18 +37,25 @@ Done.
 
 ## Update/Draw
 Done. 
-
 - Update should be not bind to Draw frequency 
-
 
 ## Lights 
 - pointLight Done
 - spotLight Done
 
+# Cross compile for Windows on Linux
+Done but only tested with wine so far. 
+
+# Android
+experimental 
+
+## Lua scripting 
+experimental see also LuaTest Project 
+
 ## Shadows
-TODO
+maybe but optional 
 
 ## PostEffects
-TODO
+maybe but optional 
 
 ## more ... ;)
