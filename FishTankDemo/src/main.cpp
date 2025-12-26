@@ -176,14 +176,14 @@ bool DemoGame::Initialize() {
 	mScore = 0;
 	mChallengeTime = 0;
 
-	// lights >>>
+	// Lights >>>
 	const Color4F cl_seaLight = {1.f,1.f,0.8f,3.f};
 	const Point2F pt_LightVector = {0.15f, 0.25f};
-	const F32 f_LightAngle = 25.f;
-	const F32 f_LightRadius = 1000.f;
+	const F32 f_LightAngle = 30.f; // 25.f;
+	const F32 f_LightRadius = 600.f;
 
 	Render2D.setAmbientColor( { 0.05f,0.051f,0.15f,1.f} );
-	for ( S32 i = 880; i > -300; i -= 220)
+	for ( S32 i = 880; i > -300; i -= 320)
 		LightManager.addLight(
 			FluxLight({ (F32)i, -100.0f,0.0f}, cl_seaLight, f_LightRadius)
 			.setAsSpotlight(pt_LightVector, f_LightAngle)
