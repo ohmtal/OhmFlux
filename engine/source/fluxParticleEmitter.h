@@ -92,6 +92,7 @@ public:
     bool getActive() { return mActive; };
 private:
     void emitParticle();
+    void emitParticlesBatch(int count);
     void initializeParticle(FluxParticle& particle);
     void appendParticleVertices ( std::vector<Vertex2D>& buffer,
                                 FluxTexture* tex,

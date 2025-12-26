@@ -17,49 +17,92 @@ mSpawnTimer(0.0f)
 //-----------------------------------------------------------------------------
 FluxParticleEmitter::~FluxParticleEmitter() {}
 //-----------------------------------------------------------------------------
-void FluxParticleEmitter::update(F32 dt)
-{
-    // 1. Update and Clean up particles using Swap-and-Pop (O(1) deletion)
-    for (size_t i = 0; i < mParticles.size(); )
-    {
-        mParticles[i].update(dt);
+void FluxParticleEmitter::update(F32 dt) {
+    // 1. Bulk Update
+    // Tight loop: maximizes L1 cache hits and allows auto-vectorization
+    for (auto& p : mParticles) {
+        p.lifeRemaining -= dt;
+        p.position += p.velocity * dt;
+    }
 
-        if (mParticles[i].lifeRemaining <= 0.0f)
-        {
-            // Move last element to current position and shrink
-            mParticles[i] = mParticles.back();
+    // 2. Unstable Cleanup (O(1) deletion)
+    // Faster than std::remove_if for large particle structs
+    // because it avoids shifting the entire tail of the vector.
+    for (size_t i = 0; i < mParticles.size(); ) {
+        if (mParticles[i].lifeRemaining <= 0.0f) {
+            mParticles[i] = std::move(mParticles.back());
             mParticles.pop_back();
-            // Don't increment i; check the swapped particle next iteration
-        }
-        else
-        {
+        } else {
             ++i;
         }
     }
 
-    if ( !mActive ) {
-        return;
+    if (!mActive) return;
+
+    // 3. Batch Spawning
+    mSpawnTimer += dt;
+
+    // Optimization: Use multiplication instead of division where possible
+    F32 invSpawnRate = 1.0f / mProperties.spawnRate;
+    int numToSpawn = static_cast<int>(mSpawnTimer * mProperties.spawnRate);
+
+    if (numToSpawn > 0) {
+        // Call the batch function we optimized previously
+        emitParticlesBatch(numToSpawn);
+
+        // Subtract only the time accounted for by the particles actually spawned
+        mSpawnTimer -= numToSpawn * invSpawnRate;
     }
 
-    // 2. Spawn new particles
-    if (mParticles.size() < mProperties.maxParticles)
-    {
-        mSpawnTimer += dt;
-        F32 spawnInterval = 1.0f / mProperties.spawnRate;
-
-        while (mSpawnTimer >= spawnInterval)
-        {
-            if (mParticles.size() >= mProperties.maxParticles) {
-                if (mProperties.playOnce)
-                    mActive = false;
-                break;
-            }
-
-            emitParticle();
-            mSpawnTimer -= spawnInterval;
-        }
+    // 4. State Management
+    if (mProperties.playOnce && mParticles.size() >= mProperties.maxParticles) {
+        mActive = false;
     }
 }
+
+// void FluxParticleEmitter::update(F32 dt)
+// {
+//     // 1. Update and Clean up particles using Swap-and-Pop (O(1) deletion)
+//     for (size_t i = 0; i < mParticles.size(); )
+//     {
+//         mParticles[i].update(dt);
+//
+//         if (mParticles[i].lifeRemaining <= 0.0f)
+//         {
+//             // Move last element to current position and shrink
+//             mParticles[i] = mParticles.back();
+//             mParticles.pop_back();
+//             // Don't increment i; check the swapped particle next iteration
+//         }
+//         else
+//         {
+//             ++i;
+//         }
+//     }
+//
+//     if ( !mActive ) {
+//         return;
+//     }
+//
+//     // 2. Spawn new particles
+//     if (mParticles.size() < mProperties.maxParticles)
+//     {
+//         mSpawnTimer += dt;
+//         F32 spawnInterval = 1.0f / mProperties.spawnRate;
+//
+//         while (mSpawnTimer >= spawnInterval)
+//         {
+//             if (mParticles.size() >= mProperties.maxParticles) {
+//                 if (mProperties.playOnce)
+//                     mActive = false;
+//                 break;
+//             }
+//
+//             emitParticle();
+//             mSpawnTimer -= spawnInterval;
+//         }
+//     }
+// }
 //-----------------------------------------------------------------------------
 void FluxParticleEmitter::appendParticleVertices
 (
@@ -133,7 +176,6 @@ void FluxParticleEmitter::render()
     }
     // 3. Submit ONE command for the WHOLE system
     RenderCommand cmd;
-    // fake draw params we only need Z layer but we fill em all
     cmd.params.z = getLayer();
     cmd.textureHandle = mProperties.texture->getHandle();
     cmd.isGui = false;
@@ -148,37 +190,41 @@ void FluxParticleEmitter::render()
 
     Render2D.submitCustomCommand(cmd);
 }
-
-// void FluxParticleEmitter::render()
-// {
-//     for (const auto& particle : mParticles)
-//     {
-//         // Particle is guaranteed alive by the update loop cleanup
-//         if (particle.texture)
-//         {
-//             // Use the lerped color based on life
-//             Color4F currentColor = particle.getCurrentColor();
-//
-//             Render2D.drawWithTransform(
-//                 particle.texture,
-//                 particle.position,
-//                 particle.rotation,
-//                 particle.scale,
-//                 currentColor
-//             );
-//         }
-//     }
-// }
 //-----------------------------------------------------------------------------
-void FluxParticleEmitter::emitParticle()
+void FluxParticleEmitter::emitParticlesBatch(int count)
 {
-    // Re-check bounds to be safe
-    if (mParticles.size() < mProperties.maxParticles)
+    // 1. Strict Boundary Guard
+    int spaceLeft = mProperties.maxParticles - static_cast<int>(mParticles.size());
+    int toSpawn = std::min(count, spaceLeft);
+
+    if (toSpawn <= 0) return;
+
+    // 2. Pre-allocate to prevent multiple reallocations
+    // (Ideally, reserve is called once at emitter creation, but this is a safety net)
+    if (mParticles.capacity() < mParticles.size() + toSpawn) {
+        mParticles.reserve(mProperties.maxParticles);
+    }
+
+    // 3. Use emplace_back to avoid the "double-write" of resize()
+    // Modern compilers (Clang 16+, GCC 13+) can often vectorize this loop
+    // if initializeParticle is inlined.
+    for (int i = 0; i < toSpawn; ++i)
     {
-        mParticles.emplace_back();
-        initializeParticle(mParticles.back());
+        // Construct directly in place
+        auto& p = mParticles.emplace_back();
+        initializeParticle(p);
     }
 }
+
+// void FluxParticleEmitter::emitParticle()
+// {
+//     // Re-check bounds to be safe
+//     if (mParticles.size() < mProperties.maxParticles)
+//     {
+//         mParticles.emplace_back();
+//         initializeParticle(mParticles.back());
+//     }
+// }
 //-----------------------------------------------------------------------------
 void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
 {
@@ -195,9 +241,7 @@ void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
     particle.velocity = Point2F{ cosf(angle), sinf(angle) } * speed;
     particle.acceleration = { 0.0f, 0.0f };
 
-
-
-    particle.rotation = particle.rotation = mProperties.rotation; // RandFloat() * 2.0f * FLUX_PI ;
+    particle.rotation = mProperties.rotation; // RandFloat() * 2.0f * FLUX_PI ;
     particle.rotationSpeed = RandInRange(mProperties.minRotationSpeed, mProperties.maxRotationSpeed); //(RandFloat() - 0.5f) * 2.0f;
 
     particle.scale = RandInRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
