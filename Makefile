@@ -1,9 +1,10 @@
 .PHONY: usage help build-info debug release windebug winrelease android webdebug webrelease webdist clean distclean
 
 # Configuration
-WEBDIST_DIR = dist_web
-EMSCRIPTEN_TOOLCHAIN = /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake
-DEMO_DIRS = FishTankDemo TickTacToe TestBed LuaTest
+WEBDIST_DIR := dist_web
+ANDROID_PROJ_DIR := android
+EMSCRIPTEN_TOOLCHAIN := /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake
+DEMO_DIRS := FishTankDemo TickTacToe TestBed LuaTest
 
 # Parallel Build Detection
 # Uses all available cores on Linux/FreeBSD, defaults to 4 if detection fails
@@ -44,7 +45,9 @@ build-info:
 	@echo "Nativ:      sudo pacman -S sdl3 glew opengl-headers"
 	@echo "Windows:    yay -S mingw-w64-sdl3 mingw-w64-glew"
 	@echo "Android:    yay -S android-ndk"
-	@echo "            export ANDROID_NDK_HOME=/opt/android-ndk"
+	@echo "            add environment: export ANDROID_NDK_HOME=/opt/android-ndk"
+	@echo "            yay -S android-sdk android-sdk-build-tools android-sdk-platform-tools"
+	@echo "            sudo pacman -S gradle"
 	@echo "Emscripten: pkg install sdl3 glew"
 	@echo "            testing @bash:"
 	@echo "            source /etc/profile.d/emscripten.sh"
@@ -73,15 +76,48 @@ winrelease:
 	cmake --build build/win_release $(JOBS)
 
 # --------- C R O S S C O M P I L E ANDROID -------------
-# Ensure ANDROID_NDK_HOME is set in your environment
-# example: export ANDROID_NDK_HOME=/opt/android-ndk
+# Ensure ANDROID_NDK_HOME and ANDROID_HOME ate set in your environment
+# arch: export ANDROID_NDK_HOME=/opt/android-ndk
+# arch: export ANDROID_HOME=/opt/android-sdk
+# Define where your Android project template is located
+# --- Settings ---
 android:
+	# 1. Build the .so libraries (Engine + Demos)
 	cmake -S . -B build/android \
 		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
 		-DANDROID_ABI=arm64-v8a \
 		-DANDROID_PLATFORM=android-24 \
 		-DCMAKE_BUILD_TYPE=Release
 	cmake --build build/android $(JOBS)
+
+	# 2. Initialize the SDL3 Android Project if missing
+	@if [ ! -f $(ANDROID_PROJ_DIR)/gradlew ]; then \
+		echo "Initializing SDL3 Android Project from deps..."; \
+		cp -r build/android/_deps/sdl3-src/android-project/* $(ANDROID_PROJ_DIR)/; \
+		chmod +x $(ANDROID_PROJ_DIR)/gradlew; \
+	fi
+
+	# 3. Build an APK for each demo
+	@for target in $(DEMO_DIRS); do \
+		echo "--- Packaging APK for: $$target ---"; \
+		# Ensure jniLibs dir exists and copy .so files \
+		mkdir -p $(ANDROID_PROJ_DIR)/app/src/main/jniLibs/arm64-v8a/; \
+		cp build/android/lib$$target.so $(ANDROID_PROJ_DIR)/app/src/main/jniLibs/arm64-v8a/; \
+		find build/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/src/main/jniLibs/arm64-v8a/ \; ; \
+		\
+		# 2025 WAY: Tell SDL3 which .so to load by editing its strings.xml \
+		sed -i "s/<string name=\"SDL_DEFAULT_LIBRARY\">.*<\/string>/<string name=\"SDL_DEFAULT_LIBRARY\">$$target<\/string>/g" \
+			$(ANDROID_PROJ_DIR)/app/src/main/res/values/strings.xml; \
+		\
+		# Build the APK via Gradle \
+		cd $(ANDROID_PROJ_DIR) && ./gradlew assembleDebug; \
+		cd ..; \
+		\
+		# Move and rename the result \
+		mkdir -p build/apks/; \
+		cp $(ANDROID_PROJ_DIR)/app/build/outputs/apk/debug/app-debug.apk build/apks/$$target.apk; \
+	done
+
 # -----------------  W E B  --------------------
 webdebug:
 	cmake -S . -B build/web_debug \

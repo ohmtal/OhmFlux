@@ -74,8 +74,32 @@ if(EMSCRIPTEN)
     add_compile_options("-sUSE_SDL=3")
     add_link_options("-sUSE_SDL=3" "-sFULL_ES3=1" "-sUSE_WEBGL2=1" "-sALLOW_MEMORY_GROWTH=1")
 elseif(ANDROID)
-    find_package(SDL3 REQUIRED CONFIG)
-    list(APPEND FLUX_LIBS SDL3::SDL3 GLESv3 EGL log android)
+    include(FetchContent)
+
+    FetchContent_Declare(
+        SDL3
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        # fixme set a stable tag like release-3.2.28
+        GIT_TAG main
+    )
+
+    # --- Android Specific Configuration ---
+    # SDL3 MUST be SHARED for Android to work with the Java/Kotlin wrapper
+    set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+    set(SDL_SHARED ON CACHE BOOL "" FORCE)
+    set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+    set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
+
+    # Enable the SDL3 target for APK generation
+    set(SDL_ANDROID_APK ON CACHE BOOL "" FORCE)
+
+
+    FetchContent_MakeAvailable(SDL3)
+
+    # Link against the SHARED target and required NDK system libs
+    list(APPEND FLUX_LIBS SDL3::SDL3-shared GLESv3 EGL log android)
+
+
 elseif(WIN32 AND NOT MSVC)
     # Force Static C++ Runtime (Fixes previous libstdc++ errors)
     add_link_options("-static-libgcc" "-static-libstdc++" "-static")
