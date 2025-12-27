@@ -42,7 +42,7 @@ cmake --build build --config Release
 ```
 
 
-For Windows-build see also: **README_BUILD_WINDOWS.md**.
+For Windows-build see also: [README_BUILD_WINDOWS.md](README_BUILD_WINDOWS.md).
 
 
 ---

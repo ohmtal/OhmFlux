@@ -4,8 +4,8 @@
 
 Before you begin, ensure you have the following installed:
 
-*   **[Git for Windows](gitforwindows.org):** Necessary for cloning the repository.
-*   **[Visual Studio](visualstudio.microsoft.com):** You must install the "Desktop development with C++" workload to compile packages with vcpkg.
+*   **Git:** Necessary for cloning the repository.
+*   **Visual Studio:** You must install the "Desktop development with C++" workload to compile packages with vcpkg.
 
 #### Installation Steps
 
