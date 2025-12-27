@@ -130,7 +130,7 @@ void FluxAudioStream::Update(const double& dt)
         // Total Gain = User Setting * Distance Falloff * Zoom Level
         float finalGain = mGain * falloff * zoomEffect;
 
-        SDL_SetAudioStreamGain(mStream, std::clamp(finalGain, 0.0f, 1.0f));
+        SDL_SetAudioStreamGain(mStream, std::clamp(finalGain, 0.0f, mGain));
     }
 
 
@@ -263,11 +263,13 @@ bool FluxAudioStream::play()
             Log("Failed to put WAV data: %s", SDL_GetError());
             return false;
         }
+
+        // Do NOT call SDL_FlushAudioStream if you want to loop later
         if (! mLooping ) {
             return SDL_FlushAudioStream(mStream);
         }
 
-        // Do NOT call SDL_FlushAudioStream if you want to loop later
+
     }
 
     return SDL_ResumeAudioStreamDevice(mStream);

@@ -324,7 +324,7 @@ void DemoGame::Update(const double& dt)
 		spawnFish();
 	}
 
-	mLabel1->setCaption("%zu fishes, FPS:%8.1f, FrameLimiter:%5.2f FrameTime:%8.6f GameTime:%8.6f", mFishes.size(),  getFPS(), mSettings.frameLimiter, getFrameTime(), getGameTime());
+	mLabel1->setCaption("%zu fishes, FPS:%d, FrameLimiter:%5.2f FrameTime:%8.6f GameTime:%8.6f", mFishes.size(),  getFPS(), mSettings.frameLimiter, getFrameTime(), getGameTime());
 
 	mLabel2->setCaption( "MOUSE x:%d (%d), y:%d (%d)"
 	  , getStatus().getMousePosI().x, getStatus().getWorldMousePosI().x

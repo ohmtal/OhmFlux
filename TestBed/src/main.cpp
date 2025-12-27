@@ -163,10 +163,10 @@ public:
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         // FluxTrueTypeFont
 
-         mMonoFont = new FluxTrueTypeFont("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 32);
+         mMonoFont = new FluxTrueTypeFont("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 20);
          if (mMonoFont)
          {
-             mMonoFont->set("Alder Babsack", { 200.f,200.f }, cl_Crimson, 2.f);
+             mMonoFont->set("Alder Babsack", { 0.f,(F32)getScreen()->getHeight()-20.f }, cl_Crimson, 2.f);
 
              // mMonoFont->setPos(200,200);
              // mMonoFont->setCaption("Alder Babsack!");
@@ -178,15 +178,21 @@ public:
          queueObject(mTomsGuitarSample);
          mTomsGuitarSample->setLooping(true);
          mTomsGuitarSample->setPositon({ 0.f, 0.f });
-         mTomsGuitarSample->play();
+         // give the camera a second to settle until playing
+         FluxSchedule.add(1.0, [this]() {
+                mTomsGuitarSample->play();
+        });
+
 
          mClickSound = new FluxAudioStream("assets/sounds/pling.ogg");
+         mClickSound->setGain(0.2f);
          queueObject(mClickSound);
 
          queueObject(mClickSound); //<< fail safe test
 
 
          mBrrooiiSound = new FluxAudioStream("assets/sounds/brrooii.ogg");
+         mBrrooiiSound->setGain(0.2f);
          mBrrooiiSound->setPositon( getScreen()->getCenterF());
          queueObject(mBrrooiiSound);
 
@@ -226,6 +232,10 @@ public:
          //     FluxLight({ 1500.0f, 0.0f,0.0f}, cl_White, 500.f)
          //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
          // );
+
+         // Lock mouse to screen:
+         SDL_SetWindowMouseGrab(getScreen()->getWindow(), true);
+
          return true;
     }
 
@@ -293,16 +303,40 @@ public:
     //--------------------------------------------------------------------------------------
     void onEvent(SDL_Event event) override
     {
-            if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+        switch (event.type)
+        {
+            case SDL_EVENT_MOUSE_WHEEL: {
                 // Zoom speed is usually much higher for the wheel
                 float scrollZoom = event.wheel.y *  0.001f  * getFrameTime();
                 Render2D.getCamera()->moveZoom(scrollZoom);
+            break;
+            }
+            case SDL_EVENT_MOUSE_MOTION: {
+                 const F32 camSpeed  = 0.1f * getFrameTime();
+                 const S32 borderSize = 20;
+                  //  E.motion.x, E.motion.y
+                // hacked in border detect
+                 if ( event.motion.x > getScreen()->getWidth()  - borderSize )
+                 {
+                     //only testing is called once
+                     //FIXME camera need:
+                     // * move vector and move speed
+                     // * bind to object
+                     // * a hock when window lost focus to stop moving
+                     Render2D.getCamera()->move({camSpeed, 0.0f});
+                 } else  if ( event.motion.x <  borderSize )
+                 {
+                     Render2D.getCamera()->move({-camSpeed, 0.0f});
+                }
             }
 
+            break;
+        } //switch
     }
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
+        mMonoFont->setCaption("fps:%d", getFPS());
 
         const float camSpeed  = 0.1f * getFrameTime();
         const float zoomSpeed = 0.0001f  * getFrameTime();
@@ -363,9 +397,8 @@ public:
         // Render2D.drawRect(100,100,200,200, { 0.3f, 0.3f,0.3f,0.7f});
         // Render2D.drawRect(200,200,300,300, { 1.f, 0.f,0.f,1.f}, false);
         // Render2D.drawLine(0,0,100,100, { 1.f, 0.3f,0.3f,1.f});
-
         // drawTriangle(Point3F p1, Point3F p2, Point3F p3, const Color4F& color, bool filled = true);
-        Render2D.drawTriangle( { 600,0 }, { 650, 20 }, { 400, 200 }, cl_Blue, false);
+        // Render2D.drawTriangle( { 600,0 }, { 650, 20 }, { 400, 200 }, cl_Blue, false);
 
         DrawParams2D dp;
         dp.image = mTileMap->getImage();

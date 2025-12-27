@@ -560,8 +560,20 @@ void FluxMain::IterateFrame()
 		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency * 1000.0;
 	}
 
-	mFPS = 1000.f / (float)gFrameTime;
 	gGameTime += (float)gFrameTime / 1000.f;
+
+	// fps update every 1 second:
+	static double lFpsTimer = 0;
+	static S32 lFrameCounter = 0;
+
+	lFpsTimer += gFrameTime;
+	lFrameCounter++;
+
+	if (lFpsTimer >= 1000.0) { // Every 1 second
+		mFPS = lFrameCounter;
+		lFrameCounter = 0;
+		lFpsTimer -= 1000.0;
+	}
 
 	// fixed update: >>>>>>>>>>>>>>>>>>>>>>>>>
 	static double accumulator = 0.0;
@@ -575,7 +587,6 @@ void FluxMain::IterateFrame()
 	}
 
 	//  Render
-	// FIXME ?   Draw(accumulator / FIXED_DT_MS);
 	Draw();
 	SDL_GL_SwapWindow(mScreen->getWindow());
 
