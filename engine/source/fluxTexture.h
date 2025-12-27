@@ -32,6 +32,9 @@ private:
 	Point2F mTexSize = { 0.f, 0.f }; //size of Texture or part if we have rows and or cols
 	std::vector<Point2F> mTexturePosition;
 
+	// for atlas generation
+	std::vector<std::string> mPendingFiles;
+
 protected:
 	void setSize( const int& lW, const int& lH );
 
@@ -57,6 +60,13 @@ public:
 	void setManual(GLuint handle, int w, int h);
 
 	void setUseTrilinearFiltering();
+
+	// Atlas generation
+	void addToAtlas(const std::string& filename);
+	void generateAtlas(int maxRows, bool setColorKeyAtZeroPixel, bool usePixelPerfect);
+
+	// save a texture to PNG
+	bool savePNGToFile(const char* filename);
 
 };
 #endif //_FLUXTEXTURE_H_

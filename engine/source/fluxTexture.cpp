@@ -20,6 +20,8 @@
 #include "fluxTexture.h"
 #include "errorlog.h"
 #include "stb_image.h"
+#include "stb_image_write.h"
+
 
 
 //------------------------------------------------------------------------------
@@ -183,39 +185,6 @@ bool FluxTexture::loadTextureDirect(const char* filename)
   return true;
 }
 
-// bool FluxTexture::loadTextureDirect(const char* filename)
-// {
-//   int width, height, channels;
-//
-//   // Load raw pixels from disk to RAM
-//   // bad on adroid !! unsigned char* data = stbi_load(filename, &w, &h, &channels, 4);
-//   // Android:
-//   size_t fileSize;
-//   void* buffer = SDL_LoadFile(filename, &fileSize);
-//   if (!buffer) { /* Handle error: SDL_GetError() */ }
-//
-//   unsigned char* data = stbi_load_from_memory((unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4);
-//
-//   SDL_free(buffer); // Free the temporary file buffer
-//
-//
-//
-//   if (!data) return false;
-//
-//   mFileName = filename;
-//   setSize(width, height);
-//
-//   dLog("* LoadTexture using bindOpenGLDirect for %s", filename);
-//
-//   // Send RAM pixels to VRAM (only 1 copy)
-//   bindOpenGLDirect(data, width, height);
-//
-//   // Free RAM pixels
-//   stbi_image_free(data);
-//
-//   mLoaded = true;
-//   return true;
-// }
 
 //------------------------------------------------------------------------------
 bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
@@ -265,55 +234,6 @@ bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
   return mLoaded;
 }
 
-// bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
-// {
-//
-//   SDL_Surface* lSurface = loadWithSTB(filename);
-//
-//   //fallback to bmp
-//   if (! lSurface )
-//     lSurface = SDL_LoadBMP(filename);
-//
-//   // finnaly give up if we have no object
-//   if (!lSurface) {
-//     return false;
-//   }
-//
-//   mFileName = filename;
-//   mW = lSurface->w;
-//   mH = lSurface->h;
-//
-//   SDL_Surface* finalSurface = nullptr;
-//
-//   if (setColorKeyAtZeroPixel) {
-//     // 1. Get the color components of the pixel at (0,0)
-//     Uint8 r, g, b, a;
-//     if (SDL_ReadSurfacePixel(lSurface, 0, 0, &r, &g, &b, &a)) {
-//       // 2. Map those components to a key compatible with the surface's format
-//       Uint32 key = SDL_MapSurfaceRGB(lSurface, r, g, b);
-//
-//       // 3. Set the color key. This defines which color should be transparent.
-//       SDL_SetSurfaceColorKey(lSurface, true, key);
-//     }
-//
-//     // 4. Convert to RGBA32.
-//     // SDL_ConvertSurface handles the transparency logic for you:
-//     // Any pixel matching the color key is automatically assigned Alpha 0.
-//     finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
-//   } else {
-//     // Just convert to a standard format for OpenGL even without a color key
-//     finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
-//   }
-//
-//   if (finalSurface) {
-//     bindOpenGL(finalSurface);
-//     SDL_DestroySurface(finalSurface);
-//   }
-//
-//   SDL_DestroySurface(lSurface);
-//   mLoaded = true;
-//   return true;
-// }
 //------------------------------------------------------------------------------
 // for truetype fonts
 
@@ -345,35 +265,6 @@ void FluxTexture::bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h)
 }
 
 
-// void FluxTexture::bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h)
-// {
-//   if (!pixels) return;
-//
-//   // 1-byte alignment is critical for font bitmaps
-//   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-//
-//   if (mHandle == 0) glGenTextures(1, &mHandle);
-//   glBindTexture(GL_TEXTURE_2D, mHandle);
-//
-//   // Upload as a 1-channel Red texture
-//   glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
-//
-//   // --- THE FIX: TEXTURE SWIZZLE ---
-//   // We tell OpenGL: "When the shader samples this texture, return:
-//   // Red=1.0, Green=1.0, Blue=1.0, Alpha=Data from the Red channel"
-//   // This makes the font white (so dp.color can tint it) and perfectly transparent.
-//   GLint swizzleMask[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
-//   glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
-//   // --------------------------------
-//
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//
-//   // Reset alignment for standard textures
-//   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-// }
 
 //------------------------------------------------------------------------------
 void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
@@ -519,39 +410,6 @@ void FluxTexture::setParts(const int& cols, const int& rows) {
 
 }
 //------------------------------------------------------------------------------
-///
-/// This remove the tile tearing, but break my bitmap fonts !!!
-///
-// bool FluxTexture::getTextureRectById(Uint32 lImgId, Point2F& position, Point2F& size)
-// {
-//
-//
-//   if (mTexturePosition.empty()) {
-//     // If the texture isn't sliced, we just use the base position
-//     position = { 0.f, 0.f };
-//     size = mTexSize;
-//     return true;
-//   }
-//
-//   // ... standard ID failsafe ...
-//   lImgId = lImgId % mTexturePosition.size();
-//   Point2F rawPos = mTexturePosition.at(lImgId);
-//
-//   // FIX: Apply a tiny inset (0.05 of a pixel)
-//   float epsilon = 0.05f;
-//
-//   // Shrink the rectangle slightly inward
-//   position.x = rawPos.x + epsilon;
-//   position.y = rawPos.y + epsilon;
-//
-//
-//
-//   // Reduce size by double epsilon so the right/bottom edges also shrink
-//   size.x = mTexSize.x - (epsilon * 2.0f);
-//   size.y = mTexSize.y - (epsilon * 2.0f);
-//
-//   return true;
-// }
 
 bool FluxTexture::getTextureRectById( Uint32 lImgId, Point2F& position, Point2F& size )
 {
@@ -571,15 +429,6 @@ bool FluxTexture::getTextureRectById( Uint32 lImgId, Point2F& position, Point2F&
   position = mTexturePosition.at(lImgId);
   return true;
 
-  // moved to setParts and mTexturePosition
-  // int maxCells =  mCols * mRows;
-  // lImgId =  lImgId % maxCells ; //failsave imgid
-  //
-  // int aColIdx = lImgId  % mCols;
-  // int aRowIdx = lImgId  / mCols;
-  //
-  // position.x = (float)aColIdx * mTexSize.x;
-  // position.y = (float)aRowIdx * mTexSize.y;
 
 }
 //------------------------------------------------------------------------------
@@ -612,4 +461,142 @@ void FluxTexture::setUseTrilinearFiltering()
     glGenerateMipmap(GL_TEXTURE_2D);
   }
 
+}
+//------------------------------------------------------------------------------
+// Atlas generation
+//------------------------------------------------------------------------------
+void FluxTexture::addToAtlas(const std::string& filename)
+{
+  mPendingFiles.push_back(filename);
+}
+//------------------------------------------------------------------------------
+void FluxTexture::generateAtlas(int maxRows, bool setColorKeyAtZeroPixel, bool usePixelPerfect) {
+  if (mPendingFiles.empty()) return;
+
+  // 1. Get uniform dimensions using your existing Android-safe helper
+  SDL_Surface* firstSurf = loadWithSTB(mPendingFiles[0].c_str());
+  if (!firstSurf) return;
+  int imgW = firstSurf->w;
+  int imgH = firstSurf->h;
+  SDL_DestroySurface(firstSurf);
+
+  // 2. Calculate Grid Layout
+  int totalImages = (int)mPendingFiles.size();
+  mRows = std::min(totalImages, maxRows);
+  mCols = (totalImages + mRows - 1) / mRows; // Ceiling division
+
+  // Set total atlas size
+  setSize(mCols * imgW, mRows * imgH);
+
+  // 3. Initialize OpenGL Texture
+  glGenTextures(1, &mHandle);
+  glBindTexture(GL_TEXTURE_2D, mHandle);
+
+  if (usePixelPerfect) {
+    mUseTrilinearFiltering = false;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  } else {
+    setUseTrilinearFiltering(); // Set your internal bool
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  }
+
+  // Allocate empty GPU canvas
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mW, mH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+  // 4. Load and Stitch
+  for (int i = 0; i < totalImages; ++i) {
+    int col = i % mCols;
+    int row = i / mCols;
+
+    // Use your loadWithSTB logic to ensure Android/APK compatibility
+    SDL_Surface* lSurface = loadWithSTB(mPendingFiles[i].c_str());
+    if (lSurface) {
+      SDL_Surface* finalSurface = nullptr;
+
+      if (setColorKeyAtZeroPixel) {
+        Uint8 r, g, b, a;
+        if (SDL_ReadSurfacePixel(lSurface, 0, 0, &r, &g, &b, &a)) {
+          SDL_SetSurfaceColorKey(lSurface, true, SDL_MapSurfaceRGB(lSurface, r, g, b));
+        }
+        // Convert to bake the colorkey into the Alpha channel
+        finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
+      } else {
+        // Ensure format matches OpenGL expectations
+        finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
+      }
+
+      if (finalSurface) {
+        // Upload this sub-tile to the GPU atlas
+        glTexSubImage2D(GL_TEXTURE_2D, 0,
+                        col * imgW, row * imgH,
+                        imgW, imgH,
+                        GL_RGBA, GL_UNSIGNED_BYTE,
+                        finalSurface->pixels);
+
+        SDL_DestroySurface(finalSurface);
+      }
+      SDL_DestroySurface(lSurface);
+    }
+  }
+
+  // 5. Finalize
+  if (mUseTrilinearFiltering) {
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+
+  mLoaded = true;
+  mPendingFiles.clear();
+  setParts(mCols, mRows);
+}
+
+//------------------------------------------------------------------------------
+// Save PNG To File
+//------------------------------------------------------------------------------
+/*
+ Example:
+ ========
+    char* prefPath = SDL_GetPrefPath("MyCompany", "MyGame");
+    std::string fullPath = std::string(prefPath) + "myPicture.png";
+    myTexture->savePNGToFile(fullPath.c_str());
+    SDL_free(prefPath);
+*/
+bool FluxTexture::savePNGToFile(const char* filename)
+{
+  if (!mLoaded || mHandle == 0) return false;
+
+  // 1. Create a buffer to hold the pixel data
+  int channels = 4; // RGBA
+  std::vector<unsigned char> pixels(mW * mH * channels);
+
+  // 2. Read pixels from GPU
+  // On Android/GLES, glGetTexImage is not available, so we use an FBO
+  GLuint fbo;
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mHandle, 0);
+
+  // Ensure alignment is 1-byte to avoid row-padding issues
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glReadPixels(0, 0, mW, mH, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+  // Cleanup FBO
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glDeleteFramebuffers(1, &fbo);
+
+  // 3. Flip pixels vertically (OpenGL is bottom-to-top, PNG is top-to-bottom)
+  stbi_flip_vertically_on_write(true);
+
+  // 4. Save to file using STB
+  // Note: On Android, saving to the app's internal storage or SD card
+  // requires a path where the app has write permissions (e.g., SDL_GetPrefPath)
+  int success = stbi_write_png(filename, mW, mH, channels, pixels.data(), mW * channels);
+
+  if (!success) {
+    SDL_Log("STB Error: Could not save image to %s", filename);
+    return false;
+  }
+
+  return true;
 }
