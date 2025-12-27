@@ -8,17 +8,19 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include "errorlog.h"
-
+//-----------------------------------------------------------------------------
 void FluxBitmapFont::setCaption(const char *szFormat, ...)
 {
-	va_list Arg;
-	va_start(Arg,szFormat);
-	vsnprintf(mCaption, sizeof(mCaption), szFormat, Arg);
-	mCaption[sizeof(mCaption) - 1] = '\0';
-	va_end(Arg);
+    if (!szFormat) return;
+    va_list Arg;
+    va_start(Arg, szFormat);
+    // Use sizeof(mCaption) to stay within bounds
+    vsnprintf(mCaption, sizeof(mCaption), szFormat, Arg);
+    mCaption[sizeof(mCaption) - 1] = '\0'; // Manual safety terminator
+    va_end(Arg);
 }
 
-
+//-----------------------------------------------------------------------------
 void FluxBitmapFont::Draw()
 {
     int x = getX();

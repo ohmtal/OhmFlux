@@ -12,6 +12,11 @@
 #ifndef _FLUXBITMAPFONT_H_
 #define _FLUXBITMAPFONT_H_
 
+#include <SDL3/SDL.h>
+#include <format>
+#include <string_view>
+
+#include "fluxGlobals.h"
 #include "fluxRenderObject.h"
 
 class FluxBitmapFont : public FluxRenderObject
@@ -41,7 +46,20 @@ public:
     , mIsGuiElement(true)
     { }
 
-    void setCaption(const char *szFormat, ...);
+    void setCaption(const char *szFormat, ...) PRINTF_CHECK(2, 3);
+
+    // failsave but need a other format: font->setCaption("Score: {}", 100);
+    template<typename... Args>
+    void setCaptionFMT(std::string_view fmt, Args&&... args) {
+        try {
+            std::string s = std::vformat(fmt, std::make_format_args(args...));
+            SDL_strlcpy(mCaption, s.c_str(), sizeof(mCaption));
+        } catch (const std::format_error& e) {
+            SDL_strlcpy(mCaption, "Format Error!", sizeof(mCaption));
+            Log("Format error in setCaption: %s", e.what());
+        }
+    }
+
 
     Point3F getPositonAndLayer() { return { getDrawParams().x, getDrawParams().y, getDrawParams().z };}
 

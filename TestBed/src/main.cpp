@@ -24,6 +24,7 @@ class TestBed : public FluxMain
 {
     typedef FluxMain Parent;
 private:
+
     FluxInput mInput;
 
     FluxTexture* mFontTex = nullptr;
@@ -233,7 +234,7 @@ public:
          //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
          // );
 
-         // Lock mouse to screen:
+         // bind mouse to window:
          SDL_SetWindowMouseGrab(getScreen()->getWindow(), true);
 
          return true;
@@ -296,6 +297,16 @@ public:
                 mSparkEmitter->setPosition({ getStatus().getWorldMousePos().x, getStatus().getWorldMousePos().y, 0.f});
                 mSparkEmitter->play();
                 mClickSound->play();
+
+                break;
+            case SDL_BUTTON_RIGHT: // toggle MouseGrab
+            {
+                bool isGrabbed = SDL_GetWindowMouseGrab(getScreen()->getWindow());
+                SDL_SetWindowMouseGrab(getScreen()->getWindow(), !isGrabbed);
+                Log("Toggle mouse grab to %d", !isGrabbed );
+                break;
+            }
+
         }
 
 
@@ -312,31 +323,37 @@ public:
             break;
             }
             case SDL_EVENT_MOUSE_MOTION: {
-                 const F32 camSpeed  = 0.1f * getFrameTime();
                  const S32 borderSize = 20;
                   //  E.motion.x, E.motion.y
                 // hacked in border detect
+                 Point2F lFinaleMoveVector = { 0.f , 0.f };
                  if ( event.motion.x > getScreen()->getWidth()  - borderSize )
                  {
-                     //only testing is called once
-                     //FIXME camera need:
-                     // * move vector and move speed
-                     // * bind to object
-                     // * a hock when window lost focus to stop moving
-                     Render2D.getCamera()->move({camSpeed, 0.0f});
+                     lFinaleMoveVector.x = 1.f;
                  } else  if ( event.motion.x <  borderSize )
                  {
-                     Render2D.getCamera()->move({-camSpeed, 0.0f});
+                     lFinaleMoveVector.x = -1.f;
                 }
+                if ( event.motion.y > getScreen()->getHeight()  - borderSize )
+                {
+                    lFinaleMoveVector.y = 1.f;
+                } else  if ( event.motion.y <  borderSize )
+                {
+                    lFinaleMoveVector.y = -1.f;
+                }
+                Render2D.getCamera()->setAutoMove(lFinaleMoveVector, 0.1f);
             }
-
+            break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+            case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+                Render2D.getCamera()->clearAutoMove();
             break;
         } //switch
     }
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
-        mMonoFont->setCaption("fps:%d", getFPS());
+        mMonoFont->setCaption("%d fps, mouse grabbed:%d (toogle with right mouse button)", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()));
 
         const float camSpeed  = 0.1f * getFrameTime();
         const float zoomSpeed = 0.0001f  * getFrameTime();

@@ -14,6 +14,9 @@
 *   Log() Is The Logging Funtion,     *
 *   It Works Exactly Like printf()    *
 *                                     *
+***************************************
+* XXTH 2012,2025:                     *
+* Some fixed and modernisations added *
 **************************************/
 
 
@@ -30,32 +33,39 @@
 // Globals
 static FILE *ErrorLog;								// The File For Error Logging
 static char gLogFilePath[512] = {0};                // Remember where we write
-
-// Code
-int Log(const char *szFormat, ...)						// Add A Line To The Log
+//-----------------------------------------------------------------------------
+int Log(const char *szFormat, ...)
 {
-	char targetStr[512];
-	va_list Arg;									// We're Using The Same As The printf() Family, A va_list
-													// To Substitute The Tokens Like %s With Their Value In The Output
-	va_start(Arg,szFormat);							// We Start The List
-	vsprintf(targetStr, szFormat, Arg);
-	va_end(Arg);									// We End The List
+	if (!szFormat) return -1;
 
-	if(ErrorLog)									// If The Log Is Open
+	char targetStr[1024];
+	va_list Arg;
+
+	va_start(Arg, szFormat);
+	SDL_vsnprintf(targetStr, sizeof(targetStr), szFormat, Arg);
+	va_end(Arg);
+
+	targetStr[sizeof(targetStr) - 1] = '\0';
+
+	if (ErrorLog)
 	{
-		fprintf(ErrorLog, "%s\n", targetStr);			// We Use vprintf To Perform Substituctions
-		fflush(ErrorLog);							// And Ensure The Line Is Written, The Log Must Be Quick
+		if (fprintf(ErrorLog, "%s\n", targetStr) < 0) {
+			fclose(ErrorLog);
+			ErrorLog = nullptr;
+		}
+		fflush(ErrorLog);
 	}
 
-	// SDL_Log("%s", targetStr);
+#ifdef __EMSCRIPTEN__
 	printf("%s\n", targetStr);
+#else
+	SDL_Log("%s", targetStr);
+#endif
 
-	return 0;										// And Return A Ok
+	return 0;
 }
-
-
-
-bool InitErrorLog(const char* log_file, const char* app_name, const char* app_version)								// Initializes Error Logging
+//-----------------------------------------------------------------------------
+bool InitErrorLog(const char* log_file, const char* app_name, const char* app_version)
 {
 	// try current working directory first
 	ErrorLog = fopen(log_file, "w");
@@ -80,22 +90,19 @@ bool InitErrorLog(const char* log_file, const char* app_name, const char* app_ve
 	}
 
 	Log("%s V%s -- Log Init...",
-		app_name, app_version);						// We Print The Name Of The App In The Log
+		app_name, app_version);
 	if (gLogFilePath[0])
 		SDL_Log("Writing ohmFlux log to: %s", gLogFilePath);
 
-	return true;									// Otherwhise Return TRUE (Everything Went OK)
+	return true;
 }
-
-void CloseErrorLog(void)							// Closes Error Logging
+//-----------------------------------------------------------------------------
+void CloseErrorLog(void)
 {
-	Log("-- Closing Log...");					// Print The End Mark
-
-	if(ErrorLog)									// If The File Is Open
+	if(ErrorLog)
 	{
-		fclose(ErrorLog);							// Close It
+		Log("-- Closing Log...");
+		fclose(ErrorLog);
+		ErrorLog = nullptr; // Safety: prevent further write attempts
 	}
-
-	return;											// And Return, Quite Plain Huh? :)
 }
-

@@ -91,6 +91,7 @@ public:
 	void setHeight(const S32& h) { mDrawParams.h = h; }
 	void setPos(const F32& x, const F32& y) { mDrawParams.x = x; mDrawParams.y = y; }
 	void setPos( const Point2F lPos ) { mDrawParams.x = lPos.x; mDrawParams.y = lPos.y; }
+	Point2F getPosition() const { return { mDrawParams.x, mDrawParams.y }; }
 	void setRotation(const F32& rotation) { mDrawParams.rotation = rotation; }
 	void setLayer(const F32& layer) { mDrawParams.z = layer; }
 	void setSpeed(const F32& speed) { this->mSpeed = speed; }

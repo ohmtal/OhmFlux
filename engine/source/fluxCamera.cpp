@@ -5,6 +5,7 @@
 #include "fluxCamera.h"
 #include <cstring>
 #include "fluxMain.h"
+#include "fluxRenderObject.h"
 
 FluxCamera::FluxCamera(F32 width, F32 height)
 : mWidth(width), mHeight(height), mZoom(1.0f), mDirty(true)
@@ -16,6 +17,18 @@ FluxCamera::FluxCamera(F32 width, F32 height)
 void FluxCamera::update()
 {
     if (!mDirty) return;
+
+    static bool lOverWriteDirty = false;
+    if ( mObjectToFollow != nullptr )
+    {
+        mPosition = mObjectToFollow->getPosition();
+        lOverWriteDirty = true;
+    } else if (mMoveSpeed != 0.f && !mMoveVector.isZero())
+    {
+        mPosition += mMoveVector * mMoveSpeed * getFrameTime();
+        dLog("new position is %4.2f, %4.2f", mPosition.x, mPosition.y);
+        lOverWriteDirty = true;
+    }
 
     // Reset to Identity Matrix
     std::memset(mViewMatrix, 0, sizeof(mViewMatrix));
@@ -30,7 +43,7 @@ void FluxCamera::update()
     mViewMatrix[12] = -mPosition.x * mZoom + (mWidth * 0.5f);
     mViewMatrix[13] = -mPosition.y * mZoom + (mHeight * 0.5f);
 
-    mDirty = false;
+    mDirty = lOverWriteDirty;
 }
 //-----------------------------------------------------------------------------
 RectF FluxCamera::getVisibleWorldRect(bool lDoSnap) // Add bool parameter
@@ -52,25 +65,37 @@ RectF FluxCamera::getVisibleWorldRect(bool lDoSnap) // Add bool parameter
 
     return { topLeft.x, topLeft.y, worldSize.x, worldSize.y };
 }
+//-----------------------------------------------------------------------------
+void FluxCamera::setAutoMove(Point2F lMoveVector, F32 lMoveSpeed)
+{
+    mMoveVector = lMoveVector;
+    mMoveSpeed  = lMoveSpeed;
+    mObjectToFollow = nullptr;
+    setDirty();
+}
 
-// RectF FluxCamera::getVisibleWorldRect()
-// {
-//     float zoom = getZoom();
-//     Point2F screenSize = getScreenObject()->getScreenSizeF();
-//
-//     // 1. Precise position
-//     Point2F rawPos = getPosition();
-//
-//     // 2. The Snap: Calculate the position as it will appear on screen
-//     // We floor the pixel-space coordinate, then convert back to world units
-//     Point2F snappedPos;
-//     snappedPos.x = std::floor(rawPos.x * zoom) / zoom;
-//     snappedPos.y = std::floor(rawPos.y * zoom) / zoom;
-//
-//     // 3. Use snappedPos for the rectangle
-//     Point2F worldSize = screenSize / zoom;
-//     Point2F topLeft = snappedPos - (worldSize / 2.0f);
-//
-//     return { topLeft.x, topLeft.y, worldSize.x, worldSize.y };
-// }
-//
+void FluxCamera::setMoveVector(Point2F lMoveVector)
+{
+    mMoveVector = lMoveVector;
+    mObjectToFollow = nullptr; //here also  ?
+    setDirty();
+}
+
+
+void FluxCamera::clearAutoMove()
+{
+    mMoveVector = { 0.f, 0.f };
+    mMoveSpeed  = 0.f;
+    mObjectToFollow = nullptr; // this also ?
+    setDirty();
+}
+
+//-----------------------------------------------------------------------------
+void FluxCamera::setObjectToFollow( FluxRenderObject* lObject )
+{
+    mMoveVector = { 0.f, 0.f };
+    mMoveSpeed  = 0.f;
+    mObjectToFollow = lObject;
+    setDirty();
+}
+//-----------------------------------------------------------------------------

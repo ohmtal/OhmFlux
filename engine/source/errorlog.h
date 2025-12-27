@@ -2,6 +2,8 @@
 #ifndef _ERRORLOG_H
 #define _ERRORLOG_H
 
+#include "fluxGlobals.h"
+
 #ifdef WIN32																// If We're Under MSVC
 #include <windows.h>														// We Need The Windows Header
 #else																		// Otherwhise
@@ -12,13 +14,15 @@
 
 // dLog
 #ifdef FLUX_DEBUG
-#define dLog(...) Log(__VA_ARGS__)
+// The ## allows for zero arguments after the format string (GCC/Clang extension)
+#define dLog(fmt, ...) Log(fmt, ##__VA_ARGS__)
 #else
-#define dLog(...) (void)0
+// Using an empty inline function or (void)0 is fine
+#define dLog(fmt, ...) ((void)0)
 #endif
 
-bool InitErrorLog(const char* log_file, const char* app_name, const char* app_version);	// Initializes The Error Log
+bool InitErrorLog(const char* log_file, const char* app_name, const char* app_version) ;	// Initializes The Error Log
 void CloseErrorLog(void);									// Closes The Error Log
-int  Log(const char *, ...);										// Uses The Error Log :)
+int  Log(const char *, ...) PRINTF_CHECK(1, 2);										// Uses The Error Log :)
 
 #endif //_ERRORLOG_H

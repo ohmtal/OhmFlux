@@ -316,35 +316,64 @@ bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
 // }
 //------------------------------------------------------------------------------
 // for truetype fonts
+
 void FluxTexture::bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h)
 {
   if (!pixels) return;
 
-  // 1-byte alignment is critical for font bitmaps
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  // 1. Create a temporary RGBA buffer (Emscripten needs explicit Alpha)
+  std::vector<unsigned char> rgba(w * h * 4);
+  for (int i = 0; i < w * h; ++i) {
+    rgba[i * 4 + 0] = 255;    // R (White)
+    rgba[i * 4 + 1] = 255;    // G (White)
+    rgba[i * 4 + 2] = 255;    // B (White)
+    rgba[i * 4 + 3] = pixels[i]; // A (Transparency from stb_truetype)
+  }
 
   if (mHandle == 0) glGenTextures(1, &mHandle);
   glBindTexture(GL_TEXTURE_2D, mHandle);
 
-  // Upload as a 1-channel Red texture
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
+  // 2. Upload as RGBA (Works everywhere including WebGL)
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
 
-  // --- THE FIX: TEXTURE SWIZZLE ---
-  // We tell OpenGL: "When the shader samples this texture, return:
-  // Red=1.0, Green=1.0, Blue=1.0, Alpha=Data from the Red channel"
-  // This makes the font white (so dp.color can tint it) and perfectly transparent.
-  GLint swizzleMask[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
-  glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
-  // --------------------------------
+  // Remove the swizzleMask calls as they will cause GL errors on Emscripten/WebGL
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-  // Reset alignment for standard textures
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 }
+
+
+// void FluxTexture::bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h)
+// {
+//   if (!pixels) return;
+//
+//   // 1-byte alignment is critical for font bitmaps
+//   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+//
+//   if (mHandle == 0) glGenTextures(1, &mHandle);
+//   glBindTexture(GL_TEXTURE_2D, mHandle);
+//
+//   // Upload as a 1-channel Red texture
+//   glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
+//
+//   // --- THE FIX: TEXTURE SWIZZLE ---
+//   // We tell OpenGL: "When the shader samples this texture, return:
+//   // Red=1.0, Green=1.0, Blue=1.0, Alpha=Data from the Red channel"
+//   // This makes the font white (so dp.color can tint it) and perfectly transparent.
+//   GLint swizzleMask[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+//   glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+//   // --------------------------------
+//
+//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//
+//   // Reset alignment for standard textures
+//   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+// }
 
 //------------------------------------------------------------------------------
 void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)

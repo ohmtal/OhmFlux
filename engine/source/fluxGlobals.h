@@ -16,7 +16,18 @@
 #define _FLUXGLOBALS_H_
 
 #include <cmath>
+#include <string>
 
+//--------- failsave check for sprintf style functions  like Log ------------
+#ifndef PRINTF_CHECK
+#  if defined(__GNUC__) || defined(__clang__)
+// format(printf, format_string_index, first_arg_to_check_index)
+// 'this' pointer in C++ counts as index 1, so indices are usually 2 and 3
+#    define PRINTF_CHECK(fmt, args) __attribute__((format(printf, fmt, args)))
+#  else
+#    define PRINTF_CHECK(fmt, args)
+#  endif
+#endif
 //--------------------------- GetScreenObject by global Instance ------------
 class FluxScreen; // Forward declaration: No #include needed yet!
 FluxScreen* getScreenObject();
@@ -273,6 +284,7 @@ struct Point2F {
     F32 lenSquared() const { return (x * x + y * y); }
 
     F32 len() const { return std::sqrt(lenSquared()); }
+    F32 isZero() const { return (x == 0.f && y == 0.f); }
 
     // --- Vector Operations ---
     void normalize() {
@@ -290,6 +302,8 @@ struct Point2F {
 
     // 2D "Cross Product" (Scalar Z-component)
     F32 cross(const Point2F& v) const { return (x * v.y - y * v.x); }
+
+
 }; //Point2F
 
 
@@ -418,6 +432,32 @@ struct FluxSettings
     bool enableLogFile = true;
 
 } ;
+
+//-----------------------------------------------------------------------------
+extern float gFrameTime;
+extern float gGameTime;
+
+inline float getFrameTime() {
+    return gFrameTime;
+}
+inline float getGameTime() {
+    return gGameTime;
+}
+//-----------------------------------------------------------------------------
+
+inline std::string sanitizeFilenameWithUnderScores(std::string name)
+{
+    std::string result;
+    for (unsigned char c : name) {
+        if (std::isalnum(c)) {
+            result += c;
+        } else if (std::isspace(c)) {
+            result += '_';
+        }
+        // Special characters (like '.') are ignored/dropped here
+    }
+    return result;
+}
 
 
 #endif //_FLUXGLOBALS_H_

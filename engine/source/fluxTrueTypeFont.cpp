@@ -44,12 +44,15 @@ FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
 //-----------------------------------------------------------------------------
 void FluxTrueTypeFont::setCaption(const char *szFormat, ...)
 {
+    if (!szFormat) return;
     va_list Arg;
-    va_start(Arg,szFormat);
+    va_start(Arg, szFormat);
+    // Use sizeof(mCaption) to stay within bounds
     vsnprintf(mCaption, sizeof(mCaption), szFormat, Arg);
-    mCaption[sizeof(mCaption) - 1] = '\0';
+    mCaption[sizeof(mCaption) - 1] = '\0'; // Manual safety terminator
     va_end(Arg);
 }
+
 //-----------------------------------------------------------------------------
 void FluxTrueTypeFont::Draw()
 {

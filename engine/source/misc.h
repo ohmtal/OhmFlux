@@ -11,30 +11,5 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
-//-----------------------------------------------------------------------------
-extern float gFrameTime;
-extern float gGameTime;
-
-inline float getFrameTime() {
-	return gFrameTime;
-}
-inline float getGameTime() {
-	return gGameTime;
-}
-//-----------------------------------------------------------------------------
-
-inline std::string sanitizeFilenameWithUnderScores(std::string name)
-{
-	std::string result;
-	for (unsigned char c : name) {
-		if (std::isalnum(c)) {
-			result += c;
-		} else if (std::isspace(c)) {
-			result += '_';
-		}
-		// Special characters (like '.') are ignored/dropped here
-	}
-	return result;
-}
 
 #endif

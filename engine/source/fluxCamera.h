@@ -5,7 +5,22 @@
 #pragma once
 #include "fluxGlobals.h"
 
+class FluxRenderObject;
+
 class FluxCamera {
+private:
+    F32 mWidth;
+    F32 mHeight;
+    F32 mZoom;
+    bool mDirty;
+    Point2F mPosition;
+    alignas(16) float mViewMatrix[16];
+
+    // movement
+    FluxRenderObject* mObjectToFollow = nullptr;
+    Point2F mMoveVector = { 0.f, 0.f };
+    F32 mMoveSpeed = 0.f;
+
 public:
     FluxCamera(F32 width, F32 height);
 
@@ -28,12 +43,12 @@ public:
     Point2F getSize() const { return { mWidth, mHeight }; }
 
     RectF getVisibleWorldRect(bool lDoSnap = true);
-private:
-    F32 mWidth;
-    F32 mHeight;
-    F32 mZoom;
-    bool mDirty;
-    Point2F mPosition;
-    alignas(16) float mViewMatrix[16];
+
+    void setDirty() { mDirty = true; }
+    void setAutoMove( Point2F lMoveVector, F32 lMoveSpeed );
+    void setMoveVector(Point2F lMoveVector);
+    Point2F getMoveVector( ) { return mMoveVector; };
+    void clearAutoMove(  );
+    void setObjectToFollow( FluxRenderObject* lObject );
 
 };

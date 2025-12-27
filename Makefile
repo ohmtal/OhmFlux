@@ -6,10 +6,13 @@ WEBDIST_DIR := dist_web
 EMSCRIPTEN_TOOLCHAIN := /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake
 DEMO_DIRS := FishTankDemo TickTacToe TestBed LuaTest
 
-#TODO change the path /opt/android to where you installed android studio !
+# Android config:
 # Your assets must be in subdirectory assets!
+#TODO: Change the path /opt/android to where you installed android studio !
+NDK_DIRS := $(wildcard /opt/android/sdk/ndk/*/)
 ANDROID_PROJ_DIR := android
-ANDROID_NDK_HOME := $(shell @ls -d /opt/android/sdk/ndk/*/ | sort -V | tail -n 1)
+ANDROID_NDK_HOME := $(lastword $(sort $(NDK_DIRS)))
+# ANDROID_NDK_HOME := $(shell @ls -d /opt/android/sdk/ndk/*/ | sort -V | tail -n 1)
 ANDROID_PLATFORM := android-24
 
 # Parallel Build Detection
