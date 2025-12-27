@@ -39,7 +39,7 @@ usage:
 	@echo "make webrelease : Build WebGL (Release via Emscripten)"
 	@echo "make webdist    : Build WebGL Release and deploy to $(WEBDIST_DIR)"
 	@echo ""
-	@echo "make build-info  : Show packages to install on Arch and FreeBSD "
+	@echo "make build-info : Show packages to install on Arch and FreeBSD "
 	@echo ""
 	@echo "make clean      : Remove $(BASE_BUILD_DIR)/ directory"
 	@echo "make distclean  : Remove all build artifacts, binaries, and $(WEBDIST_DIR)"
