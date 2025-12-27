@@ -25,7 +25,7 @@ help: usage
 
 usage:
 	@echo "-----------------------------------------------------------------"
-	@echo "OhmFlux Build System - Usage"
+	@echo -e "\e[34mOhmFlux Build System - Usage\e[0m"
 	@echo "-----------------------------------------------------------------"
 	@echo "make debug      : Build native Desktop (Debug)"
 	@echo "make release    : Build native Desktop (Release)"
@@ -33,7 +33,7 @@ usage:
 	@echo "make windebug   : Cross-compile Windows (Debug via MinGW)"
 	@echo "make winrelease : Cross-compile Windows (Release via MinGW)"
 	@echo ""
-	@echo "make android    : Cross-compile Android (Release ARM64)"
+	@echo "make android    : experimental Android (Release ARM64)"
 	@echo ""
 	@echo "make webdebug   : Build WebGL (Debug via Emscripten)"
 	@echo "make webrelease : Build WebGL (Release via Emscripten)"
