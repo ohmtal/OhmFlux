@@ -56,7 +56,7 @@ build-info:
 	@echo "            export ANDROID_NDK_HOME=/opt/android/sdk/ndk/28.2.13676358  # Update version if different"
 	@echo "            export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"
 	@echo "            sudo pacman -S gradle"
-	@echo "Emscripten: pkg install sdl3 glew"
+	@echo "Emscripten: sudo pacman -S emscripten"
 	@echo "            testing @bash:"
 	@echo "            source /etc/profile.d/emscripten.sh"
 	@echo "            emrun index.html"
