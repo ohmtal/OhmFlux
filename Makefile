@@ -84,7 +84,7 @@ winrelease:
 	x86_64-w64-mingw32-cmake -S . -B $(BASE_BUILD_DIR)/win_release -DCMAKE_BUILD_TYPE=Release
 	cmake --build $(BASE_BUILD_DIR)/win_release $(JOBS)
 
-# --------- C R O S S C O M P I L E ANDROID -------------
+# --------- experimental ANDROID -------------
 # Ensure ANDROID_NDK_HOME and ANDROID_HOME ate set in your environment
 # arch: export ANDROID_NDK_HOME=/opt/android-ndk
 # arch: export ANDROID_HOME=/opt/android-sdk
