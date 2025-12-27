@@ -26,7 +26,7 @@ void FluxCamera::update()
     } else if (mMoveSpeed != 0.f && !mMoveVector.isZero())
     {
         mPosition += mMoveVector * mMoveSpeed * getFrameTime();
-        dLog("new position is %4.2f, %4.2f", mPosition.x, mPosition.y);
+        // dLog("new position is %4.2f, %4.2f", mPosition.x, mPosition.y);
         lOverWriteDirty = true;
     }
 
