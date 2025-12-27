@@ -4,7 +4,9 @@ A Game using OhmFlux.
 
 The goal is to find a key to open the gate to the next level. 
 
-****Milestone I****
+---
+
+**Milestone I**
 
 [X] implemented an atlas generator into FluxTexture
 
@@ -16,8 +18,9 @@ The goal is to find a key to open the gate to the next level.
 
 [ ] right click on the Map should move the Sprite to the point using A* path finding ( implemented in grid )
 
+---
 
-****Milestone II****
+**Milestone II**
 
 [ ] creatures to fight
 
