@@ -303,9 +303,7 @@ if(BUILD_AMANA)
     set(GAME_SOURCES
         "${AMANA_DIR}/src/main.cpp"
         "${AMANA_DIR}/src/amanaGame.cpp"
-        "${AMANA_DIR}/src/globals.cpp"
         "${AMANA_DIR}/src/globalResources.cpp"
-        "${AMANA_DIR}/src/scenes/evoScene.cpp"
     )
     configure_demo_target(AmanaGame ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()

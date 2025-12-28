@@ -4,19 +4,19 @@
 #include <game/fluxScene.h>
 #include "../amanaGame.h"
 
-class EvoScene: public FluxScene
+class MainMenu: public FluxScene
 {
 private:
 public:
-    EvoScene()  {
-        setCaption("EvoScene");
+    MainMenu()  {
+        setCaption("MainMenu");
     }
 
     void onEnter() override {
-        Log("Enter EvoScene");
+        Log("Enter MainMenu");
     }
     void onExit() override {
-        Log("Exit EvoScene");
+        Log("Exit MainMenu");
     }
 
     void Update(const double& dt) override {

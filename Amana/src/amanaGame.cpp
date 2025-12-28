@@ -5,8 +5,9 @@
 #include "amanaGame.h"
 #include "globals.h"
 #include "globalResources.h"
-#include "scenes/evoScene.h"
 
+#include "scenes/evoScene.h"
+#include "scenes/mainMenu.h"
 //--------------------------------------------------------------------------------------
 AmanaGame* g_Game = nullptr;
 
@@ -37,11 +38,11 @@ void AmanaGameMainLoop()
     g_Game->Execute();
     SAFE_DELETE(g_Game);
 }
-
 //--------------------------------------------------------------------------------------
 AmanaGame::AmanaGame()
 {
     mEvoScene = new EvoScene();
+    mMainMenu = new MainMenu();
 }
 //--------------------------------------------------------------------------------------
 // simple state machine onEnter/onExit ....
@@ -57,7 +58,6 @@ bool AmanaGame::setScene( FluxScene* lNewScene )
     mScene->onEnter();
 
     return true;
-
 }
 //--------------------------------------------------------------------------------------
 bool AmanaGame::Initialize()
@@ -67,30 +67,60 @@ bool AmanaGame::Initialize()
     if (!gRes.init())
         return false;
 
-    mEvoScene = new EvoScene();
-    setScene(mEvoScene);
+    setScene(mMainMenu);
+    // setScene(mEvoScene);
     return true;
 }
-
+//--------------------------------------------------------------------------------------
 void AmanaGame::Deinitialize()
 {
+    SAFE_DELETE(mMainMenu);
     SAFE_DELETE(mEvoScene);
 }
 //--------------------------------------------------------------------------------------
 void AmanaGame::onEvent(SDL_Event event) {
     getScene()->onEvent(event);
 }
-void AmanaGame::onKeyEvent(SDL_KeyboardEvent event){
+//--------------------------------------------------------------------------------------
+void AmanaGame::onKeyEvent(SDL_KeyboardEvent event)
+{
+    // default key handling ESC/ALT+ENTER/PAUSE
+    if ( event.type == SDL_EVENT_KEY_UP ) {
+        switch ( event.key ) {
+            case SDLK_ESCAPE:
+                TerminateApplication();
+                break;
+            case SDLK_RETURN:
+                if ( event.mod & SDL_KMOD_LALT)
+                    toggleFullScreen();
+            break;
+            case SDLK_PAUSE:
+                if (togglePause()) {
+                    Log("Now paused....");
+                }
+
+                else
+                    Log("pause off");
+            break;
+        } //switch
+
+    } //KEY_UP
+
+    // pass to Scene:
     getScene()->onKeyEvent(event);
 }
+//--------------------------------------------------------------------------------------
 void AmanaGame::onMouseButtonEvent(SDL_MouseButtonEvent event){
     getScene()->onMouseButtonEvent(event);
 }
+//--------------------------------------------------------------------------------------
 void AmanaGame::Update(const double& dt){
     getScene()->Update(dt);
 }
+//--------------------------------------------------------------------------------------
 void AmanaGame::onDraw()
 {
     gRes.StatusLabel->setCaptionFMT("{} at {}fps ", getScene()->getCaption(), getGame()->getFPS());
     getScene()->Draw();
 }
+//--------------------------------------------------------------------------------------

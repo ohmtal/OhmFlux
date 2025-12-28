@@ -3,10 +3,14 @@
 
 #include <fluxMain.h>
 #include <game/fluxScene.h>
-#include "scenes/evoScene.h"
+
+//--------------------------------------------------------------------------------------
+// Scene forward declatations:
+class EvoScene;
+class MainMenu;
 
 
-
+//--------------------------------------------------------------------------------------
 
 class AmanaGame : public FluxMain
 {
@@ -14,7 +18,9 @@ class AmanaGame : public FluxMain
 
 protected:
     FluxScene* mScene = nullptr;
+
     EvoScene*  mEvoScene = nullptr;
+    MainMenu*  mMainMenu = nullptr;
 
 private:
 
