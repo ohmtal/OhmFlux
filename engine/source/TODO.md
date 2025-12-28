@@ -1,30 +1,40 @@
-# Adding more features
+# TODO
 
-## Move from OpenGL fixed function Pipeline to Shader/Modern Rendering
+## Open:
+
+### Fonts (bitmap and ttf) 
+- need to calculate the size not every time they are rendered 
+- overwrite getRectI to match the correct position with the text align 
+
+---
+
+## Features 
+
+### Move from OpenGL fixed function Pipeline to Shader/Modern Rendering
 Done
 
-## Separate Draw from Screen
+### Separate Draw from Screen
 Done 
 
-##  Camera 
+###  Camera 
 Done.
 
-## Batch Rendering 
+### Batch Rendering 
 Done
 
-## Tilemap 
+### Tilemap 
 Done
 
-## Particles
+### Particles
 Done
 
-## Adding .png via stb
+### Adding .png via stb
 Done
 
-## truetype fonts via stb
+### truetype fonts via stb
 Done
 
-## Sound 
+### Sound 
 
 Done! 
 
@@ -32,30 +42,30 @@ Done!
 - looping Music 
 - ogg support via stb
 
-## Scheduler
+### Scheduler
 Done. 
 
-## Update/Draw
+### Update/Draw
 Done. 
 - Update should be not bind to Draw frequency 
 
-## Lights 
+### Lights 
 - pointLight Done
 - spotLight Done
 
-# Cross compile for Windows on Linux
-Done but only tested with wine so far. 
+### Cross compile for Windows on Linux
+Done.
 
-# Android
+### Android
 experimental 
 
-## Lua scripting 
+### Lua scripting 
 experimental see also LuaTest Project 
 
-## Shadows
+### Shadows
 maybe but optional 
 
-## PostEffects
+### PostEffects
 maybe but optional 
 
-## more ... ;)
+### more ... ;)
