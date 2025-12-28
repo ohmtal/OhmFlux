@@ -20,7 +20,9 @@ private:
 	bool mVisible;
 public:
 	FluxBaseObject() { mVisible=true;};
-	virtual ~FluxBaseObject() {};
+	virtual ~FluxBaseObject() = default;
+
+
 	virtual void Execute() {};
 	virtual bool Initialize() { return true;};
 	virtual void Deinitialize() {};

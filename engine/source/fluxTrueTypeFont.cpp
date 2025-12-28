@@ -65,7 +65,9 @@ void FluxTrueTypeFont::Draw()
     float currentY = startY;
 
     // 1. PRE-PASS: Calculate scaled total width for alignment
-    if (mAlign != FontAlign_Left) {
+    // eats fps because calculated ecery time
+    // but need it for object width
+    /*if (mAlign != FontAlign_Left)*/ {
         float tempX = 0, tempY = 0;
         for (int i = 0; mCaption[i]; ++i) {
             unsigned char c = (unsigned char)mCaption[i];
@@ -78,8 +80,12 @@ void FluxTrueTypeFont::Draw()
         float totalWidth = tempX * mScale; // Scale the total accumulated width
         if (mAlign == FontAlign_Center) currentX -= (totalWidth * 0.5f);
         else if (mAlign == FontAlign_Right) currentX -= totalWidth;
+
+        // hack in Object width
+        getDrawParams().w = totalWidth; //updateSize
     }
 
+    S32 lMaxHeight = 0;
     // 2. DRAW-PASS
     for (int i = 0; mCaption[i]; ++i)
     {
@@ -105,6 +111,9 @@ void FluxTrueTypeFont::Draw()
             dp.w = (S32)((q.x1 - q.x0) * mScale);
             dp.h = (S32)((q.y1 - q.y0) * mScale);
 
+            if ( dp.h > lMaxHeight )
+                lMaxHeight = dp.h;
+
             // Apply Scale to Position
             // q.x0/y0 are offsets from the baseline. We scale the offset and add to current position.
             dp.x = currentX + (q.x0 * mScale) + (dp.w * 0.5f);
@@ -120,5 +129,6 @@ void FluxTrueTypeFont::Draw()
             currentX += (nextX * mScale);
         }
     }
+    getDrawParams().h = lMaxHeight; //updateSize
 }
 

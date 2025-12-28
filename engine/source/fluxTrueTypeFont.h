@@ -42,6 +42,7 @@ private:
 public:
     FluxTrueTypeFont(const char* filename, U32 fontSize = 32);
 
+
     void setCaption(const char *szFormat, ...) PRINTF_CHECK(2, 3);
 
     // failsave but need a other format: font->setCaption("Score: {}", 100);

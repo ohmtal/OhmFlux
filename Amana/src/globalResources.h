@@ -3,6 +3,7 @@
 #include <iostream>
 #include <assert.h>
 #include <fluxMain.h>
+#include <gui/fluxGuiEventManager.h>
 
 
 
@@ -45,6 +46,8 @@ public:
     // ----------------- load the global resources --------------------------
     FluxTexture*     FontSourceCodeTexture = nullptr;
     FluxBitmapFont*  StatusLabel = nullptr;
+
+    FluxGuiEventManager* GuiEvents = nullptr;
 
     bool init();
 

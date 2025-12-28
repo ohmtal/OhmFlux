@@ -23,9 +23,10 @@ class FluxBitmapFont : public FluxRenderObject
 {
     typedef FluxRenderObject Parent;
 protected:
-    int mStartChar, mEndChar;
-    char  mCaption[256];
-    int mCharWidth, mCharHeight;
+    S32 mStartChar, mEndChar;
+    char  mCaption[256]; // do not change directly !!
+    S32 mCharWidth, mCharHeight;
+    S32 mTextlen;
     Color4F mColor;
     FontAlign mAlign;
     bool mIsGuiElement;
@@ -34,8 +35,8 @@ private:
 public:
     FluxBitmapFont(FluxTexture* lTex,
                     FluxScreen* lScreen,
-                    int lStartChar = 32,
-                    int lEndChar=127)
+                    S32 lStartChar = 32,
+                    S32 lEndChar=127)
     : FluxRenderObject(lTex, lScreen)
     , mStartChar(lStartChar)
     , mEndChar(lEndChar)
@@ -45,6 +46,16 @@ public:
     , mAlign(FontAlign_Left)
     , mIsGuiElement(true)
     { }
+
+
+    // THIS MUST BE CALLED EVERY TIME THE CAPTION IS CHANGED !!!!
+    void updateSize()
+    {
+        mTextlen = strlen(mCaption);
+
+        getDrawParams().w = mTextlen * getCharWidth();
+        getDrawParams().h = getCharHeight();
+    }
 
     void setCaption(const char *szFormat, ...) PRINTF_CHECK(2, 3);
 
@@ -58,6 +69,7 @@ public:
             SDL_strlcpy(mCaption, "Format Error!", sizeof(mCaption));
             Log("Format error in setCaption: %s", e.what());
         }
+        updateSize();
     }
 
 
@@ -70,6 +82,8 @@ public:
     {
         mCharWidth  = w;
         mCharHeight = h;
+        // here too !!
+        updateSize();
     }
     int getCharHeight() { return mCharHeight; }
     int getCharWidth() { return mCharWidth;}

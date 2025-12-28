@@ -83,7 +83,10 @@ void AmanaGame::Deinitialize()
     SAFE_DELETE(mEvoScene);
 }
 //--------------------------------------------------------------------------------------
-void AmanaGame::onEvent(SDL_Event event) {
+void AmanaGame::onEvent(SDL_Event event)
+{
+    if ( gRes.GuiEvents != nullptr)
+        gRes.GuiEvents->onEvent(event);
     getScene()->onEvent(event);
 }
 //--------------------------------------------------------------------------------------

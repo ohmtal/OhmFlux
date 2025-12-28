@@ -5,10 +5,7 @@
 #include "fluxGlobals.h"
 #include "fluxMain.h" // Now we can safely include the heavy header
 
-// #include <iostream>
-// #include <string>
-// #include <algorithm>
-// #include <cctype>
+
 
 FluxScreen* g_CurrentScreen = nullptr;
 
@@ -16,4 +13,11 @@ FluxScreen* getScreenObject() {
     // return FluxMain::Instance()->getScreen();
     return g_CurrentScreen;
 }
+
+FluxQuadtree* g_CurrentQuadTree = nullptr;
+
+FluxQuadtree* getQuadTreeObject()  {
+    return g_CurrentQuadTree;
+}
+
 

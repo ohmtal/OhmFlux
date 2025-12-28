@@ -26,6 +26,7 @@
 float gFrameTime = 0.f; // we need that Global for timming
 float gGameTime  = 0.f;
 
+extern FluxQuadtree* g_CurrentQuadTree;
 //--------------------------------------------------------------------------------------
 FluxMain::FluxMain()
 {
@@ -45,8 +46,6 @@ FluxMain::FluxMain()
 	mSettings.cursorHotSpotX = 0;
 	mSettings.cursorHotSpotY = 0;
 
-	// mScreen = nullptr;
-	mEngineQuadtree = nullptr;
 
 }
 
@@ -147,9 +146,8 @@ bool FluxMain::Initialize()
 	Log( "GLVersion : %s",glGetString(GL_VERSION));
 	Log("---------------------------------------");
 
-	//mEngineQuadtree init
 	if (mSettings.useQuadTree) {
-		mEngineQuadtree = new FluxQuadtree(mSettings.WorldBounds);
+		g_CurrentQuadTree = new FluxQuadtree(mSettings.WorldBounds);
 	}
 
 
@@ -179,10 +177,10 @@ void FluxMain::Deinitialize()
 
 	SAFE_DELETE(g_CurrentScreen);
 
-	if (mEngineQuadtree)
+	if (g_CurrentQuadTree)
 	{
-		mEngineQuadtree->clear();
-		SAFE_DELETE(mEngineQuadtree);
+		g_CurrentQuadTree->clear();
+		SAFE_DELETE(g_CurrentQuadTree);
 	}
 
 	CloseErrorLog();
@@ -296,45 +294,6 @@ void FluxMain::Update(const double& dt)
 }
 //--------------------------------------------------------------------------------------
 
-FluxRenderObject* FluxMain::rayCast( const Point2I& lPos )
-{
-
-	//FIXME FluxMain::rayCast / quadtree needs  to be fixed .... quadtree does not work as expected!!!
-
-	RectI clickArea = {lPos.x, lPos.y, 1, 1};
-
-	// Query the quadtree to get a list of nearby candidates
-	std::vector<FluxRenderObject*> candidates = mEngineQuadtree->retrieve(clickArea);
-
-	dLog("-----------------------------------");
-	dLog("FluxMain::rayCast(%d,%d) candidates count: %d", lPos.x, lPos.y, candidates.size());
-
-	//sort them by layer:
-	std::sort(candidates.begin(), candidates.end(),
-			  [](const FluxRenderObject* a, const FluxRenderObject* b) {
-				  // return a->getLayer() < b->getLayer(); // Sorts ASCENDING (lowest layer first)
-					return a->getLayer() > b->getLayer(); // Sorts DESCENDING (highest layer first)
-			  }
-	);
-
-	for (auto it = candidates.rbegin(); it != candidates.rend(); ++it) {
-		FluxRenderObject* hit = *it;
-		RectI hitBounds = hit->getRectI();
-
-		dLog("\t compare %d,%d,%d,%d with %d,%d,%d,%d"
-			, clickArea.x,clickArea.y,clickArea.w,clickArea.h
-			, hitBounds.x,hitBounds.y,hitBounds.w,hitBounds.h
-		);
-
-		if (checkAABBIntersectionI(clickArea, hitBounds)) {
-			return hit;
-		}
-	}
-	dLog("-----------------------------------");
-
-	return nullptr;
-
-}
 //--------------------------------------------------------------------------------------
 void FluxMain::Draw() {
 	assert(getScreen());

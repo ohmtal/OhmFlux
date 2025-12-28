@@ -17,7 +17,14 @@
 #include "fluxScreen.h"
 #include "fluxRender2D.h"
 
-class FluxRenderObject : public FluxBaseObject {
+
+// Forward declarations
+class FluxQuadtree;
+struct FluxNode; // If you made Node a standalone struct or public
+
+
+class FluxRenderObject : public FluxBaseObject
+{
 
 private:
 	// F32 mX,mY,mLayer, mRotation;
@@ -34,8 +41,13 @@ private:
 	S32 mAnimationDelay;
 	S32 mAnimationTime;
 
+	//quadtree support
+	// Use a pointer to an incomplete type.
+	// The compiler doesn't need to know the size of the struct to store a poin
+	void* myQuadNode = nullptr;
 
 public:
+
 	FluxRenderObject(FluxTexture* lTexture, FluxScreen* lScreen, S32 framesStart = 0, S32 framesEnd = 0)
 	: // mScreen(lScreen),
 	 mSpeed(0.0f)
@@ -60,7 +72,7 @@ public:
 		mDrawParams.isGuiElement = false;
 	}
 
-	virtual ~FluxRenderObject() {};
+	virtual ~FluxRenderObject();
 	FluxScreen* getScreen() { return getScreenObject(); } // only for compat.
 	FluxTexture* getTexture() { return mDrawParams.image; }
 
@@ -112,6 +124,10 @@ public:
 
 	virtual void Update(const double& dt) override;
 	virtual void Draw() override;
+
+	//quadtree container
+	void setQuadNode(void* node) { myQuadNode = node; }
+	void* getQuadNode() const { return myQuadNode; }
 
 };//class renderObject
 #endif // #ifndef _FLUXRENDEROBJECT_H_

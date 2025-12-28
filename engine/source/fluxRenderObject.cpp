@@ -5,7 +5,20 @@
 
 #include "fluxRenderObject.h"
 #include "fluxRender2D.h"
+#include "fluxQuadtree.h"
+#include "fluxGlobals.h"
 
+
+//--------------------------------------------------------------------------------------
+FluxRenderObject::~FluxRenderObject() {
+
+	//remove from FluxQuadtree
+	if (myQuadNode)
+	{
+		if (getQuadTreeObject())
+			getQuadTreeObject()->remove(this);
+	}
+}
 //--------------------------------------------------------------------------------------
 void FluxRenderObject::Update(const double& dt)
 {

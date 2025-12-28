@@ -6,6 +6,7 @@
 
 class EvoScene: public FluxScene
 {
+    typedef FluxScreen Parent;
 private:
 public:
     EvoScene()  {

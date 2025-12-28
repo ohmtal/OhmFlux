@@ -17,15 +17,17 @@ const int MAX_OBJECTS_PER_NODE = 10;
 const int MAX_QUADTREE_LEVELS = 5;
 
 class FluxQuadtree {
-private:
+public:
     // Inner structure representing one node/quadrant in the tree
     struct Node {
         int level;
         RectI bounds;
+        Node* parent; // Added for upward traversal
         std::vector<FluxRenderObject*> objects;
-        Node* children[4]; // 0: Top-Right, 1: Top-Left, 2: Bottom-Left, 3: Bottom-Right
+        Node* children[4];
 
-        Node(int pLevel, RectI pBounds) : level(pLevel), bounds(pBounds) {
+        Node(int pLevel, RectI pBounds, Node* pParent = nullptr)
+        : level(pLevel), bounds(pBounds), parent(pParent) {
             for (int i = 0; i < 4; ++i) children[i] = nullptr;
         }
 
@@ -36,6 +38,7 @@ private:
         }
     };
 
+private:
     Node* root;
 
     // Helper functions for internal logic
@@ -53,6 +56,18 @@ public:
     void clear();
     void insert(FluxRenderObject* obj);
     std::vector<FluxRenderObject*> retrieve(RectI area);
+
+    // API for the Container Manager
+    void update(FluxRenderObject* obj);
+    void remove(FluxRenderObject* obj);
+    void checkAndCollapse(Node* node);
+
+    // cast Ray
+    // return the object which is clicked sorted by layer (z)
+    bool rayCast(FluxRenderObject* &foundObject, const Point2I& lPos, bool onlyGuiObjects = false);
+    // return a list of objects found at this position
+    std::vector<FluxRenderObject*> rayCastList(const Point2I& lPos, bool onlyGuiObjects);
+
 };
 
 #endif // _FLUX_QUADTREE_H

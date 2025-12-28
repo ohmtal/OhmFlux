@@ -24,6 +24,7 @@
 #include "fluxAudioStream.h"
 #include "fluxQuadtree.h"
 #include "fluxCamera.h"
+#include "fluxGlobals.h"
 
 
 extern FluxScreen* g_CurrentScreen;
@@ -39,7 +40,6 @@ private:
 	std::vector<FluxBaseObject*> mQueueObjects;
 	std::vector<FluxBaseObject*> mDeletedObjects;
 
-	FluxQuadtree* mEngineQuadtree;
 
 	FluxAppStatus mAppStatus;
 
@@ -64,7 +64,7 @@ public:
 
 
 	// FluxScreen* getScreen() { return mScreen; }
-	FluxScreen* getScreen() { return g_CurrentScreen; }
+	FluxScreen* getScreen() { return getScreenObject(); }
 
 	// FluxTexture* loadTransparentTexture(const char* filename, int cols = 1, int rows = 1);
 	// usePixelPerfect is set so a pixel color looks like a pixel
@@ -84,9 +84,9 @@ public:
 
 	bool queueDelete(FluxBaseObject* lObject); //<< this rock :D
 
-	FluxQuadtree* GetQuadtree() { return mEngineQuadtree; }
+	FluxQuadtree* GetQuadtree() { return getQuadTreeObject(); }
 
-	FluxRenderObject* rayCast( const Point2I& lPos );
+	// moved to global FluxRenderObject* rayCast( const Point2I& lPos );
 
 	void Draw();
 

@@ -12,5 +12,7 @@ bool GlobalResources::init()
     StatusLabel->setColor( cl_Crimson );
     getGame()->queueObject(StatusLabel);
 
+    GuiEvents = new FluxGuiEventManager();
+
     return true;
 }

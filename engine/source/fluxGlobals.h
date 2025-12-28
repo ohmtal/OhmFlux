@@ -18,6 +18,16 @@
 #include <cmath>
 #include <string>
 
+//--------------------------- GetScreenObject by global Instance ------------
+class FluxScreen; // Forward declaration: No #include needed yet!
+FluxScreen* getScreenObject();
+
+class FluxQuadtree;
+FluxQuadtree* getQuadTreeObject();
+static constexpr auto getContainer = getQuadTreeObject;
+
+
+
 //--------- failsave check for sprintf style functions  like Log ------------
 #ifndef PRINTF_CHECK
 #  if defined(__GNUC__) || defined(__clang__)
@@ -28,10 +38,8 @@
 #    define PRINTF_CHECK(fmt, args)
 #  endif
 #endif
-//--------------------------- GetScreenObject by global Instance ------------
-class FluxScreen; // Forward declaration: No #include needed yet!
-FluxScreen* getScreenObject();
 
+//------------------------------------------------------------------------------
 
 enum FontAlign {
     FontAlign_Left,
@@ -344,6 +352,24 @@ struct RectI{
     S32 len_y() const { return h; }
     bool isValidRect() const { return (w > 0 && h > 0); }
 
+    // Checks if THIS rect fully contains OTHER rect
+    // Used by update() to see if an object can stay in its current node
+    bool contains(const RectI& other) const {
+        return (other.x >= x &&
+        other.y >= y &&
+        other.x + other.w <= x + w &&
+        other.y + other.h <= y + h);
+    }
+
+    // Checks if THIS rect overlaps at all with OTHER rect
+    // Used by retrieve() to find candidates for mouse clicks
+    bool intersects(const RectI& other) const {
+        return (x < other.x + other.w &&
+        x + w > other.x &&
+        y < other.y + other.h &&
+        y + h > other.y);
+    }
+
 };
 
 struct RectF
@@ -458,6 +484,8 @@ inline std::string sanitizeFilenameWithUnderScores(std::string name)
     }
     return result;
 }
+
+
 
 
 #endif //_FLUXGLOBALS_H_

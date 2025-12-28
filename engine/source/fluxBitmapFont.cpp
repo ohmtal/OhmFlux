@@ -18,22 +18,27 @@ void FluxBitmapFont::setCaption(const char *szFormat, ...)
     vsnprintf(mCaption, sizeof(mCaption), szFormat, Arg);
     mCaption[sizeof(mCaption) - 1] = '\0'; // Manual safety terminator
     va_end(Arg);
+
+    // update width and height of the object!
+    updateSize();
+
 }
 
 //-----------------------------------------------------------------------------
 void FluxBitmapFont::Draw()
 {
-    int x = getX();
-    int y = getY();
+    S32 x = getX();
+    S32 y = getY();
 
-    int lTextlen = strlen(mCaption);
-    int lTextWidth =  lTextlen * mCharWidth;
+
+    S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
+
     if ( mAlign == FontAlign_Center ) {
-        x -= int(lTextWidth / 2);
+        x -= halfWidth;
     }
-    else
-    if ( mAlign == FontAlign_Right ) {
-        x -= lTextWidth;
+    else if ( mAlign == FontAlign_Right )
+    {
+        x -= getDrawParams().w;
     }
 
     DrawParams2D dp; // Creates a new drawparams object
@@ -47,7 +52,7 @@ void FluxBitmapFont::Draw()
     dp.color = mColor;
     dp.isGuiElement = getIsGuiElement();
 
-    for (size_t i = 0; i < lTextlen; i++)
+    for (size_t i = 0; i < mTextlen; i++)
     {
         dp.x = x;
         dp.imgId =  char(mCaption[i])-mStartChar;
