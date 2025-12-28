@@ -44,6 +44,11 @@ AmanaGame::AmanaGame()
     mEvoScene = new EvoScene();
     mMainMenu = new MainMenu();
 }
+
+FluxScene* AmanaGame::getMainMenu() { return static_cast<FluxScene*>(mMainMenu); }
+FluxScene* AmanaGame::getEvoScene()  { return static_cast<FluxScene*>(mEvoScene); }
+
+
 //--------------------------------------------------------------------------------------
 // simple state machine onEnter/onExit ....
 bool AmanaGame::setScene( FluxScene* lNewScene )
@@ -84,24 +89,23 @@ void AmanaGame::onEvent(SDL_Event event) {
 //--------------------------------------------------------------------------------------
 void AmanaGame::onKeyEvent(SDL_KeyboardEvent event)
 {
-    // default key handling ESC/ALT+ENTER/PAUSE
+    // default key handling
     if ( event.type == SDL_EVENT_KEY_UP ) {
-        switch ( event.key ) {
-            case SDLK_ESCAPE:
-                TerminateApplication();
-                break;
+        switch ( event.key )
+        {
             case SDLK_RETURN:
                 if ( event.mod & SDL_KMOD_LALT)
                     toggleFullScreen();
             break;
-            case SDLK_PAUSE:
-                if (togglePause()) {
-                    Log("Now paused....");
-                }
-
-                else
-                    Log("pause off");
-            break;
+            // FIXME MOVE TO GAME SCENE:
+            // case SDLK_PAUSE:
+            //     if (togglePause()) {
+            //         Log("Now paused....");
+            //     }
+            //
+            //     else
+            //         Log("pause off");
+            // break;
         } //switch
 
     } //KEY_UP

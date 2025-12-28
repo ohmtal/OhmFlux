@@ -33,6 +33,8 @@ public:
     bool setScene( FluxScene* lNewScene ); // << simple statemachine
 
 
+    FluxScene* getMainMenu();
+    FluxScene* getEvoScene();
 
     bool Initialize() override;
     void Deinitialize() override;
