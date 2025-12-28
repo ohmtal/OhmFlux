@@ -23,7 +23,6 @@ public:
 		VM_OPENGL2D
 	};
 
-
 private:
 	SDL_Window* mWindow;
 	SDL_GLContext mGL_Context;
@@ -92,8 +91,6 @@ public:
 	void setScaleScreen(bool value) 	{mScaleScreen = value;}
 	bool setScaleScreen() 	const {return mScaleScreen;}
 
-
-		
 };
 
 #endif //_FLUXSCREEN_H_

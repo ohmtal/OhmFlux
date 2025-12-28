@@ -43,6 +43,7 @@ set(DEMO_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/FishTankDemo")
 set(TTT_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/TickTacToe")
 set(TESTBED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TestBed")
 set(LUATEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/LuaTest")
+set(AMANA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Amana")
 # =============================================================================
 # <<<< PROJECTS SECTION
 # =============================================================================
@@ -295,6 +296,22 @@ if(BUILD_LUATEST)
     target_compile_features(LuaTest PRIVATE cxx_std_17)
     target_compile_definitions(LuaTest PRIVATE SOL_ALL_SAFETIES_ON=1)
 endif()
+
+# --- 5. Amana ---
+option(BUILD_AMANA "Build Amana Game" ON)
+if(BUILD_AMANA)
+    set(GAME_SOURCES
+        "${AMANA_DIR}/src/main.cpp"
+        "${AMANA_DIR}/src/amanaGame.cpp"
+        "${AMANA_DIR}/src/globals.cpp"
+        "${AMANA_DIR}/src/globalResources.cpp"
+        "${AMANA_DIR}/src/scenes/evoScene.cpp"
+    )
+    configure_demo_target(AmanaGame ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
+endif()
+
+
+
 # =============================================================================
 # <<<<< PROJECTS SECTION
 # =============================================================================

@@ -57,7 +57,7 @@ struct Light {
     float cutoff;
 };
 
-#define MAX_LIGHTS 8
+#define MAX_LIGHTS 16
 uniform Light uLights[MAX_LIGHTS];
 uniform int uNumLights;
 uniform bool uIsGui;

@@ -222,9 +222,8 @@ bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
   finalSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
 
   if (finalSurface) {
-    bindOpenGL(finalSurface);
+    mLoaded = bindOpenGL(finalSurface);
     SDL_DestroySurface(finalSurface);
-    mLoaded = true;
   } else {
     SDL_Log("FluxTexture Error: Surface conversion failed for %s", filename);
     mLoaded = false;
@@ -310,11 +309,11 @@ void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
   if (mHandle == 0) Log("Failed to bind OpenGL Texture: %s", mFileName);
 }
 //------------------------------------------------------------------------------
-void FluxTexture::bindOpenGL(SDL_Surface* lSurface)
+bool FluxTexture::bindOpenGL(SDL_Surface* lSurface)
 {
   if (!lSurface) {
     Log("FluxTexture::bindOpenGL - Invalid Surface!");
-    return;
+    return false;
   }
 
   //  Convert to a standard format for OpenGL
@@ -322,7 +321,7 @@ void FluxTexture::bindOpenGL(SDL_Surface* lSurface)
 
   if (!formattedSurface) {
     Log("Failed to convert surface for OpenGL upload");
-    return;
+    return false;
   }
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -372,7 +371,9 @@ void FluxTexture::bindOpenGL(SDL_Surface* lSurface)
 
   if (mHandle == 0) {
     Log("Failed to bind OpenGL Texture: %s", mFileName);
+    return false;
   }
+  return true;
 }
 
 

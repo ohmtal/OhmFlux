@@ -4,7 +4,7 @@
 BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web
 EMSCRIPTEN_TOOLCHAIN := /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake
-DEMO_DIRS := FishTankDemo TickTacToe TestBed LuaTest
+DEMO_DIRS := FishTankDemo TickTacToe TestBed LuaTest Amana
 
 # Android config:
 # Your assets must be in subdirectory assets!

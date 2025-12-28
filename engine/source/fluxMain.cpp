@@ -45,7 +45,7 @@ FluxMain::FluxMain()
 	mSettings.cursorHotSpotX = 0;
 	mSettings.cursorHotSpotY = 0;
 
-	mScreen = nullptr;
+	// mScreen = nullptr;
 	mEngineQuadtree = nullptr;
 
 }
@@ -88,8 +88,9 @@ bool FluxMain::Initialize()
 	//seed random number generator
     srand((unsigned) time(nullptr));
 
-	mScreen = new FluxScreen();
-	if(mScreen->getVideoFailed())
+	g_CurrentScreen = new FluxScreen();
+	// mScreen = new FluxScreen();
+	if(getScreen()->getVideoFailed())
 	{
 		Log("Failed to init  Video / Audio  or Shader");
 		return false;
@@ -98,27 +99,27 @@ bool FluxMain::Initialize()
 		,mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen);
 
 
-	if (!mScreen->prepareMode(mSettings))
+	if (!getScreen()->prepareMode(mSettings))
 	{
 		Log("Failed to prepareMode(%d,%d,%d,%d)",mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen, mSettings.initialVsync);
 		return false;
 	}
-	if (!mScreen->init())
+	if (!getScreen()->init())
 		return false;
 
 
-	mScreen->setVSync(mSettings.initialVsync);
+	getScreen()->setVSync(mSettings.initialVsync);
 
-	mScreen->setScaleScreen(mSettings.ScaleScreen);
+	getScreen()->setScaleScreen(mSettings.ScaleScreen);
 
 	if (mSettings.Caption)
-		mScreen->setCaption(mSettings.Caption);
+		getScreen()->setCaption(mSettings.Caption);
 
 	if (mSettings.IconFilename )
-		mScreen->setIcon(mSettings.IconFilename);
+		getScreen()->setIcon(mSettings.IconFilename);
 
 	if (mSettings.CursorFilename)
-		mScreen->setCursor(mSettings.CursorFilename, mSettings.cursorHotSpotX, mSettings.cursorHotSpotY);
+		getScreen()->setCursor(mSettings.CursorFilename, mSettings.cursorHotSpotX, mSettings.cursorHotSpotY);
 
 
 	//some informations
@@ -176,7 +177,7 @@ void FluxMain::Deinitialize()
 
 
 
-	SAFE_DELETE(mScreen);
+	SAFE_DELETE(g_CurrentScreen);
 
 	if (mEngineQuadtree)
 	{
@@ -268,27 +269,11 @@ FluxTexture* FluxMain::loadTexture(const char* filename, int cols, int rows, boo
 	mTextures.push_back(result);
 	return result;
 }
-// FluxTexture* FluxMain::loadTexture(const char* filename, int cols /*= 1*/, int rows /*= 1*/, bool setColorKeyAtZeroPixel /*= false*/, bool usePixelPerfect  /*= false*/)
-// {
-// 	FluxTexture* result = new FluxTexture();
-// 	if (!usePixelPerfect)
-// 		result->setUseTrilinearFiltering();
-// 	if (!result->loadTexture(filename, setColorKeyAtZeroPixel)){
-// 		Log("Cannot load graphic: %s", SDL_GetError() );
-// 		SAFE_DELETE(result);
-// 		// assert (false); //call assert!
-// 		return nullptr;
-// 	}
-// 	result->setParts(cols,rows);
-// 	mTextures.push_back(result);
-// 	return result;
-// }
-
 //--------------------------------------------------------------------------------------
 bool FluxMain::toggleFullScreen()
 {
   mAppStatus.Visible = false;
-  bool result = mScreen->toggleFullScreen();
+  bool result = getScreen()->toggleFullScreen();
   mAppStatus.Visible = true; 
   return result;
 }
@@ -352,7 +337,7 @@ FluxRenderObject* FluxMain::rayCast( const Point2I& lPos )
 }
 //--------------------------------------------------------------------------------------
 void FluxMain::Draw() {
-	assert(mScreen);
+	assert(getScreen());
     /* layers ... init */
 	// disabled for batch rendering
 	// glEnable(GL_DEPTH_TEST);
@@ -452,7 +437,7 @@ void FluxMain::setupMousePositions( F32 lX, F32 lY ) //SDL2 compat  SDL_MouseMot
 {
 
 	mAppStatus.RealMousePos = { lX, lY };
-	mAppStatus.MousePos 	= { lX / mScreen->getScaleX() , lY / mScreen->getScaleY() };
+	mAppStatus.MousePos 	= { lX / getScreen()->getScaleX() , lY / getScreen()->getScaleY() };
 	setupWorldMousePositions( );
 
 }
@@ -588,7 +573,7 @@ void FluxMain::IterateFrame()
 
 	//  Render
 	Draw();
-	SDL_GL_SwapWindow(mScreen->getWindow());
+	SDL_GL_SwapWindow(getScreen()->getWindow());
 
 	//  Update LastTick AFTER the frame is finished
 	mLastTick = mTickCount;

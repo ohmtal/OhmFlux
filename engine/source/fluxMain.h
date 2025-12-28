@@ -26,7 +26,7 @@
 #include "fluxCamera.h"
 
 
-
+extern FluxScreen* g_CurrentScreen;
 
 class FluxMain : public FluxBaseObject
 {
@@ -34,7 +34,7 @@ protected:
 	static FluxMain* _instance;
 
 private:
-	FluxScreen* mScreen;
+	// FluxScreen* mScreen;
 	std::vector<FluxTexture*> mTextures;
 	std::vector<FluxBaseObject*> mQueueObjects;
 	std::vector<FluxBaseObject*> mDeletedObjects;
@@ -53,15 +53,18 @@ private:
 public:
 	FluxMain();
 	~FluxMain();
+
 	// fake singelton
-	static FluxMain* Instance() {
-		// Optional: add your assert here to ensure a game was created
-		assert(_instance != nullptr && "No game instance created! Did you call new [YourGameClass]()?");
-		return _instance;
-	}
+	// 2025-12-28 removed AGAIN i did only need this for getScreen so i added this as global variable
+	// static FluxMain* Instance() {
+	// 	// Optional: add your assert here to ensure a game was created
+	// 	assert(_instance != nullptr && "No game instance created! Did you call new [YourGameClass]()?");
+	// 	return _instance;
+	// }
 
 
-	FluxScreen* getScreen() { return mScreen; }
+	// FluxScreen* getScreen() { return mScreen; }
+	FluxScreen* getScreen() { return g_CurrentScreen; }
 
 	// FluxTexture* loadTransparentTexture(const char* filename, int cols = 1, int rows = 1);
 	// usePixelPerfect is set so a pixel color looks like a pixel
@@ -113,10 +116,6 @@ public:
 
 };// class
 
-// //--------------------------- GetScreenObject by global Instance ------------
-// inline FluxScreen* getScreenObject() {
-// 	return FluxMain::Instance()->getScreen();
-// }
 
 
 #endif //#ifndef _FLUXMAIN_H_

@@ -46,7 +46,7 @@ public:
 	bool loadTexture(const char* filename, bool setColorKeyAtZeroPixel = false);
 	void bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h); //for TruetypeFonts
 	void bindOpenGLDirect(unsigned char* pixels, int w, int h); //from loadTextureDirect using STB
-	void bindOpenGL(SDL_Surface* lSurface);
+	bool bindOpenGL(SDL_Surface* lSurface);
 	GLuint getHandle() { return mHandle; }
 
     void setParts(const int& cols, const int& rows);

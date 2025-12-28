@@ -368,7 +368,7 @@ struct RectF
     }
 };
 
-#define MAX_LIGHTS 8 // Maximum number of 2D lights supported by the shader
+#define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
 
 //------------------------------------- Vertex2D for batch rendering
 struct Vertex2D {
