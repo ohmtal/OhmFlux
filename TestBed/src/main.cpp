@@ -200,7 +200,7 @@ public:
          mScheduleTestId = FluxSchedule.add(3.0, [this]() {
                           this->Brrooii(); // Calls method with arguments
          });
-         Log("ScheduleTestId is: %d", mScheduleTestId);
+         Log("ScheduleTestId is: %zu", mScheduleTestId);
 
         // lights testing:
 
@@ -246,7 +246,7 @@ public:
         mScheduleTestId = FluxSchedule.add(3.0, [this]() {
             this->Brrooii(); // Calls method with arguments
         });
-        Log("ScheduleTestId is: %d", mScheduleTestId);
+        Log("ScheduleTestId is: %zu", mScheduleTestId);
 
     }
 

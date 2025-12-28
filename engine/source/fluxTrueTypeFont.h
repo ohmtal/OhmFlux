@@ -77,7 +77,7 @@ public:
         F32     lScale = 1.f
     )
     {
-        setCaption(lCaption);
+        setCaption("%s", lCaption);
         setPos(lPos);
         setColor(lColor);
         setScale(lScale);

@@ -101,7 +101,7 @@ public:
         Color4F lColor = {1.f,1.f,1.f,1.f}
     )
     {
-        setCaption(lCaption);
+        setCaption("%s", lCaption);
         setPos(x,y);
         setCharSize(charW, charH);
         setColor(lColor);
