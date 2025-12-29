@@ -2,6 +2,11 @@
 
 ## Open:
 
+### FluxScreen : 
+- I removed mScreen from FluxRenderObject but it's left over in the constructor
+- Check if this used in other Objects and not longer needed 
+- update the demos (also lua!)
+
 ### Fonts (bitmap and ttf) 
 - need to calculate the size not every time they are rendered 
 - overwrite getRectI to match the correct position with the text align 
