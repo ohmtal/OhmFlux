@@ -2,12 +2,6 @@
 // Copyright (c) 2024 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Flux Game Engine
-//
-// @Author  T.Huehn (XXTH)
-// @Desc    simple bitmap font class
-// @created 2024-12-05
-//-----------------------------------------------------------------------------
 #pragma once
 #ifndef _FLUXBITMAPFONT_H_
 #define _FLUXBITMAPFONT_H_

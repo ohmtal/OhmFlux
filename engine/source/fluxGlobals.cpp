@@ -10,7 +10,6 @@
 FluxScreen* g_CurrentScreen = nullptr;
 
 FluxScreen* getScreenObject() {
-    // return FluxMain::Instance()->getScreen();
     return g_CurrentScreen;
 }
 

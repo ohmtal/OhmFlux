@@ -1,5 +1,3 @@
-//FIXME !!!!!!!!!!!! need more testing does not work correctly !!!!!!!!!!!
-
 //-----------------------------------------------------------------------------
 // Copyright (c) 2025 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT

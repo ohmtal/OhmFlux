@@ -2,12 +2,6 @@
 // Copyright (c) 2024 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Flux Game Engine
-//
-// @Author  T.Huehn (XXTH)
-// @Desc    AudioStream SDL / wav
-// @created 2024-12-06
-//-----------------------------------------------------------------------------
 #pragma once
 #ifndef _FLUXAUDIOSTREAM_H_
 #define _FLUXAUDIOSTREAM_H_

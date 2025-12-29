@@ -7,7 +7,7 @@
 #define _FLUX_PARTICLE_H
 
 #include "fluxMath.h"
-#include "fluxTexture.h" // Assuming particles might have textures
+#include "fluxTexture.h"
 
 struct FluxParticle
 {

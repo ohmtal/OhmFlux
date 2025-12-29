@@ -18,16 +18,13 @@ mSpawnTimer(0.0f)
 FluxParticleEmitter::~FluxParticleEmitter() {}
 //-----------------------------------------------------------------------------
 void FluxParticleEmitter::update(F32 dt) {
-    // 1. Bulk Update
-    // Tight loop: maximizes L1 cache hits and allows auto-vectorization
+
     for (auto& p : mParticles) {
         p.lifeRemaining -= dt;
         p.position += p.velocity * dt;
     }
 
-    // 2. Unstable Cleanup (O(1) deletion)
-    // Faster than std::remove_if for large particle structs
-    // because it avoids shifting the entire tail of the vector.
+
     for (size_t i = 0; i < mParticles.size(); ) {
         if (mParticles[i].lifeRemaining <= 0.0f) {
             mParticles[i] = std::move(mParticles.back());
@@ -39,22 +36,19 @@ void FluxParticleEmitter::update(F32 dt) {
 
     if (!mActive) return;
 
-    // 3. Batch Spawning
+
     mSpawnTimer += dt;
 
-    // Optimization: Use multiplication instead of division where possible
+
     F32 invSpawnRate = 1.0f / mProperties.spawnRate;
     int numToSpawn = static_cast<int>(mSpawnTimer * mProperties.spawnRate);
 
     if (numToSpawn > 0) {
-        // Call the batch function we optimized previously
-        emitParticlesBatch(numToSpawn);
 
-        // Subtract only the time accounted for by the particles actually spawned
+        emitParticlesBatch(numToSpawn);
         mSpawnTimer -= numToSpawn * invSpawnRate;
     }
 
-    // 4. State Management
     if (mProperties.playOnce && mParticles.size() >= mProperties.maxParticles) {
         mActive = false;
     }
@@ -114,7 +108,6 @@ void FluxParticleEmitter::appendParticleVertices
     const Color4F& color)
 {
     // 1. Get UVs ONCE (In a real emitter, you'd pass these in as params to save even more time)
-    // For now, let's assume full texture (0,0 to 1,1)
     float umin = 0.0f, vmin = 0.0f, umax = 1.0f, vmax = 1.0f;
 
     // 2. Vertex Positions
@@ -207,8 +200,6 @@ void FluxParticleEmitter::emitParticlesBatch(int count)
     }
 
     // 3. Use emplace_back to avoid the "double-write" of resize()
-    // Modern compilers (Clang 16+, GCC 13+) can often vectorize this loop
-    // if initializeParticle is inlined.
     for (int i = 0; i < toSpawn; ++i)
     {
         // Construct directly in place

@@ -32,7 +32,7 @@ extern FluxScreen* g_CurrentScreen;
 class FluxMain : public FluxBaseObject
 {
 protected:
-	static FluxMain* _instance;
+	// static FluxMain* _instance;
 
 private:
 	// FluxScreen* mScreen;

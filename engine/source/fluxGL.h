@@ -4,7 +4,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-// 1. Include the correct GL API header for the platform
+
 #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
 #include <GLES3/gl3.h>
 #else
@@ -18,7 +18,7 @@
 //----------------------------------------------------------------------------
 //  OpenGL Debug
 //----------------------------------------------------------------------------
-// 1. Ensure APIENTRY is defined (standard for OpenGL callbacks)
+//
 // HOWTO:
 //     // Enable it after glewInit()
 //     if (glDebugMessageCallback) {

@@ -30,7 +30,7 @@ extern FluxQuadtree* g_CurrentQuadTree;
 //--------------------------------------------------------------------------------------
 FluxMain::FluxMain()
 {
-	 _instance = this;
+	 // _instance = this;
 
 	FluxBaseObject();
 	mSettings.ScreenWidth  = 1152; //800;
@@ -53,7 +53,7 @@ FluxMain::~FluxMain() {
 
 }
 
-FluxMain* FluxMain::_instance = nullptr;
+// FluxMain* FluxMain::_instance = nullptr;
 
 // FluxMain* FluxMain::Instance() {
 // 	static_assert(std::is_default_constructible<FluxMain>::value,

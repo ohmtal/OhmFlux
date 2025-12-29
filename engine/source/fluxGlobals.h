@@ -18,6 +18,9 @@
 #include <cmath>
 #include <string>
 
+
+#define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
+
 //--------------------------- GetScreenObject by global Instance ------------
 class FluxScreen; // Forward declaration: No #include needed yet!
 FluxScreen* getScreenObject();
@@ -243,12 +246,6 @@ struct  Point2I{
     S32 x, y;
 };
 
-//-----------------------------------------------------------------------------
-// Copyright (c) 2025 Ohmtal Game Studio
-// SPDX-License-Identifier: MIT
-//-----------------------------------------------------------------------------
-#include <cmath> // For std::sqrt
-
 struct Point2F {
     F32 x, y;
 
@@ -354,8 +351,6 @@ struct RectI{
     S32 len_y() const { return h; }
     bool isValidRect() const { return (w > 0 && h > 0); }
 
-    // Checks if THIS rect fully contains OTHER rect
-    // Used by update() to see if an object can stay in its current node
     bool contains(const RectI& other) const {
         return (other.x >= x &&
         other.y >= y &&
@@ -363,8 +358,6 @@ struct RectI{
         other.y + other.h <= y + h);
     }
 
-    // Checks if THIS rect overlaps at all with OTHER rect
-    // Used by retrieve() to find candidates for mouse clicks
     bool intersects(const RectI& other) const {
         return (x < other.x + other.w &&
         x + w > other.x &&
@@ -396,7 +389,6 @@ struct RectF
     }
 };
 
-#define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
 
 //------------------------------------- Vertex2D for batch rendering
 struct Vertex2D {
