@@ -51,11 +51,14 @@ private:
 
     void clearResources();
     void FillOggBuffer();
+
+protected:
+    bool loadWAV(const char * lFilename);
+    bool loadOGG(const char* lFilename);
+
 public:
     FluxAudioStream( const char* lFilename);
     ~FluxAudioStream();
-    bool loadWAV(const char * lFilename);
-    bool loadOGG(const char* lFilename);
 
     bool play();
     bool stop();
