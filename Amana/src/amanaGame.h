@@ -8,6 +8,7 @@
 // Scene forward declatations:
 class EvoScene;
 class MainMenu;
+class MapEditor;
 
 
 //--------------------------------------------------------------------------------------
@@ -21,13 +22,14 @@ protected:
 
     EvoScene*  mEvoScene = nullptr;
     MainMenu*  mMainMenu = nullptr;
+    MapEditor* mMapEditor = nullptr;
 
 private:
 
 public:
     FluxScene* getScene()
     {
-        //FIXME handle null!
+        //FIXME handle nullptr!
         return mScene;
     }
     bool setScene( FluxScene* lNewScene ); // << simple statemachine
@@ -35,6 +37,7 @@ public:
 
     FluxScene* getMainMenu();
     FluxScene* getEvoScene();
+    FluxScene* getEditorScene();
 
     bool Initialize() override;
     void Deinitialize() override;

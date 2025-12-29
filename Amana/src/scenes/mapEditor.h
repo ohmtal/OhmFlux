@@ -4,13 +4,13 @@
 #include <game/fluxScene.h>
 #include "../amanaGame.h"
 
-class EvoScene: public FluxScene
+class MapEditor: public FluxScene
 {
     typedef FluxScene Parent;
 private:
 public:
-    EvoScene()  {
-        setCaption("EvoScene");
+    MapEditor()  {
+        setCaption("MapEditor");
     }
     bool Initialize() override
     {
@@ -26,10 +26,10 @@ public:
     }
 
     void onEnter() override {
-        Log("Enter EvoScene");
+        Log("Enter MapEditor");
     }
     void onExit() override {
-        Log("Exit EvoScene");
+        Log("Exit MapEditor");
     }
 
     void Update(const double& dt) override { };

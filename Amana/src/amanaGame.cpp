@@ -8,6 +8,7 @@
 
 #include "scenes/evoScene.h"
 #include "scenes/mainMenu.h"
+#include "scenes/mapEditor.h"
 //--------------------------------------------------------------------------------------
 AmanaGame* g_Game = nullptr;
 
@@ -43,10 +44,12 @@ AmanaGame::AmanaGame()
 {
     mEvoScene = new EvoScene();
     mMainMenu = new MainMenu();
+    mMapEditor = new MapEditor();
 }
 
 FluxScene* AmanaGame::getMainMenu() { return static_cast<FluxScene*>(mMainMenu); }
 FluxScene* AmanaGame::getEvoScene()  { return static_cast<FluxScene*>(mEvoScene); }
+FluxScene* AmanaGame::getEditorScene() { return static_cast<FluxScene*>(mMapEditor); }
 
 
 //--------------------------------------------------------------------------------------
@@ -81,6 +84,7 @@ void AmanaGame::Deinitialize()
 {
     SAFE_DELETE(mMainMenu);
     SAFE_DELETE(mEvoScene);
+    SAFE_DELETE(mMapEditor);
 }
 //--------------------------------------------------------------------------------------
 void AmanaGame::onEvent(SDL_Event event)
