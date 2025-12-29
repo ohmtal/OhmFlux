@@ -92,8 +92,9 @@ public:
 		dLog("fish says goodbye");
 	}
 
-	void peep() {
-		dLog("peep!  on layer: %f", getLayer() );
+	//this is for schedule testing, not really a usefull method
+	void peep(std::string foo) {
+		Log("peep! %s on layer: %f",foo.c_str() , getLayer() );
 	}
 
 };

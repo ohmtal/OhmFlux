@@ -8,17 +8,14 @@
 // Example usage:
 // =============
 //
-// ****** Scheduler test on deleted object ***** >>>
-myFish* lFish = static_cast<myFish*>(hitObj);
-// it call peep after the fish is deleted or better not ;)
-FluxSchedule.add(2.0, lFish, [lFish]() {
-    lFish->peep();
-});
-// test "global schedule still works" sending the current fps to it
-FluxSchedule.add(2.0, nullptr, [savedFPS = getFPS()]() {
-    _MainPeep_(savedFPS);
-});
-// <<<
+// myFish* lFish = static_cast<myFish*>(hitObj);
+// FluxSchedule.add(2.0, lFish, [lFish]() {
+//     lFish->peep();
+// });
+// // test "global schedule still works" sending the current fps to it
+// FluxSchedule.add(2.0, nullptr, [savedFPS = getFPS()]() {
+//     _MainPeep_(savedFPS);
+// });
 // //-----------------------------------------------------------------------------
 
 #pragma once

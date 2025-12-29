@@ -576,17 +576,23 @@ void DemoGame::onMouseButtonEvent(SDL_MouseButtonEvent event)
 
 					if (getQuadTreeObject()->rayCast(hitObj, getStatus().WorldMousePos.toPoint2I()))
 					{
-						// ****** Scheduler test on deleted object ***** >>>
-						myFish* lFish = static_cast<myFish*>(hitObj);
-						// it call peep after the fish is deleted or better not ;)
-						FluxSchedule.add(2.0, lFish, [lFish]() {
-								lFish->peep();
-						});
-						// test "global schedule still works" sending the current fps to it
-						FluxSchedule.add(2.0, nullptr, [savedFPS = getFPS()]() {
-							_MainPeep_(savedFPS);
-						});
-						// <<<
+						#ifdef FLUX_DEBUG
+							// ****** Scheduler test on deleted object ***** >>>
+							myFish* lFish = static_cast<myFish*>(hitObj);
+							// it call peep after the fish is deleted or better not ;)
+							FluxSchedule.add(2.f, lFish, [lFish]() {
+								lFish->peep("2");
+							});
+							// queueDelete is faster .......
+							FluxSchedule.add(0.f, lFish, [lFish]() {
+								lFish->peep("0");
+							});
+							// test "global schedule still works" sending the current fps to it
+							FluxSchedule.add(2.0, nullptr, [savedFPS = getFPS()]() {
+								_MainPeep_(savedFPS);
+							});
+							// <<<
+						#endif
 
 						// 2. queueDelete likely takes FluxBaseObject*, which works via implicit upcast
 						if (!queueDelete(hitObj)) {
