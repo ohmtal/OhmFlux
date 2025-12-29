@@ -195,30 +195,31 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
             "--preload-file=${PRELOAD_PATH}" "-sALLOW_MEMORY_GROWTH=1" "-sNO_EXIT_RUNTIME=1" "-sMINIFY_HTML=1"
         )
     elseif(WIN32)
-        # Windows standard: target.exe or target_Debug.exe
         # 1. Define the base path
         set(BASE_OUT_DIR "${SOURCE_DIR}")
 
-        # 2. Force MSVC (Visual Studio) to stop adding /Debug or /Release subfolders
-        # This has no negative effect on MinGW
+        # 2. General Windows properties (Works for both MSVC and MinGW)
         set_target_properties(${TARGET_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${BASE_OUT_DIR}"
             RUNTIME_OUTPUT_DIRECTORY_DEBUG "${BASE_OUT_DIR}"
             RUNTIME_OUTPUT_DIRECTORY_RELEASE "${BASE_OUT_DIR}"
             RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${BASE_OUT_DIR}"
             RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${BASE_OUT_DIR}"
-            
-            # 3. Apply your naming logic
+
+            # Apply naming logic: target.exe or target_Debug.exe
             OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>>"
         )
-
-        # 4. For Visual Studio F5 "Run" support, set the working directory to find assets
+        # 3. Visual Studio Specific Settings
         if(MSVC)
             set_target_properties(${TARGET_NAME} PROPERTIES
+                # This forces static linking of the VC Runtime (/MT)
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+
+                # Working directory for F5 support
                 VS_DEBUGGER_WORKING_DIRECTORY "${SOURCE_DIR}"
             )
-        endif()
-	elseif(ANDROID)
+    endif()
+    elseif(ANDROID)
         # Android standard: libTARGET_NAME.so
         # No special suffix needed, CMake handles .so for libraries
         set_target_properties(${TARGET_NAME} PROPERTIES
