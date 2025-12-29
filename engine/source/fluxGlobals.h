@@ -98,6 +98,7 @@ typedef unsigned short     U16;     ///< Compiler independent Unsigned 16-bit sh
 
 typedef signed int         S32;     ///< Compiler independent Signed 32-bit integer
 typedef unsigned int       U32;     ///< Compiler independent Unsigned 32-bit integer
+typedef unsigned long long  U64;    ///< Compiler independent Unsigned 64-bit integer
 
 typedef float              F32;     ///< Compiler independent 32-bit float
 typedef double             F64;     ///< Compiler independent 64-bit float
@@ -311,6 +312,7 @@ struct Point2F {
     // 2D "Cross Product" (Scalar Z-component)
     F32 cross(const Point2F& v) const { return (x * v.y - y * v.x); }
 
+    Point2I toPoint2I() const { return { static_cast<S32>(x), static_cast<S32>(y)  };}
 
 }; //Point2F
 

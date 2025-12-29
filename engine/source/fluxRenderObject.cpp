@@ -16,7 +16,7 @@ FluxRenderObject::~FluxRenderObject() {
 	if (myQuadNode)
 	{
 		if (getQuadTreeObject())
-			getQuadTreeObject()->remove(this);
+			getQuadTreeObject()->removeObject(this);
 	}
 }
 //--------------------------------------------------------------------------------------

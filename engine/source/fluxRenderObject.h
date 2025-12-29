@@ -97,12 +97,19 @@ public:
 	S32   getFramesEnd() const { return mFramesEnd; }
 	S32   getAnimationDelay() const { return mAnimationDelay; }
  
-	void setX(const F32& x) { mDrawParams.x = x; }
-	void setY(const F32& y) { mDrawParams.y = y; }
+	void setX(const F32& x) {
+		mDrawParams.x = x;
+		//FIXME see below
+	}
+	void setY(const F32& y) {
+		mDrawParams.y = y;
+		//FIXME update quadtree here
+		// 		<< but then i need to call it twice
+	}
 	void setWidth(const S32& w) { mDrawParams.w = w; }
 	void setHeight(const S32& h) { mDrawParams.h = h; }
-	void setPos(const F32& x, const F32& y) { mDrawParams.x = x; mDrawParams.y = y; }
-	void setPos( const Point2F lPos ) { mDrawParams.x = lPos.x; mDrawParams.y = lPos.y; }
+	void setPos(const F32& x, const F32& y) { setX(x); setY(y); }
+	void setPos( const Point2F lPos ) { setX(lPos.x); setY(lPos.y); }
 	Point2F getPosition() const { return { mDrawParams.x, mDrawParams.y }; }
 	void setRotation(const F32& rotation) { mDrawParams.rotation = rotation; }
 	void setLayer(const F32& layer) { mDrawParams.z = layer; }

@@ -65,6 +65,11 @@ public:
 		currentX += (isFlipped ? -speed : speed);
 		setX(currentX);
 
+		if(getQuadTreeObject())
+		{
+			getQuadTreeObject()->updateObject(this);
+		}
+
 		// 3. Unified boundary check
 		bool outLeft = (isFlipped && currentX < -100.0f);
 		bool outRight = (!isFlipped && currentX > screenWidth + 100.0f);
@@ -75,27 +80,7 @@ public:
 			setY(static_cast<float>(RandInt(30, getScreen()->getHeight() - 80)));
 		}
 	}
-	// virtual void Update(const double& dt)  override
-	// {
-	// 	Parent::Update(dt);
-	// 	myFish* f = this;
-	// 	if (f->getFlipX())
-	// 	{
-	// 		f->setX(f->getX() - f->getSpeed()*dt);
-	// 		if (f->getX() < -100.f) {
-	// 			f->setFlipX (!f->getFlipX());
-	// 			f->setY((float)RandInt(30,getScreen()->getHeight()-80 ));
-	// 	   }
-	// 	} else {
-	// 		f->setX(f->getX() + f->getSpeed()*dt);
-	// 		if (f->getX() > (float)getScreen()->getWidth() + 100.f)
-	// 		{
-	// 			f->setFlipX(!f->getFlipX());
-	// 			f->setY((float)RandInt(30,getScreen()->getHeight()-80 ));
-	// 		}
-	// 	}
- //
-	// } //update)
+
 	virtual void Draw() override
 	{
 		Parent::Draw();
@@ -104,6 +89,12 @@ public:
 	}
 	~myFish() {
 		// SAFE_DELETE(mLabel);
+		dLog("fish says goodbye");
 	}
+
+	void peep() {
+		dLog("peep!  on layer: %f", getLayer() );
+	}
+
 };
 #endif //_MYFISH_H_

@@ -48,6 +48,8 @@ private:
     void insert(Node* node, FluxRenderObject* obj);
     void retrieve(Node* node, std::vector<FluxRenderObject*>& returnObjects, RectI area);
 
+    void rayCastRecursive(Node* node, FluxRenderObject* &bestMatch, const RectI lRect, bool onlyGui);
+
 public:
     FluxQuadtree(RectI worldBounds);
     ~FluxQuadtree();
@@ -58,8 +60,8 @@ public:
     std::vector<FluxRenderObject*> retrieve(RectI area);
 
     // API for the Container Manager
-    void update(FluxRenderObject* obj);
-    void remove(FluxRenderObject* obj);
+    void updateObject(FluxRenderObject* obj);
+    void removeObject(FluxRenderObject* obj);
     void checkAndCollapse(Node* node);
 
     // cast Ray

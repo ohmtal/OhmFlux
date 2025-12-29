@@ -4,12 +4,12 @@
 //-----------------------------------------------------------------------------
 // usage with Lambdas:
 //
-//   *** W a r n i n g ***
+// WARNING
 // You need to manually unbind when FluxGuiEvent.target is deleted
 // i first tried to change this to shared_ptr but i did not all the changes
 // and how to use it.
 //
-//   *** W a r n i n g  II ***
+// WARNING  II
 // Fonts depends on rendered center, because they are shifted to left or right on render !!
 // and this function only check against middle = x,y
 // FIXME should be rewritten by overwrite getRectI with the parmeter
@@ -104,65 +104,3 @@ public:
 
 };
 
-
-
-// class FluxGuiEventManager
-// {
-//     std::vector<FluxGuiEvent> mListeners;
-//
-// public:
-//     ~FluxGuiEventManager() { clear();}
-//
-//     void clear() {
-//         mListeners.clear();
-//     }
-//
-//     // Bind any SDL event type to a callback for a specific object
-//     void bind(std::shared_ptr<FluxRenderObject> obj, Uint32 eventType, std::function<void(const SDL_Event&)> callback) {
-//         auto it = std::find_if(mListeners.begin(), mListeners.end(),
-//                                [&obj](const FluxGuiEvent& e) { return e.target.lock() == obj; });
-//
-//         if (it != mListeners.end()) {
-//             it->callbacks[eventType] = callback;
-//         } else {
-//             FluxGuiEvent newEvent;
-//             newEvent.target = obj;
-//             newEvent.callbacks[eventType] = callback;
-//             mListeners.push_back(newEvent);
-//         }
-//     }
-//
-//     void onEvent(const SDL_Event& e) {
-//         // Top-to-bottom iteration for GUI
-//         for (auto it = mListeners.rbegin(); it != mListeners.rend(); ) {
-//             if (auto obj = it->target.lock()) {
-//
-//                 // 1. Check if this listener cares about this specific event type
-//                 if (it->callbacks.count(e.type)) {
-//
-//                     // 2. Spatial check: If it's a mouse event, is it inside the object?
-//                     bool isMouseEvent = (e.type >= SDL_EVENT_MOUSE_MOTION && e.type <= SDL_EVENT_MOUSE_WHEEL);
-//                     bool hit = true;
-//
-//                     if (isMouseEvent) {
-//                         float mx, my;
-//                         SDL_GetMouseState(&mx, &my); // SDL3 uses floats for coordinates
-//                         hit = obj->getRectI().pointInRect({(int)mx, (int)my});
-//                     }
-//
-//                     if (hit) {
-//                         it->callbacks[e.type](e); // Execute the bound callback
-//                         return; // Consume the event
-//                     }
-//                 }
-//                 ++it;
-//             } else {
-//                 // Automatic cleanup of deleted objects
-//                 auto baseIt = std::next(it).base();
-//                 mListeners.erase(baseIt);
-//                 it = std::vector<FluxGuiEvent>::reverse_iterator(baseIt);
-//             }
-//         }
-//     }
-//
-// };

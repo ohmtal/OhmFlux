@@ -60,6 +60,7 @@ set(ENGINE_SOURCES
     ${ENGINE_DIR}/fluxQuadtree.cpp
     ${ENGINE_DIR}/fluxRender2D.cpp
     ${ENGINE_DIR}/fluxShader.cpp
+    ${ENGINE_DIR}/fluxScheduler.cpp
     ${ENGINE_DIR}/fluxMesh.cpp
     ${ENGINE_DIR}/fluxCamera.cpp
     ${ENGINE_DIR}/fluxParticleEmitter.cpp

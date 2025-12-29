@@ -12,15 +12,31 @@
 #define _FLUXBASE_H_
 
 #include "fluxGlobals.h"
+#include "fluxScheduler.h"
+// #include "errorlog.h"
 
 
 class FluxBaseObject
 {
 private:
 	bool mVisible;
+	bool mScheduleUsed = false;
 public:
-	FluxBaseObject() { mVisible=true;};
-	virtual ~FluxBaseObject() = default;
+	FluxBaseObject() {
+		mVisible=true;
+		mScheduleUsed = false;
+	};
+
+	void setScheduleUsed( bool value = true )  { mScheduleUsed = value; }
+
+	virtual ~FluxBaseObject() {
+		if ( mScheduleUsed )
+		{
+			mScheduleUsed = false;
+			FluxSchedule.cleanByOwner(this);
+		}
+
+	}
 
 
 	virtual void Execute() {};

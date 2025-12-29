@@ -180,7 +180,7 @@ public:
          mTomsGuitarSample->setLooping(true);
          mTomsGuitarSample->setPositon({ 0.f, 0.f });
          // give the camera a second to settle until playing
-         FluxSchedule.add(1.0, [this]() {
+         FluxSchedule.add(1.0, this, [this]() {
                 mTomsGuitarSample->play();
         });
 
@@ -197,7 +197,7 @@ public:
          mBrrooiiSound->setPositon( getScreen()->getCenterF());
          queueObject(mBrrooiiSound);
 
-         mScheduleTestId = FluxSchedule.add(3.0, [this]() {
+         mScheduleTestId = FluxSchedule.add(3.0, this, [this]() {
                           this->Brrooii(); // Calls method with arguments
          });
          Log("ScheduleTestId is: %zu", mScheduleTestId);
@@ -239,22 +239,22 @@ public:
 
          return true;
     }
-
+    //--------------------------------------------------------------------------------------
     void Brrooii()
     {
         mBrrooiiSound->play();
-        mScheduleTestId = FluxSchedule.add(3.0, [this]() {
+        mScheduleTestId = FluxSchedule.add(3.0, this, [this]() {
             this->Brrooii(); // Calls method with arguments
         });
         Log("ScheduleTestId is: %zu", mScheduleTestId);
 
     }
-
+    //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
         Parent::Deinitialize();
     }
-
+    //--------------------------------------------------------------------------------------
     void onKeyEvent(SDL_KeyboardEvent event) override
     {
 
@@ -284,7 +284,7 @@ public:
                 break;
         }
     }
-
+    //--------------------------------------------------------------------------------------
     void onMouseButtonEvent(SDL_MouseButtonEvent event) override
     {
         bool isDown = event.down;

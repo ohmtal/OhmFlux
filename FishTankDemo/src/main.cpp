@@ -23,7 +23,7 @@
 #include "myFish.h"
 #include "GuiFishLabel.h"
 
-
+#include <errorlog.h>
 #include <fluxGlobals.h>
 #include <fluxRender2D.h>
 #include <misc.h>
@@ -32,9 +32,14 @@
 #include <fluxParticleEmitter.h>
 #include <fluxParticleManager.h>
 #include <fluxParticlePresets.h>
+#include <fluxScheduler.h>
 
 
-
+//--------------------------------------------------------------------------------------
+void _MainPeep_(S32 someValue)
+{
+	LogFMT("_MainPeep_ someValue:{}", someValue);
+}
 
 //--------------------------------------------------------------------------------------
 
@@ -452,16 +457,29 @@ void DemoGame::onEvent(SDL_Event event)
 		Render2D.getCamera()->moveZoom(scrollZoom);
 	}
 
-	if ( event.type ==  SDL_EVENT_KEY_UP )
+	// Testing automove
+	// FIXME This is not perfect .. it should test agains which key is down
+	// instead of key up
+	Point2F lFinaleMoveVector = { 0.f , 0.f };
+	if ( event.type ==  SDL_EVENT_KEY_DOWN )
 	{
-		F32 camSpeed = 16.f; // * getFrameTime();
 		switch ( event.key.key ) {
-			case SDLK_RIGHT: 	Render2D.getCamera()->move({camSpeed, 0.0f}); break;
-			case SDLK_LEFT: 	Render2D.getCamera()->move({-camSpeed, 0.0f}); break;
-			case SDLK_UP:   	Render2D.getCamera()->move({0.0f, -camSpeed}); break;
-			case SDLK_DOWN: 	Render2D.getCamera()->move({0.0f, camSpeed}); break;
+			case SDLK_RIGHT: 	lFinaleMoveVector.x = 1.f;; break;
+			case SDLK_LEFT: 	lFinaleMoveVector.x = -1.f;; break;
+			case SDLK_UP:   	lFinaleMoveVector.y = 1.f;; break;
+			case SDLK_DOWN: 	lFinaleMoveVector.y = -1.f;; break;
 		}
 	}
+	if ( event.type ==  SDL_EVENT_KEY_UP )
+	{
+		switch ( event.key.key ) {
+			case SDLK_RIGHT: 	lFinaleMoveVector.x = 0.f;; break;
+			case SDLK_LEFT: 	lFinaleMoveVector.x = 0.f;; break;
+			case SDLK_UP:   	lFinaleMoveVector.y = 0.f;; break;
+			case SDLK_DOWN: 	lFinaleMoveVector.y = 0.f;; break;
+		}
+	}
+	Render2D.getCamera()->setAutoMove(lFinaleMoveVector, 0.1f);
 
 	#endif
 
@@ -548,27 +566,65 @@ void DemoGame::onMouseButtonEvent(SDL_MouseButtonEvent event)
 	{
 		switch (button)
 		{
-			case SDL_BUTTON_LEFT:
+			case SDL_BUTTON_LEFT: {
 
-				sortFishes(); //sort by layer
-				static std::vector<myFish *>::iterator curObj;
-				for (curObj=mFishes.begin(); curObj!=mFishes.end(); ++curObj) {
+				// we enabled the container
+				if (getQuadTreeObject())
+				{
+					// 1. Must use FluxRenderObject* because rayCast takes FluxRenderObject*&
+					FluxRenderObject* hitObj = nullptr;
 
-					if ((*curObj) && (*curObj)->pointCollide(getStatus().WorldMousePos)) {
+					if (getQuadTreeObject()->rayCast(hitObj, getStatus().WorldMousePos.toPoint2I()))
+					{
+						// ****** Scheduler test on deleted object ***** >>>
+						myFish* lFish = static_cast<myFish*>(hitObj);
+						// it call peep after the fish is deleted or better not ;)
+						FluxSchedule.add(2.0, lFish, [lFish]() {
+								lFish->peep();
+						});
+						// test "global schedule still works" sending the current fps to it
+						FluxSchedule.add(2.0, nullptr, [savedFPS = getFPS()]() {
+							_MainPeep_(savedFPS);
+						});
+						// <<<
 
-						//remove from render/updatequeue and add it to delete
-						if (!queueDelete((*curObj)))
+						// 2. queueDelete likely takes FluxBaseObject*, which works via implicit upcast
+						if (!queueDelete(hitObj)) {
 							Log("FAILED TO DELETE FROM QUEUE!!!!!!!!!!!!!!!!!");
-						else {
-							mFishes.erase(curObj); //remove from fishes
-							mPling->play();
-							updateFishCounter();
+						} else {
+							// 3. Find the object in the vector to get a valid iterator for erase()
+							// Cast hitObj to myFish* to match the vector's element type
+							auto it = std::find(mFishes.begin(), mFishes.end(), static_cast<myFish*>(hitObj));
+
+							if (it != mFishes.end()) {
+								mFishes.erase(it); // erase requires an iterator
+								mPling->play();
+								updateFishCounter();
+							}
 						}
-						break;
+					}
+
+				} else {
+					sortFishes(); //sort by layer
+					static std::vector<myFish *>::iterator curObj;
+					for (curObj=mFishes.begin(); curObj!=mFishes.end(); ++curObj) {
+
+						if ((*curObj) && (*curObj)->pointCollide(getStatus().WorldMousePos)) {
+
+							//remove from render/updatequeue and add it to delete
+							if (!queueDelete((*curObj)))
+								Log("FAILED TO DELETE FROM QUEUE!!!!!!!!!!!!!!!!!");
+							else {
+								mFishes.erase(curObj); //remove from fishes
+								mPling->play();
+								updateFishCounter();
+							}
+							break;
+						}
 					}
 				}
-
 				break;
+			} //CASE LEFT
 		}
 	}
 }
@@ -623,6 +679,12 @@ int main(int argc, char *argv[])
 	lDemoGame->mSettings.initialVsync = false;
 
 	lDemoGame->mSettings.maxSprites = 100000;
+
+	// testing quadTreee with click!
+	// while the quadTree should speed up
+	// it's slower because of the updates
+	// moving from one container to a other
+	lDemoGame->mSettings.useQuadTree = true;
 
 
 	lDemoGame->Execute();

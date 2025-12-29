@@ -2,6 +2,8 @@
 // Copyright (c) 2025 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// Spatial Grid would be better i guess
+//-----------------------------------------------------------------------------
 
 #include "fluxQuadtree.h"
 #include "fluxMath.h"
@@ -133,25 +135,7 @@ void FluxQuadtree::retrieve(Node* node, std::vector<FluxRenderObject*>& returnOb
 }
 
 //------------------------------------------------------------------------------
-// // Internal recursive retrieve function
-// void FluxQuadtree::retrieve(Node* node, std::vector<FluxRenderObject*>& returnObjects, RectI area)
-// {
-//
-//     // Simple AABB intersection check for retrieve
-//     if (checkAABBIntersectionI(node->bounds, area)) {
-//         // Add objects stored directly in this node
-//         returnObjects.insert(returnObjects.end(), node->objects.begin(), node->objects.end());
-//
-//         // If split, check children recursively
-//         if (node->children[0]) {
-//             for (int i = 0; i < 4; ++i) {
-//                 retrieve(node->children[i], returnObjects, area);
-//             }
-//         }
-//     }
-// }
-//------------------------------------------------------------------------------
-void FluxQuadtree::update(FluxRenderObject* obj)
+void FluxQuadtree::updateObject(FluxRenderObject* obj)
 {
     Node* currentNode = static_cast<Node*>(obj->getQuadNode());
 
@@ -185,7 +169,7 @@ void FluxQuadtree::update(FluxRenderObject* obj)
     }
 }
 //------------------------------------------------------------------------------
-void FluxQuadtree::remove(FluxRenderObject* obj)
+void FluxQuadtree::removeObject(FluxRenderObject* obj)
 {
     Node* currentNode = static_cast<Node*>(obj->getQuadNode());
     if (!currentNode) return;
@@ -229,46 +213,39 @@ void FluxQuadtree::checkAndCollapse(Node* node) {
  * return the object which is at lPos sorted by layer (z)
  */
 
-bool FluxQuadtree::rayCast(FluxRenderObject* &foundObject, const Point2I& lPos, bool onlyGuiObjects)
-{
 
-    RectI clickArea = {lPos.x, lPos.y, 1, 1};
-
-    // 1. Retrieve candidates from Quadtree
-    std::vector<FluxRenderObject*> candidates = this->retrieve(clickArea);
-
-    if (candidates.empty()) {
-        foundObject = nullptr;
-        return false;
-    }
-
-    // dLog("-----------------------------------");
-    // dLog("FluxMain::rayCast(%d,%d) candidates count: %zu", lPos.x, lPos.y, candidates.size());
-
-
-    // 2. Sort by Layer DESCENDING (Highest layer/Top-most first)
-    std::sort(candidates.begin(), candidates.end(),
-              [](const FluxRenderObject* a, const FluxRenderObject* b) {
-                  return a->getLayer() > b->getLayer();
-              }
-    );
-
-    // 3. Iterate normally (since 0 is now the highest layer)
-    for (FluxRenderObject* hit : candidates) {
-        RectI hitBounds = hit->getRectI();
-
-        if (onlyGuiObjects && !hit->getIsGuiElement()) {
-            continue;
-        }
-        // Use pointInRect for pixel-perfect point detection
-        if (hitBounds.pointInRect(lPos)) {
-            foundObject = hit; // Assign to the reference parameter
-            return true;       // We found the top-most object
-        }
-    }
-
+bool FluxQuadtree::rayCast(FluxRenderObject* &foundObject, const Point2I& lPos, bool onlyGui) {
     foundObject = nullptr;
-    return false;
+    RectI clickArea = {lPos.x, lPos.y, 1, 1};
+    rayCastRecursive(root, foundObject, clickArea, onlyGui);
+    return (foundObject != nullptr);
+}
+
+void FluxQuadtree::rayCastRecursive(Node* node, FluxRenderObject* &bestMatch, const RectI lRect, bool onlyGui)
+{
+    // Use intersects to ensure we don't miss clicks on node boundaries
+    if (!node || !node->bounds.intersects(lRect)) return;
+
+    Point2I clickPt = lRect.getPoint();
+
+    // 1. Check objects in this node
+    for (FluxRenderObject* obj : node->objects) {
+        if (onlyGui && !obj->getIsGuiElement()) continue;
+
+        if (obj->getRectI().pointInRect(clickPt)) {
+            // FIXED: Use < if Layer 0 is the top-most (front)
+            if (!bestMatch || obj->getLayer() < bestMatch->getLayer()) {
+                bestMatch = obj;
+            }
+        }
+    }
+
+    // 2. Recurse into children
+    if (node->children[0]) { // Only recurse if the node has been split
+        for (int i = 0; i < 4; ++i) {
+            rayCastRecursive(node->children[i], bestMatch, lRect, onlyGui);
+        }
+    }
 }
 //------------------------------------------------------------------------------
 /**

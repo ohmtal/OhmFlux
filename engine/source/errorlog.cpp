@@ -26,6 +26,7 @@
 #include <stdarg.h>									// And The Standard Argument Header For va_list
 #include <errno.h>
 
+
 #include "fluxGlobals.h"
 #include <SDL3/SDL.h>
 #include "errorlog.h"
@@ -64,6 +65,7 @@ int Log(const char *szFormat, ...)
 
 	return 0;
 }
+
 //-----------------------------------------------------------------------------
 bool InitErrorLog(const char* log_file, const char* app_name, const char* app_version)
 {
