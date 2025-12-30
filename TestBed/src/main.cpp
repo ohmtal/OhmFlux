@@ -332,17 +332,17 @@ public:
                   //  E.motion.x, E.motion.y
                 // hacked in border detect
                  Point2F lFinaleMoveVector = { 0.f , 0.f };
-                 if ( event.motion.x > getScreen()->getWidth()  - borderSize )
+                 if ( getStatus().getMousePosI().x > getScreen()->getWidth()  - borderSize )
                  {
                      lFinaleMoveVector.x = 1.f;
-                 } else  if ( event.motion.x <  borderSize )
+                 } else  if ( getStatus().getMousePosI().x <  borderSize )
                  {
                      lFinaleMoveVector.x = -1.f;
                 }
-                if ( event.motion.y > getScreen()->getHeight()  - borderSize )
+                if ( getStatus().getMousePosI().y > getScreen()->getHeight()  - borderSize )
                 {
                     lFinaleMoveVector.y = 1.f;
-                } else  if ( event.motion.y <  borderSize )
+                } else  if ( getStatus().getMousePosI().y <  borderSize )
                 {
                     lFinaleMoveVector.y = -1.f;
                 }

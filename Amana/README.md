@@ -12,6 +12,8 @@ The goal is to find a key to open the gate to the next level.
 
 [X] finite state machine and FluxScene class for switching Scenes 
 
+[ ] Scene enhancements to keep setup a new Scene as lazy as possible 
+
 [ ] A loader to put the animated sprite pictures in to different Sprite-sheet (Atlas) textures one for each animation and direction
 
 [ ] Let a Sprite run around decide the animation be direction => time for a new class FluxSprite
