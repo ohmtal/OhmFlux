@@ -205,10 +205,15 @@ public:
         // lights testing:
 
          // Render2D.setAmbientColor({ 1.f,0.5f,0.5f,0.5f });
-          Render2D.setAmbientColor({ 0.1f, 0.1f, 0.1f, 1.f });
+          // Render2D.setAmbientColor({ 0.01f, 0.001f, 0.001f, 0.01f });
+
+         // values must be very low with the current tone mapping
+         // alpha doesnt matter
+          Render2D.setAmbientColor({ 0.01f,0.03f,0.03f });
+
           LightManager.addLight(FluxLight({100.0f, 400.0f, 0.0f}, cl_Red , 100.0f));
           LightManager.addLight(FluxLight({250.0f, 400.0f, 0.0f}, cl_Green, 100.0f));
-          LightManager.addLight(FluxLight({175.0f, 450.0f, 10.0f}, { 0.f,0.f,1.f,3.f}, 100.0f));
+          LightManager.addLight(FluxLight({175.0f, 450.0f, 10.0f}, { 0.f,0.f,1.f,10.f}, 100.0f));
 
          // FluxLight flashlight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f);
          // flashlight.setAsSpotlight({0.0f, 1.0f}, 45.0f); //

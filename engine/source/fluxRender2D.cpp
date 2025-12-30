@@ -336,6 +336,8 @@ void FluxRender2D::renderLights()
     const std::vector<FluxLight>& lights = LightManager.getLights();
     RectF view = Render2D.getCamera()->getVisibleWorldRect(false);
 
+    bool lSceneHaveLights = lights.size() > 0;
+
     int activeLightCount = 0;
 
     for (size_t i = 0; i < lights.size(); ++i) {
@@ -361,8 +363,19 @@ void FluxRender2D::renderLights()
         activeLightCount++;
     }
 
-    //  Tell the shader exactly how many lights were actually uploaded
-    mDefaultShader.setInt("uNumLights", activeLightCount);
+    if ( lSceneHaveLights && activeLightCount == 0 )
+    {
+        // scene have lights but Culling removed them
+        // no the shader fall back to non light rendering
+        // which is bad ... testing -1 to prevent that
+        mDefaultShader.setInt("uNumLights", -1);
+        // dLog("hacking lightcount !");
+
+    } else {
+        //  Tell the shader exactly how many lights were actually uploaded
+        mDefaultShader.setInt("uNumLights", activeLightCount);
+    }
+
 
     // dLog("current Light count %d", activeLightCount);
 }
