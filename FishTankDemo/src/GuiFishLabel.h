@@ -32,8 +32,8 @@ private:
 
 public:
 
-	GuiFishLabel(FluxTexture* lFishTex, FluxTexture* lFontTex, FluxScreen* lScreen)
-		:FluxBitmapFont(lFontTex, lScreen)
+	GuiFishLabel(FluxTexture* lFishTex, FluxTexture* lFontTex)
+		:FluxBitmapFont(lFontTex)
 	{
         mFishTexture = lFishTex;
 	}

@@ -26,7 +26,7 @@ struct FluxNode; // If you made Node a standalone struct or public
 class FluxRenderObject : public FluxBaseObject
 {
 
-private:
+protected:
 	// F32 mX,mY,mLayer, mRotation;
 	// S32 mWidth, mHeight;
 	// FluxTexture* mTexture;
@@ -41,6 +41,7 @@ private:
 	S32 mAnimationDelay;
 	S32 mAnimationTime;
 
+private:
 	//quadtree support
 	// Use a pointer to an incomplete type.
 	// The compiler doesn't need to know the size of the struct to store a poin
@@ -48,7 +49,8 @@ private:
 
 public:
 
-	FluxRenderObject(FluxTexture* lTexture, FluxScreen* lScreen, S32 framesStart = 0, S32 framesEnd = 0)
+	FluxRenderObject(FluxTexture* lTexture, S32 framesStart = 0, S32 framesEnd = 0)
+	// FluxRenderObject(FluxTexture* lTexture, FluxScreen* lScreen, S32 framesStart = 0, S32 framesEnd = 0)
 	: // mScreen(lScreen),
 	 mSpeed(0.0f)
 	, mDirX(0.0f)
@@ -85,7 +87,7 @@ public:
 	F32 getWidthF() const { return mDrawParams.getWidthF(); }
 	S32 getHeight() const { return mDrawParams.h; }
 	F32 getHeightF() const { return mDrawParams.getHeightF(); }
-	RectI getRectI() const { return mDrawParams.getRectI(); }
+	virtual RectI getRectI() const { return mDrawParams.getRectI(); }
 	F32 getRotation() const {return mDrawParams.rotation; }
 	F32 getLayer() const {return mDrawParams.getLayer(); }
 	F32 getSpeed() const { return mSpeed; }

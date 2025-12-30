@@ -120,11 +120,11 @@ void bindFluxRenderObject(sol::state& lua) {
 
     // Constructor Factory
     type["new"] = sol::factories(
-        [](FluxTexture* tex, FluxScreen* screen) {
-            return new FluxRenderObject(tex, screen);
+        [](FluxTexture* tex) {
+            return new FluxRenderObject(tex);
         },
-        [](FluxTexture* tex, FluxScreen* screen, int fs, int fe) {
-            return new FluxRenderObject(tex, screen, fs, fe);
+        [](FluxTexture* tex,  int fs, int fe) {
+            return new FluxRenderObject(tex, fs, fe);
         }
     );
 
@@ -188,19 +188,13 @@ void bindFluxBitmapFont(sol::state& lua) {
 
     // Use sol::factories with stack_object for maximum debuggability
     type["new"] = sol::factories(
-        [](sol::stack_object tex_obj, sol::stack_object screen_obj) -> FluxBitmapFont* {
+        [](sol::stack_object tex_obj ) -> FluxBitmapFont* {
             // Check if these are actually the types we expect
             if (!tex_obj.is<FluxTexture*>()) {
                 throw sol::error("Font Constructor Error: Argument 1 is not a FluxTexture pointer!");
             }
-            if (!screen_obj.is<FluxScreen*>()) {
-                throw sol::error("Font Constructor Error: Argument 2 is not a FluxScreen pointer!");
-            }
 
-            return new FluxBitmapFont(
-                tex_obj.as<FluxTexture*>(),
-                                      screen_obj.as<FluxScreen*>()
-            );
+            return new FluxBitmapFont( tex_obj.as<FluxTexture*>() );
         }
     );
 

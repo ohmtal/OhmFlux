@@ -21,14 +21,14 @@ function Game:Initialize()
 
 
     print("Lua: Setup font....")
-    self.font = FluxBitmapFont.new(self.FontMonoTex, screen)
+    self.font = FluxBitmapFont.new(self.FontMonoTex)
     print("Lua: Setup font....2")
     self.font:set("Hello World", 20 , 20 , 26, 32, { 0.9, 0.9, 1., 1.} );
     print("Lua: Setup font....3")
     app:queueObject(self.font)
 
     print("Lua: Setup background:")
-    self.background = FluxRenderObject.new(self.bgTex, screen)
+    self.background = FluxRenderObject.new(self.bgTex)
 
     local params = self.background:getDrawParams()
 
@@ -75,7 +75,7 @@ end
                 app:terminateApplication()
             elseif key == "P" then
                 app:togglePause()
-            elseif key == "Return" and ctrl then
+            elseif key == "Return" and alt then
                 app:toggleFullScreen()
             elseif key == "F5" then
                 print("Reloading...")

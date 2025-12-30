@@ -28,10 +28,10 @@ private:
     using Parent::getDrawParams;
 public:
     FluxBitmapFont(FluxTexture* lTex,
-                    FluxScreen* lScreen,
+                    // FluxScreen* lScreen,
                     S32 lStartChar = 32,
                     S32 lEndChar=127)
-    : FluxRenderObject(lTex, lScreen)
+    : FluxRenderObject(lTex/*, lScreen*/)
     , mStartChar(lStartChar)
     , mEndChar(lEndChar)
     , mCharWidth(16)
@@ -107,6 +107,8 @@ public:
 
     virtual void Draw() override;
 
+
+    RectI getRectI() const override;
 
 }; //class FluxBitmapFont
 

@@ -21,29 +21,33 @@ public:
         SAFE_DELETE(mEvoSceneButton);
         SAFE_DELETE(mMapEditorButton);
     }
-
-    bool Initialize() override
+    //--------------------------------------------------------------------------
+    bool loadFontButton(FluxBitmapFont* &lButton, std::string lCaption, F32 lY, Color4F lColor = cl_AcidGreen)
     {
-        if (!Parent::Initialize())
-            return false;
-        if (mInitialized)
-            return true;
-
-        // mEvoSceneButton = std::make_shared<FluxBitmapFont>(gRes.FontSourceCodeTexture, getGame()->getScreen());
-        mEvoSceneButton = new FluxBitmapFont(gRes.FontSourceCodeTexture, getGame()->getScreen());
-        mEvoSceneButton->set("[  evolutuion  ]", getGame()->getScreen()->getCenterX(), 100, 40, 48, cl_AcidGreen );
-        mEvoSceneButton->setAlign(FontAlign_Center);
-
-        mMapEditorButton = new FluxBitmapFont(gRes.FontSourceCodeTexture, getGame()->getScreen());
-        mMapEditorButton->set("[  Map Editor  ]", getGame()->getScreen()->getCenterX(), 160, 40, 48, cl_AcidGreen );
-        mMapEditorButton->setAlign(FontAlign_Center);
-
-
-        mInitialized = true;
+        lButton = new FluxBitmapFont(gRes.FontSourceCodeTexture);
+        lButton->set(lCaption.c_str(), getGame()->getScreen()->getCenterX(), lY, 36, 40, lColor );
+        lButton->setAlign(FontAlign_Center);
         return true;
     }
+    //--------------------------------------------------------------------------
+    bool OnInitialize() override
+    {
+        loadFontButton(mEvoSceneButton, "[  evolutuion  ]", 100);
+        loadFontButton(mMapEditorButton, "[  Map Editor  ]", 150);
 
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    void bindButton(FluxRenderObject* lButton, FluxScene* lTargetScene) {
+        if (!lButton || !lTargetScene) return;
 
+        // 1. Queue the object (replaces repeated getGame()->queueObject)
+        getGame()->queueObject(lButton);
+
+        setupClickEvent(gRes.GuiEvents, lButton, [lTargetScene](){ getGame()->setScene(lTargetScene); });
+
+    }
+    //--------------------------------------------------------------------------
     void onEnter() override
     {
         Log("Enter MainMenu");
@@ -51,31 +55,10 @@ public:
         if (!Initialize())
             return ;
 
-        if (!mEvoSceneButton) {
-            dLog("mEvoSceneButton is NULL!!!");
-            return;
-        }
-
-
-        getGame()->queueObject(mEvoSceneButton);
-        gRes.GuiEvents->bind(mEvoSceneButton ,
-            SDL_EVENT_MOUSE_BUTTON_DOWN, [](const SDL_Event& e)
-            {
-                if ( e.button.button == SDL_BUTTON_LEFT )
-                    getGame()->setScene(getGame()->getEvoScene());
-            }
-        );
-
-        getGame()->queueObject(mMapEditorButton);
-        gRes.GuiEvents->bind(mMapEditorButton ,
-                             SDL_EVENT_MOUSE_BUTTON_DOWN, [](const SDL_Event& e)
-                             {
-                                 if ( e.button.button == SDL_BUTTON_LEFT )
-                                     getGame()->setScene(getGame()->getEditorScene());
-                             }
-        );
-
+        bindButton(mEvoSceneButton, getGame()->getEvoScene());
+        bindButton(mMapEditorButton, getGame()->getEditorScene());
     }
+    //--------------------------------------------------------------------------
     void onExit() override {
         Log("Exit MainMenu");
 
@@ -83,16 +66,14 @@ public:
         getGame()->unQueueObject(mMapEditorButton);
         gRes.GuiEvents->clear();
     }
-
+    //--------------------------------------------------------------------------
     void Update(const double& dt) override {
 
     };
-
-
+    //--------------------------------------------------------------------------
     void Draw() override {
 
     }
-
     //--------------------------------------------------------------------------
     void onKeyEvent(SDL_KeyboardEvent event) override
     {
@@ -106,5 +87,4 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-
 };

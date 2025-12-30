@@ -8,7 +8,7 @@
 #include "errorlog.h"
 //-----------------------------------------------------------------------------
 FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
-: Parent(nullptr, nullptr)
+: Parent(nullptr)
 {
     mAlign = FontAlign_Left;
     mIsGuiElement = true;
@@ -132,3 +132,19 @@ void FluxTrueTypeFont::Draw()
     getDrawParams().h = lMaxHeight; //updateSize
 }
 
+//-----------------------------------------------------------------------------
+RectI FluxTrueTypeFont::getRectI() const
+{
+    RectI lResult = getDrawParams().getRectI();
+    S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
+
+    if ( mAlign == FontAlign_Left ) {
+        lResult.x += halfWidth;
+    }
+    else if ( mAlign == FontAlign_Right )
+    {
+        lResult.x -= halfWidth;
+    }
+
+    return lResult;
+}

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <fluxMain.h>
-#include "luabind/luaFluxMain.h"
+#include "luabind/luaFluxBindings.h"
 #include <sol/sol.hpp>
 #include "SDL3/SDL.h"
 /*
@@ -104,7 +104,7 @@ public:
     //--------------------------------------------------------------------------
     void reloadScript() {
         sol::state_view lua(lua_self.lua_state());
-        auto result = lua.script_file("assets/loader.lua");
+        auto result = lua.script_file("assets/main.lua");
 
         if (result.valid()) {
             printf("Lua Script Reloaded Successfully!\n");
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
     lua["app"] = &game;
 
     // 4. Load the script NOW. The script can now safely access the global 'app'.
-    auto result = lua.script_file("assets/loader.lua");
+    auto result = lua.script_file("assets/main.lua");
     if (!result.valid()) {
         sol::error err = result;
         printf("SCRIPT LOAD ERROR: %s\n", err.what());

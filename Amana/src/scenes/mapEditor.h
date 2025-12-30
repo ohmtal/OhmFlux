@@ -12,16 +12,11 @@ public:
     MapEditor()  {
         setCaption("MapEditor");
     }
-    bool Initialize() override
+    bool OnInitialize() override
     {
-        if (!Parent::Initialize())
-            return false;
-        if (mInitialized)
-            return true;
 
         //... load content here ...
 
-        mInitialized = true;
         return true;
     }
 

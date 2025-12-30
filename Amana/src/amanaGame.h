@@ -48,7 +48,7 @@ public:
     void onMouseButtonEvent(SDL_MouseButtonEvent event) override;
 
     AmanaGame();
-    virtual ~AmanaGame() { };
+    ~AmanaGame();
 
 };
 

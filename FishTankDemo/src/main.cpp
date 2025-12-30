@@ -113,13 +113,13 @@ bool DemoGame::Initialize() {
 	
 	// test BitMapFonr
 	//mLabel1 = new FluxBitmapFont(mHackNerdTex, getScreen());
-	mLabel1 = new FluxBitmapFont(mMono16Tex, getScreen());
+	mLabel1 = new FluxBitmapFont(mMono16Tex);
 	mLabel1->set("XX XX XX", 7, getScreen()->getHeight() - 14,  13, 28, { 1.f, 0.f, 1.f, LabelAlpha} );
 	mLabel1->setLayer(0.f); //push to front
 	mLabel1->setIsGuiElement(true);
 	queueObject(mLabel1);
 
-	mLabel2 = new FluxBitmapFont(mMono16Tex, getScreen());
+	mLabel2 = new FluxBitmapFont(mMono16Tex);
 	mLabel2->set("XX XX XX", 250,13, 13, 28, { 1.f, 1.f, 1.f, LabelAlpha });
 	mLabel2->setLayer(0.f); //push to front
 	mLabel2->setIsGuiElement(true);
@@ -141,7 +141,7 @@ bool DemoGame::Initialize() {
 
 
 	// ************* Game Labels *********************
-	mScoreLabel = new FluxBitmapFont(mHackNerdTex, getScreen());
+	mScoreLabel = new FluxBitmapFont(mHackNerdTex);
 	mScoreLabel->set("000000", getScreen()->getWidth() - 6 * 13 ,13, 13, 25, { 0.5f, 0.5f, 1.f, LabelAlpha });
 	mScoreLabel->setLayer(0.f); //push to front
 	mScoreLabel->setCaption("%06d", 0);
@@ -149,7 +149,7 @@ bool DemoGame::Initialize() {
 	queueObject(mScoreLabel);
 
 
-	mChallengeTimeLabel = new FluxBitmapFont(mHackNerdTex, getScreen());
+	mChallengeTimeLabel = new FluxBitmapFont(mHackNerdTex);
 	mChallengeTimeLabel->set("000000",
 							getScreen()->getWidth() - 6 * 13 ,
 							getScreen()->getHeight() - 13,
@@ -165,12 +165,12 @@ bool DemoGame::Initialize() {
 	for (int i = 0; i < FishTypeCount; i++)
 	{
 		// counter of current fishes
-		mFishLabel[i] = new GuiFishLabel(mFishTextures[i], mMono16Tex, getScreen());
+		mFishLabel[i] = new GuiFishLabel(mFishTextures[i], mMono16Tex);
 		mFishLabel[i]->setIsGuiElement(true);
 		mFishLabel[i]->set("XXXX", 15, y, 13, 28, { 1.f, 1.f, 1.f, LabelAlpha });
 		queueObject(mFishLabel[i]);
 		// goal display
-		mFishGoalDisplay[i] = new FluxBitmapFont( mMono16Tex, getScreen());
+		mFishGoalDisplay[i] = new FluxBitmapFont( mMono16Tex);
 		mFishGoalDisplay[i]->set("XXX", 15 + (4*13), y, 13, 28,  { 0.f, 0.f, 1.f, LabelAlpha });
 		mFishGoalDisplay[i]->setVisible(false);
 		queueObject(mFishGoalDisplay[i]);
@@ -247,7 +247,7 @@ void DemoGame::respawnFishes(int setNewCount )
 void DemoGame::spawnFish()
 {
 	int rTex = RandInt(0,FishTypeCount - 1 );
-	myFish* f = new myFish(mFishTextures[rTex], mMono16Tex, getScreen(), rTex);
+	myFish* f = new myFish(mFishTextures[rTex], mMono16Tex, rTex);
 	queueObject(f);
 	mFishes.push_back(f);
 	updateFishCounter();

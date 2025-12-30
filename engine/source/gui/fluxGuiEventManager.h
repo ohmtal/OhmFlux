@@ -2,18 +2,15 @@
 // Copyright (c) 2012 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// usage with Lambdas:
 //
-// WARNING
+// WARNING << dangling pointer >>
 // You need to manually unbind when FluxGuiEvent.target is deleted
 // i first tried to change this to shared_ptr but i did not all the changes
 // and how to use it.
 //
-// WARNING  II
-// Fonts depends on rendered center, because they are shifted to left or right on render !!
-// and this function only check against middle = x,y
-// FIXME should be rewritten by overwrite getRectI with the parmeter
 //
+// usage with Lambdas:
+// ===================
 // Standard Click:
 //      guiManager.bind(myButton, SDL_EVENT_MOUSE_BUTTON_DOWN, [](const SDL_Event& e){ ... });
 // Keyboard Shortcut (when object is active):
@@ -92,8 +89,6 @@ public:
 
                 if (hit)
                 {
-
-
                     listener.callbacks[e.type](e);
                     return; // Event consumed
                 }

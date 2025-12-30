@@ -86,5 +86,7 @@ public:
 
     virtual void Draw() override;
 
+    RectI getRectI() const override;
+
 }; //class FluxBitmapFont
 

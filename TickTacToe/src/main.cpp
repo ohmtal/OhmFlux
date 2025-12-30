@@ -53,7 +53,7 @@ public:
         int idx = 0;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                FluxBitmapFont* lbl = new FluxBitmapFont(mFontTex, getScreen());
+                FluxBitmapFont* lbl = new FluxBitmapFont(mFontTex);
                 lbl->setCharSize(64, 64);
                 int x = mBoardLeft + col * mCellSize + (mCellSize / 2) - 20;
                 int y = mBoardTop + row * mCellSize + (mCellSize / 2) - 32;
@@ -66,14 +66,14 @@ public:
 
         // Grid lines (text-based)
 
-        mStatusLabel = new FluxBitmapFont(mFontTex, getScreen());
+        mStatusLabel = new FluxBitmapFont(mFontTex);
         //mStatusLabel->set("Player X turn", 10, 10, 26, 32, 0.9f, 0.9f, 1.f, 1.f);
         mStatusLabel->set("Player X turn", getScreen()->getCenterX(), mBoardTop - 50, 26, 32, { 0.9f, 0.9f, 1.f, 1.f} );
         mStatusLabel->setAlign(FontAlign_Center);
         mStatusLabel->setLayer(0.05f);
         queueObject(mStatusLabel);
 
-        mHintLabel = new FluxBitmapFont(mFontTex, getScreen());
+        mHintLabel = new FluxBitmapFont(mFontTex);
         mHintLabel->set("Click cells to play. Press R to reset.", getScreen()->getCenterX() , mBoardTop + mBoardSize + 30,
                         18, 24, { 0.8f, 0.8f, 0.8f, 1.f } );
         mHintLabel->setAlign(FontAlign_Center);

@@ -16,14 +16,14 @@ public:
 	int mFishType;
 
 
-	myFish(FluxTexture* lTex, FluxTexture* lFontTex, FluxScreen* lScreen, int lFishType)
-		:FluxRenderObject(lTex, lScreen, 0,3)
+	myFish(FluxTexture* lTex, FluxTexture* lFontTex,  int lFishType)
+		:FluxRenderObject(lTex, 0,3)
 	{
 
 		mFishType = lFishType;
 
-		setX((float)RandInt(0,lScreen->getWidth() ));
-		setY((float)RandInt(30,lScreen->getHeight()-80));
+		setX((float)RandInt(0,getScreen()->getWidth() ));
+		setY((float)RandInt(30,getScreen()->getHeight()-80));
 
 
 		setWidth(lTex->getWidth()/8);

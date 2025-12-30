@@ -47,9 +47,23 @@ AmanaGame::AmanaGame()
     mMapEditor = new MapEditor();
 }
 
-FluxScene* AmanaGame::getMainMenu() { return static_cast<FluxScene*>(mMainMenu); }
-FluxScene* AmanaGame::getEvoScene()  { return static_cast<FluxScene*>(mEvoScene); }
-FluxScene* AmanaGame::getEditorScene() { return static_cast<FluxScene*>(mMapEditor); }
+AmanaGame::~AmanaGame()
+{
+    SAFE_DELETE(mMainMenu);
+    SAFE_DELETE(mEvoScene);
+    SAFE_DELETE(mMapEditor);
+}
+
+FluxScene* AmanaGame::getMainMenu() {
+    return static_cast<FluxScene*>(mMainMenu);
+}
+FluxScene* AmanaGame::getEvoScene()  {
+    return static_cast<FluxScene*>(mEvoScene);
+
+}
+FluxScene* AmanaGame::getEditorScene() {
+    return static_cast<FluxScene*>(mMapEditor);
+}
 
 
 //--------------------------------------------------------------------------------------
@@ -82,9 +96,6 @@ bool AmanaGame::Initialize()
 //--------------------------------------------------------------------------------------
 void AmanaGame::Deinitialize()
 {
-    SAFE_DELETE(mMainMenu);
-    SAFE_DELETE(mEvoScene);
-    SAFE_DELETE(mMapEditor);
 }
 //--------------------------------------------------------------------------------------
 void AmanaGame::onEvent(SDL_Event event)
@@ -104,15 +115,6 @@ void AmanaGame::onKeyEvent(SDL_KeyboardEvent event)
                 if ( event.mod & SDL_KMOD_LALT)
                     toggleFullScreen();
             break;
-            // FIXME MOVE TO GAME SCENE:
-            // case SDLK_PAUSE:
-            //     if (togglePause()) {
-            //         Log("Now paused....");
-            //     }
-            //
-            //     else
-            //         Log("pause off");
-            // break;
         } //switch
 
     } //KEY_UP

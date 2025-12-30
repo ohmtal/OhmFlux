@@ -81,7 +81,7 @@ public:
         // <<< Tilemap
 
 
-        mStatusLabel = new FluxBitmapFont(mFontTex, getScreen());
+        mStatusLabel = new FluxBitmapFont(mFontTex);
         //mStatusLabel->set("Player X turn", 10, 10, 26, 32, 0.9f, 0.9f, 1.f, 1.f);
         mStatusLabel->set("...STATUS....", getScreen()->getCenterX(), 50, 26, 32, { 0.9f, 0.9f, 1.f, 1.f} );
         mStatusLabel->setAlign(FontAlign_Center);

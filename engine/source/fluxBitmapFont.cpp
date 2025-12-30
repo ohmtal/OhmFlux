@@ -60,3 +60,19 @@ void FluxBitmapFont::Draw()
         x += mCharWidth;
     }
 }
+//-----------------------------------------------------------------------------
+RectI FluxBitmapFont::getRectI() const
+{
+    RectI lResult = getDrawParams().getRectI();
+    S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
+
+    if ( mAlign == FontAlign_Left ) {
+        lResult.x += halfWidth;
+    }
+    else if ( mAlign == FontAlign_Right )
+    {
+        lResult.x -= halfWidth;
+    }
+
+    return lResult;
+}
