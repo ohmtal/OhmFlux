@@ -440,12 +440,12 @@ struct FluxSettings
     Point2I minWindowSize = { 320, 200 };
     const char* Caption;
     const char* Version;
-    const char* IconFilename;
-    const char* CursorFilename;
-    S32 cursorHotSpotX = 0;
-    S32 cursorHotSpotY = 0;
+    const char* IconFilename;     // must be an .bmp image!
+    const char* CursorFilename;   // must be an .bmp image!
+    S32 cursorHotSpotX = 0;       // offset for mousepointer click position X
+    S32 cursorHotSpotY = 0;       // offset for mousepointer click position Y
     bool useQuadTree    = false;
-    RectI WorldBounds = { -2000, -2000, 4000, 4000 };
+    RectI WorldBounds = { -1000, -1000, 2000, 2000 };
 
     U32 maxSprites = DEFAULT_MAX_SPRITES; // this need to be set since we use Batchrendering
 

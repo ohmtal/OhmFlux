@@ -157,7 +157,7 @@ public:
              .setTexture(lBubble)
              .setScaleMinMax( 0.3f, 0.3f)
              .setLifeTimeMinMax(6.f,10.f)
-             .setRotationSpeedMinMax(10.f, 20.f)
+             // .setRotationSpeedMinMax(1.0f, 2.0f)
          )->setPosition({ 700.f ,550.f, 0.10f })->play();
 
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -451,6 +451,12 @@ int main(int argc, char* argv[])
     TestBed* game = new TestBed();
     game->mSettings.Caption = "TestBed";
     game->mSettings.enableLogFile = true;
+    game->mSettings.IconFilename = "assets/particles/Skull2.bmp";
+    game->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";
+    game->mSettings.cursorHotSpotX = 10;
+    game->mSettings.cursorHotSpotY = 10;
+
+
     game->Execute();
     SAFE_DELETE(game);
     return 0;

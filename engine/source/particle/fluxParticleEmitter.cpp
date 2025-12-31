@@ -17,11 +17,12 @@ mSpawnTimer(0.0f)
 //-----------------------------------------------------------------------------
 FluxParticleEmitter::~FluxParticleEmitter() {}
 //-----------------------------------------------------------------------------
-void FluxParticleEmitter::update(F32 dt) {
+void FluxParticleEmitter::update(F32 dt)
+{
 
-    for (auto& p : mParticles) {
-        p.lifeRemaining -= dt;
-        p.position += p.velocity * dt;
+    for (auto& p : mParticles)
+    {
+        p.update(dt);
     }
 
 
@@ -233,8 +234,11 @@ void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
     particle.velocity = Point2F{ cosf(angle), sinf(angle) } * speed;
     particle.acceleration = { 0.0f, 0.0f };
 
-    particle.rotation = mProperties.rotation; // RandFloat() * 2.0f * FLUX_PI ;
     particle.rotationSpeed = RandInRange(mProperties.minRotationSpeed, mProperties.maxRotationSpeed); //(RandFloat() - 0.5f) * 2.0f;
+    if (particle.rotationSpeed == 0.f)
+        particle.rotation = mProperties.rotation; // RandFloat() * 2.0f * FLUX_PI ;
+    else
+        particle.rotation = RandFloat() * 2.0f * FLUX_PI ;
 
     particle.scale = RandInRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
 
