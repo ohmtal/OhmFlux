@@ -172,6 +172,12 @@ target_compile_definitions(ohmFlux_engine PUBLIC
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:DEBUG>>:FLUX_DEBUG>
 )
 
+if(WIN32 AND MSVC)
+    target_compile_definitions(ohmFlux_engine PUBLIC NOMINMAX)
+    set_target_properties(ohmFlux_engine PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    
+endif()
+
 # ---------------- Macro for Projects ------------------
 # Android and Windows build added:
 macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
@@ -222,11 +228,12 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
             set_target_properties(${TARGET_NAME} PROPERTIES
                 # This forces static linking of the VC Runtime (/MT)
                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-
+                
                 # Working directory for F5 support
                 VS_DEBUGGER_WORKING_DIRECTORY "${SOURCE_DIR}"
-            )
-    endif()
+             )
+        endif()
+        
     elseif(ANDROID)
         # Android standard: libTARGET_NAME.so
         # No special suffix needed, CMake handles .so for libraries
