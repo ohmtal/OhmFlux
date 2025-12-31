@@ -4,8 +4,9 @@
 //-----------------------------------------------------------------------------
 #ifndef _MYFISH_H_
 #define _MYFISH_H_
-#include "source/fluxMain.h"
+#include <fluxMain.h>
 #include "globals.h"
+#include <core/fluxMath.h>
 
 class myFish : public FluxRenderObject
 {

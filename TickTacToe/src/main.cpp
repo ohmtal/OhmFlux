@@ -2,12 +2,11 @@
 // Simple TicTacToe demo built on ohmFlux
 //-----------------------------------------------------------------------------
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
-#include "source/fluxMain.h"
-#include "source/fluxBitmapFont.h"
-#include "source/misc.h"
+#include <fluxMain.h>
+#include <fonts/fluxBitmapFont.h>
 
 #include <array>
-#include <fluxRender2D.h>
+#include <render/fluxRender2D.h>
 
 class TicTacToeGame : public FluxMain
 {

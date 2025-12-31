@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <map>
 
-#include "../fluxRenderObject.h"
+#include "core/fluxRenderObject.h"
 
 struct FluxGuiEvent {
      FluxRenderObject* target;

@@ -6,8 +6,8 @@
 
 #include <SDL3/SDL.h>
 #include <string>
-#include "../fluxBaseObject.h"
-#include "../gui/fluxGuiEventManager.h"
+#include "core/fluxBaseObject.h"
+#include "gui/fluxGuiEventManager.h"
 
 
 class FluxScene : public FluxBaseObject

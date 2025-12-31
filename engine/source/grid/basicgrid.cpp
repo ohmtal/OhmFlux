@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "basicgrid.h"
-#include "fluxGlobals.h"
-#include "errorlog.h"
+#include "core/fluxGlobals.h"
+#include "utils/errorlog.h"
 #include "tBinaryHeap.h"
 
 #include <algorithm>

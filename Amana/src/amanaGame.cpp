@@ -127,13 +127,14 @@ void AmanaGame::onMouseButtonEvent(SDL_MouseButtonEvent event){
     getScene()->onMouseButtonEvent(event);
 }
 //--------------------------------------------------------------------------------------
-void AmanaGame::Update(const double& dt){
+void AmanaGame::Update(const double& dt)
+{
+    gRes.StatusLabel->setCaptionFMT("{} at {}fps ", getScene()->getCaption(), getGame()->getFPS());
     getScene()->Update(dt);
 }
 //--------------------------------------------------------------------------------------
 void AmanaGame::onDraw()
 {
-    gRes.StatusLabel->setCaptionFMT("{} at {}fps ", getScene()->getCaption(), getGame()->getFPS());
     getScene()->Draw();
 }
 //--------------------------------------------------------------------------------------

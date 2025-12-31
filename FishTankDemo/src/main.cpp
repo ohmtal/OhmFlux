@@ -23,16 +23,15 @@
 #include "myFish.h"
 #include "GuiFishLabel.h"
 
-#include <errorlog.h>
-#include <fluxGlobals.h>
-#include <fluxRender2D.h>
-#include <misc.h>
-#include <fluxLight.h>
-#include <fluxLightManager.h>
-#include <fluxParticleEmitter.h>
-#include <fluxParticleManager.h>
-#include <fluxParticlePresets.h>
-#include <fluxScheduler.h>
+#include <utils/errorlog.h>
+#include <core/fluxGlobals.h>
+#include <render/fluxRender2D.h>
+#include <lights/fluxLight.h>
+#include <lights/fluxLightManager.h>
+#include <particle/fluxParticleEmitter.h>
+#include <particle/fluxParticleManager.h>
+#include <particle/fluxParticlePresets.h>
+#include <utils/fluxScheduler.h>
 
 
 //--------------------------------------------------------------------------------------

@@ -7,8 +7,7 @@
 #define _MAIN_H_
 
 #include "source/fluxMain.h"
-#include "source/misc.h"
-#include "source/errorlog.h"
+#include <utils/errorlog.h>
 #include "globals.h"
 #include "myFish.h"
 #include "GuiFishLabel.h"

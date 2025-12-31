@@ -1,0 +1,78 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2024 Ohmtal Game Studio
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
+#include "fluxBitmapFont.h"
+#include "render/fluxRender2D.h"
+
+#include <SDL3/SDL.h>
+#include <stdio.h>
+#include "utils/errorlog.h"
+//-----------------------------------------------------------------------------
+void FluxBitmapFont::setCaption(const char *szFormat, ...)
+{
+    if (!szFormat) return;
+    va_list Arg;
+    va_start(Arg, szFormat);
+    // Use sizeof(mCaption) to stay within bounds
+    vsnprintf(mCaption, sizeof(mCaption), szFormat, Arg);
+    mCaption[sizeof(mCaption) - 1] = '\0'; // Manual safety terminator
+    va_end(Arg);
+
+    // update width and height of the object!
+    updateSize();
+
+}
+
+//-----------------------------------------------------------------------------
+void FluxBitmapFont::Draw()
+{
+    S32 x = getX();
+    S32 y = getY();
+
+
+    S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
+
+    if ( mAlign == FontAlign_Center ) {
+        x -= halfWidth;
+    }
+    else if ( mAlign == FontAlign_Right )
+    {
+        x -= getDrawParams().w;
+    }
+
+    DrawParams2D dp; // Creates a new drawparams object
+    dp.image = getTexture();
+    dp.imgId = 0;
+    dp.x = x;
+    dp.y = y;
+    dp.z = getLayer();
+    dp.w = mCharWidth;
+    dp.h = mCharHeight;
+    dp.color = mColor;
+    dp.isGuiElement = getIsGuiElement();
+
+    for (size_t i = 0; i < mTextlen; i++)
+    {
+        dp.x = x;
+        dp.imgId =  char(mCaption[i])-mStartChar;
+        Render2D.drawSprite(dp);
+        x += mCharWidth;
+    }
+}
+//-----------------------------------------------------------------------------
+RectI FluxBitmapFont::getRectI() const
+{
+    RectI lResult = getDrawParams().getRectI();
+    S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
+
+    if ( mAlign == FontAlign_Left ) {
+        lResult.x += halfWidth;
+    }
+    else if ( mAlign == FontAlign_Right )
+    {
+        lResult.x -= halfWidth;
+    }
+
+    return lResult;
+}

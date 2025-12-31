@@ -10,21 +10,21 @@
 #pragma once
 #ifndef _FLUXMAIN_H_
 #define _FLUXMAIN_H_
-#include "fluxGlobals.h"
+#include "core/fluxGlobals.h"
 #include <SDL3/SDL.h>
 
 #include <vector>
 #include <cassert>
 
-#include "fluxBaseObject.h"
-#include "fluxTexture.h"
-#include "fluxScreen.h"
-#include "fluxRenderObject.h"
-#include "fluxBitmapFont.h"
-#include "fluxAudioStream.h"
-#include "fluxQuadtree.h"
-#include "fluxCamera.h"
-#include "fluxGlobals.h"
+#include "core/fluxBaseObject.h"
+#include "core/fluxTexture.h"
+#include "core/fluxScreen.h"
+#include "core/fluxRenderObject.h"
+#include "fonts/fluxBitmapFont.h"
+#include "audio/fluxAudioStream.h"
+#include "core/fluxQuadtree.h"
+#include "core/fluxCamera.h"
+#include "core/fluxGlobals.h"
 
 
 extern FluxScreen* g_CurrentScreen;

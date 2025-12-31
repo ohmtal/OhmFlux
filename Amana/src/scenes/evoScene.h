@@ -1,6 +1,6 @@
 #pragma once
 
-#include <errorlog.h>
+#include <utils/errorlog.h>
 #include <game/fluxScene.h>
 #include "../amanaGame.h"
 

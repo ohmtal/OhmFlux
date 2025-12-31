@@ -2,21 +2,20 @@
 // ohmFlux TestBed
 // !!! Warning ugly code style ahead !!!
 //-----------------------------------------------------------------------------
-#include "source/fluxMain.h"
-#include "source/fluxBitmapFont.h"
-#include "source/misc.h"
-#include <fluxRender2D.h>
-#include <fluxInput.h>
-#include <fluxTilemap.h>
-#include <fluxTextFile.h>
-#include <fluxParticleEmitter.h>
-#include <fluxParticleManager.h>
-#include <fluxParticlePresets.h>
-#include <fluxTrueTypeFont.h>
-#include <fluxAudioStream.h>
-#include <fluxScheduler.h>
-#include <fluxLight.h>
-#include <fluxLightManager.h>
+#include <fluxMain.h>
+#include <fonts/fluxBitmapFont.h>
+#include <render/fluxRender2D.h>
+#include <core/fluxInput.h>
+#include <core/fluxTilemap.h>
+#include <utils/fluxTextFile.h>
+#include <particle/fluxParticleEmitter.h>
+#include <particle/fluxParticleManager.h>
+#include <particle/fluxParticlePresets.h>
+#include <fonts/fluxTrueTypeFont.h>
+#include <audio/fluxAudioStream.h>
+#include <utils/fluxScheduler.h>
+#include <lights/fluxLight.h>
+#include <lights/fluxLightManager.h>
 
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 

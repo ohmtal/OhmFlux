@@ -9,7 +9,7 @@
 #ifndef _BASICGRID_H_
 #define _BASICGRID_H_
 
-#include "fluxGlobals.h"
+#include "core/fluxGlobals.h"
 #include <vector>
 #include <cassert>
 

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 
-#include "fluxGlobals.h"
+#include "core/fluxGlobals.h"
 #include <SDL3/SDL.h>
 
 #ifdef __EMSCRIPTEN__
@@ -16,12 +16,11 @@
 #include <algorithm>
 
 #include "fluxMain.h"
-#include "fluxMath.h"
-#include "errorlog.h"
-#include "fluxRender2D.h"
-#include "fluxParticleManager.h"
-#include "fluxScheduler.h"
-#include "misc.h"
+#include "core/fluxMath.h"
+#include "utils/errorlog.h"
+#include "render/fluxRender2D.h"
+#include "particle/fluxParticleManager.h"
+#include "utils/fluxScheduler.h"
 
 float gFrameTime = 0.f; // we need that Global for timming
 float gGameTime  = 0.f;

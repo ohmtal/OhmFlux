@@ -51,23 +51,31 @@ set(AMANA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Amana")
 # --- Engine Library Sources ---
 set(ENGINE_SOURCES
     ${ENGINE_DIR}/fluxMain.cpp
-    ${ENGINE_DIR}/fluxScreen.cpp
-    ${ENGINE_DIR}/fluxTexture.cpp
-    ${ENGINE_DIR}/errorlog.cpp
-    ${ENGINE_DIR}/fluxRenderObject.cpp
-    ${ENGINE_DIR}/fluxBitmapFont.cpp
-    ${ENGINE_DIR}/fluxAudioStream.cpp
-    ${ENGINE_DIR}/fluxQuadtree.cpp
-    ${ENGINE_DIR}/fluxRender2D.cpp
-    ${ENGINE_DIR}/fluxShader.cpp
-    ${ENGINE_DIR}/fluxScheduler.cpp
-    ${ENGINE_DIR}/fluxMesh.cpp
-    ${ENGINE_DIR}/fluxCamera.cpp
-    ${ENGINE_DIR}/fluxParticleEmitter.cpp
-    ${ENGINE_DIR}/fluxParticleManager.cpp
-    ${ENGINE_DIR}/fluxTrueTypeFont.cpp
-    ${ENGINE_DIR}/fluxGlobals.cpp
+
+    ${ENGINE_DIR}/audio/fluxAudioStream.cpp
+
+    ${ENGINE_DIR}/core/fluxGlobals.cpp
+    ${ENGINE_DIR}/core/fluxScreen.cpp
+    ${ENGINE_DIR}/core/fluxTexture.cpp
+    ${ENGINE_DIR}/core/fluxRenderObject.cpp
+    ${ENGINE_DIR}/core/fluxQuadtree.cpp
+    ${ENGINE_DIR}/core/fluxCamera.cpp
+
+    ${ENGINE_DIR}/fonts/fluxBitmapFont.cpp
+    ${ENGINE_DIR}/fonts/fluxTrueTypeFont.cpp
+
     ${ENGINE_DIR}/grid/basicgrid.cpp
+
+    ${ENGINE_DIR}/particle/fluxParticleEmitter.cpp
+    ${ENGINE_DIR}/particle/fluxParticleManager.cpp
+
+    ${ENGINE_DIR}/render/fluxMesh.cpp
+    ${ENGINE_DIR}/render/fluxRender2D.cpp
+    ${ENGINE_DIR}/render/fluxShader.cpp
+
+    ${ENGINE_DIR}/utils/fluxScheduler.cpp
+    ${ENGINE_DIR}/utils/errorlog.cpp
+
     ${STB_DIR}/flux_stb_impl.cpp
 )
 
