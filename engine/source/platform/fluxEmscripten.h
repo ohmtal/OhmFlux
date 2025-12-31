@@ -46,8 +46,8 @@
 #include <emscripten/em_js.h>
 
 #include "utils/errorlog.h"
+#include "core/fluxScreen.h"
 #include "fluxMain.h"
-#include "fluxScreen.h"
 
 
 
