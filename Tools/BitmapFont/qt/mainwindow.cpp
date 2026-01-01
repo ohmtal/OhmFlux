@@ -118,22 +118,19 @@ MainWindow::~MainWindow()
 //------------------------------------------------------------------------------
 void MainWindow::on_btnFont_clicked()
 {
-    bool ok;
+    QFontDialog dialog(paintBoxWidget->font(), this);
+    dialog.setOption(QFontDialog::DontUseNativeDialog, true);
+    dialog.setFixedSize(600, 400);
+    if (dialog.exec()) {
+        QFont font = dialog.selectedFont();
+        font.setStyleStrategy(QFont::PreferAntialias);
 
-    QFont initialFont = paintBoxWidget->font();
-    // initialFont.setPointSize(DEFAULT_NEW_FONT_SIZE);
-    initialFont.setStyleStrategy(QFont::PreferAntialias);
-
-    QFont selectedFont = QFontDialog::getFont(&ok, initialFont, this);
-
-    if (ok) {
-        selectedFont.setStyleStrategy(QFont::PreferAntialias);
-
-        paintBoxWidget->setFont(selectedFont);
+        paintBoxWidget->setFont(font);
         onFontChanged();
         paintBoxWidget->update();
     }
 }
+
 //------------------------------------------------------------------------------
 void MainWindow::on_btnBackGroundColor_clicked()
 {
@@ -150,7 +147,8 @@ void MainWindow::on_btnSaveAs_clicked() {
     QFileDialog dialog(this, "Save Bitmap Font");
     dialog.setAcceptMode(QFileDialog::AcceptSave);
     dialog.setNameFilters({"PNG (*.png)", "Bitmap (*.bmp)", "JPG (*.jpg)"});
-    dialog.setDefaultSuffix("png");
+    // dialog.setDefaultSuffix("png");
+    dialog.resize(600, 400);
 
     if (dialog.exec()) {
         QString fileName = dialog.selectedFiles().first();
@@ -190,61 +188,6 @@ void MainWindow::on_btnSaveAs_clicked() {
         }
     }
 }
-/*
-void MainWindow::on_btnSaveAs_clicked()
-{
-    QFileDialog dialog(this, "Save Bitmap Font");
-    dialog.setAcceptMode(QFileDialog::AcceptSave);
-    dialog.setNameFilters({"Bitmap (*.bmp)", "PNG (*.png)"});
-    dialog.setDefaultSuffix("bmp");
-
-    if (dialog.exec()) {
-        QString fileName = dialog.selectedFiles().first();
-
-        // Handle automatic extension
-        QFileInfo fileInfo(fileName);
-        if (fileInfo.suffix().isEmpty()) {
-            QString selectedFilter = dialog.selectedNameFilter();
-            if (selectedFilter.contains("*.png")) fileName += ".png";
-            else if (selectedFilter.contains("*.bmp")) fileName += ".bmp";
-        }
-
-        if (!fileName.isEmpty()) {
-            // Prepare the widget for a "clean" render
-            bool savDrawLines = paintBoxWidget->drawLines;
-            paintBoxWidget->drawLines = false;
-
-            // Create the pixmap and render
-            QPixmap pixmap(paintBoxWidget->size());
-            bool isPng = fileName.endsWith(".png", Qt::CaseInsensitive);
-
-            if (isPng) {
-                // Initialize pixmap with full transparency for PNGs
-                pixmap.fill(Qt::transparent);
-            } else {
-                pixmap.fill(paintBoxWidget->backgroundColor);
-            }
-
-            QPainter painter(&pixmap);
-            paintBoxWidget->paintFont(&painter, !isPng);
-            painter.end();
-
-            // Since we aren't calling paintFont manually here,
-            // render() will trigger the widget's paintEvent.
-            // paintBoxWidget->render(&pixmap);
-
-            if (pixmap.save(fileName)) {
-                // Optional: success feedback
-            } else {
-                QMessageBox::warning(this, "Save Error", "Could not save file to: " + fileName);
-            }
-
-            // Restore the UI state
-            paintBoxWidget->drawLines = savDrawLines;
-            paintBoxWidget->update(); // Refresh screen to show lines again
-        }
-    }
-}*/
 //------------------------------------------------------------------------------
 void MainWindow::on_chkDrawLines_stateChanged(int arg1)
 {
