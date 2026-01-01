@@ -83,6 +83,14 @@ set(ENGINE_SOURCES
 # ------------ Dependencies (SDL3 & Graphics) --------------
 set(FLUX_LIBS "")
 
+# -- box2D
+set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
+set(BOX2D_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(engine/box2d)
+# <<<
+
+
 if(EMSCRIPTEN)
     add_compile_options("-sUSE_SDL=3")
     add_link_options("-sUSE_SDL=3" "-sFULL_ES3=1" "-sUSE_WEBGL2=1" "-sALLOW_MEMORY_GROWTH=1")
@@ -156,6 +164,7 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${ENGINE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/engine>
     $<BUILD_INTERFACE:${STB_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/engine/box2d/include>
 )
 
 # Apply Static Interface Properties for Windows/MinGW
@@ -164,7 +173,7 @@ if(WIN32 AND NOT MSVC AND NOT EMSCRIPTEN AND NOT ANDROID)
     target_compile_definitions(ohmFlux_engine PUBLIC GLEW_STATIC)
 endif()
 
-target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile)
+target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile box2d)
 
 # ------------------- Compiler Flags -------------------
 # Add debug flag
