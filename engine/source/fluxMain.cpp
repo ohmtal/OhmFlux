@@ -39,7 +39,7 @@ FluxMain::FluxMain()
 	mSettings.ScaleScreen  = true;
 
 	mSettings.Caption        = "Flux";
-	mSettings.Version        = "0.251215";
+	mSettings.Version        = "0.260101";
 	mSettings.IconFilename   = nullptr;
 	mSettings.CursorFilename = nullptr;
 	mSettings.cursorHotSpotX = 0;
@@ -156,30 +156,33 @@ bool FluxMain::Initialize()
 void FluxMain::Deinitialize()
 {
 	// Shutdown scheduler
+	dLog("FluxMain: shutdown FluxSchedule");
 	FluxSchedule.shutdown();
 
 
-	// Cleanup Textures
-	// for (auto* tex : mTextures) {
-	// 	SAFE_DELETE(tex);
-	// }
-	// mTextures.clear();
-	for (auto& [key, val] : mTextureCache) {
-		SAFE_DELETE(val);
-	}
-	mTextureCache.clear();
 
 	// Cleanup Game Objects
+	dLog("FluxMain: Cleaning up queued game objects");
 	for (auto* obj : mQueueObjects) {
 		auto* baseObj = static_cast<FluxBaseObject*>(obj); // Explicit cast if needed
 		SAFE_DELETE(baseObj);
 	}
 	mQueueObjects.clear();
 
+	// Cleanup Textures
+	dLog("FluxMain: Cleaning up Textrue resources");
+	for (auto& [key, val] : mTextureCache) {
+		SAFE_DELETE(val);
+	}
+	mTextureCache.clear();
+
+
+	dLog("FluxMain: Cleaning up screen");
 	SAFE_DELETE(g_CurrentScreen);
 
 	if (g_CurrentQuadTree)
 	{
+		dLog("FluxMain: Cleaning up quad tree");
 		g_CurrentQuadTree->clear();
 		SAFE_DELETE(g_CurrentQuadTree);
 	}

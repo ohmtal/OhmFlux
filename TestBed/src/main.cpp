@@ -16,6 +16,7 @@
 #include <utils/fluxScheduler.h>
 #include <lights/fluxLight.h>
 #include <lights/fluxLightManager.h>
+#include "box2d/box2d.h"
 
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 
@@ -80,12 +81,16 @@ public:
         // <<< Tilemap
 
 
-        mStatusLabel = new FluxBitmapFont(mFontTex);
-        //mStatusLabel->set("Player X turn", 10, 10, 26, 32, 0.9f, 0.9f, 1.f, 1.f);
-        mStatusLabel->set("...STATUS....", getScreen()->getCenterX(), 50, 26, 32, { 0.9f, 0.9f, 1.f, 1.f} );
-        mStatusLabel->setAlign(FontAlign_Center);
-        mStatusLabel->setLayer(0.05f);
-        mStatusLabel->setColor( cl_Blue );
+
+
+        // mStatusLabel = new FluxBitmapFont(mFontTex);
+        // //mStatusLabel->set("Player X turn", 10, 10, 26, 32, 0.9f, 0.9f, 1.f, 1.f);
+        // mStatusLabel->set("...STATUS....", getScreen()->getCenterX(), 50, 26, 32, { 0.9f, 0.9f, 1.f, 1.f} );
+        // mStatusLabel->setAlign(FontAlign_Center);
+        // mStatusLabel->setLayer(0.05f);
+        // mStatusLabel->setColor( cl_Blue );
+
+        mStatusLabel = new FluxBitmapFont(mFontTex, "..STATUS..", {getScreen()->getCenterX(),50}, {26,32} , FontAlign_Center, cl_Blue);
         queueObject(mStatusLabel);
 
 

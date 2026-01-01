@@ -7,6 +7,12 @@
 #include <stdio.h>
 #include "utils/errorlog.h"
 //-----------------------------------------------------------------------------
+// FIXME need a resource manager to prevent multiple copies of ttf font in
+//       memory. For loaded Textures FluxMain loadTextures does this but
+//       here we push the data directly to FluxTexture
+//
+//-----------------------------------------------------------------------------
+
 FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
 : Parent(nullptr)
 {
@@ -14,7 +20,7 @@ FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
     mIsGuiElement = true;
     mColor = {1.0f, 1.0f, 1.0f, 1.0f};
 
-    // 1. Load TTF file using SDL3 (Works on Android APK assets and Desktop)
+    // Load TTF file using SDL3 (Works on Android APK assets and Desktop)
     size_t size;
     void* ttfData = SDL_LoadFile(filename, &size);
 
@@ -23,7 +29,7 @@ FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
         return;
     }
 
-    // 2. Bake to Bitmap
+    // Bake to Bitmap
     // Note: stbtt_BakeFontBitmap does NOT keep a pointer to ttfData,
     // it only reads it, so we can free ttfData safely after this step.
     std::vector<unsigned char> alphaBitmap(512 * 512);
@@ -34,12 +40,17 @@ FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
     // 3. Free the file buffer immediately after baking
     SDL_free(ttfData);
 
-    // 4. Create Texture (Atlas)
-    FluxTexture* lTexture = new FluxTexture();
-    lTexture->bindOpenGLAlphaDirect(alphaBitmap.data(), 512, 512);
-    setTexture(lTexture);
+    // Create Texture (Atlas)
+    mTexture = new FluxTexture();
+    mTexture->bindOpenGLAlphaDirect(alphaBitmap.data(), 512, 512);
+    setTexture(mTexture);
 }
 
+FluxTrueTypeFont::~FluxTrueTypeFont(void)
+{
+    // clean Texture
+    SAFE_DELETE(mTexture);
+}
 
 //-----------------------------------------------------------------------------
 void FluxTrueTypeFont::setCaption(const char *szFormat, ...)
@@ -148,3 +159,4 @@ RectI FluxTrueTypeFont::getRectI() const
 
     return lResult;
 }
+

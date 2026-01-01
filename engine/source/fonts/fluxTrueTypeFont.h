@@ -2,12 +2,6 @@
 // Copyright (c) 2024 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Flux Game Engine
-//
-// @Author  T.Huehn (XXTH)
-// @Desc    simple bitmap font class
-// @created 2024-12-05
-//-----------------------------------------------------------------------------
 #pragma once
 
 #include <SDL3/SDL.h>
@@ -36,11 +30,13 @@ protected:
     FontAlign mAlign;
     bool mIsGuiElement;
     F32 mScale = 1.f;
+    FluxTexture* mTexture;
 private:
     using Parent::getDrawParams;
 
 public:
     FluxTrueTypeFont(const char* filename, U32 fontSize = 32);
+    ~FluxTrueTypeFont();
 
 
     void setCaption(const char *szFormat, ...) PRINTF_CHECK(2, 3);

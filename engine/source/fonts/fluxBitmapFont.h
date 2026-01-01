@@ -17,7 +17,8 @@ class FluxBitmapFont : public FluxRenderObject
 {
     typedef FluxRenderObject Parent;
 protected:
-    S32 mStartChar, mEndChar;
+    S32 mStartChar =  32,
+        mEndChar   = 127;
     char  mCaption[256]; // do not change directly !!
     S32 mCharWidth, mCharHeight;
     S32 mTextlen;
@@ -40,6 +41,24 @@ public:
     , mAlign(FontAlign_Left)
     , mIsGuiElement(true)
     { }
+
+    // one liner
+    FluxBitmapFont(FluxTexture* lTex,
+                   const char * lCaption,
+                   Point2I  lPos,
+                   Point2I  lCharSize,
+                   FontAlign lAlign = FontAlign_Left,
+                   Color4F  lColor = cl_White
+    )
+    : FluxRenderObject(lTex)
+    , mIsGuiElement(true)
+    {
+        setCaption("%s", lCaption);
+        setPos(lPos.x,lPos.y);
+        setCharSize(lCharSize.x, lCharSize.y);
+        setAlign(lAlign);
+        setColor(lColor);
+    }
 
 
     // THIS MUST BE CALLED EVERY TIME THE CAPTION IS CHANGED !!!!
