@@ -35,7 +35,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
-#include "fluxBaseObject.h"
+#include "core/fluxBaseObject.h"
 #include "utils/errorlog.h"
 
 

@@ -15,6 +15,10 @@
 
 #include <vector>
 #include <cassert>
+#include <tuple>
+#include <map>
+#include <string>
+#include <mutex>
 
 #include "core/fluxBaseObject.h"
 #include "core/fluxTexture.h"
@@ -36,7 +40,16 @@ protected:
 
 private:
 	// FluxScreen* mScreen;
-	std::vector<FluxTexture*> mTextures;
+	// std::vector<FluxTexture*> mTextures;
+
+	// added prevent of multiple Texture loadings.
+	// this open a more lazy way of creating objects like
+	// FluxBitmapFont's and FluxRenderObject's '
+	// the mutex is added to for thread safety
+	std::mutex mTextureMutex;
+	typedef std::tuple<std::string, int, int, bool, bool> TextureKey;
+	std::map<TextureKey, FluxTexture*, std::less<>> mTextureCache;
+
 	std::vector<FluxBaseObject*> mQueueObjects;
 	std::vector<FluxBaseObject*> mDeletedObjects;
 

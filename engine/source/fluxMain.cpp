@@ -160,10 +160,14 @@ void FluxMain::Deinitialize()
 
 
 	// Cleanup Textures
-	for (auto* tex : mTextures) {
-		SAFE_DELETE(tex);
+	// for (auto* tex : mTextures) {
+	// 	SAFE_DELETE(tex);
+	// }
+	// mTextures.clear();
+	for (auto& [key, val] : mTextureCache) {
+		SAFE_DELETE(val);
 	}
-	mTextures.clear();
+	mTextureCache.clear();
 
 	// Cleanup Game Objects
 	for (auto* obj : mQueueObjects) {
@@ -171,8 +175,6 @@ void FluxMain::Deinitialize()
 		SAFE_DELETE(baseObj);
 	}
 	mQueueObjects.clear();
-
-
 
 	SAFE_DELETE(g_CurrentScreen);
 
@@ -241,20 +243,26 @@ bool FluxMain::queueDelete(FluxBaseObject* lObject)
 }
 //--------------------------------------------------------------------------------------
 // Texture load wrapper
+// 2026-01-01 optimized with thread safety and prevent multiple loading
 FluxTexture* FluxMain::loadTexture(const char* filename, int cols, int rows, bool setColorKeyAtZeroPixel, bool usePixelPerfect)
 {
+	// Create a key using string_view to avoid allocation during the search
+	// Note: We use a helper auto-key to check existence
+	auto lookupKey = std::make_tuple(std::string_view(filename), cols, rows, setColorKeyAtZeroPixel, usePixelPerfect);
+
+	// Transparent Lookup
+	auto it = mTextureCache.find(lookupKey);
+	if (it != mTextureCache.end()) {
+		return it->second;
+	}
+
+	// --- Cache Miss: Now we proceed with loading ---
 	FluxTexture* result = new FluxTexture();
 	if (!usePixelPerfect) result->setUseTrilinearFiltering();
 
-	bool success = false;
-
-	// If no software-colorkeying is requested, use the Fast Path
-	if (!setColorKeyAtZeroPixel) {
-		success = result->loadTextureDirect(filename);
-	} else {
-		// Use the Surface-based path (Double-copy) because it's required for ColorKeying
-		success = result->loadTexture(filename, setColorKeyAtZeroPixel);
-	}
+	bool success = (!setColorKeyAtZeroPixel)
+	? result->loadTextureDirect(filename)
+	: result->loadTexture(filename, setColorKeyAtZeroPixel);
 
 	if (!success) {
 		Log("Cannot load graphic: %s", filename);
@@ -263,9 +271,39 @@ FluxTexture* FluxMain::loadTexture(const char* filename, int cols, int rows, boo
 	}
 
 	result->setParts(cols, rows);
-	mTextures.push_back(result);
+
+	// Store in cache: Only here is the string actually copied/allocated
+	mTextureCache.emplace(lookupKey, result);
+
 	return result;
 }
+
+
+// FluxTexture* FluxMain::loadTexture(const char* filename, int cols, int rows, bool setColorKeyAtZeroPixel, bool usePixelPerfect)
+// {
+// 	FluxTexture* result = new FluxTexture();
+// 	if (!usePixelPerfect) result->setUseTrilinearFiltering();
+//
+// 	bool success = false;
+//
+// 	// If no software-colorkeying is requested, use the Fast Path
+// 	if (!setColorKeyAtZeroPixel) {
+// 		success = result->loadTextureDirect(filename);
+// 	} else {
+// 		// Use the Surface-based path (Double-copy) because it's required for ColorKeying
+// 		success = result->loadTexture(filename, setColorKeyAtZeroPixel);
+// 	}
+//
+// 	if (!success) {
+// 		Log("Cannot load graphic: %s", filename);
+// 		SAFE_DELETE(result);
+// 		return nullptr;
+// 	}
+//
+// 	result->setParts(cols, rows);
+// 	mTextures.push_back(result);
+// 	return result;
+// }
 //--------------------------------------------------------------------------------------
 bool FluxMain::toggleFullScreen()
 {

@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Android Example:
+// Example:
 //
 // char* prefPath = SDL_GetPrefPath("MyCompany", "MyGame");
 // std::string savePath = std::string(prefPath) + "savegame.txt";
