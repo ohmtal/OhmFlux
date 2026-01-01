@@ -4,7 +4,7 @@
 //-----------------------------------------------------------------------------
 // Example:
 //
-// char* prefPath = SDL_GetPrefPath("MyCompany", "MyGame");
+// char* prefPath = SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ) ;
 // std::string savePath = std::string(prefPath) + "savegame.txt";
 //
 // FluxTextFile::Save(savePath, myLines);

@@ -19,4 +19,9 @@ FluxQuadtree* getQuadTreeObject()  {
     return g_CurrentQuadTree;
 }
 
+// FIXME need access to settings or FluxMain again ...
+// char * getPrefPath()
+// {
+//   return SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ) ;
+// }
 

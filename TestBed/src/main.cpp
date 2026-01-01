@@ -449,6 +449,7 @@ int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
     TestBed* game = new TestBed();
+    game->mSettings.Company = "Ohmflux";
     game->mSettings.Caption = "TestBed";
     game->mSettings.enableLogFile = true;
     game->mSettings.IconFilename = "assets/particles/Skull2.bmp";
@@ -456,7 +457,7 @@ int main(int argc, char* argv[])
     game->mSettings.cursorHotSpotX = 10;
     game->mSettings.cursorHotSpotY = 10;
 
-    LogFMT("TEST: My pref path would be:{}", SDL_GetPrefPath("Ohmtal", "TestBed"));
+    LogFMT("TEST: My pref path would be:{}", SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ));
 
     game->Execute();
     SAFE_DELETE(game);

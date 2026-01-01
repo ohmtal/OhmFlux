@@ -558,7 +558,7 @@ void FluxTexture::generateAtlas(int maxRows, bool setColorKeyAtZeroPixel, bool u
 /*
  Example:
  ========
-    char* prefPath = SDL_GetPrefPath("MyCompany", "MyGame");
+    char* prefPath = SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ) ;
     std::string fullPath = std::string(prefPath) + "myPicture.png";
     myTexture->savePNGToFile(fullPath.c_str());
     SDL_free(prefPath);
