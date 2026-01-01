@@ -1,3 +1,7 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Ohmtal Game Studio
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
 #include <QApplication>
 #include "mainwindow.h"
 

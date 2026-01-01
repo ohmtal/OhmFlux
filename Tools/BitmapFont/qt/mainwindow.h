@@ -1,3 +1,7 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Ohmtal Game Studio
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -28,7 +32,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 public:
-    void paintFont(QPainter* myPainter);
+    void paintFont(QPainter* myPainter, bool fillBackground = true);
 };
 
 
