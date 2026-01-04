@@ -39,7 +39,7 @@ FluxMain::FluxMain()
 	mSettings.ScaleScreen  = true;
 
 	mSettings.Caption        = "Flux";
-	mSettings.Version        = "0.260101";
+	mSettings.Version        = "0.260104";
 	mSettings.IconFilename   = nullptr;
 	mSettings.CursorFilename = nullptr;
 	mSettings.cursorHotSpotX = 0;

@@ -39,6 +39,7 @@ private:
 
 	const char* mCaption;
 	Point2I mMinWindowSize;
+	bool mWindowMaximized = false;
 
 	U32 mMaxSprites = DEFAULT_MAX_SPRITES;
 

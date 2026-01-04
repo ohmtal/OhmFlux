@@ -17,6 +17,7 @@
 #include <random>
 #include <chrono>
 #include <cstring> // For memset()
+#include <mutex>
 
 // Forward declaration for FILE, as it's used in method signatures
 // The actual definition comes from <cstdio> which is included above.
@@ -105,6 +106,8 @@ public:
     SFXParams mParams;
     SFXState mState;
 
+    std::recursive_mutex mParamsMutex;
+
     float master_vol;
     float sound_vol;
     int wav_bits;
@@ -117,30 +120,22 @@ public:
     SFXGenerator();
 
     void ResetParams();
+    void ResetSample(bool restart);
+    void SynthSample(int length, float* buffer, FILE* file);
+
+    void PlaySample();
     bool LoadSettings(const char* filename);
     bool SaveSettings(const char* filename);
-    void ResetSample(bool restart);
-    void PlaySample();
-    void SynthSample(int length, float* buffer, FILE* file);
     bool ExportWAV(const char* filename);
 
-
     void GeneratePickupCoin();
-
     void GenerateLaserShoot();
-
     void GenerateExplosion();
-
     void GeneratePowerup();
-
     void GenerateHitHurt();
-
     void GenerateJump();
-
     void GenerateBlipSelect();
-
     void Randomize();
-
     void Mutate();
 
     //------------------------------------------------------------------------------
@@ -161,6 +156,8 @@ private:
     float frnd(float range);
     std::mt19937 m_rand_engine;
     SDL_AudioStream* mStream = nullptr;
+    void ResetParamsNoLock();
+
 };
 
 #endif // SFXGENERATOR_H

@@ -439,6 +439,7 @@ struct FluxSettings
     double frameLimiter = 0.f; //sleep milliseconds
 
     Point2I minWindowSize = { 320, 200 };
+    bool WindowMaximized  = false;
     const char* Company = "Ohmtal";
     const char* Caption;
     const char* Version;

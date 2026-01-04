@@ -147,6 +147,7 @@ bool  FluxScreen::prepareMode(const FluxSettings& lSettings )
 	mFullScreen	 = lSettings.FullScreen;
 	mVsync = lSettings.initialVsync;
 	mMinWindowSize = lSettings.minWindowSize;
+	mWindowMaximized = lSettings.WindowMaximized;
 
 	mMaxSprites = lSettings.maxSprites;
 
@@ -174,6 +175,8 @@ bool FluxScreen::init()
 	SDL_SetWindowSize(mWindow,getWidth(),getHeight());
 	SDL_SetWindowMinimumSize(mWindow, mMinWindowSize.x, mMinWindowSize.y);
 
+	if (mWindowMaximized)
+		SDL_MaximizeWindow(mWindow);
 
 	mGL_Context = SDL_GL_CreateContext(mWindow);
 

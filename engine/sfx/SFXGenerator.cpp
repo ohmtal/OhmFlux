@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------------
 #include "SFXGenerator.h"
 #include <SDL3/SDL.h>
+#include <mutex>
 
 #ifndef PI
 #define PI 3.14159265f
@@ -41,7 +42,7 @@ SFXGenerator::SFXGenerator():
     fileacc = 0;
 
     // Reset all sound parameters to default
-    ResetParams();
+    ResetParamsNoLock();
     // Initialize state variables
     mState.playing_sample = false;
     mState.phase = 0;
@@ -84,6 +85,11 @@ SFXGenerator::SFXGenerator():
 //-----------------------------------------------------------------------------
 void SFXGenerator::ResetParams()
 {
+    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
+}
+void SFXGenerator::ResetParamsNoLock()
+{
     mParams.wave_type=0;
 
     mParams.p_base_freq=0.3f;
@@ -120,6 +126,8 @@ void SFXGenerator::ResetParams()
 //-----------------------------------------------------------------------------
 bool SFXGenerator::LoadSettings(const char* filename)
 {
+    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+
     FILE* file=fopen(filename, "rb");
     if(!file)
         return false;
@@ -176,6 +184,8 @@ bool SFXGenerator::LoadSettings(const char* filename)
 //-----------------------------------------------------------------------------
 bool SFXGenerator::SaveSettings(const char* filename)
 {
+    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+
     FILE* file=fopen(filename, "wb");
     if(!file)
         return false;
@@ -224,6 +234,7 @@ bool SFXGenerator::SaveSettings(const char* filename)
 //-----------------------------------------------------------------------------
 void SFXGenerator::ResetSample(bool restart)
 {
+    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     if(!restart)
         mState.phase=0;
     mState.fperiod=100.0/(mParams.p_base_freq*mParams.p_base_freq+0.001);
@@ -293,6 +304,7 @@ void SFXGenerator::PlaySample()
 //-----------------------------------------------------------------------------
 void SFXGenerator::SynthSample(int length, float* buffer, FILE* file)
 {
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     for(int i=0;i<length;i++)
     {
         if(!mState.playing_sample)
@@ -461,6 +473,7 @@ void SFXGenerator::SynthSample(int length, float* buffer, FILE* file)
 //-----------------------------------------------------------------------------
 bool SFXGenerator::ExportWAV(const char* filename)
 {
+     // not ? std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     FILE* foutput=fopen(filename, "wb");
     if(!foutput)
         return false;
@@ -518,7 +531,8 @@ bool SFXGenerator::ExportWAV(const char* filename)
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::GeneratePickupCoin(){
-    ResetParams();
+    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
     mParams.p_base_freq = 0.4f + frnd(0.5f);
     mParams.p_env_attack = 0.0f;
     mParams.p_env_sustain = frnd(0.1f);
@@ -531,7 +545,8 @@ void SFXGenerator::GeneratePickupCoin(){
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::GenerateLaserShoot() {
-    ResetParams();
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
     mParams.wave_type = rnd(2);
     if (mParams.wave_type == 2 && rnd(1))
         mParams.wave_type = rnd(1);
@@ -568,7 +583,8 @@ void SFXGenerator::GenerateLaserShoot() {
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::GenerateExplosion() {
-    ResetParams();
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
     mParams.wave_type = 3;
     if (rnd(1)) {
         mParams.p_base_freq = 0.1f + frnd(0.4f);
@@ -603,7 +619,8 @@ void SFXGenerator::GenerateExplosion() {
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::GeneratePowerup() {
-    ResetParams();
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
     if (rnd(1)) mParams.wave_type = 1;
     else mParams.p_duty = frnd(0.6f);
 
@@ -625,7 +642,8 @@ void SFXGenerator::GeneratePowerup() {
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::GenerateHitHurt() {
-    ResetParams();
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
     mParams.wave_type = rnd(2);
     if (mParams.wave_type == 2) mParams.wave_type = 3;
     if (mParams.wave_type == 0) mParams.p_duty = frnd(0.6f);
@@ -639,7 +657,8 @@ void SFXGenerator::GenerateHitHurt() {
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::GenerateJump(){
-    ResetParams();
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
     mParams.wave_type = 0;
     mParams.p_duty = frnd(0.6f);
     mParams.p_base_freq = 0.3f + frnd(0.3f);
@@ -652,7 +671,8 @@ void SFXGenerator::GenerateJump(){
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::GenerateBlipSelect(){
-    ResetParams();
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    ResetParamsNoLock();
     mParams.wave_type = rnd(1);
     if (mParams.wave_type == 0) mParams.p_duty = frnd(0.6f);
     mParams.p_base_freq = 0.2f + frnd(0.4f);
@@ -663,6 +683,7 @@ void SFXGenerator::GenerateBlipSelect(){
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::Randomize() {
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     mParams.p_base_freq = pow(frnd(2.0f) - 1.0f, 2.0f);
     if (rnd(1))
         mParams.p_base_freq = pow(frnd(2.0f) - 1.0f, 3.0f) + 0.5f;
@@ -708,6 +729,7 @@ void SFXGenerator::Randomize() {
 }
 //-----------------------------------------------------------------------------
 void SFXGenerator::Mutate(){
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     if (rnd(1)) mParams.p_base_freq += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_freq_ramp += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_freq_dramp += frnd(0.1f) - 0.05f;
@@ -736,7 +758,10 @@ void SFXGenerator::Mutate(){
 //------------------------------------------------------------------------------
 void SDLCALL SFXGenerator::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
 {
+
     auto* gen = static_cast<SFXGenerator*>(userdata);
+
+    std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
 
     // additional_amount ist in BYTES.
     // Ein Float hat 4 Bytes.
