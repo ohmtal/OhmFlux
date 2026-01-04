@@ -18,6 +18,7 @@
 #include <lights/fluxLightManager.h>
 #include "box2d/box2d.h"
 #include <OplController.h>
+#include <SFXGenerator.h>
 
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 
@@ -27,6 +28,9 @@ class TestBed : public FluxMain
 private:
     OplController* mOplController = nullptr;
     OplController::SongData mTestOPLSong;
+
+    SFXGenerator* mSFXGenerator = nullptr;
+
 
     FluxInput mInput;
 
@@ -45,7 +49,7 @@ private:
     FluxTrueTypeFont* mMonoFont;
 
     FluxAudioStream* mTomsGuitarSample = nullptr;
-    FluxAudioStream* mClickSound = nullptr;
+    // FluxAudioStream* mClickSound = nullptr;
     FluxAudioStream* mBrrooiiSound = nullptr;
 
     FluxScheduler::TaskID mScheduleTestId = 0;
@@ -192,11 +196,11 @@ public:
         });
 
 
-         mClickSound = new FluxAudioStream("assets/sounds/pling.ogg");
-         mClickSound->setGain(0.2f);
-         queueObject(mClickSound);
-
-         queueObject(mClickSound); //<< fail safe test
+         // mClickSound = new FluxAudioStream("assets/sounds/pling.ogg");
+         // mClickSound->setGain(0.2f);
+         // queueObject(mClickSound);
+         //
+         // queueObject(mClickSound); //<< fail safe test
 
 
          mBrrooiiSound = new FluxAudioStream("assets/sounds/brrooii.ogg");
@@ -263,6 +267,14 @@ public:
             SAFE_DELETE(mOplController);
          }
 
+         //SFX Test:
+         mSFXGenerator = new SFXGenerator();
+         if (!mSFXGenerator->initSDLAudio())
+         {
+             Log("Failed to init SFXGenerator");
+             SAFE_DELETE(mSFXGenerator);
+         }
+
 
 
          return true;
@@ -281,6 +293,7 @@ public:
     void Deinitialize() override
     {
         SAFE_DELETE(mOplController);
+        SAFE_DELETE(mSFXGenerator);
 
         Parent::Deinitialize();
     }
@@ -326,7 +339,11 @@ public:
             case SDL_BUTTON_LEFT:
                 mSparkEmitter->setPosition({ getStatus().getWorldMousePos().x, getStatus().getWorldMousePos().y, 0.f});
                 mSparkEmitter->play();
-                mClickSound->play();
+                if (mSFXGenerator) {
+                    mSFXGenerator->GenerateJump();
+                    mSFXGenerator->PlaySample();
+                }
+
 
                 break;
             case SDL_BUTTON_RIGHT: // toggle MouseGrab
