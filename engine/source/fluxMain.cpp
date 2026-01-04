@@ -46,6 +46,7 @@ FluxMain::FluxMain()
 	mSettings.cursorHotSpotY = 0;
 
 
+
 }
 
 FluxMain::~FluxMain() {
@@ -147,6 +148,12 @@ bool FluxMain::Initialize()
 
 	if (mSettings.useQuadTree) {
 		g_CurrentQuadTree = new FluxQuadtree(mSettings.WorldBounds);
+	}
+
+	// init custom SDL events
+	FLUX_EVENT_SCALE_CHANGED =  SDL_RegisterEvents(1);
+	if (FLUX_EVENT_SCALE_CHANGED == (Uint32)-1) {
+		Log("ERROR: Failed to register SDL/FLUX Event: FLUX_EVENT_SCALE_CHANGED !!!!");
 	}
 
 

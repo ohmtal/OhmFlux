@@ -225,7 +225,7 @@ bool FluxScreen::init()
 
 	// Set the projection once (or when window resizes)
 	// createOrthoMatrix(0.0f, getWidth(), getHeight(), 0.0f, -100.0f, 100.0f, mOrtho);
-	Render2D.updateOrto(getWidth(), getHeight());
+	Render2D.updateOrtho(getWidth(), getHeight());
 
 
 #ifdef __EMSCRIPTEN__
@@ -262,7 +262,7 @@ bool FluxScreen::updateWindowSize(S32 lWidth, S32 lHeight)
 
 		//update
 		// createOrthoMatrix(0.0f, getWidth(), getHeight(), 0.0f, -100.0f, 100.0f, mOrtho);
-		Render2D.updateOrto(getWidth(), getHeight());
+		Render2D.updateOrtho(getWidth(), getHeight());
 
 
 		// dLog("------------- FluxScreen::updateWindowSize --------------- ");
@@ -275,8 +275,18 @@ bool FluxScreen::updateWindowSize(S32 lWidth, S32 lHeight)
 	} else /*if (mScreenMode == VM_OPENGL)*/ {
 		// not implemented
 	}
-	return true;
 
+	//fire FLUX_EVENT_SCALE_CHANGED >>>
+	SDL_Event event;
+	SDL_zero(event); // Initialize all fields to 0
+	event.type = FLUX_EVENT_SCALE_CHANGED;
+	// Example Data ...
+	// event.user.code = 42;           // A custom integer code
+	// event.user.data1 = somePointer; // Pointer to a struct/object (optional)
+	SDL_PushEvent(&event);
+	//<< FLUX_EVENT_SCALE_CHANGED
+
+	return true;
 }
 //-------------------------------------------------------------------------------
 bool FluxScreen::setCaption(const char* lCaption)

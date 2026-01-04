@@ -40,7 +40,7 @@ set(BOX2D_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/box2d")
 set(YMFM_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/ymfm/src")
 set(OPL_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/opl")
 set(SFX_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/sfx")
-set(IMGGUI_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/imggui")
+set(IMGGUI_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/imgui")
 # =============================================================================
 # PROJECTS SECTION >>>>
 # =============================================================================
@@ -49,6 +49,8 @@ set(TTT_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/TickTacToe")
 set(TESTBED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TestBed")
 set(LUATEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Amana")
+set(IMGGUITEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ImguiTest")
+
 # =============================================================================
 # <<<< PROJECTS SECTION
 # =============================================================================
@@ -97,6 +99,16 @@ set(ENGINE_SOURCES
 
     #  --- sfx ---
     ${SFX_DIR}/SFXGenerator.cpp
+
+    #  --- imggui ---
+    ${IMGGUI_DIR}/imgui.cpp
+    ${IMGGUI_DIR}/imgui_draw.cpp
+    ${IMGGUI_DIR}/imgui_widgets.cpp
+    ${IMGGUI_DIR}/imgui_tables.cpp
+    # also demo ?
+    ${IMGGUI_DIR}/imgui_demo.cpp
+    ${IMGGUI_DIR}/backends/imgui_impl_sdl3.cpp
+    ${IMGGUI_DIR}/backends/imgui_impl_opengl3.cpp
 
 )
 
@@ -191,6 +203,7 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${YMFM_DIR}>
     $<BUILD_INTERFACE:${OPL_DIR}>
     $<BUILD_INTERFACE:${SFX_DIR}>
+    $<BUILD_INTERFACE:${IMGGUI_DIR}>
 
 )
 
@@ -294,22 +307,22 @@ endmacro()
 # --- 1. FishTank ---
 option(BUILD_FISHTANK "Build FishTank demo" ON)
 if(BUILD_FISHTANK)
-    set(DEMO_SOURCES "${DEMO_DIR}/src/main.cpp")
-    configure_demo_target(FishTankDemo ${DEMO_DIR} "${DEMO_DIR}/assets@assets" "${DEMO_SOURCES}")
+    set(GAME_SOURCES "${DEMO_DIR}/src/main.cpp")
+    configure_demo_target(FishTankDemo ${DEMO_DIR} "${DEMO_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 # --- 2. TicTacToe ---
 option(BUILD_TICTACTOE "Build TicTacToe demo" OFF)
 if(BUILD_TICTACTOE)
-    set(DEMO_SOURCES "${TTT_DIR}/src/main.cpp")
-    configure_demo_target(TicTacToeDemo ${TTT_DIR} "${TTT_DIR}/assets@assets" "${DEMO_SOURCES}")
+    set(GAME_SOURCES "${TTT_DIR}/src/main.cpp")
+    configure_demo_target(TicTacToeDemo ${TTT_DIR} "${TTT_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 # --- 3. TestBed ---
 option(BUILD_TESTBED "Build TestBed application" ON)
 if(BUILD_TESTBED)
-    set(DEMO_SOURCES "${TESTBED_DIR}/src/main.cpp")
-    configure_demo_target(TestBed ${TESTBED_DIR} "${TESTBED_DIR}/assets@assets" "${DEMO_SOURCES}")
+    set(GAME_SOURCES "${TESTBED_DIR}/src/main.cpp")
+    configure_demo_target(TestBed ${TESTBED_DIR} "${TESTBED_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 # --- 4. LuaTest ---
@@ -336,13 +349,13 @@ if(BUILD_LUATEST)
     FetchContent_MakeAvailable(lua sol2)
 
     # Define your sources
-    set(DEMO_SOURCES
+    set(GAME_SOURCES
         ${LUATEST_DIR}/src/main.cpp
         # ${LUATEST_DIR}/src/luabind/luaFluxMain.cpp
     )
 
     # Configure the target
-    configure_demo_target(LuaTest ${LUATEST_DIR} "${LUATEST_DIR}/assets@assets" "${DEMO_SOURCES}")
+    configure_demo_target(LuaTest ${LUATEST_DIR} "${LUATEST_DIR}/assets@assets" "${GAME_SOURCES}")
 
     # Link Lua and sol2 specifically to this target
     # target_link_libraries ensures these are only linked to LuaTest
@@ -361,6 +374,14 @@ if(BUILD_AMANA)
         "${AMANA_DIR}/src/globalResources.cpp"
     )
     configure_demo_target(AmanaGame ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
+endif()
+
+
+# --- 6. ImguiTest ---
+option(BUILD_IMGGUITEST "Build ImguiTest application" ON)
+if(BUILD_IMGGUITEST)
+    set(GAME_SOURCES "${IMGGUITEST_DIR}/src/main.cpp")
+    configure_demo_target(ImguiTest ${IMGGUITEST_DIR} "${IMGGUITEST_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 

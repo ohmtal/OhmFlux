@@ -21,6 +21,7 @@
 
 #define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
 
+
 //--------------------------- GetScreenObject by global Instance ------------
 class FluxScreen; // Forward declaration: No #include needed yet!
 FluxScreen* getScreenObject();
@@ -480,6 +481,8 @@ inline std::string sanitizeFilenameWithUnderScores(std::string name)
     return result;
 }
 
+// extra SDL_EVENTS
+static S32 FLUX_EVENT_SCALE_CHANGED = 0;
 
 
 

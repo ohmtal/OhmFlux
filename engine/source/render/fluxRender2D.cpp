@@ -278,7 +278,7 @@ void FluxRender2D::executeDrawTriangle(const PrimitiveCommand& cmd) {
 }
 
 //-------------------------------------------------------------------------------
-void FluxRender2D::updateOrto(S32 width, S32 height)
+void FluxRender2D::updateOrtho(S32 width, S32 height)
 {
 
     if (!mActiveCamera && !mDefaultCamera)

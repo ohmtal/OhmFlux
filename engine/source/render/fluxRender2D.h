@@ -119,7 +119,7 @@ private:
     FluxCamera* mActiveCamera = nullptr;
     FluxCamera* mDefaultCamera =  nullptr;;
 
-    // orto and viewmatrix setup for screen
+    // ortho and viewmatrix setup for screen
     //  alignas => matrix is aligned for SIMD operations (webGL performance)
     alignas(16) F32 mOrtho[16] = {0.0f};
     alignas(16) F32 mCurrentCameraViewMatrix[16] {0.0f};;
@@ -165,7 +165,7 @@ public:
 
     //quad render
     // bool loadDefaultShader();
-    void updateOrto(S32 width, S32 height);
+    void updateOrtho(S32 width, S32 height);
     void beginFrame(); //FluxCamera* cam); //Camera
 
     // this batch the draws NOT draw

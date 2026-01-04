@@ -56,6 +56,8 @@ public:
 	~FluxScreen();
 
 	SDL_Window * getWindow() { return mWindow; }
+	SDL_GLContext getGLContext() { return mGL_Context; }
+
 
 	bool getVideoFailed() { return mSDLVideoFailed; }
 	bool prepareMode(const FluxSettings& lSettings );
