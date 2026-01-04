@@ -175,6 +175,20 @@ public:
     void togglePause();
 
 
+    SDL_AudioStream* getAudioStream() { return mStream; }
+    float getVolume() {
+        if (mStream)
+            return SDL_GetAudioStreamGain(mStream);
+        return 0.f;
+    }
+    bool setVolume(const float value) {
+        if (mStream)
+            return SDL_SetAudioStreamGain(mStream, value);
+        return false;
+    }
+
+
+
     /**
      * Returns the OPL2 register offset for the Carrier (Operator 2)
      * of a given channel (0-8).
