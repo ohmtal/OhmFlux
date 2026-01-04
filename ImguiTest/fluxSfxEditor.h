@@ -46,10 +46,15 @@ public:
         DrawSFXEditor();
     }
     //--------------------------------------------------------------------------
+    #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+    void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
+        return ;
+    }
+
+    #else //Desktop
     void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
         if ( !mSFXGenerator )
             return;
-
         // Use 'static' or 'new' for context because the dialog is ASYNC
         // (In a real 2026 app, you might store this context in your class to avoid leaks)
         auto* ctx = new FileDialogContext{ mSFXGenerator, action };
@@ -62,17 +67,13 @@ public:
             if (filelist && *filelist)
             {
                 std::string filename = *filelist;
-                // 1. set the extension !! whe simple check against a dot
-                // if (filename.find('.') != std::string::npos)
-                {
-                    if ( (c->action == fa_load || c->action == fa_save)
-                         && !filename.ends_with(".sfxr") ) {
-                        filename.append(".sfxr");
-                    } else  if ( c->action == fa_export && !filename.ends_with(".wav") ) {
-                        filename.append(".wav");
-                    }
-                } // dotti
-                // 2. the action based load/save/export
+                const char* extension = (c->action == fa_export) ? "wav" : "sfx";
+                std::string lowerFilename = filename;
+                std::transform(lowerFilename.begin(), lowerFilename.end(), lowerFilename.begin(), ::tolower);
+                if (!lowerFilename.ends_with(extension)) {
+                    filename += extension;
+                }
+
                 if (c->action == fa_load) {
                     Log("Action: Load SFXR to [%s]", filename.c_str());
                     if (!c->generator->LoadSettings(filename.c_str()))
@@ -100,6 +101,7 @@ public:
             SDL_ShowOpenFileDialog(callback, ctx, SDL_GL_GetCurrentWindow(), filters, 2, SDL_GetBasePath(), false);
         }
     }
+#endif // Desktop
     //--------------------------------------------------------------------------
     void DrawSFXEditor()
     {
@@ -320,15 +322,15 @@ public:
             // ---- more buttons ----
             ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
+
+            #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
             if (ImGui::Button("Load", lButtonSize)) FileDialog(fa_load);
             if (ImGui::Button("Save", lButtonSize)) FileDialog(fa_save);
-
             ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
-
             if (ImGui::Button("EXPORT .WAV", lButtonSize)) {
                 FileDialog(fa_export);
             }
-
+            #endif
             ImGui::EndTable();
         }
 
