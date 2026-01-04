@@ -1,5 +1,6 @@
 # TODO
 
+
 - FluxMain::loadTexture mTextures should use a std::unordered_map<std::string, FluxTexture> and 
   lookup the filename to prevent double loading ... this may also be usefull to get an FluxTexture
   without createing an object 
@@ -7,6 +8,10 @@
 ## Open:
 
 - Amana 
+- Integrate imggui
+- Integrate OPLController with ymfw
+- Integrate SFXGenerator 
+- Integrate box2d
 
 ---
 

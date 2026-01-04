@@ -17,6 +17,7 @@
 #include <lights/fluxLight.h>
 #include <lights/fluxLightManager.h>
 #include "box2d/box2d.h"
+#include <OplController.h>
 
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 
@@ -24,6 +25,8 @@ class TestBed : public FluxMain
 {
     typedef FluxMain Parent;
 private:
+    OplController* mOplController = nullptr;
+    OplController::SongData mTestOPLSong;
 
     FluxInput mInput;
 
@@ -246,6 +249,22 @@ public:
          // bind mouse to window:
          SDL_SetWindowMouseGrab(getScreen()->getWindow(), true);
 
+
+         // OPL TEST
+         mOplController = new OplController();
+         if (mOplController->initController())
+         {
+             if (mOplController->loadSongFMS("assets/music/test.fms", mTestOPLSong))
+             {
+                 mOplController->start_song(mTestOPLSong, true);
+             }
+         } else {
+            Log("Failed to init OplController");
+            SAFE_DELETE(mOplController);
+         }
+
+
+
          return true;
     }
     //--------------------------------------------------------------------------------------
@@ -261,6 +280,8 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
+        SAFE_DELETE(mOplController);
+
         Parent::Deinitialize();
     }
     //--------------------------------------------------------------------------------------

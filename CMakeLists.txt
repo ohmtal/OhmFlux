@@ -36,6 +36,11 @@ target_compile_options(flux_speed_profile INTERFACE
 # --- Path Definitions ---
 set(ENGINE_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/source")
 set(STB_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/engine/stb")
+set(BOX2D_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/box2d")
+set(YMFM_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/ymfm/src")
+set(OPL_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/opl")
+set(SFX_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/sfx")
+set(IMGGUI_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/imggui")
 # =============================================================================
 # PROJECTS SECTION >>>>
 # =============================================================================
@@ -47,6 +52,7 @@ set(AMANA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Amana")
 # =============================================================================
 # <<<< PROJECTS SECTION
 # =============================================================================
+
 
 # --- Engine Library Sources ---
 set(ENGINE_SOURCES
@@ -76,7 +82,22 @@ set(ENGINE_SOURCES
     ${ENGINE_DIR}/utils/fluxScheduler.cpp
     ${ENGINE_DIR}/utils/errorlog.cpp
 
+    #  --- stb ---
     ${STB_DIR}/flux_stb_impl.cpp
+
+    #  --- ymfm ---
+    ${YMFM_DIR}/ymfm_opl.cpp
+    ${YMFM_DIR}/ymfm_misc.cpp
+    ${YMFM_DIR}/ymfm_adpcm.cpp
+    ${YMFM_DIR}/ymfm_pcm.cpp
+    ${YMFM_DIR}/ymfm_ssg.cpp
+
+    #  --- opl ---
+    ${OPL_DIR}/OplController.cpp
+
+    #  --- sfx ---
+    ${SFX_DIR}/SFXGenerator.cpp
+
 )
 
 
@@ -160,11 +181,17 @@ endif()
 
 # --- Engine Target ---
 add_library(ohmFlux_engine STATIC ${ENGINE_SOURCES})
+
 target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${ENGINE_DIR}>
+    $<BUILD_INTERFACE:${ENGINE_DIR}/utils>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/engine>
     $<BUILD_INTERFACE:${STB_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/engine/box2d/include>
+    $<BUILD_INTERFACE:${BOX2D_DIR}/include>
+    $<BUILD_INTERFACE:${YMFM_DIR}>
+    $<BUILD_INTERFACE:${OPL_DIR}>
+    $<BUILD_INTERFACE:${SFX_DIR}>
+
 )
 
 # Apply Static Interface Properties for Windows/MinGW
@@ -201,11 +228,13 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
     if(ANDROID)
         add_library(${TARGET_NAME} SHARED ${SOURCES_LIST})
     else()
-        # add_executable(${TARGET_NAME} ${SOURCES_LIST})
          add_executable(${TARGET_NAME} ${GUI_TYPE} ${SOURCES_LIST})
     endif()
 
-    target_include_directories(${TARGET_NAME} PRIVATE ${SOURCE_DIR})
+    target_include_directories(${TARGET_NAME} PRIVATE
+        ${SOURCE_DIR}
+    )
+
     target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine)
 
     if(EMSCRIPTEN)
@@ -270,7 +299,7 @@ if(BUILD_FISHTANK)
 endif()
 
 # --- 2. TicTacToe ---
-option(BUILD_TICTACTOE "Build TicTacToe demo" ON)
+option(BUILD_TICTACTOE "Build TicTacToe demo" OFF)
 if(BUILD_TICTACTOE)
     set(DEMO_SOURCES "${TTT_DIR}/src/main.cpp")
     configure_demo_target(TicTacToeDemo ${TTT_DIR} "${TTT_DIR}/assets@assets" "${DEMO_SOURCES}")

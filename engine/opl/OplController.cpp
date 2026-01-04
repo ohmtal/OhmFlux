@@ -1,0 +1,751 @@
+#include "OplController.h"
+//------------------------------------------------------------------------------
+OplController::OplController(){
+    mChip = new ymfm::ym3812(mInterface);
+    reset();
+}
+
+OplController::~OplController() {
+
+    if (mStream) {
+        SDL_DestroyAudioStream(mStream);
+        mStream = nullptr;
+    }
+
+    if (mChip) {
+        delete mChip;
+        mChip = nullptr;
+    }
+
+}
+//------------------------------------------------------------------------------
+void OplController::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
+{
+
+    if (!userdata)
+        return;
+
+    auto* controller = static_cast<OplController*>(userdata);
+    if (controller && additional_amount > 0) {
+        int frames = additional_amount / 4; // S16 * 2 channels = 4 bytes
+
+        // Generate data directly into a temporary vector or stack buffer
+        std::vector<int16_t> temp(additional_amount / sizeof(int16_t));
+        controller->fillBuffer(temp.data(), frames);
+
+        SDL_PutAudioStreamData(stream, temp.data(), additional_amount);
+    }
+}
+//------------------------------------------------------------------------------
+bool OplController::initController() {
+    SDL_AudioSpec spec;
+    spec.format = SDL_AUDIO_S16;
+    spec.channels = 2;
+    spec.freq = 44100;
+
+    // Create the stream and a logical device connection in one go
+    mStream = SDL_OpenAudioDeviceStream(
+        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+        &spec,
+        OplController::audio_callback, // The static bridge
+        this                           // Pass 'this' as userdata
+    );
+
+    if (!mStream) {
+        Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
+        return false;
+    }
+
+    // Mandatory: Start the device (it is created paused)
+    SDL_ResumeAudioStreamDevice(mStream);
+    return true;
+}
+//------------------------------------------------------------------------------
+bool OplController::shutDownController()
+{
+    if (mStream) {
+        SDL_DestroyAudioStream(mStream);
+        mStream = nullptr;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+void OplController::set_speed(uint8_t songspeed)
+{
+    if (songspeed == 0) songspeed = 1;
+
+    // TRY 70.0f (VGA/AdLib standard) or 50.0f (Amiga/Tracker standard)
+    float base_hz = PLAYBACK_FREQUENCY;
+    float ticks_per_second = base_hz / (float)songspeed;
+
+    mSeqState.samples_per_tick = (int)(44100.0f / ticks_per_second);
+}
+//------------------------------------------------------------------------------
+void OplController::setPlaying(bool value, bool hardStop)
+{
+    // SDL2 SDL_LockAudio(); // Protect shared variables from the audio thread
+
+    mSeqState.playing = value;
+
+    if (!value) // We are Pausing or Stopping
+    {
+        // 1. Release all keys (Soft Mute)
+        // This allows notes with a 'Release' value to fade out,
+        // then the chip becomes silent.
+        for (int i = 0; i < 9; ++i) {
+            this->stopNote(i);
+        }
+
+        if (hardStop) {
+            // 2. Immediate Mute (Hard Mute)
+            // This is for 'Stop', zeroing out the volume completely.
+            this->silenceAll();
+        }
+    }
+    // If value is true, the sequencer just resumes from current m_seq.song_counter
+
+    // SDL2 SDL_UnlockAudio();
+}
+//------------------------------------------------------------------------------
+void OplController::togglePause()
+{
+    if (mSeqState.playing){
+        setPlaying(false,false);
+    } else {
+        setPlaying(true, false);
+    }
+}
+//------------------------------------------------------------------------------
+uint8_t OplController::get_carrier_offset(int channel) {
+    if (channel < 0 || channel > 8) return 0;
+
+    // The Carrier is always 3 steps away from the Modulator base
+    return Adr_add[channel] + 3;
+}
+//------------------------------------------------------------------------------
+uint8_t OplController::get_modulator_offset(int channel){
+    if (channel < 0 || channel > 8) return 0;
+    return Adr_add[channel];
+}
+//------------------------------------------------------------------------------
+void OplController::silenceAll() {
+    // Stop all notes physically via Key-Off
+    for (int i = 0; i < 9; ++i) {
+        stopNote(i);
+
+        // Write TL=63 to both Modulator and Carrier for every channel
+        // Modulator TL addresses: 0x40 - 0x55
+        // Carrier TL addresses:   0x40 - 0x55 (offset by +3)
+        uint8_t mod_offset = get_modulator_offset(i);
+        uint8_t car_offset = get_carrier_offset(i);
+
+        write(0x40 + mod_offset, 63); // Silence Modulator
+        write(0x40 + car_offset, 63); // Silence Carrier
+    }
+}
+//------------------------------------------------------------------------------
+void OplController::reset() {
+    mChip->reset();
+    m_pos = 0.0;
+
+    // A truly "silent" instrument has Total Level = 63
+    uint8_t silent_ins[24];
+    memset(silent_ins, 0, 24);
+    silent_ins[2] = 63; // Modulator TL (Silent)
+    silent_ins[3] = 63; // Carrier TL (Silent)
+
+    for (int i = 0; i < 9; ++i) {
+        setInstrument(i, silent_ins);
+    }
+
+    mSeqState.song_counter = 0;
+    this->silenceAll();
+}
+//------------------------------------------------------------------------------
+void OplController::write(uint16_t reg, uint8_t val)
+{
+    #ifdef FM_DEBUG
+    if (reg >= 0xB0 && reg <= 0xB8) {
+        printf("HARDWARE WRITE: Reg %02X = %02B (KeyOn: %s)\n",
+                reg, val, (val & 0x20) ? "YES" : "NO");
+    }
+    #endif
+    mChip->write_address(reg);
+    mChip->write_data(val);
+}
+//------------------------------------------------------------------------------
+/*
+ * FM_adresses:array[1..8]of byte=($A0,$B0,$20,$40,$60,$80,$E0,$C0);
+ *
+ * procedure playton(welchen:integer;channel:byte);
+ * begin
+ * if welchen>0 then
+ * begin
+ * SendData(FM_adresses[1]+channel-1,tonleiter[welchen,2]);
+ * SendData(FM_adresses[2]+channel-1,tonleiter[welchen,1]);
+ * end;
+ *
+ * if welchen=-1 then
+ * begin
+ * SendData(FM_adresses[2]+channel-1,$00);
+ * end;
+ * end;
+ */
+void OplController::playNoteDOS(int channel, int noteIndex) {
+    if (channel < 0 || channel > 8) return;
+
+    // 1. Handle "No Note" or "Rest"
+    // Since your table is 1-based [85], index 0 is safety/padding.
+    if (noteIndex <= 0 || noteIndex >= 85) {
+        stopNote(channel);
+        return;
+    }
+
+    // 2. Force Key-Off to ensure the OPL envelope re-triggers
+    stopNote(channel);
+
+
+    // 3. Translate the index using your myDosScale table
+    uint8_t b0_val = myDosScale[noteIndex][0]; // The Key-On/Block/F-High byte
+    uint8_t a0_val = myDosScale[noteIndex][1]; // The F-Low byte
+
+    // 4. Write to the OPL registers
+    // Register A0-A8: F-Number Low
+    write(0xA0 + channel, a0_val);
+
+    // Register B0-B8: Key-On, Block, and F-Number High
+    write(0xB0 + channel, b0_val);
+
+    // 5. Save the value so stopNote() knows which block/frequency to turn off
+    last_block_values[channel] = b0_val;
+}
+//------------------------------------------------------------------------------
+void OplController::playNote(int channel, int noteIndex) {
+    if (channel < 0 || channel > 8)
+        return;
+
+    stopNote(channel);
+
+
+    int octave = noteIndex / 12;
+    int note = noteIndex % 12;
+    uint16_t fnum = f_numbers[note];
+
+    // Register 0xA0: Low 8 bits of F-Number
+    write(0xA0 + channel, fnum & 0xFF);
+
+    // Register 0xB0: Key-On (0x20) | Octave | F-Number High bits
+    uint8_t b0_val = 0x20 | (octave << 2) | (fnum >> 8);
+
+    // SAVE the value (so we know the octave/frequency for later)
+    last_block_values[channel] = b0_val;
+
+    write(0xB0 + channel, b0_val);
+}
+//------------------------------------------------------------------------------
+void OplController::stopNote(int channel) {
+    if (channel < 0 || channel > 8) return;
+
+    // CRITICAL FIX: Use the last value but REMOVE the Key-On bit (0x20)
+    // This keeps the Octave and Frequency bits identical during the release phase.
+    uint8_t b0_off = last_block_values[channel] & ~0x20;
+
+    // write(0xB0 + channel, 0x00);
+    write(0xB0 + channel, b0_off);
+
+    mChip->generate(&mOutput); // THIS IS CRITCAL to get it work !!! take me 8 hours to find out!
+
+    // Update the saved value so we don't accidentally re-enable Key-On
+    last_block_values[channel] = b0_off;
+}
+//------------------------------------------------------------------------------
+void OplController::render(int16_t* buffer, int frames) {
+    for (int i = 0; i < frames; i++) {
+        // Only generate new OPL data when the fractional position advances
+        while (m_pos <= i) {
+            mChip->generate(&mOutput);
+            m_pos += m_step;
+        }
+
+        // Use the most recently generated output
+        int16_t sample = (int16_t)mOutput.data[0];
+        buffer[i * 2 + 0] = sample; // Left
+        buffer[i * 2 + 1] = sample; // Right
+    }
+    // Reset m_pos for the next callback buffer
+    m_pos -= frames;
+}
+// blended version but sounds the same
+// void OplController::render(int16_t* buffer, int frames) {
+//     static int32_t prev_sample = 0; // Store the last sample for blending
+//
+//     for (int i = 0; i < frames; i++) {
+//         while (m_pos <= i) {
+//             prev_sample = m_output.data[0]; // Save old sample before generating new
+//             m_chip->generate(&m_output);
+//             m_pos += m_step;
+//         }
+//
+//         // 1. Calculate the fractional distance between the two OPL samples
+//         double fraction = m_pos - i;
+//
+//         // 2. Linear Interpolation: Blend prev_sample and current m_output.data[0]
+//         // This removes the "thinness" and adds the "depth" you heard in DOSBox
+//         int32_t blended = (int32_t)((double)prev_sample * fraction +
+//         (double)m_output.data[0] * (1.0 - fraction));
+//
+//         // 3. Output to buffer
+//         int16_t sample = (int16_t)blended;
+//         buffer[i * 2 + 0] = sample;
+//         buffer[i * 2 + 1] = sample;
+//     }
+//     m_pos -= frames;
+// }
+//------------------------------------------------------------------------------
+void OplController::dumpInstrumentFromCache(uint8_t channel)
+{
+    if (channel < 0 || channel > 8) return;
+
+    // 1. Get the pointer from your cache
+    const uint8_t* patch = getInstrument(channel);
+
+    if (patch == nullptr) {
+        printf("Error: Channel %d has no instrument in cache!\n", channel);
+        return;
+    }
+
+    printf("\n--- CACHE DUMP: OPL Channel %d ---\n", channel);
+    // There are 24 parameters in your metadata
+    for (size_t i = 0; i < 24; ++i) {
+        printf("[%2zu] %-20s : %d\n", i, OplController::INSTRUMENT_METADATA[i].name.c_str(), patch[i]);
+    }
+    printf("----------------------------------\n");
+}
+//------------------------------------------------------------------------------
+void OplController::setInstrument(uint8_t channel, const uint8_t lIns[24]) {
+    if (channel > 8) return;
+
+    memcpy(m_instrument_cache[channel], lIns, 24);
+
+    // Pointer for our data (allows us to use the hi-hat test override)
+    const uint8_t* p_ins = lIns;
+
+    // Get the hardware offsets based on your Adr_add logic
+    uint8_t mod_off = get_modulator_offset(channel); // Adr_add[channel]
+    uint8_t car_off = get_carrier_offset(channel);   // Adr_add[channel] + 3
+
+    // 1. Multiplier / Sustain Mode / Vibrato ($20 range)
+    write(0x20 + mod_off, p_ins[0] | (p_ins[14] << 5) | (p_ins[16] << 6) | (p_ins[18] << 7));
+    write(0x20 + car_off, p_ins[1] | (p_ins[15] << 5) | (p_ins[17] << 6) | (p_ins[19] << 7));
+
+    // 2. Total Level / Scaling ($40 range)
+    write(0x40 + mod_off, p_ins[2] | (p_ins[22] << 6));
+    write(0x40 + car_off, p_ins[3] | (p_ins[23] << 6));
+
+    // 3. Attack / Decay ($60 range)
+    write(0x60 + mod_off, p_ins[6] | (p_ins[4] << 4));
+    write(0x60 + car_off, p_ins[7] | (p_ins[5] << 4));
+
+    // 4. Sustain Level / Release Rate ($80 range)
+    write(0x80 + mod_off, p_ins[10] | (p_ins[8] << 4));
+    write(0x80 + car_off, p_ins[11] | (p_ins[9] << 4));
+
+    // 5. Waveform Select ($E0 range)
+    write(0xE0 + mod_off, p_ins[12]);
+    write(0xE0 + car_off, p_ins[13]);
+
+    // 6. Connection / Feedback ($C0 range) - CHANNEL BASED, not operator based
+    write(0xC0 + channel, p_ins[21] | (p_ins[20] << 1));
+
+    // Global Setup (Ensure waveforms are enabled)
+    write(0x01, 0x20);
+}
+//------------------------------------------------------------------------------
+const uint8_t* OplController::getInstrument(uint8_t channel) const{
+    if (channel > 8) return nullptr;
+    return m_instrument_cache[channel];
+}
+//------------------------------------------------------------------------------
+bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        Log("ERROR: Could not open song file: %s", filename.c_str());
+        return false;
+    }
+
+    reset(); //reset everything !!
+
+    // 1. Interleaved Load: Name then Settings for each channel
+    for (int ch = 1; ch <= 9; ++ch) {
+        if (!file.read(reinterpret_cast<char*>(sd.actual_ins[ch]), 256)) {
+            Log("ERROR: Failed reading Name for Channel %d at offset %ld", ch, (long)file.tellg());
+            return false;
+        }
+        if (!file.read(reinterpret_cast<char*>(sd.ins_set[ch]), 24)) {
+            Log("ERROR: Failed reading Settings for Channel %d at offset %ld", ch, (long)file.tellg());
+            return false;
+        }
+    }
+
+    // 2. Load Speed (1 byte) and Length (2 bytes)
+    if (!file.read(reinterpret_cast<char*>(&sd.song_speed), 1)) {
+        Log("ERROR: Failed reading song_speed");
+        return false;
+    }
+    if (!file.read(reinterpret_cast<char*>(&sd.song_length), 2)) {
+        Log("ERROR: Failed reading song_length");
+        return false;
+    }
+
+    Log("INFO: Song Header Loaded. Speed: %u, Length: %u", sd.song_speed, sd.song_length);
+
+    // Safety check for 2026 memory limits
+    if (sd.song_length > 1000) {
+        Log("ERROR: song_length (%u) exceeds maximum allowed (1000)", sd.song_length);
+        return false;
+    }
+
+    // 3. Load Note Grid (Adjusted for 0-based C++ logic)
+    for (int i = 0; i < sd.song_length; ++i) { // Start at 0
+        for (int j = 0; j < 9; ++j) {           // Start at 0
+            int16_t temp_note;
+            if (!file.read(reinterpret_cast<char*>(&temp_note), 2)) {
+                Log("ERROR: Failed reading Note at Tick %d, Channel %d", i, j);
+                return false;
+            }
+            // Store it 0-based so sd.song[0][0] is the first note
+            sd.song[i][j] = temp_note;
+        }
+    }
+
+    Log("SUCCESS: Song '%s' loaded completely.", filename.c_str());
+
+    // 4. Update OPL with new instruments
+    for (int i = 0; i < 9; ++i) {
+        // Hardware Channel 'i' (0-8) gets Instrument Data 'i+1' (1-9)
+        setInstrument(i, sd.ins_set[i + 1]);
+    }
+
+    return true;
+}
+//------------------------------------------------------------------------------
+bool OplController::saveSongFMS(const std::string& filename, const SongData& sd) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) return false;
+
+    // 1. Write Instruments
+    for (int ch = 1; ch <= 9; ++ch) {
+        file.write(reinterpret_cast<const char*>(&sd.actual_ins[ch]), 1);
+        file.write(reinterpret_cast<const char*>(&sd.ins_set[ch][0]), 24);
+    }
+
+    // 2. Write Speed and Length
+    file.write(reinterpret_cast<const char*>(&sd.song_speed), 2);
+    file.write(reinterpret_cast<const char*>(&sd.song_length), 2);
+
+    // 3. Write Song Notes (Adjusted for 0-based memory)
+    for (int i = 0; i < sd.song_length; ++i) { // Start at 0
+        for (int j = 0; j < 9; ++j) {           // Start at 0 (OPL Channels 0-8)
+            // Ensure you write exactly 2 bytes if your song grid is int16_t
+            file.write(reinterpret_cast<const char*>(&sd.song[i][j]), 2);
+        }
+    }
+
+    return file.good();
+}
+//------------------------------------------------------------------------------
+void OplController::start_song(SongData& sd, bool loopit) {
+    // SDL2 SDL_LockAudio(); // Stop the callback thread for a microsecond
+
+    mSeqState.current_song = &sd;
+    mSeqState.song_counter = 0;
+    mSeqState.sample_accumulator = 0;
+    mSeqState.loop = loopit;
+    set_speed(sd.song_speed);
+    mSeqState.playing = true;
+    // SDL2 SDL_UnlockAudio(); // Let the callback thread resume
+}
+//------------------------------------------------------------------------------
+bool OplController::loadInstrument(const std::string& filename, uint8_t channel)
+{
+    std::ifstream file(filename, std::ios::binary);
+    if (!file.is_open()) return false;
+
+    uint8_t instrumentData[24];
+    file.read(reinterpret_cast<char*>(instrumentData), 24);
+
+    if (file.gcount() == 24) {
+        setInstrument(channel, instrumentData);
+        return true;
+    }
+    return false;
+}
+//------------------------------------------------------------------------------
+bool OplController::saveInstrument(const std::string& filename, const uint8_t* instrumentData) {
+    // std::ios::binary is essential to prevent CRLF translation on Windows
+    std::ofstream file(filename, std::ios::binary);
+
+    if (!file.is_open()) {
+        return false;
+    }
+
+    // Write the 24-byte block exactly as it exists in memory
+    file.write(reinterpret_cast<const char*>(instrumentData), 24);
+
+    return file.good(); // Returns true if the write was successful
+}
+//------------------------------------------------------------------------------
+void OplController::TestInstrumentDOS(int channel, const uint8_t ins[24], int noteIndex) {
+    if (!mChip || channel < 0 || channel > 8) return;
+
+    printf("--- Testing Channel %d with Note Index %d ---\n", channel, noteIndex);
+
+    // 1. Apply the instrument (Ensure this uses your p_ins logic from before)
+    setInstrument(channel, ins);
+
+    // 2. Force Volume to Maximum (OPL: 0 is loudest)
+    // We override the Carrier Total Level for this specific channel to ensure we hear it.
+    int car_off = get_carrier_offset(channel);
+    write(0x40 + car_off, 0x00);
+
+    // 3. Clear the Key-On bit first (Force 0 -> 1 transition)
+    write(0xB0 + channel, 0x00);
+
+    // 4. Wait a few samples for the chip to register the Key-Off
+    ymfm::ym3812::output_data output;
+    for (int i = 0; i < 100; i++) mChip->generate(&output);
+
+    // 5. Trigger the Note using your myDosScale table
+    if (noteIndex < 1 || noteIndex > 84) noteIndex = 48; // Default to C-4
+    uint8_t b0_val = myDosScale[noteIndex][0];
+    uint8_t a0_val = myDosScale[noteIndex][1];
+
+    write(0xA0 + channel, a0_val);
+    write(0xB0 + channel, b0_val);
+
+    // 6. Monitor for sound over the next 4410 samples (0.1 seconds)
+    bool heard_sound = false;
+    for (int i = 0; i < 4410; i++) {
+        mChip->generate(&output);
+        if (output.data[0] != 0) {
+            heard_sound = true;
+            if (i % 1000 == 0) {
+                printf("Sample %d: Output Level %d\n", i, output.data[0]);
+            }
+        }
+    }
+
+    if (!heard_sound) {
+        printf("RESULT: Channel %d is SILENT. Check instrument registers ($20-$80 range).\n", channel);
+    } else {
+        printf("RESULT: Channel %d is PRODUCING SOUND.\n", channel);
+    }
+}
+//------------------------------------------------------------------------------
+void OplController::replaceSongNotes(SongData& sd, int targetChannel, int16_t oldNote, int16_t newNote) {
+    int count = 0;
+
+    // 2026 Logic: Start at 0, end before song_length
+    for (int i = 0; i < sd.song_length; ++i) {
+
+        int16_t currentNote = sd.song[i][targetChannel];
+
+        // DEBUG: This will now show the actual notes in memory
+        if (i < 10) { // Limit debug output to first 10 ticks to avoid lag
+            printf("remap: tick:%d, chan:%d, note:%d\n", i, targetChannel, currentNote);
+        }
+
+        if (currentNote == oldNote) {
+            sd.song[i][targetChannel] = newNote;
+            count++;
+        }
+    }
+    printf("REMAPPER: Replaced %d instances of note %d with %d.\n", count, oldNote, newNote);
+}
+//------------------------------------------------------------------------------
+void OplController::fillBuffer(int16_t* buffer, int total_frames) {
+    // 1. Local cache of volatile values for speed
+    double step = m_step;
+    double current_pos = m_pos;
+
+    for (int i = 0; i < total_frames; i++) {
+
+        // --- SEQUENCER LOGIC ---
+        if (mSeqState.playing && mSeqState.current_song) {
+            mSeqState.sample_accumulator += 1.0;
+
+            while (mSeqState.sample_accumulator >= mSeqState.samples_per_tick) {
+                mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+                this->tickSequencer(); // Encapsulate the "next step" logic
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        while (current_pos <= i) {
+            mChip->generate(&mOutput);
+            current_pos += step;
+        }
+
+        int16_t sample = (int16_t)mOutput.data[0];
+        buffer[i * 2 + 0] = sample; // Left
+        buffer[i * 2 + 1] = sample; // Right
+    }
+
+    // 2. Save back once
+    m_pos = current_pos - total_frames;
+}
+//------------------------------------------------------------------------------
+void OplController::tickSequencer() {
+    const SongData& s = *mSeqState.current_song;
+
+    if (mSeqState.song_counter < s.song_length) {
+        for (int ch = 0; ch < 9; ch++) {
+            int16_t raw_note = s.song[mSeqState.song_counter][ch];
+
+            // Update UI/Debug state
+            mSeqState.last_notes[ch + 1] = raw_note;
+            mSeqState.note_updated = true;
+
+            if (raw_note == -1) {
+                this->stopNote(ch);
+            } else if (raw_note > 0) {
+                this->playNoteDOS(ch, (uint8_t)raw_note);
+            }
+        }
+        mSeqState.song_counter++;
+    } else {
+        if (mSeqState.loop) mSeqState.song_counter = 0;
+        else setPlaying(false);
+    }
+}
+//------------------------------------------------------------------------------
+void OplController::consoleSongOutput()
+{
+    // DEBUG / UI VIEW
+    if (mSeqState.note_updated) {
+        // We print "song_counter - 1" because the counter was already
+        // incremented in the callback after the note was played.
+        printf("Step %3d: ", mSeqState.song_counter - 1);
+
+        // Loop through Tracker Columns 1 to 9
+        for (int ch = 1; ch <= 9; ch++) {
+            int16_t note = mSeqState.last_notes[ch];
+
+            if (note == -1) {
+                printf(" === "); // Visual "Note Off"
+            } else if (note == 0) {
+                printf(" ... "); // Visual "Empty/Rest"
+            } else {
+                // printf("%4d ", note); // The actual note index
+                printf("%4s ", getNoteNameFromId(note).c_str());
+            }
+        }
+        printf("\n");
+        mSeqState.note_updated = false;
+    }
+}
+//------------------------------------------------------------------------------
+std::string OplController::getNoteNameFromId(int noteID) {
+    // 0 is the padding/empty entry in your array
+    if (noteID == 0 || noteID > 84) {
+        return "...";
+    } else if (noteID < 0) {
+        return "===";
+    }
+
+
+
+    // The note names in the order of your chromatic table (C, C#, D, D#...)
+    static const char* noteNames[] = {
+        "C-", "C#", "D-", "D#", "E-", "F-",
+        "F#", "G-", "G#", "A-", "A#", "B-"
+    };
+
+    // 1. Calculate the Octave (I-VIII)
+    // IDs 1-12 = Octave 1, 13-24 = Octave 2, etc.
+    int octave = ((noteID ) / 12 )  + 1;
+
+    int positionInOctave = (noteID - 1) % 12;
+
+    // Note: If your myDosScale matches the DOCUMENT numbers exactly:
+    // 1=D, 2=E, 3=F, 4=G, 5=A, 6=H, 7=C#, 8=D#, 9=F#, 10=G#, 11=A#, 12=C
+    static const int documentToMusicalMap[] = {
+        2,  // 1 -> D
+        4,  // 2 -> E
+        5,  // 3 -> F
+        7,  // 4 -> G
+        9,  // 5 -> A
+        11, // 6 -> H
+        1,  // 7 -> C#
+        3,  // 8 -> D#
+        6,  // 9 -> F#
+        8,  // 10 -> G#
+        10, // 11 -> A#
+        0   // 12 -> C
+    };
+
+    int noteIndex = documentToMusicalMap[positionInOctave];
+
+    return std::string(noteNames[noteIndex]) + std::to_string(octave);
+}
+//------------------------------------------------------------------------------
+int OplController::getIdFromNoteName(std::string name) {
+
+    if (name.length() < 3 || name == "...")
+        return 0;
+    else if (name == "===")
+        return -1;
+
+    static const std::vector<std::string> noteNames = {
+        "C-", "C#", "D-", "D#", "E-", "F-",
+        "F#", "G-", "G#", "A-", "A#", "B-"
+    };
+
+    // The reverse map of your documentToMusicalMap
+    // Maps musical index (0=C, 1=C#, 2=D...) back to array position (0-11)
+    static const int musicalToPositionMap[] = {
+        11, // C- (0) -> index 11
+        6,  // C# (1) -> index 6
+        0,  // D- (2) -> index 0
+        7,  // D# (3) -> index 7
+        1,  // E- (4) -> index 1
+        2,  // F- (5) -> index 2
+        8,  // F# (6) -> index 8
+        3,  // G- (7) -> index 3
+        9,  // G# (8) -> index 9
+        4,  // A- (9) -> index 4
+        10, // A# (10)-> index 10
+        5   // B- (11)-> index 5
+    };
+
+    std::string notePart = name.substr(0, 2);
+    int octave;
+    try {
+        octave = std::stoi(name.substr(2));
+    } catch (...) { return 0; }
+
+    // Find the musical index (0-11)
+    int musicalIndex = -1;
+    for (int i = 0; i < 12; ++i) {
+        if (noteNames[i] == notePart) {
+            musicalIndex = i;
+            break;
+        }
+    }
+    if (musicalIndex == -1) return 0;
+
+    int positionInOctave = musicalToPositionMap[musicalIndex];
+
+    // THE REVERSE MATH:
+    // In your working function: octave = ((noteID - 1) / 12) + 1 + (noteIndex == 0 ? 1 : 0)
+    // If the note is C (index 0), the octave was incremented, so we subtract it back.
+    int adjustedOctave = (musicalIndex == 0) ? (octave - 1) : octave;
+
+    int noteID = ((adjustedOctave - 1) * 12) + (positionInOctave + 1);
+
+    return (noteID >= 1 && noteID <= 84) ? noteID : 0;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
