@@ -8,6 +8,12 @@
 #include <imgui.h>
 #include <SFXGenerator.h>
 
+#ifdef __EMSCRIPTEN__
+extern "C" {
+    // Forward declaration
+    void emscripten_trigger_download(const char* name);
+}
+#endif
 
 enum SFXGEN_FILE_ACTION_TYPE :int {
     fa_none     = 0,
@@ -44,13 +50,30 @@ public:
         if (!mSFXGenerator)
             return;
         DrawSFXEditor();
+
     }
     //--------------------------------------------------------------------------
-    #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-    void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
+    #if defined(__ANDROID__)
+    void FileDialog(SFXGEN_FILE_ACTION_TYPE action)
+    {
+        //FIXME not implemented on android Dialog
         return ;
     }
+    #elif defined(__EMSCRIPTEN__)
+    static inline char wav_file_name[256] = "export.wav"; // Buffer to hold the filename
+    void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
+        if (action == fa_export)
+        {
+            if (!mSFXGenerator->ExportWAV(wav_file_name))
+                Log("ERROR: Failed to export wav to [%s]", wav_file_name);
+            else
+                emscripten_trigger_download(wav_file_name);
 
+        } else {
+            //FIXME not implemented on WebGL Dialog
+        }
+        return ;
+    }
     #else //Desktop
     void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
         if ( !mSFXGenerator )
@@ -67,7 +90,7 @@ public:
             if (filelist && *filelist)
             {
                 std::string filename = *filelist;
-                const char* extension = (c->action == fa_export) ? "wav" : "sfx";
+                const char* extension = (c->action == fa_export) ? ".wav" : ".sfx";
                 std::string lowerFilename = filename;
                 std::transform(lowerFilename.begin(), lowerFilename.end(), lowerFilename.begin(), ::tolower);
                 if (!lowerFilename.ends_with(extension)) {
@@ -323,14 +346,21 @@ public:
             ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 
 
-            #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
             if (ImGui::Button("Load", lButtonSize)) FileDialog(fa_load);
             if (ImGui::Button("Save", lButtonSize)) FileDialog(fa_save);
             ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
+#endif
+
+#if defined(__EMSCRIPTEN__)
+            ImGui::PushItemWidth(-FLT_MIN);
+            ImGui::InputTextWithHint("##fname", "enter filename...", wav_file_name, IM_ARRAYSIZE(wav_file_name));
+            ImGui::PopItemWidth();
+#endif
+
             if (ImGui::Button("EXPORT .WAV", lButtonSize)) {
                 FileDialog(fa_export);
             }
-            #endif
             ImGui::EndTable();
         }
 

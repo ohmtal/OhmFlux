@@ -126,7 +126,17 @@ add_subdirectory(engine/box2d)
 
 if(EMSCRIPTEN)
     add_compile_options("-sUSE_SDL=3")
-    add_link_options("-sUSE_SDL=3" "-sFULL_ES3=1" "-sUSE_WEBGL2=1" "-sALLOW_MEMORY_GROWTH=1")
+    # add_link_options("-sUSE_SDL=3" "-sFULL_ES3=1" "-sUSE_WEBGL2=1" "-sALLOW_MEMORY_GROWTH=1")
+    add_link_options(
+        "-sUSE_SDL=3"
+        "-sFULL_ES3=1"
+        "-sUSE_WEBGL2=1"
+        "-sALLOW_MEMORY_GROWTH=1"
+        # for virtual filesystem
+        "-sFORCE_FILESYSTEM=1"
+        "-sEXPORTED_RUNTIME_METHODS=['FS', 'ccall']"
+        "-sEXIT_RUNTIME=1"
+    )
 elseif(ANDROID)
     include(FetchContent)
 

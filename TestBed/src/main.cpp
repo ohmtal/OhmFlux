@@ -7,7 +7,7 @@
 #include <render/fluxRender2D.h>
 #include <core/fluxInput.h>
 #include <core/fluxTilemap.h>
-#include <utils/fluxTextFile.h>
+#include <utils/fluxFile.h>
 #include <particle/fluxParticleEmitter.h>
 #include <particle/fluxParticleManager.h>
 #include <particle/fluxParticlePresets.h>

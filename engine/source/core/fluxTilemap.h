@@ -11,7 +11,7 @@
 #include "fluxBaseObject.h"
 #include "core/fluxTexture.h"
 #include "render/fluxRender2D.h"
-#include "utils/fluxTextFile.h"
+#include "utils/fluxFile.h"
 #include "grid/basicgrid.h"
 
 
@@ -163,7 +163,7 @@ public:
         // 1. Use your helper to get all lines from the file
         std::vector<std::string> lines;
 
-        if (!FluxTextFile::Load(filename, lines)) {
+        if (!FluxFile::LoadTextFile(filename, lines)) {
             Log("Tilemap::load failed to open file: %s", filename.c_str());
             return false;
         }
@@ -270,6 +270,6 @@ public:
             output.push_back(ss.str());
         }
 
-        return FluxTextFile::Save(filename, output);
+        return FluxFile::SaveTextFile(filename, output);
     }
 }; //Class

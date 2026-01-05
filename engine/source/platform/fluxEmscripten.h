@@ -129,13 +129,76 @@ EM_BOOL on_fullscreen_change(int eventType, const EmscriptenFullscreenChangeEven
     }
     return EM_TRUE;
 }
+//-------------------------------------------------------------------------------
+// JavaScript helper to trigger browser download
+extern "C" {
+EM_JS(void, emscripten_trigger_download, (const char* name), {
+    const filename = UTF8ToString(name);
+    const data = FS.readFile(filename); // Read from virtual memory
+    const blob = new Blob([data], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+
+    // Clean up to prevent memory leaks
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+});
+}
+//-------------------------------------------------------------------------------
+// This defines a C function: void loadFileToWasm(int fileHandle, const char* virtualPath)
+// Note: In 2026, passing complex JS objects like 'File' directly to EM_JS
+// is usually handled by passing a reference or using a global JS object.
+extern "C" {
+EM_ASYNC_JS(void, loadFileToWasm, (const char* virtualPath), {
+    // 1. Get the file from a global or a file input (JS side)
+    const fileInput = document.getElementById('myFileInput');
+    if (!fileInput.files[0]) return;
+    const file = fileInput.files[0];
+
+    // 2. Read the file into an ArrayBuffer
+    const buffer = await file.arrayBuffer();
+    const data = new Uint8Array(buffer);
+
+    // 3. Write to the virtual filesystem
+    // We convert the C string 'virtualPath' to a JS string
+    FS.writeFile(UTF8ToString(virtualPath), data);
+
+    console.log("File loaded to:", UTF8ToString(virtualPath));
+});
+}
+// THIS NEED SOMETHING LIKE THAT JavaScript:
+// // Example: Processing a user upload
+// const fileInput = document.getElementById('myInput');
+//
+// fileInput.addEventListener('change', async (e) => {
+//     const file = e.target.files[0];
+//
+//     try {
+//         // 1. Load the file modularly
+//         const path = await loadFileToWasm(file, "temp_input.wav");
+//
+//         // 2. Call your C++ function via ccall
+//         // This C++ function can now safely use: fopen("temp_input.wav", "rb")
+//         const result = Module.ccall('process_audio', 'number', ['string'], [path]);
+//
+//         console.log("Processing finished with code:", result);
+//
+//         // 3. Optional: Clean up MEMFS to save memory
+//         Module.FS.unlink(path);
+//
+//     } catch (err) {
+//         console.error("Failed to load file:", err);
+//     }
+// });
 
 //-------------------------------------------------------------------------------
 // Init:
 //-------------------------------------------------------------------------------
 inline void initEmScripten()
 {
-    // g_FluxScreen = lScreen;
     emscripten_set_fullscreenchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, nullptr, EM_TRUE, on_fullscreen_change);
 }
 

@@ -473,7 +473,7 @@ void SFXGenerator::SynthSample(int length, float* buffer, FILE* file)
 //-----------------------------------------------------------------------------
 bool SFXGenerator::ExportWAV(const char* filename)
 {
-     // not ? std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     FILE* foutput=fopen(filename, "wb");
     if(!foutput)
         return false;
@@ -517,16 +517,39 @@ bool SFXGenerator::ExportWAV(const char* filename)
         SynthSample(256, NULL, foutput);
     mState.mute_stream=false;
 
-    // seek back to header and write size info
+    // // seek back to header and write size info
+    // fseek(foutput, 4, SEEK_SET);
+    // dword=0;
+    // dword=foutstream_datasize-4+file_sampleswritten*wav_bits/8;
+    // fwrite(&dword, 1, 4, foutput); // remaining file size
+    // fseek(foutput, foutstream_datasize, SEEK_SET);
+    // dword=file_sampleswritten*wav_bits/8;
+    // fwrite(&dword, 1, 4, foutput); // chunk size (data)
+    //
+    // fseek(foutput, 0, SEEK_END);
+    // fflush(foutput);
+    // fclose(foutput);
+
+    // 1. Calculate the total audio data size
+    unsigned int audio_bytes = file_sampleswritten * (wav_bits / 8);
+
+    // 2. Update RIFF Chunk Size (Total File Size - 8)
+    // Located at offset 4
     fseek(foutput, 4, SEEK_SET);
-    dword=0;
-    dword=foutstream_datasize-4+file_sampleswritten*wav_bits/8;
-    fwrite(&dword, 1, 4, foutput); // remaining file size
-    fseek(foutput, foutstream_datasize, SEEK_SET);
-    dword=file_sampleswritten*wav_bits/8;
-    fwrite(&dword, 1, 4, foutput); // chunk size (data)
+    unsigned int riff_size = 36 + audio_bytes; // 36 is the header size after this field
+    fwrite(&riff_size, 4, 1, foutput);
+
+    // 3. Update Data Chunk Size (Just the audio bytes)
+    // In a standard WAV, this is located at offset 40
+    fseek(foutput, 40, SEEK_SET);
+    fwrite(&audio_bytes, 4, 1, foutput);
+
+    // 4. MEMFS Safety: Seek to the absolute end before closing
+    fseek(foutput, 0, SEEK_END);
+    fflush(foutput);
     fclose(foutput);
-    
+
+
     return true;
 }
 //-----------------------------------------------------------------------------
