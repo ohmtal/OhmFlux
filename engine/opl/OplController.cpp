@@ -117,15 +117,15 @@ void OplController::togglePause()
     }
 }
 //------------------------------------------------------------------------------
-uint8_t OplController::get_carrier_offset(int channel) {
-    if (channel < 0 || channel > 8) return 0;
+uint8_t OplController::get_carrier_offset(uint8_t channel) {
+    if (channel > FMS_MAX_CHANNEL) return 0;
 
     // The Carrier is always 3 steps away from the Modulator base
     return Adr_add[channel] + 3;
 }
 //------------------------------------------------------------------------------
-uint8_t OplController::get_modulator_offset(int channel){
-    if (channel < 0 || channel > 8) return 0;
+uint8_t OplController::get_modulator_offset(uint8_t channel){
+    if (channel > FMS_MAX_CHANNEL) return 0;
     return Adr_add[channel];
 }
 //------------------------------------------------------------------------------
@@ -305,7 +305,7 @@ void OplController::render(int16_t* buffer, int frames) {
 //------------------------------------------------------------------------------
 void OplController::dumpInstrumentFromCache(uint8_t channel)
 {
-    if (channel < 0 || channel > 8) return;
+    if (channel > FMS_MAX_CHANNEL) return;
 
     // 1. Get the pointer from your cache
     const uint8_t* patch = getInstrument(channel);
@@ -324,7 +324,7 @@ void OplController::dumpInstrumentFromCache(uint8_t channel)
 }
 //------------------------------------------------------------------------------
 void OplController::setInstrument(uint8_t channel, const uint8_t lIns[24]) {
-    if (channel > 8) return;
+    if (channel > FMS_MAX_CHANNEL) return;
 
     memcpy(m_instrument_cache[channel], lIns, 24);
 
@@ -363,7 +363,7 @@ void OplController::setInstrument(uint8_t channel, const uint8_t lIns[24]) {
 }
 //------------------------------------------------------------------------------
 const uint8_t* OplController::getInstrument(uint8_t channel) const{
-    if (channel > 8) return nullptr;
+    if (channel > FMS_MAX_CHANNEL) return nullptr;
     return m_instrument_cache[channel];
 }
 //------------------------------------------------------------------------------
@@ -408,7 +408,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
 
     // 3. Load Note Grid (Adjusted for 0-based C++ logic)
     for (int i = 0; i < sd.song_length; ++i) { // Start at 0
-        for (int j = 0; j < 9; ++j) {           // Start at 0
+        for (int j = 0; j <= FMS_MAX_CHANNEL; ++j) {           // Start at 0
             int16_t temp_note;
             if (!file.read(reinterpret_cast<char*>(&temp_note), 2)) {
                 Log("ERROR: Failed reading Note at Tick %d, Channel %d", i, j);
@@ -446,7 +446,7 @@ bool OplController::saveSongFMS(const std::string& filename, const SongData& sd)
 
     // 3. Write Song Notes (Adjusted for 0-based memory)
     for (int i = 0; i < sd.song_length; ++i) { // Start at 0
-        for (int j = 0; j < 9; ++j) {           // Start at 0 (OPL Channels 0-8)
+        for (int j = 0; j <= FMS_MAX_CHANNEL; ++j) {           // Start at 0 (OPL Channels 0-8)
             // Ensure you write exactly 2 bytes if your song grid is int16_t
             file.write(reinterpret_cast<const char*>(&sd.song[i][j]), 2);
         }
@@ -469,6 +469,9 @@ void OplController::start_song(SongData& sd, bool loopit) {
 //------------------------------------------------------------------------------
 bool OplController::loadInstrument(const std::string& filename, uint8_t channel)
 {
+    if (channel > FMS_MAX_CHANNEL)
+        return false;
+
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) return false;
 
@@ -496,8 +499,8 @@ bool OplController::saveInstrument(const std::string& filename, const uint8_t* i
     return file.good(); // Returns true if the write was successful
 }
 //------------------------------------------------------------------------------
-void OplController::TestInstrumentDOS(int channel, const uint8_t ins[24], int noteIndex) {
-    if (!mChip || channel < 0 || channel > 8) return;
+void OplController::TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], int noteIndex) {
+    if (!mChip || channel > FMS_MAX_CHANNEL) return;
 
     printf("--- Testing Channel %d with Note Index %d ---\n", channel, noteIndex);
 
@@ -543,10 +546,13 @@ void OplController::TestInstrumentDOS(int channel, const uint8_t ins[24], int no
     }
 }
 //------------------------------------------------------------------------------
-void OplController::replaceSongNotes(SongData& sd, int targetChannel, int16_t oldNote, int16_t newNote) {
+void OplController::replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote) {
+    if (targetChannel > FMS_MAX_CHANNEL)
+        return;
+
     int count = 0;
 
-    // 2026 Logic: Start at 0, end before song_length
+    // Start at 0, end before song_length
     for (int i = 0; i < sd.song_length; ++i) {
 
         int16_t currentNote = sd.song[i][targetChannel];
@@ -747,5 +753,22 @@ int OplController::getIdFromNoteName(std::string name) {
     return (noteID >= 1 && noteID <= 84) ? noteID : 0;
 }
 //------------------------------------------------------------------------------
+std::array< uint8_t, 24 > OplController::GetDefaultInstrument()
+{
+    return {
+        0x01, 0x01, // 0-1: Modulator/Carrier Frequency
+        0x10, 0x00, // 2-3: Modulator/Carrier Output
+        0x0F, 0x0F, // 4-5: Modulator/Carrier Attack
+        0x00, 0x00, // 6-7: Modulator/Carrier Decay
+        0x07, 0x07, // 8-9: Modulator/Carrier Sustain
+        0x07, 0x07, // 10-11: Modulator/Carrier Release
+        0x00, 0x00, // 12-13: Modulator/Carrier Waveform
+        0x00, 0x00, // 14-15: Modulator/Carrier EG Typ
+        0x00, 0x00, // 16-17: Modulator/Carrier Vibrato
+        0x00, 0x00, // 18-19: Modulator/Carrier Amp Mod
+        0x00, 0x00, // 20-21: Feedback / Modulation Mode
+        0x00, 0x00  // 22-23: Modulator/Carrier Scaling
+    };
+}
 //------------------------------------------------------------------------------
 

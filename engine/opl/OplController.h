@@ -25,8 +25,13 @@
 
 // always good ;)
 #include <algorithm>
+
+//FIXME  rewrite instrument data to std::array<uint8_t, 24>
+#include <array>
 //------------------------------------------------------------------------------
 const float PLAYBACK_FREQUENCY = 90.0f;
+
+#define FMS_MAX_CHANNEL 8
 
 //------------------------------------------------------------------------------
 // class OplController
@@ -193,11 +198,11 @@ public:
      * Returns the OPL2 register offset for the Carrier (Operator 2)
      * of a given channel (0-8).
      */
-    uint8_t get_carrier_offset(int channel);
+    uint8_t get_carrier_offset(uint8_t channel);
     /**
      * Returns the OPL2 register offset for the Modulator (Operator 1)
      */
-    uint8_t get_modulator_offset(int channel);
+    uint8_t get_modulator_offset(uint8_t channel);
 
     // Return the pointer directly
     ymfm::ym3812* getChip() { return mChip; }
@@ -232,9 +237,9 @@ public:
 
     bool loadInstrument(const std::string& filename, uint8_t channel);
     bool saveInstrument(const std::string& filename, const uint8_t* instrumentData); //FIXME NOT TESTED !!!!
-    void TestInstrumentDOS(int channel, const uint8_t ins[24], int noteIndex = 48);
+    void TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], int noteIndex = 48);
 
-    void replaceSongNotes(SongData& sd, int targetChannel, int16_t oldNote, int16_t newNote);
+    void replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote);
 
     void fillBuffer(int16_t* buffer, int total_frames);
     void tickSequencer();
@@ -245,6 +250,13 @@ public:
     int getIdFromNoteName(std::string name);
 
 
+    // usage:
+    // // 1. Get the default data as a std::array
+    // auto defaultData = GetDefaultInstrument();
+    // // 2. Copy it into the first slot of your existing 2D array
+    // std::copy(defaultData.begin(), defaultData.end(), ins_set[0]);
+
+    std::array<uint8_t, 24> GetDefaultInstrument();
 
 }; //class
 

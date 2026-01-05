@@ -2,6 +2,15 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// IMPORTAND:
+//   when your object's Draw is called you must call :
+//      DrawBegin {IMGUI calls} DrawEnd
+//
+// imGui ini is disabled by default you can do;
+//      - getGuiIO()->LoadIniSettingsFromDisk(filename)
+//      - getGuiIO()->SaveIniSettingsToDisk(filename)
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include <core/fluxBaseObject.h>
@@ -20,6 +29,7 @@ class FluxGuiGlue : public FluxBaseObject
 private:
     ImGuiIO* mGuiIO = nullptr;
     ImGuiStyle mBaseStyle;
+
     bool mScaleImGui = false;
 
 
@@ -27,6 +37,12 @@ public:
     ~FluxGuiGlue() { Deinitialize(); }
 
     FluxScreen* getScreen()  { return getScreenObject(); }
+
+    ImGuiIO* getGuiIO() { return mGuiIO; }
+
+    void setScaleGui( bool value ) { mScaleImGui = value; }
+    bool getScaleGui() { return mScaleImGui; }
+
 
     // void Execute() override;
     bool Initialize() override {
@@ -85,16 +101,15 @@ public:
         ImGui_ImplSDL3_ProcessEvent(&event);
     }
 
-    void onRenderStart()
+    void DrawBegin()
     {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
-        // The first argument is now an ImGuiID (0 for default), not a pointer.
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_None);
     }
 
-    void onRenderEnd()
+    void DrawEnd()
     {
         ImGui::Render();
 

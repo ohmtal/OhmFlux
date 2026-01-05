@@ -50,6 +50,7 @@ set(TESTBED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TestBed")
 set(LUATEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Amana")
 set(IMGGUITEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ImguiTest")
+set(EDITOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/FluxEditor")
 
 # =============================================================================
 # <<<< PROJECTS SECTION
@@ -394,6 +395,13 @@ if(BUILD_IMGGUITEST)
     configure_demo_target(ImguiTest ${IMGGUITEST_DIR} "${IMGGUITEST_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
+
+# --- ImguiTest ---
+option(BUILD_EDITOR "Build Editor application" ON)
+if(BUILD_EDITOR)
+    set(GAME_SOURCES "${EDITOR_DIR}/src/main.cpp")
+    configure_demo_target(FluxEditor ${EDITOR_DIR} "${EDITOR_DIR}/assets@assets" "${GAME_SOURCES}")
+endif()
 
 
 # =============================================================================

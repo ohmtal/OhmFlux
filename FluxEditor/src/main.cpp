@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// ohmFlux ImguiTest
+// ohmFlux FluxEditor
 //-----------------------------------------------------------------------------
 // FIXME scaling on size changed...
 //      => FluxScreen::updateWindowSize need a event for this
@@ -7,15 +7,16 @@
 
 #include <fluxMain.h>
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
-#include <gui/fluxGuiGlue.h>
 
+
+#include "editorGui.h"
 
 class FluxEditor : public FluxMain
 {
     typedef FluxMain Parent;
 private:
 
-    FluxGuiGlue* mGuiGlue = nullptr;
+    EditorGui* mEditorGui = nullptr;
 
 public:
     FluxEditor() {}
@@ -25,8 +26,8 @@ public:
     {
         if (!Parent::Initialize()) return false;
 
-        mGuiGlue = new FluxGuiGlue();
-        if (!mGuiGlue->Initialize())
+        mEditorGui = new EditorGui();
+        if (!mEditorGui->Initialize())
             return false;
 
         return true;
@@ -34,7 +35,8 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        SAFE_DELETE(mGuiGlue);
+        mEditorGui->Deinitialize();
+        SAFE_DELETE(mEditorGui);
 
         Parent::Deinitialize();
     }
@@ -50,7 +52,7 @@ public:
     //--------------------------------------------------------------------------------------
     void onEvent(SDL_Event event) override
     {
-        mGuiGlue->onEvent(event);
+        mEditorGui->onEvent(event);
     }
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
@@ -61,9 +63,7 @@ public:
 
     void onDraw() override
     {
-        mGuiGlue->DrawBegin();
-        ImGui::ShowDemoWindow();
-        mGuiGlue->DrawEnd();
+        mEditorGui->Draw();
     } //Draw
 }; //classe ImguiTest
 //------------------------------------------------------------------------------
@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
     (void)argc; (void)argv;
     FluxEditor* game = new FluxEditor();
     game->mSettings.Company = "Ohmflux";
-    game->mSettings.Caption = "ImguiTest";
+    game->mSettings.Caption = "Editor";
     game->mSettings.enableLogFile = true;
     game->mSettings.WindowMaximized = true;
     // game->mSettings.ScreenWidth  = 1920;

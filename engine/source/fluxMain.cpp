@@ -177,7 +177,7 @@ void FluxMain::Deinitialize()
 	mQueueObjects.clear();
 
 	// Cleanup Textures
-	dLog("FluxMain: Cleaning up Textrue resources");
+	dLog("FluxMain: Cleaning up Texture resources");
 	for (auto& [key, val] : mTextureCache) {
 		SAFE_DELETE(val);
 	}
