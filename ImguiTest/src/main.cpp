@@ -8,10 +8,8 @@
 #include <fluxMain.h>
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 
-#include <imgui.h>
-#include <backends/imgui_impl_sdl3.h>
-#include <backends/imgui_impl_opengl3.h>
 
+#include "soundEditorGui.h"
 #include "fluxGuiGlue.h"
 #include "fluxSfxEditor.h"
 
@@ -20,8 +18,7 @@ class ImGuiTest : public FluxMain
     typedef FluxMain Parent;
 private:
 
-    FluxSfxEditor* mSfxEditor = nullptr;
-    FluxGuiGlue* mGuiGlue = nullptr;
+    SoundEditorGui* mSoundEditor = nullptr;
 
 public:
     ImGuiTest() {}
@@ -31,13 +28,8 @@ public:
     {
         if (!Parent::Initialize()) return false;
 
-
-        mGuiGlue = new FluxGuiGlue();
-        if (!mGuiGlue->Initialize())
-            return false;
-
-        mSfxEditor = new FluxSfxEditor();
-        if (!mSfxEditor->Initialize())
+        mSoundEditor = new SoundEditorGui();
+        if (!mSoundEditor->Initialize())
             return false;
 
         return true;
@@ -45,8 +37,8 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        SAFE_DELETE(mSfxEditor);
-        SAFE_DELETE(mGuiGlue);
+        mSoundEditor->Deinitialize();
+        SAFE_DELETE(mSoundEditor);
 
         Parent::Deinitialize();
     }
@@ -62,28 +54,18 @@ public:
     //--------------------------------------------------------------------------------------
     void onEvent(SDL_Event event) override
     {
-        mGuiGlue->onEvent(event);
+        mSoundEditor->onEvent(event);
     }
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
-
         Parent::Update(dt);
     }
     //--------------------------------------------------------------------------------------
+
     void onDraw() override
     {
-
-        mGuiGlue->onRenderStart();
-
-        ImGui::ShowDemoWindow();
-
-        mSfxEditor->Draw();
-
-
-
-        mGuiGlue->onRenderEnd();
-
+        mSoundEditor->Draw();
     } //Draw
 }; //classe ImguiTest
 //------------------------------------------------------------------------------
