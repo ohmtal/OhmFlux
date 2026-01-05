@@ -131,8 +131,7 @@ EM_BOOL on_fullscreen_change(int eventType, const EmscriptenFullscreenChangeEven
 }
 //-------------------------------------------------------------------------------
 // JavaScript helper to trigger browser download
-extern "C" {
-EM_JS(void, emscripten_trigger_download, (const char* name), {
+EM_JS(void, js_impl_download, (const char* name), {
     const filename = UTF8ToString(name);
     const data = FS.readFile(filename); // Read from virtual memory
     const blob = new Blob([data], { type: 'application/octet-stream' });
@@ -146,12 +145,10 @@ EM_JS(void, emscripten_trigger_download, (const char* name), {
     // Clean up to prevent memory leaks
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 });
-}
 //-------------------------------------------------------------------------------
 // This defines a C function: void loadFileToWasm(int fileHandle, const char* virtualPath)
 // Note: In 2026, passing complex JS objects like 'File' directly to EM_JS
 // is usually handled by passing a reference or using a global JS object.
-extern "C" {
 EM_ASYNC_JS(void, loadFileToWasm, (const char* virtualPath), {
     // 1. Get the file from a global or a file input (JS side)
     const fileInput = document.getElementById('myFileInput');
@@ -168,7 +165,6 @@ EM_ASYNC_JS(void, loadFileToWasm, (const char* virtualPath), {
 
     console.log("File loaded to:", UTF8ToString(virtualPath));
 });
-}
 // THIS NEED SOMETHING LIKE THAT JavaScript:
 // // Example: Processing a user upload
 // const fileInput = document.getElementById('myInput');
@@ -200,6 +196,12 @@ EM_ASYNC_JS(void, loadFileToWasm, (const char* virtualPath), {
 inline void initEmScripten()
 {
     emscripten_set_fullscreenchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, nullptr, EM_TRUE, on_fullscreen_change);
+}
+
+extern "C" {
+    void emscripten_trigger_download(const char* name) {
+        js_impl_download(name);
+    }
 }
 
 

@@ -9,10 +9,14 @@
 #include <SFXGenerator.h>
 
 #ifdef __EMSCRIPTEN__
+#ifdef __cplusplus
 extern "C" {
+#endif
     // Forward declaration
     void emscripten_trigger_download(const char* name);
+#ifdef __cplusplus
 }
+#endif
 #endif
 
 enum SFXGEN_FILE_ACTION_TYPE :int {
