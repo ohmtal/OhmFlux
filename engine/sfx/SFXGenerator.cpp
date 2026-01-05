@@ -781,34 +781,31 @@ void SFXGenerator::Mutate(){
 //------------------------------------------------------------------------------
 void SDLCALL SFXGenerator::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
 {
+    if (!userdata)
+        return;
 
     auto* gen = static_cast<SFXGenerator*>(userdata);
 
     if (!gen)
         return;
 
-    std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
+
 
     // additional_amount ist in BYTES.
     // Ein Float hat 4 Bytes.
     int frames_to_generate = additional_amount / sizeof(float);
 
-    if (frames_to_generate > 0) {
-        // Nutze einen lokalen Puffer (Vermeide große Arrays auf dem Stack)
-        // std::vector ist hier sicher, da SDL3 Audio-Threads meist genug Stack haben,
-        // aber ein Member-Array wäre noch performanter.
+    if (frames_to_generate > 0)
+    {
+        std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
         std::vector<float> buffer(frames_to_generate, 0.0f);
 
         if (gen->mState.playing_sample && !gen->mState.mute_stream) {
-            // Dein Synth füllt den Puffer mit Floats
             gen->SynthSample(frames_to_generate, buffer.data(), NULL);
         } else {
-            // Explizit Null setzen, falls nicht gespielt wird
             std::fill(buffer.begin(), buffer.end(), 0.0f);
         }
 
-        // Jetzt die Daten in den Stream schieben
-        // WICHTIG: Die Anzahl der BYTES muss additional_amount entsprechen
         SDL_PutAudioStreamData(stream, buffer.data(), additional_amount);
     }
 }
