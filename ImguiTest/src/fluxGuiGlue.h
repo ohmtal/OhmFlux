@@ -77,6 +77,11 @@ public:
     }
     void onEvent(SDL_Event event)
     {
+        if (event.type ==  FLUX_EVENT_SCALE_CHANGED)
+        {
+            OnScaleChanged();
+        }
+
         ImGui_ImplSDL3_ProcessEvent(&event);
     }
 

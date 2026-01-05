@@ -784,6 +784,9 @@ void SDLCALL SFXGenerator::audio_callback(void* userdata, SDL_AudioStream* strea
 
     auto* gen = static_cast<SFXGenerator*>(userdata);
 
+    if (!gen)
+        return;
+
     std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
 
     // additional_amount ist in BYTES.
