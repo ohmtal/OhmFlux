@@ -3,12 +3,11 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // Singleton
-// - only used on FluxAudioStream at the moment
-// FIXME sfx and OPL should be also bound to this to have a MasterVolume
 //-----------------------------------------------------------------------------
 #pragma once
 
 #include "SDL3/SDL.h"
+#include "utils/errorlog.h"
 
 namespace FluxAudio {
 

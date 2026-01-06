@@ -38,7 +38,6 @@ public:
 
 	}
 
-
 	virtual void Execute() {};
 	virtual bool Initialize() { return true;};
 	virtual void Deinitialize() {};

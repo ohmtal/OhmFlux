@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// IMPORTAND:
-//   when your object's Draw is called you must call :
+// IMPORTANT:
+//  You must draw the gui in onDrawTopMost:
 //      DrawBegin {IMGUI calls} DrawEnd
 //
 // imGui ini is disabled by default you can do;
@@ -31,14 +31,24 @@ private:
     ImGuiStyle mBaseStyle;
 
     bool mScaleImGui = false;
+    bool mEnableDockSpace = false;
 
 
 public:
+    FluxGuiGlue( bool lEnableDockSpace , bool lScaleGui = false )
+    {
+        mEnableDockSpace = lEnableDockSpace;
+        mScaleImGui = lScaleGui;
+    }
+
     ~FluxGuiGlue() { Deinitialize(); }
 
     FluxScreen* getScreen()  { return getScreenObject(); }
 
     ImGuiIO* getGuiIO() { return mGuiIO; }
+
+    void setEnableDockSpace( bool value ) { mEnableDockSpace = value; }
+    bool getEnableDockSpace() { return mEnableDockSpace; }
 
     void setScaleGui( bool value ) { mScaleImGui = value; }
     bool getScaleGui() { return mScaleImGui; }
@@ -106,7 +116,12 @@ public:
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
-        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_None);
+
+        if (mEnableDockSpace)
+        {
+            ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode; //<< this makes it transparent
+            ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), dockspace_flags);
+        }
     }
 
     void DrawEnd()

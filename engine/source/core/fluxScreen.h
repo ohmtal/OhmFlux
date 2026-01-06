@@ -74,7 +74,9 @@ public:
 	S32  getHeight()	 const { return _mHeight; }
 	S32  getCenterX()	 const { return _mCenterX; }
 	S32  getCenterY()	 const { return _mCenterY; }
-	Point2F getCenterF() const { return { static_cast<F32>(_mCenterX ), static_cast<F32>(_mCenterX ) }; }
+
+	Point2F getCenterF() const { return { static_cast<F32>(_mCenterX ), static_cast<F32>(_mCenterY ) }; }
+	Point2I getScreenSize() const { return { _mWidth , _mHeight  }; }
 	Point2F getScreenSizeF() const { return { static_cast<F32>(_mWidth ), static_cast<F32>(_mHeight ) }; }
 	Point2F getScreenCenterF() const { return { static_cast<F32>(_mWidth ) / 2.f , static_cast<F32>(_mHeight ) / 2.f }; }
 	Point2I getRealScreenSize() const { return mRealScreenSize; }

@@ -403,7 +403,10 @@ endif()
 # --- ImguiTest ---
 option(BUILD_EDITOR "Build Editor application" ON)
 if(BUILD_EDITOR)
-    set(GAME_SOURCES "${EDITOR_DIR}/src/main.cpp")
+    set(GAME_SOURCES
+        "${EDITOR_DIR}/src/main.cpp"
+        "${EDITOR_DIR}/src/editorGui.cpp"
+    )
     configure_demo_target(FluxEditor ${EDITOR_DIR} "${EDITOR_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 

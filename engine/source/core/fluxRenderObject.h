@@ -108,6 +108,7 @@ public:
 		//FIXME update quadtree here
 		// 		<< but then i need to call it twice
 	}
+	void setSize(const Point2I value) { setWidth(value.x), setHeight(value.y);}
 	void setWidth(const S32& w) { mDrawParams.w = w; }
 	void setHeight(const S32& h) { mDrawParams.h = h; }
 	void setPos(const F32& x, const F32& y) { setX(x); setY(y); }

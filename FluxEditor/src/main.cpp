@@ -5,76 +5,24 @@
 //      => FluxScreen::updateWindowSize need a event for this
 //-----------------------------------------------------------------------------
 
-#include <fluxMain.h>
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
-
-
-#include "editorGui.h"
-
-class FluxEditor : public FluxMain
-{
-    typedef FluxMain Parent;
-private:
-
-    EditorGui* mEditorGui = nullptr;
-
-public:
-    FluxEditor() {}
-    ~FluxEditor() {}
-
-    bool Initialize() override
-    {
-        if (!Parent::Initialize()) return false;
-
-        mEditorGui = new EditorGui();
-        if (!mEditorGui->Initialize())
-            return false;
-
-        return true;
-    }
-    //--------------------------------------------------------------------------------------
-    void Deinitialize() override
-    {
-        mEditorGui->Deinitialize();
-        SAFE_DELETE(mEditorGui);
-
-        Parent::Deinitialize();
-    }
-    //--------------------------------------------------------------------------------------
-    void onKeyEvent(SDL_KeyboardEvent event) override
-    {
-        bool isKeyUp = (event.type == SDL_EVENT_KEY_UP);
-        if (event.key == SDLK_ESCAPE && isKeyUp)
-            TerminateApplication();
-    }
-    //--------------------------------------------------------------------------------------
-    void onMouseButtonEvent(SDL_MouseButtonEvent event) override    {    }
-    //--------------------------------------------------------------------------------------
-    void onEvent(SDL_Event event) override
-    {
-        mEditorGui->onEvent(event);
-    }
-    //--------------------------------------------------------------------------------------
-    void Update(const double& dt) override
-    {
-        Parent::Update(dt);
-    }
-    //--------------------------------------------------------------------------------------
-
-    void onDraw() override
-    {
-        mEditorGui->Draw();
-    } //Draw
-}; //classe ImguiTest
+#include "fluxEditorMain.h"
 //------------------------------------------------------------------------------
 // Main
 //------------------------------------------------------------------------------
+
+FluxEditorMain* g_FluxEditor = nullptr;
+
+FluxEditorMain* getGame() {
+    return g_FluxEditor;
+}
+
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    FluxEditor* game = new FluxEditor();
+    FluxEditorMain* game = new FluxEditorMain();
     game->mSettings.Company = "Ohmflux";
-    game->mSettings.Caption = "Editor";
+    game->mSettings.Caption = "Flux Editor";
     game->mSettings.enableLogFile = true;
     game->mSettings.WindowMaximized = true;
     // game->mSettings.ScreenWidth  = 1920;
@@ -85,6 +33,8 @@ int main(int argc, char* argv[])
     // game->mSettings.cursorHotSpotY = 10;
 
     // LogFMT("TEST: My pref path would be:{}", SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ));
+
+    g_FluxEditor = game;
 
     game->Execute();
     SAFE_DELETE(game);

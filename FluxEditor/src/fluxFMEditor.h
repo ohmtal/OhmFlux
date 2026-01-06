@@ -249,8 +249,8 @@ public:
             {
                 if (ImGui::BeginMenu("File"))
                 {
-                    if (ImGui::MenuItem("Open")) { POPUP_NOT_IMPEMENTED_ACTIVE = true; }
-                    if (ImGui::MenuItem("Save")) { POPUP_NOT_IMPEMENTED_ACTIVE = true; }
+                    if (ImGui::MenuItem("Open")) { showMessage("Open", "Open not implemented, yet."); }
+                    if (ImGui::MenuItem("Save")) { showMessage("Save", "Save not implemented, yet."); }
                     ImGui::EndMenu();
                 }
 

@@ -370,6 +370,8 @@ void FluxMain::Draw() {
 	/* layers ... end */ 
 	Render2D.renderBatch();
 
+	onDrawTopMost();
+
 	// disabled for batch rendering
     // glClear(GL_DEPTH_BUFFER_BIT);
     // glDisable(GL_DEPTH_TEST);

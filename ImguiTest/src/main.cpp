@@ -1,33 +1,42 @@
 //-----------------------------------------------------------------------------
 // ohmFlux ImguiTest
 //-----------------------------------------------------------------------------
-// FIXME scaling on size changed...
-//      => FluxScreen::updateWindowSize need a event for this
-//-----------------------------------------------------------------------------
 
 #include <fluxMain.h>
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 #include <gui/fluxGuiGlue.h>
 
 
-class FluxEditor : public FluxMain
+class FluxGuiTest : public FluxMain
 {
     typedef FluxMain Parent;
 private:
 
     FluxGuiGlue* mGuiGlue = nullptr;
+    FluxTexture* mBackgroundTex = nullptr;
+    FluxRenderObject* mBackground = nullptr;
 
 public:
-    FluxEditor() {}
-    ~FluxEditor() {}
+    FluxGuiTest() {}
+    ~FluxGuiTest() {}
 
     bool Initialize() override
     {
         if (!Parent::Initialize()) return false;
 
-        mGuiGlue = new FluxGuiGlue();
+        mGuiGlue = new FluxGuiGlue(true);
         if (!mGuiGlue->Initialize())
             return false;
+
+        mBackgroundTex = loadTexture("assets/background.bmp");
+
+        // not centered ?!?!?! i guess center is not in place yet ?
+        mBackground = new FluxRenderObject(mBackgroundTex);
+        if (mBackground) {
+            mBackground->setPos(getScreen()->getCenterF());
+            mBackground->setSize(getScreen()->getScreenSize());
+            queueObject(mBackground);
+        }
 
         return true;
     }
@@ -59,11 +68,12 @@ public:
     }
     //--------------------------------------------------------------------------------------
 
-    void onDraw() override
+    void onDrawTopMost() override
     {
         mGuiGlue->DrawBegin();
         ImGui::ShowDemoWindow();
         mGuiGlue->DrawEnd();
+
     } //Draw
 }; //classe ImguiTest
 //------------------------------------------------------------------------------
@@ -72,7 +82,7 @@ public:
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    FluxEditor* game = new FluxEditor();
+    FluxGuiTest* game = new FluxGuiTest();
     game->mSettings.Company = "Ohmflux";
     game->mSettings.Caption = "ImguiTest";
     game->mSettings.enableLogFile = true;

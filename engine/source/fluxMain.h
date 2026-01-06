@@ -115,6 +115,7 @@ public:
 
 	virtual void Update(const double& dt);
 	virtual void onDraw() {};
+	virtual void onDrawTopMost() {}; // rendered After RenderBatch
 
 	std::vector<FluxBaseObject*> getQueueObjects() { return mQueueObjects; }
 
