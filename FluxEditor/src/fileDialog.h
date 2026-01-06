@@ -26,10 +26,12 @@ struct ImFileDialog {
     char pathInput[512];
     char fileInput[256] = "";
     std::string selectedFile = "";
+    std::string selectedExt = "";
 
     bool Draw(const char* label, bool isSaveMode, std::vector<std::string> filters) {
         bool result = false;
-        if (ImGui::Begin(label, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::Begin(label, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
 
             // 1. Path Input at the top
             strncpy(pathInput, currentPath.c_str(), sizeof(pathInput));
@@ -65,7 +67,7 @@ struct ImFileDialog {
                             std::string ext = path.extension().string();
                             std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-                            if (std::find(filters.begin(), filters.end(), ext) != filters.end()) {
+                            if (filters.empty() ||  std::find(filters.begin(), filters.end(), ext) != filters.end()) {
 
                                 // Use AllowDoubleClick flag to ensure the click isn't swallowed
                                 bool isSelected = (selectedFile == name);
@@ -78,6 +80,7 @@ struct ImFileDialog {
                                 if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
                                     if (strlen(fileInput) > 0) {
                                         selectedFile = (fs::path(currentPath) / fileInput).string();
+                                        selectedExt  = ext;
                                         result = true; // This triggers the 'Save/Open' action
                                     }
                                 }
@@ -85,9 +88,12 @@ struct ImFileDialog {
                         }
                     }
 
-                } catch (...) { /* Handle permission errors */ }
-                ImGui::EndChild();
+                } catch (...) {
+                    Log("FileBrowser permission error.");
+                }
+
             }
+            ImGui::EndChild();
 
             // 3. Filename Input (Required for Save, handy for Load)
             ImGui::InputText("File", fileInput, sizeof(fileInput));
@@ -96,6 +102,7 @@ struct ImFileDialog {
             if (ImGui::Button(isSaveMode ? "Save" : "Open")) {
                 if (strlen(fileInput) > 0) {
                     selectedFile = (fs::path(currentPath) / fileInput).string();
+                    selectedExt = fs::path(selectedFile).extension().string();
                     result = true;
                 }
             }
@@ -104,8 +111,9 @@ struct ImFileDialog {
                 ImGui::CloseCurrentPopup(); // Or handle state
             }
 
-            ImGui::End();
+
         }
+        ImGui::End();
         return result;
     }
 };

@@ -35,11 +35,15 @@ private:
 
     ImGuiID mDockSpaceId;
 
+    const char* mIniFileName;
+
 public:
-    FluxGuiGlue( bool lEnableDockSpace , bool lScaleGui = false )
+    FluxGuiGlue( bool lEnableDockSpace , bool lScaleGui = false, const char* IniFileName = nullptr )
     {
         mEnableDockSpace = lEnableDockSpace;
         mScaleImGui = lScaleGui;
+
+        mIniFileName = IniFileName;
     }
 
     ~FluxGuiGlue() { Deinitialize(); }
@@ -64,7 +68,7 @@ public:
         ImGui::CreateContext();
         mGuiIO = &ImGui::GetIO();
 
-        mGuiIO->IniFilename = nullptr;
+        mGuiIO->IniFilename = mIniFileName;
         mGuiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         mGuiIO->DisplaySize  = ImVec2(getScreen()->getHeight(), getScreen()->getWidth());
         mGuiIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;

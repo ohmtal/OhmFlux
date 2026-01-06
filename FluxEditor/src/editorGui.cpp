@@ -1,10 +1,11 @@
 #include "editorGui.h"
 #include "fluxEditorMain.h"
 #include "fileDialog.h"
+#include <imgui_internal.h>
 //------------------------------------------------------------------------------
 bool EditorGui::Initialize()
 {
-    mGuiGlue = new FluxGuiGlue(true);
+    mGuiGlue = new FluxGuiGlue(true, false, "flux.ini");
     if (!mGuiGlue->Initialize())
         return false;
 
@@ -118,32 +119,50 @@ void EditorGui::DrawGui()
     ShowManuBar();
 
 
+    // // docking test found at: https://github.com/ocornut/imgui/wiki/Docking
+    // // does not work so far. i guess i missed something
+    //
+    // if (ImGui::DockBuilderGetNode(mGuiGlue->getDockSpaceId()) == nullptr)
+    // {
+    //     ImGui::DockBuilderAddNode(mGuiGlue->getDockSpaceId(), ImGuiDockNodeFlags_DockSpace);
+    //     ImGui::DockBuilderSetNodeSize(mGuiGlue->getDockSpaceId(), ImGui::GetMainViewport()->Size);
+    //     ImGuiID dock_id_left = 0;
+    //     ImGuiID dock_id_main = mGuiGlue->getDockSpaceId();
+    //     ImGui::DockBuilderSplitNode(dock_id_main, ImGuiDir_Left, 0.20f, &dock_id_left, &dock_id_main);
+    //     ImGuiID dock_id_left_top = 0;
+    //     ImGuiID dock_id_left_bottom = 0;
+    //     ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.50f, &dock_id_left_top, &dock_id_left_bottom);
+    //     ImGui::DockBuilderDockWindow("FM Instrument Editor", dock_id_main);
+    //     ImGui::DockBuilderDockWindow("File Browser", dock_id_left_top);
+    //     // ImGui::DockBuilderDockWindow("Scene", dock_id_left_bottom);
+    //     ImGui::DockBuilderFinish(mGuiGlue->getDockSpaceId());
+    // }
 
     if ( mParameter.mShowDemo )
     {
-        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
+        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow();
     }
 
 
     if ( mParameter.mShowSFXEditor ){
-        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
+        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mSfxEditor->Draw();
     }
 
 
     if ( mParameter.mShowFMComposer ) {
-        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
+        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMEditor->DrawComposer();
     }
 
     if ( mParameter.mShowFMInstrumentEditor ) {
-        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
+        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMEditor->DrawInstrumentEditor();
     }
 
     if ( mParameter.mShowPianoScale ) {
-        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
+        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMEditor->DrawPianoScale();
     }
 
@@ -157,11 +176,15 @@ void EditorGui::DrawGui()
 
 //XXTH_TEST
     static ImFileDialog myDialog;
-    if (myDialog.Draw("File Browser", true, { ".png", ".jpg", ".bmp" })) {
-        static std::string myCaption = "User chose:" + myDialog.selectedFile;
-        showMessage("File Browser Message", myCaption);
-    }
+    static std::string myCaption;
+    if (myDialog.Draw("File Browser", false, { ".png", ".bmp", ".wav", ".ogg", ".sfx", ".fmi", ".fms" })) {
+         myCaption = "User chose:" + myDialog.selectedFile;
+        LogFMT("File:{} Ext:{}", myDialog.selectedFile, myDialog.selectedExt);
 
+        if ( myDialog.selectedExt == ".fmi" )
+            mFMEditor->loadInstrument(myDialog.selectedFile);
+        // showMessage("File Browser Message", myCaption);
+    }
 
 
 

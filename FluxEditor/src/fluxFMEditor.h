@@ -56,6 +56,12 @@ public:
         if (mController)
             SAFE_DELETE(mController);
     }
+
+    //--------------------------------------------------------------------------
+    bool loadInstrument(const std::string& filename)
+    {
+        return mController->loadInstrument(filename, mInstrumentChannel);
+    }
     //--------------------------------------------------------------------------
     void resetInstrument()
     {
