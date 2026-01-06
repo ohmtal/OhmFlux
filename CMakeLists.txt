@@ -232,6 +232,10 @@ target_compile_definitions(ohmFlux_engine PUBLIC
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:DEBUG>>:FLUX_DEBUG>
 )
 
+# so we know where we are
+target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE)
+
+
 if(WIN32 AND MSVC)
     target_compile_definitions(ohmFlux_engine PUBLIC NOMINMAX)
     set_target_properties(ohmFlux_engine PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

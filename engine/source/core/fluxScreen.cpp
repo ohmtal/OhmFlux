@@ -14,6 +14,8 @@
 #include "render/fluxRender2D.h"
 #include "particle/fluxParticleManager.h"
 
+#include "audio/fluxAudio.h"
+
 
 //-------------------------------------------------------------------------------
 // Howto:
@@ -31,6 +33,9 @@ FluxScreen::FluxScreen(VideoMode lVM)
 		mSDLVideoFailed = true;
 		return;
 	}
+
+	AudioManager.init();
+
 	mSDLVideoFailed = false;
 	mWindow		 = nullptr;
 	mScreenMode  = lVM;

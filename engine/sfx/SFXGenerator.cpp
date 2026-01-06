@@ -7,6 +7,11 @@
 #include <SDL3/SDL.h>
 #include <mutex>
 
+#ifdef FLUX_ENGINE
+#include <audio/fluxAudio.h>
+#endif
+
+
 #ifndef PI
 #define PI 3.14159265f
 #endif
@@ -810,28 +815,67 @@ void SDLCALL SFXGenerator::audio_callback(void* userdata, SDL_AudioStream* strea
     }
 }
 //------------------------------------------------------------------------------
-bool SFXGenerator::initSDLAudio() {
+bool SFXGenerator::initSDLAudio()
+{
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_F32; // not: spec.format = SDL_AUDIO_S16;
     spec.channels = 1; //NOT 2;
     spec.freq = 44100;
 
-    // Create the stream and a logical device connection in one go
-    mStream = SDL_OpenAudioDeviceStream(
-        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-        &spec,
-        SFXGenerator::audio_callback,
-        this
-    );
 
-    if (!mStream) {
+    mStream = SDL_CreateAudioStream(&spec, &spec);
+    if (!mStream)
+    {
         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
         return false;
     }
 
-    // SDL_SetAudioStreamGain(mStream, 1.2f);
+    SDL_SetAudioStreamGetCallback(mStream, SFXGenerator::audio_callback, this);
 
-    // Mandatory: Start the device (it is created paused)
+    #ifdef FLUX_ENGINE
+    AudioManager.bindStream(mStream);
+    #else
+    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+
+    if (dev == 0) {
+        Log("Failed to open audio device: %s", SDL_GetError());
+        return false;
+    }
+
+    if (!SDL_BindAudioStream(dev, mStream)) {
+        Log("SDL_OpenAudioDeviceStream failed to bind stream: %s", SDL_GetError());
+        return false;
+    }
+    #endif
+
     SDL_ResumeAudioStreamDevice(mStream);
     return true;
 }
+
+
+
+// bool SFXGenerator::initSDLAudio() {
+//     SDL_AudioSpec spec;
+//     spec.format = SDL_AUDIO_F32; // not: spec.format = SDL_AUDIO_S16;
+//     spec.channels = 1; //NOT 2;
+//     spec.freq = 44100;
+//
+//     // Create the stream and a logical device connection in one go
+//     mStream = SDL_OpenAudioDeviceStream(
+//         SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+//         &spec,
+//         SFXGenerator::audio_callback,
+//         this
+//     );
+//
+//     if (!mStream) {
+//         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
+//         return false;
+//     }
+//
+//     // SDL_SetAudioStreamGain(mStream, 1.2f);
+//
+//     // Mandatory: Start the device (it is created paused)
+//     SDL_ResumeAudioStreamDevice(mStream);
+//     return true;
+// }

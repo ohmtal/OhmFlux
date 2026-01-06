@@ -149,6 +149,21 @@ public:
         SDL_ClearAudioStream(mStream);
     }
 
+    SDL_AudioStream* getAudioStream() { return mStream; }
+    float getVolume() {
+        if (mStream) {
+            float gain = SDL_GetAudioStreamGain(mStream);
+            return (gain < 0.0f) ? 0.0f : gain;
+        }
+        return 0.f;
+    }
+    bool setVolume(const float value) {
+        if (mStream)
+            return SDL_SetAudioStreamGain(mStream, value);
+        return false;
+    }
+
+
 
 
 private:

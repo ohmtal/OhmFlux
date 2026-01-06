@@ -4,11 +4,14 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#include <audio/fluxAudio.h>
 #include <core/fluxBaseObject.h>
 #include <gui/fluxGuiGlue.h>
+
 #include "fluxSfxEditor.h"
 #include "fluxFMEditor.h"
 #include "fluxEditorGlobals.h"
+
 
 
 class EditorGui: public FluxBaseObject
@@ -121,6 +124,21 @@ public:
                 ImGui::EndMenu();
             }
 
+            // ----------- Master Volume
+            float rightOffset = 230.0f;
+            ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
+
+            ImGui::SetNextItemWidth(100);
+            float currentVol = AudioManager.getMasterVolume();
+            if (ImGui::SliderFloat("##MasterVol", &currentVol, 0.0f, 2.0f, "Vol %.1f"))
+            {
+                if (!AudioManager.setMasterVolume(currentVol))
+                    Log("Error: Failed to set SDL Master volume");
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Master Volume");
+
+
+            // -----------
             ImGui::EndMainMenuBar();
         }
 

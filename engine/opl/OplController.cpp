@@ -5,6 +5,11 @@
 //-----------------------------------------------------------------------------
 #include "OplController.h"
 #include <mutex>
+
+#ifdef FLUX_ENGINE
+#include <audio/fluxAudio.h>
+#endif
+
 //------------------------------------------------------------------------------
 OplController::OplController(){
     // mChip = new ymfm::ym3812(mInterface); //OPL2
@@ -47,29 +52,66 @@ void OplController::audio_callback(void* userdata, SDL_AudioStream* stream, int 
     }
 }
 //------------------------------------------------------------------------------
-bool OplController::initController() {
+bool OplController::initController()
+{
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_S16;
     spec.channels = 2;
     spec.freq = 44100;
 
-    // Create the stream and a logical device connection in one go
-    mStream = SDL_OpenAudioDeviceStream(
-        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-        &spec,
-        OplController::audio_callback, // The static bridge
-        this                           // Pass 'this' as userdata
-    );
-
+    mStream = SDL_CreateAudioStream(&spec, &spec);
     if (!mStream) {
         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
         return false;
     }
+    SDL_SetAudioStreamGetCallback(mStream, OplController::audio_callback, this);
 
-    // Mandatory: Start the device (it is created paused)
+
+    #ifdef FLUX_ENGINE
+        AudioManager.bindStream(mStream);
+    #else
+        SDL_AudioDeviceID dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+
+        if (dev == 0) {
+            Log("Failed to open audio device: %s", SDL_GetError());
+            return false;
+        }
+
+        if (!SDL_BindAudioStream(dev, mStream)) {
+            Log("Failed to bind stream: %s", SDL_GetError());
+            return false;
+        }
+    #endif
+
+
     SDL_ResumeAudioStreamDevice(mStream);
+
     return true;
 }
+
+// bool OplController::initController() {
+//     SDL_AudioSpec spec;
+//     spec.format = SDL_AUDIO_S16;
+//     spec.channels = 2;
+//     spec.freq = 44100;
+//
+//     // Create the stream and a logical device connection in one go
+//     mStream = SDL_OpenAudioDeviceStream(
+//         SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+//         &spec,
+//         OplController::audio_callback, // The static bridge
+//         this                           // Pass 'this' as userdata
+//     );
+//
+//     if (!mStream) {
+//         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
+//         return false;
+//     }
+//
+//     // Mandatory: Start the device (it is created paused)
+//     SDL_ResumeAudioStreamDevice(mStream);
+//     return true;
+// }
 //------------------------------------------------------------------------------
 bool OplController::shutDownController()
 {

@@ -128,8 +128,8 @@ public:
         }
 
         ImGui::Separator();
-        if (ImGui::Button("Panic: Stop Channel", ImVec2(-FLT_MIN, 0))) {
-            mController->silenceAll();
+        if (ImGui::Button("Stop Channel", ImVec2(-FLT_MIN, 0))) {
+            mController->stopNote(mInstrumentChannel);
         }
 
         ImGui::End();
@@ -289,7 +289,7 @@ public:
 
                 ImGui::SetNextItemWidth(100);
                 float currentVol = mController->getVolume();
-                if (ImGui::SliderFloat("##MasterVol", &currentVol, 0.0f, 2.0f, "Vol %.1f"))
+                if (ImGui::SliderFloat("##FMVol", &currentVol, 0.0f, 2.0f, "Vol %.1f"))
                 {
                     mController->setVolume(currentVol);
                 }

@@ -28,7 +28,7 @@ private:
     SDL_AudioStream *mStream = nullptr;
     Uint8 *mWavData = nullptr;
     Uint32 mWaveDataLen = 0;
-    SDL_AudioDeviceID mAudioDevice;
+    // SDL_AudioDeviceID mAudioDevice;
     float mGain = 1.f; //volume 0.f..1.f
 
     // position

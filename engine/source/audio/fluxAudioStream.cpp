@@ -5,6 +5,7 @@
 #include "audio/fluxAudioStream.h"
 #include "utils/errorlog.h"
 #include "render/fluxRender2D.h"
+#include "audio/fluxAudio.h"
 
 #include <algorithm>
 
@@ -15,8 +16,8 @@ FluxAudioStream::FluxAudioStream( const char* lFilename)
 {
     setVisible(false); //sound does not need draw
 
-    mAudioDevice =  SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
-    if (mAudioDevice == 0)
+    // mAudioDevice =  SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if (AudioManager.getDeviceID() == 0)
     {
         Log("Failed to open audio device!");
         return;
@@ -187,7 +188,8 @@ bool FluxAudioStream::loadOGG(const char* lFilename) {
     mSpec.freq = info.sample_rate;
 
     mStream = SDL_CreateAudioStream(&mSpec, nullptr);
-    SDL_BindAudioStream(mAudioDevice, mStream);
+    // SDL_BindAudioStream(AudioManager.getDeviceID(), mStream);
+    AudioManager.bindStream(mStream);
 
     mIsOgg = true;
     mInitDone = true;
@@ -197,7 +199,7 @@ bool FluxAudioStream::loadOGG(const char* lFilename) {
 //-----------------------------------------------------------------------------
 bool FluxAudioStream::loadWAV(const char * lFilename)
 {
-    if (mAudioDevice == 0)
+    if (AudioManager.getDeviceID() == 0)
         return false;
 
     mInitDone = false;
@@ -228,7 +230,7 @@ bool FluxAudioStream::loadWAV(const char * lFilename)
         return false;
     }
 
-    if (!SDL_BindAudioStream(mAudioDevice, mStream)) {
+    if (!AudioManager.bindStream(mStream)) {
         Log("Failed to bind '%s' stream to device: %s", lFilename, SDL_GetError());
         SDL_DestroyAudioStream(mStream);
         mStream = nullptr;
