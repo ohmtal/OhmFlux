@@ -7,6 +7,7 @@
 #include <core/fluxBaseObject.h>
 #include <imgui.h>
 #include <OplController.h>
+#include "fluxEditorGlobals.h"
 
 #ifdef __EMSCRIPTEN__
 #ifdef __cplusplus
@@ -31,6 +32,8 @@ class FluxFMEditor : public FluxBaseObject
 private:
     OplController* mController = nullptr;
     uint8_t mInstrumentChannel = 0; // 0 .. FMS_MAX_CHANNEL
+    bool mInstrumentEditorAutoPlay = true;
+    bool mInstrumentEditorAutoPlayStarted = false;
 
 public:
     ~FluxFMEditor() { Deinitialize();}
@@ -41,9 +44,10 @@ public:
         if (!mController || !mController->initController())
             return false;
 
-        mController->setInstrument(mInstrumentChannel, mController->GetDefaultInstrument().data());
 
-        mController->dumpInstrumentFromCache(mInstrumentChannel);
+
+        mController->loadInstrumentPreset();
+        // mController->dumpInstrumentFromCache(mInstrumentChannel);
 
         return true;
     }
@@ -51,6 +55,11 @@ public:
     {
         if (mController)
             SAFE_DELETE(mController);
+    }
+    //--------------------------------------------------------------------------
+    void resetInstrument()
+    {
+        mController->resetInstrument(mInstrumentChannel);
     }
     //--------------------------------------------------------------------------
     void DrawScalePlayer()
@@ -62,7 +71,7 @@ public:
         // Offsets based on your table: C=null, C#=7, D=1, D#=8, E=2, F=3, F#=9, G=4, G#=10, A=5, A#=11, B=6
         const int noteOffsets[] = { 0, 7, 1, 8, 2, 3, 9, 4, 10, 5, 11, 6 };
 
-        ImGui::Begin("OPL Scale Player");
+        ImGui::Begin("FM Full Scale");
 
         if (ImGui::BeginTable("ScaleTable", 13, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame))
         {
@@ -126,106 +135,12 @@ public:
         ImGui::End();
     }
     //--------------------------------------------------------------------------
-    // void DrawPianoScale()
-    // {
-    //     static int currentOctave = 3; // Default to Octave IV (index 3)
-    //     const char* octaves[] = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" };
-    //
-    //     ImGui::Begin("OPL Piano Editor");
-    //
-    //     // 1. Octave Selection
-    //     ImGui::SetNextItemWidth(120);
-    //     if (ImGui::BeginCombo("Octave", octaves[currentOctave])) {
-    //         for (int i = 0; i < 8; i++) {
-    //             if (ImGui::Selectable(octaves[i], currentOctave == i)) currentOctave = i;
-    //         }
-    //         ImGui::EndCombo();
-    //     }
-    //
-    //     ImGui::Spacing();
-    //
-    //     // 2. Keyboard Layout Logic
-    //     // Offsets: C=null, C#=7, D=1, D#=8, E=2, F=3, F#=9, G=4, G#=10, A=5, A#=11, B=6
-    //     struct PianoKey { const char* name; int offset; bool isBlack; };
-    //     PianoKey keys[] = {
-    //         {"C", -1, false}, {"C#", 7, true}, {"D", 1, false}, {"D#", 8, true},
-    //         {"E", 2, false},  {"F", 3, false}, {"F#", 9, true}, {"G", 4, false},
-    //         {"G#", 10, true}, {"A", 5, false}, {"A#", 11, true}, {"B", 6, false}
-    //     };
-    //
-    //     ImVec2 startPos = ImGui::GetCursorScreenPos();
-    //     float whiteWidth = 40.0f;
-    //     float whiteHeight = 150.0f;
-    //     float blackWidth = 25.0f;
-    //     float blackHeight = 90.0f;
-    //
-    //     // Draw White Keys First
-    //     int whiteKeyCount = 0;
-    //     for (int i = 0; i < 12; i++) {
-    //         if (keys[i].isBlack) continue;
-    //
-    //         int noteIndex = (currentOctave * 12) + keys[i].offset;
-    //         bool isNull = (currentOctave == 0 && i == 0); // Octave I, C is //
-    //
-    //         ImGui::PushID(i);
-    //         ImGui::SetCursorScreenPos(ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y));
-    //
-    //         if (isNull) ImGui::BeginDisabled();
-    //         if (ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight))) {}
-    //
-    //         // Use the same activation logic from your earlier scale
-    //         if (ImGui::IsItemActivated()) mController->playNoteDOS(mInstrumentChannel, noteIndex);
-    //         if (ImGui::IsItemDeactivated()) mController->stopNote(mInstrumentChannel);
-    //         if (isNull) ImGui::EndDisabled();
-    //
-    //         ImGui::PopID();
-    //         whiteKeyCount++;
-    //     }
-    //
-    //     // Draw Black Keys (Overlapping)
-    //     whiteKeyCount = 0;
-    //     for (int i = 0; i < 12; i++) {
-    //         if (!keys[i].isBlack) {
-    //             whiteKeyCount++;
-    //             continue;
-    //         }
-    //
-    //         int noteIndex = (currentOctave * 12) + keys[i].offset;
-    //         bool isNull = (currentOctave == 7); // Octave VIII sharps are //
-    //
-    //         // Position black keys between white keys
-    //         float xPos = startPos.x + (whiteKeyCount * whiteWidth) - (blackWidth / 2.0f);
-    //         ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
-    //
-    //         ImGui::PushID(i + 100);
-    //         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
-    //
-    //         if (isNull) ImGui::BeginDisabled();
-    //         if (ImGui::Button("##black", ImVec2(blackWidth, blackHeight))) {}
-    //
-    //         if (ImGui::IsItemActivated()) mController->playNoteDOS(mInstrumentChannel, noteIndex);
-    //         if (ImGui::IsItemDeactivated()) mController->stopNote(mInstrumentChannel);
-    //         if (isNull) ImGui::EndDisabled();
-    //
-    //         ImGui::PopStyleColor();
-    //         ImGui::PopID();
-    //     } // black keys
-    //
-    //     // Reset cursor to end of piano block
-    //     // Calculate the final "bottom-right" corner of your keyboard
-    //     ImVec2 finalPos = ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight);
-    //     // Instead of just setting the cursor, submit a dummy to extend the boundaries
-    //     ImGui::SetCursorScreenPos(finalPos);
-    //     ImGui::Dummy(ImVec2(0, 10)); // Extends boundary and adds 10px padding at the bottom
-    //
-    //     ImGui::End();
-    // }
     void DrawPianoScale()
     {
         static int currentOctave = 3;
         const char* octaves[] = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" };
 
-        ImGui::Begin("OPL Piano Editor");
+        ImGui::Begin("Test Instrument Piano");
 
         // Octave Selection
         ImGui::SetNextItemWidth(120);
@@ -270,7 +185,7 @@ public:
             ImGui::PopID();
             whiteKeyCount++;
         }
-
+        //--------------------------------------------------------------------------
         // 2. Draw Black Keys (On Top)
         whiteKeyCount = 0;
         for (int i = 0; i < 12; i++) {
@@ -303,71 +218,7 @@ public:
 
         ImGui::End();
     }
-
     //--------------------------------------------------------------------------
-    // void DrawInstrumentEditor()
-    // {
-    //     if (!mController)
-    //         return ;
-    //
-    //     uint8_t* instrumentData =  mController->getInstrumentMutable( mInstrumentChannel );
-    //
-    //     ImGui::SetNextWindowSizeConstraints(ImVec2(450.0f, 400.0f), ImVec2(FLT_MAX, FLT_MAX));
-    //
-    //     if (ImGui::Begin("FM Instrument Editor"))
-    //     {
-    //
-    //         if (ImGui::BeginCombo("Select Instrument", ("Instrument " + std::to_string(mInstrumentChannel)).c_str())) {
-    //             for (int n = 0; n <= FMS_MAX_CHANNEL; n++) {
-    //                 const bool is_selected = (mInstrumentChannel == n);
-    //                 if (ImGui::Selectable(("Instrument " + std::to_string(n)).c_str(), is_selected))
-    //                     mInstrumentChannel = n;
-    //                 if (is_selected)
-    //                     ImGui::SetItemDefaultFocus();
-    //             }
-    //             ImGui::EndCombo();
-    //         }
-    //         // 2-column table: Parameter name | Control widget
-    //         if (ImGui::BeginTable("InstrumentParams", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg))
-    //         {
-    //             ImGui::TableSetupColumn("Parameter", ImGuiTableColumnFlags_WidthFixed, 180.0f);
-    //             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-    //             ImGui::TableHeadersRow();
-    //
-    //             for (size_t i = 0; i < OplController::INSTRUMENT_METADATA.size(); ++i)
-    //             {
-    //                 const auto& meta = OplController::INSTRUMENT_METADATA[i];
-    //
-    //                 ImGui::TableNextRow();
-    //                 ImGui::TableSetColumnIndex(0);
-    //                 ImGui::TextUnformatted(meta.name.c_str());
-    //
-    //                 ImGui::TableSetColumnIndex(1);
-    //                 ImGui::PushID(static_cast<int>(i)); // Prevent ID collisions for duplicate names
-    //
-    //                 // OPTIMIZATION: Check if the parameter is a binary flag (0 or 1)
-    //                 if (meta.maxValue == 1)
-    //                 {
-    //                     bool isChecked = (instrumentData[i] != 0);
-    //                     if (ImGui::Checkbox("##v", &isChecked))
-    //                     {
-    //                         instrumentData[i] = isChecked ? 1 : 0;
-    //                     }
-    //                 }
-    //                 else
-    //                 {
-    //                     // Use SliderScalar for uint8_t data (0-maxValue)
-    //                     uint8_t minVal = 0;
-    //                     ImGui::SliderScalar("##v", ImGuiDataType_U8, &instrumentData[i], &minVal, &meta.maxValue, "%u");
-    //                 }
-    //
-    //                 ImGui::PopID();
-    //             }
-    //             ImGui::EndTable();
-    //         }
-    //     }
-    //     ImGui::End();
-    // }
     void DrawInstrumentEditor()
     {
         // 1. Get the current data from the controller to fill our local editor
@@ -376,7 +227,8 @@ public:
         static int lastChannel = -1;
 
         // If we switched channels, load the new instrument data into our buffer
-        if (mInstrumentChannel != lastChannel) {
+        // if (mInstrumentChannel != lastChannel)
+        {
             const uint8_t* currentIns = mController->getInstrument(mInstrumentChannel);
             if (currentIns) {
                 std::copy(currentIns, currentIns + 24, editBuffer);
@@ -384,44 +236,199 @@ public:
             lastChannel = mInstrumentChannel;
         }
 
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar; //<<< For menubar !!
         ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 400.0f), ImVec2(FLT_MAX, FLT_MAX));
-        if (ImGui::Begin("FM Instrument Editor"))
+        if (ImGui::Begin("FM Instrument Editor", nullptr, window_flags))
         {
-            bool changed = false;
 
-            if (ImGui::BeginTable("Params", 2, ImGuiTableFlags_RowBg))
+            bool isAnySliderActive = false; // Track if any slider is being dragged
+
+
+            // 2. Use BeginMenuBar instead of just BeginMenu
+            if (ImGui::BeginMenuBar())
             {
-                for (size_t i = 0; i < OplController::INSTRUMENT_METADATA.size(); ++i)
+                if (ImGui::BeginMenu("File"))
                 {
-                    const auto& meta = OplController::INSTRUMENT_METADATA[i];
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted(meta.name.c_str());
+                    if (ImGui::MenuItem("Open")) { POPUP_NOT_IMPEMENTED_ACTIVE = true; }
+                    if (ImGui::MenuItem("Save")) { POPUP_NOT_IMPEMENTED_ACTIVE = true; }
+                    ImGui::EndMenu();
+                }
 
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::PushID(i);
+                if (ImGui::BeginMenu("Options"))
+                {
+                    ImGui::MenuItem("Autoplay C-4", "", &mInstrumentEditorAutoPlay);
 
-                    if (meta.maxValue == 1) {
-                        bool val = (editBuffer[i] != 0);
-                        if (ImGui::Checkbox("##v", &val)) {
-                            editBuffer[i] = val ? 1 : 0;
-                            changed = true; // Mark for update
+                    // --- NEW CHANNEL SUB-MENU ---
+                    if (ImGui::BeginMenu("Select Channel"))
+                    {
+                        for (uint8_t i = 0; i < 9; i++)
+                        {
+                            char label[32];
+                            snprintf(label, sizeof(label), "Channel %d", i + 1); // Display 1-9 for users
+
+                            // MenuItem returns true when clicked
+                            // The third parameter (bool selected) shows the checkmark
+                            if (ImGui::MenuItem(label, nullptr, mInstrumentChannel == i))
+                            {
+                                mInstrumentChannel = i;
+                                // Optional: Reset the local buffer to the new channel's data immediately
+                                lastChannel = -1;
+                            }
                         }
-                    } else {
-                        uint8_t minV = 0;
-                        if (ImGui::SliderScalar("##v", ImGuiDataType_U8, &editBuffer[i], &minV, &meta.maxValue, "%u")) {
-                            changed = true; // Mark for update
-                        }
+                        ImGui::EndMenu();
                     }
-                    ImGui::PopID();
+                    // ----------------------------
+                    ImGui::Separator();
+                    if (ImGui::MenuItem("Reset")) { resetInstrument(); }
+                    ImGui::EndMenu();
+                }
+                //-------------- channel select combo and volume
+                // Add spacing for combo and volume
+                float rightOffset = 230.0f;
+                ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
+
+                ImGui::SetNextItemWidth(100);
+                float currentVol = mController->getVolume();
+                if (ImGui::SliderFloat("##MasterVol", &currentVol, 0.0f, 2.0f, "Vol %.1f"))
+                {
+                    mController->setVolume(currentVol);
+                }
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("FM Volume");
+                ImGui::SameLine(); // Place the combo box immediately to the right of the slider
+
+                // 3. Add Channel Selection Combo
+                ImGui::SetNextItemWidth(120);
+                if (ImGui::BeginCombo("##ChannelSelect", mController->GetChannelName(mInstrumentChannel), ImGuiComboFlags_HeightLarge))
+                {
+                    for (int i = 0; i <= FMS_MAX_CHANNEL; i++)
+                    {
+                        bool is_selected = (mInstrumentChannel == i);
+                        if (ImGui::Selectable(mController->GetChannelName(i), is_selected)) {
+                            mInstrumentChannel = i;
+                        }
+                        if (is_selected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+                //------------------
+
+                ImGui::EndMenuBar(); // 3. EndMenuBar, not EndMenu
+            }
+
+
+            if (ImGui::BeginTable("Params", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
+            {
+                // Setup columns: [Mod Label] [Mod Slider] [Car Label] [Car Slider]
+                ImGui::TableSetupColumn("Mod Label", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+                ImGui::TableSetupColumn("Mod Slider", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Car Label", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+                ImGui::TableSetupColumn("Car Slider", ImGuiTableColumnFlags_WidthStretch);
+
+                // Iterate 2 parameters at a time (total 24 params = 12 rows)
+                for (size_t i = 0; i < OplController::INSTRUMENT_METADATA.size(); i += 2)
+                {
+                    ImGui::TableNextRow();
+
+                    // --- Column 0 & 1: Modulator ---
+                    {
+                        const auto& meta = OplController::INSTRUMENT_METADATA[i];
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::TextUnformatted(meta.name.c_str());
+
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::PushID(static_cast<int>(i));
+                        uint8_t minV = 0;
+
+                        // Fixed width for sliders to keep the middle of the table aligned
+                        ImGui::SetNextItemWidth(-FLT_MIN);
+                        if (ImGui::SliderScalar("##v", ImGuiDataType_U8, &editBuffer[i], &minV, &meta.maxValue, "%u")) {
+                            mController->setInstrument(mInstrumentChannel, editBuffer);
+                        }
+
+                        if (ImGui::IsItemActive()) isAnySliderActive = true;
+                        if (ImGui::IsItemDeactivated()) {
+                            mController->stopNote(mInstrumentChannel);
+                            mInstrumentEditorAutoPlayStarted = false;
+                        }
+                        ImGui::PopID();
+                    }
+
+                    // --- Column 2 & 3: Carrier ---
+                    if (i + 1 < OplController::INSTRUMENT_METADATA.size())
+                    {
+                        const auto& meta = OplController::INSTRUMENT_METADATA[i + 1];
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(meta.name.c_str());
+
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::PushID(static_cast<int>(i + 1));
+                        uint8_t minV = 0;
+
+                        ImGui::SetNextItemWidth(-FLT_MIN);
+                        if (ImGui::SliderScalar("##v", ImGuiDataType_U8, &editBuffer[i + 1], &minV, &meta.maxValue, "%u")) {
+                            mController->setInstrument(mInstrumentChannel, editBuffer);
+                        }
+
+                        if (ImGui::IsItemActive()) isAnySliderActive = true;
+                        if (ImGui::IsItemDeactivated()) {
+                            mController->stopNote(mInstrumentChannel);
+                            mInstrumentEditorAutoPlayStarted = false;
+                        }
+                        ImGui::PopID();
+                    }
                 }
                 ImGui::EndTable();
             }
 
-            // 2. If any slider or checkbox was moved, send the WHOLE buffer to the OPL chip
-            if (changed) {
-                mController->setInstrument(mInstrumentChannel, editBuffer);
+            // if (ImGui::BeginTable("Params", 2, ImGuiTableFlags_RowBg))
+            // {
+            //     for (size_t i = 0; i < OplController::INSTRUMENT_METADATA.size(); ++i)
+            //     {
+            //         const auto& meta = OplController::INSTRUMENT_METADATA[i];
+            //         ImGui::TableNextRow();
+            //         ImGui::TableSetColumnIndex(0);
+            //         ImGui::TextUnformatted(meta.name.c_str());
+            //
+            //         ImGui::TableSetColumnIndex(1);
+            //         ImGui::PushID(i);
+            //
+            //         if (meta.maxValue == 1) {
+            //             bool val = (editBuffer[i] != 0);
+            //             if (ImGui::Checkbox("##v", &val)) {
+            //                 editBuffer[i] = val ? 1 : 0;
+            //                 mController->setInstrument(mInstrumentChannel, editBuffer);
+            //             }
+            //         } else { // slider >>
+            //             ImGui::PushID(i);
+            //             uint8_t minV = 0;
+            //
+            //             // 1. Draw the slider
+            //             if (ImGui::SliderScalar("##v", ImGuiDataType_U8, &editBuffer[i], &minV, &meta.maxValue, "%u")) {
+            //                 mController->setInstrument(mInstrumentChannel, editBuffer);
+            //             }
+            //
+            //             if (ImGui::IsItemActive()) {
+            //                 isAnySliderActive = true;
+            //             }
+            //
+            //             if (ImGui::IsItemDeactivated()) {
+            //                 mController->stopNote(mInstrumentChannel);
+            //                 mInstrumentEditorAutoPlayStarted = false;
+            //             }
+            //             ImGui::PopID();
+            //         } //<<< slider
+            //         ImGui::PopID();
+            //     }
+            //     ImGui::EndTable();
+            // }
+
+
+            if (mInstrumentEditorAutoPlay && isAnySliderActive && !mInstrumentEditorAutoPlayStarted)
+            {
+                mController->playNoteDOS(mInstrumentChannel, mController->getIdFromNoteName("C-4"));
+                mInstrumentEditorAutoPlayStarted = true;
             }
+
         }
         ImGui::End();
     }

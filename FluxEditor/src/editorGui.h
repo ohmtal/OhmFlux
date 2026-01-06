@@ -8,6 +8,7 @@
 #include <gui/fluxGuiGlue.h>
 #include "fluxSfxEditor.h"
 #include "fluxFMEditor.h"
+#include "fluxEditorGlobals.h"
 
 
 class EditorGui: public FluxBaseObject
@@ -61,6 +62,30 @@ public:
         mGuiGlue->onEvent(event);
     }
     //--------------------------------------------------------------------------------------
+    // call with: POPUP_NOT_IMPEMENTED_ACTIVE = true;
+    void DrawNotImplementedPopup() {
+        // 1. Check the flag to trigger the opening once
+        if (POPUP_NOT_IMPEMENTED_ACTIVE) {
+            ImGui::OpenPopup("NotImplementedPopup");
+            POPUP_NOT_IMPEMENTED_ACTIVE = false; // Reset so we don't call OpenPopup every frame
+        }
+
+        // 2. Always attempt to begin the modal
+        // (ImGui only returns true here if the popup is actually open)
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        if (ImGui::BeginPopupModal("NotImplementedPopup", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Sorry. Feature not implemented yet.");
+            ImGui::Separator();
+
+            if (ImGui::Button("OK", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }    //--------------------------------------------------------------------------
+
 /*
  Shortcuts:
     ImGui::Separator();
@@ -126,6 +151,7 @@ public:
             mFMEditor->DrawScalePlayer();
 
 
+        DrawNotImplementedPopup();
 
 
         mGuiGlue->DrawEnd();

@@ -4,6 +4,40 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // FIXME need dome cleanup
+// TODO OPL3 addons:
+// 1. Key Technical Advantages of OPL3
+// Switching gives you access to specific hardware capabilities that OPL2 (YM3812)
+// lacks:
+//
+// - Stereo Output & Panning: OPL3 supports stereo sound with per-channel panning
+// (Left, Right, or Center/Both). In OPL2, everything is strictly mono.
+// - 4-Operator Synthesis: You can combine two channels into a single 4-operator
+// voice. This allows for much more complex, "modern" FM sounds that are
+// difficult or impossible to achieve with standard 2-operator OPL2 instruments.
+// - Double Polyphony: OPL3 features 18 melodic channels (36 operators total),
+// exactly twice the capacity of OPL2's 9 channels.
+// - More Waveforms: OPL3 adds 4 additional waveforms (8 total), including a
+// Square Wave, which helps create "harder" and "thicker" sounds.
+//
+// 2. Implementation Differences
+// If you switch your emulation core, your code will need small but important
+// adjustments:
+//
+// - Register Sets: OPL3 uses two register banks ($0xx and $1xx). Your current
+// offsets (0x20, 0x40, etc.) will only control the first 9 channels.
+// - Reduced Delays: Genuine OPL3 hardware (and high-end emulators) requires
+// almost zero delay between writes compared to the strict microsecond wait
+// times of OPL2.
+// - Compatibility: You can still use your existing INSTRUMENT_METADATA and
+// setInstrument logic for the first 9 channels without any changes.
+//
+// 3. Verdict: Is it "Better" Sound?
+//
+// - If you play OPL2 songs: It will sound identical, though sometimes slightly
+// louder depending on the emulation core.
+// - If you write NEW music: It is much better. The ability to use stereo panning
+// and 4-operator instruments makes the difference between a "thin" retro
+// sound and a "full" professional FM synthesizer.
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -26,8 +60,10 @@
 // always good ;)
 #include <algorithm>
 
-//FIXME  rewrite instrument data to std::array<uint8_t, 24>
+//FIXME ? rewrite instrument data to std::array<uint8_t, 24>
 #include <array>
+
+#include <mutex>
 //------------------------------------------------------------------------------
 const float PLAYBACK_FREQUENCY = 90.0f;
 
@@ -67,19 +103,24 @@ public:
 
     static const std::vector<InsParam> INSTRUMENT_METADATA; //Defined below
 
-
-
+    std::recursive_mutex mDataMutex;
 
 private:
-    ymfm::ym3812* mChip;
+    using OplChip = ymfm::ymf262; // = OPL3 // ymfm::ym3812 = OPL2
+
+    OplChip* mChip; //OPL
+
     OplInterface mInterface;
 
     SDL_AudioStream* mStream = nullptr;
 
+
+
+
     // OPL RATIO
     double m_pos = 0.0;
     double m_step = 49716.0 / 44100.0; // Ratio of OPL rate to SDL rate
-    ymfm::ym3812::output_data mOutput;
+    OplChip::output_data mOutput;
 
     // 9 channels, each holding 24 instrument parameters
     uint8_t m_instrument_cache[9][24];
@@ -175,6 +216,12 @@ public:
 
     const SequencerState& getSequencerState() const { return mSeqState; }
 
+
+    // in my DosProgramm i used melodic only but is should be a flag;
+    // Enables Deep Effects and Locks Melodic Mode
+    // this is updated
+    bool mMelodicMode = false; // else RhythmMode
+
     // need a lot of cleaning .. lol but for now it's here:
     void setPlaying(bool value, bool hardStop = false);
     void togglePause();
@@ -182,8 +229,10 @@ public:
 
     SDL_AudioStream* getAudioStream() { return mStream; }
     float getVolume() {
-        if (mStream)
-            return SDL_GetAudioStreamGain(mStream);
+        if (mStream) {
+            float gain = SDL_GetAudioStreamGain(mStream);
+            return (gain < 0.0f) ? 0.0f : gain;
+        }
         return 0.f;
     }
     bool setVolume(const float value) {
@@ -205,10 +254,10 @@ public:
     uint8_t get_modulator_offset(uint8_t channel);
 
     // Return the pointer directly
-    ymfm::ym3812* getChip() { return mChip; }
+    OplChip* getChip() { return mChip; }
 
     // Return by reference (&) so generate() writes to the REAL m_output
-    ymfm::ym3812::output_data& getOutPut() { return mOutput; }
+    OplChip::output_data& getOutPut() { return mOutput; }
 
     double getPos() const { return m_pos; }
     void setPos(double val) { m_pos = val; }
@@ -249,14 +298,38 @@ public:
     std::string getNoteNameFromId(int noteID);
     int getIdFromNoteName(std::string name);
 
+    const char* GetChannelName(int index) {
+        static const char* melodic[] = { "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5", "Channel 6", "Channel 7", "Channel 8", "Channel 9" };
+        static const char* rhythm[]  = { "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5", "Channel 6", "Bass Drum", "Snare/HH", "Tom/Cym" };
 
-    // usage:
-    // // 1. Get the default data as a std::array
-    // auto defaultData = GetDefaultInstrument();
-    // // 2. Copy it into the first slot of your existing 2D array
-    // std::copy(defaultData.begin(), defaultData.end(), ins_set[0]);
+        if (mMelodicMode)
+            return melodic[index];
+
+        return rhythm[index];
+    }
+
 
     std::array<uint8_t, 24> GetDefaultInstrument();
+
+    std::array<uint8_t, 24> GetDefaultBassDrum();
+    std::array<uint8_t, 24> GetDefaultSnareHiHat();
+    std::array<uint8_t, 24> GetDefaultTomCymbal();
+    std::array<uint8_t, 24> GetDefaultLeadSynth();
+    std::array<uint8_t, 24> GetDefaultOrgan();
+    std::array<uint8_t, 24> GetDefaultCowbell();
+
+    // Channel     Sound Type	Logic
+    // 0	Grand Piano	Fast attack, medium decay, low sustain, fast release.
+    // 1	FM Bass	Short attack, rapid decay, high feedback for "grit".
+    // 2	Strings/Pad	Slow attack (1-2s), high sustain, slow release (~2s).
+    // 3	Lead Synth	Fast attack, full sustain, pseudo-sawtooth waveform.
+    // 4	Electric Organ	Fast attack, 100% sustain, no decay/release (on/off feel).
+    // 5	Bell / Xylophone	Instant attack, rapid decay to zero sustain.
+    std::array<uint8_t, 24> GetMelodicDefault(uint8_t index);
+
+
+    void resetInstrument(uint8_t channel);
+    void loadInstrumentPreset();
 
 }; //class
 
