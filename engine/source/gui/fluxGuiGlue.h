@@ -33,6 +33,7 @@ private:
     bool mScaleImGui = false;
     bool mEnableDockSpace = false;
 
+    ImGuiID mDockSpaceId;
 
 public:
     FluxGuiGlue( bool lEnableDockSpace , bool lScaleGui = false )
@@ -52,6 +53,8 @@ public:
 
     void setScaleGui( bool value ) { mScaleImGui = value; }
     bool getScaleGui() { return mScaleImGui; }
+
+    ImGuiID getDockSpaceId() { return mDockSpaceId; }
 
 
     // void Execute() override;
@@ -120,7 +123,7 @@ public:
         if (mEnableDockSpace)
         {
             ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode; //<< this makes it transparent
-            ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), dockspace_flags);
+            mDockSpaceId = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), dockspace_flags);
         }
     }
 

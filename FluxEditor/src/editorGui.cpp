@@ -117,23 +117,40 @@ void EditorGui::DrawGui()
     mGuiGlue->DrawBegin();
     ShowManuBar();
 
+
+
     if ( mParameter.mShowDemo )
+    {
+        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow();
+    }
 
-    if ( mParameter.mShowSFXEditor )
+
+    if ( mParameter.mShowSFXEditor ){
+        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mSfxEditor->Draw();
+    }
 
-    if ( mParameter.mShowFMComposer )
+
+    if ( mParameter.mShowFMComposer ) {
+        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMEditor->DrawComposer();
+    }
 
-    if ( mParameter.mShowFMInstrumentEditor )
+    if ( mParameter.mShowFMInstrumentEditor ) {
+        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMEditor->DrawInstrumentEditor();
+    }
 
-    if ( mParameter.mShowPianoScale )
+    if ( mParameter.mShowPianoScale ) {
+        ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMEditor->DrawPianoScale();
+    }
 
-    if ( mParameter.mShowCompleteScale )
+
+    if ( mParameter.mShowCompleteScale ) {
         mFMEditor->DrawScalePlayer();
+    }
 
 
     DrawMsgBoxPopup();
@@ -144,6 +161,8 @@ void EditorGui::DrawGui()
         static std::string myCaption = "User chose:" + myDialog.selectedFile;
         showMessage("File Browser Message", myCaption);
     }
+
+
 
 
 
