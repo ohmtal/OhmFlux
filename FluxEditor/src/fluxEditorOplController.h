@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // FIXME use the channel also in piano and instrument editor!!
+// FIXME overrite void OplController::tickSequencer() to mute channels
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -29,6 +30,7 @@ public:
 
     // Size is exactly the number of channels (e.g., 9)
     ChannelSettings mChannelSettings[FMS_MAX_CHANNEL+1];
+    //--------------------------------------------------------------------------
 
     void setChannelMuted( int channel , bool value )
     {
@@ -42,7 +44,7 @@ public:
         return mChannelSettings[channel].muted;
     }
 
-
+    //--------------------------------------------------------------------------
     int getStepByChannel(int channel) {
 
         return mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].step;
@@ -64,8 +66,7 @@ public:
         setStepByChannel(channel , lNext);
     }
 
-
-
+    //--------------------------------------------------------------------------
     int getOctaveByChannel(int channel) {
         return mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].octave;
     }
@@ -90,6 +91,7 @@ public:
         setOctaveByChannel(channel , lNext);
     }
 
+    //--------------------------------------------------------------------------
     // Helper function moved inside the class
     int getNoteWithOctave(int channel, const char* noteBase) {
         char noteBuf[OPL_MAX_OCTAVE];
@@ -97,4 +99,78 @@ public:
         // Use the base class OplController::getIdFromNoteName
         return this->getIdFromNoteName(noteBuf);
     }
+
+    //--------------------------------------------------------------------------
+    // Insert Row Logic (Inside OplController)
+    void insertRowAt(SongData& sd, uint16_t targetSeq) {
+        //FIXME untested
+        // // 1. Move all rows below targetSeq down by one
+        // for (int i = 999; i > targetSeq; --i) {
+        //     for (int ch = 0; ch < 9; ++ch) {
+        //         sd.song[i][ch] = sd.song[i-1][ch];
+        //     }
+        // }
+        // // 2. Clear the newly inserted row
+        // for (int ch = 0; ch < 9; ++ch) sd.song[targetSeq][ch] = 0;
+    }
+
+    //--------------------------------------------------------------------------
+    // Delete Range Logic
+    void deleteRange(SongData& sd, uint16_t start, uint16_t end) {
+        //FIXME untested
+        // int rangeLen = (end - start) + 1;
+        // // Shift data up
+        // for (int i = start; i < 1000 - rangeLen; ++i) {
+        //     for (int ch = 0; ch < 9; ++ch) {
+        //         sd.song[i][ch] = sd.song[i + rangeLen][ch];
+        //     }
+        // }
+        // // Clear remaining rows at end
+        // for (int i = 1000 - rangeLen; i < 1000; ++i) {
+        //     for (int ch = 0; ch < 9; ++ch) sd.song[i][ch] = 0;
+        // }
+    }
+    //--------------------------------------------------------------------------
+    bool clearSongRange(SongData& sd, uint16_t start, uint16_t end)
+    {
+        if (end > FMS_MAX_SONG_LENGTH )
+            return false;
+
+        for (int i = start; i <= end; ++i)
+        {
+            for (int ch = 0; ch <= FMS_MAX_CHANNEL; ++ch) {
+                sd.song[i][ch] = 0;
+            }
+        }
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    bool clearSong(SongData& sd)
+    {
+        sd.song_length = 0;
+        return clearSongRange(sd, 0,FMS_MAX_SONG_LENGTH);
+    }
+    //--------------------------------------------------------------------------
+    bool copySongRange(SongData& fromSD, uint16_t fromStart,  SongData& toSD, uint16_t toStart, uint16_t len)
+    {
+
+        if (fromStart + len > FMS_MAX_SONG_LENGTH + 1 || toStart + len > FMS_MAX_SONG_LENGTH + 1 )
+        {
+            Log("Cant copy SongData out of range! from %d, to %d", fromStart + len,toStart + len  );
+            return false;
+        }
+
+        if (toStart + len > toSD.song_length)
+            toSD.song_length = toStart + len;
+
+
+        for ( int i = 0 ; i <= len; i++)
+        {
+            for (int ch = 0; ch <= FMS_MAX_CHANNEL; ++ch)
+                toSD.song[i+toStart][ch] = fromSD.song[i+fromStart][ch];
+        }
+        return true;
+    }
+
+
 };

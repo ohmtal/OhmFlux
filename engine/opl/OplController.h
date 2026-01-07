@@ -68,7 +68,7 @@
 const float PLAYBACK_FREQUENCY = 90.0f;
 
 #define FMS_MAX_CHANNEL 8
-
+#define FMS_MAX_SONG_LENGTH 1000
 //------------------------------------------------------------------------------
 // class OplController
 //------------------------------------------------------------------------------
@@ -93,7 +93,9 @@ public:
 
         // song: array[1..1000, 1..9] of integer
         // Pascal 'integer' is 16-bit signed. 1000 * 9 * 2 = 18000 bytes
-        int16_t song[1001][10];
+        // int16_t song[1001][10];
+        int16_t song[FMS_MAX_SONG_LENGTH + 1][FMS_MAX_CHANNEL + 1];
+
     };
 
     struct InsParam {
