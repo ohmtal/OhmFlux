@@ -86,7 +86,7 @@ public:
         uint8_t ins_set[10][24];
 
         // songspeed: byte [1 byte]
-        uint8_t song_speed;
+        uint8_t song_delay; //default 15
 
         // songlaenge: word [2 bytes]
         uint16_t song_length;
@@ -105,6 +105,26 @@ public:
 
     std::recursive_mutex mDataMutex;
 
+    struct SequencerState {
+        bool playing = false;
+        bool loop = false;
+        int song_needle = 0;
+
+        int song_startAt = 0;
+        int song_stopAt = 0;
+
+        int samples_per_tick = 0;
+        int sample_accumulator = 0;
+        const SongData* current_song = nullptr; // Pointer to the loaded song
+
+        // see what it plays
+        int16_t last_notes[10]; // Stores the notes for channels 1-9
+        bool note_updated = false;
+    };
+
+
+    const SequencerState& getSequencerState() const { return mSeqState; }
+
 private:
     using OplChip = ymfm::ymf262; // = OPL3 // ymfm::ym3812 = OPL2
 
@@ -114,6 +134,7 @@ private:
 
     SDL_AudioStream* mStream = nullptr;
 
+    SequencerState mSeqState;
 
 
 
@@ -189,22 +210,6 @@ private:
 
 
 
-    struct SequencerState {
-        bool playing = false;
-        bool loop = false;
-        int song_counter = 0;
-        int samples_per_tick = 0;
-        int sample_accumulator = 0;
-        const SongData* current_song = nullptr; // Pointer to the loaded song
-
-        // see what it plays
-        int16_t last_notes[10]; // Stores the notes for channels 1-9
-        bool note_updated = false;
-    };
-
-    SequencerState mSeqState;
-
-
 
 public:
     OplController();
@@ -214,13 +219,10 @@ public:
     bool shutDownController();
 
 
-    const SequencerState& getSequencerState() const { return mSeqState; }
-
-
     // in my DosProgramm i used melodic only but is should be a flag;
     // Enables Deep Effects and Locks Melodic Mode
     // this is updated
-    bool mMelodicMode = false; // else RhythmMode
+    bool mMelodicMode = true; // else RhythmMode
 
     // need a lot of cleaning .. lol but for now it's here:
     void setPlaying(bool value, bool hardStop = false);
@@ -282,7 +284,13 @@ public:
     bool loadSongFMS(const std::string& filename, SongData& sd);
     bool saveSongFMS(const std::string& filename, const SongData& sd); //FIXME NOT TESTED !!!!
 
-    void start_song(SongData& sd, bool loopit);
+    // alias for start_song
+    void playSong(SongData& sd, bool loopit, int startAt=0, int stopAt=-1)
+    {
+        start_song(sd,loopit, startAt, stopAt);
+    }
+    // stopAt=-1 means == song_length
+    void start_song(SongData& sd, bool loopit, int startAt=0, int stopAt=-1);
 
     bool loadInstrument(const std::string& filename, uint8_t channel);
     bool saveInstrument(const std::string& filename, const uint8_t* instrumentData); //FIXME NOT TESTED !!!!
@@ -294,13 +302,24 @@ public:
     void tickSequencer();
 
     // can be called in mail loop to output the playing song to console
-    void consoleSongOutput();
+    void consoleSongOutput(bool useNumbers = false);
     std::string getNoteNameFromId(int noteID);
     int getIdFromNoteName(std::string name);
 
-    const char* GetChannelName(int index) {
+    const char* GetChannelName(int index)
+    {
         static const char* melodic[] = { "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5", "Channel 6", "Channel 7", "Channel 8", "Channel 9" };
         static const char* rhythm[]  = { "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5", "Channel 6", "Bass Drum", "Snare/HH", "Tom/Cym" };
+
+        if (mMelodicMode)
+            return melodic[index];
+
+        return rhythm[index];
+    }
+    const char* GetChannelNameShort(int index)
+    {
+        static const char* melodic[] = { "CH#1", "CH#2", "CH#3", "CH#4", "CH#5", "CH#6", "CH#7", "CH#8", "CH#9" };
+        static const char* rhythm[]  = { "CH#1", "CH#2", "CH#3", "CH#4", "CH#5", "CH#6", "Bass Drum", "Snare/HH", "Tom/Cym" };
 
         if (mMelodicMode)
             return melodic[index];

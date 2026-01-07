@@ -39,7 +39,9 @@ public:
     void onKeyEvent(SDL_KeyboardEvent event) override
     {
         bool isKeyUp = (event.type == SDL_EVENT_KEY_UP);
-        if (event.key == SDLK_ESCAPE && isKeyUp)
+        if (event.key == SDLK_F4 &&
+            ( event.mod & SDLK_LALT || event.mod & SDLK_RALT)
+            && isKeyUp)
             TerminateApplication();
     }
     //--------------------------------------------------------------------------------------

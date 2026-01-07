@@ -12,7 +12,7 @@
 #include "fluxSfxEditor.h"
 #include "fluxFMEditor.h"
 #include "fluxEditorGlobals.h"
-#include "FluxComposer.h"
+#include "fluxComposer.h"
 
 
 class EditorGui: public FluxBaseObject
@@ -20,11 +20,11 @@ class EditorGui: public FluxBaseObject
 public:
     struct soundToolParameter {
         bool mShowDemo                = false;
-        bool mShowSFXEditor           = true;
+        bool mShowSFXEditor           = false;
         bool mShowFMInstrumentEditor  = true;
-        bool mShowFMComposer          = false;
-        bool mShowCompleteScale       = false;
-        bool mShowPianoScale          = true;
+        bool mShowFMComposer          = true;
+        bool mShowCompleteScale       = true;
+        bool mShowPianoScale          = false;
 
     };
 

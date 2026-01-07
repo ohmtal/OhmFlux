@@ -71,6 +71,11 @@ void EditorGui::ShowManuBar()
 {
     if (ImGui::BeginMainMenuBar())
     {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Exit")) { getGame()->TerminateApplication(); }
+            ImGui::EndMenu();
+        }
 
         if (ImGui::BeginMenu("Window"))
         {
@@ -186,6 +191,8 @@ void EditorGui::DrawGui()
 
         if ( myDialog.selectedExt == ".fmi" )
             mFMEditor->loadInstrument(myDialog.selectedFile);
+        if ( myDialog.selectedExt == ".fms" )
+            mFMComposer->loadSong(myDialog.selectedFile);
         // showMessage("File Browser Message", myCaption);
     }
 

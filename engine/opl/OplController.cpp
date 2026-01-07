@@ -214,7 +214,7 @@ void OplController::reset() {
         setInstrument(i, silent_ins);
     }
 
-    mSeqState.song_counter = 0;
+    mSeqState.song_needle = 0;
     this->silenceAll();
 }
 //------------------------------------------------------------------------------
@@ -531,7 +531,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
     }
 
     // 2. Load Speed (1 byte) and Length (2 bytes)
-    if (!file.read(reinterpret_cast<char*>(&sd.song_speed), 1)) {
+    if (!file.read(reinterpret_cast<char*>(&sd.song_delay), 1)) {
         Log("ERROR: Failed reading song_speed");
         return false;
     }
@@ -540,7 +540,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
         return false;
     }
 
-    Log("INFO: Song Header Loaded. Speed: %u, Length: %u", sd.song_speed, sd.song_length);
+    Log("INFO: Song Header Loaded. Speed: %u, Length: %u", sd.song_delay, sd.song_length);
 
     // Safety check for 2026 memory limits
     if (sd.song_length > 1000) {
@@ -583,7 +583,7 @@ bool OplController::saveSongFMS(const std::string& filename, const SongData& sd)
     }
 
     // 2. Write Speed and Length
-    file.write(reinterpret_cast<const char*>(&sd.song_speed), 2);
+    file.write(reinterpret_cast<const char*>(&sd.song_delay), 2);
     file.write(reinterpret_cast<const char*>(&sd.song_length), 2);
 
     // 3. Write Song Notes (Adjusted for 0-based memory)
@@ -597,14 +597,27 @@ bool OplController::saveSongFMS(const std::string& filename, const SongData& sd)
     return file.good();
 }
 //------------------------------------------------------------------------------
-void OplController::start_song(SongData& sd, bool loopit) {
+void OplController::start_song(SongData& sd, bool loopit, int startAt, int stopAt)
+{
     // SDL2 SDL_LockAudio(); // Stop the callback thread for a microsecond
 
     mSeqState.current_song = &sd;
-    mSeqState.song_counter = 0;
+
+    // when playing a part of the song
+    mSeqState.song_startAt  = startAt;
+
+    if ( stopAt > startAt )
+        mSeqState.song_stopAt  = stopAt;
+    else
+        mSeqState.song_stopAt  = sd.song_length;
+
+    // the needle at which position the song is:
+    mSeqState.song_needle = mSeqState.song_startAt;
+
+
     mSeqState.sample_accumulator = 0;
     mSeqState.loop = loopit;
-    set_speed(sd.song_speed);
+    set_speed(sd.song_delay);
     mSeqState.playing = true;
     // SDL2 SDL_UnlockAudio(); // Let the callback thread resume
 }
@@ -749,9 +762,16 @@ void OplController::fillBuffer(int16_t* buffer, int total_frames) {
 void OplController::tickSequencer() {
     const SongData& s = *mSeqState.current_song;
 
-    if (mSeqState.song_counter < s.song_length) {
+    if ( mSeqState.song_stopAt > s.song_length )
+    {
+        Log("ERROR: song stop is greater than song_length. thats bad!!!");
+        mSeqState.song_stopAt = s.song_length;
+    }
+    // if (mSeqState.song_counter < s.song_length)
+    if (mSeqState.song_needle < mSeqState.song_stopAt)
+    {
         for (int ch = 0; ch < 9; ch++) {
-            int16_t raw_note = s.song[mSeqState.song_counter][ch];
+            int16_t raw_note = s.song[mSeqState.song_needle][ch];
 
             // Update UI/Debug state
             mSeqState.last_notes[ch + 1] = raw_note;
@@ -763,20 +783,29 @@ void OplController::tickSequencer() {
                 this->playNoteDOS(ch, (uint8_t)raw_note);
             }
         }
-        mSeqState.song_counter++;
+        mSeqState.song_needle++;
     } else {
-        if (mSeqState.loop) mSeqState.song_counter = 0;
+        if (mSeqState.loop)
+        {
+            if (mSeqState.song_startAt > mSeqState.song_stopAt)
+            {
+                Log("ERROR: song start is greater than song stop. thats bad!!!");
+                mSeqState.song_startAt = 0;
+
+            }
+            mSeqState.song_needle = mSeqState.song_startAt;
+        }
         else setPlaying(false);
     }
 }
 //------------------------------------------------------------------------------
-void OplController::consoleSongOutput()
+void OplController::consoleSongOutput(bool useNumbers)
 {
     // DEBUG / UI VIEW
     if (mSeqState.note_updated) {
-        // We print "song_counter - 1" because the counter was already
+        // We print "song_needle - 1" because the counter was already
         // incremented in the callback after the note was played.
-        printf("Step %3d: ", mSeqState.song_counter - 1);
+        printf("Step %3d: ", mSeqState.song_needle - 1);
 
         // Loop through Tracker Columns 1 to 9
         for (int ch = 1; ch <= 9; ch++) {
@@ -787,8 +816,10 @@ void OplController::consoleSongOutput()
             } else if (note == 0) {
                 printf(" ... "); // Visual "Empty/Rest"
             } else {
-                // printf("%4d ", note); // The actual note index
-                printf("%4s ", getNoteNameFromId(note).c_str());
+                if ( useNumbers )
+                    printf("%4d ", note); // The actual note index
+                else
+                    printf("%4s ", getNoteNameFromId(note).c_str());
             }
         }
         printf("\n");
@@ -840,7 +871,8 @@ std::string OplController::getNoteNameFromId(int noteID) {
     return std::string(noteNames[noteIndex]) + std::to_string(octave);
 }
 //------------------------------------------------------------------------------
-int OplController::getIdFromNoteName(std::string name) {
+int OplController::getIdFromNoteName(std::string name)
+{
 
     if (name.length() < 3 || name == "...")
         return 0;

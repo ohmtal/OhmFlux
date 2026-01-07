@@ -6,7 +6,7 @@
 
 #include <core/fluxBaseObject.h>
 #include <imgui.h>
-#include <OplController.h>
+#include "fluxEditorOplController.h"
 #include "fluxEditorGlobals.h"
 
 #ifdef __EMSCRIPTEN__
@@ -30,7 +30,7 @@ extern "C" {
 class FluxFMEditor : public FluxBaseObject
 {
 private:
-    OplController* mController = nullptr;
+    FluxEditorOplController* mController = nullptr;
     uint8_t mInstrumentChannel = 0; // 0 .. FMS_MAX_CHANNEL
     bool mInstrumentEditorAutoPlay = true;
     bool mInstrumentEditorAutoPlayStarted = false;
@@ -38,17 +38,17 @@ private:
 public:
     ~FluxFMEditor() { Deinitialize();}
 
-    OplController* getController() { return  mController; }
+    FluxEditorOplController* getController() { return  mController; }
 
     bool Initialize() override
     {
-        mController = new OplController();
+        mController = new FluxEditorOplController();
         if (!mController || !mController->initController())
             return false;
 
 
 
-        mController->loadInstrumentPreset();
+        loadInstrumentPreset();
         // mController->dumpInstrumentFromCache(mInstrumentChannel);
 
         return true;
@@ -69,6 +69,12 @@ public:
     {
         mController->resetInstrument(mInstrumentChannel);
     }
+    //--------------------------------------------------------------------------
+    void loadInstrumentPreset()
+    {
+            mController->loadInstrumentPreset();
+    }
+
     //--------------------------------------------------------------------------
     void DrawScalePlayer()
     {
@@ -287,7 +293,9 @@ public:
                     }
                     // ----------------------------
                     ImGui::Separator();
-                    if (ImGui::MenuItem("Reset")) { resetInstrument(); }
+                    if (ImGui::MenuItem("Reset current")) { resetInstrument(); }
+                    if (ImGui::MenuItem("Load presets")) { loadInstrumentPreset(); }
+
                     ImGui::EndMenu();
                 }
                 //-------------- channel select combo and volume
