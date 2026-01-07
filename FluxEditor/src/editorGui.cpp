@@ -17,6 +17,9 @@ bool EditorGui::Initialize()
     if (!mFMEditor->Initialize())
         return false;
 
+    mFMComposer = new FluxComposer( mFMEditor->getController());
+    if (!mFMComposer->Initialize())
+        return false;
 
     // not centered ?!?!?! i guess center is not in place yet ?
     mBackground = new FluxRenderObject(getGame()->loadTexture("assets/fluxeditorback.png"));
@@ -153,7 +156,7 @@ void EditorGui::DrawGui()
 
     if ( mParameter.mShowFMComposer ) {
         // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-        mFMEditor->DrawComposer();
+        mFMComposer->DrawComposer();
     }
 
     if ( mParameter.mShowFMInstrumentEditor ) {

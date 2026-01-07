@@ -38,6 +38,8 @@ private:
 public:
     ~FluxFMEditor() { Deinitialize();}
 
+    OplController* getController() { return  mController; }
+
     bool Initialize() override
     {
         mController = new OplController();
@@ -440,17 +442,17 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    void DrawComposer()
-    {
-        if (!mController)
-            return ;
-
-        ImGui::SetNextWindowSizeConstraints(ImVec2(800.0f, 400.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("FM Composer");
-
-        ImGui::End();
-    }
-
+    // void DrawComposer()
+    // {
+    //     if (!mController)
+    //         return ;
+    //
+    //     ImGui::SetNextWindowSizeConstraints(ImVec2(800.0f, 400.f), ImVec2(FLT_MAX, FLT_MAX));
+    //     ImGui::Begin("FM Composer");
+    //
+    //     ImGui::End();
+    // }
+    //
 
 
 

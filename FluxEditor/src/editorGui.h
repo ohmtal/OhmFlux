@@ -12,7 +12,7 @@
 #include "fluxSfxEditor.h"
 #include "fluxFMEditor.h"
 #include "fluxEditorGlobals.h"
-
+#include "FluxComposer.h"
 
 
 class EditorGui: public FluxBaseObject
@@ -33,6 +33,7 @@ private:
     FluxGuiGlue* mGuiGlue = nullptr;
     FluxSfxEditor* mSfxEditor = nullptr;
     FluxFMEditor* mFMEditor = nullptr;
+    FluxComposer* mFMComposer = nullptr;
 
     soundToolParameter mParameter;
 public:
