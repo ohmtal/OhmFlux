@@ -16,24 +16,53 @@ class FluxEditorOplController : public OplController
 {
 public:
 
+    void setLoop( bool value ) {
+        mSeqState.loop = value;
+    }
+
 
     struct ChannelSettings {
         int octave = 4;
         int step = 1;
+        bool muted = false;
     };
 
     // Size is exactly the number of channels (e.g., 9)
     ChannelSettings mChannelSettings[FMS_MAX_CHANNEL+1];
 
+    void setChannelMuted( int channel , bool value )
+    {
+         mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].muted = value;
+    }
+
+    bool getChannelMuted( int channel  )
+    {
+        if (channel < 0 || channel > FMS_MAX_CHANNEL)
+            return false;
+        return mChannelSettings[channel].muted;
+    }
+
+
     int getStepByChannel(int channel) {
-        // Clamp between 0 and MAX-1 (e.g., 0 to 8)
+
         return mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].step;
     }
     void setStepByChannel(int channel, int step) {
-        // Clamp between 0 and MAX-1 (e.g., 0 to 8)
+        step = std::clamp(step,0,99);
         mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].step = step;
     }
 
+    void incStepByChannel(int channel ) {
+        int lNext = getStepByChannel(channel) + 1;
+        setStepByChannel(channel , lNext);
+    }
+
+    void decStepByChannel(int channel ) {
+        int lNext = getStepByChannel(channel) - 1;
+        if (lNext < 1)
+            lNext = 1;
+        setStepByChannel(channel , lNext);
+    }
 
 
 

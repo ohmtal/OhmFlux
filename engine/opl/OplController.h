@@ -105,6 +105,8 @@ public:
 
     std::recursive_mutex mDataMutex;
 
+
+
     struct SequencerState {
         bool playing = false;
         bool loop = false;
@@ -122,8 +124,10 @@ public:
         bool note_updated = false;
     };
 
-
     const SequencerState& getSequencerState() const { return mSeqState; }
+
+protected:
+    SequencerState mSeqState;
 
 private:
     using OplChip = ymfm::ymf262; // = OPL3 // ymfm::ym3812 = OPL2
@@ -134,7 +138,7 @@ private:
 
     SDL_AudioStream* mStream = nullptr;
 
-    SequencerState mSeqState;
+
 
 
 
