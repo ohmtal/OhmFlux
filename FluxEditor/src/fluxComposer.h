@@ -114,7 +114,7 @@ public:
         int lChannel = mSelectedCol - 1;
 
         int lNewTone = mController->getNoteWithOctave(lChannel, lName, lOctaveAdd);
-        dLog("insertTone:%d", lNewTone);
+        // dLog("insertTone:%d", lNewTone);
 
         if (isPlaying())
         {
@@ -335,7 +335,7 @@ public:
         if ( lSequencerState.playing )
         {
             mCurrentPlayingRow =lSequencerState.song_needle  ;
-            mController->consoleSongOutput(true); //FIXME DEBUG
+            // mController->consoleSongOutput(true); // DEBUG
         }
         //---------------
         ImVec2 lButtonSize = ImVec2(100, 0);
@@ -643,17 +643,14 @@ public:
                             ImDrawList* draw_list = ImGui::GetWindowDrawList();
                             ImVec2 p0 = ImGui::GetCursorScreenPos();
                             ImVec2 p1 = ImVec2(p0.x + ImGui::GetContentRegionAvail().x, p0.y + ImGui::GetTextLineHeightWithSpacing());
-
-                            // Zeichne eine gefüllte Fläche als Hintergrund
                             draw_list->AddRectFilled(p0, p1, ImGui::GetColorU32(ImGuiCol_HeaderActive), 4.0f);
 
-                            // Text darüber platzieren
+
                             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
                             ImGui::Indent(5.0f);
                             ImGui::Text("%s", mController->GetChannelName(lChannel));
                             ImGui::Unindent(5.0f);
                             //<<<
-
 
                             ImGui::Separator();
 
@@ -733,9 +730,7 @@ public:
                                 {
                                     // Highlight row using RowBg0 (standard for active rows)
                                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(80, 80, 0, 255));
-//FIXME RECORDING SUCKS WHEN SCROLLING
-
-                                    // ImGui::SetScrollHereY(0.5f); // Centers the playing row
+                                    ImGui::SetScrollHereY(0.5f); // Centers the playing row
                                 }
 
                             } else if (isRowSelected(i))
