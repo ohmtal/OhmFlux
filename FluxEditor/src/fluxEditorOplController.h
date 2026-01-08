@@ -102,16 +102,29 @@ public:
 
     //--------------------------------------------------------------------------
     // Insert Row Logic (Inside OplController)
-    void insertRowAt(SongData& sd, uint16_t targetSeq) {
-        //FIXME untested
-        // // 1. Move all rows below targetSeq down by one
-        // for (int i = 999; i > targetSeq; --i) {
-        //     for (int ch = 0; ch < 9; ++ch) {
-        //         sd.song[i][ch] = sd.song[i-1][ch];
-        //     }
-        // }
-        // // 2. Clear the newly inserted row
-        // for (int ch = 0; ch < 9; ++ch) sd.song[targetSeq][ch] = 0;
+    void insertRowAt(SongData& sd, uint16_t start, int onChannel = -1)
+    {
+
+        sd.song_length++;
+
+        // 1. Move all rows below targetSeq down by one
+        for (int i = sd.song_length; i > start; --i) {
+
+            if (onChannel >= 0 && onChannel <= FMS_MAX_CHANNEL) {
+                sd.song[i][onChannel] = sd.song[i-1][onChannel];
+            } else {
+                for (int ch = 0; ch < 9; ++ch) {
+                    sd.song[i][ch] = sd.song[i-1][ch];
+                }
+            }
+        }
+        // 2. Clear the newly inserted row
+        if (onChannel >= 0 && onChannel <= FMS_MAX_CHANNEL) {
+            sd.song[start][onChannel] = 0;
+        } else {
+            for (int ch = 0; ch < 9; ++ch)
+                sd.song[start][ch] = 0;
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -153,6 +166,8 @@ public:
     //--------------------------------------------------------------------------
     bool copySongRange(SongData& fromSD, uint16_t fromStart,  SongData& toSD, uint16_t toStart, uint16_t len)
     {
+
+        dLog("copySongRange len:%d", len );
 
         if (fromStart + len > FMS_MAX_SONG_LENGTH + 1 || toStart + len > FMS_MAX_SONG_LENGTH + 1 )
         {

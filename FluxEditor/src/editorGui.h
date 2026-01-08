@@ -24,7 +24,7 @@ public:
         bool mShowFMInstrumentEditor  = true;
         bool mShowFMComposer          = true;
         bool mShowCompleteScale       = true;
-        bool mShowPianoScale          = false;
+        // bool mShowPianoScale          = false;
 
     };
 

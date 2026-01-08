@@ -149,12 +149,13 @@ public:
         ImGui::End();
     }
     //--------------------------------------------------------------------------
-    void DrawPianoScale()
+    void DrawPianoScale(bool inLine)
     {
         static int currentOctave = 3;
         const char* octaves[] = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" };
 
-        ImGui::Begin("Test Instrument Piano");
+        if (!inLine)
+            ImGui::Begin("Test Instrument Piano");
 
         // Octave Selection
         ImGui::SetNextItemWidth(120);
@@ -230,7 +231,8 @@ public:
         ImGui::SetCursorScreenPos(finalPos);
         ImGui::Dummy(ImVec2(0, 10));
 
-        ImGui::End();
+        if (!inLine)
+            ImGui::End();
     }
     //--------------------------------------------------------------------------
     void DrawInstrumentEditor()
@@ -445,6 +447,7 @@ public:
                 mInstrumentEditorAutoPlayStarted = true;
             }
 
+            DrawPianoScale(true);
         }
         ImGui::End();
     }

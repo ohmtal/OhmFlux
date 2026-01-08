@@ -28,10 +28,15 @@ private:
 
     int mSelectedRow = 0;
     int mSelectionPivot = -1;
-    int selected_col = 1;
-    bool is_editing = false;
-    bool just_opened_this_frame = false;
-    char edit_buf[32] = "";
+    int mSelectedCol = 1;
+    bool mIsEditing = false;
+    bool mJustOpenThisFrame = false;
+    char mEditBuffer[32] = "";
+
+    bool mScrollToSelected = false;
+
+    int mCurrentPlayingRow = -1;
+
 
     OplController::SongData mSongData;
 
@@ -99,32 +104,128 @@ public:
     uint16_t getSelectionLen() { return (mSelectionPivot == -1) ? 1 : std::max(mSelectedRow, mSelectionPivot); }
     bool isRowSelected(int i) { return i >= getSelectionMin() && i <= getSelectionMax(); }
 
+
+    bool  isPlaying() { return mController->getSequencerState().playing; }
     //-----------------------------------------------------------------------------------------------------
+    // when playing live adding !!
+    void insertTone(const char* lName)
+    {
+        int lChannel = mSelectedCol - 1;
+
+        if (isPlaying())
+        {
+            mSongData.song[mCurrentPlayingRow][lChannel] = mController->getNoteWithOctave(lChannel, lName);
+        } else {
+            mSongData.song[mSelectedRow][lChannel] = mController->getNoteWithOctave(lChannel, lName);
+            mController->playNoteDOS(lChannel, mSongData.song[mSelectedRow][lChannel]);
+            mSelectedRow = std::min(FMS_MAX_SONG_LENGTH, mSelectedRow + mController->getStepByChannel(lChannel));
+            if ( mSelectedRow > mSongData.song_length )
+                mSongData.song_length = mSelectedRow;
+        }
+    }
+    //--------------------------------------------------------------------------
+    void DrawPianoScale()
+    {
+        struct PianoKey { const char* name; int offset; bool isBlack; };
+        PianoKey keys[] = {
+            {"C-", 0, false}, {"C#", 7, true}, {"D-", 1, false}, {"D#", 8, true},
+            {"E-", 2, false},  {"F-", 3, false}, {"F#", 9, true}, {"G-", 4, false},
+            {"G#", 10, true}, {"A-", 5, false}, {"A#", 11, true}, {"B-", 6, false}
+        };
+        int lChannel = mSelectedCol - 1;
+
+        int  currentOctave = mController->getOctaveByChannel(lChannel);
+
+        ImVec2 startPos = ImGui::GetCursorScreenPos();
+        float whiteWidth = 40.0f, whiteHeight = 150.0f;
+        float blackWidth = 26.0f, blackHeight = 90.0f;
+
+        // 1. Draw White Keys (Allowing Overlap)
+        int whiteKeyCount = 0;
+        for (int i = 0; i < 12; i++) {
+            if (keys[i].isBlack) continue;
+
+            ImGui::PushID(i);
+            ImGui::SetCursorScreenPos(ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y));
+
+            // FIX: Tell ImGui this item can be overlapped by items drawn later
+            ImGui::SetNextItemAllowOverlap();
+
+            bool isNull = (currentOctave == 0 && i == 0);
+            if (isNull) ImGui::BeginDisabled();
+
+            ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
+
+            // add note
+            if (ImGui::IsItemActivated()) {
+                insertTone(keys[i].name);
+            }
+
+
+            if (isNull) ImGui::EndDisabled();
+            ImGui::PopID();
+            whiteKeyCount++;
+        }
+        //--------------------------------------------------------------------------
+        // 2. Draw Black Keys (On Top)
+        whiteKeyCount = 0;
+        for (int i = 0; i < 12; i++) {
+            if (!keys[i].isBlack) { whiteKeyCount++; continue; }
+
+            float xPos = startPos.x + (whiteKeyCount * whiteWidth) - (blackWidth / 2.0f);
+            ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
+
+            ImGui::PushID(i + 100);
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.05f, 0.05f, 0.05f, 1.0f)); // Darker black
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
+
+            bool isNull = (currentOctave == 7);
+            if (isNull) ImGui::BeginDisabled();
+
+            ImGui::Button("##black", ImVec2(blackWidth, blackHeight));
+
+            if (ImGui::IsItemActivated()) {
+                insertTone(keys[i].name);
+            }
+
+
+            if (isNull) ImGui::EndDisabled();
+            ImGui::PopStyleColor(2);
+            ImGui::PopID();
+        }
+
+        // Correctly extend window boundary
+        ImVec2 finalPos = ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight);
+        ImGui::SetCursorScreenPos(finalPos);
+        ImGui::Dummy(ImVec2(0, 10));
+
+    }
+
     //-----------------------------------------------------------------------------------------------------
     void DrawNoteCell(int row, int col, int16_t& note_val, FluxEditorOplController* controller)
     {
         ImGui::TableSetColumnIndex(col);
-        bool is_selected = (row == mSelectedRow && col == selected_col);
+        bool is_selected = (row == mSelectedRow && col == mSelectedCol);
 
         // Use a simpler ID system to prevent ID collisions during clipping
         ImGui::PushID(col);
 
-        if (is_selected && is_editing) {
+        if (is_selected && mIsEditing) {
             // --- EDIT MODE ---
             ImGui::SetKeyboardFocusHere();
             ImGui::SetNextItemWidth(-FLT_MIN);
 
-            if (ImGui::InputText("##edit", edit_buf, sizeof(edit_buf),
+            if (ImGui::InputText("##edit", mEditBuffer, sizeof(mEditBuffer),
                 ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll)) {
-                if (!just_opened_this_frame) {
-                    note_val = (int16_t)controller->getIdFromNoteName(edit_buf);
-                    is_editing = false;
+                if (!mJustOpenThisFrame) {
+                    note_val = (int16_t)controller->getIdFromNoteName(mEditBuffer);
+                    mIsEditing = false;
                 }
                 }
-                just_opened_this_frame = false;
+                mJustOpenThisFrame = false;
 
             if (ImGui::IsItemDeactivated() && !ImGui::IsItemDeactivatedAfterEdit()) {
-                is_editing = false;
+                mIsEditing = false;
             }
         } else {
             // --- VIEW MODE ---
@@ -150,7 +251,7 @@ public:
             // 3. The Selectable MUST be exactly the size of the cell to keep the clipper stable
             if (ImGui::Selectable("##select", is_selected, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowOverlap, ImVec2(0, 0))) {
                 mSelectedRow = row;
-                selected_col = col;
+                mSelectedCol = col;
 
 
                 if (  mSelectionPivot >= 0)
@@ -167,9 +268,9 @@ public:
                 ImGui::SetWindowFocus("FM Song Composer");
 
                 if (ImGui::IsMouseDoubleClicked(0)) {
-                    is_editing = true;
-                    just_opened_this_frame = true;
-                    snprintf(edit_buf, sizeof(edit_buf), "%s", display_text);
+                    mIsEditing = true;
+                    mJustOpenThisFrame = true;
+                    snprintf(mEditBuffer, sizeof(mEditBuffer), "%s", display_text);
                 }
             }
             ImGui::PopStyleColor(2);
@@ -180,84 +281,6 @@ public:
         }
         ImGui::PopID();
     }
-
-    // void DrawNoteCell(int row, int col, int16_t& note_val, FluxEditorOplController* controller)
-    // {
-    //     ImGui::TableSetColumnIndex(col);
-    //     bool is_selected = (row == selected_row && col == selected_col);
-    //
-    //
-    //
-    //     if (is_selected) {
-    //         ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_HeaderActive));
-    //     }
-    //
-    //     char id_buf[32];
-    //     snprintf(id_buf, 32, "##cell_%d_%d", row, col);
-    //
-    //     if (is_selected && is_editing) {
-    //         ImGui::SetKeyboardFocusHere();
-    //         ImGui::SetNextItemWidth(-FLT_MIN);
-    //
-    //         // 1. Capture the result of the InputText
-    //         bool submitted = ImGui::InputText(id_buf, edit_buf, sizeof(edit_buf),
-    //                                           ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-    //
-    //         // 2. Logic: Only save if Enter was pressed AND it wasn't the frame we opened
-    //         if (submitted) {
-    //             if (!just_opened_this_frame) {
-    //                 note_val = (int16_t)controller->getIdFromNoteName(edit_buf);
-    //                 is_editing = false;
-    //             }
-    //         }
-    //
-    //         // 3. Reset the shield flag ONLY after the first frame has successfully rendered
-    //         // We do this at the very end of the block.
-    //         just_opened_this_frame = false;
-    //
-    //         if (ImGui::IsItemDeactivated() && !ImGui::IsItemDeactivatedAfterEdit()) {
-    //             is_editing = false;
-    //         }
-    //     } else {
-    //         // --- VIEW MODE ---
-    //         // Single click to select, double click to edit
-    //
-    //         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
-    //         ImGui::PushStyleColor(ImGuiCol_HeaderActive,  ImVec4(0, 0, 0, 0));
-    //
-    //         if (ImGui::Selectable(id_buf, is_selected, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(0, 0))) {
-    //             selected_row = row;
-    //             dLog("MO Selected row: %d", selected_row);
-    //             selected_col = col;
-    //
-    //             // IMPORTANT THIS to prevent cursor goes to header after click ===>>>>
-    //             ImGui::SetWindowFocus(nullptr);
-    //             ImGui::SetWindowFocus("FM Song Composer");
-    //             //<<<<<<
-    //
-    //
-    //             if (ImGui::IsMouseDoubleClicked(0)) {
-    //                 is_editing = true;
-    //                 just_opened_this_frame = true;
-    //                 std::string current = controller->getNoteNameFromId(note_val);
-    //                 snprintf(edit_buf, sizeof(edit_buf), "%s", current.c_str());
-    //             }
-    //         }
-    //         ImGui::PopStyleColor(2);
-    //
-    //         // Display logic... (Keep your existing TextColored logic here)
-    //         std::string display_text;
-    //         if (note_val == -1)      display_text = "===";
-    //         else if (note_val == 0)   display_text = "...";
-    //         else                     display_text = controller->getNoteNameFromId(note_val);
-    //
-    //         ImGui::SameLine();
-    //         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - ImGui::GetStyle().ItemSpacing.x);
-    //         if (note_val == -1)      ImGui::TextColored(ImVec4(1, 0, 1, 1), "===");
-    //         else if (note_val == 0)   ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1), "...");
-    //         else                     ImGui::TextUnformatted(display_text.c_str());
-    //     }
-    // }
 
     //-----------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------
@@ -270,14 +293,9 @@ public:
             if (ImGui::IsKeyPressed(key))
             {
                 bool lShiftPressed = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
-                int lChannel = selected_col - 1;
+                int lChannel = mSelectedCol - 1;
 
-                mSongData.song[mSelectedRow][lChannel] = mController->getNoteWithOctave(lChannel, lShiftPressed ? sharp : natural);
-
-                mController->playNoteDOS(lChannel, mSongData.song[mSelectedRow][lChannel]);
-
-                mSelectedRow = std::min(1000, mSelectedRow + mController->getStepByChannel(lChannel));
-
+                insertTone(lShiftPressed ? sharp : natural);
                 return true;
             }
             return false;
@@ -286,12 +304,10 @@ public:
         // -------------- check we are playing a song ------------------------
         // Get read-only state from your controller
         const auto& lSequencerState = mController->getSequencerState();
-        int current_playing_row = 0;
         if ( lSequencerState.playing )
         {
-            current_playing_row =lSequencerState.song_needle  ;
+            mCurrentPlayingRow =lSequencerState.song_needle  ;
             mController->consoleSongOutput(true); //FIXME DEBUG
-
         }
         //---------------
         ImVec2 lButtonSize = ImVec2(100, 0);
@@ -391,7 +407,7 @@ public:
             //---------------------- SongDisplay >>>>>>>>>>>>>>>>>>>
 
             // if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !is_editing)
-            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput && !is_editing)
+            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput && !mIsEditing)
 
             {
                 // bool lAltPressed = ImGui::IsKeyDown(ImGuiKey_LeftAlt);
@@ -399,23 +415,28 @@ public:
                 bool lCtrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
                 float lWheel = ImGui::GetIO().MouseWheel;
 
+
+
+
                 if (lShiftPressed && mSelectionPivot == -1) {
                     mSelectionPivot = mSelectedRow;
                 }
 
-                if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true) || lWheel > 0)    {
+                if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true) || lWheel > 0)
+                {
                     mSelectedRow = std::max(0, mSelectedRow - 1);
                     if (!lShiftPressed) mSelectionPivot = -1;
                 }
                 else
-                if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true) || lWheel < 0)  {
+                if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true) || lWheel < 0)
+                {
                     mSelectedRow = std::min(static_cast<int>(mSongData.song_length), mSelectedRow + 1);
                     if (!lShiftPressed) mSelectionPivot = -1;
                 }
                 else
-                if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  selected_col = std::max(1, selected_col - 1);
+                if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  mSelectedCol = std::max(1, mSelectedCol - 1);
                 else
-                if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) selected_col = std::min(9, selected_col + 1);
+                if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) mSelectedCol = std::min(9, mSelectedCol + 1);
                 else
                 if (ImGui::IsKeyPressed(ImGuiKey_PageUp))
                 {
@@ -426,7 +447,7 @@ public:
                 else
                 if (ImGui::IsKeyPressed(ImGuiKey_PageDown))
                 {
-                    mSelectedRow = std::min(static_cast<int>(mSongData.song_length), mSelectedRow + 1);
+                    mSelectedRow = std::min(static_cast<int>(mSongData.song_length), mSelectedRow + 16);
                     if (!lShiftPressed) mSelectionPivot = -1;
                 }
                 else
@@ -444,15 +465,15 @@ public:
 
 
                 if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)) {
-                    is_editing = true;
-                    just_opened_this_frame = true; // SET THIS FLAG
+                    mIsEditing = true;
+                    mJustOpenThisFrame = true; // SET THIS FLAG
 
-                    std::string current = mController->getNoteNameFromId(mSongData.song[mSelectedRow][selected_col-1]);
-                    snprintf(edit_buf, sizeof(edit_buf), "%s", current.c_str());
+                    std::string current = mController->getNoteNameFromId(mSongData.song[mSelectedRow][mSelectedCol-1]);
+                    snprintf(mEditBuffer, sizeof(mEditBuffer), "%s", current.c_str());
                 } else {
 
 
-                    int lChannel = selected_col - 1;
+                    int lChannel = mSelectedCol - 1;
                     int16_t& current_note = mSongData.song[mSelectedRow][lChannel];
                     // Check for specific keys to "push" values immediately
 
@@ -478,18 +499,40 @@ public:
                             mController->clearSongRange(mSongData,  getSelectionMin(), getSelectionMax());
                         else
                             current_note = 0;  // "..." Empty
-
+                    }
+                    if ( ImGui::IsKeyPressed( ImGuiKey_Insert ) )
+                    {
+                        if ( (mSelectedRow == mSongData.song_length) && (mSongData.song_length <= FMS_MAX_SONG_LENGTH) )
+                        {
+                            mSongData.song_length ++ ;
+                            mSelectedRow ++;
+                        }
+                        else
+                        {
+                            mController->insertRowAt(mSongData, mSelectedRow);
+                        }
                     }
 
 
-                    if (ImGui::IsKeyPressed(ImGuiKey_1))
-                        lShiftPressed ? mController->decOctaveByChannel(lChannel) :  mController->incOctaveByChannel(lChannel);
 
-                    if (ImGui::IsKeyPressed(ImGuiKey_2))
+
+                    if (ImGui::IsKeyPressed(ImGuiKey_KeypadAdd) || ImGui::IsKeyPressed(ImGuiKey_Q) )
+                    {
+                        mController->incOctaveByChannel(lChannel);
+                    }
+
+                    if (ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) || ImGui::IsKeyPressed(ImGuiKey_W) )
+                    {
+                        mController->decOctaveByChannel(lChannel);
+                    }
+
+
+                    if (ImGui::IsKeyPressed(ImGuiKey_S))
                         lShiftPressed ? mController->decStepByChannel(lChannel) :  mController->incStepByChannel(lChannel);
 
 
                     // --- Handling Operations on Range ---
+
 
                     if (lCtrlPressed && ImGui::IsKeyPressed(ImGuiKey_C)) {
                         mController->clearSong(mBufferSongData);
@@ -509,6 +552,8 @@ public:
                 }
             } //is_eding
 
+
+            DrawPianoScale();
 
             // --------------- Songdata -----------------
             if (ImGui::BeginChild("##SongDataTable", ImVec2(0, -ImGui::GetTextLineHeightWithSpacing()), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar))
@@ -550,9 +595,51 @@ public:
                         // ----  Header popup menu and header click -----
 
 
-                        if (ImGui::BeginPopupContextItem()) { // Standard right-click context menu
+                        if (ImGui::BeginPopupContextItem())
+                        {
+                            // fancy header
+                            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+                            ImVec2 p0 = ImGui::GetCursorScreenPos();
+                            ImVec2 p1 = ImVec2(p0.x + ImGui::GetContentRegionAvail().x, p0.y + ImGui::GetTextLineHeightWithSpacing());
+
+                            // Zeichne eine gefüllte Fläche als Hintergrund
+                            draw_list->AddRectFilled(p0, p1, ImGui::GetColorU32(ImGuiCol_HeaderActive), 4.0f);
+
+                            // Text darüber platzieren
+                            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
+                            ImGui::Indent(5.0f);
+                            ImGui::Text("%s", mController->GetChannelName(lChannel));
+                            ImGui::Unindent(5.0f);
+                            //<<<
+
+
+                            ImGui::Separator();
+
                             if (ImGui::MenuItem("Mute Channel")) { mController->setChannelMuted(lChannel, !lChannelIsMuted); }
                             // if (ImGui::MenuItem("Solo Channel")) { /* ... */ }
+
+                            ImGui::Separator();
+
+                            // Octave ...
+                            int lOctave = mController->getOctaveByChannel(lChannel);
+                            ImGui::Text("Octave:");
+                            ImGui::SetNextItemWidth(100.0f); // Often needed as menus are narrow by default
+                            if (ImGui::InputInt("##Octave", &lOctave)) {
+                                mController->setOctaveByChannel(lChannel, lOctave);
+                            }
+
+                            ImGui::Separator();
+
+                            // Step ..
+                            int lStep = mController->getStepByChannel(lChannel);
+                            ImGui::Text("Step:");
+                            ImGui::SetNextItemWidth(100.0f); // Often needed as menus are narrow by default
+                            if (ImGui::InputInt("##step", &lStep)) {
+                                mController->setStepByChannel(lChannel, lStep);
+                            }
+                            //<<< Step
+
+                            //-----
                             ImGui::EndPopup();
                         }
 
@@ -600,7 +687,7 @@ public:
                             ImGui::PushID(i);
                             if (lSequencerState.playing)
                             {
-                                if (i == current_playing_row) {
+                                if (i == mCurrentPlayingRow) {
                                     // Highlight row using RowBg0 (standard for active rows)
                                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(80, 80, 0, 255));
                                     ImGui::SetScrollHereY(0.5f); // Centers the playing row
@@ -613,9 +700,12 @@ public:
                                 ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(color));
 
 
-                                //FIXME but how ?
-                                if (i == mSelectedRow)
+                                if (mScrollToSelected && (i == mSelectedRow))
+                                {
                                     ImGui::SetScrollHereY(0.5f);
+                                    mScrollToSelected = false;
+                                }
+
                             }
 
 
@@ -630,6 +720,10 @@ public:
 
                             ImGui::PopID();
                         } //for display ....
+
+                        // clipper.DisplayEnd - 1 => last row but i want to scroll earlier
+                        if ( mSelectedRow  > clipper.DisplayEnd - 3)
+                            mScrollToSelected = true;
                     } //while clipper...
 
                     ImGui::EndTable();
@@ -642,6 +736,7 @@ public:
 
 
         }
+
         ImGui::End();
     }
 };

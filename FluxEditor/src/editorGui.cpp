@@ -85,7 +85,7 @@ void EditorGui::ShowManuBar()
             ImGui::Separator();
             ImGui::MenuItem("FM Composer", NULL, &mParameter.mShowFMComposer);
             ImGui::MenuItem("FM Instrument Editor", NULL, &mParameter.mShowFMInstrumentEditor);
-            ImGui::MenuItem("FM Piano Scale", NULL, &mParameter.mShowPianoScale);
+            // ImGui::MenuItem("FM Piano Scale", NULL, &mParameter.mShowPianoScale);
             ImGui::MenuItem("FM Full Scale", NULL, &mParameter.mShowCompleteScale);
 
 
@@ -169,10 +169,10 @@ void EditorGui::DrawGui()
         mFMEditor->DrawInstrumentEditor();
     }
 
-    if ( mParameter.mShowPianoScale ) {
-        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-        mFMEditor->DrawPianoScale();
-    }
+    // if ( mParameter.mShowPianoScale ) {
+    //     // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
+    //     mFMEditor->DrawPianoScale();
+    // }
 
 
     if ( mParameter.mShowCompleteScale ) {
