@@ -87,6 +87,17 @@ SFXGenerator::SFXGenerator():
     mState.arp_limit = 0;
     mState.arp_mod = 0.0;
 }
+
+SFXGenerator::~SFXGenerator()
+{
+    if (mStream)
+    {
+        SDL_FlushAudioStream(mStream);
+        SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
+        SDL_DestroyAudioStream(mStream);
+        mStream = nullptr;
+    }
+}
 //-----------------------------------------------------------------------------
 void SFXGenerator::ResetParams()
 {
@@ -797,7 +808,7 @@ void SDLCALL SFXGenerator::audio_callback(void* userdata, SDL_AudioStream* strea
 
 
     // additional_amount ist in BYTES.
-    // Ein Float hat 4 Bytes.
+    // one float == 4 Bytes.
     int frames_to_generate = additional_amount / sizeof(float);
 
     if (frames_to_generate > 0)

@@ -118,6 +118,7 @@ public:
     int fileacc;
 
     SFXGenerator();
+    ~SFXGenerator();
 
     void ResetParams();
     void ResetSample(bool restart);

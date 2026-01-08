@@ -253,6 +253,8 @@ public:
                 mSelectedRow = row;
                 mSelectedCol = col;
 
+                if (!isPlaying())
+                    mScrollToSelected = true;
 
                 if (  mSelectionPivot >= 0)
                 {
@@ -422,13 +424,14 @@ public:
                     mSelectionPivot = mSelectedRow;
                 }
 
-                if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true) || lWheel > 0)
+                mScrollToSelected = true;
+                if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true) /*|| lWheel > 0*/)
                 {
                     mSelectedRow = std::max(0, mSelectedRow - 1);
                     if (!lShiftPressed) mSelectionPivot = -1;
                 }
                 else
-                if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true) || lWheel < 0)
+                if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true) /*|| lWheel < 0*/)
                 {
                     mSelectedRow = std::min(static_cast<int>(mSongData.song_length), mSelectedRow + 1);
                     if (!lShiftPressed) mSelectionPivot = -1;
@@ -460,6 +463,8 @@ public:
                     // Use your song_length or the absolute max row (999)
                     mSelectedRow = mSongData.song_length > 0 ? (mSongData.song_length - 1) : 0;
                     if (!lShiftPressed) mSelectionPivot = -1;
+                } else {
+                    mScrollToSelected = false;
                 }
 
 
@@ -697,6 +702,12 @@ public:
                             {
                                 // Different color for the selection range vs. the active cursor
                                 ImVec4 color = (i == mSelectedRow) ? ImVec4(0.3f, 0.3f, 0.1f, 1.0f) : ImVec4(0.15f, 0.15f, 0.3f, 1.0f);
+                                //FIXME when cols are selected (is mute at the moment) like this:
+                                // speed up make ImGui::GetColorU32 only once !!!!
+                                // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, color1, 0); // Color Col 0
+                                // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, color2, 2); // Color Col 2
+
+
                                 ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(color));
 
 
@@ -722,8 +733,9 @@ public:
                         } //for display ....
 
                         // clipper.DisplayEnd - 1 => last row but i want to scroll earlier
-                        if ( mSelectedRow  > clipper.DisplayEnd - 3)
-                            mScrollToSelected = true;
+                        // FIXME ? also bad here
+                        // if ( mSelectedRow  > clipper.DisplayEnd - 3)
+                        //     mScrollToSelected = true;
                     } //while clipper...
 
                     ImGui::EndTable();

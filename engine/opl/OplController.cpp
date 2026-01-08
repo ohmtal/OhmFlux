@@ -20,6 +20,8 @@ OplController::OplController(){
 OplController::~OplController() {
 
     if (mStream) {
+        SDL_FlushAudioStream(mStream);
+        SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
         SDL_DestroyAudioStream(mStream);
         mStream = nullptr;
     }
