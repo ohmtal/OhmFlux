@@ -108,11 +108,7 @@ public:
         // Initialize SongData
         mSongData.song_delay = 15; // Default from Pascal code
         mSongData.song_length = mNewSongLen;
-        for (int i = 0; i < 1001; ++i) {
-            for (int j = 0; j < 10; ++j) {
-                mSongData.song[i][j] = 0;
-            }
-        }
+        mSongData.init();
 
         return true;
     }
