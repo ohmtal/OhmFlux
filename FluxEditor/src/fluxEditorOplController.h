@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// FIXME use the channel also in piano and instrument editor!!
-// FIXME overrite void OplController::tickSequencer() to mute channels
+// 2026-01-08
+// * overrite void OplController::tickSequencer() to mute channels
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -16,6 +16,8 @@ static const int  OPL_MAX_OCTAVE = 8;
 class FluxEditorOplController : public OplController
 {
 public:
+
+    virtual ~FluxEditorOplController() = default;
 
     void setLoop( bool value ) {
         mSeqState.loop = value;

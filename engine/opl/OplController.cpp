@@ -3,6 +3,12 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// 2026-10-09
+// * actual_ins => getInstrumentName(int lChannel) / setInstrumentName
+// * SongData also got a init function and getter / setter for the name
+//   Pascal string is not 0 terminated! first byte is the length
+//   after so many years i forgot this ;)
+//-----------------------------------------------------------------------------
 #include "OplController.h"
 #include <mutex>
 
@@ -566,6 +572,31 @@ bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
     return true;
 }
 //------------------------------------------------------------------------------
+/**
+ *  Returns a null-terminated C-string for display/UI
+ */
+std::string OplController::GetInstrumentName(SongData& sd, int channel) {
+    if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
+    {
+        Log("Error: GetInstrumentName with invalid channel ! %d", channel);
+        return "";
+    }
+    return sd.getInstrumentNamePascalString(channel);
+}
+
+/**
+ *  Converts a C-string back into the Pascal [Length][Data...] format
+ */
+bool OplController::SetInstrumentName(SongData& sd, int channel, const char* name) {
+    if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
+    {
+        Log("Error: setInstrumentName with invalid channel ! %d", channel);
+        return false;
+    }
+    return sd.setInstrumentNamePascalString(channel, name);
+}
+
+//------------------------------------------------------------------------------
 bool OplController::saveSongFMS(const std::string& filename, const SongData& sd) {
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) return false;
@@ -631,6 +662,7 @@ bool OplController::loadInstrument(const std::string& filename, uint8_t channel)
         setInstrument(channel, instrumentData);
         return true;
     }
+
     return false;
 }
 //------------------------------------------------------------------------------
@@ -944,156 +976,158 @@ std::array< uint8_t, 24 > OplController::GetDefaultInstrument()
 
 
 std::array< uint8_t, 24 > OplController::GetDefaultBassDrum(){
-       return {
-           0x01, 0x02, // Freq: Mod=1, Car=2 (gives a thicker sound)
-           0x10, 0x00, // Output: Both loud
-           0x0F, 0x0F, // Attack: Instant
-           0x08, 0x06, // Decay: Rapid for punch
-           0x00, 0x00, // Sustain: 0 (Drums shouldn't sustain)
-           0x0A, 0x0A, // Release: Quick fade
-           0x00, 0x00, // Waveform: Sine
-           0x00, 0x00, // EG Typ: 0 (Drums always decay)
-           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-       };
-   }
+    return {
+        0x01, 0x02, // Freq: Mod=1, Car=2 (gives a thicker sound)
+        0x10, 0x00, // Output: Both loud
+        0x0F, 0x0F, // Attack: Instant
+        0x08, 0x06, // Decay: Rapid for punch
+        0x00, 0x00, // Sustain: 0 (Drums shouldn't sustain)
+        0x0A, 0x0A, // Release: Quick fade
+        0x00, 0x00, // Waveform: Sine
+        0x00, 0x00, // EG Typ: 0 (Drums always decay)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+}
 
 std::array< uint8_t, 24 > OplController::GetDefaultSnareHiHat(){
-       return {
-           0x01, 0x01,
-           0x12, 0x00, // Mod(HH) slightly quieter than Car(SD)
-           0x0F, 0x0F, // Attack: Instant
-           0x0D, 0x07, // Decay: HH is very short (D), SD is longer (7)
-           0x00, 0x00, // Sustain: 0
-           0x0D, 0x07, // Release: Match decay
-           0x00, 0x00, // Waveform: Sine (OPL noise gen overrides this)
-           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-       };
-   }
+    return {
+        0x01, 0x01,
+        0x12, 0x00, // Mod(HH) slightly quieter than Car(SD)
+        0x0F, 0x0F, // Attack: Instant
+        0x0D, 0x07, // Decay: HH is very short (D), SD is longer (7)
+        0x00, 0x00, // Sustain: 0
+        0x0D, 0x07, // Release: Match decay
+        0x00, 0x00, // Waveform: Sine (OPL noise gen overrides this)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+}
 
 std::array< uint8_t, 24 > OplController::GetDefaultTomCymbal(){
-       return {
-           0x02, 0x01, // 0-1: Multiplier (Mod/Tom: 2 for a hollower tone, Car/Cym: 1)
-           0x12, 0x02, // 2-3: Output (Tom: 18, Cym: 2 [Loud])
-           0x0F, 0x0F, // 4-5: Attack (Instant for both)
-           0x07, 0x09, // 6-7: Decay (Tom: 7 [Snappy], Cym: 9 [Linger])
-           0x00, 0x00, // 8-9: Sustain (Must be 0 for drums)
-           0x07, 0x09, // 10-11: Release (Match Decay for clean trigger-off)
-           0x00, 0x00, // 12-13: Waveform (Sine is standard)
-           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 14-21 (Flags/Feedback)
-           0x00, 0x00  // 22-23: Scaling
-       };
-   }
+    return {
+        0x02, 0x01, // 0-1: Multiplier (Mod/Tom: 2 for a hollower tone, Car/Cym: 1)
+        0x12, 0x02, // 2-3: Output (Tom: 18, Cym: 2 [Loud])
+        0x0F, 0x0F, // 4-5: Attack (Instant for both)
+        0x07, 0x09, // 6-7: Decay (Tom: 7 [Snappy], Cym: 9 [Linger])
+        0x00, 0x00, // 8-9: Sustain (Must be 0 for drums)
+        0x07, 0x09, // 10-11: Release (Match Decay for clean trigger-off)
+        0x00, 0x00, // 12-13: Waveform (Sine is standard)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 14-21 (Flags/Feedback)
+        0x00, 0x00  // 22-23: Scaling
+    };
+}
 
 std::array< uint8_t, 24 > OplController::GetDefaultLeadSynth()
-    {
-        return {
-            0x01, 0x01, // 0-1: Multiplier (1:1 Verhältnis für klaren Ton)
-            0x12, 0x00, // 2-3: Output (Modulator auf 18 für FM-Grit, Carrier auf 0 [Laut])
-            0x0F, 0x0F, // 4-5: Attack (Maximal schnell)
-            0x05, 0x02, // 6-7: Decay (Modulator fällt schnell ab, Carrier hält länger)
-            0x0F, 0x0F, // 8-9: Sustain (Maximal - Lead Sounds stehen solange Taste gedrückt)
-            0x05, 0x05, // 10-11: Release (Kurzes Ausklingen)
-            0x02, 0x00, // 12-13: Waveform (Modulator: Absolute Sine [0x02] für mehr Obertöne)
-            0x01, 0x01, // 14-15: EG Typ (Sustain-Modus AN)
-            0x00, 0x00, // 16-17: Vibrato (Kann im Editor manuell erhöht werden)
-            0x00, 0x00, // 18-19: Amp Mod (Aus)
-            0x05, 0x00, // 20-21: Feedback auf 5 (WICHTIG für den "Sägezahn"-Charakter), Mode: FM
-            0x00, 0x00  // 22-23: Scaling (Aus)
-        };
-    }
+{
+    return {
+        0x01, 0x01, // 0-1: Multiplier (1:1 Verhältnis für klaren Ton)
+        0x12, 0x00, // 2-3: Output (Modulator auf 18 für FM-Grit, Carrier auf 0 [Laut])
+        0x0F, 0x0F, // 4-5: Attack (Maximal schnell)
+        0x05, 0x02, // 6-7: Decay (Modulator fällt schnell ab, Carrier hält länger)
+        0x0F, 0x0F, // 8-9: Sustain (Maximal - Lead Sounds stehen solange Taste gedrückt)
+        0x05, 0x05, // 10-11: Release (Kurzes Ausklingen)
+        0x02, 0x00, // 12-13: Waveform (Modulator: Absolute Sine [0x02] für mehr Obertöne)
+        0x01, 0x01, // 14-15: EG Typ (Sustain-Modus AN)
+        0x00, 0x00, // 16-17: Vibrato (Kann im Editor manuell erhöht werden)
+        0x00, 0x00, // 18-19: Amp Mod (Aus)
+        0x05, 0x00, // 20-21: Feedback auf 5 (WICHTIG für den "Sägezahn"-Charakter), Mode: FM
+        0x00, 0x00  // 22-23: Scaling (Aus)
+    };
+}
 
 std::array< uint8_t, 24 > OplController::GetDefaultOrgan()
-    {
-        return {
-            0x01, 0x02, // 0-1: Multiplier (Mod=1 [Base], Car=2 [Octave/Harmonic])
-            0x08, 0x00, // 2-3: Output (Both loud; Adjust Mod output to change 'drawbar' mix)
-            0x0F, 0x0F, // 4-5: Attack (Instant for both)
-            0x00, 0x00, // 6-7: Decay (None)
-            0x0F, 0x0F, // 8-9: Sustain (Full - Organs don't fade)
-            0x02, 0x02, // 10-11: Release (Very short - stops immediately)
-            0x00, 0x00, // 12-13: Waveform (Pure Sines)
-            0x01, 0x01, // 14-15: EG Typ (Sustain ON)
-            0x01, 0x01, // 16-17: Vibrato (ON - Adds the 'Leslie Speaker' feel)
-            0x00, 0x00, // 18-19: Amp Mod (OFF)
-            0x00, 0x01, // 20-21: Feedback 0, Connection 1 (Additive Mode - CRITICAL)
-            0x00, 0x00  // 22-23: Scaling (OFF)
-        };
-    }
+{
+    return {
+        0x01, 0x02, // 0-1: Multiplier (Mod=1 [Base], Car=2 [Octave/Harmonic])
+        0x08, 0x00, // 2-3: Output (Both loud; Adjust Mod output to change 'drawbar' mix)
+        0x0F, 0x0F, // 4-5: Attack (Instant for both)
+        0x00, 0x00, // 6-7: Decay (None)
+        0x0F, 0x0F, // 8-9: Sustain (Full - Organs don't fade)
+        0x02, 0x02, // 10-11: Release (Very short - stops immediately)
+        0x00, 0x00, // 12-13: Waveform (Pure Sines)
+        0x01, 0x01, // 14-15: EG Typ (Sustain ON)
+        0x01, 0x01, // 16-17: Vibrato (ON - Adds the 'Leslie Speaker' feel)
+        0x00, 0x00, // 18-19: Amp Mod (OFF)
+        0x00, 0x01, // 20-21: Feedback 0, Connection 1 (Additive Mode - CRITICAL)
+        0x00, 0x00  // 22-23: Scaling (OFF)
+    };
+}
 
 std::array< uint8_t, 24 > OplController::GetDefaultCowbell()
-    {
-        return {
-            0x01, 0x04, // 0-1: Multiplier (Mod=1, Car=4: Creates a high, resonant 'clink')
-            0x15, 0x00, // 2-3: Output (Mod=21 [Moderate FM bite], Car=0 [Loud])
-            0x0F, 0x0F, // 4-5: Attack (Instant hit)
-            0x06, 0x08, // 6-7: Decay (Modulator drops fast to clean the tone, Carrier lingers)
-            0x00, 0x00, // 8-9: Sustain (Must be 0 for percussion)
-            0x08, 0x08, // 10-11: Release (Fast fade-out)
-            0x00, 0x00, // 12-13: Waveform (Pure Sine)
-            0x00, 0x00, // 14-15: EG Typ (Decay mode)
-            0x00, 0x00, // 16-17: Vibrato (Off)
-            0x00, 0x00, // 18-19: Amp Mod (Off)
-            0x07, 0x00, // 20-21: Feedback 7 (Max grit for 'metal' feel), Mode FM
-            0x00, 0x00  // 22-23: Scaling
-        };
-    }
+{
+    return {
+        0x01, 0x04, // 0-1: Multiplier (Mod=1, Car=4: Creates a high, resonant 'clink')
+        0x15, 0x00, // 2-3: Output (Mod=21 [Moderate FM bite], Car=0 [Loud])
+        0x0F, 0x0F, // 4-5: Attack (Instant hit)
+        0x06, 0x08, // 6-7: Decay (Modulator drops fast to clean the tone, Carrier lingers)
+        0x00, 0x00, // 8-9: Sustain (Must be 0 for percussion)
+        0x08, 0x08, // 10-11: Release (Fast fade-out)
+        0x00, 0x00, // 12-13: Waveform (Pure Sine)
+        0x00, 0x00, // 14-15: EG Typ (Decay mode)
+        0x00, 0x00, // 16-17: Vibrato (Off)
+        0x00, 0x00, // 18-19: Amp Mod (Off)
+        0x07, 0x00, // 20-21: Feedback 7 (Max grit for 'metal' feel), Mode FM
+        0x00, 0x00  // 22-23: Scaling
+    };
+}
 
 void OplController::resetInstrument(uint8_t channel)
-    {
+{
+    std::array<uint8_t, 24> defaultData;
+
+    if (!mMelodicMode) {
+        if (channel == 6) defaultData = GetDefaultBassDrum();
+        else if (channel == 7) defaultData = GetDefaultSnareHiHat();
+        else if (channel == 8) defaultData = GetDefaultTomCymbal(); // similar logic
+        else defaultData = GetDefaultInstrument();
+    } else {
+        defaultData = GetDefaultInstrument();
+    }
+    setInstrument(channel, defaultData.data());
+}
+
+std::array< uint8_t, 24 > OplController::GetMelodicDefault(uint8_t index)
+{
+    auto data = GetDefaultInstrument(); // Start with your basic Sine template
+
+    switch (index % 6) {
+        case 0: // Basic Piano
+            data[4] = 0xF; data[5] = 0xF; // Fast Attack
+            data[6] = 0x4; data[7] = 0x4; // Moderate Decay
+            data[8] = 0x2; data[9] = 0x2; // Low Sustain
+            break;
+        case 1: // FM Bass
+            data[20] = 0x5;               // High Feedback (Index 20)
+            data[2] = 0x15;               // Higher Modulator Output for grit
+            break;
+        case 2: // Strings
+            data[4] = 0x3; data[5] = 0x2; // Slow Attack
+            data[10] = 0x5; data[11] = 0x5; // Slower Release
+            break;
+        case 3: return GetDefaultLeadSynth();
+        case 4: return GetDefaultOrgan();
+        case 5: return GetDefaultCowbell();
+    }
+    return data;
+}
+
+void OplController::loadInstrumentPreset()
+{
+    for (uint8_t i = 0; i < 9; i++) {
         std::array<uint8_t, 24> defaultData;
 
         if (!mMelodicMode) {
-            if (channel == 6) defaultData = GetDefaultBassDrum();
-            else if (channel == 7) defaultData = GetDefaultSnareHiHat();
-            else if (channel == 8) defaultData = GetDefaultTomCymbal(); // similar logic
-            else defaultData = GetDefaultInstrument();
+            // Rhythm Mode Logic
+            if (i == 6)      defaultData = GetDefaultBassDrum();
+            else if (i == 7) defaultData = GetDefaultSnareHiHat();
+            else if (i == 8) defaultData = GetDefaultTomCymbal();
+            else             defaultData = GetMelodicDefault(i);
         } else {
-            defaultData = GetDefaultInstrument();
+            // Full Melodic Mode: 9 Melodic Voices
+            defaultData = GetMelodicDefault(i);
         }
-        setInstrument(channel, defaultData.data());
+
+        setInstrument(i, defaultData.data());
     }
+}
 
-std::array< uint8_t, 24 > OplController::GetMelodicDefault(uint8_t index)
-    {
-        auto data = GetDefaultInstrument(); // Start with your basic Sine template
 
-        switch (index % 6) {
-            case 0: // Basic Piano
-                data[4] = 0xF; data[5] = 0xF; // Fast Attack
-                data[6] = 0x4; data[7] = 0x4; // Moderate Decay
-                data[8] = 0x2; data[9] = 0x2; // Low Sustain
-                break;
-            case 1: // FM Bass
-                data[20] = 0x5;               // High Feedback (Index 20)
-                data[2] = 0x15;               // Higher Modulator Output for grit
-                break;
-            case 2: // Strings
-                data[4] = 0x3; data[5] = 0x2; // Slow Attack
-                data[10] = 0x5; data[11] = 0x5; // Slower Release
-                break;
-            case 3: return GetDefaultLeadSynth();
-            case 4: return GetDefaultOrgan();
-            case 5: return GetDefaultCowbell();
-        }
-        return data;
-    }
-
-void OplController::loadInstrumentPreset()
-    {
-        for (uint8_t i = 0; i < 9; i++) {
-            std::array<uint8_t, 24> defaultData;
-
-            if (!mMelodicMode) {
-                // Rhythm Mode Logic
-                if (i == 6)      defaultData = GetDefaultBassDrum();
-                else if (i == 7) defaultData = GetDefaultSnareHiHat();
-                else if (i == 8) defaultData = GetDefaultTomCymbal();
-                else             defaultData = GetMelodicDefault(i);
-            } else {
-                // Full Melodic Mode: 9 Melodic Voices
-                defaultData = GetMelodicDefault(i);
-            }
-
-            setInstrument(i, defaultData.data());
-        }
-    }

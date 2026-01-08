@@ -10,11 +10,22 @@
 // TODO: rewrite from handleNoteInput to keybord playing (y/x)
 //       => USE SDL SCANCODE FOR keyboard layout same on all languages
 // TODO; sync channel with fmEditor uint8_t mInstrumentChannel = 0; // 0 .. FMS_MAX_CHANNEL
-//       ==> i should use the EditorOPL Class ...
+//       ==> USE SDL Events for this !!!
 //       I also like to have the fullscale als live insert ...
-// TODO: Intrument names.. we have 256 chars for each ?! uint8_t actual_ins[10][256];
+//
+// TODO: Instrument names.. we have 256 chars for each ?! uint8_t actual_ins[10][256];
 //       cool i was afraid i only have 12 for dos name :D
-// TODO: Load / Save
+//       Added:
+//          std::string GetInstrumentName(SongData& sd, int channel);
+//          bool SetInstrumentName(SongData& sd,int channel, const char* name);
+//       But not sure what it the best way to use it.
+//       Cant use it with loadInstrumentPreset because it does not need a song
+//       not sure if i did a good or bad design decision
+//       the instruments are cached => uint8_t m_instrument_cache[9][24];
+//       and used with setInstrument / getInstrument
+
+
+// TODO: Load / Save ==> also emscripten load will be tricky if done check SFXEditor
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -67,7 +78,11 @@ public:
 
     FluxComposer(FluxEditorOplController* lController)
     {
+        mSongData.init();
+        mBufferSongData.init();
+
         mController = lController;
+
 
         mSelectedRowColor = ImGui::GetColorU32(ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
         mSelectedRowInactiveColor = ImGui::GetColorU32(ImVec4(0.15f, 0.15f, 0.3f, 0.3f));
@@ -173,7 +188,7 @@ public:
     {
        int lChannel = getCurrentChannel();
        static bool lInsertMode = true;
-       ImVec2 lButtonSize = ImVec2(120, 0);
+       ImVec2 lButtonSize = ImVec2(100, 0);
 
         // ---- Header -----
 
@@ -190,20 +205,20 @@ public:
 
         ImGui::BeginDisabled(isPlaying());
         ImGui::SameLine();
-        if (ImGui::Button("add Silence (===)", lButtonSize)) {
+        if (ImGui::Button("add (===)", lButtonSize)) {
             insertTone("===");
         }
         ImGui::SameLine();
-        if (ImGui::Button("add Clear (...)", lButtonSize)) {
+        if (ImGui::Button("add (...)", lButtonSize)) {
             insertTone("...");
         }
         // if (ImGui::Button("Add: ...", lButtonSize)) {}
         ImGui::EndDisabled();
 
-        ImGui::SameLine(150.f + 3 * lButtonSize.x);
-        if (ImGui::Button("Silence all.", lButtonSize)) {
-            mController->silenceAll(false);
-        }
+        // ImGui::SameLine();
+        // if (ImGui::Button("Silence all.", lButtonSize)) {
+        //     mController->silenceAll(false);
+        // }
 
 
 
@@ -776,6 +791,14 @@ public:
                             ImGui::Unindent(5.0f);
                             //<<<
 
+                            if ( j > 0)
+                            {
+                                ImGui::Separator();
+                                ImGui::TextColored(Color4FIm(cl_AcidGreen), "%s", mController->GetInstrumentName(mSongData,lChannel).c_str());
+                            }
+
+
+                            ImGui::Separator();
                             if ( j == 0 ) {
                                 if (ImGui::MenuItem("Activate all channel")) {
                                     mController->setAllChannelActive(true);

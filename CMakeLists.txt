@@ -293,9 +293,9 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
         # Shell Template Configuration
         # FIXME custom shell file !!
         if(CMAKE_BUILD_TYPE STREQUAL "Release")
-            set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/shell_minimal.html")
+            set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_minimal.html")
             # sucks on Desktop Fullscreen:
-            # set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/shell_custom_web.html")
+            # set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_custom_web.html")
 
             if(EXISTS "${CUSTOM_SHELL_FILE}")
                 target_link_options(${TARGET_NAME} PRIVATE "--shell-file" "${CUSTOM_SHELL_FILE}")

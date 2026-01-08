@@ -78,27 +78,105 @@ const float PLAYBACK_FREQUENCY = 90.0f;
 class OplController
 {
 public:
+    // struct SongData {
+    //     // Actual_ins: array[1..9] of string [256 bytes each]
+    //     // Total: 9 * 256 = 2304 bytes
+    //     uint8_t actual_ins[10][256];
+    //
+    //     // Ins_set: array[1..9, 0..23] of byte
+    //     // Total: 9 * 24 = 216 bytes
+    //     uint8_t ins_set[10][24];
+    //
+    //     // songspeed: byte [1 byte]
+    //     uint8_t song_delay; //default 15
+    //
+    //     // songlaenge: word [2 bytes]
+    //     uint16_t song_length;
+    //
+    //     // song: array[1..1000, 1..9] of integer
+    //     // Pascal 'integer' is 16-bit signed. 1000 * 9 * 2 = 18000 bytes
+    //     // int16_t song[1001][10];
+    //     int16_t song[FMS_MAX_SONG_LENGTH + 1][FMS_MAX_CHANNEL + 1];
+    //
+    // };
+    #include <cstring>
+    #include <algorithm>
+
     struct SongData {
-        // Actual_ins: array[1..9] of string [256 bytes each]
-        // Total: 9 * 256 = 2304 bytes
+        // Pascal: array[1..9] of string[255] -> 10 slots to allow 1-based indexing
+        // Index [channel][0] is the length byte.
         uint8_t actual_ins[10][256];
 
-        // Ins_set: array[1..9, 0..23] of byte
-        // Total: 9 * 24 = 216 bytes
+        // Pascal: array[1..9, 0..23] of byte
         uint8_t ins_set[10][24];
 
-        // songspeed: byte [1 byte]
-        uint8_t song_delay; //default 15
+        uint8_t song_delay;   // Pascal: byte
+        uint16_t song_length; // Pascal: word (16-bit)
 
-        // songlaenge: word [2 bytes]
-        uint16_t song_length;
-
-        // song: array[1..1000, 1..9] of integer
-        // Pascal 'integer' is 16-bit signed. 1000 * 9 * 2 = 18000 bytes
-        // int16_t song[1001][10];
+        // Pascal: array[1..1000, 1..9] of integer (16-bit signed)
         int16_t song[FMS_MAX_SONG_LENGTH + 1][FMS_MAX_CHANNEL + 1];
 
-    };
+        // Initialization function
+        void init() {
+            // 1. Zero out everything first for safety
+            std::memset(this, 0, sizeof(SongData));
+
+            // 2. Initialize Pascal Strings (actual_ins)
+            // In Pascal, a blank string has a length of 0 at index [0].
+            for (int ch = 0; ch <= FMS_MAX_CHANNEL; ++ch) {
+                actual_ins[ch][0] = 0; // Length = 0
+                // Optional: Initialize with a default name like "Empty"
+                // SetPascalString(ch, "Empty");
+            }
+
+            // 3. Set standard defaults
+            song_delay = 15;
+            song_length = 0;
+
+            // 4. Initialize Song Array
+            // If "0" is not a valid empty note in your tracker,
+            // initialize with -1 or your specific "empty" constant.
+            for (int i = 0; i <= FMS_MAX_SONG_LENGTH; ++i) {
+                for (int j = 0; j <= FMS_MAX_CHANNEL; ++j) {
+                    song[i][j] = 0;
+                }
+            }
+        }
+
+        // Helper to get the Pascal string for C++ string (0..8 -> 1..9)
+        std::string getInstrumentNamePascalString(int channel)
+        {
+            // Safety check for your 0..8 range
+            if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
+                return "";
+
+            // index [channel+1] selects the row (1..9)
+            // index [0] is the Pascal length byte
+            uint8_t len = actual_ins[channel + 1][0];
+
+            // Data starts at [1]. Use reinterpret_cast for modern C++ standards.
+            return std::string(reinterpret_cast<const char*>(&actual_ins[channel + 1][1]), len);
+        }
+
+        // Helper to set a Pascal string from a C-string (0..8 -> 1..9)
+        bool setInstrumentNamePascalString(int channel, const char* name) {
+            if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
+                return false;
+
+            size_t len = std::strlen(name);
+            if (len > 255) len = 255; // Turbo Pascal 6 limit
+
+            // Update length byte at [0]
+            actual_ins[channel + 1][0] = static_cast<uint8_t>(len);
+
+            // Copy data starting at [1].
+            // We don't null-terminate because Pascal doesn't use it.
+            std::memcpy(&actual_ins[channel + 1][1], name, len);
+
+            return true;
+        }
+    }; //stuct SongData
+
 
     struct InsParam {
         std::string name;
@@ -292,6 +370,10 @@ public:
     bool loadSongFMS(const std::string& filename, SongData& sd);
     bool saveSongFMS(const std::string& filename, const SongData& sd); //FIXME NOT TESTED !!!!
 
+    std::string GetInstrumentName(SongData& sd, int channel);
+    bool SetInstrumentName(SongData& sd,int channel, const char* name);
+
+
     // alias for start_song
     void playSong(SongData& sd, bool loopit, int startAt=0, int stopAt=-1)
     {
@@ -357,6 +439,7 @@ public:
 
     void resetInstrument(uint8_t channel);
     void loadInstrumentPreset();
+
 
 }; //class
 
