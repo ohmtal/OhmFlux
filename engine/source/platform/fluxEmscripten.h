@@ -48,7 +48,7 @@
 #include "utils/errorlog.h"
 #include "core/fluxScreen.h"
 #include "fluxMain.h"
-
+#include "SDL3/SDL.h"
 
 
 //-------------------------------------------------------------------------------
@@ -130,6 +130,104 @@ EM_BOOL on_fullscreen_change(int eventType, const EmscriptenFullscreenChangeEven
     return EM_TRUE;
 }
 //-------------------------------------------------------------------------------
+// 2026-01-08 >>>>
+
+//-----------------------------
+void sync_opengl_high_dpi(SDL_Window* window) {
+    // 1. Query the browser directly for the viewport size
+    double browser_w, browser_h;
+    emscripten_get_element_css_size("#canvas", &browser_w, &browser_h);
+
+    // 2. If browser reports 0, we are too early; retry in 50ms
+    if (browser_w <= 0 || browser_h <= 0) {
+        emscripten_async_call([](void* arg) { sync_opengl_high_dpi((SDL_Window*)arg); }, window, 50);
+        return;
+    }
+
+    // 3. Get physical pixel scale (DPR)
+    double dpr = emscripten_get_device_pixel_ratio();
+    int phys_w = (int)(browser_w * dpr);
+    int phys_h = (int)(browser_h * dpr);
+
+    // 4. FORCE the HTML Canvas element to have the correct physical pixels
+    // Without this, OpenGL renders into a tiny backbuffer and stretches it (blur/bottom-left)
+    emscripten_set_canvas_element_size("#canvas", phys_w, phys_h);
+
+    getScreenObject()->updateWindowSize(phys_w, phys_h);
+
+    // Log to confirm (it should now show ~1080x2400)
+    Log("New Resolution: %dx%d (DPR: %f)", phys_w, phys_h, dpr);
+}
+//-----------------------------
+
+EM_BOOL on_fullscreen_change_attempt2(int eventType, const EmscriptenFullscreenChangeEvent *e, void *userData) {
+    SDL_Window* window = (SDL_Window*)userData;
+
+    if (e->isFullscreen) {
+        // 1. Enter fullscreen via SDL3
+        SDL_SetWindowFullscreen(window, true);
+
+        emscripten_async_call([](void* arg) {
+            sync_opengl_high_dpi((SDL_Window*)arg);
+
+        }, window, 250);
+
+    } else {
+        SDL_SetWindowFullscreen(window, false);
+    }
+    return EM_TRUE;
+}
+
+
+// EM_BOOL on_fullscreen_change_attempt2(int eventType, const EmscriptenFullscreenChangeEvent *e, void *userData) {
+//     if (e->isFullscreen) {
+//         SDL_SetWindowFullscreen(getScreenObject()->getWindow(), true);
+//
+//         // Mobile browsers need a tiny moment to finish the rotation animation
+//         // 100ms is the standard 'stabilization' delay for 2026 mobile web apps
+//         emscripten_async_run_in_main_runtime_thread(EM_FUNC_SIG_V, (void*)window, [](void* arg) {
+//             SDL_Window* win = (SDL_Window*)arg;
+//             int w, h;
+//
+//             // Get the REAL physical pixel count (DPR included)
+//             SDL_GL_GetDrawableSize(win, &w, &h);
+//
+//             // Update the raw OpenGL Viewport
+//             glViewport(0, 0, w, h);
+//
+//             // If you have a custom projection matrix (e.g., ortho or perspective),
+//             // update it here to match the new aspect ratio (w/h).
+//             getScreenObject()->updateWindowSize(w,h);
+//
+//         }, 100);
+//     }
+//     return EM_TRUE;_WI
+//
+// }
+//
+
+//-----------------------------
+void sync_canvas_size() {
+    double width, height;
+    emscripten_get_element_css_size("#canvas", &width, &height);
+    double dpr = emscripten_get_device_pixel_ratio();
+    emscripten_set_canvas_element_size("#canvas", (int)(width * dpr), (int)(height * dpr));
+}
+
+//-----------------------------
+
+EM_BOOL on_orientation_change(int eventType, const EmscriptenOrientationChangeEvent *orientationEvent, void *userData) {
+    sync_canvas_size();
+    return EM_TRUE;
+}
+//-----------------------------
+
+EM_BOOL on_resize(int eventType, const EmscriptenUiEvent *uiEvent, void *userData) {
+    sync_canvas_size();
+    return EM_TRUE;
+}
+//<<<<<
+//-------------------------------------------------------------------------------
 // JavaScript helper to trigger browser download
 EM_JS(void, js_impl_download, (const char* name), {
     const filename = UTF8ToString(name);
@@ -196,6 +294,14 @@ EM_ASYNC_JS(void, loadFileToWasm, (const char* virtualPath), {
 inline void initEmScripten()
 {
     emscripten_set_fullscreenchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, nullptr, EM_TRUE, on_fullscreen_change);
+
+    //2026-01-08
+    // sucks!
+    // emscripten_set_fullscreenchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, nullptr, EM_TRUE, on_fullscreen_change_attempt2);
+    // emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_FALSE, on_resize);
+    // emscripten_set_orientationchange_callback(nullptr, EM_FALSE, on_orientation_change);
+
+
 }
 
 extern "C" {

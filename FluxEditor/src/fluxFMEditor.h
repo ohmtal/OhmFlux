@@ -76,7 +76,7 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    void DrawScalePlayer()
+    void DrawScalePlayer(bool inLine = false)
     {
         if (!mController)
             return;
@@ -85,7 +85,10 @@ public:
         // Offsets based on your table: C=null, C#=7, D=1, D#=8, E=2, F=3, F#=9, G=4, G#=10, A=5, A#=11, B=6
         const int noteOffsets[] = { 0, 7, 1, 8, 2, 3, 9, 4, 10, 5, 11, 6 };
 
-        ImGui::Begin("FM Full Scale");
+        if (!inLine) {
+            ImGui::Begin("FM Full Scale");
+        }
+
 
         if (ImGui::BeginTable("ScaleTable", 13, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchSame))
         {
@@ -146,7 +149,9 @@ public:
             mController->stopNote(mInstrumentChannel);
         }
 
-        ImGui::End();
+        if (!inLine) {
+            ImGui::End();
+        }
     }
     //--------------------------------------------------------------------------
     void DrawPianoScale(bool inLine)
@@ -447,7 +452,9 @@ public:
                 mInstrumentEditorAutoPlayStarted = true;
             }
 
-            DrawPianoScale(true);
+            // DrawPianoScale(true);
+            ImGui::Separator();
+            DrawScalePlayer(true);
         }
         ImGui::End();
     }

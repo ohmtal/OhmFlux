@@ -6,15 +6,28 @@
 #ifndef _FLUXSHADERSOURCES_H_
 #define _FLUXSHADERSOURCES_H_
 
+// #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+// #define GLSL_VERSION "#version 300 es\nprecision highp float;\n"
+// #else
+// #define GLSL_VERSION "#version 330 core\n"
+// #endif
+
 #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-#define GLSL_VERSION "#version 300 es\nprecision highp float;\n"
+#define GLSL_VERSION "#version 300 es\n"
+
+#define VERT_PRECISION "precision highp float;\n"
+// #define FRAG_PRECISION "precision mediump float;\n"
+#define FRAG_PRECISION "precision highp float;\n"
 #else
 #define GLSL_VERSION "#version 330 core\n"
+#define VERT_PRECISION ""
+#define FRAG_PRECISION ""
 #endif
+
 
 //------------------------------------------------------------------------------
 // --- Default Sprite Shader ---
-inline const char* vertexShaderSource = GLSL_VERSION R"(
+inline const char* vertexShaderSource = GLSL_VERSION VERT_PRECISION R"(
 layout (location = 0) in vec3 aPos;      // Final position calculated on CPU
 layout (location = 1) in vec2 aTexCoord; // Final UV (handled flipping/scrolling)
 layout (location = 2) in vec4 aColor;    // Per-sprite Tint and Alpha
@@ -39,7 +52,7 @@ void main() {
 }
 )";
 //------------------------------------------------------------------------------
-inline const char* fragmentShaderSource = GLSL_VERSION R"(
+inline const char* fragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
 out vec4 FragColor;
 
 in vec2 TexCoord;
@@ -150,7 +163,7 @@ void main() {
 
 //------------------------------------------------------------------------------
 // --- Flat Color Shader (for Primitives) ---
-inline const char* flatVertexShaderSource = GLSL_VERSION R"(
+inline const char* flatVertexShaderSource = GLSL_VERSION VERT_PRECISION R"(
 layout (location = 0) in vec3 aPos;
 layout (location = 2) in vec4 aColor; // MUST match Location 2 in Vertex2D
 
@@ -167,7 +180,7 @@ void main() {
 )";
 
 
-inline const char* flatFragmentShaderSource = GLSL_VERSION R"(
+inline const char* flatFragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
 out vec4 FragColor;
 in vec4 vColor; // Received from vertex shader
 

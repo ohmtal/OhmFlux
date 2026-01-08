@@ -23,7 +23,7 @@ public:
         bool mShowSFXEditor           = false;
         bool mShowFMInstrumentEditor  = true;
         bool mShowFMComposer          = true;
-        bool mShowCompleteScale       = true;
+        bool mShowCompleteScale       = false;
         // bool mShowPianoScale          = false;
 
     };

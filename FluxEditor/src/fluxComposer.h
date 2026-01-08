@@ -37,6 +37,7 @@ private:
 
     int mCurrentPlayingRow = -1;
 
+    int mNewSongLen = 64;
 
     OplController::SongData mSongData;
 
@@ -64,7 +65,7 @@ public:
 
         // Initialize SongData
         mSongData.song_delay = 15; // Default from Pascal code
-        mSongData.song_length = 32;
+        mSongData.song_length = mNewSongLen;
         for (int i = 0; i < 1001; ++i) {
             for (int j = 0; j < 10; ++j) {
                 mSongData.song[i][j] = 0;
@@ -108,15 +109,18 @@ public:
     bool  isPlaying() { return mController->getSequencerState().playing; }
     //-----------------------------------------------------------------------------------------------------
     // when playing live adding !!
-    void insertTone(const char* lName)
+    void insertTone(const char* lName, int lOctaveAdd = 0)
     {
         int lChannel = mSelectedCol - 1;
 
+        int lNewTone = mController->getNoteWithOctave(lChannel, lName, lOctaveAdd);
+        dLog("insertTone:%d", lNewTone);
+
         if (isPlaying())
         {
-            mSongData.song[mCurrentPlayingRow][lChannel] = mController->getNoteWithOctave(lChannel, lName);
+            mSongData.song[mCurrentPlayingRow][lChannel] = lNewTone;
         } else {
-            mSongData.song[mSelectedRow][lChannel] = mController->getNoteWithOctave(lChannel, lName);
+            mSongData.song[mSelectedRow][lChannel] = lNewTone;
             mController->playNoteDOS(lChannel, mSongData.song[mSelectedRow][lChannel]);
             mSelectedRow = std::min(FMS_MAX_SONG_LENGTH, mSelectedRow + mController->getStepByChannel(lChannel));
             if ( mSelectedRow > mSongData.song_length )
@@ -126,6 +130,11 @@ public:
     //--------------------------------------------------------------------------
     void DrawPianoScale()
     {
+
+        int lScaleCount = 12 * 3;
+        int lOctaveAdd = -1;
+        int  currentOctave = 0;
+
         struct PianoKey { const char* name; int offset; bool isBlack; };
         PianoKey keys[] = {
             {"C-", 0, false}, {"C#", 7, true}, {"D-", 1, false}, {"D#", 8, true},
@@ -134,16 +143,20 @@ public:
         };
         int lChannel = mSelectedCol - 1;
 
-        int  currentOctave = mController->getOctaveByChannel(lChannel);
+
+
+
 
         ImVec2 startPos = ImGui::GetCursorScreenPos();
-        float whiteWidth = 40.0f, whiteHeight = 150.0f;
-        float blackWidth = 26.0f, blackHeight = 90.0f;
+        float whiteWidth = 40.0f, whiteHeight = 90.0f;
+        float blackWidth = 26.0f, blackHeight = 50.0f;
 
         // 1. Draw White Keys (Allowing Overlap)
         int whiteKeyCount = 0;
-        for (int i = 0; i < 12; i++) {
-            if (keys[i].isBlack) continue;
+        for (int i = 0; i < lScaleCount; i++) {
+            if (keys[i % 12].isBlack) continue;
+            lOctaveAdd = std::trunc( i / 12) - 1;
+            currentOctave = mController->getOctaveByChannel(lChannel) + lOctaveAdd;
 
             ImGui::PushID(i);
             ImGui::SetCursorScreenPos(ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y));
@@ -155,12 +168,17 @@ public:
             if (isNull) ImGui::BeginDisabled();
 
             ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
-
             // add note
             if (ImGui::IsItemActivated()) {
-                insertTone(keys[i].name);
+
+                insertTone(keys[i % 12].name, lOctaveAdd);
             }
 
+            if ((i % 12) == 0)
+            {
+                ImGui::SetCursorScreenPos(ImVec2(startPos.x + 5 + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight - 20.f));
+                ImGui::TextColored(ImColor4F(cl_Aquamarine), "%s%d",keys[i % 12].name,  mController->getOctaveByChannel(lChannel)+lOctaveAdd);
+            }
 
             if (isNull) ImGui::EndDisabled();
             ImGui::PopID();
@@ -169,8 +187,11 @@ public:
         //--------------------------------------------------------------------------
         // 2. Draw Black Keys (On Top)
         whiteKeyCount = 0;
-        for (int i = 0; i < 12; i++) {
-            if (!keys[i].isBlack) { whiteKeyCount++; continue; }
+        for (int i = 0; i < lScaleCount; i++)
+        {
+            lOctaveAdd = std::trunc( i / 12);
+            currentOctave = mController->getOctaveByChannel(lChannel) + lOctaveAdd;
+            if (!keys[i % 12].isBlack) { whiteKeyCount++; continue; }
 
             float xPos = startPos.x + (whiteKeyCount * whiteWidth) - (blackWidth / 2.0f);
             ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
@@ -185,9 +206,14 @@ public:
             ImGui::Button("##black", ImVec2(blackWidth, blackHeight));
 
             if (ImGui::IsItemActivated()) {
-                insertTone(keys[i].name);
+                insertTone(keys[i % 12].name, lOctaveAdd);
             }
 
+            if ((i % 12) == 0)
+            {
+                ImGui::SetCursorScreenPos(ImVec2(xPos + 5, startPos.y + blackHeight - 20.f));
+                ImGui::TextColored(ImColor4F(cl_Aquamarine), "%s%d",keys[i % 12].name,  mController->getOctaveByChannel(lChannel)+lOctaveAdd);
+            }
 
             if (isNull) ImGui::EndDisabled();
             ImGui::PopStyleColor(2);
@@ -324,7 +350,11 @@ public:
             {
                 if (ImGui::BeginMenu("File"))
                 {
-                    if (ImGui::MenuItem("New Song")) { /* TODO: Implement new song logic */ }
+                    if (ImGui::MenuItem("New Song")) {
+                        mSongData.song_length = FMS_MAX_SONG_LENGTH;
+                        mController->clearSong(mSongData);
+                        mSongData.song_length = mNewSongLen;
+                    }
                     if (ImGui::MenuItem("Load Song")) { /* TODO: Implement load song logic */ }
                     if (ImGui::MenuItem("Save Song")) { /* TODO: Implement save song logic */ }
                     ImGui::EndMenu();
@@ -500,10 +530,17 @@ public:
                     else
                     if ( ImGui::IsKeyPressed(ImGuiKey_Delete))
                     {
-                        if (mSelectionPivot >= 0)
-                            mController->clearSongRange(mSongData,  getSelectionMin(), getSelectionMax());
-                        else
-                            current_note = 0;  // "..." Empty
+                        if ( lCtrlPressed )
+                        {
+                            mController->deleteSongRange(mSongData,  getSelectionMin(), getSelectionMax());
+                            mSelectionPivot = -1;
+                        } else {
+                            if (mSelectionPivot >= 0)
+                                mController->clearSongRange(mSongData,  getSelectionMin(), getSelectionMax());
+                            else
+                                current_note = 0;  // "..." Empty
+                        }
+
                     }
                     if ( ImGui::IsKeyPressed( ImGuiKey_Insert ) )
                     {
@@ -692,10 +729,13 @@ public:
                             ImGui::PushID(i);
                             if (lSequencerState.playing)
                             {
-                                if (i == mCurrentPlayingRow) {
+                                if (i == mCurrentPlayingRow)
+                                {
                                     // Highlight row using RowBg0 (standard for active rows)
                                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImColor(80, 80, 0, 255));
-                                    ImGui::SetScrollHereY(0.5f); // Centers the playing row
+//FIXME RECORDING SUCKS WHEN SCROLLING
+
+                                    // ImGui::SetScrollHereY(0.5f); // Centers the playing row
                                 }
 
                             } else if (isRowSelected(i))

@@ -266,14 +266,45 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
     target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine)
 
     if(EMSCRIPTEN)
+        # set_target_properties(${TARGET_NAME} PROPERTIES
+        #     SUFFIX ".html" OUTPUT_NAME "index"
+        #     RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+        # )
+        # target_link_options(${TARGET_NAME} PRIVATE
+        #     "-sUSE_SDL=3" "-sMAX_WEBGL_VERSION=2" "-sMIN_WEBGL_VERSION=2"
+        #     "--preload-file=${PRELOAD_PATH}" "-sALLOW_MEMORY_GROWTH=1" "-sNO_EXIT_RUNTIME=1" "-sMINIFY_HTML=1"
+        # )
         set_target_properties(${TARGET_NAME} PROPERTIES
-            SUFFIX ".html" OUTPUT_NAME "index"
+            SUFFIX ".html"
+            OUTPUT_NAME "index"
             RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
         )
+
         target_link_options(${TARGET_NAME} PRIVATE
-            "-sUSE_SDL=3" "-sMAX_WEBGL_VERSION=2" "-sMIN_WEBGL_VERSION=2"
-            "--preload-file=${PRELOAD_PATH}" "-sALLOW_MEMORY_GROWTH=1" "-sNO_EXIT_RUNTIME=1" "-sMINIFY_HTML=1"
+            "-sUSE_SDL=3"
+            "-sMAX_WEBGL_VERSION=2"
+            "-sMIN_WEBGL_VERSION=2"
+            "--preload-file=${PRELOAD_PATH}"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sNO_EXIT_RUNTIME=1"
+            "-sMINIFY_HTML=1"
         )
+
+        # Shell Template Configuration
+        # FIXME custom shell file !!
+        if(CMAKE_BUILD_TYPE STREQUAL "Release")
+            set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/shell_minimal.html")
+            # sucks on Desktop Fullscreen:
+            # set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/shell_custom_web.html")
+
+            if(EXISTS "${CUSTOM_SHELL_FILE}")
+                target_link_options(${TARGET_NAME} PRIVATE "--shell-file" "${CUSTOM_SHELL_FILE}")
+                set_target_properties(${TARGET_NAME} PROPERTIES LINK_DEPENDS "${CUSTOM_SHELL_FILE}")
+            else()
+                message(WARNING "Custom template not found: ${CUSTOM_SHELL_FILE}")
+            endif()
+        endif()
+
     elseif(WIN32)
         # 1. Define the base path
         set(BASE_OUT_DIR "${SOURCE_DIR}")

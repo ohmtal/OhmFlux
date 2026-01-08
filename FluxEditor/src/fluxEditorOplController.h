@@ -93,9 +93,9 @@ public:
 
     //--------------------------------------------------------------------------
     // Helper function moved inside the class
-    int getNoteWithOctave(int channel, const char* noteBase) {
+    int getNoteWithOctave(int channel, const char* noteBase, int lOctaveAdd = 0) {
         char noteBuf[OPL_MAX_OCTAVE];
-        snprintf(noteBuf, sizeof(noteBuf), "%s%d", noteBase, getOctaveByChannel(channel));
+        snprintf(noteBuf, sizeof(noteBuf), "%s%d", noteBase, getOctaveByChannel(channel)+lOctaveAdd);
         // Use the base class OplController::getIdFromNoteName
         return this->getIdFromNoteName(noteBuf);
     }
@@ -107,7 +107,7 @@ public:
 
         sd.song_length++;
 
-        // 1. Move all rows below targetSeq down by one
+        //  Move all rows below targetSeq down by one
         for (int i = sd.song_length; i > start; --i) {
 
             if (onChannel >= 0 && onChannel <= FMS_MAX_CHANNEL) {
@@ -118,7 +118,7 @@ public:
                 }
             }
         }
-        // 2. Clear the newly inserted row
+        // Clear the newly inserted row
         if (onChannel >= 0 && onChannel <= FMS_MAX_CHANNEL) {
             sd.song[start][onChannel] = 0;
         } else {
@@ -129,19 +129,19 @@ public:
 
     //--------------------------------------------------------------------------
     // Delete Range Logic
-    void deleteRange(SongData& sd, uint16_t start, uint16_t end) {
-        //FIXME untested
-        // int rangeLen = (end - start) + 1;
-        // // Shift data up
-        // for (int i = start; i < 1000 - rangeLen; ++i) {
-        //     for (int ch = 0; ch < 9; ++ch) {
-        //         sd.song[i][ch] = sd.song[i + rangeLen][ch];
-        //     }
-        // }
-        // // Clear remaining rows at end
-        // for (int i = 1000 - rangeLen; i < 1000; ++i) {
-        //     for (int ch = 0; ch < 9; ++ch) sd.song[i][ch] = 0;
-        // }
+    void deleteSongRange(SongData& sd, uint16_t start, uint16_t end) {
+        int rangeLen = (end - start) + 1;
+        // Shift data up
+        for (int i = start; i < sd.song_length - rangeLen; ++i) {
+            for (int ch = 0; ch < 9; ++ch) {
+                sd.song[i][ch] = sd.song[i + rangeLen][ch];
+            }
+        }
+        // Clear remaining rows at end
+        for (int i = sd.song_length - rangeLen; i < sd.song_length; ++i) {
+            for (int ch = 0; ch < 9; ++ch) sd.song[i][ch] = 0;
+        }
+        sd.song_length -= rangeLen;
     }
     //--------------------------------------------------------------------------
     bool clearSongRange(SongData& sd, uint16_t start, uint16_t end)

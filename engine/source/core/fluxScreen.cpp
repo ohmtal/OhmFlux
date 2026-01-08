@@ -54,6 +54,11 @@ FluxScreen::FluxScreen(VideoMode lVM)
 
 	mScreenFlags = SDL_WINDOW_OPENGL;
 	mScreenFlags |= SDL_WINDOW_RESIZABLE ;
+//2026-01-08
+// #ifdef __EMSCRIPTEN__
+// 	mScreenFlags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
+// #endif
+
 
 
 
@@ -254,22 +259,32 @@ bool FluxScreen::init()
 bool FluxScreen::updateWindowSize(S32 lWidth, S32 lHeight)
 {
 
+
 	mRealScreenSize.x = lWidth;
 	mRealScreenSize.y = lHeight;
 	//************ DEFAULT VM_OPENGL2D ********
 	if (mScreenMode == VM_OPENGL2D) {
-		// Set the viewport to top-left corner
+
+		// NOTE: with mScreenFlags |= SDL_WINDOW_HIGH_PIXEL_DENSITY
+		// uses HighDPI but this make it very laggy
+		// and does _NOT_ fix my FluxEditor is rendered to small
+		#ifdef __EMSCRIPTEN__ //2026-01-08
+		S32 lPixelW, lPixelH;
+		SDL_GetWindowSizeInPixels(mWindow, &lPixelW, &lPixelH);
+		glViewport(0,0, lPixelW, lPixelH);
+		dLog("EMSCRIPTEN: Viewport size: %dx%d", lPixelW, lPixelH);
+		#else
 		if (mScaleScreen) {
 			glViewport(0,0, lWidth, lHeight);
 		} else {
 			glViewport(0,0, getWidth(), getHeight());
 		}
+		#endif
+
 
 		mScaleX = (float)lWidth / (float)getWidth();
 		mScaleY = (float)lHeight / (float)getHeight();
 
-		//update
-		// createOrthoMatrix(0.0f, getWidth(), getHeight(), 0.0f, -100.0f, 100.0f, mOrtho);
 		Render2D.updateOrtho(getWidth(), getHeight());
 
 
