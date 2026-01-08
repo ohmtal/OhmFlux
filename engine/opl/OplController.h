@@ -67,7 +67,9 @@
 //------------------------------------------------------------------------------
 const float PLAYBACK_FREQUENCY = 90.0f;
 
+#define FMS_MIN_CHANNEL 0
 #define FMS_MAX_CHANNEL 8
+
 #define FMS_MAX_SONG_LENGTH 1000
 //------------------------------------------------------------------------------
 // class OplController
@@ -274,7 +276,7 @@ public:
 
 
 
-    void silenceAll();
+    void silenceAll(bool hardStop);
     void set_speed(uint8_t songspeed);
     void reset();
     void write(uint16_t reg, uint8_t val);
@@ -305,7 +307,7 @@ public:
     void replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote);
 
     void fillBuffer(int16_t* buffer, int total_frames);
-    void tickSequencer();
+    virtual void tickSequencer();
 
     // can be called in mail loop to output the playing song to console
     void consoleSongOutput(bool useNumbers = false);

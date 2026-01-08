@@ -144,18 +144,7 @@ void OplController::setPlaying(bool value, bool hardStop)
 
     if (!value) // We are Pausing or Stopping
     {
-        // 1. Release all keys (Soft Mute)
-        // This allows notes with a 'Release' value to fade out,
-        // then the chip becomes silent.
-        for (int i = 0; i < 9; ++i) {
-            this->stopNote(i);
-        }
-
-        if (hardStop) {
-            // 2. Immediate Mute (Hard Mute)
-            // This is for 'Stop', zeroing out the volume completely.
-            this->silenceAll();
-        }
+        this->silenceAll(hardStop);
     }
     // If value is true, the sequencer just resumes from current m_seq.song_counter
 
@@ -183,22 +172,25 @@ uint8_t OplController::get_modulator_offset(uint8_t channel){
     return Adr_add[channel];
 }
 //------------------------------------------------------------------------------
-void OplController::silenceAll() {
+void OplController::silenceAll(bool hardStop) {
     // Stop all notes physically via Key-Off
 
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
-    for (int i = 0; i < 9; ++i) {
+    for (int i = FMS_MIN_CHANNEL; i <= FMS_MAX_CHANNEL; ++i) {
         stopNote(i);
 
-        // Write TL=63 to both Modulator and Carrier for every channel
-        // Modulator TL addresses: 0x40 - 0x55
-        // Carrier TL addresses:   0x40 - 0x55 (offset by +3)
-        uint8_t mod_offset = get_modulator_offset(i);
-        uint8_t car_offset = get_carrier_offset(i);
+        if (hardStop )
+        {
+            // Write TL=63 to both Modulator and Carrier for every channel
+            // Modulator TL addresses: 0x40 - 0x55
+            // Carrier TL addresses:   0x40 - 0x55 (offset by +3)
+            uint8_t mod_offset = get_modulator_offset(i);
+            uint8_t car_offset = get_carrier_offset(i);
 
-        write(0x40 + mod_offset, 63); // Silence Modulator
-        write(0x40 + car_offset, 63); // Silence Carrier
+            write(0x40 + mod_offset, 63); // Silence Modulator
+            write(0x40 + car_offset, 63); // Silence Carrier
+        }
     }
 }
 //------------------------------------------------------------------------------
@@ -217,7 +209,7 @@ void OplController::reset() {
     }
 
     mSeqState.song_needle = 0;
-    this->silenceAll();
+    this->silenceAll(true);
 }
 //------------------------------------------------------------------------------
 void OplController::write(uint16_t reg, uint8_t val)
@@ -772,7 +764,7 @@ void OplController::tickSequencer() {
     // if (mSeqState.song_counter < s.song_length)
     if (mSeqState.song_needle < mSeqState.song_stopAt)
     {
-        for (int ch = 0; ch < 9; ch++) {
+        for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ch++) {
             int16_t raw_note = s.song[mSeqState.song_needle][ch];
 
             // Update UI/Debug state

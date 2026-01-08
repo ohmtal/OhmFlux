@@ -25,33 +25,42 @@ public:
     struct ChannelSettings {
         int octave = 4;
         int step = 1;
-        bool muted = false;
+        bool active = true;
     };
 
     // Size is exactly the number of channels (e.g., 9)
     ChannelSettings mChannelSettings[FMS_MAX_CHANNEL+1];
     //--------------------------------------------------------------------------
 
-    void setChannelMuted( int channel , bool value )
+    void setChannelActive( int channel , bool value )
     {
-         mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].muted = value;
+         mChannelSettings[std::clamp(channel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL)].active = value;
+         if (!value)
+             stopNote(channel);
     }
 
-    bool getChannelMuted( int channel  )
+    void setAllChannelActive( bool value )
     {
-        if (channel < 0 || channel > FMS_MAX_CHANNEL)
+        for ( int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ch++ )
+            setChannelActive(ch, value);
+    }
+
+
+    bool getChannelActive( int channel  )
+    {
+        if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
             return false;
-        return mChannelSettings[channel].muted;
+        return mChannelSettings[channel].active;
     }
 
     //--------------------------------------------------------------------------
     int getStepByChannel(int channel) {
 
-        return mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].step;
+        return mChannelSettings[std::clamp(channel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL)].step;
     }
     void setStepByChannel(int channel, int step) {
         step = std::clamp(step,0,99);
-        mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].step = step;
+        mChannelSettings[std::clamp(channel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL)].step = step;
     }
 
     void incStepByChannel(int channel ) {
@@ -68,11 +77,11 @@ public:
 
     //--------------------------------------------------------------------------
     int getOctaveByChannel(int channel) {
-        return mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].octave;
+        return mChannelSettings[std::clamp(channel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL)].octave;
     }
 
     void setOctaveByChannel(int channel, int val) {
-        mChannelSettings[std::clamp(channel, 0, FMS_MAX_CHANNEL)].octave = std::clamp(val, OPL_MIN_OCTAVE, OPL_MAX_OCTAVE);
+        mChannelSettings[std::clamp(channel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL)].octave = std::clamp(val, OPL_MIN_OCTAVE, OPL_MAX_OCTAVE);
     }
 
     void incOctaveByChannel(int channel)
@@ -102,29 +111,25 @@ public:
 
     //--------------------------------------------------------------------------
     // Insert Row Logic (Inside OplController)
-    void insertRowAt(SongData& sd, uint16_t start, int onChannel = -1)
+    void insertRowAt(SongData& sd, uint16_t start)
     {
 
         sd.song_length++;
 
         //  Move all rows below targetSeq down by one
         for (int i = sd.song_length; i > start; --i) {
-
-            if (onChannel >= 0 && onChannel <= FMS_MAX_CHANNEL) {
-                sd.song[i][onChannel] = sd.song[i-1][onChannel];
-            } else {
-                for (int ch = 0; ch < 9; ++ch) {
+            for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL ; ++ch)
+            {
+                if (getChannelActive(ch))
                     sd.song[i][ch] = sd.song[i-1][ch];
-                }
             }
         }
         // Clear the newly inserted row
-        if (onChannel >= 0 && onChannel <= FMS_MAX_CHANNEL) {
-            sd.song[start][onChannel] = 0;
-        } else {
-            for (int ch = 0; ch < 9; ++ch)
+        for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ++ch){
+            if (getChannelActive(ch))
                 sd.song[start][ch] = 0;
         }
+
     }
 
     //--------------------------------------------------------------------------
@@ -133,13 +138,16 @@ public:
         int rangeLen = (end - start) + 1;
         // Shift data up
         for (int i = start; i < sd.song_length - rangeLen; ++i) {
-            for (int ch = 0; ch < 9; ++ch) {
-                sd.song[i][ch] = sd.song[i + rangeLen][ch];
+            for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ++ch) {
+                if (getChannelActive(ch))
+                    sd.song[i][ch] = sd.song[i + rangeLen][ch];
             }
         }
         // Clear remaining rows at end
         for (int i = sd.song_length - rangeLen; i < sd.song_length; ++i) {
-            for (int ch = 0; ch < 9; ++ch) sd.song[i][ch] = 0;
+            for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ++ch)
+                if (getChannelActive(ch))
+                    sd.song[i][ch] = 0;
         }
         sd.song_length -= rangeLen;
     }
@@ -151,8 +159,9 @@ public:
 
         for (int i = start; i <= end; ++i)
         {
-            for (int ch = 0; ch <= FMS_MAX_CHANNEL; ++ch) {
-                sd.song[i][ch] = 0;
+            for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ++ch) {
+                if (getChannelActive(ch))
+                    sd.song[i][ch] = 0;
             }
         }
         return true;
@@ -181,11 +190,57 @@ public:
 
         for ( int i = 0 ; i <= len; i++)
         {
-            for (int ch = 0; ch <= FMS_MAX_CHANNEL; ++ch)
-                toSD.song[i+toStart][ch] = fromSD.song[i+fromStart][ch];
+            for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ++ch)
+                if (getChannelActive(ch))
+                    toSD.song[i+toStart][ch] = fromSD.song[i+fromStart][ch];
         }
         return true;
     }
+    //--------------------------------------------------------------------------
+    // override for only playing active channel
+    void tickSequencer() override
+    {
+        const SongData& s = *mSeqState.current_song;
 
+        if ( mSeqState.song_stopAt > s.song_length )
+        {
+            Log("ERROR: song stop is greater than song_length. thats bad!!!");
+            mSeqState.song_stopAt = s.song_length;
+        }
+        // if (mSeqState.song_counter < s.song_length)
+        if (mSeqState.song_needle < mSeqState.song_stopAt)
+        {
+            for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ch++) {
+                int16_t raw_note = s.song[mSeqState.song_needle][ch];
+
+                // Update UI/Debug state
+                mSeqState.last_notes[ch + 1] = raw_note;
+                mSeqState.note_updated = true;
+
+                if (getChannelActive(ch))
+                {
+                    if (raw_note == -1) {
+                        this->stopNote(ch);
+                    } else if (raw_note > 0) {
+                        this->playNoteDOS(ch, (uint8_t)raw_note);
+                    }
+                }
+            }
+            mSeqState.song_needle++;
+        } else {
+            if (mSeqState.loop)
+            {
+                if (mSeqState.song_startAt > mSeqState.song_stopAt)
+                {
+                    Log("ERROR: song start is greater than song stop. thats bad!!!");
+                    mSeqState.song_startAt = 0;
+
+                }
+                mSeqState.song_needle = mSeqState.song_startAt;
+            }
+            else setPlaying(false);
+        }
+
+    } //tickSequencer
 
 };

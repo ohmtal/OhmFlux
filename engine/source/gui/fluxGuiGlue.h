@@ -24,6 +24,11 @@ inline ImVec4 ImColor4F(const Color4F& c) {
     return ImVec4(c.r, c.g, c.b, c.a);
 }
 
+inline ImColor Color4FIm(const Color4F& c) {
+    return ImColor (c.r, c.g, c.b, c.a);
+}
+
+
 class FluxGuiGlue : public FluxBaseObject
 {
 private:
