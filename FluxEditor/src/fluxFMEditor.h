@@ -31,7 +31,7 @@ class FluxFMEditor : public FluxBaseObject
 {
 private:
     FluxEditorOplController* mController = nullptr;
-    uint8_t mInstrumentChannel = 0; // 0 .. FMS_MAX_CHANNEL
+    uint8_t mInstrumentChannel = FMS_MIN_CHANNEL; // 0 .. FMS_MAX_CHANNEL
     bool mInstrumentEditorAutoPlay = true;
     bool mInstrumentEditorAutoPlayStarted = false;
 
@@ -46,10 +46,7 @@ public:
         if (!mController || !mController->initController())
             return false;
 
-
-
         loadInstrumentPreset();
-        // mController->dumpInstrumentFromCache(mInstrumentChannel);
 
         return true;
     }
@@ -62,12 +59,12 @@ public:
     //--------------------------------------------------------------------------
     bool loadInstrument(const std::string& filename)
     {
-        return mController->loadInstrument(filename, mInstrumentChannel);
+        return mController->loadInstrument(filename, getChannel());
     }
     //--------------------------------------------------------------------------
     void resetInstrument()
     {
-        mController->resetInstrument(mInstrumentChannel);
+        mController->resetInstrument(getChannel());
     }
     //--------------------------------------------------------------------------
     void loadInstrumentPreset()
@@ -131,10 +128,10 @@ public:
                         ImGui::Button(label, ImVec2(-FLT_MIN, 0.0f));
 
                         if (ImGui::IsItemActivated()) {
-                            mController->playNoteDOS(mInstrumentChannel, noteIndex);
+                            mController->playNoteDOS(getChannel(), noteIndex);
                         }
                         if (ImGui::IsItemDeactivated()) {
-                            mController->stopNote(mInstrumentChannel);
+                            mController->stopNote(getChannel());
                         }
 
                         if (isSharp) ImGui::PopStyleColor();
@@ -146,7 +143,7 @@ public:
 
         ImGui::Separator();
         if (ImGui::Button("Stop Channel", ImVec2(-FLT_MIN, 0))) {
-            mController->stopNote(mInstrumentChannel);
+            mController->stopNote(getChannel());
         }
 
         if (!inLine) {
@@ -198,8 +195,8 @@ public:
 
             ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
 
-            if (ImGui::IsItemActivated()) mController->playNoteDOS(mInstrumentChannel, (currentOctave * 12) + keys[i].offset);
-            if (ImGui::IsItemDeactivated()) mController->stopNote(mInstrumentChannel);
+            if (ImGui::IsItemActivated()) mController->playNoteDOS(getChannel(), (currentOctave * 12) + keys[i].offset);
+            if (ImGui::IsItemDeactivated()) mController->stopNote(getChannel());
 
             if (isNull) ImGui::EndDisabled();
             ImGui::PopID();
@@ -223,8 +220,8 @@ public:
 
             ImGui::Button("##black", ImVec2(blackWidth, blackHeight));
 
-            if (ImGui::IsItemActivated()) mController->playNoteDOS(mInstrumentChannel, (currentOctave * 12) + keys[i].offset);
-            if (ImGui::IsItemDeactivated()) mController->stopNote(mInstrumentChannel);
+            if (ImGui::IsItemActivated()) mController->playNoteDOS(getChannel(), (currentOctave * 12) + keys[i].offset);
+            if (ImGui::IsItemDeactivated()) mController->stopNote(getChannel());
 
             if (isNull) ImGui::EndDisabled();
             ImGui::PopStyleColor(2);
@@ -248,13 +245,13 @@ public:
         static int lastChannel = -1;
 
         // If we switched channels, load the new instrument data into our buffer
-        // if (mInstrumentChannel != lastChannel)
+        // if (getChannel() != lastChannel)
         {
-            const uint8_t* currentIns = mController->getInstrument(mInstrumentChannel);
+            const uint8_t* currentIns = mController->getInstrument(getChannel());
             if (currentIns) {
                 std::copy(currentIns, currentIns + 24, editBuffer);
             }
-            lastChannel = mInstrumentChannel;
+            lastChannel = getChannel();
         }
 
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar; //<<< For menubar !!
@@ -289,9 +286,10 @@ public:
 
                             // MenuItem returns true when clicked
                             // The third parameter (bool selected) shows the checkmark
-                            if (ImGui::MenuItem(label, nullptr, mInstrumentChannel == i))
+                            if (ImGui::MenuItem(label, nullptr, getChannel() == i))
                             {
-                                mInstrumentChannel = i;
+                                setChannel(i);
+
                                 // Optional: Reset the local buffer to the new channel's data immediately
                                 lastChannel = -1;
                             }
@@ -321,13 +319,13 @@ public:
 
                 // 3. Add Channel Selection Combo
                 ImGui::SetNextItemWidth(120);
-                if (ImGui::BeginCombo("##ChannelSelect", mController->GetChannelName(mInstrumentChannel), ImGuiComboFlags_HeightLarge))
+                if (ImGui::BeginCombo("##ChannelSelect", mController->GetChannelName(getChannel()), ImGuiComboFlags_HeightLarge))
                 {
                     for (int i = 0; i <= FMS_MAX_CHANNEL; i++)
                     {
-                        bool is_selected = (mInstrumentChannel == i);
+                        bool is_selected = (getChannel() == i);
                         if (ImGui::Selectable(mController->GetChannelName(i), is_selected)) {
-                            mInstrumentChannel = i;
+                            setChannel(i);
                         }
                         if (is_selected) ImGui::SetItemDefaultFocus();
                     }
@@ -365,12 +363,12 @@ public:
                         // Fixed width for sliders to keep the middle of the table aligned
                         ImGui::SetNextItemWidth(-FLT_MIN);
                         if (ImGui::SliderScalar("##v", ImGuiDataType_U8, &editBuffer[i], &minV, &meta.maxValue, "%u")) {
-                            mController->setInstrument(mInstrumentChannel, editBuffer);
+                            mController->setInstrument(getChannel(), editBuffer);
                         }
 
                         if (ImGui::IsItemActive()) isAnySliderActive = true;
                         if (ImGui::IsItemDeactivated()) {
-                            mController->stopNote(mInstrumentChannel);
+                            mController->stopNote(getChannel());
                             mInstrumentEditorAutoPlayStarted = false;
                         }
                         ImGui::PopID();
@@ -389,12 +387,12 @@ public:
 
                         ImGui::SetNextItemWidth(-FLT_MIN);
                         if (ImGui::SliderScalar("##v", ImGuiDataType_U8, &editBuffer[i + 1], &minV, &meta.maxValue, "%u")) {
-                            mController->setInstrument(mInstrumentChannel, editBuffer);
+                            mController->setInstrument(getChannel(), editBuffer);
                         }
 
                         if (ImGui::IsItemActive()) isAnySliderActive = true;
                         if (ImGui::IsItemDeactivated()) {
-                            mController->stopNote(mInstrumentChannel);
+                            mController->stopNote(getChannel());
                             mInstrumentEditorAutoPlayStarted = false;
                         }
                         ImGui::PopID();
@@ -403,52 +401,10 @@ public:
                 ImGui::EndTable();
             }
 
-            // if (ImGui::BeginTable("Params", 2, ImGuiTableFlags_RowBg))
-            // {
-            //     for (size_t i = 0; i < OplController::INSTRUMENT_METADATA.size(); ++i)
-            //     {
-            //         const auto& meta = OplController::INSTRUMENT_METADATA[i];
-            //         ImGui::TableNextRow();
-            //         ImGui::TableSetColumnIndex(0);
-            //         ImGui::TextUnformatted(meta.name.c_str());
-            //
-            //         ImGui::TableSetColumnIndex(1);
-            //         ImGui::PushID(i);
-            //
-            //         if (meta.maxValue == 1) {
-            //             bool val = (editBuffer[i] != 0);
-            //             if (ImGui::Checkbox("##v", &val)) {
-            //                 editBuffer[i] = val ? 1 : 0;
-            //                 mController->setInstrument(mInstrumentChannel, editBuffer);
-            //             }
-            //         } else { // slider >>
-            //             ImGui::PushID(i);
-            //             uint8_t minV = 0;
-            //
-            //             // 1. Draw the slider
-            //             if (ImGui::SliderScalar("##v", ImGuiDataType_U8, &editBuffer[i], &minV, &meta.maxValue, "%u")) {
-            //                 mController->setInstrument(mInstrumentChannel, editBuffer);
-            //             }
-            //
-            //             if (ImGui::IsItemActive()) {
-            //                 isAnySliderActive = true;
-            //             }
-            //
-            //             if (ImGui::IsItemDeactivated()) {
-            //                 mController->stopNote(mInstrumentChannel);
-            //                 mInstrumentEditorAutoPlayStarted = false;
-            //             }
-            //             ImGui::PopID();
-            //         } //<<< slider
-            //         ImGui::PopID();
-            //     }
-            //     ImGui::EndTable();
-            // }
-
 
             if (mInstrumentEditorAutoPlay && isAnySliderActive && !mInstrumentEditorAutoPlayStarted)
             {
-                mController->playNoteDOS(mInstrumentChannel, mController->getIdFromNoteName("C-4"));
+                mController->playNoteDOS(getChannel(), mController->getIdFromNoteName("C-4"));
                 mInstrumentEditorAutoPlayStarted = true;
             }
 
@@ -460,17 +416,34 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    // void DrawComposer()
-    // {
-    //     if (!mController)
-    //         return ;
-    //
-    //     ImGui::SetNextWindowSizeConstraints(ImVec2(800.0f, 400.f), ImVec2(FLT_MAX, FLT_MAX));
-    //     ImGui::Begin("FM Composer");
-    //
-    //     ImGui::End();
-    // }
-    //
+    int getChannel( ) { return mInstrumentChannel; }
+
+    int setChannel( int lChannel, bool fireEvent = true)
+    {
+        lChannel = std::clamp(lChannel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL);
+        mInstrumentChannel = lChannel;
+
+
+        //fire EVENT >>>
+        if ( mController->mSyncInstrumentChannel && fireEvent)
+        {
+            SDL_Event event;
+            SDL_zero(event);
+            event.type = FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED;
+            event.user.code = lChannel;
+            SDL_PushEvent(&event);
+        }
+
+        return lChannel;
+    }
+    //--------------------------------------------------------------------------
+    void onEvent(SDL_Event event) {
+
+        if (event.type == FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED) {
+            // dLog("Composer changed channel to: %d",event.user.code);
+            setChannel( event.user.code, false);
+        }
+    }
 
 
 

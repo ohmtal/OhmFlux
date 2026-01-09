@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <string>
+#include <SDL3/SDL.h>
 
 
 #define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
@@ -399,6 +400,21 @@ struct Vertex2D {
     // Optional: float textureIndex; (If using Multi-texture batching)
 };
 
+//-------------------------------------- util for filenames
+
+inline std::string sanitizeFilenameWithUnderScores(std::string name)
+{
+    std::string result;
+    for (unsigned char c : name) {
+        if (std::isalnum(c)) {
+            result += c;
+        } else if (std::isspace(c)) {
+            result += '_';
+        }
+        // Special characters (like '.') are ignored/dropped here
+    }
+    return result;
+}
 
 //-------------------------------------- game parameter structs
 
@@ -454,7 +470,20 @@ struct FluxSettings
 
     bool enableLogFile = true;
 
+
+    std::string getPrefsPath() {
+        return  SDL_GetPrefPath(getSafeCompany().c_str(), getSafeCaption().c_str());
+    }
+
+    std::string getSafeCompany() {
+        return sanitizeFilenameWithUnderScores(Company);
+    }
+    std::string getSafeCaption() {
+        return sanitizeFilenameWithUnderScores(Caption);
+    }
+
 } ;
+
 
 //-----------------------------------------------------------------------------
 extern float gFrameTime;
@@ -467,20 +496,6 @@ inline float getGameTime() {
     return gGameTime;
 }
 //-----------------------------------------------------------------------------
-
-inline std::string sanitizeFilenameWithUnderScores(std::string name)
-{
-    std::string result;
-    for (unsigned char c : name) {
-        if (std::isalnum(c)) {
-            result += c;
-        } else if (std::isspace(c)) {
-            result += '_';
-        }
-        // Special characters (like '.') are ignored/dropped here
-    }
-    return result;
-}
 
 // extra SDL_EVENTS
 static S32 FLUX_EVENT_SCALE_CHANGED = 0;

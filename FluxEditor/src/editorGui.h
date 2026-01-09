@@ -2,6 +2,12 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// TODO: to options:
+//              FluxEditorOplController => mSyncInstrumentChannel
+//              fileDialog => mDefaultPath
+// TODO: save your own settings file !! and ImGui ==> SaveIniSettingsToMemory
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include <audio/fluxAudio.h>
@@ -44,5 +50,7 @@ public:
     void DrawMsgBoxPopup();
     void ShowManuBar();
     void DrawGui( );
+    void onKeyEvent(SDL_KeyboardEvent event);
+
 
 }; //class

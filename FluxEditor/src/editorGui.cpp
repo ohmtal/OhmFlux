@@ -5,7 +5,20 @@
 //------------------------------------------------------------------------------
 bool EditorGui::Initialize()
 {
-    mGuiGlue = new FluxGuiGlue(true, false, "flux.ini");
+    // FIXME ImGui does not save it !
+    //       /home/tom/.local/share/Ohmflux/Flux_Editor/Flux_EditorGui.ini
+    static std::string sIniFile = getGame()->mSettings.getPrefsPath()
+                .append(getGame()->mSettings.getSafeCaption())
+                .append("Gui.ini")
+                ;
+
+    // THIS WORKS:
+    // static std::string sIniFile = getGame()->mSettings.getSafeCaption().append("Gui.ini");
+
+    LogFMT("INI: Ini file set to:{}", sIniFile);
+
+
+    mGuiGlue = new FluxGuiGlue(true, false, sIniFile.c_str());
     if (!mGuiGlue->Initialize())
         return false;
 
@@ -42,6 +55,14 @@ void EditorGui::Deinitialize()
 void EditorGui::onEvent(SDL_Event event)
 {
     mGuiGlue->onEvent(event);
+
+    if (mSfxEditor)
+        mSfxEditor->onEvent(event);
+    if (mFMComposer)
+        mFMComposer->onEvent(event);
+    if (mFMEditor)
+        mFMEditor->onEvent(event);
+
 }
 //------------------------------------------------------------------------------
 void EditorGui::DrawMsgBoxPopup() {
@@ -203,4 +224,11 @@ void EditorGui::DrawGui()
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
+
+void EditorGui::onKeyEvent(SDL_KeyboardEvent event)
+    {
+        if ( mParameter.mShowFMComposer )
+            mFMComposer->onKeyEvent(event);
+    }

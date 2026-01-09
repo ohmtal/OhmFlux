@@ -288,6 +288,44 @@ EM_ASYNC_JS(void, loadFileToWasm, (const char* virtualPath), {
 //     }
 // });
 
+//TODO: TEST:
+/*
+void trigger_file_load() {
+    EM_ASM({
+        // Check if the input already exists to avoid duplicates
+        var fileInput = document.getElementById('emscripten_file_loader');
+        if (!fileInput) {
+            fileInput = document.createElement('input');
+            fileInput.id = 'emscripten_file_loader';
+    fileInput.type = 'file';
+    fileInput.style.display = 'none'; // Hide the element
+
+    fileInput.onchange = function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var data = new Uint8Array(e.target.result);
+            // Write the file to Emscripten's virtual file system (MEMFS)
+            var stream = FS.open(file.name, 'w');
+            FS.write(stream, data, 0, data.length);
+            FS.close(stream);
+
+            console.log("File loaded into MEMFS: " + file.name);
+
+            // Optional: Call a C++ function to notify that loading is finished
+            // Module.ccall('on_file_loaded', 'void', ['string'], [file.name]);
+        };
+        reader.readAsArrayBuffer(file);
+    };
+    document.body.appendChild(fileInput);
+        }
+        fileInput.click(); // Open the browser's file dialog
+    });
+}*/
+
+
 //-------------------------------------------------------------------------------
 // Init:
 //-------------------------------------------------------------------------------

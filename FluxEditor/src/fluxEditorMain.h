@@ -25,6 +25,17 @@ public:
         if (!mEditorGui->Initialize())
             return false;
 
+        FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED =  SDL_RegisterEvents(1);
+        if (FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED == (Uint32)-1) {
+            Log("ERROR: Failed to register SDL/FLUX Event: FLUX_EVENT_OPL_CHANNEL_CHANGED !!!!");
+        }
+
+        FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED =  SDL_RegisterEvents(1);
+        if (FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED == (Uint32)-1) {
+            Log("ERROR: Failed to register SDL/FLUX Event: FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED !!!!");
+        }
+
+
         return true;
     }
     //--------------------------------------------------------------------------------------
@@ -39,10 +50,13 @@ public:
     void onKeyEvent(SDL_KeyboardEvent event) override
     {
         bool isKeyUp = (event.type == SDL_EVENT_KEY_UP);
-        if (event.key == SDLK_F4 &&
-            ( event.mod & SDLK_LALT || event.mod & SDLK_RALT)
-            && isKeyUp)
+        bool isAlt =  event.mod & SDLK_LALT || event.mod & SDLK_RALT;
+        if (event.key == SDLK_F4 && isAlt  && isKeyUp)
             TerminateApplication();
+        else
+            mEditorGui->onKeyEvent(event);
+
+
     }
     //--------------------------------------------------------------------------------------
     void onMouseButtonEvent(SDL_MouseButtonEvent event) override    {    }

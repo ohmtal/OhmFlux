@@ -19,9 +19,12 @@ public:
 
     virtual ~FluxEditorOplController() = default;
 
+    bool mSyncInstrumentChannel = true;
+
     void setLoop( bool value ) {
         mSeqState.loop = value;
     }
+
 
 
     struct ChannelSettings {

@@ -193,8 +193,6 @@ elseif(WIN32 AND NOT MSVC)
         shell32 setupapi version uuid
     )
 
-    # adding ANSI
-    # add_definitions(-D__USE_MINGW_ANSI_STDIO=1)
 
 else()
     # Default Desktop (Linux)
@@ -334,7 +332,8 @@ macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
                 VS_DEBUGGER_WORKING_DIRECTORY "${SOURCE_DIR}"
              )
         endif()
-        
+
+
     elseif(ANDROID)
         # Android standard: libTARGET_NAME.so
         # No special suffix needed, CMake handles .so for libraries

@@ -3,7 +3,8 @@
 #include <imgui.h>
 #include <string>
 
-
+static S32 FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED = 0;
+static S32 FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED = 0;
 
 
 static bool POPUP_MSGBOX_ACTIVE = false;

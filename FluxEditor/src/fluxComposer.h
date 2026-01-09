@@ -6,12 +6,26 @@
 // * Menu play Selection
 // * Piano: silence, insert or test  mode, note off
 //
-// TODO: Record mode with pre ticker like my guitar looper
-// TODO: rewrite from handleNoteInput to keybord playing (y/x)
-//       => USE SDL SCANCODE FOR keyboard layout same on all languages
-// TODO; sync channel with fmEditor uint8_t mInstrumentChannel = 0; // 0 .. FMS_MAX_CHANNEL
+// 2026-01-09
+// *  Piano:Sharp notes wrong !!
+// * rewrite from handleNoteInput to keybord playing (y/x)
+//     => USE SDL SCANCODE FOR keyboard layout same on all languages
+//     => Note intput by name with [ALT]
+// *  sync channel with fmEditor uint8_t mInstrumentChannel = 0; // 0 .. FMS_MAX_CHANNEL
 //       ==> USE SDL Events for this !!!
-//       I also like to have the fullscale als live insert ...
+//         event.type = FLUX_EVENT_OPL_CHANNEL_CHANGED; //FLUX_EVENT_SCALE_CHANGED;
+//         event.user.code = lChannel;           // A custom integer code == channel
+//
+// * save ini to user path (test in emscripten => is not permanent)
+// * ini not saved in path !!
+//        => INI: Ini file set to:/home/tom/.local/share/Ohmflux/Flux_Editor/Flux_EditorGui.ini
+//       made the variable static this works
+
+// TODO: Record mode with pre ticker like my guitar looper
+//       Before i do this i should find out why record mode is so laggy!
+//       i guess it's the mutex lock ?
+//
+// TODO:  I also like to have the fullscale als live insert ...
 //
 // TODO: Instrument names.. we have 256 chars for each ?! uint8_t actual_ins[10][256];
 //       cool i was afraid i only have 12 for dos name :D
@@ -23,9 +37,9 @@
 //       not sure if i did a good or bad design decision
 //       the instruments are cached => uint8_t m_instrument_cache[9][24];
 //       and used with setInstrument / getInstrument
-
-
+//
 // TODO: Load / Save ==> also emscripten load will be tricky if done check SFXEditor
+//       check => trigger_file_load (marked with TODO TEST)
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -54,6 +68,7 @@ private:
     int mSelectedRow = 0;
     int mSelectionPivot = -1;
     int mSelectedCol = 1;
+    int mLastSetChannel = -1;
     bool mIsEditing = false;
     bool mJustOpenThisFrame = false;
     char mEditBuffer[32] = "";
@@ -68,6 +83,10 @@ private:
     ImU32 mSelectedRowInactiveColor = 0;
     ImU32 mActiveRowColor = 0;
     ImU32 mPlayingRowColor = 0;
+
+
+    // i use ALT for note input !! bool mKeyboardMode = true; //using keys yxcvbnnm instead of c,d,e
+    bool mInsertMode   = true; //keyboard and piano insert tones
 
 
     OplController::SongData mSongData;
@@ -153,7 +172,6 @@ public:
 
 
         int lNewTone = mController->getNoteWithOctave(lChannel, lName, lOctaveAdd);
-
         if (isPlaying())
         {
             mSongData.song[mCurrentPlayingRow][lChannel] = lNewTone;
@@ -162,12 +180,14 @@ public:
             {
                 mSongData.song[mSelectedRow][lChannel] = -1;
                 mSelectedRow = std::min(FMS_MAX_SONG_LENGTH, mSelectedRow + mController->getStepByChannel(lChannel));
+                mController->stopNote(lChannel);
                 return ;
             }
             if (std::strcmp(lName, "...") == 0)
             {
                 mSongData.song[mSelectedRow][lChannel] = 0;
                 mSelectedRow = std::min(FMS_MAX_SONG_LENGTH, mSelectedRow + mController->getStepByChannel(lChannel));
+                mController->stopNote(lChannel);
                 return ;
             }
 
@@ -183,7 +203,6 @@ public:
     void DrawPianoScale()
     {
        int lChannel = getCurrentChannel();
-       static bool lInsertMode = true;
        ImVec2 lButtonSize = ImVec2(100, 0);
 
         // ---- Header -----
@@ -197,7 +216,7 @@ public:
         }
 
         ImGui::SameLine();
-        ImGui::Checkbox("Insert Mode",&lInsertMode);
+        ImGui::Checkbox("Insert Mode",&mInsertMode);
 
         ImGui::BeginDisabled(isPlaying());
         ImGui::SameLine();
@@ -256,14 +275,14 @@ public:
             // add or play note
             if (ImGui::IsItemActivated()) {
 
-                if (lInsertMode)
+                if (mInsertMode)
                     insertTone(keys[i % 12].name, lOctaveAdd);
                 else {
                     mController->playNoteDOS(lChannel, (currentOctave * 12) + keys[i % 12].offset);
                 }
 
             }
-            if (ImGui::IsItemDeactivated() && !lInsertMode)
+            if (ImGui::IsItemDeactivated() && !mInsertMode)
                 mController->stopNote(lChannel);
 
             if ((i % 12) == 0)
@@ -281,7 +300,7 @@ public:
         whiteKeyCount = 0;
         for (int i = 0; i < lScaleCount; i++)
         {
-            lOctaveAdd = std::trunc( i / 12);
+            lOctaveAdd = std::trunc( i / 12) - 1;
             currentOctave = mController->getOctaveByChannel(lChannel) + lOctaveAdd;
             if (!keys[i % 12].isBlack) { whiteKeyCount++; continue; }
 
@@ -301,14 +320,14 @@ public:
             // add or play note
             if (ImGui::IsItemActivated()) {
 
-                if (lInsertMode)
+                if (mInsertMode)
                     insertTone(keys[i % 12].name, lOctaveAdd);
                 else {
                     mController->playNoteDOS(lChannel, (currentOctave * 12) + keys[i % 12].offset);
                 }
 
             }
-            if (ImGui::IsItemDeactivated() && !lInsertMode)
+            if (ImGui::IsItemDeactivated() && !mInsertMode)
                 mController->stopNote(lChannel);
 
 
@@ -385,6 +404,7 @@ public:
             if (ImGui::Selectable("##select", is_selected, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowOverlap, ImVec2(0, 0))) {
                 mSelectedRow = lRow;
                 mSelectedCol = lCol;
+                setChannel( getCurrentChannel() );
 
                 if (!isPlaying())
                     mScrollToSelected = true;
@@ -569,7 +589,7 @@ public:
             if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput && !mIsEditing)
 
             {
-                // bool lAltPressed = ImGui::IsKeyDown(ImGuiKey_LeftAlt);
+                bool lAltPressed = ImGui::IsKeyDown(ImGuiKey_LeftAlt) || ImGui::IsKeyDown(ImGuiKey_RightAlt);
                 bool lShiftPressed = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
                 bool lCtrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
                 // float lWheel = ImGui::GetIO().MouseWheel;
@@ -639,22 +659,25 @@ public:
                     int16_t& current_note = mSongData.song[mSelectedRow][lChannel];
                     // Check for specific keys to "push" values immediately
 
-                    if (!lCtrlPressed)
+                    // if (!mKeyboardMode)
                     {
-                        if      (handleNoteInput(ImGuiKey_C, "C-", "C#")) {}
-                        else if (handleNoteInput(ImGuiKey_D, "D-", "D#")) {}
-                        else if (handleNoteInput(ImGuiKey_E, "E-", "F-")) {} // E# is usually F
-                        else if (handleNoteInput(ImGuiKey_F, "F-", "F#")) {}
-                        else if (handleNoteInput(ImGuiKey_G, "G-", "G#")) {}
-                        else if (handleNoteInput(ImGuiKey_A, "A-", "A#")) {}
-                        else if (handleNoteInput(ImGuiKey_B, "B-", "C-")) {} // B# is usually C (next octave)
+                        if (!lCtrlPressed && lAltPressed)
+                        {
+                            if      (handleNoteInput(ImGuiKey_C, "C-", "C#")) {}
+                            else if (handleNoteInput(ImGuiKey_D, "D-", "D#")) {}
+                            else if (handleNoteInput(ImGuiKey_E, "E-", "F-")) {} // E# is usually F
+                            else if (handleNoteInput(ImGuiKey_F, "F-", "F#")) {}
+                            else if (handleNoteInput(ImGuiKey_G, "G-", "G#")) {}
+                            else if (handleNoteInput(ImGuiKey_A, "A-", "A#")) {}
+                            else if (handleNoteInput(ImGuiKey_B, "B-", "C-")) {} // B# is usually C (next octave)
+                        }
                     }
 
                     // special without step
                     if (ImGui::IsKeyPressed(ImGuiKey_Space))  {
                         current_note = -1; // "===" Note Off
                     }
-                    else
+                    // else
                     if ( ImGui::IsKeyPressed(ImGuiKey_Delete))
                     {
                         if ( lCtrlPressed )
@@ -1011,16 +1034,31 @@ public:
 
     //--------------------------------------------------------------------------
 
-
     int getCurrentChannel()
     {
         //FIXME sanity ??
         return mSelectedCol - 1;
     }
-    int setChannel( int lChannel)
+    int setChannel( int lChannel, bool fireEvent = true)
     {
         lChannel = std::clamp(lChannel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL);
+        if (mLastSetChannel == lChannel)
+            return lChannel;
+
+        mLastSetChannel = lChannel;
         mSelectedCol = lChannel + 1;
+
+
+        //fire EVENT >>>
+        if ( mController->mSyncInstrumentChannel && fireEvent)
+        {
+            SDL_Event event;
+            SDL_zero(event);
+            event.type = FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED;
+            event.user.code = lChannel;
+            SDL_PushEvent(&event);
+        }
+
         return lChannel;
     }
     int channelUp( )
@@ -1031,6 +1069,52 @@ public:
     {
         return setChannel(getCurrentChannel() - 1 );
     }
+    //--------------------------------------------------------------------------
+    void onEvent(SDL_Event event)
+    {
+        if (event.type == FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED) {
+            // dLog("Instrument changed channel to: %d",event.user.code);
+            setChannel( event.user.code, false);
+        }
+    }
+    //--------------------------------------------------------------------------
+    void onKeyEvent(SDL_KeyboardEvent event)
+    {
+        bool isKeyUp = (event.type == SDL_EVENT_KEY_UP);
+        bool isAlt =  event.mod & SDLK_LALT || event.mod & SDLK_RALT;
+        bool isCtrl =  event.mod & SDLK_LCTRL || event.mod & SDLK_RCTRL;
 
+        /*
+           Mapping:
+                    d   f       h   j   k
+              z   x   c   v   b   n   m   ,   .
+              B-1 C   D   E   F   G   A   B   C+1
+        */
+
+        //FIXME mInsertMode ?
+
+        if (/*mKeyboardMode && */!isAlt && !isCtrl && !isKeyUp)
+        {
+                 if (event.scancode == SDL_SCANCODE_Z)  insertTone("B-", -1);
+            else if (event.scancode == SDL_SCANCODE_X)  insertTone("C-",  0);
+            else if (event.scancode == SDL_SCANCODE_D)  insertTone("C#",  0);
+            else if (event.scancode == SDL_SCANCODE_C)  insertTone("D-",  0);
+            else if (event.scancode == SDL_SCANCODE_F)  insertTone("D#",  0);
+            else if (event.scancode == SDL_SCANCODE_V)  insertTone("E-",  0);
+            else if (event.scancode == SDL_SCANCODE_B)  insertTone("F-",  0);
+            else if (event.scancode == SDL_SCANCODE_H)  insertTone("F#",  0);
+            else if (event.scancode == SDL_SCANCODE_N)  insertTone("G-",  0);
+            else if (event.scancode == SDL_SCANCODE_J)  insertTone("G#",  0);
+            else if (event.scancode == SDL_SCANCODE_M)  insertTone("A-",  0);
+            else if (event.scancode == SDL_SCANCODE_K)  insertTone("A#",  0);
+            else if (event.scancode == SDL_SCANCODE_COMMA)  insertTone("B-",  0);
+            else if (event.scancode == SDL_SCANCODE_PERIOD)  insertTone("C-",  1);
+            // else if (event.scancode == SDL_SCANCODE_SPACE)  insertTone("===",  0);
+
+
+
+            // Log("Scancode is: %d",event.scancode );
+        } // no mods
+    }
 
 };
