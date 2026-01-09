@@ -173,18 +173,18 @@ elseif(WIN32 AND NOT MSVC)
     # but keeping it in Debug so you can see your logs.
     link_libraries("-Wl,--subsystem,windows") # Global for MinGW
 
-    # 1. Force CMake to find .a files only
+    #  Force CMake to find .a files only
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 
-    # 2. SDL3 Static
+    # SDL3 Static
     set(SDL3_SHARED FALSE CACHE BOOL "" FORCE)
     find_package(SDL3 REQUIRED CONFIG COMPONENTS SDL3-static)
 
-    # 3. GLEW Static - Manual Search to avoid DLL import libs
+    # GLEW Static - Manual Search to avoid DLL import libs
     # On Arch MinGW, the static lib is usually named 'glew32' or 'glew32s'
     find_library(GLEW_STATIC_LIB NAMES glew32s glew32 glew32.a)
 
-    # 4. Collection of Windows libs
+    # Collection of Windows libs
     list(APPEND FLUX_LIBS
         SDL3::SDL3-static
         ${GLEW_STATIC_LIB}
@@ -192,6 +192,10 @@ elseif(WIN32 AND NOT MSVC)
         user32 gdi32 winmm imm32 ole32 oleaut32
         shell32 setupapi version uuid
     )
+
+    # adding ANSI
+    # add_definitions(-D__USE_MINGW_ANSI_STDIO=1)
+
 else()
     # Default Desktop (Linux)
     find_package(SDL3 REQUIRED CONFIG)
