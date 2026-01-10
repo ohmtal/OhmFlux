@@ -41,6 +41,7 @@
 #pragma once
 
 #include <core/fluxBaseObject.h>
+#include <utils/fluxSettingsManager.h>
 #include <imgui.h>
 #include "imgui_internal.h"
 #include "fluxEditorOplController.h"
@@ -53,6 +54,8 @@ class FluxComposer : public FluxBaseObject
 {
 private:
     FluxEditorOplController* mController = nullptr;
+    bool mItsMyController = false;
+    // std::unique_ptr<FluxEditorOplController> mController = nullptr;
 
     static const int MAX_PATTERNS = 16;
     static const int NOTES_PER_PATTERN = 64;
@@ -110,16 +113,17 @@ public:
         mPlayingRowColor  = ImGui::GetColorU32(ImColor4F(cl_Coral));
 
     }
-    ~FluxComposer() { Deinitialize(); }
+    ~FluxComposer() {
+        Deinitialize();
+    }
     //-----------------------------------------------------------------------------------------------------
     bool Initialize() override
     {
-        // Assuming OplController is already initialized elsewhere or can be initialized here.
-        // For now, let's just create it if it's not passed in.
-        // In a real application, the OplController might be shared.
+
         if (!mController)
         {
             mController = new FluxEditorOplController();
+            mItsMyController = true;
             if (!mController || !mController->initController())
                 return false;
         }
@@ -127,13 +131,26 @@ public:
         // Initialize SongData
         newSong();
 
+
+        mInsertMode   = SettingsManager().get("fluxComposer::mInsertMode", true);
+        mLiveMode     = SettingsManager().get("fluxComposer::mLiveMode", true);
+
+
         return true;
     }
     //-----------------------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        if (mController)
+        SettingsManager().set("fluxComposer::mInsertMode", mInsertMode);
+        SettingsManager().set("fluxComposer::mLiveMode", mLiveMode);
+
+
+        // std::unique_ptr<Controller> mController; would be better ^^
+        if (mController && mItsMyController)
+        {
             SAFE_DELETE(mController);
+        }
+
     }
     //-----------------------------------------------------------------------------------------------------
     bool loadSong(const std::string& filename)
@@ -290,7 +307,7 @@ public:
                 if (mInsertMode)
                     insertTone(keys[i % 12].name, lOctaveAdd);
                 else {
-                    mController->playNoteDOS(lChannel, (currentOctave * 12) + keys[i % 12].offset);
+                    mController->playNoteDOS(lChannel, ((currentOctave - 1) * 12) + keys[i % 12].offset);
                 }
 
             }
@@ -336,7 +353,7 @@ public:
                 if (mInsertMode)
                     insertTone(keys[i % 12].name, lOctaveAdd);
                 else {
-                    mController->playNoteDOS(lChannel, (currentOctave * 12) + keys[i % 12].offset);
+                    mController->playNoteDOS(lChannel, ((currentOctave - 1) * 12) + keys[i % 12].offset);
                 }
 
             }
@@ -522,8 +539,8 @@ public:
                     if (ImGui::MenuItem("Activate all channel")) {mController->setAllChannelActive(true);}
                     if (ImGui::MenuItem("Deactivate all channel")) {mController->setAllChannelActive(false);}
                     ImGui::Separator();
-                    if (ImGui::MenuItem("Octave + "),"+, w") { incOctave(); }
-                    if (ImGui::MenuItem("Octave - "),"-, q") { decOctave(); }
+                    if (ImGui::MenuItem("Octave + ","+, w")) { incOctave(); }
+                    if (ImGui::MenuItem("Octave - ","-, q")) { decOctave(); }
 
                     ImGui::EndMenu();
                 }
@@ -1119,7 +1136,7 @@ public:
                     ,event.user.code
                     ,mController->getInstrumentNameFromCache(event.user.code).c_str()
                     );
-            dLog("Instrument name changed on channel %d", event.user.code);
+            // dLog("Instrument name changed on channel %d", event.user.code);
         }
 
     }
@@ -1191,6 +1208,6 @@ public:
         mSongData.song_length = mNewSongLen;
         resetSongSettings();
         if (resetInstruments)
-            mController->loadInstrumentPreset();
+            mController->loadInstrumentPresetSyncSongName(mSongData);
     }
 }; //class

@@ -1134,21 +1134,26 @@ std::array< uint8_t, 24 > OplController::GetMelodicDefault(uint8_t index)
 
 void OplController::loadInstrumentPreset()
 {
-    for (uint8_t i = 0; i < 9; i++) {
+    std::string lDefaultName;
+    for (uint8_t ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ch++) {
         std::array<uint8_t, 24> defaultData;
 
         if (!mMelodicMode) {
             // Rhythm Mode Logic
-            if (i == 6)      defaultData = GetDefaultBassDrum();
-            else if (i == 7) defaultData = GetDefaultSnareHiHat();
-            else if (i == 8) defaultData = GetDefaultTomCymbal();
-            else             defaultData = GetMelodicDefault(i);
+            if (ch == 6)      defaultData = GetDefaultBassDrum();
+            else if (ch == 7) defaultData = GetDefaultSnareHiHat();
+            else if (ch == 8) defaultData = GetDefaultTomCymbal();
+            else             defaultData = GetMelodicDefault(ch);
+
+            lDefaultName = std::format("RythmDefaultChannel {}",ch+1);
         } else {
             // Full Melodic Mode: 9 Melodic Voices
-            defaultData = GetMelodicDefault(i);
+            defaultData = GetMelodicDefault(ch);
+            lDefaultName = std::format("MelodicDefault {}",ch+1);
         }
 
-        setInstrument(i, defaultData.data());
+        setInstrumentNameInCache(ch, lDefaultName.c_str());
+        setInstrument(ch, defaultData.data());
     }
 }
 

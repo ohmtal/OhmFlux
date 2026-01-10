@@ -34,13 +34,14 @@ target_compile_options(flux_speed_profile INTERFACE
 )
 
 # --- Path Definitions ---
-set(ENGINE_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/source")
-set(STB_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/engine/stb")
-set(BOX2D_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/box2d")
-set(YMFM_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/ymfm/src")
+set(ENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/engine/source")
+set(STB_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/stb")
+set(BOX2D_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/box2d")
+set(YMFM_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/ymfm/src")
 set(OPL_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/opl")
 set(SFX_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/sfx")
-set(IMGGUI_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/imgui")
+set(IMGGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/engine/imgui")
+set(JSON_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/json/single_include")
 # =============================================================================
 # PROJECTS SECTION >>>>
 # =============================================================================
@@ -217,7 +218,7 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${OPL_DIR}>
     $<BUILD_INTERFACE:${SFX_DIR}>
     $<BUILD_INTERFACE:${IMGGUI_DIR}>
-
+    $<BUILD_INTERFACE:${JSON_DIR}>
 )
 
 # Apply Static Interface Properties for Windows/MinGW

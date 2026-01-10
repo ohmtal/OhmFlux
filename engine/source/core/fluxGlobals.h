@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <string>
+#include <memory>
 #include <SDL3/SDL.h>
 
 
@@ -471,8 +472,21 @@ struct FluxSettings
     bool enableLogFile = true;
 
 
+    // std::string getPrefsPath() {
+    //     return  SDL_GetPrefPath(getSafeCompany().c_str(), getSafeCaption().c_str());
+    // }
+
     std::string getPrefsPath() {
-        return  SDL_GetPrefPath(getSafeCompany().c_str(), getSafeCaption().c_str());
+        std::unique_ptr<char, void(*)(void*)> rawPath(
+            SDL_GetPrefPath(getSafeCompany().c_str(), getSafeCaption().c_str()),
+                                                      SDL_free
+        );
+
+        if (rawPath) {
+            return std::string(rawPath.get());
+        }
+
+        return "";
     }
 
     std::string getSafeCompany() {

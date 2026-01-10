@@ -2,25 +2,31 @@
 #include "fluxEditorMain.h"
 #include "fileDialog.h"
 #include <imgui_internal.h>
+#include <utils/fluxSettingsManager.h>
+
 //------------------------------------------------------------------------------
 bool EditorGui::Initialize()
 {
-    // FIXME ImGui does not save it !
-    //       /home/tom/.local/share/Ohmflux/Flux_Editor/Flux_EditorGui.ini
-    static std::string sIniFile = getGame()->mSettings.getPrefsPath()
-                .append(getGame()->mSettings.getSafeCaption())
-                .append("Gui.ini")
-                ;
+    std::string lSettingsFile =
+        getGame()->mSettings.getPrefsPath()
+        .append(getGame()->mSettings.getSafeCaption())
+        .append("_prefs.json");
+    if (SettingsManager().Initialize(lSettingsFile))
+    {
 
-    // THIS WORKS:
-    // static std::string sIniFile = getGame()->mSettings.getSafeCaption().append("Gui.ini");
+    } else {
+        LogFMT("Error: Can not open setting file: {}", lSettingsFile);
+    }
 
-    LogFMT("INI: Ini file set to:{}", sIniFile);
+    mEditorSettings = SettingsManager().get("EditorGui::mEditorSettings", mDefaultEditorSettings);
 
 
-    mGuiGlue = new FluxGuiGlue(true, false, sIniFile.c_str());
+
+    mGuiGlue = new FluxGuiGlue(true, false, nullptr);
     if (!mGuiGlue->Initialize())
         return false;
+
+
 
     mSfxEditor = new FluxSfxEditor();
     if (!mSfxEditor->Initialize())
@@ -47,8 +53,16 @@ bool EditorGui::Initialize()
 //------------------------------------------------------------------------------
 void EditorGui::Deinitialize()
 {
+
+    SAFE_DELETE(mFMEditor);
+    SAFE_DELETE(mFMComposer);
     SAFE_DELETE(mSfxEditor);
     SAFE_DELETE(mGuiGlue);
+
+    if (SettingsManager().IsInitialized()) {
+        SettingsManager().set("EditorGui::mEditorSettings", mEditorSettings);
+        SettingsManager().save();
+    }
 
 }
 //------------------------------------------------------------------------------
@@ -100,14 +114,13 @@ void EditorGui::ShowManuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::MenuItem("IMGui Demo", NULL, &mParameter.mShowDemo);
+            ImGui::MenuItem("IMGui Demo", NULL, &mEditorSettings.mShowDemo);
             ImGui::Separator();
-            ImGui::MenuItem("SFX Editor", NULL, &mParameter.mShowSFXEditor);
+            ImGui::MenuItem("SFX Editor", NULL, &mEditorSettings.mShowSFXEditor);
             ImGui::Separator();
-            ImGui::MenuItem("FM Composer", NULL, &mParameter.mShowFMComposer);
-            ImGui::MenuItem("FM Instrument Editor", NULL, &mParameter.mShowFMInstrumentEditor);
-            // ImGui::MenuItem("FM Piano Scale", NULL, &mParameter.mShowPianoScale);
-            ImGui::MenuItem("FM Full Scale", NULL, &mParameter.mShowCompleteScale);
+            ImGui::MenuItem("FM Composer", NULL, &mEditorSettings.mShowFMComposer);
+            ImGui::MenuItem("FM Instrument Editor", NULL, &mEditorSettings.mShowFMInstrumentEditor);
+            ImGui::MenuItem("FM Full Scale", NULL, &mEditorSettings.mShowCompleteScale);
 
 
             ImGui::EndMenu();
@@ -167,25 +180,25 @@ void EditorGui::DrawGui()
     //     ImGui::DockBuilderFinish(mGuiGlue->getDockSpaceId());
     // }
 
-    if ( mParameter.mShowDemo )
+    if ( mEditorSettings.mShowDemo )
     {
         // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow();
     }
 
 
-    if ( mParameter.mShowSFXEditor ){
+    if ( mEditorSettings.mShowSFXEditor ){
         // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mSfxEditor->Draw();
     }
 
 
-    if ( mParameter.mShowFMComposer ) {
+    if ( mEditorSettings.mShowFMComposer ) {
         // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMComposer->DrawComposer();
     }
 
-    if ( mParameter.mShowFMInstrumentEditor ) {
+    if ( mEditorSettings.mShowFMInstrumentEditor ) {
         // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mFMEditor->DrawInstrumentEditor();
     }
@@ -196,7 +209,7 @@ void EditorGui::DrawGui()
     // }
 
 
-    if ( mParameter.mShowCompleteScale ) {
+    if ( mEditorSettings.mShowCompleteScale ) {
         mFMEditor->DrawScalePlayer();
     }
 
@@ -255,6 +268,6 @@ void EditorGui::DrawGui()
 
 void EditorGui::onKeyEvent(SDL_KeyboardEvent event)
     {
-        if ( mParameter.mShowFMComposer )
+        if ( mEditorSettings.mShowFMComposer )
             mFMComposer->onKeyEvent(event);
     }

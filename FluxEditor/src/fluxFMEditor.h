@@ -80,7 +80,15 @@ public:
     //--------------------------------------------------------------------------
     void loadInstrumentPreset()
     {
-            mController->loadInstrumentPreset();
+        mController->loadInstrumentPreset();
+        SDL_Event event;
+        for (U8 ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ch++)
+        {
+            SDL_zero(event);
+            event.type = FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED;
+            event.user.code = ch;
+            SDL_PushEvent(&event);
+        }
     }
 
     //--------------------------------------------------------------------------

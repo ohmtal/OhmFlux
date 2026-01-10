@@ -14,6 +14,7 @@
 #pragma once
 
 #include <core/fluxBaseObject.h>
+#include <utils/fluxSettingsManager.h>
 #include <imgui.h>
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -95,9 +96,27 @@ public:
         if (!ImGui_ImplOpenGL3_Init(glsl_version))
             return false;
 
+        // load settings...if we dont use inifile
+        if (mIniFileName == nullptr && SettingsManager().IsInitialized()) {
+            std::string savedLayout = SettingsManager().get("imgui_layout", std::string(""));
+            if (!savedLayout.empty()) {
+                ImGui::LoadIniSettingsFromMemory(savedLayout.c_str(), savedLayout.size());
+            }
+        }
+
         return true;
     };
+
+
     void Deinitialize() override {
+        // save settings if we dont use ini
+        if (mIniFileName == nullptr && SettingsManager().IsInitialized()) {
+            size_t out_size;
+            const char* data = ImGui::SaveIniSettingsToMemory(&out_size);
+            SettingsManager().set("imgui_layout", std::string(data, out_size));
+            SettingsManager().save();
+        }
+
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();

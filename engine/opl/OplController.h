@@ -82,30 +82,6 @@ const float PLAYBACK_FREQUENCY = 90.0f;
 class OplController
 {
 public:
-    // struct SongData {
-    //     // Actual_ins: array[1..9] of string [256 bytes each]
-    //     // Total: 9 * 256 = 2304 bytes
-    //     uint8_t actual_ins[10][256];
-    //
-    //     // Ins_set: array[1..9, 0..23] of byte
-    //     // Total: 9 * 24 = 216 bytes
-    //     uint8_t ins_set[10][24];
-    //
-    //     // songspeed: byte [1 byte]
-    //     uint8_t song_delay; //default 15
-    //
-    //     // songlaenge: word [2 bytes]
-    //     uint16_t song_length;
-    //
-    //     // song: array[1..1000, 1..9] of integer
-    //     // Pascal 'integer' is 16-bit signed. 1000 * 9 * 2 = 18000 bytes
-    //     // int16_t song[1001][10];
-    //     int16_t song[FMS_MAX_SONG_LENGTH + 1][FMS_MAX_CHANNEL + 1];
-    //
-    // };
-    #include <cstring>
-    #include <algorithm>
-
     struct SongData {
         // Pascal: array[1..9] of string[255] -> 10 slots to allow 1-based indexing
         // Index [channel][0] is the length byte.
@@ -301,6 +277,10 @@ private:
     uint8_t last_block_values[9] = { 0 };
 
 
+    // in my DosProgramm i used melodic only but is should be a flag;
+    // Enables Deep Effects and Locks Melodic Mode
+    // this is updated
+    bool mMelodicMode = true; // else RhythmMode
 
 
 public:
@@ -311,10 +291,6 @@ public:
     bool shutDownController();
 
 
-    // in my DosProgramm i used melodic only but is should be a flag;
-    // Enables Deep Effects and Locks Melodic Mode
-    // this is updated
-    bool mMelodicMode = true; // else RhythmMode
 
     // need a lot of cleaning .. lol but for now it's here:
     void setPlaying(bool value, bool hardStop = false);
@@ -336,6 +312,8 @@ public:
     }
 
 
+    bool isMelodicMode() { return mMelodicMode;}
+    void setMelodicMode(bool value) { mMelodicMode = value;}
 
     /**
      * Returns the OPL2 register offset for the Carrier (Operator 2)
@@ -482,6 +460,14 @@ public:
 
     void resetInstrument(uint8_t channel);
     void loadInstrumentPreset();
+    void loadInstrumentPresetSyncSongName(SongData& sd)
+    {
+        loadInstrumentPreset();
+        for ( U8 ch = FMS_MIN_CHANNEL;  ch <= FMS_MAX_CHANNEL; ch++ )
+        {
+            SetInstrumentName(sd,ch, getInstrumentNameFromCache(ch).c_str());
+        }
+    }
 
 
 }; //class

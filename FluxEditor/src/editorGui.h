@@ -21,18 +21,18 @@
 #include "fluxComposer.h"
 
 
+
 class EditorGui: public FluxBaseObject
 {
 public:
-    struct soundToolParameter {
-        bool mShowDemo                = false;
-        bool mShowSFXEditor           = false;
-        bool mShowFMInstrumentEditor  = true;
-        bool mShowFMComposer          = true;
-        bool mShowCompleteScale       = false;
-        // bool mShowPianoScale          = false;
-
+    struct EditorSettings {
+        bool mShowDemo;
+        bool mShowSFXEditor;
+        bool mShowFMInstrumentEditor;
+        bool mShowFMComposer;
+        bool mShowCompleteScale;
     };
+
 
 private:
     FluxRenderObject* mBackground = nullptr;
@@ -41,7 +41,16 @@ private:
     FluxFMEditor* mFMEditor = nullptr;
     FluxComposer* mFMComposer = nullptr;
 
-    soundToolParameter mParameter;
+
+    EditorSettings mEditorSettings;
+    EditorSettings mDefaultEditorSettings = {
+        .mShowDemo = false,
+        .mShowSFXEditor = true,
+        .mShowFMInstrumentEditor = true,
+        .mShowFMComposer = true,
+        .mShowCompleteScale = false
+    };
+
 public:
 
     bool Initialize() override;
@@ -54,3 +63,12 @@ public:
 
 
 }; //class
+
+// macro for JSON support
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EditorGui::EditorSettings,
+                                                mShowDemo,
+                                                mShowSFXEditor,
+                                                mShowFMInstrumentEditor,
+                                                mShowFMComposer,
+                                                mShowCompleteScale
+)
