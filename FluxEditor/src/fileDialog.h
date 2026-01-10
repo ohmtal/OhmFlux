@@ -125,7 +125,15 @@ struct ImFileDialog {
             ImGui::SameLine();
             ImGui::SetNextItemWidth(-FLT_MIN);
             if (ImGui::InputTextWithHint("##pathInput","Path", pathInput, sizeof(pathInput), ImGuiInputTextFlags_EnterReturnsTrue)) {
-                if (fs::exists(pathInput)) currentPath = pathInput;
+                if (fs::exists(pathInput)) {
+                      currentPath = pathInput;
+                      mDirty = true;
+                } else {
+                    std::strncpy(pathInput, currentPath.c_str(), sizeof(pathInput) - 1);
+                    pathInput[sizeof(pathInput) - 1] = '\0';
+
+                }
+
             }
 
             // ------- Add to gui -------------------
