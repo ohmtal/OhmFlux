@@ -25,7 +25,7 @@ struct ImFileDialog {
 
     std::string mLabel = "File Browser";
     bool mSaveMode = false;
-    std::vector<std::string> mFilters;
+    std::vector<std::string> mFilters = {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" };
     std::string mSaveExt = "";
     bool mCancelPressed = false;
 
