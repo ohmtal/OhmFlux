@@ -30,18 +30,22 @@
 //       presets ... also when it saved = overwritten
 //
 // * Save settings
+// * toggle melodic mode ++ save in settings
 //
-// TODO: toggle melodic mode ++ save in settings
+// TODO: Move ImGui::IsKeyPressed to onKeyEvent ?
+//       for better what is used as shortcut overview
 //
+// Nice to have:
+// =============
+// TODO: Cut (ctrl+x)
 // TODO: Record mode with pre ticker like my guitar looper
 //       Before i do this i should find out why record mode is so laggy!
 //       i guess it's the mutex lock ?
 //
 // TODO:  I also like to have the fullscale als live insert ...
 //
-//
 // TODO: Load / Save ==> also emscripten load will be tricky if done check SFXEditor
-//       check => trigger_file_load (marked with TODO TEST)
+//       check => trigger_file_load (marked with TODO TEST )
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -53,7 +57,24 @@
 #include "fluxEditorGlobals.h"
 
 
+// ------------- Wav export in a thread >>>>>>>>>>>>>>
+struct ExportTask {
+    OplController* controller;
+    FluxEditorOplController::SongData song;
+    std::string filename;
+    float progress = 0.0f; // Track progress here
+    bool isFinished = false;
+};
 
+// This is the function the thread actually runs
+static int SDLCALL ExportThreadFunc(void* data) {
+    auto* task = static_cast<ExportTask*>(data);
+
+    task->controller->exportToWav(task->song, task->filename, &task->progress);
+
+    task->isFinished = true;
+    return 0;
+}
 
 class FluxComposer : public FluxBaseObject
 {
@@ -65,7 +86,8 @@ private:
     static const int MAX_PATTERNS = 16;
     static const int NOTES_PER_PATTERN = 64;
 
-    // hackfest
+    std::string mSongName = "newsong.fms";
+
     int mStartAt = 0;
     int mEndAt = -1;
     bool mLoop = false;
@@ -100,6 +122,8 @@ private:
     OplController::SongData mSongData;
 
     OplController::SongData mBufferSongData;
+
+    ExportTask* mCurrentExport = nullptr; //<<< for export to wav
 
 public:
 
@@ -137,8 +161,11 @@ public:
         newSong();
 
 
-        mInsertMode   = SettingsManager().get("fluxComposer::mInsertMode", true);
-        mLiveMode     = SettingsManager().get("fluxComposer::mLiveMode", true);
+
+        mInsertMode = SettingsManager().get("fluxComposer::InsertMode", false);
+        mLiveMode   = SettingsManager().get("fluxComposer::LiveMode", true);
+        mLoop       = SettingsManager().get("fluxComposer::Loop", false);
+        mController->setMelodicMode(SettingsManager().get("fluxComposer::MelodicMode", true));
 
 
         return true;
@@ -146,8 +173,10 @@ public:
     //-----------------------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        SettingsManager().set("fluxComposer::mInsertMode", mInsertMode);
-        SettingsManager().set("fluxComposer::mLiveMode", mLiveMode);
+        SettingsManager().set("fluxComposer::InsertMode", mInsertMode);
+        SettingsManager().set("fluxComposer::LiveMode", mLiveMode);
+        SettingsManager().set("fluxComposer::Loop", mLoop);
+        SettingsManager().set("fluxComposer::MelodicMode", mController->getMelodicMode());
 
 
         // std::unique_ptr<Controller> mController; would be better ^^
@@ -166,6 +195,7 @@ public:
         if (mController->loadSongFMS(filename, mSongData))
         {
             resetSongSettings();
+            mSongName = extractFilename(filename);
             return true;
         }
         return false;
@@ -235,10 +265,6 @@ public:
             lChannel = setChannel(lChannel);
         }
 
-        ImGui::SameLine();
-        ImGui::Checkbox("Insert Mode",&mInsertMode);
-        ImGui::SameLine();
-        ImGui::Checkbox("Live Mode",&mLiveMode);
 
 
         ImGui::BeginDisabled(!mInsertMode);
@@ -472,11 +498,191 @@ public:
     }
 
     //-----------------------------------------------------------------------------------------------------
+    void DrawComposerHeader()
+    {
+        ImVec2 lButtonSize = ImVec2(60,60);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+
+        // fancy header
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImVec2 p0 = ImGui::GetCursorScreenPos();
+        ImVec2 p1 = ImVec2(p0.x + ImGui::GetContentRegionAvail().x, p0.y + ImGui::GetTextLineHeightWithSpacing());
+        draw_list->AddRectFilled(p0, p1, ImGui::GetColorU32(ImGuiCol_HeaderActive), 4.0f);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
+        ImGui::Indent(5.0f);
+        ImGui::Text("%s", mSongName.c_str());
+        ImGui::Unindent(5.0f);
+        //<<<
+
+        // ImGuiTableFlags_SizingFixedFit |
+        if (ImGui::BeginTable("SongControls", 3,ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders))
+        {
+
+            ImGui::TableNextRow();
+
+            ImGui::BeginDisabled(isPlaying()); /// DISABLED >>>>
+
+            ImGui::TableNextColumn(); //COL 1
+            ImGui::Text("Song Length:");
+            ImGui::SetNextItemWidth(120);
+            ImGui::InputScalar("##Length", ImGuiDataType_U16, &mSongData.song_length, nullptr, nullptr, "%u");
+
+            ImGui::Separator();
+
+            ImGui::Text("Song Delay:");
+            ImGui::SetNextItemWidth(120);
+            ImGui::InputScalar("##Speed", ImGuiDataType_U8, &mSongData.song_delay, nullptr, nullptr, "%u");
+
+            ImGui::Separator();
+
+            ImGui::Text("Play Range:");
+            ImGui::SetNextItemWidth(120);
+            ImGui::DragIntRange2("##SongRange", &mStartAt, &mEndAt, 1.0f, 0, mSongData.song_length);
+
+            ImGui::TableNextColumn(); // COL 2
+
+            ImGui::Dummy(ImVec2(0.f, 4.f));
+
+            bool lMelodicMode = mController->getMelodicMode();
+            if (ImGui::Checkbox("Melodic Mode", &lMelodicMode))
+            {
+                mController->setMelodicMode(lMelodicMode);
+            }
+            ImGui::Dummy(ImVec2(0.f, 5.f)); ImGui::Separator();
+
+            ImGui::Dummy(ImVec2(0.f, 4.f));
+            ImGui::Checkbox("Insert Mode",&mInsertMode);
+            ImGui::Dummy(ImVec2(0.f, 5.f)); ImGui::Separator();
+
+            ImGui::Dummy(ImVec2(0.f, 4.f));
+            ImGui::Checkbox("Live Mode",&mLiveMode);
+
+
+            ImGui::EndDisabled(); //<<<< DISABLED
+
+
+            ImGui::TableNextColumn(); //COL 3
+
+            ImGui::Dummy(ImVec2(0.f, 8.f));
+            ImGui::Dummy(ImVec2(12.f, 8.f));
+            ImGui::SameLine();
+
+
+            ImGui::BeginGroup();
+            if (isPlaying())
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Black));
+                ImGui::PushStyleColor(ImGuiCol_Button, ImColor4F(cl_Orange));        // Normal
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow)); // Hover
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Gold));  // Geklickt
+
+                if (ImGui::Button("Stop",lButtonSize))
+                {
+                    mController->setPlaying(false);
+                }
+                ImGui::PopStyleColor(4);
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Black));
+                ImGui::PushStyleColor(ImGuiCol_Button, ImColor4F(cl_Gold));        // Normal
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow)); // Hover
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Orange));  // Geklickt
+
+                if (ImGui::Button("Play",lButtonSize))
+                {
+                    playSong(3); //autodetect
+                }
+                ImGui::PopStyleColor(4);
+            }
+
+            if (ImGui::Checkbox("Loop", &mLoop))
+            {
+                mController->setLoop( mLoop );
+            }
+            ImGui::EndGroup();
+
+            ImGui::SameLine();
+            ImGui::Dummy(ImVec2(6.f, 0.f));
+            ImGui::SameLine();
+            ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+            ImGui::SameLine();
+            ImGui::Dummy(ImVec2(6.f, 0.f));
+
+            ImGui::SameLine();
+            if (ImGui::Button("New",lButtonSize))
+            {
+                newSong();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Save",lButtonSize))
+            {
+                callSaveSong();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Export",lButtonSize))
+            {
+                callExportSong();
+            }
+
+
+
+             ImGui::EndTable();
+        }
+
+        ImGui::PopStyleVar();
+
+        // hint for readonly
+        if (isPlaying() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip("Cannot change while playing.");
+        }
+
+        ImGui::Separator();
+
+    }
+
+    //-----------------------------------------------------------------------------------------------------
+        void DrawExportStatus() {
+        // Check if the thread task exists
+        if (mCurrentExport == nullptr) return;
+
+        //  Force the modal to open
+        if (!ImGui::IsPopupOpen("Exporting...")) {
+            ImGui::OpenPopup("Exporting...");
+        }
+
+        // Set the window position to the center of the screen
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        //  Draw the Modal (This disables keyboard/mouse for everything else)
+        if (ImGui::BeginPopupModal("Exporting...", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
+
+            ImGui::Text("Generating FM Audio: %s", mCurrentExport->filename.c_str());
+            ImGui::Separator();
+
+            // Draw the Progress Bar
+            ImGui::ProgressBar(mCurrentExport->progress, ImVec2(300, 0));
+
+            // Auto-close when the thread finishes
+            if (mCurrentExport->isFinished) {
+                ImGui::CloseCurrentPopup();
+
+                // Clean up the task memory here
+                delete mCurrentExport;
+                mCurrentExport = nullptr;
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+
     //-----------------------------------------------------------------------------------------------------
     void DrawComposer()
     {
         if (!mController)
             return;
+
+        // export to wav
+        DrawExportStatus();
 
         auto handleNoteInput = [&](ImGuiKey key, const char* natural, const char* sharp) {
             if (ImGui::IsKeyPressed(key))
@@ -499,8 +705,6 @@ public:
             // mController->consoleSongOutput(true); // DEBUG
         }
         //---------------
-        ImVec2 lButtonSize = ImVec2(100, 0);
-        //---------------
 
         ImGui::SetNextWindowSizeConstraints(ImVec2(800.0f, 600.0f), ImVec2(FLT_MAX, FLT_MAX));
         // if (ImGui::Begin("FM Song Composer", nullptr, ImGuiWindowFlags_MenuBar))
@@ -516,10 +720,13 @@ public:
                     }
                     if (ImGui::MenuItem("Load Song")) { showMessage("Open", "Use the File Browser to open a Song (fms)"); }
                     if (ImGui::MenuItem("Save Song")) {
-                        g_FileDialog.mSaveMode = true;
-                        g_FileDialog.mSaveExt = ".fms";
-                        g_FileDialog.mLabel = "Save Song (.fms)";
+                        callSaveSong();
                     }
+                    ImGui::Separator();
+                    if (ImGui::MenuItem("Export Song to WAV")) {
+                        callExportSong();
+                    }
+
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Edit"))
@@ -538,6 +745,7 @@ public:
                 if (ImGui::BeginMenu("Action"))
                 {
 
+                    if (ImGui::MenuItem("Play","F1")) { playSong(3); }
                     if (ImGui::MenuItem("Play selected")) { playSong(1); }
                     if (ImGui::MenuItem("Silence all.")) { mController->silenceAll(false); }
                     ImGui::Separator();
@@ -563,62 +771,8 @@ public:
                 ImGui::EndMenuBar();
             }
 
-            // Song Controls (Length, Speed)
-            if (ImGui::BeginTable("SongControls", 4, ImGuiTableFlags_SizingFixedFit))
-            {
-                ImGui::TableNextColumn();
-                ImGui::Text("Song Length:");
-                ImGui::TableNextColumn();
-                ImGui::SetNextItemWidth(120);
-                ImGui::InputScalar("##Length", ImGuiDataType_U16, &mSongData.song_length, nullptr, nullptr, "%u");
 
-                ImGui::TableNextColumn();
-                ImGui::Text("Song Delay:");
-                ImGui::TableNextColumn();
-                ImGui::SetNextItemWidth(120);
-                ImGui::InputScalar("##Speed", ImGuiDataType_U8, &mSongData.song_delay, nullptr, nullptr, "%u");
-
-
-                ImGui::TableNextRow(); // <<< row ----
-                ImGui::TableNextColumn();
-                ImGui::SetNextItemWidth(120);
-                if (isPlaying())
-                {
-                    if (ImGui::Button("Stop",lButtonSize))
-                    {
-                        mController->setPlaying(false);
-                    }
-                } else {
-                    if (ImGui::Button("Play",lButtonSize))
-                    {
-                        playSong(3); //autodetect
-                    }
-                }
-
-                ImGui::TableNextColumn();
-                ImGui::BeginDisabled(isPlaying());
-                ImGui::DragIntRange2("##SongRange", &mStartAt, &mEndAt, 1.0f, 0, mSongData.song_length);
-                ImGui::EndDisabled();
-
-                ImGui::TableNextColumn();
-                if (ImGui::Checkbox("Loop", &mLoop))
-                {
-                    mController->setLoop( mLoop );
-                }
-
-                ImGui::TableNextColumn();
-
-
-                ImGui::EndTable();
-            }
-
-
-            // hint for readonly
-            if (isPlaying() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                ImGui::SetTooltip("Cannot change while playing.");
-            }
-
-            ImGui::Separator();
+            DrawComposerHeader();
 
             //---------------------- SongDisplay >>>>>>>>>>>>>>>>>>>
 
@@ -763,12 +917,6 @@ public:
                     {
                       pasteSelected();
                     }
-                    //FIXME Ctrl + x
-
-
-
-
-
                 }
             } //is_eding
 
@@ -1148,6 +1296,7 @@ public:
     //--------------------------------------------------------------------------
     void onKeyEvent(SDL_KeyboardEvent event)
     {
+        // IMPORTANT: check we have focus !
         ImGuiWindow* window = ImGui::FindWindowByName("FM Song Composer");
         bool isFocused = (window && window == GImGui->NavWindow);
         if (!isFocused)
@@ -1157,14 +1306,32 @@ public:
         bool isAlt =  event.mod & SDLK_LALT || event.mod & SDLK_RALT;
         bool isCtrl =  event.mod & SDLK_LCTRL || event.mod & SDLK_RCTRL;
 
+        if (isKeyUp)
+        {
+            switch (event.key)
+            {
+                case SDLK_F1:
+                {
+                    LogFMT("F1 PRESSED playing = {}", isPlaying());
+                    // toggle Play Stop
+                    if (isPlaying()) {
+                        mController->setPlaying(false);
+                    } else {
+                        playSong(3); //autodetect
+                    }
+
+                    break;
+                }
+            }
+
+        }
+
         /*
            Mapping:
                     d   f       h   j   k
               z   x   c   v   b   n   m   ,   .
               B-1 C   D   E   F   G   A   B   C+1
         */
-
-        //FIXME mInsertMode ?
 
         if (/*mKeyboardMode && */!isAlt && !isCtrl && !isKeyUp)
         {
@@ -1190,8 +1357,54 @@ public:
         } // no mods
     }
 
+    void callSaveSong() {
+        g_FileDialog.setFileName(mSongName);
+        g_FileDialog.mSaveMode = true;
+        g_FileDialog.mSaveExt = ".fms";
+        g_FileDialog.mLabel = "Save Song (.fms)";
+
+    }
+
+
+    bool exportSongToWav(std::string filename) {
+        if (mCurrentExport) return false; // Already exporting!
+
+        mCurrentExport = new ExportTask();
+        mCurrentExport->controller = mController;
+        mCurrentExport->song = mSongData;
+        mCurrentExport->filename = filename;
+
+        // Create the thread
+        SDL_Thread* thread = SDL_CreateThread(ExportThreadFunc, "WavExportThread", mCurrentExport);
+
+        if (!thread) {
+            delete mCurrentExport;
+            mCurrentExport = nullptr;
+            return false;
+        }
+
+        // Detach the thread so it cleans itself up when finished
+        SDL_DetachThread(thread);
+        return true;
+    }
+
+    // bool exportSongToWav(std::string filename)
+    // {
+    //
+    //     return mController->exportToWav(mSongData, filename );
+    // }
+
+    void callExportSong() {
+        g_FileDialog.setFileName(mSongName.append(".wav"));
+        g_FileDialog.mSaveMode = true;
+        g_FileDialog.mSaveExt = ".fms.wav";
+        g_FileDialog.mLabel = "Export Song (.wav)";
+    }
+
+
     bool saveSong(std::string filename)
     {
+        mSongName = extractFilename(filename);
         return mController->saveSongFMS(filename, mSongData);
     }
 
@@ -1202,6 +1415,7 @@ public:
         resetSelection();
         // maybe mLoop = false;
         mController->setAllChannelActive(true);
+
 
     }
 
@@ -1214,5 +1428,6 @@ public:
         resetSongSettings();
         if (resetInstruments)
             mController->loadInstrumentPresetSyncSongName(mSongData);
+        mSongName = "newsong.fms";
     }
 }; //class

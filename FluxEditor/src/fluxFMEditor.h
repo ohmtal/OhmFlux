@@ -264,16 +264,10 @@ public:
         // Get the current data from the controller to fill our local editor
         // We use a static or persistent buffer so the UI is responsive
         static uint8_t editBuffer[24];
-        static int lastChannel = -1;
 
-        // If we switched channels, load the new instrument data into our buffer
-        // if (getChannel() != lastChannel)
-        {
-            const uint8_t* currentIns = mController->getInstrument(getChannel());
-            if (currentIns) {
-                std::copy(currentIns, currentIns + 24, editBuffer);
-            }
-            lastChannel = getChannel();
+        const uint8_t* currentIns = mController->getInstrument(getChannel());
+        if (currentIns) {
+            std::copy(currentIns, currentIns + 24, editBuffer);
         }
 
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar; //<<< For menubar !!
@@ -292,6 +286,7 @@ public:
                 {
                     if (ImGui::MenuItem("Open*")) { showMessage("Open", "Use the File Browser to open a Instrument (fmi)"); }
                     if (ImGui::MenuItem("Save Instrument")) {
+                        g_FileDialog.setFileName(mController->getInstrumentNameFromCache(getChannel()));
                         g_FileDialog.mSaveMode = true;
                         g_FileDialog.mSaveExt = ".fmi";
                         g_FileDialog.mLabel = "Save Instrument (.fmi)";
@@ -316,9 +311,6 @@ public:
                             if (ImGui::MenuItem(label, nullptr, getChannel() == ch))
                             {
                                 setChannel(ch);
-
-                                // Optional: Reset the local buffer to the new channel's data immediately
-                                lastChannel = -1;
                             }
                         }
                         ImGui::EndMenu();
@@ -482,7 +474,6 @@ public:
 
     bool saveInstrument(std::string filename)
     {
-        //FIXME need to update the instrument name !
         if (mController->saveInstrument(filename, getChannel()))
         {
             //sync to Composer

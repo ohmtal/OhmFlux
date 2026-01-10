@@ -1,10 +1,6 @@
 //-----------------------------------------------------------------------------
 // ohmFlux FluxEditor
 //-----------------------------------------------------------------------------
-// FIXME scaling on size changed...
-//      => FluxScreen::updateWindowSize need a event for this
-//-----------------------------------------------------------------------------
-
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 #include "fluxEditorMain.h"
 //------------------------------------------------------------------------------
@@ -32,7 +28,6 @@ int main(int argc, char* argv[])
     // game->mSettings.cursorHotSpotX = 10;
     // game->mSettings.cursorHotSpotY = 10;
 
-    // LogFMT("TEST: My pref path would be:{}", SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ));
 
     g_FluxEditor = game;
 

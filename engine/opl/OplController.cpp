@@ -103,29 +103,6 @@ bool OplController::initController()
     return true;
 }
 
-// bool OplController::initController() {
-//     SDL_AudioSpec spec;
-//     spec.format = SDL_AUDIO_S16;
-//     spec.channels = 2;
-//     spec.freq = 44100;
-//
-//     // Create the stream and a logical device connection in one go
-//     mStream = SDL_OpenAudioDeviceStream(
-//         SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-//         &spec,
-//         OplController::audio_callback, // The static bridge
-//         this                           // Pass 'this' as userdata
-//     );
-//
-//     if (!mStream) {
-//         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
-//         return false;
-//     }
-//
-//     // Mandatory: Start the device (it is created paused)
-//     SDL_ResumeAudioStreamDevice(mStream);
-//     return true;
-// }
 //------------------------------------------------------------------------------
 bool OplController::shutDownController()
 {
@@ -780,7 +757,7 @@ void OplController::replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_
 }
 //------------------------------------------------------------------------------
 void OplController::fillBuffer(int16_t* buffer, int total_frames) {
-    // 1. Local cache of volatile values for speed
+    // Local cache of volatile values for speed
     double step = m_step;
     double current_pos = m_pos;
 
@@ -999,8 +976,6 @@ std::array< uint8_t, 24 > OplController::GetDefaultInstrument()
     };
 }
 //------------------------------------------------------------------------------
-
-
 std::array< uint8_t, 24 > OplController::GetDefaultBassDrum(){
     return {
         0x01, 0x02, // Freq: Mod=1, Car=2 (gives a thicker sound)
@@ -1014,7 +989,7 @@ std::array< uint8_t, 24 > OplController::GetDefaultBassDrum(){
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 }
-
+//------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetDefaultSnareHiHat(){
     return {
         0x01, 0x01,
@@ -1027,7 +1002,7 @@ std::array< uint8_t, 24 > OplController::GetDefaultSnareHiHat(){
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 }
-
+//------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetDefaultTomCymbal(){
     return {
         0x02, 0x01, // 0-1: Multiplier (Mod/Tom: 2 for a hollower tone, Car/Cym: 1)
@@ -1041,7 +1016,7 @@ std::array< uint8_t, 24 > OplController::GetDefaultTomCymbal(){
         0x00, 0x00  // 22-23: Scaling
     };
 }
-
+//------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetDefaultLeadSynth()
 {
     return {
@@ -1059,7 +1034,7 @@ std::array< uint8_t, 24 > OplController::GetDefaultLeadSynth()
         0x00, 0x00  // 22-23: Scaling (Aus)
     };
 }
-
+//------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetDefaultOrgan()
 {
     return {
@@ -1077,7 +1052,7 @@ std::array< uint8_t, 24 > OplController::GetDefaultOrgan()
         0x00, 0x00  // 22-23: Scaling (OFF)
     };
 }
-
+//------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetDefaultCowbell()
 {
     return {
@@ -1095,7 +1070,7 @@ std::array< uint8_t, 24 > OplController::GetDefaultCowbell()
         0x00, 0x00  // 22-23: Scaling
     };
 }
-
+//------------------------------------------------------------------------------
 void OplController::resetInstrument(uint8_t channel)
 {
     std::array<uint8_t, 24> defaultData;
@@ -1110,7 +1085,7 @@ void OplController::resetInstrument(uint8_t channel)
     }
     setInstrument(channel, defaultData.data());
 }
-
+//------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetMelodicDefault(uint8_t index)
 {
     auto data = GetDefaultInstrument(); // Start with your basic Sine template
@@ -1135,7 +1110,7 @@ std::array< uint8_t, 24 > OplController::GetMelodicDefault(uint8_t index)
     }
     return data;
 }
-
+//------------------------------------------------------------------------------
 void OplController::loadInstrumentPreset()
 {
     std::string lDefaultName;
@@ -1160,5 +1135,108 @@ void OplController::loadInstrumentPreset()
         setInstrument(ch, defaultData.data());
     }
 }
+//------------------------------------------------------------------------------
+void OplController::loadInstrumentPresetSyncSongName(SongData& sd)
+{
+    loadInstrumentPreset();
+    for ( U8 ch = FMS_MIN_CHANNEL;  ch <= FMS_MAX_CHANNEL; ch++ )
+    {
+        SetInstrumentName(sd,ch, getInstrumentNameFromCache(ch).c_str());
+    }
+}
+
+//------------------------------------------------------------------------------
+bool OplController::exportToWav(SongData& sd, const std::string& filename, float* progressOut)
+{
+
+    // unbind the audio stream
+    SDL_PauseAudioStreamDevice(mStream);
+    SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
 
 
+    //start the song
+    start_song( sd, false, 0, -1);
+
+    // calculate duration based on the speed
+    uint32_t total_ticks = sd.song_length * 1; // using your 1 tick per step logic
+    uint32_t total_samples = total_ticks * mSeqState.samples_per_tick;
+    double durationInSeconds = (double)total_samples / 44100.0;
+
+
+
+    int sampleRate = 44100; // Match your chip's output rate
+    int totalFrames = durationInSeconds * sampleRate;
+    int chunkSize = 4096;   // Process in small batches
+
+    std::vector<int16_t> exportBuffer(totalFrames * 2); // Stereo
+    int framesProcessed = 0;
+
+    // Reset your sequencer state before starting
+    mSeqState.sample_accumulator = 0;
+    m_pos = 0;
+
+    while (framesProcessed < totalFrames) {
+        int remaining = totalFrames - framesProcessed;
+        int toWrite = std::min(chunkSize, remaining);
+
+        // Fill the buffer starting at the current offset
+        this->fillBuffer(&exportBuffer[framesProcessed * 2], toWrite);
+        framesProcessed += toWrite;
+
+        if (progressOut) {
+            *progressOut = (float)framesProcessed / (float)total_samples;
+        }
+    }
+
+    // rebind the audio stream!
+    SDL_SetAudioStreamGetCallback(mStream, OplController::audio_callback, this);
+    SDL_ResumeAudioStreamDevice(mStream);
+
+
+    // Now write exportBuffer to a wav file
+    return saveWavFile(filename, exportBuffer, sampleRate);
+}
+//------------------------------------------------------------------------------
+bool OplController::saveWavFile(const std::string& filename, const std::vector< int16_t >& data, int sampleRate) {
+    // Open the file for writing using SDL3's IO system
+    SDL_IOStream* io = SDL_IOFromFile(filename.c_str(), "wb");
+    if (!io) {
+        LogFMT("ERROR:Failed to open file for writing: %s", SDL_GetError());
+        return false;
+    }
+
+    uint32_t numChannels = 2; // Stereo as per your fillBuffer
+    uint32_t bitsPerSample = 16;
+    uint32_t dataSize = (uint32_t)(data.size() * sizeof(int16_t));
+    uint32_t fileSize = 36 + dataSize;
+    uint32_t byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+    uint16_t blockAlign = (uint16_t)(numChannels * (bitsPerSample / 8));
+
+    // Write the 44-byte WAV Header
+    SDL_WriteIO(io, "RIFF", 4);
+    SDL_WriteU32LE(io, fileSize);
+    SDL_WriteIO(io, "WAVE", 4);
+    SDL_WriteIO(io, "fmt ", 4);
+    SDL_WriteU32LE(io, 16);          // Subchunk1Size (16 for PCM)
+    SDL_WriteU16LE(io, 1);           // AudioFormat (1 for PCM)
+    SDL_WriteU16LE(io, (uint16_t)numChannels);
+    SDL_WriteU32LE(io, (uint32_t)sampleRate);
+    SDL_WriteU32LE(io, byteRate);
+    SDL_WriteU16LE(io, blockAlign);
+    SDL_WriteU16LE(io, (uint16_t)bitsPerSample);
+    SDL_WriteIO(io, "data", 4);
+    SDL_WriteU32LE(io, dataSize);
+
+    // Write the actual PCM sample data
+    SDL_WriteIO(io, data.data(), dataSize);
+
+    // Close the stream
+    SDL_CloseIO(io);
+    LogFMT("Successfully exported {}", filename);
+
+
+
+    return true;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------

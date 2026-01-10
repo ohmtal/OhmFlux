@@ -312,7 +312,7 @@ public:
     }
 
 
-    bool isMelodicMode() { return mMelodicMode;}
+    bool getMelodicMode() { return mMelodicMode;}
     void setMelodicMode(bool value) { mMelodicMode = value;}
 
     /**
@@ -460,14 +460,11 @@ public:
 
     void resetInstrument(uint8_t channel);
     void loadInstrumentPreset();
-    void loadInstrumentPresetSyncSongName(SongData& sd)
-    {
-        loadInstrumentPreset();
-        for ( U8 ch = FMS_MIN_CHANNEL;  ch <= FMS_MAX_CHANNEL; ch++ )
-        {
-            SetInstrumentName(sd,ch, getInstrumentNameFromCache(ch).c_str());
-        }
-    }
+    void loadInstrumentPresetSyncSongName(SongData& sd);
+    bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr);
+
+private:
+    bool saveWavFile(const std::string& filename, const std::vector<int16_t>& data, int sampleRate);
 
 
 }; //class

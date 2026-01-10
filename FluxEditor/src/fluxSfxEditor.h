@@ -164,7 +164,7 @@ public:
         // minimum size
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
 
-        ImGui::Begin("SFX Generator Editor");
+        ImGui::Begin("Sound Effects Generator");
 
         if (ImGui::BeginTable("EditorColumns", 3,
             ImGuiTableFlags_Resizable |

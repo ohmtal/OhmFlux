@@ -23,3 +23,11 @@ inline void showMessage(std::string caption, std::string text)
     POPUP_MSGBOX_TEXT   = text;
     POPUP_MSGBOX_ACTIVE = true;
 }
+
+inline std::string_view extractFilename(std::string_view path) {
+    size_t lastSlash = path.find_last_of("/\\");
+    if (lastSlash == std::string_view::npos) {
+        return path;
+    }
+    return path.substr(lastSlash + 1);
+}

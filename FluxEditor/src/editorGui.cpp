@@ -116,11 +116,11 @@ void EditorGui::ShowManuBar()
         {
             ImGui::MenuItem("IMGui Demo", NULL, &mEditorSettings.mShowDemo);
             ImGui::Separator();
-            ImGui::MenuItem("SFX Editor", NULL, &mEditorSettings.mShowSFXEditor);
+            ImGui::MenuItem("Sound Effects Generator", NULL, &mEditorSettings.mShowSFXEditor);
             ImGui::Separator();
             ImGui::MenuItem("FM Composer", NULL, &mEditorSettings.mShowFMComposer);
             ImGui::MenuItem("FM Instrument Editor", NULL, &mEditorSettings.mShowFMInstrumentEditor);
-            ImGui::MenuItem("FM Full Scale", NULL, &mEditorSettings.mShowCompleteScale);
+            // ImGui::MenuItem("FM Full Scale", NULL, &mEditorSettings.mShowCompleteScale);
 
 
             ImGui::EndMenu();
@@ -208,10 +208,9 @@ void EditorGui::DrawGui()
     //     mFMEditor->DrawPianoScale();
     // }
 
-
-    if ( mEditorSettings.mShowCompleteScale ) {
-        mFMEditor->DrawScalePlayer();
-    }
+    // if ( mEditorSettings.mShowCompleteScale ) {
+    //     mFMEditor->DrawScalePlayer();
+    // }
 
 
     DrawMsgBoxPopup();
@@ -238,6 +237,14 @@ void EditorGui::DrawGui()
                         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
                     mFMEditor->saveInstrument(g_FileDialog.selectedFile);
                 }
+                else
+                if (g_FileDialog.mSaveExt == ".fms.wav")
+                {
+                    if (g_FileDialog.selectedExt == "")
+                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    mFMComposer->exportSongToWav(g_FileDialog.selectedFile);
+                }
+
             }
 
 

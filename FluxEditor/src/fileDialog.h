@@ -2,16 +2,6 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-//TODO: Highlight or someting when in safe mode
-//-----------------------------------------------------------------------------
-// Example:
-//     static ImFileDialog myDialog;
-//     if (myDialog.Draw("File Browser", true, {".fms",".fmi"})) {
-//         printf("User chose: %s\n", myDialog.selectedFile.c_str());
-//     }
-// TODO: Test as replacement:
-//       https://github.com/ocornut/imgui/wiki/Useful-Extensions#file-browsers--file-dialog
-//-----------------------------------------------------------------------------
 #pragma once
 #include "imgui.h"
 #include <filesystem>
@@ -35,17 +25,23 @@ struct ImFileDialog {
 
     std::string mLabel = "File Browser";
     bool mSaveMode = false;
-    std::vector<std::string> mFilters = {  ".sfx", ".fmi", ".fms" };
+    std::vector<std::string> mFilters;
     std::string mSaveExt = "";
     bool mCancelPressed = false;
+
+    void setFileName(std::string filename)
+    {
+        strncpy(fileInput, filename.c_str(), sizeof(fileInput));
+    }
 
     void reset() {
         mLabel = "File Browser";
         mSaveMode = false;
-        mFilters = {  ".sfx", ".fmi", ".fms" };
+        mFilters = {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" };
         mSaveExt = "";
         mCancelPressed = false;
         mDirty = true;
+        setFileName("");
     }
 
     bool fetchFiles()
@@ -88,10 +84,6 @@ struct ImFileDialog {
         }
         return true;
     }
-
-
-
-
 
 
     bool Draw() {
