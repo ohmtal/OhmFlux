@@ -20,23 +20,20 @@
 // * ini not saved in path !!
 //        => INI: Ini file set to:/home/tom/.local/share/Ohmflux/Flux_Editor/Flux_EditorGui.ini
 //       made the variable static this works
-
+// * song_length is +1 ?! is it only the display or also in the OplController ?
+//   fixed at Clipper i had +1 no idea why
+// * check for active window on event => note input
+// *  OplController does not save the instruments ....!!!
+//
+// TODO: Instrument names.. added cache but name must be also set on resetInstrument and
+//       presets ... also when it saved = overwritten
+//
 // TODO: Record mode with pre ticker like my guitar looper
 //       Before i do this i should find out why record mode is so laggy!
 //       i guess it's the mutex lock ?
 //
 // TODO:  I also like to have the fullscale als live insert ...
 //
-// TODO: Instrument names.. we have 256 chars for each ?! uint8_t actual_ins[10][256];
-//       cool i was afraid i only have 12 for dos name :D
-//       Added:
-//          std::string GetInstrumentName(SongData& sd, int channel);
-//          bool SetInstrumentName(SongData& sd,int channel, const char* name);
-//       But not sure what it the best way to use it.
-//       Cant use it with loadInstrumentPreset because it does not need a song
-//       not sure if i did a good or bad design decision
-//       the instruments are cached => uint8_t m_instrument_cache[9][24];
-//       and used with setInstrument / getInstrument
 //
 // TODO: Load / Save ==> also emscripten load will be tricky if done check SFXEditor
 //       check => trigger_file_load (marked with TODO TEST)
@@ -45,6 +42,7 @@
 
 #include <core/fluxBaseObject.h>
 #include <imgui.h>
+#include "imgui_internal.h"
 #include "fluxEditorOplController.h"
 #include "fluxEditorGlobals.h"
 
@@ -87,6 +85,7 @@ private:
 
     // i use ALT for note input !! bool mKeyboardMode = true; //using keys yxcvbnnm instead of c,d,e
     bool mInsertMode   = true; //keyboard and piano insert tones
+    bool mLiveMode     = false; //notes are insert where the play trigger is
 
 
     OplController::SongData mSongData;
@@ -128,6 +127,7 @@ public:
         mSongData.song_delay = 15; // Default from Pascal code
         mSongData.song_length = mNewSongLen;
         mSongData.init();
+        newSong();
 
         return true;
     }
@@ -172,7 +172,7 @@ public:
 
 
         int lNewTone = mController->getNoteWithOctave(lChannel, lName, lOctaveAdd);
-        if (isPlaying())
+        if (isPlaying() && mLiveMode)
         {
             mSongData.song[mCurrentPlayingRow][lChannel] = lNewTone;
         } else {
@@ -217,6 +217,9 @@ public:
 
         ImGui::SameLine();
         ImGui::Checkbox("Insert Mode",&mInsertMode);
+        ImGui::SameLine();
+        ImGui::Checkbox("Live Mode",&mLiveMode);
+
 
         ImGui::BeginDisabled(isPlaying());
         ImGui::SameLine();
@@ -457,7 +460,7 @@ public:
         // -------------- check we are playing a song ------------------------
         // Get read-only state from your controller
         const auto& lSequencerState = mController->getSequencerState();
-        if ( lSequencerState.playing )
+        if ( isPlaying() )
         {
             mCurrentPlayingRow =lSequencerState.song_needle  ;
             // mController->consoleSongOutput(true); // DEBUG
@@ -476,12 +479,14 @@ public:
                 if (ImGui::BeginMenu("File"))
                 {
                     if (ImGui::MenuItem("New Song")) {
-                        mSongData.song_length = FMS_MAX_SONG_LENGTH;
-                        mController->clearSong(mSongData);
-                        mSongData.song_length = mNewSongLen;
+                        newSong();
                     }
-                    if (ImGui::MenuItem("*Load Song")) { /* TODO: Implement load song logic */ }
-                    if (ImGui::MenuItem("*Save Song")) { /* TODO: Implement save song logic */ }
+                    if (ImGui::MenuItem("Load Song")) { showMessage("Open", "Use the File Browser to open a Song (fms)"); }
+                    if (ImGui::MenuItem("Save Song")) {
+                        g_FileDialog.mSaveMode = true;
+                        g_FileDialog.mSaveExt = ".fms";
+                        g_FileDialog.mLabel = "Save Song (.fms)";
+                    }
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Edit"))
@@ -544,7 +549,7 @@ public:
                 ImGui::TableNextRow(); // <<< row ----
                 ImGui::TableNextColumn();
                 ImGui::SetNextItemWidth(120);
-                if (lSequencerState.playing)
+                if (isPlaying())
                 {
                     if (ImGui::Button("Stop",lButtonSize))
                     {
@@ -559,7 +564,7 @@ public:
                 }
 
                 ImGui::TableNextColumn();
-                ImGui::BeginDisabled(lSequencerState.playing);
+                ImGui::BeginDisabled(isPlaying());
                 ImGui::DragIntRange2("##SongRange", &mStartAt, &mEndAt, 1.0f, 0, mSongData.song_length);
                 ImGui::EndDisabled();
 
@@ -577,7 +582,7 @@ public:
 
 
             // hint for readonly
-            if (lSequencerState.playing && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            if (isPlaying() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
                 ImGui::SetTooltip("Cannot change while playing.");
             }
 
@@ -803,7 +808,6 @@ public:
                             ImVec2 p0 = ImGui::GetCursorScreenPos();
                             ImVec2 p1 = ImVec2(p0.x + ImGui::GetContentRegionAvail().x, p0.y + ImGui::GetTextLineHeightWithSpacing());
                             draw_list->AddRectFilled(p0, p1, ImGui::GetColorU32(ImGuiCol_HeaderActive), 4.0f);
-
                             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
                             ImGui::Indent(5.0f);
                             ImGui::Text("%s", lCaption.c_str());
@@ -891,7 +895,7 @@ public:
                     ImGuiListClipper clipper;
 
                     // clipper.Begin(FMS_MAX_SONG_LENGTH, 20.f);
-                    clipper.Begin(mSongData.song_length+1, 20.f);
+                    clipper.Begin(mSongData.song_length, 20.f);
 
                     clipper.IncludeItemByIndex(mSelectedRow);
 
@@ -918,7 +922,7 @@ public:
 
                             // ----- Draw Selectiontion --------
 
-                            if (lSequencerState.playing)
+                            if (isPlaying())
                             {
                                 if (i == mCurrentPlayingRow)
                                 {
@@ -926,7 +930,7 @@ public:
                                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, mPlayingRowColor);
                                     lNoteColor = cl_Black;
 
-                                    if (mCurrentPlayingRow > clipper.DisplayEnd - 3) {
+                                    if (mLiveMode &&  (mCurrentPlayingRow > clipper.DisplayEnd - 3)) {
                                         // ImGui::SetScrollHereY(0.5f); // Centers the playing row
                                         ImGui::SetScrollHereY(0.f); // to top
                                     }
@@ -1076,10 +1080,25 @@ public:
             // dLog("Instrument changed channel to: %d",event.user.code);
             setChannel( event.user.code, false);
         }
+        else
+        if (event.type == FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED) {
+            // event.user.code is the channel !
+            mController->SetInstrumentName(mSongData
+                    ,event.user.code
+                    ,mController->getInstrumentNameFromCache(event.user.code).c_str()
+                    );
+            dLog("Instrument name changed on channel %d", event.user.code);
+        }
+
     }
     //--------------------------------------------------------------------------
     void onKeyEvent(SDL_KeyboardEvent event)
     {
+        ImGuiWindow* window = ImGui::FindWindowByName("FM Song Composer");
+        bool isFocused = (window && window == GImGui->NavWindow);
+        if (!isFocused)
+            return ;
+
         bool isKeyUp = (event.type == SDL_EVENT_KEY_UP);
         bool isAlt =  event.mod & SDLK_LALT || event.mod & SDLK_RALT;
         bool isCtrl =  event.mod & SDLK_LCTRL || event.mod & SDLK_RCTRL;
@@ -1117,4 +1136,14 @@ public:
         } // no mods
     }
 
+    bool saveSong(std::string filename)
+    {
+        return mController->saveSongFMS(filename, mSongData);
+    }
+
+    void newSong() {
+        mSongData.song_length = FMS_MAX_SONG_LENGTH;
+        mController->clearSong(mSongData);
+        mSongData.song_length = mNewSongLen;
+    }
 };

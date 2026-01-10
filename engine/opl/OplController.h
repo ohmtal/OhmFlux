@@ -57,6 +57,10 @@
 #include <cstdint>
 #include <string>
 
+// extractFilename
+#include <string_view>
+
+
 // always good ;)
 #include <algorithm>
 
@@ -144,7 +148,7 @@ public:
         }
 
         // Helper to get the Pascal string for C++ string (0..8 -> 1..9)
-        std::string getInstrumentNamePascalString(int channel)
+        std::string getInstrumentName(int channel)
         {
             // Safety check for your 0..8 range
             if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
@@ -159,7 +163,7 @@ public:
         }
 
         // Helper to set a Pascal string from a C-string (0..8 -> 1..9)
-        bool setInstrumentNamePascalString(int channel, const char* name) {
+        bool setInstrumentName(int channel, const char* name) {
             if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
                 return false;
 
@@ -231,6 +235,8 @@ private:
 
     // 9 channels, each holding 24 instrument parameters
     uint8_t m_instrument_cache[9][24];
+    uint8_t m_instrument_name_cache[9][256]; //dos style string first byte is the len!
+
 
     // F-Numbers for the Chromatic Scale (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
     static constexpr uint16_t f_numbers[] = {
@@ -367,8 +373,45 @@ public:
     void setInstrument(uint8_t channel, const uint8_t lIns[24]);
     const uint8_t* getInstrument(uint8_t channel) const;
 
+
+    // Helper to get the Pascal string for C++ string (0..8 -> 1..9)
+    std::string getInstrumentNameFromCache(int channel)
+    {
+        if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
+            return "";
+        uint8_t len = m_instrument_name_cache[channel][0];
+
+        // Data starts at [1]. Use reinterpret_cast for modern C++ standards.
+        return std::string(reinterpret_cast<const char*>(&m_instrument_name_cache[channel][1]), len);
+    }
+
+    // hackfest
+    std::string_view extractFilename(std::string_view path) {
+        size_t lastSlash = path.find_last_of("/\\");
+        if (lastSlash == std::string_view::npos) {
+            return path;
+        }
+        return path.substr(lastSlash + 1);
+    }
+
+    // Helper to set a Pascal string from a C-string (0..8 -> 1..9)
+    bool setInstrumentNameInCache(int channel, const char* name) {
+        if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
+            return false;
+
+        name = extractFilename(name).data();
+        size_t len = std::strlen(name);
+        if (len > 255) len = 255; // Turbo Pascal 6 limit
+        // Update length byte at [0]
+        m_instrument_name_cache[channel][0]= static_cast<uint8_t>(len);
+        // Copy data starting at [1].
+        // We don't null-terminate because Pascal doesn't use it.
+        std::memcpy(&m_instrument_name_cache[channel][1], name, len);
+        return true;
+    }
+
     bool loadSongFMS(const std::string& filename, SongData& sd);
-    bool saveSongFMS(const std::string& filename, const SongData& sd); //FIXME NOT TESTED !!!!
+    bool saveSongFMS(const std::string& filename,  SongData& sd);
 
     std::string GetInstrumentName(SongData& sd, int channel);
     bool SetInstrumentName(SongData& sd,int channel, const char* name);
@@ -379,11 +422,11 @@ public:
     {
         start_song(sd,loopit, startAt, stopAt);
     }
-    // stopAt=-1 means == song_length
+    // stopAt=-1 means ==
     void start_song(SongData& sd, bool loopit, int startAt=0, int stopAt=-1);
 
     bool loadInstrument(const std::string& filename, uint8_t channel);
-    bool saveInstrument(const std::string& filename, const uint8_t* instrumentData); //FIXME NOT TESTED !!!!
+    bool saveInstrument(const std::string& filename, uint8_t channel);
     void TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], int noteIndex = 48);
 
     void replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote);

@@ -203,18 +203,44 @@ void EditorGui::DrawGui()
 
     DrawMsgBoxPopup();
 
-//XXTH_TEST
-    static ImFileDialog myDialog;
-    static std::string myCaption;
-    if (myDialog.Draw("File Browser", false, { ".png", ".bmp", ".wav", ".ogg", ".sfx", ".fmi", ".fms" })) {
-         myCaption = "User chose:" + myDialog.selectedFile;
-        LogFMT("File:{} Ext:{}", myDialog.selectedFile, myDialog.selectedExt);
 
-        if ( myDialog.selectedExt == ".fmi" )
-            mFMEditor->loadInstrument(myDialog.selectedFile);
-        if ( myDialog.selectedExt == ".fms" )
-            mFMComposer->loadSong(myDialog.selectedFile);
-        // showMessage("File Browser Message", myCaption);
+
+    if (g_FileDialog.Draw()) {
+        LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+
+        if (g_FileDialog.mSaveMode)
+        {
+            if (!g_FileDialog.mCancelPressed)
+            {
+                if (g_FileDialog.mSaveExt == ".fms")
+                {
+                    if (g_FileDialog.selectedExt == "")
+                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    mFMComposer->saveSong(g_FileDialog.selectedFile);
+                }
+                else
+                if (g_FileDialog.mSaveExt == ".fmi")
+                {
+                    if (g_FileDialog.selectedExt == "")
+                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    mFMEditor->saveInstrument(g_FileDialog.selectedFile);
+                }
+            }
+
+
+            //FIXME fmi
+            //FIXME sfx
+            //reset
+            g_FileDialog.reset();
+        } else {
+            if ( g_FileDialog.selectedExt == ".fmi" )
+                mFMEditor->loadInstrument(g_FileDialog.selectedFile);
+            else
+            if ( g_FileDialog.selectedExt == ".fms" )
+                mFMComposer->loadSong(g_FileDialog.selectedFile);
+
+            //FIXME also load sfx here !!
+        }
     }
 
 

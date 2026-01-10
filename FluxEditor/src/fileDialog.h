@@ -2,8 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-//FIXME: *** W i P ***
-// * add filter
+//TODO: Highlight or someting when in safe mode
 //-----------------------------------------------------------------------------
 // Example:
 //     static ImFileDialog myDialog;
@@ -34,8 +33,22 @@ struct ImFileDialog {
     std::vector<fs::directory_entry> mEntries;
     bool mDirty = true;
 
+    std::string mLabel = "File Browser";
+    bool mSaveMode = false;
+    std::vector<std::string> mFilters = {  ".sfx", ".fmi", ".fms" };
+    std::string mSaveExt = "";
+    bool mCancelPressed = false;
 
-    bool fetchFiles(std::vector<std::string> filters)
+    void reset() {
+        mLabel = "File Browser";
+        mSaveMode = false;
+        mFilters = {  ".sfx", ".fmi", ".fms" };
+        mSaveExt = "";
+        mCancelPressed = false;
+        mDirty = true;
+    }
+
+    bool fetchFiles()
     {
         mEntries.clear();
         try {
@@ -52,7 +65,7 @@ struct ImFileDialog {
                 mExt = path.extension().string();
                 std::transform(mExt.begin(), mExt.end(), mExt.begin(), ::tolower);
 
-                if (filters.empty() || std::find(filters.begin(), filters.end(), mExt) != filters.end()) {
+                if (mFilters.empty() || std::find(mFilters.begin(), mFilters.end(), mExt) != mFilters.end()) {
                     mEntries.push_back(entry);
                 }
             }
@@ -81,7 +94,7 @@ struct ImFileDialog {
 
 
 
-    bool Draw(const char* label, bool isSaveMode, std::vector<std::string> filters) {
+    bool Draw() {
         bool result = false;
 
         // -------- Fetch Files and sort ---------------
@@ -89,12 +102,12 @@ struct ImFileDialog {
         if (mDirty)
         {
             mDirty = false;
-            if (!fetchFiles(filters))
+            if (!fetchFiles())
                 return false;
 
         }
 
-        if (ImGui::Begin(label, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin(mLabel.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
 
             // ------- Top: -----------
@@ -166,7 +179,7 @@ struct ImFileDialog {
             ImGui::InputText("File", fileInput, sizeof(fileInput));
 
             // 4. Buttons
-            if (ImGui::Button(isSaveMode ? "Save" : "Open")) {
+            if (ImGui::Button(mSaveMode ? "Save" : "Open")) {
                 if (strlen(fileInput) > 0) {
                     selectedFile = (fs::path(currentPath) / fileInput).string();
                     selectedExt = fs::path(selectedFile).extension().string();
@@ -175,7 +188,9 @@ struct ImFileDialog {
             }
             ImGui::SameLine();
             if (ImGui::Button("Cancel")) {
-                ImGui::CloseCurrentPopup(); // Or handle state
+                // ImGui::CloseCurrentPopup(); // Or handle state
+                mCancelPressed = true;
+                result = true;
             }
 
 

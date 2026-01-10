@@ -59,7 +59,18 @@ public:
     //--------------------------------------------------------------------------
     bool loadInstrument(const std::string& filename)
     {
-        return mController->loadInstrument(filename, getChannel());
+        if (mController->loadInstrument(filename, getChannel())) {
+            //sync to Composer
+
+            SDL_Event event;
+            SDL_zero(event);
+            event.type = FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED;
+            event.user.code = getChannel();
+            SDL_PushEvent(&event);
+
+            return true;
+        }
+        return false;
     }
     //--------------------------------------------------------------------------
     void resetInstrument()
@@ -144,6 +155,10 @@ public:
         ImGui::Separator();
         if (ImGui::Button("Stop Channel", ImVec2(-FLT_MIN, 0))) {
             mController->stopNote(getChannel());
+        }
+
+        if (ImGui::Button("Silence all.", ImVec2(-FLT_MIN, 0))) {
+            mController->silenceAll(false);
         }
 
         if (!inLine) {
@@ -262,13 +277,18 @@ public:
             bool isAnySliderActive = false; // Track if any slider is being dragged
 
 
-            // 2. Use BeginMenuBar instead of just BeginMenu
+
+            // Use BeginMenuBar instead of just BeginMenu
             if (ImGui::BeginMenuBar())
             {
                 if (ImGui::BeginMenu("File"))
                 {
-                    if (ImGui::MenuItem("Open")) { showMessage("Open", "Open not implemented, yet."); }
-                    if (ImGui::MenuItem("Save")) { showMessage("Save", "Save not implemented, yet."); }
+                    if (ImGui::MenuItem("Open*")) { showMessage("Open", "Use the File Browser to open a Instrument (fmi)"); }
+                    if (ImGui::MenuItem("Save Instrument")) {
+                        g_FileDialog.mSaveMode = true;
+                        g_FileDialog.mSaveExt = ".fmi";
+                        g_FileDialog.mLabel = "Save Instrument (.fmi)";
+                    }
                     ImGui::EndMenu();
                 }
 
@@ -279,16 +299,16 @@ public:
                     // --- NEW CHANNEL SUB-MENU ---
                     if (ImGui::BeginMenu("Select Channel"))
                     {
-                        for (uint8_t i = 0; i < 9; i++)
+                        for (uint8_t ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ch++)
                         {
                             char label[32];
-                            snprintf(label, sizeof(label), "Channel %d", i + 1); // Display 1-9 for users
+                            snprintf(label, sizeof(label), "Channel %d", ch + 1); // Display 1-9 for users
 
                             // MenuItem returns true when clicked
                             // The third parameter (bool selected) shows the checkmark
-                            if (ImGui::MenuItem(label, nullptr, getChannel() == i))
+                            if (ImGui::MenuItem(label, nullptr, getChannel() == ch))
                             {
-                                setChannel(i);
+                                setChannel(ch);
 
                                 // Optional: Reset the local buffer to the new channel's data immediately
                                 lastChannel = -1;
@@ -321,11 +341,11 @@ public:
                 ImGui::SetNextItemWidth(120);
                 if (ImGui::BeginCombo("##ChannelSelect", mController->GetChannelName(getChannel()), ImGuiComboFlags_HeightLarge))
                 {
-                    for (int i = 0; i <= FMS_MAX_CHANNEL; i++)
+                    for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ch++)
                     {
-                        bool is_selected = (getChannel() == i);
-                        if (ImGui::Selectable(mController->GetChannelName(i), is_selected)) {
-                            setChannel(i);
+                        bool is_selected = (getChannel() == ch);
+                        if (ImGui::Selectable(mController->GetChannelName(ch), is_selected)) {
+                            setChannel(ch);
                         }
                         if (is_selected) ImGui::SetItemDefaultFocus();
                     }
@@ -335,8 +355,16 @@ public:
 
                 ImGui::EndMenuBar(); // 3. EndMenuBar, not EndMenu
             }
-
-
+            // fancy instrument name
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImVec2 p0 = ImGui::GetCursorScreenPos();
+            ImVec2 p1 = ImVec2(p0.x + ImGui::GetContentRegionAvail().x, p0.y + ImGui::GetTextLineHeightWithSpacing());
+            draw_list->AddRectFilled(p0, p1, ImGui::GetColorU32(ImGuiCol_HeaderActive), 4.0f);
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
+            ImGui::Indent(5.0f);
+            ImGui::Text("%s", mController->getInstrumentNameFromCache(getChannel()).c_str());
+            ImGui::Unindent(5.0f);
+            //<<< fancy
             if (ImGui::BeginTable("Params", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV))
             {
                 // Setup columns: [Mod Label] [Mod Slider] [Car Label] [Car Slider]
@@ -445,6 +473,11 @@ public:
         }
     }
 
+    void saveInstrument(std::string filename)
+    {
+        //FIXME need to update the instrument name !
+        mController->saveInstrument(filename, getChannel());
+    }
 
 
 };

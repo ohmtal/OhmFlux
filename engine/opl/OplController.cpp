@@ -16,6 +16,7 @@
 #include <audio/fluxAudio.h>
 #endif
 
+
 //------------------------------------------------------------------------------
 OplController::OplController(){
     // mChip = new ymfm::ym3812(mInterface); //OPL2
@@ -94,6 +95,11 @@ bool OplController::initController()
 
     SDL_ResumeAudioStreamDevice(mStream);
 
+    // null the cache
+    std::memset(m_instrument_cache, 0, sizeof(m_instrument_cache));
+    std::memset(m_instrument_name_cache, 0, sizeof(m_instrument_name_cache));
+
+
     return true;
 }
 
@@ -144,17 +150,12 @@ void OplController::set_speed(uint8_t songspeed)
 //------------------------------------------------------------------------------
 void OplController::setPlaying(bool value, bool hardStop)
 {
-    // SDL2 SDL_LockAudio(); // Protect shared variables from the audio thread
-
     mSeqState.playing = value;
 
     if (!value) // We are Pausing or Stopping
     {
         this->silenceAll(hardStop);
     }
-    // If value is true, the sequencer just resumes from current m_seq.song_counter
-
-    // SDL2 SDL_UnlockAudio();
 }
 //------------------------------------------------------------------------------
 void OplController::togglePause()
@@ -543,7 +544,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
     Log("INFO: Song Header Loaded. Speed: %u, Length: %u", sd.song_delay, sd.song_length);
 
     // Safety check for 2026 memory limits
-    if (sd.song_length > 1000) {
+    if (sd.song_length > FMS_MAX_SONG_LENGTH) {
         Log("ERROR: song_length (%u) exceeds maximum allowed (1000)", sd.song_length);
         return false;
     }
@@ -564,9 +565,10 @@ bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
     Log("SUCCESS: Song '%s' loaded completely.", filename.c_str());
 
     // 4. Update OPL with new instruments
-    for (int i = 0; i < 9; ++i) {
+    for (int ch = FMS_MIN_CHANNEL; ch <= FMS_MAX_CHANNEL; ++ch) {
         // Hardware Channel 'i' (0-8) gets Instrument Data 'i+1' (1-9)
-        setInstrument(i, sd.ins_set[i + 1]);
+        setInstrument(ch, sd.ins_set[ch + 1]);
+        setInstrumentNameInCache(ch, GetInstrumentName(sd,ch).c_str());
     }
 
     return true;
@@ -581,7 +583,7 @@ std::string OplController::GetInstrumentName(SongData& sd, int channel) {
         Log("Error: GetInstrumentName with invalid channel ! %d", channel);
         return "";
     }
-    return sd.getInstrumentNamePascalString(channel);
+    return sd.getInstrumentName(channel);
 }
 
 /**
@@ -593,32 +595,46 @@ bool OplController::SetInstrumentName(SongData& sd, int channel, const char* nam
         Log("Error: setInstrumentName with invalid channel ! %d", channel);
         return false;
     }
-    return sd.setInstrumentNamePascalString(channel, name);
+    setInstrumentNameInCache(channel,name);
+    return sd.setInstrumentName(channel, name);
 }
 
 //------------------------------------------------------------------------------
-bool OplController::saveSongFMS(const std::string& filename, const SongData& sd) {
+bool OplController::saveSongFMS(const std::string& filename, SongData& sd) {
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) return false;
 
-    // 1. Write Instruments
+    // Sync Live Cache to SongData (Slots 1-9)
+    // Clear Slot 0 so it remains "empty"
+    std::memset(sd.ins_set[0], 0, 24);
+    // Copy 9 live instruments from cache into sd.ins_set[1...9]
+    std::memcpy(&sd.ins_set[1][0], m_instrument_cache, sizeof(m_instrument_cache));
+
+    // Write Instruments (Indices 1-9)
     for (int ch = 1; ch <= 9; ++ch) {
-        file.write(reinterpret_cast<const char*>(&sd.actual_ins[ch]), 1);
-        file.write(reinterpret_cast<const char*>(&sd.ins_set[ch][0]), 24);
+        // FIX: Must write 256 bytes for name to match your loader's file.read(..., 256)
+        file.write(reinterpret_cast<const char*>(sd.actual_ins[ch]), 256);
+
+        // Write 24 bytes for instrument settings
+        file.write(reinterpret_cast<const char*>(sd.ins_set[ch]), 24);
     }
 
-    // 2. Write Speed and Length
-    file.write(reinterpret_cast<const char*>(&sd.song_delay), 2);
+    // Write Metadata
+    // Loader expects 1 byte for delay
+    uint8_t delay8 = static_cast<uint8_t>(sd.song_delay);
+    file.write(reinterpret_cast<const char*>(&delay8), 1);
+
+    // Loader expects 2 bytes for length
     file.write(reinterpret_cast<const char*>(&sd.song_length), 2);
 
-    // 3. Write Song Notes (Adjusted for 0-based memory)
-    for (int i = 0; i < sd.song_length; ++i) { // Start at 0
-        for (int j = 0; j <= FMS_MAX_CHANNEL; ++j) {           // Start at 0 (OPL Channels 0-8)
-            // Ensure you write exactly 2 bytes if your song grid is int16_t
+    // Write Notes
+    for (int i = 0; i < sd.song_length; ++i) {
+        for (int j = 0; j <= FMS_MAX_CHANNEL; ++j) {
             file.write(reinterpret_cast<const char*>(&sd.song[i][j]), 2);
         }
     }
 
+    file.close();
     return file.good();
 }
 //------------------------------------------------------------------------------
@@ -647,6 +663,8 @@ void OplController::start_song(SongData& sd, bool loopit, int startAt, int stopA
     // SDL2 SDL_UnlockAudio(); // Let the callback thread resume
 }
 //------------------------------------------------------------------------------
+
+
 bool OplController::loadInstrument(const std::string& filename, uint8_t channel)
 {
     if (channel > FMS_MAX_CHANNEL)
@@ -660,13 +678,17 @@ bool OplController::loadInstrument(const std::string& filename, uint8_t channel)
 
     if (file.gcount() == 24) {
         setInstrument(channel, instrumentData);
+        setInstrumentNameInCache(channel, filename.c_str());
         return true;
     }
 
     return false;
 }
 //------------------------------------------------------------------------------
-bool OplController::saveInstrument(const std::string& filename, const uint8_t* instrumentData) {
+bool OplController::saveInstrument(const std::string& filename, uint8_t channel)
+{
+    if (channel > FMS_MAX_CHANNEL)
+        return false;
     // std::ios::binary is essential to prevent CRLF translation on Windows
     std::ofstream file(filename, std::ios::binary);
 
@@ -675,7 +697,7 @@ bool OplController::saveInstrument(const std::string& filename, const uint8_t* i
     }
 
     // Write the 24-byte block exactly as it exists in memory
-    file.write(reinterpret_cast<const char*>(instrumentData), 24);
+    file.write(reinterpret_cast<const char*>(getInstrument(channel)), 24);
 
     return file.good(); // Returns true if the write was successful
 }

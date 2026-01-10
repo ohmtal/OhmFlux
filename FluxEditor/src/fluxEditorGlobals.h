@@ -2,14 +2,20 @@
 
 #include <imgui.h>
 #include <string>
+#include "fileDialog.h"
 
-static S32 FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED = 0;
-static S32 FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED = 0;
+//SDL Events
+inline U32 FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED = 0;
+inline U32 FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED = 0;
+inline U32 FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED = 0;
 
+//File Dialog
+inline ImFileDialog g_FileDialog;
 
-static bool POPUP_MSGBOX_ACTIVE = false;
-static std::string POPUP_MSGBOX_CAPTION = "Msg";
-static std::string POPUP_MSGBOX_TEXT   = "..";
+//MessageBox
+inline bool POPUP_MSGBOX_ACTIVE = false;
+inline std::string POPUP_MSGBOX_CAPTION = "Msg";
+inline std::string POPUP_MSGBOX_TEXT   = "..";
 
 inline void showMessage(std::string caption, std::string text)
 {
