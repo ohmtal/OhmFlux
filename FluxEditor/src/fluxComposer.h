@@ -208,7 +208,7 @@ public:
         // ---- Header -----
 
         ImGui::SetNextItemWidth(200.0f);
-        if (ImGui::SliderInt("Channel", &lChannel,
+        if (ImGui::SliderInt("##ChannelSlider", &lChannel,
             FMS_MIN_CHANNEL, FMS_MAX_CHANNEL,
             mController->GetChannelName(lChannel)))
         {
@@ -221,7 +221,7 @@ public:
         ImGui::Checkbox("Live Mode",&mLiveMode);
 
 
-        ImGui::BeginDisabled(isPlaying());
+        ImGui::BeginDisabled(!mInsertMode);
         ImGui::SameLine();
         if (ImGui::Button("add (===)", lButtonSize)) {
             insertTone("===");
@@ -258,6 +258,12 @@ public:
         float whiteWidth = 40.0f, whiteHeight = 90.0f;
         float blackWidth = 26.0f, blackHeight = 50.0f;
 
+        ImVec4 lWhileColor = ImColor4F(cl_LightGray);
+        ImVec4 lWhileColorHoover = ImColor4F(cl_SkyBlue);
+        if (mInsertMode) {
+            lWhileColor = ImColor4F(cl_White);
+        }
+
         // 1. Draw White Keys (Allowing Overlap)
         int whiteKeyCount = 0;
         for (int i = 0; i < lScaleCount; i++) {
@@ -273,6 +279,11 @@ public:
 
             bool isNull = (currentOctave == 0 && i == 0);
             if (isNull) ImGui::BeginDisabled();
+
+
+            ImGui::PushStyleColor(ImGuiCol_Button, lWhileColor);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, lWhileColorHoover);
+
 
             ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
             // add or play note
@@ -291,10 +302,11 @@ public:
             if ((i % 12) == 0)
             {
                 ImGui::SetCursorScreenPos(ImVec2(startPos.x + 5 + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight - 20.f));
-                ImGui::TextColored(ImColor4F(cl_Aquamarine), "%s%d",keys[i % 12].name,  mController->getOctaveByChannel(lChannel)+lOctaveAdd);
+                ImGui::TextColored(ImColor4F(cl_Black), "%s%d",keys[i % 12].name,  mController->getOctaveByChannel(lChannel)+lOctaveAdd);
             }
 
             if (isNull) ImGui::EndDisabled();
+            ImGui::PopStyleColor(2);
             ImGui::PopID();
             whiteKeyCount++;
         }

@@ -186,12 +186,16 @@ struct ImFileDialog {
                     result = true;
                 }
             }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel")) {
-                // ImGui::CloseCurrentPopup(); // Or handle state
-                mCancelPressed = true;
-                result = true;
+            if (mSaveMode)
+            {
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel")) {
+                    // ImGui::CloseCurrentPopup(); // Or handle state
+                    mCancelPressed = true;
+                    result = true;
+                }
             }
+
 
 
         }
