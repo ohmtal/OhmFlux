@@ -5,7 +5,8 @@
 // TODO: to options:
 //              FluxEditorOplController => mSyncInstrumentChannel
 //              fileDialog => mDefaultPath
-// TODO: save your own settings file !! and ImGui ==> SaveIniSettingsToMemory
+// 2026-01-10
+// * save your own settings file !! and ImGui ==> SaveIniSettingsToMemory
 //-----------------------------------------------------------------------------
 
 #pragma once

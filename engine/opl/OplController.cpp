@@ -699,7 +699,11 @@ bool OplController::saveInstrument(const std::string& filename, uint8_t channel)
     // Write the 24-byte block exactly as it exists in memory
     file.write(reinterpret_cast<const char*>(getInstrument(channel)), 24);
 
-    return file.good(); // Returns true if the write was successful
+    if  (file.good() ) {
+        setInstrumentNameInCache(channel, filename.c_str());
+        return true;
+    }
+    return false;
 }
 //------------------------------------------------------------------------------
 void OplController::TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], int noteIndex) {

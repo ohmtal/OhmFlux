@@ -241,7 +241,6 @@ void EditorGui::DrawGui()
             }
 
 
-            //FIXME fmi
             //FIXME sfx
             //reset
             g_FileDialog.reset();

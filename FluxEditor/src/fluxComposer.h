@@ -25,8 +25,13 @@
 // * check for active window on event => note input
 // *  OplController does not save the instruments ....!!!
 //
-// TODO: Instrument names.. added cache but name must be also set on resetInstrument and
+// 2026-01-10
+// * Instrument names.. added cache but name must be also set on resetInstrument and
 //       presets ... also when it saved = overwritten
+//
+// * Save settings
+//
+// TODO: toggle melodic mode ++ save in settings
 //
 // TODO: Record mode with pre ticker like my guitar looper
 //       Before i do this i should find out why record mode is so laggy!
@@ -477,7 +482,7 @@ public:
             if (ImGui::IsKeyPressed(key))
             {
                 bool lShiftPressed = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
-                int lChannel = getCurrentChannel();
+                // int lChannel = getCurrentChannel();
 
                 insertTone(lShiftPressed ? sharp : natural);
                 return true;
@@ -1089,9 +1094,9 @@ public:
 
     int getCurrentChannel()
     {
-        //FIXME sanity ??
-        return mSelectedCol - 1;
+        return  std::clamp(mSelectedCol - 1, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL);
     }
+
     int setChannel( int lChannel, bool fireEvent = true)
     {
         lChannel = std::clamp(lChannel, FMS_MIN_CHANNEL, FMS_MAX_CHANNEL);

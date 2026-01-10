@@ -64,7 +64,7 @@
 // always good ;)
 #include <algorithm>
 
-//FIXME ? rewrite instrument data to std::array<uint8_t, 24>
+//Maybe rewrite instrument data to std::array<uint8_t, 24>
 #include <array>
 
 #include <mutex>

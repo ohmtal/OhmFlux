@@ -61,7 +61,6 @@ public:
     {
         if (mController->loadInstrument(filename, getChannel())) {
             //sync to Composer
-
             SDL_Event event;
             SDL_zero(event);
             event.type = FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED;
@@ -262,7 +261,7 @@ public:
     //--------------------------------------------------------------------------
     void DrawInstrumentEditor()
     {
-        // 1. Get the current data from the controller to fill our local editor
+        // Get the current data from the controller to fill our local editor
         // We use a static or persistent buffer so the UI is responsive
         static uint8_t editBuffer[24];
         static int lastChannel = -1;
@@ -481,10 +480,22 @@ public:
         }
     }
 
-    void saveInstrument(std::string filename)
+    bool saveInstrument(std::string filename)
     {
         //FIXME need to update the instrument name !
-        mController->saveInstrument(filename, getChannel());
+        if (mController->saveInstrument(filename, getChannel()))
+        {
+            //sync to Composer
+            SDL_Event event;
+            SDL_zero(event);
+            event.type = FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED;
+            event.user.code = getChannel();
+            SDL_PushEvent(&event);
+
+            return true;
+        }
+
+        return false;
     }
 
 
