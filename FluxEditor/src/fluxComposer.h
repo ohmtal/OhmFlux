@@ -67,8 +67,9 @@ private:
     int mSelectionPivot = -1;
     int mSelectedCol = 1;
     int mLastSetChannel = -1;
-    bool mIsEditing = false;
-    bool mJustOpenThisFrame = false;
+    // disabled !! dont need this anymore .. FIXME cleanup
+    // bool mIsEditing = false;
+    // bool mJustOpenThisFrame = false;
     char mEditBuffer[32] = "";
 
     bool mScrollToSelected = false;
@@ -124,9 +125,6 @@ public:
         }
 
         // Initialize SongData
-        mSongData.song_delay = 15; // Default from Pascal code
-        mSongData.song_length = mNewSongLen;
-        mSongData.init();
         newSong();
 
         return true;
@@ -145,8 +143,7 @@ public:
 
         if (mController->loadSongFMS(filename, mSongData))
         {
-            mStartAt = 0;
-            mEndAt = mSongData.song_length;
+            resetSongSettings();
             return true;
         }
         return false;
@@ -157,6 +154,7 @@ public:
     void setController(FluxEditorOplController* controller)  { mController = controller;  }
     FluxEditorOplController*  getController()   { return mController;  }
     //-----------------------------------------------------------------------------------------------------
+    void resetSelection() { mSelectionPivot = -1;}
     uint16_t getSelectionMin() { return (mSelectionPivot == -1) ? mSelectedRow : std::min(mSelectedRow, mSelectionPivot); }
     uint16_t getSelectionMax() { return (mSelectionPivot == -1) ? mSelectedRow : std::max(mSelectedRow, mSelectionPivot); }
     uint16_t getSelectionLen() { return (mSelectionPivot == -1) ? 1 : std::max(mSelectedRow, mSelectionPivot); }
@@ -373,7 +371,7 @@ public:
 
         // Use a simpler ID system to prevent ID collisions during clipping
         ImGui::PushID(lCol);
-
+/*
         if (is_selected && mIsEditing) {
             // --- EDIT MODE ---
             ImGui::SetKeyboardFocusHere();
@@ -391,7 +389,8 @@ public:
             if (ImGui::IsItemDeactivated() && !ImGui::IsItemDeactivatedAfterEdit()) {
                 mIsEditing = false;
             }
-        } else {
+        } else*/
+        {
             // --- VIEW MODE ---
             const char* lDisplayText = "...";
             ImVec4 lColor = ImColor4F(cl_Gray);
@@ -415,7 +414,7 @@ public:
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0,0,0,0));
             ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0,0,0,0));
 
-            // 3. The Selectable MUST be exactly the size of the cell to keep the clipper stable
+            // The Selectable MUST be exactly the size of the cell to keep the clipper stable
             if (ImGui::Selectable("##select", is_selected, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowOverlap, ImVec2(0, 0))) {
                 mSelectedRow = lRow;
                 mSelectedCol = lCol;
@@ -428,18 +427,18 @@ public:
                 {
                     bool lShiftPressed = ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift);
                     if  (!lShiftPressed)
-                        mSelectionPivot = -1;
+                        resetSelection();
                 }
 
                 // This resets focus to the parent window to keep keyboard nav clean
                 ImGui::SetWindowFocus(nullptr);
                 ImGui::SetWindowFocus("FM Song Composer");
 
-                if (ImGui::IsMouseDoubleClicked(0)) {
-                    mIsEditing = true;
-                    mJustOpenThisFrame = true;
-                    snprintf(mEditBuffer, sizeof(mEditBuffer), "%s", lDisplayText);
-                }
+                // if (ImGui::IsMouseDoubleClicked(0)) {
+                //     mIsEditing = true;
+                //     mJustOpenThisFrame = true;
+                //     snprintf(mEditBuffer, sizeof(mEditBuffer), "%s", lDisplayText);
+                // }
             }
             ImGui::PopStyleColor(2);
 
@@ -517,7 +516,7 @@ public:
                 if (ImGui::BeginMenu("Action"))
                 {
 
-                    if (ImGui::MenuItem("Play selected")) { playSelected(); }
+                    if (ImGui::MenuItem("Play selected")) { playSong(1); }
                     if (ImGui::MenuItem("Silence all.")) { mController->silenceAll(false); }
                     ImGui::Separator();
                     if (ImGui::MenuItem("Activate all channel")) {mController->setAllChannelActive(true);}
@@ -570,8 +569,7 @@ public:
                 } else {
                     if (ImGui::Button("Play",lButtonSize))
                     {
-                        // For demonstration, play a C-4 note on the current channel
-                        mController->playSong(mSongData, mLoop, mStartAt, mEndAt);
+                        playSong(3); //autodetect
                     }
                 }
 
@@ -603,7 +601,7 @@ public:
             //---------------------- SongDisplay >>>>>>>>>>>>>>>>>>>
 
             // if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !is_editing)
-            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput && !mIsEditing)
+            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput/* && !mIsEditing*/)
 
             {
                 bool lAltPressed = ImGui::IsKeyDown(ImGuiKey_LeftAlt) || ImGui::IsKeyDown(ImGuiKey_RightAlt);
@@ -622,13 +620,13 @@ public:
                 if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true) /*|| lWheel > 0*/)
                 {
                     mSelectedRow = std::max(0, mSelectedRow - 1);
-                    if (!lShiftPressed) mSelectionPivot = -1;
+                    if (!lShiftPressed) resetSelection();
                 }
                 else
                 if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true) /*|| lWheel < 0*/)
                 {
                     mSelectedRow = std::min(static_cast<int>(mSongData.song_length), mSelectedRow + 1);
-                    if (!lShiftPressed) mSelectionPivot = -1;
+                    if (!lShiftPressed) resetSelection();
                 }
                 else
                 if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  channelDown();
@@ -639,37 +637,37 @@ public:
                 {
                     int newRow = std::max(0, mSelectedRow - 16);
                     mSelectedRow = newRow;
-                    if (!lShiftPressed) mSelectionPivot = -1;
+                    if (!lShiftPressed) resetSelection();
                 }
                 else
                 if (ImGui::IsKeyPressed(ImGuiKey_PageDown))
                 {
                     mSelectedRow = std::min(static_cast<int>(mSongData.song_length), mSelectedRow + 16);
-                    if (!lShiftPressed) mSelectionPivot = -1;
+                    if (!lShiftPressed) resetSelection();
                 }
                 else
                 if (ImGui::IsKeyPressed(ImGuiKey_Home)) {
                     mSelectedRow = 0;
-                    if (!lShiftPressed) mSelectionPivot = -1;
+                    if (!lShiftPressed) resetSelection();
                 }
                 else
                 if (ImGui::IsKeyPressed(ImGuiKey_End)) {
                     // Use your song_length or the absolute max row (999)
                     mSelectedRow = mSongData.song_length > 0 ? (mSongData.song_length - 1) : 0;
-                    if (!lShiftPressed) mSelectionPivot = -1;
+                    if (!lShiftPressed) resetSelection();
                 } else {
                     mScrollToSelected = false;
                 }
 
 
 
-                if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)) {
+/*                if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)) {
                     mIsEditing = true;
                     mJustOpenThisFrame = true; // SET THIS FLAG
 
                     std::string current = mController->getNoteNameFromId(mSongData.song[mSelectedRow][mSelectedCol-1]);
                     snprintf(mEditBuffer, sizeof(mEditBuffer), "%s", current.c_str());
-                } else {
+                } else */{
 
 
                     int lChannel = getCurrentChannel();
@@ -913,10 +911,10 @@ public:
 
                     while (clipper.Step())
                     {
-                        for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                        for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
                         {
                             ImGui::TableNextRow(ImGuiTableRowFlags_None, 20.0f);
-                            ImGui::PushID(i);
+                            ImGui::PushID(row);
 
                             static Color4F lNoteColor;
                             lNoteColor = cl_White;
@@ -936,7 +934,7 @@ public:
 
                             if (isPlaying())
                             {
-                                if (i == mCurrentPlayingRow)
+                                if (row == mCurrentPlayingRow)
                                 {
                                     // Highlight row using RowBg0 (standard for active rows)
                                     ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, mPlayingRowColor);
@@ -948,10 +946,14 @@ public:
                                     }
 
                                 }
+                                // show selection on row 0 only
+                                if (isRowSelected(row))
+                                    ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, mSelectedRowColor, 0 );
 
-                            } else if (isRowSelected(i)) {
+                            }
+                            else if (isRowSelected(row)) {
 
-                                static bool sSelectedRow =  i == mSelectedRow;
+                                static bool sSelectedRow =  row == mSelectedRow;
 
                                 if ( sSelectedRow || mSelectionPivot >= 0 )
                                 {
@@ -968,7 +970,7 @@ public:
                                 }
 
 
-                                if (mScrollToSelected && mSelectedRow > clipper.DisplayEnd - 3)
+                                if (!isPlaying() && mScrollToSelected && mSelectedRow > clipper.DisplayEnd - 3)
                                 {
                                     ImGui::SetScrollHereY(0.5f);
                                     // ImGui::SetScrollHereY(0.0f);
@@ -983,11 +985,11 @@ public:
 
                             // ----- Draw Sequence Number -----
                             ImGui::TableSetColumnIndex(0);
-                            ImGui::Text("%03d", i + 1);
+                            ImGui::Text("%03d", row + 1);
 
                             // Draw Channels
-                            for (int j = 1; j <= 9; j++) {
-                                DrawNoteCell(i, j, mSongData.song[i][j-1], mController, lNoteColor);
+                            for (int col = 1; col <= 9; col++) {
+                                DrawNoteCell(row, col, mSongData.song[row][col-1], mController, lNoteColor);
                             }
 
                             ImGui::PopID();
@@ -1024,7 +1026,7 @@ public:
 
     void deleteSelected() {
         mController->deleteSongRange(mSongData,  getSelectionMin(), getSelectionMax());
-        mSelectionPivot = -1;
+        resetSelection();
     }
     void insertEmpty() {
         if ( (mSelectedRow == mSongData.song_length) && (mSongData.song_length <= FMS_MAX_SONG_LENGTH) ) {
@@ -1043,9 +1045,27 @@ public:
         mController->decOctaveByChannel(getCurrentChannel());
     }
     //--------------------------------------------------------------------------
-    void playSelected()
+    /*
+     * Playmodes:
+     *      0 (default)= With startat/endAt
+     *      1 = only selection
+     *      2 = full Song
+     *      3 = autodetect
+     */
+    void playSong(U8 playMode = 0)
     {
-        mController->playSong(mSongData, mLoop, getSelectionMin(), getSelectionMax());
+        switch (playMode)
+        {
+            case 1: mController->playSong(mSongData, mLoop, getSelectionMin(), getSelectionMax());break;
+            case 2: mController->playSong(mSongData, mLoop); break;
+            case 3:
+                if (getSelectionLen() > 1)
+                    playSong(1);
+                else
+                    playSong(0);
+                break;
+            default: mController->playSong(mSongData, mLoop, mStartAt, mEndAt); break;
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -1153,9 +1173,24 @@ public:
         return mController->saveSongFMS(filename, mSongData);
     }
 
-    void newSong() {
-        mSongData.song_length = FMS_MAX_SONG_LENGTH;
-        mController->clearSong(mSongData);
-        mSongData.song_length = mNewSongLen;
+    void resetSongSettings()
+    {
+        mStartAt = 0;
+        mEndAt = -1;
+        resetSelection();
+        // maybe mLoop = false;
+        mController->setAllChannelActive(true);
+
     }
-};
+
+
+
+    void newSong(bool resetInstruments = true) {
+        mSongData.init();
+        mSongData.song_delay = 15;
+        mSongData.song_length = mNewSongLen;
+        resetSongSettings();
+        if (resetInstruments)
+            mController->loadInstrumentPreset();
+    }
+}; //class
