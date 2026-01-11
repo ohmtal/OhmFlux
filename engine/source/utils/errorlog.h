@@ -18,10 +18,8 @@
 
 // dLog
 #ifdef FLUX_DEBUG
-// The ## allows for zero arguments after the format string (GCC/Clang extension)
 #define dLog(fmt, ...) Log(fmt, ##__VA_ARGS__)
 #else
-// Using an empty inline function or (void)0 is fine
 #define dLog(fmt, ...) ((void)0)
 #endif
 

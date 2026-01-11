@@ -31,6 +31,8 @@ int main(int argc, char* argv[])
 
     g_FluxEditor = game;
 
+
+
     game->Execute();
     SAFE_DELETE(game);
     return 0;

@@ -479,14 +479,9 @@ struct FluxSettings
     std::string getPrefsPath() {
         std::unique_ptr<char, void(*)(void*)> rawPath(
             SDL_GetPrefPath(getSafeCompany().c_str(), getSafeCaption().c_str()),
-                                                      SDL_free
+            SDL_free
         );
-
-        if (rawPath) {
-            return std::string(rawPath.get());
-        }
-
-        return "";
+        return rawPath ? std::string(rawPath.get()) : "";
     }
 
     std::string getSafeCompany() {
@@ -497,6 +492,49 @@ struct FluxSettings
     }
 
 } ;
+//-----------------------------------------------------------------------------
+inline std::string getUserFolder(SDL_Folder folder){
+    const char* rawPath = SDL_GetUserFolder(folder);
+    if (rawPath) {
+        std::string result(rawPath);
+        SDL_free(const_cast<char*>(rawPath));
+        return result;
+    }
+    return "";
+}
+
+inline std::string getHomePath()      { return getUserFolder( SDL_FOLDER_HOME ) ; }
+inline std::string getDesktopPath()   { return getUserFolder( SDL_FOLDER_DESKTOP ) ; }
+inline std::string getDocumentsPath() { return getUserFolder( SDL_FOLDER_DOCUMENTS ) ; }
+inline std::string getDownloadPath()  { return getUserFolder( SDL_FOLDER_DOWNLOADS ) ; }
+inline std::string getMusicPath()     { return getUserFolder( SDL_FOLDER_MUSIC ) ; }
+inline std::string getPicturesPath()  { return getUserFolder( SDL_FOLDER_PICTURES ) ; }
+inline std::string getVideosPath()    { return getUserFolder( SDL_FOLDER_VIDEOS ) ; }
+
+inline const std::string getGamePath(){
+    const char* rawPath = SDL_GetBasePath();
+    if (rawPath) {
+        std::string result(rawPath);
+        SDL_free(const_cast<char*>(rawPath));
+        return result;
+    }
+    return "";
+}
+
+
+// example: dumpPathes(&game->mSettings);
+inline void dumpPathes(FluxSettings* settings=nullptr) {
+    if ( settings )
+        SDL_Log("Prefs Path:%s", settings->getPrefsPath().c_str());
+
+    SDL_Log("Game Path:%s", getGamePath().c_str());
+    SDL_Log("Home Path:%s", getHomePath().c_str());
+    SDL_Log("Desktop Path:%s", getDesktopPath().c_str());
+    SDL_Log("Document Path:%s", getDocumentsPath().c_str());
+    SDL_Log("Download Path:%s", getDownloadPath().c_str());
+    SDL_Log("Music Path:%s", getMusicPath().c_str());
+    SDL_Log("Video Path:%s", getVideosPath().c_str());
+}
 
 
 //-----------------------------------------------------------------------------
