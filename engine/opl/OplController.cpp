@@ -833,7 +833,8 @@ void OplController::tickSequencer() {
             }
         }
         mSeqState.song_needle++;
-    } else {
+    }
+    if (mSeqState.song_needle >=  s.song_length){
         if (mSeqState.loop)
         {
             if (mSeqState.song_startAt > mSeqState.song_stopAt)
