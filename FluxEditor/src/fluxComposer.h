@@ -1281,7 +1281,7 @@ public:
     {
         switch (playMode)
         {
-            case 1: mController->playSong(mSongData, mLoop, getSelectionMin(), getSelectionMax());break;
+            case 1: mController->playSong(mSongData, mLoop, getSelectionMin(), getSelectionMax() + 1);break;
             case 2: mController->playSong(mSongData, mLoop); break;
             case 3:
                 if (getSelectionLen() > 1)

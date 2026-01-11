@@ -837,7 +837,7 @@ void OplController::tickSequencer() {
         }
         mSeqState.song_needle++;
     }
-    if (mSeqState.song_needle >=  s.song_length){
+    if (mSeqState.song_needle >= s.song_length || mSeqState.song_needle >= mSeqState.song_stopAt){
         if (mSeqState.loop)
         {
             if (mSeqState.song_startAt > mSeqState.song_stopAt)
