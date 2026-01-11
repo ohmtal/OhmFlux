@@ -15,6 +15,7 @@ static const int  OPL_MAX_OCTAVE = 8;
 
 class FluxEditorOplController : public OplController
 {
+    typedef OplController Parent ;
 public:
 
     virtual ~FluxEditorOplController() = default;
@@ -205,6 +206,10 @@ public:
     // override for only playing active channel
     void tickSequencer() override
     {
+        // testing after changes:
+        // Parent::tickSequencer();
+        // return ;
+
         const SongData& s = *mSeqState.current_song;
 
         if ( mSeqState.song_stopAt > s.song_length )
