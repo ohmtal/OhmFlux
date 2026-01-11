@@ -54,8 +54,8 @@ bool EditorGui::Initialize()
 void EditorGui::Deinitialize()
 {
 
+    SAFE_DELETE(mFMComposer); //Composer before FMEditor !!!
     SAFE_DELETE(mFMEditor);
-    SAFE_DELETE(mFMComposer);
     SAFE_DELETE(mSfxEditor);
     SAFE_DELETE(mGuiGlue);
 

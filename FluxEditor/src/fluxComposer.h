@@ -180,8 +180,9 @@ public:
         mLoop       = SettingsManager().get("fluxComposer::Loop", false);
         mController->setMelodicMode(SettingsManager().get("fluxComposer::MelodicMode", true));
         mController->loadInstrumentPreset();
-        mController->setRenderMode(SettingsManager().get("fluxComposer::RenderMode", OplController::RenderMode::RAW));
 
+        int lMode = SettingsManager().get("fluxComposer::RenderMode", 0);
+        mController->setRenderMode(static_cast<OplController::RenderMode>(lMode));
 
         return true;
     }
@@ -192,7 +193,9 @@ public:
         SettingsManager().set("fluxComposer::LiveMode", mLiveMode);
         SettingsManager().set("fluxComposer::Loop", mLoop);
         SettingsManager().set("fluxComposer::MelodicMode", mController->getMelodicMode());
-        SettingsManager().set("fluxComposer::RenderMode", mController->getRenderMode());
+
+        int lMode = static_cast<int>(mController->getRenderMode());
+        SettingsManager().set("fluxComposer::RenderMode", lMode);
 
         // std::unique_ptr<Controller> mController; would be better ^^
         if (mController && mItsMyController)
