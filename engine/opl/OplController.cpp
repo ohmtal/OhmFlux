@@ -288,31 +288,6 @@ void OplController::playNoteDOS(int channel, int noteIndex) {
     if (!mMelodicMode && channel >= 6) {
         playDrum(channel, noteIndex);
         return;
-
-        // // 1. Set the Frequency/Pitch for the drum (Drums still need a pitch!)
-        // uint8_t a0_val = myDosScale[noteIndex][1];
-        // uint8_t b0_val = myDosScale[noteIndex][0] & ~0x20; // REMOVE the melodic Key-On bit
-        // write(0xA0 + channel, a0_val);
-        // write(0xB0 + channel, b0_val); // Write block/fnum WITHOUT turning the note "on"
-        //
-        // // 2. Trigger the specific hardware drum bit in 0xBD
-        // uint8_t drumMask = 0;
-        // // 2026-01-11 fixed drumMask
-        // // if (channel == 6) drumMask = 0x10; // Bass Drum
-        // // if (channel == 7) drumMask = 0x08; // Snare (Note: You'd need logic to pick Snare vs HH)
-        // // if (channel == 8) drumMask = 0x04; // Tom (Note: You'd need logic to pick Tom vs Cym)
-        //
-        //
-        // if (channel == 6) drumMask = 0x10; // Bass Drum
-        // if (channel == 7) drumMask = 0x08 | 0x01; // Snare & Hi-Hat
-        // if (channel == 8) drumMask = 0x04 | 0x02; // Tom & Cymbal
-        //
-        // // Trigger: Off then On (to ensure a fresh hit)
-        // uint8_t currentBD = readShadow(0xBD);
-        // write(0xBD, currentBD & ~drumMask);
-        // write(0xBD, currentBD | drumMask);
-
-        return; // Exit here so we don't execute the melodic code below
     }
 
     // --- STANDARD MELODIC LOGIC (Channels 0-5, or all if MelodicMode is true) ---
@@ -325,37 +300,6 @@ void OplController::playNoteDOS(int channel, int noteIndex) {
     //XXTH TEST last_block_values[channel] = b0_val;
 }
 
-//   ---------- before Rhythm Mode:  ---------------
-// void OplController::playNoteDOS(int channel, int noteIndex) {
-//     if (channel < 0 || channel > 8) return;
-//
-//     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
-//
-//     // 1. Handle "No Note" or "Rest"
-//     // Since your table is 1-based [85], index 0 is safety/padding.
-//     if (noteIndex <= 0 || noteIndex >= 85) {
-//         stopNote(channel);
-//         return;
-//     }
-//
-//     // 2. Force Key-Off to ensure the OPL envelope re-triggers
-//     stopNote(channel);
-//
-//
-//     // 3. Translate the index using your myDosScale table
-//     uint8_t b0_val = myDosScale[noteIndex][0]; // The Key-On/Block/F-High byte
-//     uint8_t a0_val = myDosScale[noteIndex][1]; // The F-Low byte
-//
-//     // 4. Write to the OPL registers
-//     // Register A0-A8: F-Number Low
-//     write(0xA0 + channel, a0_val);
-//
-//     // Register B0-B8: Key-On, Block, and F-Number High
-//     write(0xB0 + channel, b0_val);
-//
-//     // 5. Save the value so stopNote() knows which block/frequency to turn off
-//     last_block_values[channel] = b0_val;
-// }
 //------------------------------------------------------------------------------
 void OplController::playNote(int channel, int noteIndex) {
     if (channel < 0 || channel > 8)
@@ -376,8 +320,6 @@ void OplController::playNote(int channel, int noteIndex) {
     // Register 0xB0: Key-On (0x20) | Octave | F-Number High bits
     uint8_t b0_val = 0x20 | (octave << 2) | (fnum >> 8);
 
-    // SAVE the value (so we know the octave/frequency for later)
-    //XXTH_TEST last_block_values[channel] = b0_val;
 
     write(0xB0 + channel, b0_val);
 }
@@ -395,8 +337,7 @@ void OplController::stopNote(int channel) {
         if (channel == 7) drumMask = 0x08 | 0x01; // Snare & Hi-Hat
         if (channel == 8) drumMask = 0x04 | 0x02; // Tom & Cymbal
 
-        // Clear only the bits for this channel, keep Global Rhythm (0x20) and Depths (0xC0)
-        //XXTH_TEST uint8_t currentBD = 0xE0;
+
         uint8_t currentBD = readShadow(0xBD);
         write(0xBD, currentBD & ~drumMask);
     }
@@ -404,10 +345,7 @@ void OplController::stopNote(int channel) {
         // --- MELODIC MODE STOP ---
         uint8_t b0_val = readShadow(0xB0 + channel) & ~0x20;
         write(0xB0 + channel, b0_val);
-        //XXTH_TEST before
-        // uint8_t b0_off = last_block_values[channel] & ~0x20;
-        // write(0xB0 + channel, b0_off);
-        // last_block_values[channel] = b0_off;
+
     }
 
     // Your critical fix remains at the bottom
