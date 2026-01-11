@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-project(ohmFlux LANGUAGES CXX)
+#NukedOPL3_lib test: project(ohmFlux LANGUAGES CXX)
+project(ohmFlux LANGUAGES C CXX)
 
 # set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -42,6 +43,7 @@ set(OPL_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/opl")
 set(SFX_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/sfx")
 set(IMGGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/engine/imgui")
 set(JSON_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/json/single_include")
+set(NUKEDOPL3_DIR "${CMAKE_CURRENT_SOURCE_DIR}/engine/Nuked-OPL3" )
 # =============================================================================
 # PROJECTS SECTION >>>>
 # =============================================================================
@@ -111,6 +113,7 @@ set(ENGINE_SOURCES
     ${IMGGUI_DIR}/imgui_demo.cpp
     ${IMGGUI_DIR}/backends/imgui_impl_sdl3.cpp
     ${IMGGUI_DIR}/backends/imgui_impl_opengl3.cpp
+
 
 )
 
@@ -221,13 +224,17 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${JSON_DIR}>
 )
 
+# --- Nuked-OPL3 Test
+add_library(NukedOPL3_lib STATIC ${NUKEDOPL3_DIR}/opl3.c)
+target_include_directories(NukedOPL3_lib PUBLIC $<BUILD_INTERFACE:${NUKEDOPL3_DIR}> )
+
 # Apply Static Interface Properties for Windows/MinGW
 if(WIN32 AND NOT MSVC AND NOT EMSCRIPTEN AND NOT ANDROID)
     set_property(TARGET ohmFlux_engine PROPERTY INTERFACE_SDL3_SHARED FALSE)
     target_compile_definitions(ohmFlux_engine PUBLIC GLEW_STATIC)
 endif()
 
-target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile box2d)
+target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile box2d NukedOPL3_lib)
 
 # ------------------- Compiler Flags -------------------
 # Add debug flag

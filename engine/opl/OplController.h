@@ -43,31 +43,32 @@
 #pragma once
 #include <SDL3/SDL.h>
 
+#ifdef OPL_YMFM
 #include "ymfm.h"
 #include "ymfm_opl.h"
-
 #include "OplInterface.h"
-#include "errorlog.h"
+#else
+#include <opl3.h>
+#endif
 
-// for load:
+#include "errorlog.h"
 #include <fstream>
 #include <vector>
-
-// for songs:
 #include <cstdint>
 #include <string>
+#include <cstring>
 
 // extractFilename
 #include <string_view>
-
-
-// always good ;)
 #include <algorithm>
 
 //Maybe rewrite instrument data to std::array<uint8_t, 24>
 #include <array>
 
 #include <mutex>
+
+
+
 //------------------------------------------------------------------------------
 const float PLAYBACK_FREQUENCY = 90.0f;
 
@@ -75,6 +76,13 @@ const float PLAYBACK_FREQUENCY = 90.0f;
 #define FMS_MAX_CHANNEL 8
 
 #define FMS_MAX_SONG_LENGTH 1000
+
+//------------------------------------------------------------------------------
+#ifndef OPL_YMFM
+struct NukedOutputData {
+    int16_t data[2]; // data[0] = Left, data[1] = Right
+};
+#endif
 //------------------------------------------------------------------------------
 // class OplController
 //------------------------------------------------------------------------------
@@ -193,13 +201,15 @@ protected:
 
 private:
 
+#ifdef OPL_YMFM
     // using OplChip = ymfm::ym3812; //OPL2
     // using OplChip = ymfm::ymf262; //OPL3
     using OplChip = ymfm::ymf289b; //OPL3L
-
     OplChip* mChip; //OPL
-
     OplInterface mInterface;
+#else
+    opl3_chip mChip;
+#endif
 
     SDL_AudioStream* mStream = nullptr;
 
@@ -210,7 +220,16 @@ private:
     // OPL RATIO
     double m_pos = 0.0;
     double m_step = 49716.0 / 44100.0; // Ratio of OPL rate to SDL rate
+
+#ifdef OPL_YMFM
     OplChip::output_data mOutput;
+#else
+
+    int16_t mOutputLeft;  // Stores last generated Left sample
+    int16_t mOutputRight; // Stores last
+
+    NukedOutputData mOutput[20];
+#endif
 
     // 9 channels, each holding 24 instrument parameters
     uint8_t m_instrument_cache[9][24];
@@ -363,11 +382,15 @@ public:
      */
     uint8_t get_modulator_offset(uint8_t channel);
 
+#ifdef OPL_YMFM
     // Return the pointer directly
     OplChip* getChip() { return mChip; }
-
     // Return by reference (&) so generate() writes to the REAL m_output
     OplChip::output_data& getOutPut() { return mOutput; }
+#else
+    opl3_chip getChip() { return mChip; }
+    NukedOutputData* getOutPut() { return mOutput; }
+#endif
 
     double getPos() const { return m_pos; }
     void setPos(double val) { m_pos = val; }

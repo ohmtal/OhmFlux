@@ -21,9 +21,14 @@
 
 //------------------------------------------------------------------------------
 OplController::OplController(){
+
+#ifdef OPL_YMFM
    // mChip = new ymfm::ym3812(mInterface); //OPL2
    // mChip = new ymfm::ymf262(mInterface);//OPL3
    mChip = new ymfm::ymf289b(mInterface);//OPL3L
+#else
+
+#endif
 
     reset();
 }
@@ -36,11 +41,12 @@ OplController::~OplController() {
         SDL_DestroyAudioStream(mStream);
         mStream = nullptr;
     }
-
+#ifdef OPL_YMFM
     if (mChip) {
         delete mChip;
         mChip = nullptr;
     }
+#endif
 
 }
 //------------------------------------------------------------------------------
@@ -183,7 +189,12 @@ void OplController::silenceAll(bool hardStop) {
 }
 //------------------------------------------------------------------------------
 void OplController::reset() {
+
+#ifdef OPL_YMFM
     mChip->reset();
+#else
+    OPL3_Reset(&mChip, 49716);
+#endif
     m_pos = 0.0;
 
     // A truly "silent" instrument has Total Level = 63
@@ -209,8 +220,13 @@ void OplController::write(uint16_t reg, uint8_t val)
     }
     #endif
     mShadowRegs[reg] = val; // 2026-01-11
+
+#ifdef OPL_YMFM
     mChip->write_address(reg);
     mChip->write_data(val);
+#else
+     OPL3_WriteReg(&mChip, reg, val);
+#endif
 }
 //------------------------------------------------------------------------------
 // 0x10: Bass Drum (uses Operators 13 & 16)
@@ -349,7 +365,12 @@ void OplController::stopNote(int channel) {
     }
 
     // Your critical fix remains at the bottom
+//FIXME or does it work without in nuked ?
+#ifdef OPL_YMFM
     mChip->generate(&mOutput);
+#else
+    OPL3_GenerateStream(&mChip, mOutput[0].data, 1);
+#endif
 }
 
 //   ---------- before Rhythm Mode:  ---------------
@@ -371,6 +392,7 @@ void OplController::stopNote(int channel) {
 //     last_block_values[channel] = b0_off;
 // }
 //------------------------------------------------------------------------------
+#ifdef OPL_YMFM
 void OplController::render(int16_t* buffer, int frames) {
     for (int i = 0; i < frames; i++) {
         // Only generate new OPL data when the fractional position advances
@@ -387,6 +409,33 @@ void OplController::render(int16_t* buffer, int frames) {
     // Reset m_pos for the next callback buffer
     m_pos -= frames;
 }
+#else
+
+void OplController::render(int16_t* buffer, int frames) {
+    for (int i = 0; i < frames; i++) {
+        // Only generate new OPL data when the fractional position advances
+        while (m_pos <= i) {
+            // We pass the address of the first element of the array.
+            // Nuked-OPL3 writes Left to data[0] and Right to data[1].
+            OPL3_GenerateStream(&mChip, mOutput[0].data, 1);
+
+            m_pos += m_step;
+        }
+
+        // Use the most recently generated output from index 0
+        // (Mimicking your ymfm logic where you used mOutput.data[0])
+        buffer[i * 2 + 0] = mOutput[0].data[0]; // Left
+        buffer[i * 2 + 1] = mOutput[0].data[1]; // Right
+    }
+
+    m_pos -= frames;
+}
+
+#endif
+
+
+
+
 // blended version but sounds the same
 // void OplController::render(int16_t* buffer, int frames) {
 //     static int32_t prev_sample = 0; // Store the last sample for blending
@@ -703,6 +752,7 @@ bool OplController::saveInstrument(const std::string& filename, uint8_t channel)
     return false;
 }
 //------------------------------------------------------------------------------
+#ifdef OPL_YMFM
 void OplController::TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], int noteIndex) {
     if (!mChip || channel > FMS_MAX_CHANNEL) return;
 
@@ -751,6 +801,7 @@ void OplController::TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], in
         printf("RESULT: Channel %d is PRODUCING SOUND.\n", channel);
     }
 }
+#endif
 //------------------------------------------------------------------------------
 void OplController::replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote) {
     if (targetChannel > FMS_MAX_CHANNEL)
@@ -776,6 +827,7 @@ void OplController::replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_
     printf("REMAPPER: Replaced %d instances of note %d with %d.\n", count, oldNote, newNote);
 }
 //------------------------------------------------------------------------------
+#ifdef OPL_YMFM //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 void OplController::fillBuffer(int16_t* buffer, int total_frames) {
     // Local cache of volatile values for speed
     double step = m_step;
@@ -807,6 +859,41 @@ void OplController::fillBuffer(int16_t* buffer, int total_frames) {
     // 2. Save back once
     m_pos = current_pos - total_frames;
 }
+#else //.-.-.-.-.-.-.-.-.-
+void OplController::fillBuffer(int16_t* buffer, int total_frames) {
+    // Local cache for performance
+    double step = m_step;
+    double current_pos = m_pos;
+
+    for (int i = 0; i < total_frames; i++) {
+
+        // --- SEQUENCER LOGIC ---
+        if (mSeqState.playing && mSeqState.current_song) {
+            mSeqState.sample_accumulator += 1.0;
+            while (mSeqState.sample_accumulator >= mSeqState.samples_per_tick) {
+                mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+                this->tickSequencer();
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        while (current_pos <= i) {
+            OPL3_GenerateStream(&mChip, mOutput[0].data, 1);
+
+            current_pos += step;
+        }
+
+        // Nuked-OPL3 is stereo. Assign L/R from index 0 of your array
+        buffer[i * 2 + 0] = mOutput[0].data[0]; // Left
+        buffer[i * 2 + 1] = mOutput[0].data[1]; // Right
+    }
+
+    // Save back position
+    m_pos = current_pos - total_frames;
+}
+
+
+#endif
 //------------------------------------------------------------------------------
 void OplController::tickSequencer() {
     const SongData& s = *mSeqState.current_song;
