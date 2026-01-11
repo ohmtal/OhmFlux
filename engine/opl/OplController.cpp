@@ -10,6 +10,12 @@
 // * SongData also got a init function and getter / setter for the name
 //   Pascal string is not 0 terminated! first byte is the length
 //   after so many years i forgot this ;)
+//2026-01-11
+// - Raw (No Blend, No Filter)	Thin, sharp, metallic aliasing	Lowest CPU usage
+// - Blended Only	Smooth, full, deep	Modern Emulator default
+// - Filtered Only	Muffled, grimy, dark	"Broken" AdLib card feel
+// - Blended + Filtered	Rich, warm, authentic	The true 90s DOS experience
+
 //-----------------------------------------------------------------------------
 #include "OplController.h"
 #include <mutex>
@@ -352,87 +358,6 @@ void OplController::stopNote(int channel) {
     mChip->generate(&mOutput);
 }
 
-//   ---------- before Rhythm Mode:  ---------------
-// void OplController::stopNote(int channel) {
-//     if (channel < 0 || channel > 8) return;
-//
-//     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
-//
-//     // CRITICAL FIX: Use the last value but REMOVE the Key-On bit (0x20)
-//     // This keeps the Octave and Frequency bits identical during the release phase.
-//     uint8_t b0_off = last_block_values[channel] & ~0x20;
-//
-//     // write(0xB0 + channel, 0x00);
-//     write(0xB0 + channel, b0_off);
-//
-//     mChip->generate(&mOutput); // THIS IS CRITCAL to get it work !!! take me 8 hours to find out!
-//
-//     // Update the saved value so we don't accidentally re-enable Key-On
-//     last_block_values[channel] = b0_off;
-// }
-//------------------------------------------------------------------------------
-void OplController::render(int16_t* buffer, int frames) {
-    for (int i = 0; i < frames; i++) {
-        // Only generate new OPL data when the fractional position advances
-        while (m_pos <= i) {
-            mChip->generate(&mOutput);
-            m_pos += m_step;
-        }
-
-        // Use the most recently generated output
-        int16_t sample = (int16_t)mOutput.data[0];
-        buffer[i * 2 + 0] = sample; // Left
-        buffer[i * 2 + 1] = sample; // Right
-    }
-    // Reset m_pos for the next callback buffer
-    m_pos -= frames;
-}
-// blended version but sounds the same
-// void OplController::render(int16_t* buffer, int frames) {
-//     static int32_t prev_sample = 0; // Store the last sample for blending
-//
-//     for (int i = 0; i < frames; i++) {
-//         while (m_pos <= i) {
-//             prev_sample = m_output.data[0]; // Save old sample before generating new
-//             m_chip->generate(&m_output);
-//             m_pos += m_step;
-//         }
-//
-//         // 1. Calculate the fractional distance between the two OPL samples
-//         double fraction = m_pos - i;
-//
-//         // 2. Linear Interpolation: Blend prev_sample and current m_output.data[0]
-//         // This removes the "thinness" and adds the "depth" you heard in DOSBox
-//         int32_t blended = (int32_t)((double)prev_sample * fraction +
-//         (double)m_output.data[0] * (1.0 - fraction));
-//
-//         // 3. Output to buffer
-//         int16_t sample = (int16_t)blended;
-//         buffer[i * 2 + 0] = sample;
-//         buffer[i * 2 + 1] = sample;
-//     }
-//     m_pos -= frames;
-// }
-//------------------------------------------------------------------------------
-void OplController::dumpInstrumentFromCache(uint8_t channel)
-{
-    if (channel > FMS_MAX_CHANNEL) return;
-
-    // 1. Get the pointer from your cache
-    const uint8_t* patch = getInstrument(channel);
-
-    if (patch == nullptr) {
-        printf("Error: Channel %d has no instrument in cache!\n", channel);
-        return;
-    }
-
-    printf("\n--- CACHE DUMP: OPL Channel %d ---\n", channel);
-    // There are 24 parameters in your metadata
-    for (size_t i = 0; i < 24; ++i) {
-        printf("[%2zu] %-20s : %d\n", i, OplController::INSTRUMENT_METADATA[i].name.c_str(), patch[i]);
-    }
-    printf("----------------------------------\n");
-}
 //------------------------------------------------------------------------------
 void OplController::setInstrument(uint8_t channel, const uint8_t lIns[24]) {
     if (channel > FMS_MAX_CHANNEL) return;
@@ -776,37 +701,112 @@ void OplController::replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_
     printf("REMAPPER: Replaced %d instances of note %d with %d.\n", count, oldNote, newNote);
 }
 //------------------------------------------------------------------------------
+// enum class RenderMode {
+//     RAW,
+//     BLENDED,
+//     SBPRO,       // 3.2kHz
+//     SB_ORIGINAL, // 2.8kHz (Muffled+)
+//     ADLIB_GOLD,  // 16kHz (Hi-Fi)
+//     CLONE_CARD,  // 8kHz + No Blending
+//     MODERN_LPF   // 12kHz
+// };
+//
+
+void OplController::setRenderMode(RenderMode mode) {
+    mRenderMode = mode;
+    float cutoff = 20000.0f;
+    mRenderUseBlending = true;
+    mRenderGain = 1.0f; // Default
+
+    switch (mode) {
+        case RenderMode::RAW:
+            cutoff = 20000.0f;
+            mRenderUseBlending = false;
+            break;
+        case RenderMode::BLENDED:
+            cutoff = 20000.0f;
+            break;
+        case RenderMode::SBPRO:
+            cutoff = 3200.0f;
+            mRenderGain = 1.2f;  // Louder, more saturated
+            break;
+        case RenderMode::SB_ORIGINAL:
+            cutoff = 2800.0f;
+            mRenderGain = 1.3f;  // Even louder, prone to "crunch"
+            break;
+        case RenderMode::ADLIB_GOLD:
+            cutoff = 16000.0f;
+            mRenderGain = 1.05f; // Very clean, slight boost
+            break;
+        case RenderMode::MODERN_LPF:
+            cutoff = 12000.0f;
+            break;
+        case RenderMode::CLONE_CARD:
+            cutoff = 8000.0f;
+            mRenderUseBlending = false;
+            mRenderGain = 0.9f;  // Often "thinner" and quieter
+            break;
+    }
+
+    // Recalculate Alpha
+    float dt = 1.0f / 44100.0f;
+    float rc = 1.0f / (2.0f * M_PI * cutoff);
+    mRenderAlpha = (cutoff >= 20000.0f) ? 1.0f : (dt / (rc + dt));
+}
+//------------------------------------------------------------------------------
 void OplController::fillBuffer(int16_t* buffer, int total_frames) {
-    // Local cache of volatile values for speed
     double step = m_step;
     double current_pos = m_pos;
 
     for (int i = 0; i < total_frames; i++) {
-
-        // --- SEQUENCER LOGIC ---
+        // --- SEQUENCER ---
         if (mSeqState.playing && mSeqState.current_song) {
             mSeqState.sample_accumulator += 1.0;
-
             while (mSeqState.sample_accumulator >= mSeqState.samples_per_tick) {
                 mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
-                this->tickSequencer(); // Encapsulate the "next step" logic
+                this->tickSequencer();
             }
         }
 
-        // --- RENDER LOGIC ---
+        // --- RENDER ---
         while (current_pos <= i) {
+            // Save for blending
+            mRender_prev_l = mOutput.data[0];
+            mRender_prev_r = mOutput.data[1];
+
             mChip->generate(&mOutput);
+
+            // Apply Filter (Alpha 1.0 means no effect)
+            if (mRenderAlpha < 1.f) {
+                mRender_lpf_l += mRenderAlpha * (static_cast<float>(mOutput.data[0]) - mRender_lpf_l);
+                mRender_lpf_r += mRenderAlpha * (static_cast<float>(mOutput.data[1]) - mRender_lpf_r);
+                mOutput.data[0] = static_cast<int16_t>(mRender_lpf_l);
+                mOutput.data[1] = static_cast<int16_t>(mRender_lpf_r);
+            }
             current_pos += step;
         }
 
-        int16_t sample = (int16_t)mOutput.data[0];
-        buffer[i * 2 + 0] = sample; // Left
-        buffer[i * 2 + 1] = sample; // Right
-    }
+        // --- OUTPUT ---
 
-    // 2. Save back once
+        if (mRenderUseBlending) {
+            double fraction = current_pos - i;
+
+            // Calculate blended sample in floating point for precision
+            double blended_l = (mRender_prev_l * fraction + mOutput.data[0] * (1.0 - fraction));
+            double blended_r = (mRender_prev_r * fraction + mOutput.data[1] * (1.0 - fraction));
+
+            // Apply gain and clamp
+            buffer[i * 2 + 0] = static_cast<int16_t>(std::clamp(blended_l * mRenderGain, -32768.0, 32767.0));
+            buffer[i * 2 + 1] = static_cast<int16_t>(std::clamp(blended_r * mRenderGain, -32768.0, 32767.0));
+        } else {
+            // Apply gain and clamp even for Raw mode
+            buffer[i * 2 + 0] = static_cast<int16_t>(std::clamp(mOutput.data[0] * mRenderGain, -32768.0f, 32767.0f));
+            buffer[i * 2 + 1] = static_cast<int16_t>(std::clamp(mOutput.data[1] * mRenderGain, -32768.0f, 32767.0f));
+        }
+    }
     m_pos = current_pos - total_frames;
 }
+
 //------------------------------------------------------------------------------
 void OplController::tickSequencer() {
     const SongData& s = *mSeqState.current_song;

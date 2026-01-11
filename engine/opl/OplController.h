@@ -81,7 +81,31 @@ const float PLAYBACK_FREQUENCY = 90.0f;
 // The Controller: Encapsulates the OPL chip and Music Logic
 class OplController
 {
+
 public:
+    enum class RenderMode {
+        RAW,
+        BLENDED,
+        SBPRO,       // 3.2kHz
+        SB_ORIGINAL, // 2.8kHz (Muffled+)
+        ADLIB_GOLD,  // 16kHz (Hi-Fi)
+        CLONE_CARD,  // 8kHz + No Blending
+        MODERN_LPF   // 12kHz
+    };
+    void setRenderMode(RenderMode mode);
+    RenderMode getRenderMode() { return mRenderMode; }
+private:
+    RenderMode mRenderMode = RenderMode::RAW;
+    float mRenderAlpha = 1.0f;
+    bool mRenderUseBlending = false;
+    float mRenderGain = 1.0f; // Global gain to simulate hot Sound Blaster output
+
+    // Filter and Blending states
+    float mRender_lpf_l = 0.0f, mRender_lpf_r = 0.0f;
+    int16_t mRender_prev_l = 0, mRender_prev_r = 0;
+
+public:
+
     struct SongData {
         // Pascal: array[1..9] of string[255] -> 10 slots to allow 1-based indexing
         // Index [channel][0] is the length byte.
@@ -389,7 +413,6 @@ public:
     void playNoteDOS(int channel, int noteIndex);
     void playNote(int channel, int noteIndex);
     void stopNote(int channel);
-    void render(int16_t* buffer, int frames);
 
     void dumpInstrumentFromCache(uint8_t channel);
     void setInstrument(uint8_t channel, const uint8_t lIns[24]);
@@ -454,6 +477,9 @@ public:
     void replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote);
 
     void fillBuffer(int16_t* buffer, int total_frames);
+    void applyFilter();
+
+
     virtual void tickSequencer();
 
     // can be called in mail loop to output the playing song to console

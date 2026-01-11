@@ -180,6 +180,8 @@ public:
         mLoop       = SettingsManager().get("fluxComposer::Loop", false);
         mController->setMelodicMode(SettingsManager().get("fluxComposer::MelodicMode", true));
         mController->loadInstrumentPreset();
+        mController->setRenderMode(SettingsManager().get("fluxComposer::RenderMode", OplController::RenderMode::RAW));
+
 
         return true;
     }
@@ -190,7 +192,7 @@ public:
         SettingsManager().set("fluxComposer::LiveMode", mLiveMode);
         SettingsManager().set("fluxComposer::Loop", mLoop);
         SettingsManager().set("fluxComposer::MelodicMode", mController->getMelodicMode());
-
+        SettingsManager().set("fluxComposer::RenderMode", mController->getRenderMode());
 
         // std::unique_ptr<Controller> mController; would be better ^^
         if (mController && mItsMyController)
@@ -759,7 +761,7 @@ public:
                 {
 
                     if (ImGui::MenuItem("Play","F1")) { playSong(3); }
-                    if (ImGui::MenuItem("Play selected")) { playSong(1); }
+                    if (ImGui::MenuItem("Play from Position")) { playSong(4); }
                     if (ImGui::MenuItem("Silence all.")) { mController->silenceAll(false); }
                     ImGui::Separator();
                     if (ImGui::MenuItem("Activate all channel")) {mController->setAllChannelActive(true);}
@@ -767,6 +769,42 @@ public:
                     ImGui::Separator();
                     if (ImGui::MenuItem("Octave + ","+, w")) { incOctave(); }
                     if (ImGui::MenuItem("Octave - ","-, q")) { decOctave(); }
+
+                    ImGui::EndMenu();
+                }
+
+                if (ImGui::BeginMenu("Sound rendering"))
+                {
+                    // Get the current mode to show the checkmark
+                    OplController::RenderMode currentMode = mController->getRenderMode();
+
+                    if (ImGui::MenuItem("Raw (Digital)", nullptr, currentMode == OplController::RenderMode::RAW)) {
+                        mController->setRenderMode(OplController::RenderMode::RAW);
+                    }
+
+                    if (ImGui::MenuItem("Blended (Smooth)", nullptr, currentMode == OplController::RenderMode::BLENDED)) {
+                        mController->setRenderMode(OplController::RenderMode::BLENDED);
+                    }
+
+                    if (ImGui::MenuItem("Modern LPF (Warm)", nullptr, currentMode == OplController::RenderMode::MODERN_LPF)) {
+                        mController->setRenderMode(OplController::RenderMode::MODERN_LPF);
+                    }
+
+                    if (ImGui::MenuItem("Sound Blaster Pro", nullptr, currentMode == OplController::RenderMode::SBPRO)) {
+                        mController->setRenderMode(OplController::RenderMode::SBPRO);
+                    }
+
+                    if (ImGui::MenuItem("Sound Blaster", nullptr, currentMode == OplController::RenderMode::SB_ORIGINAL)) {
+                        mController->setRenderMode(OplController::RenderMode::SB_ORIGINAL);
+                    }
+
+                    if (ImGui::MenuItem("AdLib Gold", nullptr, currentMode == OplController::RenderMode::ADLIB_GOLD)) {
+                        mController->setRenderMode(OplController::RenderMode::ADLIB_GOLD);
+                    }
+                    if (ImGui::MenuItem("Sound Blaster Clone", nullptr, currentMode == OplController::RenderMode::CLONE_CARD)) {
+                        mController->setRenderMode(OplController::RenderMode::CLONE_CARD);
+                    }
+
 
                     ImGui::EndMenu();
                 }
@@ -1234,6 +1272,7 @@ public:
      *      1 = only selection
      *      2 = full Song
      *      3 = autodetect
+     *      4 = play from position
      */
     void playSong(U8 playMode = 0)
     {
@@ -1247,6 +1286,7 @@ public:
                 else
                     playSong(0);
                 break;
+            case 4: mController->playSong(mSongData, mLoop, mSelectedRow);break;
             default: mController->playSong(mSongData, mLoop, mStartAt, mEndAt); break;
         }
     }
