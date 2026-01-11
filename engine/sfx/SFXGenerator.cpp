@@ -12,8 +12,8 @@
 #endif
 
 
-#ifndef PI
-#define PI 3.14159265f
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
 #endif
 //-----------------------------------------------------------------------------
 // A helper function for random numbers
@@ -414,7 +414,7 @@ void SFXGenerator::SynthSample(int length, float* buffer, FILE* file)
                 sample=1.0f-fp*2;
                 break;
             case 2: // sine
-                sample=(float)sin(fp*2*PI);
+                sample=(float)sin(fp*2*M_PI);
                 break;
             case 3: // noise
                 sample=mState.noise_buffer[mState.phase*32/mState.period];
