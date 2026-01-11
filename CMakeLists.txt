@@ -246,111 +246,113 @@ if(WIN32 AND MSVC)
 endif()
 
 # ---------------- Macro for Projects ------------------
-# Android and Windows build added:
-macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
+macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
 
-    if(NOT DISABLE_DEMOS)  
+    # Determine if we need the WIN32 GUI flag (only for Windows Release)
+    set(GUI_TYPE "")
+    if(WIN32 AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(GUI_TYPE "WIN32")
+    endif()
 
-        # Determine if we need the WIN32 GUI flag (only for Windows Release)
-        set(GUI_TYPE "")
-        if(WIN32 AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-            set(GUI_TYPE "WIN32")
-        endif()
+    # Android uses shared libraries loaded by a Java/Kotlin wrapper
+    if(ANDROID)
+        add_library(${TARGET_NAME} SHARED ${SOURCES_LIST})
+    else()
+            add_executable(${TARGET_NAME} ${GUI_TYPE} ${SOURCES_LIST})
+    endif()
 
-        # Android uses shared libraries loaded by a Java/Kotlin wrapper
-        if(ANDROID)
-            add_library(${TARGET_NAME} SHARED ${SOURCES_LIST})
-        else()
-             add_executable(${TARGET_NAME} ${GUI_TYPE} ${SOURCES_LIST})
-        endif()
+    target_include_directories(${TARGET_NAME} PRIVATE
+        ${SOURCE_DIR}
+    )
 
-        target_include_directories(${TARGET_NAME} PRIVATE
-            ${SOURCE_DIR}
+    target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine)
+
+    if(EMSCRIPTEN)
+        # set_target_properties(${TARGET_NAME} PROPERTIES
+        #     SUFFIX ".html" OUTPUT_NAME "index"
+        #     RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+        # )
+        # target_link_options(${TARGET_NAME} PRIVATE
+        #     "-sUSE_SDL=3" "-sMAX_WEBGL_VERSION=2" "-sMIN_WEBGL_VERSION=2"
+        #     "--preload-file=${PRELOAD_PATH}" "-sALLOW_MEMORY_GROWTH=1" "-sNO_EXIT_RUNTIME=1" "-sMINIFY_HTML=1"
+        # )
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            SUFFIX ".html"
+            OUTPUT_NAME "index"
+            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
         )
 
-        target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine)
+        target_link_options(${TARGET_NAME} PRIVATE
+            "-sUSE_SDL=3"
+            "-sMAX_WEBGL_VERSION=2"
+            "-sMIN_WEBGL_VERSION=2"
+            "--preload-file=${PRELOAD_PATH}"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sNO_EXIT_RUNTIME=1"
+            "-sMINIFY_HTML=1"
+        )
 
-        if(EMSCRIPTEN)
-            # set_target_properties(${TARGET_NAME} PROPERTIES
-            #     SUFFIX ".html" OUTPUT_NAME "index"
-            #     RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
-            # )
-            # target_link_options(${TARGET_NAME} PRIVATE
-            #     "-sUSE_SDL=3" "-sMAX_WEBGL_VERSION=2" "-sMIN_WEBGL_VERSION=2"
-            #     "--preload-file=${PRELOAD_PATH}" "-sALLOW_MEMORY_GROWTH=1" "-sNO_EXIT_RUNTIME=1" "-sMINIFY_HTML=1"
-            # )
-            set_target_properties(${TARGET_NAME} PROPERTIES
-                SUFFIX ".html"
-                OUTPUT_NAME "index"
-                RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
-            )
+        # Shell Template Configuration
+        # FIXME custom shell file !!
+        if(CMAKE_BUILD_TYPE STREQUAL "Release")
+            set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_minimal.html")
+            # sucks on Desktop Fullscreen:
+            # set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_custom_web.html")
 
-            target_link_options(${TARGET_NAME} PRIVATE
-                "-sUSE_SDL=3"
-                "-sMAX_WEBGL_VERSION=2"
-                "-sMIN_WEBGL_VERSION=2"
-                "--preload-file=${PRELOAD_PATH}"
-                "-sALLOW_MEMORY_GROWTH=1"
-                "-sNO_EXIT_RUNTIME=1"
-                "-sMINIFY_HTML=1"
-            )
-
-            # Shell Template Configuration
-            # FIXME custom shell file !!
-            if(CMAKE_BUILD_TYPE STREQUAL "Release")
-                set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_minimal.html")
-                # sucks on Desktop Fullscreen:
-                # set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_custom_web.html")
-
-                if(EXISTS "${CUSTOM_SHELL_FILE}")
-                    target_link_options(${TARGET_NAME} PRIVATE "--shell-file" "${CUSTOM_SHELL_FILE}")
-                    set_target_properties(${TARGET_NAME} PROPERTIES LINK_DEPENDS "${CUSTOM_SHELL_FILE}")
-                else()
-                    message(WARNING "Custom template not found: ${CUSTOM_SHELL_FILE}")
-                endif()
+            if(EXISTS "${CUSTOM_SHELL_FILE}")
+                target_link_options(${TARGET_NAME} PRIVATE "--shell-file" "${CUSTOM_SHELL_FILE}")
+                set_target_properties(${TARGET_NAME} PROPERTIES LINK_DEPENDS "${CUSTOM_SHELL_FILE}")
+            else()
+                message(WARNING "Custom template not found: ${CUSTOM_SHELL_FILE}")
             endif()
-
-        elseif(WIN32)
-            # 1. Define the base path
-            set(BASE_OUT_DIR "${SOURCE_DIR}")
-
-            # 2. General Windows properties (Works for both MSVC and MinGW)
-            set_target_properties(${TARGET_NAME} PROPERTIES
-                RUNTIME_OUTPUT_DIRECTORY "${BASE_OUT_DIR}"
-                RUNTIME_OUTPUT_DIRECTORY_DEBUG "${BASE_OUT_DIR}"
-                RUNTIME_OUTPUT_DIRECTORY_RELEASE "${BASE_OUT_DIR}"
-                RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${BASE_OUT_DIR}"
-                RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${BASE_OUT_DIR}"
-
-                # Apply naming logic: target.exe or target_Debug.exe
-                OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>>"
-            )
-            # 3. Visual Studio Specific Settings
-            if(MSVC)
-                set_target_properties(${TARGET_NAME} PROPERTIES
-                    # This forces static linking of the VC Runtime (/MT)
-                    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-                
-                    # Working directory for F5 support
-                    VS_DEBUGGER_WORKING_DIRECTORY "${SOURCE_DIR}"
-                 )
-            endif()
-
-
-        elseif(ANDROID)
-            # Android standard: libTARGET_NAME.so
-            # No special suffix needed, CMake handles .so for libraries
-            set_target_properties(${TARGET_NAME} PROPERTIES
-                RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
-            )
-        else()
-            # Linux standard (your original preference)
-            set_target_properties(${TARGET_NAME} PROPERTIES
-                RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
-                OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}.x86_64>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>.x86_64>"
-            )
         endif()
-    endif() #(NOT DISABLE_DEMOS)  
+
+    elseif(WIN32)
+        # 1. Define the base path
+        set(BASE_OUT_DIR "${SOURCE_DIR}")
+
+        # 2. General Windows properties (Works for both MSVC and MinGW)
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${BASE_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${BASE_OUT_DIR}"
+
+            # Apply naming logic: target.exe or target_Debug.exe
+            OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>>"
+        )
+        # 3. Visual Studio Specific Settings
+        if(MSVC)
+            set_target_properties(${TARGET_NAME} PROPERTIES
+                # This forces static linking of the VC Runtime (/MT)
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+                
+                # Working directory for F5 support
+                VS_DEBUGGER_WORKING_DIRECTORY "${SOURCE_DIR}"
+                )
+        endif()
+
+
+    elseif(ANDROID)
+        # Android standard: libTARGET_NAME.so
+        # No special suffix needed, CMake handles .so for libraries
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+        )
+    else()
+        # Linux standard (your original preference)
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+            OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}.x86_64>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>.x86_64>"
+        )
+    endif()
+endmacro()
+
+macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
+    if(NOT DISABLE_DEMOS)  
+       configure_project_target(${TARGET_NAME} "${SOURCE_DIR}" "${PRELOAD_PATH}" ${SOURCES_LIST})
+    endif() 
 endmacro()
 
 
