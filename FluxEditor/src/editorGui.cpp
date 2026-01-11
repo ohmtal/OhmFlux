@@ -102,7 +102,7 @@ void EditorGui::DrawMsgBoxPopup() {
     }
 }
 
-void EditorGui::ShowManuBar()
+void EditorGui::ShowMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
     {
@@ -158,38 +158,13 @@ void EditorGui::DrawGui()
 {
 
     mGuiGlue->DrawBegin();
-    ShowManuBar();
+    ShowMenuBar();
 
-
-    // // docking test found at: https://github.com/ocornut/imgui/wiki/Docking
-    // // does not work so far. i guess i missed something
-    //
-    // if (ImGui::DockBuilderGetNode(mGuiGlue->getDockSpaceId()) == nullptr)
-    // {
-    //     ImGui::DockBuilderAddNode(mGuiGlue->getDockSpaceId(), ImGuiDockNodeFlags_DockSpace);
-    //     ImGui::DockBuilderSetNodeSize(mGuiGlue->getDockSpaceId(), ImGui::GetMainViewport()->Size);
-    //     ImGuiID dock_id_left = 0;
-    //     ImGuiID dock_id_main = mGuiGlue->getDockSpaceId();
-    //     ImGui::DockBuilderSplitNode(dock_id_main, ImGuiDir_Left, 0.20f, &dock_id_left, &dock_id_main);
-    //     ImGuiID dock_id_left_top = 0;
-    //     ImGuiID dock_id_left_bottom = 0;
-    //     ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.50f, &dock_id_left_top, &dock_id_left_bottom);
-    //     ImGui::DockBuilderDockWindow("FM Instrument Editor", dock_id_main);
-    //     ImGui::DockBuilderDockWindow("File Browser", dock_id_left_top);
-    //     // ImGui::DockBuilderDockWindow("Scene", dock_id_left_bottom);
-    //     ImGui::DockBuilderFinish(mGuiGlue->getDockSpaceId());
-    // }
 
     if ( mEditorSettings.mShowDemo )
     {
         // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow();
-    }
-
-
-    if ( mEditorSettings.mShowSFXEditor ){
-        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-        mSfxEditor->Draw();
     }
 
 
@@ -211,6 +186,11 @@ void EditorGui::DrawGui()
     // if ( mEditorSettings.mShowCompleteScale ) {
     //     mFMEditor->DrawScalePlayer();
     // }
+
+    if (mEditorSettings.mShowSFXEditor) {
+        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
+        mSfxEditor->Draw();
+    }
 
 
     DrawMsgBoxPopup();
@@ -264,16 +244,51 @@ void EditorGui::DrawGui()
 
 
 
+    InitDockSpace();  
 
     mGuiGlue->DrawEnd();
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-
 void EditorGui::onKeyEvent(SDL_KeyboardEvent event)
-    {
-        if ( mEditorSettings.mShowFMComposer )
-            mFMComposer->onKeyEvent(event);
-    }
+{
+    if ( mEditorSettings.mShowFMComposer )
+        mFMComposer->onKeyEvent(event);
+}
+//------------------------------------------------------------------------------
+void EditorGui::InitDockSpace()
+{
+    if (mEditorSettings.mEditorGuiInitialized)
+        return; 
+
+    mEditorSettings.mEditorGuiInitialized = true;
+
+    ImGuiID dockspace_id = mGuiGlue->getDockSpaceId();
+
+    // Clear any existing layout
+    ImGui::DockBuilderRemoveNode(dockspace_id);
+    ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1920, 990));
+
+    // Replicate your splits (matches your ini data)
+    ImGuiID dock_main_id = dockspace_id;
+    ImGuiID dock_id_left, dock_id_right, dock_id_central;
+
+    // First Split: Left (FM Instrument Editor) vs Right (Everything else)
+    // ratio ~413/1920 = 0.215f
+    dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.215f, nullptr, &dock_main_id);
+
+    // Second Split: Center (Composer/Generator) vs Right (File Browser)
+    // ratio ~259/1505 = 0.172f from the right
+    dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.172f, nullptr, &dock_id_central);
+
+    // Dock the Windows to these IDs
+    ImGui::DockBuilderDockWindow("FM Instrument Editor", dock_id_left);
+    ImGui::DockBuilderDockWindow("File Browser", dock_id_right);
+    ImGui::DockBuilderDockWindow("Sound Effects Generator", dock_id_central);
+    ImGui::DockBuilderDockWindow("FM Song Composer", dock_id_central);
+
+
+    ImGui::DockBuilderFinish(dockspace_id);
+}
+//------------------------------------------------------------------------------

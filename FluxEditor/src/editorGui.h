@@ -26,12 +26,16 @@
 class EditorGui: public FluxBaseObject
 {
 public:
+    // dont forget to add a parameter 
+    // a.) mDefaultEditorSettings
+    // b.) on the bottom to the json macro!!! 
     struct EditorSettings {
         bool mShowDemo;
         bool mShowSFXEditor;
         bool mShowFMInstrumentEditor;
         bool mShowFMComposer;
         bool mShowCompleteScale;
+        bool mEditorGuiInitialized;
     };
 
 
@@ -49,7 +53,8 @@ private:
         .mShowSFXEditor = true,
         .mShowFMInstrumentEditor = true,
         .mShowFMComposer = true,
-        .mShowCompleteScale = false
+        .mShowCompleteScale = false,
+        .mEditorGuiInitialized = false
     };
 
 public:
@@ -58,18 +63,20 @@ public:
     void Deinitialize() override;
     void onEvent(SDL_Event event);
     void DrawMsgBoxPopup();
-    void ShowManuBar();
+    void ShowMenuBar();
     void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event);
+    void InitDockSpace(); 
 
 
 }; //class
 
 // macro for JSON support
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EditorGui::EditorSettings,
-                                                mShowDemo,
-                                                mShowSFXEditor,
-                                                mShowFMInstrumentEditor,
-                                                mShowFMComposer,
-                                                mShowCompleteScale
+    mShowDemo,
+    mShowSFXEditor,
+    mShowFMInstrumentEditor,
+    mShowFMComposer,
+    mShowCompleteScale,
+    mEditorGuiInitialized
 )

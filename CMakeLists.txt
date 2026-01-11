@@ -246,7 +246,7 @@ if(WIN32 AND MSVC)
 endif()
 
 # ---------------- Macro for Projects ------------------
-macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
+macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
 
     # Determine if we need the WIN32 GUI flag (only for Windows Release)
     set(GUI_TYPE "")
@@ -256,9 +256,9 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
 
     # Android uses shared libraries loaded by a Java/Kotlin wrapper
     if(ANDROID)
-        add_library(${TARGET_NAME} SHARED ${SOURCES_LIST})
+        add_library(${TARGET_NAME} SHARED ${ARGN})
     else()
-            add_executable(${TARGET_NAME} ${GUI_TYPE} ${SOURCES_LIST})
+            add_executable(${TARGET_NAME} ${GUI_TYPE} ${ARGN})
     endif()
 
     target_include_directories(${TARGET_NAME} PRIVATE
@@ -349,9 +349,9 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
     endif()
 endmacro()
 
-macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH SOURCES_LIST)
+macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH )
     if(NOT DISABLE_DEMOS)  
-       configure_project_target(${TARGET_NAME} "${SOURCE_DIR}" "${PRELOAD_PATH}" ${SOURCES_LIST})
+       configure_project_target(${TARGET_NAME} "${SOURCE_DIR}" "${PRELOAD_PATH}" ${ARGN})
     endif() 
 endmacro()
 

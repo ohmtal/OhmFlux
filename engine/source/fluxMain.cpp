@@ -70,12 +70,17 @@ bool FluxMain::Initialize()
 #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 	if (mSettings.enableLogFile)
 	{
+#ifdef FLUX_DEBUG
 		std::string lLogFileString = sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+#else 
+		std::string lLogFileString = mSettings.getPrefsPath() 
+				+ sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+#endif
 		InitErrorLog(lLogFileString.c_str(),this->mSettings.Caption,this->mSettings.Version);
 	}
 
 #endif
-	Log("Running on SDL3");
+	LogFMT("{} running on SDL3", mSettings.Caption);
 
 	mAppStatus.Visible		 = true;
 	mAppStatus.Paused		 = false;
