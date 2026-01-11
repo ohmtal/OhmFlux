@@ -192,7 +192,10 @@ protected:
     SequencerState mSeqState;
 
 private:
-    using OplChip = ymfm::ymf262; // = OPL3 // ymfm::ym3812 = OPL2
+
+    // using OplChip = ymfm::ym3812; //OPL2
+    // using OplChip = ymfm::ymf262; //OPL3
+    using OplChip = ymfm::ymf289b; //OPL3L
 
     OplChip* mChip; //OPL
 
@@ -274,7 +277,7 @@ private:
          0xC0  // 8: Feedback (Handled outside the loop)
      };
     // Array to store the last value written to registers 0xB0 through 0xB8
-    uint8_t last_block_values[9] = { 0 };
+    //XXTH_TEST uint8_t last_block_values[9] = { 0 };
 
 
     // in my DosProgramm i used melodic only but is should be a flag;
@@ -282,6 +285,7 @@ private:
     // this is updated
     bool mMelodicMode = true; // else RhythmMode
 
+    uint8_t mShadowRegs[512] = {0}; //2026-01-11
 
 public:
     OplController();
@@ -313,7 +317,41 @@ public:
 
 
     bool getMelodicMode() { return mMelodicMode;}
-    void setMelodicMode(bool value) { mMelodicMode = value;}
+    void setMelodicMode(bool value) {
+        mMelodicMode = value;
+        if (value)
+            setupToMelodicMode();
+        else
+            setupRhythmMode();
+    }
+
+    void setupToMelodicMode() {
+        // Read current state to preserve AM/Vibrato depth (Bits 6-7)
+        uint8_t currentBD = readShadow(0xBD);
+
+        // Clear Bit 5 (0x20) to disable Rhythm Mode
+        write(0xBD, currentBD & ~0x20);
+    }
+    void setupRhythmMode()
+    {
+        // 1. Enable OPL3 extensions (Bank 1 access)
+        write(0x105, 0x01);
+
+        // 2. Set Panning and Connection (Center Pan, FM mode)
+        // Do this BEFORE enabling rhythm to prevent a "pop" in the speakers
+        write(0xC6, 0x30); // Bass Drum
+        write(0xC7, 0x30); // Snare / Hi-Hat
+        write(0xC8, 0x30); // Tom / Cymbal
+
+        // 3. Clear any existing drum triggers and enable Rhythm Mode
+        // 0x20 = Rhythm Enable
+        // 0xC0 = Standard AM/Vibrato depth (optional but recommended)
+        write(0xBD, 0x20 | 0xC0);
+
+        // 4. Update your Shadow Register manually if your write() doesn't
+        // (Ensure your readShadow(0xBD) will now return 0xE0)
+    }
+
 
     /**
      * Returns the OPL2 register offset for the Carrier (Operator 2)
@@ -342,6 +380,12 @@ public:
     void set_speed(uint8_t songspeed);
     void reset();
     void write(uint16_t reg, uint8_t val);
+    uint8_t readShadow(uint16_t reg) {
+        return mShadowRegs[reg];
+    }
+
+    void playDrum(int channel, int noteIndex);
+
     void playNoteDOS(int channel, int noteIndex);
     void playNote(int channel, int noteIndex);
     void stopNote(int channel);
@@ -442,8 +486,10 @@ public:
     std::array<uint8_t, 24> GetDefaultInstrument();
 
     std::array<uint8_t, 24> GetDefaultBassDrum();
-    std::array<uint8_t, 24> GetDefaultSnareHiHat();
-    std::array<uint8_t, 24> GetDefaultTomCymbal();
+    std::array<uint8_t, 24> GetDefaultHiHat();
+    std::array<uint8_t, 24> GetDefaultSnare();
+    std::array<uint8_t, 24> GetDefaultCymbal();
+    std::array<uint8_t, 24> GetDefaultTom();
     std::array<uint8_t, 24> GetDefaultLeadSynth();
     std::array<uint8_t, 24> GetDefaultOrgan();
     std::array<uint8_t, 24> GetDefaultCowbell();

@@ -32,11 +32,24 @@
 // * Save settings
 // * toggle melodic mode ++ save in settings
 //
+// TODO Rythm Mode: different input per channel like a drum dings  !
+//     also need presets for channel 7 and 8 only have one for each
+// if (noteIndex == 35 || noteIndex == 36) {
+//     drumMask = 0x10; targetChannel = 6; // Bass Drum
+// } else if (noteIndex == 38 || noteIndex == 40) {
+//     drumMask = 0x08; targetChannel = 7; // Snare
+// } else if (noteIndex == 42 || noteIndex == 44) {
+//     drumMask = 0x01; targetChannel = 7; // Hi-Hat (Shared Ch 7)
+// } else if (noteIndex == 41 || noteIndex == 43) {
+//     drumMask = 0x04; targetChannel = 8; // Tom
+// } else if (noteIndex == 49 || noteIndex == 51) {
+//     drumMask = 0x02; targetChannel = 8; // Cymbal (Shared Ch 8)
+// }
+// Nice to have:
+// =============
 // TODO: Move ImGui::IsKeyPressed to onKeyEvent ?
 //       for better what is used as shortcut overview
 //
-// Nice to have:
-// =============
 // TODO: Cut (ctrl+x)
 // TODO: Record mode with pre ticker like my guitar looper
 //       Before i do this i should find out why record mode is so laggy!
@@ -166,7 +179,7 @@ public:
         mLiveMode   = SettingsManager().get("fluxComposer::LiveMode", true);
         mLoop       = SettingsManager().get("fluxComposer::Loop", false);
         mController->setMelodicMode(SettingsManager().get("fluxComposer::MelodicMode", true));
-
+        mController->loadInstrumentPreset();
 
         return true;
     }

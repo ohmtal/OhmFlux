@@ -3,7 +3,9 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// 2026-10-09
+// 2026-01-11
+// * added readshadow and fixed playnote with rhythm mode
+// 2026-01-09
 // * actual_ins => getInstrumentName(int lChannel) / setInstrumentName
 // * SongData also got a init function and getter / setter for the name
 //   Pascal string is not 0 terminated! first byte is the length
@@ -19,8 +21,10 @@
 
 //------------------------------------------------------------------------------
 OplController::OplController(){
-    // mChip = new ymfm::ym3812(mInterface); //OPL2
-    mChip = new ymfm::ymf262(mInterface);//OPL3
+   // mChip = new ymfm::ym3812(mInterface); //OPL2
+   // mChip = new ymfm::ymf262(mInterface);//OPL3
+   mChip = new ymfm::ymf289b(mInterface);//OPL3L
+
     reset();
 }
 
@@ -204,9 +208,73 @@ void OplController::write(uint16_t reg, uint8_t val)
                 reg, val, (val & 0x20) ? "YES" : "NO");
     }
     #endif
+    mShadowRegs[reg] = val; // 2026-01-11
     mChip->write_address(reg);
     mChip->write_data(val);
 }
+//------------------------------------------------------------------------------
+// 0x10: Bass Drum (uses Operators 13 & 16)
+// 0x08: Snare Drum (uses Operator 17)
+// 0x04: Tom-Tom (uses Operator 15)
+// 0x02: Top Cymbal (uses Operator 18)
+// 0x01: Hi-Hat (uses Operator 14)
+
+void OplController::playDrum(int channel, int noteIndex) {
+    uint8_t drumMask = 0;
+    uint8_t targetChannel = 0;
+
+    switch (channel)
+    {
+        case 6:   // Bass Drum
+        {
+            drumMask = 0x10;
+            break;
+        }
+
+        case 7:  // snare or hihat
+        {
+            if (noteIndex < 36)
+               drumMask = 0x01; //hihat below C-4
+            else
+               drumMask = 0x08; //snare C-4 and up
+            break;
+        }
+
+        case 8:  // tom or cymbal
+        {
+            if (noteIndex < 36)
+                drumMask = 0x04; //tom below C-4
+                else
+                drumMask = 0x02; //cymbal C-4 and up
+            break;
+        }
+
+    }
+    // // Map MIDI Note to Drum Bit and Pitch Channel
+    // if (noteIndex == 35 || noteIndex == 36) {
+    //     drumMask = 0x10; targetChannel = 6; // Bass Drum
+    // } else if (noteIndex == 38 || noteIndex == 40) {
+    //     drumMask = 0x08; targetChannel = 7; // Snare
+    // } else if (noteIndex == 42 || noteIndex == 44) {
+    //     drumMask = 0x01; targetChannel = 7; // Hi-Hat (Shared Ch 7)
+    // } else if (noteIndex == 41 || noteIndex == 43) {
+    //     drumMask = 0x04; targetChannel = 8; // Tom
+    // } else if (noteIndex == 49 || noteIndex == 51) {
+    //     drumMask = 0x02; targetChannel = 8; // Cymbal (Shared Ch 8)
+    // }
+
+    if (drumMask > 0) {
+        // 1. Set frequency for the correct channel
+        write(0xA0 + channel, myDosScale[noteIndex][1]);
+        write(0xB0 + channel, myDosScale[noteIndex][0] & ~0x20);
+
+        // 2. Trigger the bit in 0xBD
+        uint8_t currentBD = readShadow(0xBD);
+        write(0xBD, currentBD & ~drumMask); // Clear
+        write(0xBD, currentBD | drumMask);  // Trigger
+    }
+}
+
 //------------------------------------------------------------------------------
 void OplController::playNoteDOS(int channel, int noteIndex) {
     if (channel < 0 || channel > 8) return;
@@ -218,21 +286,31 @@ void OplController::playNoteDOS(int channel, int noteIndex) {
     }
     // --- RHYTHM MODE LOGIC ---
     if (!mMelodicMode && channel >= 6) {
-        // 1. Set the Frequency/Pitch for the drum (Drums still need a pitch!)
-        uint8_t a0_val = myDosScale[noteIndex][1];
-        uint8_t b0_val = myDosScale[noteIndex][0] & ~0x20; // REMOVE the melodic Key-On bit
-        write(0xA0 + channel, a0_val);
-        write(0xB0 + channel, b0_val); // Write block/fnum WITHOUT turning the note "on"
+        playDrum(channel, noteIndex);
+        return;
 
-        // 2. Trigger the specific hardware drum bit in 0xBD
-        uint8_t drumMask = 0;
-        if (channel == 6) drumMask = 0x10; // Bass Drum
-        if (channel == 7) drumMask = 0x08; // Snare (Note: You'd need logic to pick Snare vs HH)
-        if (channel == 8) drumMask = 0x04; // Tom (Note: You'd need logic to pick Tom vs Cym)
-
-        // Trigger: Off then On (to ensure a fresh hit)
-        write(0xBD, 0xE0 & ~drumMask);
-        write(0xBD, 0xE0 | drumMask);
+        // // 1. Set the Frequency/Pitch for the drum (Drums still need a pitch!)
+        // uint8_t a0_val = myDosScale[noteIndex][1];
+        // uint8_t b0_val = myDosScale[noteIndex][0] & ~0x20; // REMOVE the melodic Key-On bit
+        // write(0xA0 + channel, a0_val);
+        // write(0xB0 + channel, b0_val); // Write block/fnum WITHOUT turning the note "on"
+        //
+        // // 2. Trigger the specific hardware drum bit in 0xBD
+        // uint8_t drumMask = 0;
+        // // 2026-01-11 fixed drumMask
+        // // if (channel == 6) drumMask = 0x10; // Bass Drum
+        // // if (channel == 7) drumMask = 0x08; // Snare (Note: You'd need logic to pick Snare vs HH)
+        // // if (channel == 8) drumMask = 0x04; // Tom (Note: You'd need logic to pick Tom vs Cym)
+        //
+        //
+        // if (channel == 6) drumMask = 0x10; // Bass Drum
+        // if (channel == 7) drumMask = 0x08 | 0x01; // Snare & Hi-Hat
+        // if (channel == 8) drumMask = 0x04 | 0x02; // Tom & Cymbal
+        //
+        // // Trigger: Off then On (to ensure a fresh hit)
+        // uint8_t currentBD = readShadow(0xBD);
+        // write(0xBD, currentBD & ~drumMask);
+        // write(0xBD, currentBD | drumMask);
 
         return; // Exit here so we don't execute the melodic code below
     }
@@ -244,7 +322,7 @@ void OplController::playNoteDOS(int channel, int noteIndex) {
 
     write(0xA0 + channel, a0_val);
     write(0xB0 + channel, b0_val);
-    last_block_values[channel] = b0_val;
+    //XXTH TEST last_block_values[channel] = b0_val;
 }
 
 //   ---------- before Rhythm Mode:  ---------------
@@ -299,7 +377,7 @@ void OplController::playNote(int channel, int noteIndex) {
     uint8_t b0_val = 0x20 | (octave << 2) | (fnum >> 8);
 
     // SAVE the value (so we know the octave/frequency for later)
-    last_block_values[channel] = b0_val;
+    //XXTH_TEST last_block_values[channel] = b0_val;
 
     write(0xB0 + channel, b0_val);
 }
@@ -318,14 +396,18 @@ void OplController::stopNote(int channel) {
         if (channel == 8) drumMask = 0x04 | 0x02; // Tom & Cymbal
 
         // Clear only the bits for this channel, keep Global Rhythm (0x20) and Depths (0xC0)
-        uint8_t currentBD = 0xE0;
+        //XXTH_TEST uint8_t currentBD = 0xE0;
+        uint8_t currentBD = readShadow(0xBD);
         write(0xBD, currentBD & ~drumMask);
     }
     else {
         // --- MELODIC MODE STOP ---
-        uint8_t b0_off = last_block_values[channel] & ~0x20;
-        write(0xB0 + channel, b0_off);
-        last_block_values[channel] = b0_off;
+        uint8_t b0_val = readShadow(0xB0 + channel) & ~0x20;
+        write(0xB0 + channel, b0_val);
+        //XXTH_TEST before
+        // uint8_t b0_off = last_block_values[channel] & ~0x20;
+        // write(0xB0 + channel, b0_off);
+        // last_block_values[channel] = b0_off;
     }
 
     // Your critical fix remains at the bottom
@@ -990,7 +1072,7 @@ std::array< uint8_t, 24 > OplController::GetDefaultBassDrum(){
     };
 }
 //------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultSnareHiHat(){
+std::array< uint8_t, 24 > OplController::GetDefaultHiHat(){
     return {
         0x01, 0x01,
         0x12, 0x00, // Mod(HH) slightly quieter than Car(SD)
@@ -1002,8 +1084,21 @@ std::array< uint8_t, 24 > OplController::GetDefaultSnareHiHat(){
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 }
+std::array< uint8_t, 24 > OplController::GetDefaultSnare() {
+    return {
+        0x01, 0x01, // 0-1: Multiplier
+        0x00, 0x00, // 2-3: Output
+        0x0F, 0x0F, // 4-5: Attack
+        0x00, 0x07, // 6-7: Decay
+        0x00, 0x00, // 8-9: Sustain
+        0x00, 0x07, // 10-11: Release
+        0x00, 0x00, // 12-13: Waveform (Sine 0x00 is best for OPL noise)
+        0x00, 0x00, // Waveform: Sine (OPL noise gen overrides this)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+}
 //------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultTomCymbal(){
+std::array< uint8_t, 24 > OplController::GetDefaultCymbal() {
     return {
         0x02, 0x01, // 0-1: Multiplier (Mod/Tom: 2 for a hollower tone, Car/Cym: 1)
         0x12, 0x02, // 2-3: Output (Tom: 18, Cym: 2 [Loud])
@@ -1016,22 +1111,36 @@ std::array< uint8_t, 24 > OplController::GetDefaultTomCymbal(){
         0x00, 0x00  // 22-23: Scaling
     };
 }
+std::array< uint8_t, 24 > OplController::GetDefaultTom(){
+    return {
+        0x03, 0x00, // 0-1: Multiplier
+        0x10, 0x00, // 2-3: Output Level
+        0x0F, 0x00, // 4-5: Attack
+        0x06, 0x00, // 6-7: Decay
+        0x00, 0x00, // 8-9: Sustain (must be zero)
+        0x06, 0x00, // 10-11: Release (same as  Decay )
+        0x00, 0x00, // 12-13: Waveform
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 14-21: Flags
+        0x00, 0x00  // 22-23: Scaling
+    };
+}
+
 //------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetDefaultLeadSynth()
 {
     return {
-        0x01, 0x01, // 0-1: Multiplier (1:1 Verhältnis für klaren Ton)
-        0x12, 0x00, // 2-3: Output (Modulator auf 18 für FM-Grit, Carrier auf 0 [Laut])
-        0x0F, 0x0F, // 4-5: Attack (Maximal schnell)
-        0x05, 0x02, // 6-7: Decay (Modulator fällt schnell ab, Carrier hält länger)
-        0x0F, 0x0F, // 8-9: Sustain (Maximal - Lead Sounds stehen solange Taste gedrückt)
-        0x05, 0x05, // 10-11: Release (Kurzes Ausklingen)
-        0x02, 0x00, // 12-13: Waveform (Modulator: Absolute Sine [0x02] für mehr Obertöne)
-        0x01, 0x01, // 14-15: EG Typ (Sustain-Modus AN)
-        0x00, 0x00, // 16-17: Vibrato (Kann im Editor manuell erhöht werden)
-        0x00, 0x00, // 18-19: Amp Mod (Aus)
-        0x05, 0x00, // 20-21: Feedback auf 5 (WICHTIG für den "Sägezahn"-Charakter), Mode: FM
-        0x00, 0x00  // 22-23: Scaling (Aus)
+        0x01, 0x01, // 0-1: Multiplier
+        0x12, 0x00, // 2-3: Output
+        0x0F, 0x0F, // 4-5: Attack
+        0x05, 0x02, // 6-7: Decay
+        0x0F, 0x0F, // 8-9: Sustain
+        0x05, 0x05, // 10-11: Release
+        0x02, 0x00, // 12-13: Waveform
+        0x01, 0x01, // 14-15: EG Typ
+        0x00, 0x00, // 16-17: Vibrato
+        0x00, 0x00, // 18-19: Amp Mod
+        0x05, 0x00, // 20-21: Feedback  5  Mode: FM
+        0x00, 0x00  // 22-23: Scaling
     };
 }
 //------------------------------------------------------------------------------
@@ -1077,8 +1186,8 @@ void OplController::resetInstrument(uint8_t channel)
 
     if (!mMelodicMode) {
         if (channel == 6) defaultData = GetDefaultBassDrum();
-        else if (channel == 7) defaultData = GetDefaultSnareHiHat();
-        else if (channel == 8) defaultData = GetDefaultTomCymbal(); // similar logic
+        else if (channel == 7) defaultData = GetDefaultHiHat(); //FIXME
+        else if (channel == 8) defaultData = GetDefaultTom(); // FIXME
         else defaultData = GetDefaultInstrument();
     } else {
         defaultData = GetDefaultInstrument();
@@ -1120,8 +1229,8 @@ void OplController::loadInstrumentPreset()
         if (!mMelodicMode) {
             // Rhythm Mode Logic
             if (ch == 6)      defaultData = GetDefaultBassDrum();
-            else if (ch == 7) defaultData = GetDefaultSnareHiHat();
-            else if (ch == 8) defaultData = GetDefaultTomCymbal();
+            else if (ch == 7) defaultData = GetDefaultHiHat(); //FIXME GetDefaultSnare
+            else if (ch == 8) defaultData = GetDefaultTom();   //FIXME GetDefaultCymbal
             else             defaultData = GetMelodicDefault(ch);
 
             lDefaultName = std::format("RythmDefaultChannel {}",ch+1);
