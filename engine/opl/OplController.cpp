@@ -18,6 +18,7 @@
 
 //-----------------------------------------------------------------------------
 #include "OplController.h"
+#include "OPL2Instruments.h"
 #include <mutex>
 
 #ifdef FLUX_ENGINE
@@ -435,7 +436,7 @@ const uint8_t* OplController::getInstrument(uint8_t channel) const{
     return m_instrument_cache[channel];
 }
 //------------------------------------------------------------------------------
-bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
+bool OplController::loadSongFMS(const std::string& filename, SongDataFMS& sd) {
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         Log("ERROR: Could not open song file: %s", filename.c_str());
@@ -502,7 +503,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongData& sd) {
 /**
  *  Returns a null-terminated C-string for display/UI
  */
-std::string OplController::GetInstrumentName(SongData& sd, int channel) {
+std::string OplController::GetInstrumentName(SongDataFMS& sd, int channel) {
     if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
     {
         Log("Error: GetInstrumentName with invalid channel ! %d", channel);
@@ -514,7 +515,7 @@ std::string OplController::GetInstrumentName(SongData& sd, int channel) {
 /**
  *  Converts a C-string back into the Pascal [Length][Data...] format
  */
-bool OplController::SetInstrumentName(SongData& sd, int channel, const char* name) {
+bool OplController::SetInstrumentName(SongDataFMS& sd, int channel, const char* name) {
     if (channel < FMS_MIN_CHANNEL || channel > FMS_MAX_CHANNEL)
     {
         Log("Error: setInstrumentName with invalid channel ! %d", channel);
@@ -525,7 +526,7 @@ bool OplController::SetInstrumentName(SongData& sd, int channel, const char* nam
 }
 
 //------------------------------------------------------------------------------
-bool OplController::saveSongFMS(const std::string& filename, SongData& sd) {
+bool OplController::saveSongFMS(const std::string& filename, SongDataFMS& sd) {
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) return false;
 
@@ -563,7 +564,7 @@ bool OplController::saveSongFMS(const std::string& filename, SongData& sd) {
     return file.good();
 }
 //------------------------------------------------------------------------------
-void OplController::start_song(SongData& sd, bool loopit, int startAt, int stopAt)
+void OplController::start_song(SongDataFMS& sd, bool loopit, int startAt, int stopAt)
 {
     // SDL2 SDL_LockAudio(); // Stop the callback thread for a microsecond
 
@@ -631,56 +632,7 @@ bool OplController::saveInstrument(const std::string& filename, uint8_t channel)
     return false;
 }
 //------------------------------------------------------------------------------
-void OplController::TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], int noteIndex) {
-    if (!mChip || channel > FMS_MAX_CHANNEL) return;
-
-    std::lock_guard<std::recursive_mutex> lock(mDataMutex);
-
-    printf("--- Testing Channel %d with Note Index %d ---\n", channel, noteIndex);
-
-    // 1. Apply the instrument (Ensure this uses your p_ins logic from before)
-    setInstrument(channel, ins);
-
-    // 2. Force Volume to Maximum (OPL: 0 is loudest)
-    // We override the Carrier Total Level for this specific channel to ensure we hear it.
-    int car_off = get_carrier_offset(channel);
-    write(0x40 + car_off, 0x00);
-
-    // 3. Clear the Key-On bit first (Force 0 -> 1 transition)
-    write(0xB0 + channel, 0x00);
-
-    // 4. Wait a few samples for the chip to register the Key-Off
-    OplChip::output_data output;
-    for (int i = 0; i < 100; i++) mChip->generate(&output);
-
-    // 5. Trigger the Note using your myDosScale table
-    if (noteIndex < 1 || noteIndex > 84) noteIndex = 48; // Default to C-4
-    uint8_t b0_val = myDosScale[noteIndex][0];
-    uint8_t a0_val = myDosScale[noteIndex][1];
-
-    write(0xA0 + channel, a0_val);
-    write(0xB0 + channel, b0_val);
-
-    // 6. Monitor for sound over the next 4410 samples (0.1 seconds)
-    bool heard_sound = false;
-    for (int i = 0; i < 4410; i++) {
-        mChip->generate(&output);
-        if (output.data[0] != 0) {
-            heard_sound = true;
-            if (i % 1000 == 0) {
-                printf("Sample %d: Output Level %d\n", i, output.data[0]);
-            }
-        }
-    }
-
-    if (!heard_sound) {
-        printf("RESULT: Channel %d is SILENT. Check instrument registers ($20-$80 range).\n", channel);
-    } else {
-        printf("RESULT: Channel %d is PRODUCING SOUND.\n", channel);
-    }
-}
-//------------------------------------------------------------------------------
-void OplController::replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote) {
+void OplController::replaceSongNotes(SongDataFMS& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote) {
     if (targetChannel > FMS_MAX_CHANNEL)
         return;
 
@@ -812,7 +764,7 @@ void OplController::fillBuffer(int16_t* buffer, int total_frames) {
 
 //------------------------------------------------------------------------------
 void OplController::tickSequencer() {
-    const SongData& s = *mSeqState.current_song;
+    const SongDataFMS& s = *mSeqState.current_song;
 
     if ( mSeqState.song_stopAt > s.song_length )
     {
@@ -982,164 +934,24 @@ int OplController::getIdFromNoteName(std::string name)
     return (noteID >= 1 && noteID <= 84) ? noteID : 0;
 }
 //------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultInstrument()
-{
-    return {
-        0x01, 0x01, // 0-1: Modulator/Carrier Frequency
-        0x10, 0x00, // 2-3: Modulator/Carrier Output
-        0x0F, 0x0F, // 4-5: Modulator/Carrier Attack
-        0x00, 0x00, // 6-7: Modulator/Carrier Decay
-        0x07, 0x07, // 8-9: Modulator/Carrier Sustain
-        0x07, 0x07, // 10-11: Modulator/Carrier Release
-        0x00, 0x00, // 12-13: Modulator/Carrier Waveform
-        0x00, 0x00, // 14-15: Modulator/Carrier EG Typ
-        0x00, 0x00, // 16-17: Modulator/Carrier Vibrato
-        0x00, 0x00, // 18-19: Modulator/Carrier Amp Mod
-        0x00, 0x00, // 20-21: Feedback / Modulation Mode
-        0x00, 0x00  // 22-23: Modulator/Carrier Scaling
-    };
-}
-//------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultBassDrum(){
-    return {
-        0x01, 0x02, // Freq: Mod=1, Car=2 (gives a thicker sound)
-        0x10, 0x00, // Output: Both loud
-        0x0F, 0x0F, // Attack: Instant
-        0x08, 0x06, // Decay: Rapid for punch
-        0x00, 0x00, // Sustain: 0 (Drums shouldn't sustain)
-        0x0A, 0x0A, // Release: Quick fade
-        0x00, 0x00, // Waveform: Sine
-        0x00, 0x00, // EG Typ: 0 (Drums always decay)
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-}
-//------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultHiHat(){
-    return {
-        0x01, 0x01,
-        0x12, 0x00, // Mod(HH) slightly quieter than Car(SD)
-        0x0F, 0x0F, // Attack: Instant
-        0x0D, 0x07, // Decay: HH is very short (D), SD is longer (7)
-        0x00, 0x00, // Sustain: 0
-        0x0D, 0x07, // Release: Match decay
-        0x00, 0x00, // Waveform: Sine (OPL noise gen overrides this)
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-}
-std::array< uint8_t, 24 > OplController::GetDefaultSnare() {
-    return {
-        0x01, 0x01, // 0-1: Multiplier
-        0x00, 0x00, // 2-3: Output
-        0x0F, 0x0F, // 4-5: Attack
-        0x00, 0x07, // 6-7: Decay
-        0x00, 0x00, // 8-9: Sustain
-        0x00, 0x07, // 10-11: Release
-        0x00, 0x00, // 12-13: Waveform (Sine 0x00 is best for OPL noise)
-        0x00, 0x00, // Waveform: Sine (OPL noise gen overrides this)
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-}
-//------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultCymbal() {
-    return {
-        0x02, 0x01, // 0-1: Multiplier (Mod/Tom: 2 for a hollower tone, Car/Cym: 1)
-        0x12, 0x02, // 2-3: Output (Tom: 18, Cym: 2 [Loud])
-        0x0F, 0x0F, // 4-5: Attack (Instant for both)
-        0x07, 0x09, // 6-7: Decay (Tom: 7 [Snappy], Cym: 9 [Linger])
-        0x00, 0x00, // 8-9: Sustain (Must be 0 for drums)
-        0x07, 0x09, // 10-11: Release (Match Decay for clean trigger-off)
-        0x00, 0x00, // 12-13: Waveform (Sine is standard)
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 14-21 (Flags/Feedback)
-        0x00, 0x00  // 22-23: Scaling
-    };
-}
-std::array< uint8_t, 24 > OplController::GetDefaultTom(){
-    return {
-        0x03, 0x00, // 0-1: Multiplier
-        0x10, 0x00, // 2-3: Output Level
-        0x0F, 0x00, // 4-5: Attack
-        0x06, 0x00, // 6-7: Decay
-        0x00, 0x00, // 8-9: Sustain (must be zero)
-        0x06, 0x00, // 10-11: Release (same as  Decay )
-        0x00, 0x00, // 12-13: Waveform
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 14-21: Flags
-        0x00, 0x00  // 22-23: Scaling
-    };
-}
-
-//------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultLeadSynth()
-{
-    return {
-        0x01, 0x01, // 0-1: Multiplier
-        0x12, 0x00, // 2-3: Output
-        0x0F, 0x0F, // 4-5: Attack
-        0x05, 0x02, // 6-7: Decay
-        0x0F, 0x0F, // 8-9: Sustain
-        0x05, 0x05, // 10-11: Release
-        0x02, 0x00, // 12-13: Waveform
-        0x01, 0x01, // 14-15: EG Typ
-        0x00, 0x00, // 16-17: Vibrato
-        0x00, 0x00, // 18-19: Amp Mod
-        0x05, 0x00, // 20-21: Feedback  5  Mode: FM
-        0x00, 0x00  // 22-23: Scaling
-    };
-}
-//------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultOrgan()
-{
-    return {
-        0x01, 0x02, // 0-1: Multiplier (Mod=1 [Base], Car=2 [Octave/Harmonic])
-        0x08, 0x00, // 2-3: Output (Both loud; Adjust Mod output to change 'drawbar' mix)
-        0x0F, 0x0F, // 4-5: Attack (Instant for both)
-        0x00, 0x00, // 6-7: Decay (None)
-        0x0F, 0x0F, // 8-9: Sustain (Full - Organs don't fade)
-        0x02, 0x02, // 10-11: Release (Very short - stops immediately)
-        0x00, 0x00, // 12-13: Waveform (Pure Sines)
-        0x01, 0x01, // 14-15: EG Typ (Sustain ON)
-        0x01, 0x01, // 16-17: Vibrato (ON - Adds the 'Leslie Speaker' feel)
-        0x00, 0x00, // 18-19: Amp Mod (OFF)
-        0x00, 0x01, // 20-21: Feedback 0, Connection 1 (Additive Mode - CRITICAL)
-        0x00, 0x00  // 22-23: Scaling (OFF)
-    };
-}
-//------------------------------------------------------------------------------
-std::array< uint8_t, 24 > OplController::GetDefaultCowbell()
-{
-    return {
-        0x01, 0x04, // 0-1: Multiplier (Mod=1, Car=4: Creates a high, resonant 'clink')
-        0x15, 0x00, // 2-3: Output (Mod=21 [Moderate FM bite], Car=0 [Loud])
-        0x0F, 0x0F, // 4-5: Attack (Instant hit)
-        0x06, 0x08, // 6-7: Decay (Modulator drops fast to clean the tone, Carrier lingers)
-        0x00, 0x00, // 8-9: Sustain (Must be 0 for percussion)
-        0x08, 0x08, // 10-11: Release (Fast fade-out)
-        0x00, 0x00, // 12-13: Waveform (Pure Sine)
-        0x00, 0x00, // 14-15: EG Typ (Decay mode)
-        0x00, 0x00, // 16-17: Vibrato (Off)
-        0x00, 0x00, // 18-19: Amp Mod (Off)
-        0x07, 0x00, // 20-21: Feedback 7 (Max grit for 'metal' feel), Mode FM
-        0x00, 0x00  // 22-23: Scaling
-    };
-}
-//------------------------------------------------------------------------------
 void OplController::resetInstrument(uint8_t channel)
 {
     std::array<uint8_t, 24> defaultData;
 
     if (!mMelodicMode) {
-        if (channel == 6) defaultData = GetDefaultBassDrum();
-        else if (channel == 7) defaultData = GetDefaultHiHat(); //FIXME
-        else if (channel == 8) defaultData = GetDefaultTom(); // FIXME
-        else defaultData = GetDefaultInstrument();
+        if (channel == 6) defaultData = OPL2Instruments::GetDefaultBassDrum();
+        else if (channel == 7) defaultData = OPL2Instruments::GetDefaultHiHat(); //FIXME
+        else if (channel == 8) defaultData = OPL2Instruments::GetDefaultTom(); // FIXME
+        else defaultData = OPL2Instruments::GetDefaultInstrument();
     } else {
-        defaultData = GetDefaultInstrument();
+        defaultData = OPL2Instruments::GetDefaultInstrument();
     }
     setInstrument(channel, defaultData.data());
 }
 //------------------------------------------------------------------------------
 std::array< uint8_t, 24 > OplController::GetMelodicDefault(uint8_t index)
 {
-    auto data = GetDefaultInstrument(); // Start with your basic Sine template
+    auto data = OPL2Instruments::GetDefaultInstrument(); // Start with your basic Sine template
 
     switch (index % 6) {
         case 0: // Basic Piano
@@ -1155,9 +967,9 @@ std::array< uint8_t, 24 > OplController::GetMelodicDefault(uint8_t index)
             data[4] = 0x3; data[5] = 0x2; // Slow Attack
             data[10] = 0x5; data[11] = 0x5; // Slower Release
             break;
-        case 3: return GetDefaultLeadSynth();
-        case 4: return GetDefaultOrgan();
-        case 5: return GetDefaultCowbell();
+        case 3: return OPL2Instruments::GetDefaultLeadSynth();
+        case 4: return OPL2Instruments::GetDefaultOrgan();
+        case 5: return OPL2Instruments::GetDefaultCowbell();
     }
     return data;
 }
@@ -1170,9 +982,9 @@ void OplController::loadInstrumentPreset()
 
         if (!mMelodicMode) {
             // Rhythm Mode Logic
-            if (ch == 6)      defaultData = GetDefaultBassDrum();
-            else if (ch == 7) defaultData = GetDefaultHiHat(); //FIXME GetDefaultSnare
-            else if (ch == 8) defaultData = GetDefaultTom();   //FIXME GetDefaultCymbal
+            if (ch == 6)      defaultData = OPL2Instruments::GetDefaultBassDrum();
+            else if (ch == 7) defaultData = OPL2Instruments::GetDefaultHiHat(); //FIXME GetDefaultSnare
+            else if (ch == 8) defaultData = OPL2Instruments::GetDefaultTom();   //FIXME GetDefaultCymbal
             else             defaultData = GetMelodicDefault(ch);
 
             lDefaultName = std::format("RythmDefaultChannel {}",ch+1);
@@ -1187,7 +999,7 @@ void OplController::loadInstrumentPreset()
     }
 }
 //------------------------------------------------------------------------------
-void OplController::loadInstrumentPresetSyncSongName(SongData& sd)
+void OplController::loadInstrumentPresetSyncSongName(SongDataFMS& sd)
 {
     loadInstrumentPreset();
     for ( U8 ch = FMS_MIN_CHANNEL;  ch <= FMS_MAX_CHANNEL; ch++ )
@@ -1197,7 +1009,7 @@ void OplController::loadInstrumentPresetSyncSongName(SongData& sd)
 }
 
 //------------------------------------------------------------------------------
-bool OplController::exportToWav(SongData& sd, const std::string& filename, float* progressOut)
+bool OplController::exportToWav(SongDataFMS& sd, const std::string& filename, float* progressOut)
 {
 
     // unbind the audio stream

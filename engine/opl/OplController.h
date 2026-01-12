@@ -3,41 +3,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// FIXME need dome cleanup
-// TODO OPL3 addons:
-// 1. Key Technical Advantages of OPL3
-// Switching gives you access to specific hardware capabilities that OPL2 (YM3812)
-// lacks:
-//
-// - Stereo Output & Panning: OPL3 supports stereo sound with per-channel panning
-// (Left, Right, or Center/Both). In OPL2, everything is strictly mono.
-// - 4-Operator Synthesis: You can combine two channels into a single 4-operator
-// voice. This allows for much more complex, "modern" FM sounds that are
-// difficult or impossible to achieve with standard 2-operator OPL2 instruments.
-// - Double Polyphony: OPL3 features 18 melodic channels (36 operators total),
-// exactly twice the capacity of OPL2's 9 channels.
-// - More Waveforms: OPL3 adds 4 additional waveforms (8 total), including a
-// Square Wave, which helps create "harder" and "thicker" sounds.
-//
-// 2. Implementation Differences
-// If you switch your emulation core, your code will need small but important
-// adjustments:
-//
-// - Register Sets: OPL3 uses two register banks ($0xx and $1xx). Your current
-// offsets (0x20, 0x40, etc.) will only control the first 9 channels.
-// - Reduced Delays: Genuine OPL3 hardware (and high-end emulators) requires
-// almost zero delay between writes compared to the strict microsecond wait
-// times of OPL2.
-// - Compatibility: You can still use your existing INSTRUMENT_METADATA and
-// setInstrument logic for the first 9 channels without any changes.
-//
-// 3. Verdict: Is it "Better" Sound?
-//
-// - If you play OPL2 songs: It will sound identical, though sometimes slightly
-// louder depending on the emulation core.
-// - If you write NEW music: It is much better. The ability to use stereo panning
-// and 4-operator instruments makes the difference between a "thin" retro
-// sound and a "full" professional FM synthesizer.
+// this is bind to my old DOS Fileformats fmi/fms which was my goal.
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -106,7 +72,7 @@ private:
 
 public:
 
-    struct SongData {
+    struct SongDataFMS {
         // Pascal: array[1..9] of string[255] -> 10 slots to allow 1-based indexing
         // Index [channel][0] is the length byte.
         uint8_t actual_ins[10][256];
@@ -123,7 +89,7 @@ public:
         // Initialization function
         void init() {
             // 1. Zero out everything first for safety
-            std::memset(this, 0, sizeof(SongData));
+            std::memset(this, 0, sizeof(SongDataFMS));
 
             // 2. Initialize Pascal Strings (actual_ins)
             // In Pascal, a blank string has a length of 0 at index [0].
@@ -141,7 +107,7 @@ public:
             // If "0" is not a valid empty note in your tracker,
             // initialize with -1 or your specific "empty" constant.
             for (int i = 0; i <= FMS_MAX_SONG_LENGTH; ++i) {
-                for (int j = 0; j <= FMS_MAX_CHANNEL; ++j) {
+                for (int j = FMS_MIN_CHANNEL; j <= FMS_MAX_CHANNEL; ++j) {
                     song[i][j] = 0;
                 }
             }
@@ -203,7 +169,7 @@ public:
 
         int samples_per_tick = 0;
         int sample_accumulator = 0;
-        const SongData* current_song = nullptr; // Pointer to the loaded song
+        const SongDataFMS* current_song = nullptr; // Pointer to the loaded song
 
         // see what it plays
         int16_t last_notes[10]; // Stores the notes for channels 1-9
@@ -455,26 +421,25 @@ public:
         return true;
     }
 
-    bool loadSongFMS(const std::string& filename, SongData& sd);
-    bool saveSongFMS(const std::string& filename,  SongData& sd);
+    bool loadSongFMS(const std::string& filename, SongDataFMS& sd);
+    bool saveSongFMS(const std::string& filename,  SongDataFMS& sd);
 
-    std::string GetInstrumentName(SongData& sd, int channel);
-    bool SetInstrumentName(SongData& sd,int channel, const char* name);
+    std::string GetInstrumentName(SongDataFMS& sd, int channel);
+    bool SetInstrumentName(SongDataFMS& sd,int channel, const char* name);
 
 
     // alias for start_song
-    void playSong(SongData& sd, bool loopit, int startAt=0, int stopAt=-1)
+    void playSong(SongDataFMS& sd, bool loopit, int startAt=0, int stopAt=-1)
     {
         start_song(sd,loopit, startAt, stopAt);
     }
     // stopAt=-1 means ==
-    void start_song(SongData& sd, bool loopit, int startAt=0, int stopAt=-1);
+    void start_song(SongDataFMS& sd, bool loopit, int startAt=0, int stopAt=-1);
 
     bool loadInstrument(const std::string& filename, uint8_t channel);
     bool saveInstrument(const std::string& filename, uint8_t channel);
-    void TestInstrumentDOS(uint8_t channel, const uint8_t ins[24], int noteIndex = 48);
 
-    void replaceSongNotes(SongData& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote);
+    void replaceSongNotes(SongDataFMS& sd, uint8_t targetChannel, int16_t oldNote, int16_t newNote);
 
     void fillBuffer(int16_t* buffer, int total_frames);
     void applyFilter();
@@ -509,16 +474,15 @@ public:
     }
 
 
-    std::array<uint8_t, 24> GetDefaultInstrument();
-
-    std::array<uint8_t, 24> GetDefaultBassDrum();
-    std::array<uint8_t, 24> GetDefaultHiHat();
-    std::array<uint8_t, 24> GetDefaultSnare();
-    std::array<uint8_t, 24> GetDefaultCymbal();
-    std::array<uint8_t, 24> GetDefaultTom();
-    std::array<uint8_t, 24> GetDefaultLeadSynth();
-    std::array<uint8_t, 24> GetDefaultOrgan();
-    std::array<uint8_t, 24> GetDefaultCowbell();
+    // std::array<uint8_t, 24> GetDefaultInstrument();
+    // std::array<uint8_t, 24> GetDefaultBassDrum();
+    // std::array<uint8_t, 24> GetDefaultHiHat();
+    // std::array<uint8_t, 24> GetDefaultSnare();
+    // std::array<uint8_t, 24> GetDefaultCymbal();
+    // std::array<uint8_t, 24> GetDefaultTom();
+    // std::array<uint8_t, 24> GetDefaultLeadSynth();
+    // std::array<uint8_t, 24> GetDefaultOrgan();
+    // std::array<uint8_t, 24> GetDefaultCowbell();
 
     // Channel     Sound Type	Logic
     // 0	Grand Piano	Fast attack, medium decay, low sustain, fast release.
@@ -532,8 +496,8 @@ public:
 
     void resetInstrument(uint8_t channel);
     void loadInstrumentPreset();
-    void loadInstrumentPresetSyncSongName(SongData& sd);
-    bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr);
+    void loadInstrumentPresetSyncSongName(SongDataFMS& sd);
+    bool exportToWav(SongDataFMS &sd, const std::string& filename, float* progressOut = nullptr);
 
 private:
     bool saveWavFile(const std::string& filename, const std::vector<int16_t>& data, int sampleRate);

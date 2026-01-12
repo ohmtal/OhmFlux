@@ -27,7 +27,7 @@ class TestBed : public FluxMain
     typedef FluxMain Parent;
 private:
     OplController* mOplController = nullptr;
-    OplController::SongData mTestOPLSong;
+    OplController::SongDataFMS mTestOPLSong;
 
     SFXGenerator* mSFXGenerator = nullptr;
 

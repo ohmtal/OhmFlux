@@ -73,7 +73,7 @@
 // ------------- Wav export in a thread >>>>>>>>>>>>>>
 struct ExportTask {
     OplController* controller;
-    FluxEditorOplController::SongData song;
+    FluxEditorOplController::SongDataFMS song;
     std::string filename;
     float progress = 0.0f; // Track progress here
     bool isFinished = false;
@@ -132,9 +132,9 @@ private:
     bool mLiveMode     = false; //notes are insert where the play trigger is
 
 
-    OplController::SongData mSongData;
+    OplController::SongDataFMS mSongData;
 
-    OplController::SongData mBufferSongData;
+    OplController::SongDataFMS mBufferSongData;
 
     ExportTask* mCurrentExport = nullptr; //<<< for export to wav
 

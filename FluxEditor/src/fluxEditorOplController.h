@@ -117,7 +117,7 @@ public:
 
     //--------------------------------------------------------------------------
     // Insert Row Logic (Inside OplController)
-    void insertRowAt(SongData& sd, uint16_t start)
+    void insertRowAt(SongDataFMS& sd, uint16_t start)
     {
 
         sd.song_length++;
@@ -140,7 +140,7 @@ public:
 
     //--------------------------------------------------------------------------
     // Delete Range Logic
-    void deleteSongRange(SongData& sd, uint16_t start, uint16_t end) {
+    void deleteSongRange(SongDataFMS& sd, uint16_t start, uint16_t end) {
         int rangeLen = (end - start) + 1;
         // Shift data up
         for (int i = start; i < sd.song_length - rangeLen; ++i) {
@@ -158,7 +158,7 @@ public:
         sd.song_length -= rangeLen;
     }
     //--------------------------------------------------------------------------
-    bool clearSongRange(SongData& sd, uint16_t start, uint16_t end)
+    bool clearSongRange(SongDataFMS& sd, uint16_t start, uint16_t end)
     {
         if (end > FMS_MAX_SONG_LENGTH )
             return false;
@@ -173,13 +173,13 @@ public:
         return true;
     }
     //--------------------------------------------------------------------------
-    bool clearSong(SongData& sd)
+    bool clearSong(SongDataFMS& sd)
     {
         sd.song_length = 0;
         return clearSongRange(sd, 0,FMS_MAX_SONG_LENGTH);
     }
     //--------------------------------------------------------------------------
-    bool copySongRange(SongData& fromSD, uint16_t fromStart,  SongData& toSD, uint16_t toStart, uint16_t len)
+    bool copySongRange(SongDataFMS& fromSD, uint16_t fromStart,  SongDataFMS& toSD, uint16_t toStart, uint16_t len)
     {
 
         dLog("copySongRange len:%d", len );
@@ -210,7 +210,7 @@ public:
         // Parent::tickSequencer();
         // return ;
 
-        const SongData& s = *mSeqState.current_song;
+        const SongDataFMS& s = *mSeqState.current_song;
 
         if ( mSeqState.song_stopAt > s.song_length )
         {
