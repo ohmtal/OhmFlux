@@ -8,6 +8,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "No build type selected, defaulting to Debug")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+
 # --- Cross-Platform Compatibility Fixes ---
 if(ANDROID)
     add_compile_definitions(ANDROID)
@@ -34,24 +42,24 @@ target_compile_options(flux_speed_profile INTERFACE
 )
 
 # --- Path Definitions ---
-set(ENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/engine/source")
-set(STB_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/stb")
-set(BOX2D_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/engine/box2d")
-set(YMFM_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/ymfm/src")
-set(OPL_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/opl")
-set(SFX_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/engine/sfx")
-set(IMGGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/engine/imgui")
-set(JSON_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/engine/json/single_include")
+set(ENGINE_DIR "${CMAKE_CURRENT_LIST_DIR}/engine/source")
+set(STB_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/stb")
+set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/engine/box2d")
+set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/engine/ymfm/src")
+set(OPL_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/opl")
+set(SFX_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/sfx")
+set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/engine/imgui")
+set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/engine/json/single_include")
 # =============================================================================
 # PROJECTS SECTION >>>>
 # =============================================================================
-set(DEMO_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/FishTankDemo")
-set(TTT_DIR     "${CMAKE_CURRENT_SOURCE_DIR}/TickTacToe")
-set(TESTBED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/TestBed")
-set(LUATEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/LuaTest")
-set(AMANA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Amana")
-set(IMGGUITEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ImguiTest")
-set(EDITOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/FluxEditor")
+set(DEMO_DIR    "${CMAKE_CURRENT_LIST_DIR}/FishTankDemo")
+set(TTT_DIR     "${CMAKE_CURRENT_LIST_DIR}/TickTacToe")
+set(TESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}/TestBed")
+set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
+set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
+set(IMGGUITEST_DIR "${CMAKE_CURRENT_LIST_DIR}/ImguiTest")
+set(EDITOR_DIR "${CMAKE_CURRENT_LIST_DIR}/FluxEditor")
 
 # =============================================================================
 # <<<< PROJECTS SECTION
@@ -122,7 +130,9 @@ set(FLUX_LIBS "")
 set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
 set(BOX2D_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(engine/box2d)
+# add_subdirectory(engine/box2d)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/engine/box2d" "${CMAKE_CURRENT_BINARY_DIR}/engine/box2d")
+
 # <<<
 
 
@@ -211,7 +221,7 @@ add_library(ohmFlux_engine STATIC ${ENGINE_SOURCES})
 target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${ENGINE_DIR}>
     $<BUILD_INTERFACE:${ENGINE_DIR}/utils>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/engine>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/engine>
     $<BUILD_INTERFACE:${STB_DIR}>
     $<BUILD_INTERFACE:${BOX2D_DIR}/include>
     $<BUILD_INTERFACE:${YMFM_DIR}>
@@ -247,39 +257,28 @@ endif()
 
 # ---------------- Macro for Projects ------------------
 macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
+    # FIX 1: Ensure SOURCE_DIR is absolute so output paths don't break
+    get_filename_component(ABS_OUT_DIR "${SOURCE_DIR}" ABSOLUTE)
 
-    # Determine if we need the WIN32 GUI flag (only for Windows Release)
     set(GUI_TYPE "")
     if(WIN32 AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(GUI_TYPE "WIN32")
     endif()
 
-    # Android uses shared libraries loaded by a Java/Kotlin wrapper
     if(ANDROID)
         add_library(${TARGET_NAME} SHARED ${ARGN})
     else()
-            add_executable(${TARGET_NAME} ${GUI_TYPE} ${ARGN})
+        add_executable(${TARGET_NAME} ${GUI_TYPE} ${ARGN})
     endif()
 
-    target_include_directories(${TARGET_NAME} PRIVATE
-        ${SOURCE_DIR}
-    )
-
+    target_include_directories(${TARGET_NAME} PRIVATE ${ABS_OUT_DIR})
     target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine)
 
     if(EMSCRIPTEN)
-        # set_target_properties(${TARGET_NAME} PROPERTIES
-        #     SUFFIX ".html" OUTPUT_NAME "index"
-        #     RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
-        # )
-        # target_link_options(${TARGET_NAME} PRIVATE
-        #     "-sUSE_SDL=3" "-sMAX_WEBGL_VERSION=2" "-sMIN_WEBGL_VERSION=2"
-        #     "--preload-file=${PRELOAD_PATH}" "-sALLOW_MEMORY_GROWTH=1" "-sNO_EXIT_RUNTIME=1" "-sMINIFY_HTML=1"
-        # )
         set_target_properties(${TARGET_NAME} PROPERTIES
             SUFFIX ".html"
             OUTPUT_NAME "index"
-            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY "${ABS_OUT_DIR}"
         )
 
         target_link_options(${TARGET_NAME} PRIVATE
@@ -292,58 +291,39 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
             "-sMINIFY_HTML=1"
         )
 
-        # Shell Template Configuration
-        # FIXME custom shell file !!
         if(CMAKE_BUILD_TYPE STREQUAL "Release")
-            set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_minimal.html")
-            # sucks on Desktop Fullscreen:
-            # set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/deploy/emscripten/shell_custom_web.html")
+            # This is correct: refers to the location of this .cmake file
+            set(CUSTOM_SHELL_FILE "${CMAKE_CURRENT_LIST_DIR}/deploy/emscripten/shell_minimal.html")
 
             if(EXISTS "${CUSTOM_SHELL_FILE}")
                 target_link_options(${TARGET_NAME} PRIVATE "--shell-file" "${CUSTOM_SHELL_FILE}")
                 set_target_properties(${TARGET_NAME} PROPERTIES LINK_DEPENDS "${CUSTOM_SHELL_FILE}")
-            else()
-                message(WARNING "Custom template not found: ${CUSTOM_SHELL_FILE}")
             endif()
         endif()
 
     elseif(WIN32)
-        # 1. Define the base path
-        set(BASE_OUT_DIR "${SOURCE_DIR}")
-
-        # 2. General Windows properties (Works for both MSVC and MinGW)
         set_target_properties(${TARGET_NAME} PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${BASE_OUT_DIR}"
-            RUNTIME_OUTPUT_DIRECTORY_DEBUG "${BASE_OUT_DIR}"
-            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${BASE_OUT_DIR}"
-            RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${BASE_OUT_DIR}"
-            RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${BASE_OUT_DIR}"
-
-            # Apply naming logic: target.exe or target_Debug.exe
+            RUNTIME_OUTPUT_DIRECTORY "${ABS_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG "${ABS_OUT_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${ABS_OUT_DIR}"
+            # Generator expression for naming
             OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>>"
         )
-        # 3. Visual Studio Specific Settings
         if(MSVC)
             set_target_properties(${TARGET_NAME} PROPERTIES
-                # This forces static linking of the VC Runtime (/MT)
                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-                
-                # Working directory for F5 support
-                VS_DEBUGGER_WORKING_DIRECTORY "${SOURCE_DIR}"
-                )
+                VS_DEBUGGER_WORKING_DIRECTORY "${ABS_OUT_DIR}"
+            )
         endif()
 
-
     elseif(ANDROID)
-        # Android standard: libTARGET_NAME.so
-        # No special suffix needed, CMake handles .so for libraries
         set_target_properties(${TARGET_NAME} PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY "${ABS_OUT_DIR}"
         )
     else()
-        # Linux standard (your original preference)
+        # Linux / Others
         set_target_properties(${TARGET_NAME} PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${SOURCE_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY "${ABS_OUT_DIR}"
             OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}.x86_64>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>.x86_64>"
         )
     endif()
