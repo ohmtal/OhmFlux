@@ -2,6 +2,42 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// Usage:
+// 1.) define a global variable like this
+//     inline ImFileDialog g_FileDialog;
+// 2.) init Example:
+//     g_FileDialog.init( getGamePath(), {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" });
+// 3.) In IMGui Render Loop:
+//
+// if (g_FileDialog.Draw()) {
+//     if (g_FileDialog.mSaveMode)
+//     {
+//         if (!g_FileDialog.mCancelPressed)
+//         {
+//             if (g_FileDialog.mSaveExt == ".fms")
+//             {
+//                 if (g_FileDialog.selectedExt == "")
+//                     g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+//                 mFMComposer->saveSong(g_FileDialog.selectedFile);
+//             }
+//         };
+//         g_FileDialog.reset();
+//     } else {
+//         if ( g_FileDialog.selectedExt == ".fms" )
+//             mFMComposer->loadSong(g_FileDialog.selectedFile);
+//     }
+//
+// 4.) Setup for save like this:
+// void callSaveSong() {
+//     g_FileDialog.setFileName(mSongName);
+//     g_FileDialog.mSaveMode = true;
+//     g_FileDialog.mSaveExt = ".fms";
+//     g_FileDialog.mLabel = "Save Song (.fms)";
+//
+// }
+
+
+//-----------------------------------------------------------------------------
 #pragma once
 #include "imgui.h"
 #include <filesystem>
@@ -20,24 +56,39 @@ struct ImFileDialog {
     std::string selectedExt = "";
     std::string mExt = "";
 
+
+
     std::vector<fs::directory_entry> mEntries;
     bool mDirty = true;
 
     std::string mLabel = "File Browser";
     bool mSaveMode = false;
-    std::vector<std::string> mFilters = {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" };
+    std::vector<std::string> mDefaultFilters = {  };
+    std::vector<std::string> mFilters = { };
     std::string mSaveExt = "";
     bool mCancelPressed = false;
+    bool mInitDone = false;
 
     void setFileName(std::string filename)
     {
         strncpy(fileInput, filename.c_str(), sizeof(fileInput));
     }
 
+    void init(std::string path, std::vector<std::string> filters)
+    {
+        if (mInitDone)
+            return ;
+        currentPath = path;
+        mDefaultFilters = filters;
+        mFilters = filters;
+        mInitDone = true;
+    }
+
+
     void reset() {
         mLabel = "File Browser";
         mSaveMode = false;
-        mFilters = {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" };
+        mFilters = mDefaultFilters;
         mSaveExt = "";
         mCancelPressed = false;
         mDirty = true;

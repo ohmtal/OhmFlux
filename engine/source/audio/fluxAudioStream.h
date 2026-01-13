@@ -68,6 +68,7 @@ public:
         mUsePostion = true;
     }
     bool getInitDone() { return mInitDone; }
+    bool IsInitialized() { return mInitDone; }
 
 }; //class
 

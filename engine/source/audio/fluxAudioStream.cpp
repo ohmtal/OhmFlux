@@ -155,7 +155,10 @@ void FluxAudioStream::Update(const double& dt)
 }
 
 //-----------------------------------------------------------------------------
-bool FluxAudioStream::loadOGG(const char* lFilename) {
+bool FluxAudioStream::loadOGG(const char* lFilename)
+{
+    clearResources(); // clear old data if any
+
     int error;
 
     // Android
@@ -201,6 +204,8 @@ bool FluxAudioStream::loadWAV(const char * lFilename)
 {
     if (AudioManager.getDeviceID() == 0)
         return false;
+
+    clearResources(); // clear old data if any
 
     mInitDone = false;
 

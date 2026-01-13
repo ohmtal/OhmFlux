@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 #include <string>
-#include "fileDialog.h"
+#include <gui/ImFileDialog.h>
 
 //SDL Events
 inline U32 FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED = 0;

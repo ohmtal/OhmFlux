@@ -1,6 +1,6 @@
 #include "editorGui.h"
 #include "fluxEditorMain.h"
-#include "fileDialog.h"
+#include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
 
@@ -47,6 +47,9 @@ bool EditorGui::Initialize()
         mBackground->setSize(getGame()->getScreen()->getScreenSize());
         getGame()->queueObject(mBackground);
     }
+
+
+    g_FileDialog.init( getGamePath(), {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" });
 
     return true;
 }
@@ -197,8 +200,9 @@ void EditorGui::DrawGui()
 
 
 
+
     if (g_FileDialog.Draw()) {
-        LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+        // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
 
         if (g_FileDialog.mSaveMode)
         {
