@@ -17,7 +17,7 @@
 #include <lights/fluxLight.h>
 #include <lights/fluxLightManager.h>
 #include "box2d/box2d.h"
-#include <OplController.h>
+#include <OPL3Controller.h>
 #include <SFXGenerator.h>
 
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
@@ -26,8 +26,8 @@ class TestBed : public FluxMain
 {
     typedef FluxMain Parent;
 private:
-    OplController* mOplController = nullptr;
-    OplController::SongDataFMS mTestOPLSong;
+    OPL3Controller* mOPL3Controller = nullptr;
+
 
     SFXGenerator* mSFXGenerator = nullptr;
 
@@ -211,7 +211,7 @@ public:
          mScheduleTestId = FluxSchedule.add(3.0, this, [this]() {
                           this->Brrooii(); // Calls method with arguments
          });
-         Log("ScheduleTestId is: %zu", mScheduleTestId);
+         // Log("ScheduleTestId is: %zu", mScheduleTestId);
 
         // lights testing:
 
@@ -251,21 +251,18 @@ public:
          // );
 
          // bind mouse to window:
-         SDL_SetWindowMouseGrab(getScreen()->getWindow(), true);
+         // use right mouse to test it ! SDL_SetWindowMouseGrab(getScreen()->getWindow(), true);
 
 
          // OPL TEST
-         mOplController = new OplController();
-         if (mOplController->initController())
+         mOPL3Controller = new OPL3Controller();
+         if (!mOPL3Controller->initController())
          {
-             if (mOplController->loadSongFMS("assets/music/test.fms", mTestOPLSong))
-             {
-                 mOplController->start_song(mTestOPLSong, true);
-             }
-         } else {
-            Log("Failed to init OplController");
-            SAFE_DELETE(mOplController);
+             Log("Failed to init OplController");
+             SAFE_DELETE(mOPL3Controller);
          }
+
+
 
          //SFX Test:
          mSFXGenerator = new SFXGenerator();
@@ -283,16 +280,16 @@ public:
     void Brrooii()
     {
         mBrrooiiSound->play();
-        mScheduleTestId = FluxSchedule.add(3.0, this, [this]() {
-            this->Brrooii(); // Calls method with arguments
-        });
-        Log("ScheduleTestId is: %zu", mScheduleTestId);
+        // mScheduleTestId = FluxSchedule.add(3.0, this, [this]() {
+        //     this->Brrooii(); // Calls method with arguments
+        // });
+        // Log("ScheduleTestId is: %zu", mScheduleTestId);
 
     }
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        SAFE_DELETE(mOplController);
+        SAFE_DELETE(mOPL3Controller);
         SAFE_DELETE(mSFXGenerator);
 
         Parent::Deinitialize();
@@ -352,6 +349,13 @@ public:
                 SDL_SetWindowMouseGrab(getScreen()->getWindow(), !isGrabbed);
                 Log("Toggle mouse grab to %d", !isGrabbed );
                 break;
+            }
+
+            case SDL_BUTTON_MIDDLE:
+            {
+                mOPL3Controller->TESTChip();
+                Log("mOPL3Controller->getPos=>%d", mOPL3Controller->getPos());
+
             }
 
         }
@@ -433,6 +437,45 @@ public:
         // FIXME emitter need a manager!
         mFireEmitter->getProperties().position = { getStatus().getWorldMousePos().x, getStatus().getWorldMousePos().y, 0.f};
         // mFireEmitter->update(dt / 1000.f);
+
+        //OPL3 Test  Siren in Main fixed 60fps loop all
+        // In your Main Loop (60 FPS)
+        // static int frameCounter = 0;
+        // frameCounter++;
+        //
+        // if (frameCounter % 30 == 0) { // Every 0.5 seconds
+        //     SongStep sirenStep;
+        //     sirenStep.instrument = 0;
+        //     sirenStep.volume = 63;
+        //
+        //     // Toggle between two notes every half second
+        //     if ((frameCounter / 30) % 2 == 0) {
+        //         sirenStep.note = 60; // C-5
+        //     } else {
+        //         sirenStep.note = 48; // C-4
+        //     }
+        //
+        //     if (!mOPL3Controller->playNote(0, sirenStep))
+        //     {
+        //         Log("FAILED TO PLAY NOTE !!!! ");
+        //     } else {
+        //         Log("mOPL3Controller->playNote %d", sirenStep.note);
+        //     }
+        //
+        // }
+
+        static float sirenPos = 24.0f; // Start at C-2
+        static float sirenDir = 0.2f;
+
+        // In your 60 FPS loop
+        sirenPos += sirenDir;
+        if (sirenPos > 72.0f || sirenPos < 24.0f) sirenDir *= -1.0f; // Bounce between C-2 and C-6
+
+        mOPL3Controller->setChannelOn(0); //should only called once but for the test here ok
+        mOPL3Controller->setChannelPanning(0, 1);//lol
+        mOPL3Controller->setFrequencyLinear(0, sirenPos);
+         Log("mOPL3Controller->setFrequencyLinear %4.2f", sirenPos);
+
 
         Parent::Update(dt);
     }
