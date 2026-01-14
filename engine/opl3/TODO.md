@@ -15,6 +15,10 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
     [ ] FMI Importer 
     [ ] SBI Importer / Exporter
     [ ] OPL2/WOPL Importer 
+        Soundbanks: 
+        https://github.com/Wohlstand/OPL3BankEditor/tree/master/Bank_Examples
+        https://github.com/sneakernets/DMXOPL/releases
+        
 
     
 [ ] Create an Sequencer Gui 
