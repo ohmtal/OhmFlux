@@ -61,6 +61,7 @@ set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
 set(IMGGUITEST_DIR "${CMAKE_CURRENT_LIST_DIR}/ImguiTest")
 set(EDITOR_DIR "${CMAKE_CURRENT_LIST_DIR}/FluxEditor")
+set(HTSEQ_DIR "${CMAKE_CURRENT_LIST_DIR}/HTSequencer")
 
 # =============================================================================
 # <<<< PROJECTS SECTION
@@ -430,7 +431,7 @@ if(BUILD_IMGGUITEST)
 endif()
 
 
-# --- ImguiTest ---
+# --- Editor ---
 option(BUILD_EDITOR "Build Editor application" ON)
 if(BUILD_EDITOR)
     set(GAME_SOURCES
@@ -438,6 +439,17 @@ if(BUILD_EDITOR)
         "${EDITOR_DIR}/src/editorGui.cpp"
     )
     configure_demo_target(FluxEditor ${EDITOR_DIR} "${EDITOR_DIR}/assets@assets" "${GAME_SOURCES}")
+endif()
+
+
+# --- HT-Sequencer ---
+option(BUILD_HT_SEQ "Build HT-Sequencer" ON)
+if(BUILD_HT_SEQ)
+    set(GAME_SOURCES
+        "${HTSEQ_DIR}/src/main.cpp"
+        "${HTSEQ_DIR}/src/sequencerGui.cpp"
+    )
+    configure_demo_target(HT-Sequencer ${HTSEQ_DIR} "$HTSEQ_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 

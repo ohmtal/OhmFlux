@@ -359,9 +359,9 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
 //------------------------------------------------------------------------------
 bool OPL3Controller::applyInstrument(uint8_t channel, uint8_t instrumentIndex) {
     if (channel >= MAX_CHANNELS) return false;
-    if (instrumentIndex >= mInstruments.size()) return false;
+    if (instrumentIndex >= mSoundBank.size()) return false;
 
-    const auto& ins = mInstruments[instrumentIndex];
+    const auto& ins = mSoundBank[instrumentIndex];
     uint16_t m_off = get_modulator_offset(channel);
     uint16_t c_off = get_carrier_offset(channel);
 
@@ -513,9 +513,9 @@ void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
 
 //------------------------------------------------------------------------------
 void OPL3Controller::initDefaultBank(){
-    mInstruments.clear();
+    mSoundBank.clear();
     // Index 0 is often used as the "Silent" or "Default" slot
-    mInstruments.push_back(GetDefaultInstrument());
+    mSoundBank.push_back(GetDefaultInstrument());
 
     //FIXME need a better default bank !!
     for (uint8_t ch = 0; ch < MAX_CHANNELS; ch++)

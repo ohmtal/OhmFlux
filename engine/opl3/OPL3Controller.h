@@ -43,7 +43,7 @@ private:
     double m_step = 49716.0 / 44100.0; // Ratio of OPL rate to SDL rate
     OplChip::output_data mOutput;
 
-    std::vector<OplInstrument> mInstruments;
+    std::vector<OplInstrument> mSoundBank;
 
     // ---------- SDL3 ----------------
     SDL_AudioStream* mStream = nullptr;
