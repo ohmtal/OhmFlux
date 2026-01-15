@@ -373,25 +373,13 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
     if (cmd == "play")
     {
-        /*
-         *     struct SongStep {
-         *        uint8_t note = 0;        // 0=None, 1-96 (C-0 to B-7), 255=Off
-         *        uint8_t instrument = 0;  // Index to Instrument table
-         *        uint8_t volume = 63;     // 0-63 OPL range
-         *        uint16_t effect = 0;     // Command (e.g., 0x0Axy for Volume Slide)
-         * };
-        */
 
         std::string tone = "C-3";
         if (fluxStr::getWord(cmdline,1) != "")
             tone = fluxStr::toUpper(fluxStr::getWord(cmdline,1));
 
-
-        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,2) , 1);
-
-
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,2) , 0);
         SongStep step{opl3::NoteToValue(tone),instrument,63};
-
         getMain()->getController()->playNote(0,step);
     }
     else
@@ -412,7 +400,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "scale")
     {
-        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 0);
         Log ("Using Instrument %d",instrument);
         myTestSong = getMain()->getController()->createScaleSong(instrument);
         getMain()->getController()->playSong(myTestSong);
@@ -420,7 +408,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "effects")
     {
-        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 0);
         Log ("Using Instrument %d",instrument);
         myTestSong = getMain()->getController()->createEffectTestSong(instrument);
         getMain()->getController()->playSong(myTestSong);
@@ -440,9 +428,152 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
         if (cmd == "test")
         {
-            // getMain()->getController()->initDefaultBank();
-            getMain()->getController()->write(0xA0 , 0x69);
-            getMain()->getController()->write(0xB0 , 0x24);
+
+            mConsole.ClearLog();
+            Log("TEST piano tone and sound like a piano (not as good as in opl3bankeeditor)");
+            getMain()->getController()->stopNote(0);
+
+            // 1. CHIP INITIALISIERUNG
+            getMain()->getController()->write(0x01, 0x00);   // Test-Bits AUS (Wichtig für Ton)
+            getMain()->getController()->write(0x05, 0x01);   // OPL3 Erweiterungen AN (Bank 0)
+            getMain()->getController()->write(0x104, 0x01);  // 4-OP Modus für Kanal 0/3 AN (Bank 1)
+
+            // 2. PAAR 0 (Kanal 0) - "Der Hammer"
+            getMain()->getController()->write(0x20, 0x01);   // Multiplier
+            getMain()->getController()->write(0x40, 0x10);   // TL (Lautstärke Modulator)
+            getMain()->getController()->write(0x60, 0xF2);   // Attack (F), Decay (2)
+            getMain()->getController()->write(0x80, 0x02);   // Sustain Level 0, Release 2 (EG-Type 0 = Halten)
+            getMain()->getController()->write(0xE0, 0x00);   // Sinus
+
+            getMain()->getController()->write(0x23, 0x01);   // Multiplier
+            getMain()->getController()->write(0x43, 0x00);   // TL (Lautstärke Carrier - MAX)
+            getMain()->getController()->write(0x63, 0xF2);   // Attack (F), Decay (2)
+            getMain()->getController()->write(0x83, 0x02);   // Sustain Level 0, Release 2
+            getMain()->getController()->write(0xE3, 0x00);   // Sinus
+
+            // 3. PAAR 1 (Kanal 3) - "Der Körper"
+            getMain()->getController()->write(0x28, 0x01);
+            getMain()->getController()->write(0x48, 0x10);
+            getMain()->getController()->write(0x68, 0xF2);
+            getMain()->getController()->write(0x88, 0x02);
+            getMain()->getController()->write(0xE8, 0x00);
+
+            getMain()->getController()->write(0x2B, 0x01);
+            getMain()->getController()->write(0x4B, 0x00);   // Zweiter Carrier (MAX Lautstärke)
+            getMain()->getController()->write(0x6B, 0xF2);
+            getMain()->getController()->write(0x8B, 0x02);
+            getMain()->getController()->write(0xEB, 0x00);
+
+            // 4. PANNING & ALGORITHMUS
+            // Wir nutzen hier 4-OP Algorithmus 0 (FM -> FM -> FM -> FM) für maximale Wirkung
+            getMain()->getController()->write(0xC0, 0x30);   // Links+Rechts, Anschlusstyp 0
+            getMain()->getController()->write(0xC3, 0x30);   // Links+Rechts, Anschlusstyp 0
+
+            // 5. FREQUENZ & KEY-ON
+            getMain()->getController()->write(0xA0, 0x98);   // F-Number Low (Note A-4)
+            getMain()->getController()->write(0xB0, 0x31);   // Block 4 + Key-On
+
+            // getMain()->getController()->flush();
+    }
+    else
+    if (cmd == "test2") {
+
+        mConsole.ClearLog();
+        Log("TEST2 piano ");
+        getMain()->getController()->stopNote(0);
+
+        // 1. HARD RESET & MODE ENABLE
+        getMain()->getController()->write(0x01,  0x00); // Mute off
+        getMain()->getController()->write(0x05,  0x01); // OPL3 On (Bank 0)
+        getMain()->getController()->write(0x104, 0x01); // 4-OP Ch 0 On (Bank 1)
+
+        // 2. PAIR 0 (Channel 0) - The Percussive Strike
+        getMain()->getController()->write(0x20, 0x03);  // Multi 3, Sustain Bit 0 (Decay mode)
+        getMain()->getController()->write(0x40, 0x10);  // TL (Medium Volume)
+        getMain()->getController()->write(0x60, 0xF2);  // Attack F (Fast), Decay 2 (Slow fade)
+        getMain()->getController()->write(0x80, 0x22);  // Sustain Level 2 (Audible!), Release 2
+        getMain()->getController()->write(0xE0, 0x00);  // Sine
+
+        getMain()->getController()->write(0x23, 0x01);  // Carrier Multi 1
+        getMain()->getController()->write(0x43, 0x00);  // Carrier Volume MAX
+        getMain()->getController()->write(0x63, 0xF2);
+        getMain()->getController()->write(0x83, 0x22);  // Sustain Level 2 (Audible!)
+        getMain()->getController()->write(0xE3, 0x04);  // Pulse Wave (Piano "Ping")
+
+        // 3. PAIR 1 (Channel 3) - The Body
+        getMain()->getController()->write(0x28, 0x01);
+        getMain()->getController()->write(0x48, 0x10);
+        getMain()->getController()->write(0x68, 0xF2);
+        getMain()->getController()->write(0x88, 0x22);
+
+        getMain()->getController()->write(0x2B, 0x01);
+        getMain()->getController()->write(0x4B, 0x00);
+        getMain()->getController()->write(0x6B, 0xF2);
+        getMain()->getController()->write(0x8B, 0x22);
+
+        // 4. PANNING & ALGORITHM
+        getMain()->getController()->write(0xC0, 0x31);  // Pan L/R + FM Mode
+        getMain()->getController()->write(0xC3, 0x30);  // Pan L/R
+
+        // 5. TRIGGER (Middle C - Block 3)
+        getMain()->getController()->write(0xA0, 0x69);
+        getMain()->getController()->write(0xB0, 0x31);  // Key-On + Block 3 (Octave 4)
+    }
+    else
+    if (cmd == "test6") {
+        mConsole.ClearLog();
+        Log("TEST6 still not as good as test more a organ then a piano");
+        getMain()->getController()->stopNote(0);
+        // 1. Hardware Init
+        getMain()->getController()->write(0x01, 0x00);
+        getMain()->getController()->write(0x05, 0x01);
+        getMain()->getController()->write(0x104, 0x01);
+
+        // 2. Pair 0 (Channel 0) - "The Attack"
+        // Modulator 0
+        getMain()->getController()->write(0x20, 0x23); // Multi 3, Sustain Bit ON (0x20)
+        getMain()->getController()->write(0x40, 0x21); // Volume
+        getMain()->getController()->write(0x60, 0xF3); // Attack F, Decay 3
+        getMain()->getController()->write(0x80, 0xF2); // Sustain Level F, Release 2
+        getMain()->getController()->write(0xE0, 0x00); // Wave 0 (Sine)
+        // Carrier 0
+        getMain()->getController()->write(0x23, 0x2E); // Multi 14, Sustain Bit ON
+        getMain()->getController()->write(0x43, 0x00); // Volume (Loud)
+        getMain()->getController()->write(0x63, 0xF1); // Attack F, Decay 1
+        getMain()->getController()->write(0x83, 0xF4); // Sustain Level F, Release 4
+        getMain()->getController()->write(0xE3, 0x04); // Wave 4 (Pulse - CRITICAL for "Piano" strike)
+
+        // 3. Pair 1 (Channel 3) - "The Resonance"
+        // Modulator 1
+        getMain()->getController()->write(0x28, 0x22); // Multi 2, Sustain Bit ON
+        getMain()->getController()->write(0x48, 0x21);
+        getMain()->getController()->write(0x68, 0xF3);
+        getMain()->getController()->write(0x88, 0xF2);
+        getMain()->getController()->write(0xE8, 0x00); // Wave 0
+        // Carrier 1
+        getMain()->getController()->write(0x2B, 0x2E); // Multi 14, Sustain Bit ON
+        getMain()->getController()->write(0x4B, 0x00); // Volume (Loud)
+        getMain()->getController()->write(0x6B, 0xF1);
+        getMain()->getController()->write(0x8B, 0xF4);
+        getMain()->getController()->write(0xEB, 0x00); // Wave 0
+
+        // 4. Algorithm & Panning
+        getMain()->getController()->write(0xC0, 0x35); // Additive (Mixes Pair 0 and Pair 1)
+        getMain()->getController()->write(0xC3, 0x34); // FM (Internal to Pair 1)
+
+        // 5. Play Note (Middle C - C4)
+        getMain()->getController()->write(0xA0, 0x69);
+        getMain()->getController()->write(0xB0, 0x21); // Block 3 + Key-On
+
+    }
+    else
+        if (cmd == "load")
+        {
+            std::string filename = "assets/op2/GENMIDI.op2";
+            if (!opl3_bridge_op2::ImportOP2(filename, getMain()->getController()->mSoundBank) )
+                Log("[error] Failed to load %s", filename.c_str());
+            else
+                Log("Loaded %s", filename.c_str());
 
         }
 
