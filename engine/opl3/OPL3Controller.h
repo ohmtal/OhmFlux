@@ -230,51 +230,53 @@ protected:
 
     //------------------- TESTING ------------------------------------
 public:
-    void consoleSongOutput(bool useNumbers)
+    void consoleSongOutput(bool useNumbers, uint8_t upToChannel = MAX_CHANNELS)
     {
         if (!mSeqState.playing)
             return;
-        // 2026 Update: Check if the UI state has changed
-        if (mSeqState.ui_dirty) {
-            // Print current position (Pattern Index : Row Index)
-            printf("[%02d:%03d] ", mSeqState.orderIdx, mSeqState.rowIdx);
 
-            // OPL3 has 18 channels. We'll print them in two rows of 9
-            // or one long row depending on your terminal width.
-            for (int ch = 0; ch < 18; ch++) {
+        char buffer[1024]; // Increased size: 18 channels * ~15 chars each + padding
+        char *ptr = buffer;
+
+        if (upToChannel > MAX_CHANNELS)
+            upToChannel = MAX_CHANNELS;
+
+        if (mSeqState.ui_dirty) {
+            // sprintf returns the number of characters written.
+            // Use that to advance the pointer.
+            ptr += sprintf(ptr, "[%02d:%03d] ", mSeqState.orderIdx, mSeqState.rowIdx);
+
+            for (int ch = 0; ch < upToChannel; ch++) {
                 const SongStep& step = mSeqState.last_steps[ch];
 
                 // 1. Note Column
                 if (step.note == 255) {
-                    printf("==="); // Note Off
+                    ptr += sprintf(ptr, "===");
                 } else if (step.note == 0) {
-                    printf("..."); // Empty
+                    ptr += sprintf(ptr, "...");
                 } else {
                     if (useNumbers) {
-                        printf("%02X", step.note);
+                        ptr += sprintf(ptr, "%02X ", step.note); // Added space for alignment
                     } else {
-                        // Assuming you have a helper that handles std::string_view or const char*
-                        printf("%3s", opl3::ValueToNote(step.note).c_str());
+                        ptr += sprintf(ptr, "%3s", opl3::ValueToNote(step.note).c_str());
                     }
                 }
 
-                // 2. Instrument & Volume Column (Visual: Ins Vol)
-                // Example output: "01 40" (Instrument 1, Volume 40)
-                printf(" %02X %02X", step.instrument, step.volume);
+                // 2. Instrument & Volume
+                ptr += sprintf(ptr, " %02X %02X", step.instrument, step.volume);
 
-                // 3. Effect Column (Visual: TypeVal)
-                // Example output: "A05" (Volume Slide 05)
+                // 3. Effect Column
                 if (step.effectType > 0) {
-                    printf("|%1X%02X ", step.effectType, step.effectVal);
+                    ptr += sprintf(ptr, "|%1X%02X ", step.effectType, step.effectVal);
                 } else {
-                    printf("|... ");
+                    ptr += sprintf(ptr, "|... ");
                 }
 
                 // Separator between channels
-                if (ch == 8) printf(" | ");
+                if (ch == 8) ptr += sprintf(ptr, " | ");
             }
 
-            printf("\n");
+            Log("%s", buffer);
             mSeqState.ui_dirty = false;
         }
     }

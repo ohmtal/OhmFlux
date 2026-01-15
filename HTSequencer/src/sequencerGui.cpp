@@ -37,7 +37,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 
 void SequencerGui::Update(const double& dt)
 {
-    getMain()->getController()->consoleSongOutput(false);
+    getMain()->getController()->consoleSongOutput(false, 8);
 
 }
 //------------------------------------------------------------------------------

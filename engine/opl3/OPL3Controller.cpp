@@ -602,26 +602,31 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     setChannelVolume(channel, getOplVol(step.volume));
     setChannelPanning(channel, step.panning);
 
-    // Frequency Setup
-    int midiNote = step.note;
+    // // Frequency Setup
+    // int midiNote = step.note;
+    //
+    // // Apply fixedNote if valid (1-96 tracker range)
+    // if (currentIns.fixedNote > 0 && currentIns.fixedNote <= 96 && currentIns.fixedNote != 255) {
+    //     // Convert tracker note (1-96) to MIDI note number
+    //     // Tracker note 1 (C-0) often corresponds to MIDI note 12 (C-0).
+    //     midiNote = currentIns.fixedNote + 11;
+    // }
+    //
+    // // Clamp midiNote to a reasonable range (e.g., 0-127)
+    // if (midiNote < 0) midiNote = 0;
+    // if (midiNote > 127) midiNote = 127;
+    //
+    // // Calculate OPL Octave (Block) and F-Number Index from MIDI note
+    // // Assuming OPL Block 0 corresponds to MIDI C-0 (MIDI note 12)
+    // const int MIDI_C0_FOR_OPL_BLOCK_0 = 12;
+    //
+    // int octave = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) / 12; // OPL Block 0-7
+    // int noteIndex = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) % 12; // Index into opl3::f_numbers (0-11)
 
-    // Apply fixedNote if valid (1-96 tracker range)
-    if (currentIns.fixedNote > 0 && currentIns.fixedNote <= 96 && currentIns.fixedNote != 255) {
-        // Convert tracker note (1-96) to MIDI note number
-        // Tracker note 1 (C-0) often corresponds to MIDI note 12 (C-0).
-        midiNote = currentIns.fixedNote + 11;
-    }
-
-    // Clamp midiNote to a reasonable range (e.g., 0-127)
-    if (midiNote < 0) midiNote = 0;
-    if (midiNote > 127) midiNote = 127;
-
-    // Calculate OPL Octave (Block) and F-Number Index from MIDI note
-    // Assuming OPL Block 0 corresponds to MIDI C-0 (MIDI note 12)
-    const int MIDI_C0_FOR_OPL_BLOCK_0 = 12;
-
-    int octave = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) / 12; // OPL Block 0-7
-    int noteIndex = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) % 12; // Index into opl3::f_numbers (0-11)
+    // 4. Frequency Calculation (C-0 to B-7)
+    int internalNote = step.note - 1; // 0-based index
+    int octave = internalNote / 12;
+    int noteIndex = internalNote % 12;
 
     // Clamp octave to valid OPL range (0-7)
     if (octave < 0) octave = 0;
