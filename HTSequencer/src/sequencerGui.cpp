@@ -387,12 +387,8 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
             tone = fluxStr::toUpper(fluxStr::getWord(cmdline,1));
 
 
-        uint8_t instrument = 1;
-        if (fluxStr::getWord(cmdline,2) != "")
-        {
-            std::string word = fluxStr::getWord(cmdline, 2);
-            auto [ptr, ec] = std::from_chars(word.data(), word.data() + word.size(), instrument);
-        }
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,2) , 1);
+
 
         SongStep step{opl3::NoteToValue(tone),instrument,63};
 
@@ -416,22 +412,26 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "scale")
     {
-        myTestSong = getMain()->getController()->createScaleSong();
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+        Log ("Using Instrument %d",instrument);
+        myTestSong = getMain()->getController()->createScaleSong(/* FIXME instrument*/);
         getMain()->getController()->playSong(myTestSong);
     }
     else
     if (cmd == "effects")
     {
-        uint8_t instrument = 1;
-        if (fluxStr::getWord(cmdline,1) != "")
-        {
-            std::string word = fluxStr::getWord(cmdline, 1);
-            auto [ptr, ec] = std::from_chars(word.data(), word.data() + word.size(), instrument);
-        }
-
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+        Log ("Using Instrument %d",instrument);
         myTestSong = getMain()->getController()->createEffectTestSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
+    // else
+    // if (cmd == "dump")
+    // {
+    //     uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+    //     Log ("Using Instrument %d",instrument);
+    //     getMain()->getController()->dumpInstrument(instrument);
+    // }
     else
     {
         console->AddLog("unknown command %s", cmd.c_str());

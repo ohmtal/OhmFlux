@@ -37,6 +37,9 @@ namespace opl3 {
     struct OplInstrument {
         std::string name = "New Instrument";
         bool isFourOp = false;  // OPL3 mode
+        int8_t fineTune = 0;
+        uint8_t fixedNote = 255;
+
 
         // Each pair (Modulator + Carrier) matches your existing UI loop
         struct OpPair {
@@ -73,6 +76,8 @@ namespace opl3 {
     };
     //--------------------------------------------------------------------------
     struct Pattern {
+        std::string name = "New Pattern";
+        uint32_t color = 0xFFFFFFFF; // RGBA
         uint16_t rowCount;
         std::vector<SongStep> steps;
 

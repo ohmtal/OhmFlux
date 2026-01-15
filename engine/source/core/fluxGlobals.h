@@ -686,5 +686,19 @@ namespace fluxStr {
         return tokens;
     }
 
+    inline std::optional<int> safeStoi(const std::string& str) {
+        try {
+            return std::stoi(str);
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
+
+    // Wrapper mit Default-Wert
+    inline int strToInt(const std::string& str, int defaultValue) {
+        return safeStoi(str).value_or(defaultValue);
+    }
+
+
 } //namespace
 #endif //_FLUXGLOBALS_H_

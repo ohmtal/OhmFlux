@@ -21,6 +21,9 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
     [ ] SBI Importer / Exporter
     [.] OP2 Importer 
        FIXME implemented but sound bad !!!! 
+       This is ignored so far:
+        file.read((char*)&fineTune, 1);
+        file.read((char*)&fixedNote, 1);
     [ ] WOPL Importer 
     
     Soundbanks: 

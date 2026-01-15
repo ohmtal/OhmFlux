@@ -354,7 +354,7 @@ public:
             case SDL_BUTTON_MIDDLE:
             {
                 mOPL3Controller->TESTChip();
-                Log("mOPL3Controller->getPos=>%d", mOPL3Controller->getPos());
+                Log("mOPL3Controller->getPos=>%4.2f", mOPL3Controller->getPos());
 
             }
 
