@@ -211,7 +211,7 @@ public:
     uint8_t readShadow(uint16_t reg);
     bool isChannelAdditive(uint8_t channel);
     void initDefaultBank();
-
+    void dumpInstrument(uint8_t instrumentIndex);
 
     void setChannelOn(uint8_t channel); // required for setFrequency!
     void setFrequency(uint8_t channel, uint16_t fnum, uint8_t octave);
@@ -322,7 +322,7 @@ public:
 
     }
 
-    SongData createScaleSong() {
+    SongData createScaleSong(uint8_t instrumentIndex = 0) {
         SongData song;
         song.title = "OPL3 Scale Test";
         song.bpm = 125.0f;
@@ -341,7 +341,7 @@ public:
             SongStep& step = scalePat.steps[row * 18 + 0];
 
             step.note = scale[i];
-            step.instrument = 0; // Ensure your soundbank has at least one instrument
+            step.instrument = instrumentIndex; // Ensure your soundbank has at least one instrument
             step.volume = 63;
         }
 

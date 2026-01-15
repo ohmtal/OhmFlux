@@ -414,7 +414,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     {
         uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
         Log ("Using Instrument %d",instrument);
-        myTestSong = getMain()->getController()->createScaleSong(/* FIXME instrument*/);
+        myTestSong = getMain()->getController()->createScaleSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
     else
@@ -425,13 +425,18 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         myTestSong = getMain()->getController()->createEffectTestSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
-    // else
-    // if (cmd == "dump")
-    // {
-    //     uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
-    //     Log ("Using Instrument %d",instrument);
-    //     getMain()->getController()->dumpInstrument(instrument);
-    // }
+    else
+    if (cmd == "dump")
+    {
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+        Log ("Using Instrument %d",instrument);
+        getMain()->getController()->dumpInstrument(instrument);
+    }
+    else
+        if (cmd == "default")
+        {
+            getMain()->getController()->initDefaultBank();
+        }
     else
     {
         console->AddLog("unknown command %s", cmd.c_str());

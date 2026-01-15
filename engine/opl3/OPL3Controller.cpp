@@ -472,32 +472,87 @@ bool OPL3Controller::applyInstrument(uint8_t channel, uint8_t instrumentIndex) {
     if (instrumentIndex >= mSoundBank.size()) return false;
 
     const auto& ins = mSoundBank[instrumentIndex];
+
+    // --- Configure 4-operator mode for this channel ---
+    uint8_t fourOpReg = readShadow(0x104);
+    uint8_t fourOpBit = 0;
+    uint8_t masterChannelRelativeIndex = channel % 9; // 0-8 for both banks
+
+    // Determine the bit to set in 0x104 for this channel group
+    // 0x104 bits: 0-2 for channels 0-2, 3-5 for channels 9-11
+    if (channel < 3) { // Channels 0, 1, 2 are masters in bank 0
+        fourOpBit = (1 << masterChannelRelativeIndex);
+    } else if (channel >= 9 && channel < 12) { // Channels 9, 10, 11 are masters in bank 1
+        fourOpBit = (1 << (masterChannelRelativeIndex + 3)); // Map to bits 3, 4, 5 of 0x104
+    }
+
+    if (ins.isFourOp) {
+        write(0x104, fourOpReg | fourOpBit); // Enable 4-op mode for this channel pair
+    } else {
+        write(0x104, fourOpReg & ~fourOpBit); // Disable 4-op mode
+    }
+
+
     uint16_t m_off = get_modulator_offset(channel);
     uint16_t c_off = get_carrier_offset(channel);
 
-    // Operator 0 (Modulator)
-    const auto& mod = ins.pairs[0].ops[0];
-    write(0x20 + m_off, mod.multi | (mod.ksr << 4) | (mod.egTyp << 5) | (mod.vib << 6) | (mod.am << 7));
-    write(0x40 + m_off, mod.tl | (mod.ksl << 6));
-    write(0x60 + m_off, mod.decay | (mod.attack << 4));
-    write(0x80 + m_off, mod.release | (mod.sustain << 4));
-    write(0xE0 + m_off, mod.wave & 0x07);
+    // Operator 0 (Modulator) of Pair 0
+    const auto& mod0 = ins.pairs[0].ops[0];
+    write(0x20 + m_off, mod0.multi | (mod0.ksr << 4) | (mod0.egTyp << 5) | (mod0.vib << 6) | (mod0.am << 7));
+    write(0x40 + m_off, mod0.tl | (mod0.ksl << 6));
+    write(0x60 + m_off, mod0.decay | (mod0.attack << 4));
+    write(0x80 + m_off, mod0.release | (mod0.sustain << 4));
+    write(0xE0 + m_off, mod0.wave & 0x07);
 
-    // Operator 1 (Carrier)
-    const auto& car = ins.pairs[0].ops[1];
-    write(0x20 + c_off, car.multi | (car.ksr << 4) | (car.egTyp << 5) | (car.vib << 6) | (car.am << 7));
-    write(0x40 + c_off, car.tl | (car.ksl << 6));
-    write(0x60 + c_off, car.decay | (car.attack << 4));
-    write(0x80 + c_off, car.release | (car.sustain << 4));
-    write(0xE0 + c_off, car.wave & 0x07);
+    // Operator 1 (Carrier) of Pair 0
+    const auto& car0 = ins.pairs[0].ops[1];
+    write(0x20 + c_off, car0.multi | (car0.ksr << 4) | (car0.egTyp << 5) | (car0.vib << 6) | (car0.am << 7));
+    write(0x40 + c_off, car0.tl | (car0.ksl << 6));
+    write(0x60 + c_off, car0.decay | (car0.attack << 4));
+    write(0x80 + c_off, car0.release | (car0.sustain << 4));
+    write(0xE0 + c_off, car0.wave & 0x07);
 
-    // Connection / Feedback / Panning ($C0 Register)
+    // Connection / Feedback / Panning ($C0 Register) for the main channel
     uint16_t c0Addr = ((channel <= 8) ? 0x000 : 0x100) + 0xC0 + (channel % 9);
-    // Bits 4-5: Panning, Bits 1-3: Feedback, Bit 0: Connection
-    uint8_t c0Val = (ins.pairs[0].panning << 4) | (ins.pairs[0].feedback << 1) | ins.pairs[0].connection;
+    uint8_t c0Val = (ins.pairs[0].panning << 4) | (ins.pairs[0].feedback << 1) | (ins.isFourOp ? 0x01 : ins.pairs[0].connection);
     write(c0Addr, c0Val);
 
+    if (ins.isFourOp) {
+        // Configure operators for the linked channel (channel + 3)
+        uint8_t linkedChannel = channel + 3;
+        uint16_t m1_off = get_modulator_offset(linkedChannel);
+        uint16_t c1_off = get_carrier_offset(linkedChannel);
 
+        // Operator 0 (Modulator) of Pair 1 (which maps to Modulator 2 for 4-op)
+        const auto& mod1 = ins.pairs[1].ops[0];
+        write(0x20 + m1_off, mod1.multi | (mod1.ksr << 4) | (mod1.egTyp << 5) | (mod1.vib << 6) | (mod1.am << 7));
+        write(0x40 + m1_off, mod1.tl | (mod1.ksl << 6));
+        write(0x60 + m1_off, mod1.decay | (mod1.attack << 4));
+        write(0x80 + m1_off, mod1.release | (mod1.sustain << 4));
+        write(0xE0 + m1_off, mod1.wave & 0x07);
+
+        // Operator 1 (Carrier) of Pair 1 (which maps to Carrier 2 for 4-op)
+        const auto& car1 = ins.pairs[1].ops[1];
+        write(0x20 + c1_off, car1.multi | (car1.ksr << 4) | (car1.egTyp << 5) | (car1.vib << 6) | (car1.am << 7));
+        write(0x40 + c1_off, car1.tl | (car1.ksl << 6));
+        write(0x60 + c1_off, car1.decay | (car1.attack << 4));
+        write(0x80 + c1_off, car1.release | (car1.sustain << 4));
+        write(0xE0 + c1_off, car1.wave & 0x07);
+
+        // For 4-op mode, the linked channel's connection is always FM (0)
+        uint16_t c0LinkedAddr = ((linkedChannel <= 8) ? 0x000 : 0x100) + 0xC0 + (linkedChannel % 9);
+        uint8_t c0LinkedVal = (ins.pairs[1].panning << 4) | (ins.pairs[1].feedback << 1) | 0x00; // Force FM connection
+        write(c0LinkedAddr, c0LinkedVal);
+    } else {
+        // If not 4-op, and this channel *could* be a 4-op master, ensure its linked channel is reset to 2-op FM mode.
+        // This handles cases where a 4-op instrument was previously on this channel.
+        if ((channel >=0 && channel < 3) || (channel >= 9 && channel < 12)) {
+            uint8_t linkedChannel = channel + 3;
+            uint16_t c0LinkedAddr = ((linkedChannel <= 8) ? 0x000 : 0x100) + 0xC0 + (linkedChannel % 9);
+            uint8_t c0LinkedVal = readShadow(c0LinkedAddr);
+            write(c0LinkedAddr, c0LinkedVal & ~0x01); // Ensure FM connection
+        }
+    }
 
     return true;
 }
@@ -540,15 +595,51 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     stopNote(channel);
     applyInstrument(channel, step.instrument);
 
+    // Get the instrument for fixedNote and fineTune
+    const auto& currentIns = mSoundBank[step.instrument];
+
     // Apply converted volume and panning
     setChannelVolume(channel, getOplVol(step.volume));
     setChannelPanning(channel, step.panning);
 
     // Frequency Setup
-    int internalNote = step.note - 1;
-    int octave = (internalNote / 12) & 0x07;
-    int noteIndex = internalNote % 12;
+    int midiNote = step.note;
+
+    // Apply fixedNote if valid (1-96 tracker range)
+    if (currentIns.fixedNote > 0 && currentIns.fixedNote <= 96 && currentIns.fixedNote != 255) {
+        // Convert tracker note (1-96) to MIDI note number
+        // Tracker note 1 (C-0) often corresponds to MIDI note 12 (C-0).
+        midiNote = currentIns.fixedNote + 11;
+    }
+
+    // Clamp midiNote to a reasonable range (e.g., 0-127)
+    if (midiNote < 0) midiNote = 0;
+    if (midiNote > 127) midiNote = 127;
+
+    // Calculate OPL Octave (Block) and F-Number Index from MIDI note
+    // Assuming OPL Block 0 corresponds to MIDI C-0 (MIDI note 12)
+    const int MIDI_C0_FOR_OPL_BLOCK_0 = 12;
+
+    int octave = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) / 12; // OPL Block 0-7
+    int noteIndex = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) % 12; // Index into opl3::f_numbers (0-11)
+
+    // Clamp octave to valid OPL range (0-7)
+    if (octave < 0) octave = 0;
+    if (octave > 7) octave = 7;
+
+    // Clamp noteIndex to valid range (0-11)
+    if (noteIndex < 0) noteIndex = 0;
+    if (noteIndex > 11) noteIndex = 11;
+
     uint16_t fnum = opl3::f_numbers[noteIndex];
+
+    // Apply fineTune
+    fnum += currentIns.fineTune;
+
+    dLog("new fnum:%d, fineTune:%d",fnum, currentIns.fineTune); //FIXME remove this
+    // Clamp fnum to valid range (0-1023)
+    if (fnum > 1023) fnum = 1023;
+    if (fnum < 0) fnum = 0;
 
     uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
     uint8_t relChan = channel % 9;
@@ -705,6 +796,48 @@ void OPL3Controller::initDefaultBank(){
 
 }
 //------------------------------------------------------------------------------
+void OPL3Controller::dumpInstrument(uint8_t instrumentIndex) {
+    if (instrumentIndex >= mSoundBank.size()) {
+        LogFMT("Error: Instrument index {} out of bounds (max {}).", instrumentIndex, mSoundBank.size() - 1);
+        return;
+    }
+
+    const auto& ins = mSoundBank[instrumentIndex];
+
+    LogFMT("--- Instrument Dump: {} (Index {}) ---", ins.name, instrumentIndex);
+    LogFMT("  Is Four-Op: {}", ins.isFourOp ? "Yes" : "No");
+    LogFMT("  Fine Tune: {}", (int)ins.fineTune);
+    LogFMT("  Fixed Note: {}", (ins.fixedNote == 255) ? "None" : std::to_string(ins.fixedNote));
+
+    for (int pIdx = 0; pIdx < (ins.isFourOp ? 2 : 1); ++pIdx) {
+        const auto& pair = ins.pairs[pIdx];
+        LogFMT("  --- Operator Pair {} ---", pIdx);
+        LogFMT("    Feedback: {}", pair.feedback);
+        LogFMT("    Connection: {}", pair.connection == 0 ? "FM" : "Additive");
+        LogFMT("    Panning: {}", pair.panning);
+
+        for (int opIdx = 0; opIdx < 2; ++opIdx) {
+            const auto& op = pair.ops[opIdx];
+            LogFMT("    {} Operator:", opIdx == 0 ? "Modulator" : "Carrier");
+
+            // Manual mapping to OplInstrument::OpParams members based on OPL_OP_METADATA order
+            LogFMT("      Multi:   0x{:02X}", op.multi);
+            LogFMT("      TL:      0x{:02X}", op.tl);
+            LogFMT("      Attack:  0x{:02X}", op.attack);
+            LogFMT("      Decay:   0x{:02X}", op.decay);
+            LogFMT("      Sustain: 0x{:02X}", op.sustain);
+            LogFMT("      Release: 0x{:02X}", op.release);
+            LogFMT("      Wave:    0x{:02X}", op.wave);
+            LogFMT("      KSR:     0x{:02X}", op.ksr);
+            LogFMT("      EGType:  0x{:02X}", op.egTyp);
+            LogFMT("      Vib:     0x{:02X}", op.vib);
+            LogFMT("      AM:      0x{:02X}", op.am);
+            LogFMT("      KSL:     0x{:02X}", op.ksl);
+        }
+    }
+    LogFMT("-----------------------------------");
+}
+
 void OPL3Controller::setFrequencyLinear(uint8_t channel, float linearFreq) {
     if (channel >= MAX_CHANNELS) return;
 
