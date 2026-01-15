@@ -9,8 +9,10 @@
 #include <core/fluxBaseObject.h>
 #include <core/fluxRenderObject.h>
 #include <gui/fluxGuiGlue.h>
+#include <gui/ImConsole.h>
 
 #include "sequencerGlobals.h"
+#include <opl3.h>
 
 // #include "fluxSfxEditor.h"
 // #include "fluxFMEditor.h"
@@ -31,6 +33,9 @@ public:
         // bool mShowFMComposer;
         // bool mShowCompleteScale;
         bool mEditorGuiInitialized;
+        bool mShowFileManager;
+        bool mShowConsole;
+
     };
 
 
@@ -49,10 +54,20 @@ private:
         // .mShowFMInstrumentEditor = true,
         // .mShowFMComposer = true,
         // .mShowCompleteScale = false,
-        .mEditorGuiInitialized = false
+
+        .mEditorGuiInitialized = false,
+        .mShowFileManager = true,
+        .mShowConsole     = true
     };
 
+
+    void InitDockSpace();
+    void OnConsoleCommand(ImConsole* console, const char* cmdline);
+
+    opl3::SongData myTestSong;
+
 public:
+    ImConsole mConsole;
 
     bool Initialize() override;
     void Deinitialize() override;
@@ -61,7 +76,9 @@ public:
     void ShowMenuBar();
     void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event);
-    void InitDockSpace(); 
+    void Update(const double& dt) override;
+
+
 
 
 }; //class
@@ -74,4 +91,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::GuiSettings,
     // mShowFMComposer,
     // mShowCompleteScale,
     mEditorGuiInitialized
+    ,mShowFileManager
+    ,mShowConsole
 )

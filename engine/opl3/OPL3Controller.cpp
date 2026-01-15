@@ -15,9 +15,7 @@
 
 //------------------------------------------------------------------------------
 OPL3Controller::OPL3Controller(){
-    // mChip = new ymfm::ym3812(mInterface); //OPL2
     mChip = new ymfm::ymf262(mInterface);//OPL3
-    // mChip = new ymfm::ymf289b(mInterface);//OPL3L
 
     reset();
 }
@@ -55,26 +53,6 @@ void OPL3Controller::audio_callback(void* userdata, SDL_AudioStream* stream, int
     SDL_PutAudioStreamData(stream, buffer, framesNeeded * 4);
 }
 
-// void OPL3Controller::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
-// {
-//
-//     if (!userdata)
-//         return;
-//
-//     auto* controller = static_cast<OPL3Controller*>(userdata);
-//     if (controller && additional_amount > 0) {
-//
-//         std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
-//
-//         int frames = additional_amount / 4; // S16 * 2 channels = 4 bytes
-//
-//         // Generate data directly into a temporary vector or stack buffer
-//         std::vector<int16_t> temp(additional_amount / sizeof(int16_t));
-//         controller->fillBuffer(temp.data(), frames);
-//
-//         SDL_PutAudioStreamData(stream, temp.data(), additional_amount);
-//     }
-// }
 
 //------------------------------------------------------------------------------
 bool OPL3Controller::initController()
@@ -126,115 +104,223 @@ bool OPL3Controller::shutDownController()
     return true;
 }
 //------------------------------------------------------------------------------
-void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames){
-    double step = m_step;
-    double current_pos = m_pos;
+void OPL3Controller::generate(int16_t* buffer, int frames) {
+    for (int i = 0; i < frames; ++i) {
+        // 1. Ask ymfm to compute one sample of data
+        // This populates mOutput.data[] with the current chip state
+        mChip->generate(&mOutput);
 
-    for (int i = 0; i < total_frames; i++) {
-        // --- SEQUENCER ---
-        if (mSeqState.playing && mSeqState.current_song) {
-            mSeqState.sample_accumulator += 1.0;
-            while (mSeqState.sample_accumulator >= mSeqState.samples_per_tick) {
-                mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
-                this->tickSequencer();
-            }
-        }
+        // 2. Interleave the Left and Right channels into your int16_t buffer
+        // OPL3 standard output: data[0] = Left, data[1] = Right
+        for (int chan = 0; chan < 2; ++chan) {
+            int32_t sample = mOutput.data[chan];
+            // int32_t sample = mOutput.data[chan] * 256;
 
-        // --- RENDER ---
-        while (current_pos <= i) {
-            // 1. OPL3 Summing: Previous sample
-            // We sum (A+C) for Left and (B+D) for Right
-            mRender_prev_l = mOutput.data[0] + mOutput.data[2];
-            mRender_prev_r = mOutput.data[1] + mOutput.data[3];
+            // 3. Optional: Manual Clamping for 16-bit safety
+            if (sample > 32767)  sample = 32767;
+            if (sample < -32768) sample = -32768;
 
-            // 2. Generate new chip state
-            mChip->generate(&mOutput);
-
-            // 3. OPL3 Summing: Current raw sample
-            int32_t raw_l = mOutput.data[0] + mOutput.data[2];
-            int32_t raw_r = mOutput.data[1] + mOutput.data[3];
-
-            // 4. Apply Low Pass Filter
-            if (mRenderAlpha < 1.0f) {
-                mRender_lpf_l += mRenderAlpha * (static_cast<float>(raw_l) - mRender_lpf_l);
-                mRender_lpf_r += mRenderAlpha * (static_cast<float>(raw_r) - mRender_lpf_r);
-                mCurrentFiltered_l = mRender_lpf_l;
-                mCurrentFiltered_r = mRender_lpf_r;
-            } else {
-                mCurrentFiltered_l = static_cast<float>(raw_l);
-                mCurrentFiltered_r = static_cast<float>(raw_r);
-            }
-
-            current_pos += step;
-        }
-
-        // --- OUTPUT ---
-        if (mRenderUseBlending) {
-            double fraction = current_pos - i;
-
-            // Linear interpolation between the previous summed sample and current filtered sample
-            double blended_l = (static_cast<double>(mRender_prev_l) * fraction +
-            static_cast<double>(mCurrentFiltered_l) * (1.0 - fraction));
-            double blended_r = (static_cast<double>(mRender_prev_r) * fraction +
-            static_cast<double>(mCurrentFiltered_r) * (1.0 - fraction));
-
-            buffer[i * 2 + 0] = static_cast<int16_t>(std::clamp(blended_l * mRenderGain, -32768.0, 32767.0));
-            buffer[i * 2 + 1] = static_cast<int16_t>(std::clamp(blended_r * mRenderGain, -32768.0, 32767.0));
-        } else {
-            buffer[i * 2 + 0] = static_cast<int16_t>(std::clamp(mCurrentFiltered_l * mRenderGain, -32768.0f, 32767.0f));
-            buffer[i * 2 + 1] = static_cast<int16_t>(std::clamp(mCurrentFiltered_r * mRenderGain, -32768.0f, 32767.0f));
+            *buffer++ = static_cast<int16_t>(sample);
         }
     }
-    m_pos = current_pos - total_frames;
 }
 //------------------------------------------------------------------------------
-void OPL3Controller::tickSequencer() {
-    if (!mSeqState.current_song || !mSeqState.playing) return;
-
-    const SongData& song = *mSeqState.current_song;
-
-    // 1. Safety Check for Order List
-    if (mSeqState.orderIdx >= song.orderList.size()) {
-        if (mSeqState.loop) mSeqState.orderIdx = mSeqState.orderStartAt;
-        else { setPlaying(false); return; }
+void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames) {
+    if (!mSeqState.playing) {
+        this->generate(buffer, total_frames);
+        return;
     }
 
-    // 2. Resolve Pattern
-    uint8_t patternIdx = song.orderList[mSeqState.orderIdx];
-    const Pattern& pat = song.patterns[patternIdx];
+    int frames_left = total_frames;
+    int buffer_offset = 0;
 
-    // 3. Process the Row for all 18 OPL3 channels
-    for (int ch = 0; ch < 18; ++ch) {
-        // Steps are stored: [row * CHANNELS + channel]
-        const SongStep& step = pat.steps[mSeqState.rowIdx * 18 + ch];
+    while (frames_left > 0) {
+        // Calculate remaining samples for the current tick
+        double samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
 
-        // 0 = No action, 1-96 = Note, 255 = Note Off
-        if (step.note > 0) {
-            this->playNote(ch, step);
-            mSeqState.last_notes[ch] = step.note;
-            mSeqState.note_updated = true;
+        if (samples_needed <= 0.0) {
+            this->tickSequencer();
+            // Subtract the length of one tick to keep precision
+            mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+
+            // Re-calculate samples_needed for the NEW tick
+            samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+        }
+
+        // Determine how much we can generate in this pass
+        int chunk = std::min((int)frames_left, (int)std::max(1.0, samples_needed));
+
+        this->generate(&buffer[buffer_offset * 2], chunk);
+
+        mSeqState.sample_accumulator += chunk;
+        buffer_offset += chunk;
+        frames_left -= chunk;
+    }
+}
+
+// void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames) {
+//
+//     if (!mSeqState.playing) {
+//         // Generate the raw ymfm output into the buffer
+//         // This makes manual playNote() calls audible
+//         this->generate(buffer, total_frames);
+//         return;
+//     }
+//
+//     int frames_left = total_frames;
+//     int buffer_offset = 0;
+//
+//     while (frames_left > 0) {
+//         // 1. Determine how many frames until the next tick
+//         int frames_to_next_tick = (int)(mSeqState.samples_per_tick - mSeqState.sample_accumulator);
+//
+//         // If it's time for a tick (or we missed one)
+//         if (frames_to_next_tick <= 0) {
+//             this->tickSequencer(); // This triggers playNote or processStepEffects
+//             mSeqState.sample_accumulator = 0;
+//             frames_to_next_tick = (int)mSeqState.samples_per_tick;
+//         }
+//
+//         // 2. Determine how many frames we can safely render now
+//         int chunk = std::min(frames_left, frames_to_next_tick);
+//
+//         // 3. Render OPL3 audio into the buffer for this chunk
+//         this->generate(&buffer[buffer_offset * 2], chunk);
+//
+//         // 4. Update counters
+//         mSeqState.sample_accumulator += chunk;
+//         buffer_offset += chunk;
+//         frames_left -= chunk;
+//     }
+// }
+//------------------------------------------------------------------------------
+void OPL3Controller::tickSequencer() {
+    if (!mSeqState.playing || !mSeqState.current_song) return;
+
+    const SongData& song = *mSeqState.current_song;
+    const Pattern& pat = song.patterns[song.orderList[mSeqState.orderIdx]];
+
+    if (mSeqState.rowIdx >= pat.rowCount) {
+        mSeqState.rowIdx = 0;
+        return;
+    }
+
+    for (int ch = 0; ch < MAX_CHANNELS; ++ch) {
+        const SongStep& step = pat.steps[mSeqState.rowIdx * MAX_CHANNELS + ch];
+
+        if (mSeqState.current_tick == 0) {
+            // --- Tick 0: New Row Trigger ---
+
+            // Logic: Trigger if there is a note, OR if the step contains
+            // data (volume/pan) that differs from the current channel state.
+            bool noteTrigger = (step.note > 0);
+            bool volumeChange = (step.volume != mSeqState.last_steps[ch].volume);
+            bool panningChange = (step.panning != mSeqState.last_steps[ch].panning);
+
+            if (noteTrigger || volumeChange || panningChange) {
+                // playNote handles Note 0 (modulation only) vs Note 1-255 (trigger/stop)
+                this->playNote(ch, step);
+            }
+
+            // Process non-continuous effects that start on Tick 0 (like Position Jump)
+            if (step.effectType != 0) {
+                this->processStepEffects(ch, step);
+            }
+        } else {
+            // --- Ticks 1+: Continuous Effects ---
+            if (step.effectType != 0) {
+                this->processStepEffects(ch, step);
+            }
         }
     }
 
-    // 4. Advance Row
-    mSeqState.rowIdx++;
+    // --- Timing Advancement ---
+    mSeqState.current_tick++;
 
-    // 5. Check for Pattern End or Order Stop Limit
-    if (mSeqState.rowIdx >= pat.rowCount) {
-        mSeqState.rowIdx = 0;
-        mSeqState.orderIdx++;
+    if (mSeqState.current_tick >= mSeqState.ticks_per_row) {
+        mSeqState.current_tick = 0;
+        mSeqState.rowIdx++;
 
-        // Handle Song End or Selection Loop
-        if (mSeqState.orderIdx >= song.orderList.size() ||
-            (mSeqState.orderStopAt > 0 && mSeqState.orderIdx > mSeqState.orderStopAt)) {
+        if (mSeqState.rowIdx >= pat.rowCount) {
+            mSeqState.rowIdx = 0;
+            mSeqState.orderIdx++;
+
+            if (mSeqState.orderIdx >= song.orderList.size() ||
+                (mSeqState.orderStopAt > 0 && mSeqState.orderIdx > mSeqState.orderStopAt)) {
                 if (mSeqState.loop) {
                     mSeqState.orderIdx = mSeqState.orderStartAt;
                 } else {
-                    setPlaying(false);
+                    mSeqState.playing = false;
+                    mSeqState.orderIdx = 0;
+                    this->silenceAll(true);
+                    for (int i = 0; i < 18; ++i) {
+                        mSeqState.last_steps[i] = {};
+                    }
+                    mSeqState.ui_dirty = true;
                 }
             }
+        }
     }
 }
+
+// void OPL3Controller::tickSequencer() {
+//     if (!mSeqState.playing || !mSeqState.current_song) return;
+//
+//     const SongData& song = *mSeqState.current_song;
+//     const Pattern& pat = song.patterns[song.orderList[mSeqState.orderIdx]];
+//
+//     if (mSeqState.rowIdx >= pat.rowCount) {
+//         mSeqState.rowIdx = 0; // Emergency reset
+//         return;
+//     }
+//
+//     for (int ch = 0; ch < MAX_CHANNELS; ++ch) {
+//         // Use mutable step if processStepEffects needs to save state (like volume slides)
+//         // SongStep& step = const_cast<SongStep&>(pat.steps[mSeqState.rowIdx * 18 + ch]);
+//         const SongStep& step = pat.steps[mSeqState.rowIdx * 18 + ch];
+//
+//         if (mSeqState.current_tick == 0) {
+//             // Start of a new Row
+//             if (step.note > 0) {
+//                 this->playNote(ch, step);
+//                 // dLog("Playnote: ch:%d note:%d vol:%d Instrument:%d Effect:%d Panning:%d", ch, step.note, step.volume, step.instrument, step.effectType, step.panning); //FIXME
+//                 mSeqState.last_steps[ch] = step;
+//                 mSeqState.ui_dirty = true;
+//             } else if (step.effectType != 0) {
+//                 this->processStepEffects(ch, step);
+//             }
+//         } else {
+//             // Sub-tick processing for continuous effects
+//             if (step.effectType != 0) {
+//                 this->processStepEffects(ch, step);
+//             }
+//         }
+//     }
+//
+//     // 1. Advance Tick
+//     mSeqState.current_tick++;
+//
+//     if (mSeqState.current_tick >= mSeqState.ticks_per_row) {
+//         mSeqState.current_tick = 0;
+//         mSeqState.rowIdx++; // Move to next row
+//
+//         // 2. Check if Row is out of pattern bounds
+//         if (mSeqState.rowIdx >= pat.rowCount) {
+//             mSeqState.rowIdx = 0;
+//             mSeqState.orderIdx++; // Move to next pattern in orderList
+//
+//             // 3. Check if Song is finished
+//             if (mSeqState.orderIdx >= song.orderList.size()) {
+//                 if (mSeqState.loop) {
+//                     mSeqState.orderIdx = mSeqState.orderStartAt;
+//                 } else {
+//                     mSeqState.playing = false;
+//                     mSeqState.orderIdx = 0; // Reset for next play
+//                 }
+//             }
+//         }
+//     }
+// }
 //------------------------------------------------------------------------------
 uint16_t OPL3Controller::get_modulator_offset(uint8_t channel) {
     static const uint8_t op_offsets[] = {
@@ -315,7 +401,9 @@ void OPL3Controller::reset() {
     mSeqState.orderIdx = 0;
     mSeqState.rowIdx = 0;
     mSeqState.sample_accumulator = 0.0;
-    memset(mSeqState.last_notes, 0, sizeof(mSeqState.last_notes));
+
+    memset(mSeqState.last_steps, 0, sizeof(mSeqState.last_steps));
+    mSeqState.ui_dirty = false;
 
     // 3. Enable OPL3 extensions (Bank 2 access)
     // Writing 0x01 to register 0x105 is mandatory for 18-channel support
@@ -337,23 +425,44 @@ void OPL3Controller::reset() {
     this->initDefaultBank();
 
 
-    dLog("OPL3 Controller Reset: 18 Channels enabled, Shadows cleared, Sequencer at Start.");
+    Log("OPL3 Controller Reset: 18 Channels enabled, Shadows cleared, Sequencer at Start.");
 }
 //------------------------------------------------------------------------------
+/**
+ * @param oplVolume Attenuation level (0 = Max Volume, 63 = Muted)
+ */
 void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
-    uint16_t mod_off = get_modulator_offset(channel);
-    uint16_t car_off = get_carrier_offset(channel);
+    // 1. Hardware Boundary Checks
+    if (channel >= MAX_CHANNELS) return;
+
+
+    if (oplVolume > 63) oplVolume = 63;
     uint8_t vol = oplVolume & 0x3F;
 
-    // 1. Always update the Carrier Volume
-    uint8_t carKsl = readShadow(0x40 + car_off) & 0xC0;
-    write(0x40 + car_off, carKsl | vol);
+    // if (mSeqState.rowIdx == 33){
+    //     assert(false);
+    // }
 
-    // 2. If Additive mode, update Modulator Volume too
-    // Otherwise, Modulator volume stays at its instrument-defined 'Total Level'
-    if (isChannelAdditive(channel)) {
-        uint8_t modKsl = readShadow(0x40 + mod_off) & 0xC0;
-        write(0x40 + mod_off, modKsl | vol);
+    // dLog("setChannelVolume: chan:%d row:%d oplVolume: %d ", channel, mSeqState.rowIdx, oplVolume);
+
+
+    uint16_t mod_off = get_modulator_offset(channel);
+    uint16_t car_off = get_carrier_offset(channel);
+
+    // 2. Update Carrier (Operator 1)
+    // Preservation of KSL (bits 6-7) is critical to maintain instrument scaling
+    uint8_t carReg = readShadow(0x40 + car_off);
+    write(0x40 + car_off, (carReg & 0xC0) | vol);
+
+    // 3. Update Modulator (Operator 0)
+    // Only applied if in Additive mode (Connection Bit 0 of $C0 is set)
+    uint16_t bank = (channel < 9) ? 0x000 : 0x100;
+    uint16_t c0Addr = bank + 0xC0 + (channel % 9);
+    bool isAdditive = (readShadow(c0Addr) & 0x01);
+
+    if (isAdditive) {
+        uint8_t modReg = readShadow(0x40 + mod_off);
+        write(0x40 + mod_off, (modReg & 0xC0) | vol);
     }
 }
 //------------------------------------------------------------------------------
@@ -394,48 +503,123 @@ bool OPL3Controller::applyInstrument(uint8_t channel, uint8_t instrumentIndex) {
 
 //------------------------------------------------------------------------------
 bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
-    if (channel >= 18 || step.note == 0) return false;
+    if (channel >= MAX_CHANNELS) return false;
 
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
-    if (step.note == 255) {
-        stopNote(channel);
-        return false;
+    SongStep prevStep = mSeqState.last_steps[channel];
+    mSeqState.last_steps[channel] = step;
+    mSeqState.ui_dirty = true;
+
+    // Helper for hardware volume conversion (0-64 -> 63-0)
+    auto getOplVol = [](uint8_t v) {
+        uint8_t clamped = (v > 63) ? 63 : v;
+        return (uint8_t)(63 - clamped);
+    };
+
+    // --- CASE 1: MODULATION ONLY ---
+    if (step.note == 0) {
+        // THIS SUCKS !!!
+        // if (step.volume != prevStep.volume) {
+        //     setChannelVolume(channel, getOplVol(step.volume));
+        // }
+        // if (step.panning != prevStep.panning) {
+        //     setChannelPanning(channel, step.panning);
+        // }
+        return true;
     }
 
-    // Prepare Hardware
+    // --- CASE 2: NOTE OFF ---
+    if (step.note == 255) {
+        stopNote(channel);
+        return true;
+    }
+
+    // --- CASE 3: TRIGGER NEW NOTE ---
+    stopNote(channel);
     applyInstrument(channel, step.instrument);
 
-    // Invert volume: 63 (max) -> 0 (no attenuation)
-    uint8_t oplVolume = 63 - (step.volume & 0x3F);
-    setChannelVolume(channel, oplVolume);
+    // Apply converted volume and panning
+    setChannelVolume(channel, getOplVol(step.volume));
+    setChannelPanning(channel, step.panning);
 
     // Frequency Setup
     int internalNote = step.note - 1;
-    int octave = internalNote / 12;
-    int note = internalNote % 12;
-    uint16_t fnum = opl3::f_numbers[note];
+    int octave = (internalNote / 12) & 0x07;
+    int noteIndex = internalNote % 12;
+    uint16_t fnum = opl3::f_numbers[noteIndex];
 
     uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
     uint8_t relChan = channel % 9;
-    uint16_t b0Addr = bankOffset + 0xB0 + relChan;
 
-    // --- Optimization: Clean Re-trigger ---
-    uint8_t currentB0 = readShadow(b0Addr);
-    if (currentB0 & 0x20) {
-        write(b0Addr, currentB0 & ~0x20); // Release if currently playing
-    }
-
-    // Write Frequency Low
     write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
 
-    // Trigger Key-On
-    uint8_t b0_val = 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03);
-    write(b0Addr, b0_val);
+    // Key-On Bit (0x20)
+    uint8_t b0_val = 0x20 | (octave << 2) | ((fnum >> 8) & 0x03);
+    write(bankOffset + 0xB0 + relChan, b0_val);
 
     return true;
 }
 
+// bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
+//     // 1. Hardware Limit Validation
+//     if (channel >= MAX_CHANNELS) return false;
+//
+//     // Recursive mutex for thread safety (Audio Thread vs. UI Thread)
+//     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
+//
+//     // Capture the 'old' state before we overwrite it
+//     SongStep prevStep = mSeqState.last_steps[channel];
+//
+//     // Update the state and UI flag
+//     mSeqState.last_steps[channel] = step;
+//     mSeqState.ui_dirty = true;
+//
+//     // --- CASE 1: VOLUME / PANNING ONLY UPDATE (Note == 0) ---
+//     // If no new note is provided, update modulation without re-triggering the sound.
+//     if (step.note == 0) {
+//         if (step.volume != prevStep.volume) {
+//             // Convert tracker volume (0-64) to OPL attenuation (63-0)
+//             uint8_t trackerVol = (step.volume > 63) ? 63 : step.volume;
+//             uint8_t oplVolume = 63 - trackerVol;
+//             setChannelVolume(channel, oplVolume);
+//         }
+//         if (step.panning != prevStep.panning) {
+//             setChannelPanning(channel, step.panning);
+//         }
+//         // if (stateChanged) mSeqState.note_updated = true;
+//         return true;
+//     }
+//     // --- CASE 2: NOTE OFF (Note == 255) ---
+//     if (step.note == 255) {
+//         stopNote(channel);
+//         return true;
+//     }
+//     // --- CASE 3: TRIGGER NEW NOTE (Note 1-127) ---
+//     // 1. Key-Off: Stop previous note so the Envelope Generator resets to the Attack phase
+//     stopNote(channel);
+//     // 2. Load Instrument: Must be set before Key-On to configure operators and connections
+//     applyInstrument(channel, step.instrument);
+//     // 3. Apply Volume & Panning
+//     uint8_t oplVolume = 63 - (step.volume & 0x3F);
+//     setChannelVolume(channel, oplVolume);
+//     setChannelPanning(channel, step.panning);
+//     // 4. Frequency Calculation (C-0 to B-7)
+//     int internalNote = step.note - 1; // 0-based index
+//     int octave = internalNote / 12;
+//     int noteIndex = internalNote % 12;
+//     uint16_t fnum = opl3::f_numbers[noteIndex];
+//     // Determine hardware bank (Bank 0: channels 0-8, Bank 1: channels 9-17)
+//     uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
+//     uint8_t relChan = channel % 9;
+//     // 5. Write Frequency Low-Byte ($A0-$A8)
+//     write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
+//     // 6. Write Octave + F-Num High + Key-On ($B0-$B8)
+//     // Bit 5 (0x20) is the Key-On bit
+//     uint8_t b0_val = 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03);
+//     write(bankOffset + 0xB0 + relChan, b0_val);
+//     return true;
+// }
 //------------------------------------------------------------------------------
 void OPL3Controller::stopNote(uint8_t channel) {
     // Range check for OPL3 (0-17)
@@ -492,23 +676,14 @@ bool OPL3Controller::isChannelAdditive(uint8_t channel) {
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
-    // pan: 0 = Mute, 1 = Left, 2 = Right, 3 = Center
-    if (channel >= MAX_CHANNELS) return;
+    uint16_t c0Addr = ((channel < 9) ? 0x000 : 0x100) + 0xC0 + (channel % 9);
+    uint8_t c0Val = readShadow(c0Addr) & 0xCF; // Keep feedback/connection bits
 
-    uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
-    uint8_t relChan = channel % 9;
-    uint16_t regAddr = bankOffset + 0xC0 + relChan;
+    if (pan < 21)      c0Val |= 0x10; // Left
+    else if (pan > 43) c0Val |= 0x20; // Right
+    else               c0Val |= 0x30; // Center
 
-    // Preserve Feedback (bits 1-3) and Connection/Algorithm (bit 0)
-    uint8_t currentC0 = readShadow(regAddr) & 0x0F;
-
-    uint8_t panBits = 0;
-    if (pan == 1) panBits = 0x20;      // Left only (bit 5)
-    else if (pan == 2) panBits = 0x10; // Right only (bit 4)
-    else if (pan == 3) panBits = 0x30; // Center (both bits)
-    // pan == 0 stays 0x00 (Mute)
-
-    write(regAddr, currentC0 | panBits);
+    write(c0Addr, c0Val);
 }
 
 //------------------------------------------------------------------------------
@@ -589,4 +764,91 @@ void OPL3Controller::setChannelOn(uint8_t channel) {
     write(reg, newB0);
 }
 //------------------------------------------------------------------------------
+void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
+    uint8_t type = step.effectType;
+    uint8_t val  = step.effectVal;
+
+    // Helper for hardware volume conversion (0-64 -> 63-0)
+    auto getOplVol = [](uint8_t v) {
+        uint8_t clamped = (v > 63) ? 63 : v;
+        return (uint8_t)(63 - clamped);
+    };
+
+    switch (type) {
+        case EFF_VOL_SLIDE: {
+            uint8_t slideUp = (val >> 4);
+            uint8_t slideDown = (val & 0x0F);
+
+            // Get current volume from the step-mirror
+            uint8_t currentVol = mSeqState.last_steps[channel].volume;
+
+            if (slideUp > 0) {
+                currentVol = (uint8_t)std::min(64, (int)currentVol + slideUp);
+            } else if (slideDown > 0) {
+                currentVol = (currentVol > slideDown) ? currentVol - slideDown : 0;
+            }
+
+
+            // dLog("Slide...channel:%d row:%d step.volume:%d( oplVolume: %d)", channel , mSeqState.rowIdx, currentVol, getOplVol(currentVol)); //FIXME remove this
+
+            // Update the state mirror
+            mSeqState.last_steps[channel].volume = currentVol;
+            mSeqState.ui_dirty = true;
+
+            // Apply to hardware
+            setChannelVolume(channel, getOplVol(currentVol));
+            break;
+        }
+
+        case EFF_PORTA_UP: {
+            modifyChannelPitch(channel, (int8_t)val);
+            break;
+        }
+
+        case EFF_SET_VOLUME: {
+            uint8_t newVol = std::min((uint8_t)64, val);
+            mSeqState.last_steps[channel].volume = newVol;
+            mSeqState.ui_dirty = true;
+
+            setChannelVolume(channel, getOplVol(newVol));
+            break;
+        }
+
+        case EFF_SET_PANNING: {
+            mSeqState.last_steps[channel].panning = val;
+            mSeqState.ui_dirty = true;
+
+            setChannelPanning(channel, val);
+            break;
+        }
+    }
+}
+//------------------------------------------------------------------------------
+void OPL3Controller::modifyChannelPitch(uint8_t channel, int8_t amount) {
+    uint16_t bank = (channel < 9) ? 0x000 : 0x100;
+    uint8_t relChan = channel % 9;
+
+    // 1. Read current F-Number/Octave from your Shadow Registers
+    uint8_t low = readShadow(bank + 0xA0 + relChan);
+    uint8_t high = readShadow(bank + 0xB0 + relChan);
+
+    uint16_t fnum = ((high & 0x03) << 8) | low;
+    uint8_t octave = (high >> 2) & 0x07;
+
+    // 2. Adjust F-Number
+    int newFnum = (int)fnum + amount;
+
+    // 3. Handle F-Number overflow into the next octave
+    if (newFnum > 1023) {
+        if (octave < 7) { octave++; newFnum = 512; } // Crude octave jump
+        else newFnum = 1023;
+    } else if (newFnum < 0) {
+        if (octave > 0) { octave--; newFnum = 512; }
+        else newFnum = 0;
+    }
+
+    // 4. Write back to hardware (A0 then B0)
+    write(bank + 0xA0 + relChan, newFnum & 0xFF);
+    write(bank + 0xB0 + relChan, (high & 0xE0) | ((octave & 0x07) << 2) | ((newFnum >> 8) & 0x03));
+}
 //------------------------------------------------------------------------------

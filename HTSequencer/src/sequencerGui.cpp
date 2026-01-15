@@ -3,7 +3,43 @@
 #include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
+#include <opl3_bridge_op2.h>
 
+#include <algorithm>
+#include <string>
+#include <cctype>
+//------------------------------------------------------------------------------
+
+void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
+{
+
+    char lBuffer[512];
+    if (priority == SDL_LOG_PRIORITY_ERROR)
+    {
+        // snprintf ensures you don't overflow lBuffer
+        snprintf(lBuffer, sizeof(lBuffer), "[ERROR] %s", message);
+    }
+    else if (priority == SDL_LOG_PRIORITY_WARN)
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "[WARN] %s", message);
+    }
+    else
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "%s", message);
+    }
+
+    // bad if we are gone !!
+    getMain()->getGui()->mConsole.AddLog("%s", message);
+
+
+}
+//------------------------------------------------------------------------------
+
+void SequencerGui::Update(const double& dt)
+{
+    getMain()->getController()->consoleSongOutput(false);
+
+}
 //------------------------------------------------------------------------------
 bool SequencerGui::Initialize()
 {
@@ -48,14 +84,22 @@ bool SequencerGui::Initialize()
         getMain()->queueObject(mBackground);
     }
 
-
+    // FileManager
     g_FileDialog.init( getGamePath(), {  ".op2", ".fmi", ".fms", ".wav", ".ogg" });
+    // Console
+    mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
+    SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
+
+
 
     return true;
 }
 //------------------------------------------------------------------------------
 void SequencerGui::Deinitialize()
 {
+
+    //FIXME unbind to null!
+    SDL_SetLogOutputFunction(nullptr, nullptr);
 
     // SAFE_DELETE(mFMComposer); //Composer before FMEditor !!!
     // SAFE_DELETE(mFMEditor);
@@ -66,6 +110,8 @@ void SequencerGui::Deinitialize()
         SettingsManager().set("EditorGui::mEditorSettings", mGuiSettings);
         SettingsManager().save();
     }
+
+
 
 }
 //------------------------------------------------------------------------------
@@ -117,6 +163,11 @@ void SequencerGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
+            ImGui::MenuItem("File Manager", NULL, &mGuiSettings.mShowFileManager);
+            ImGui::MenuItem("Console", NULL, &mGuiSettings.mShowConsole);
+
+
+
             // ImGui::MenuItem("IMGui Demo", NULL, &mGuiSettings.mShowDemo);
             // ImGui::MenuItem("IMGui Demo", NULL, &mGuiSettings.mShowDemo);
             // ImGui::Separator();
@@ -159,6 +210,7 @@ void SequencerGui::ShowMenuBar()
 
 }
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void SequencerGui::DrawGui()
 {
 
@@ -200,51 +252,65 @@ void SequencerGui::DrawGui()
 
     DrawMsgBoxPopup();
 
+    mConsole.Draw("Console", &mGuiSettings.mShowConsole);
 
 
 
-    if (g_FileDialog.Draw()) {
-        // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+    if (mGuiSettings.mShowFileManager)
+    {
+        if (g_FileDialog.Draw()) {
+            // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
 
-        if (g_FileDialog.mSaveMode)
-        {
-            if (!g_FileDialog.mCancelPressed)
+            if (g_FileDialog.mSaveMode)
             {
-                // if (g_FileDialog.mSaveExt == ".fms")
-                // {
-                //     if (g_FileDialog.selectedExt == "")
-                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                //     mFMComposer->saveSong(g_FileDialog.selectedFile);
-                // }
+                if (!g_FileDialog.mCancelPressed)
+                {
+                    // if (g_FileDialog.mSaveExt == ".fms")
+                    // {
+                    //     if (g_FileDialog.selectedExt == "")
+                    //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    //     mFMComposer->saveSong(g_FileDialog.selectedFile);
+                    // }
+                    // else
+                    // if (g_FileDialog.mSaveExt == ".fmi")
+                    // {
+                    //     if (g_FileDialog.selectedExt == "")
+                    //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    //     mFMEditor->saveInstrument(g_FileDialog.selectedFile);
+                    // }
+                    // else
+                    // if (g_FileDialog.mSaveExt == ".fms.wav")
+                    // {
+                    //     if (g_FileDialog.selectedExt == "")
+                    //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    //     mFMComposer->exportSongToWav(g_FileDialog.selectedFile);
+                    // }
+
+                }
+
+
+                //FIXME sfx
+                //reset
+                g_FileDialog.reset();
+            } else {
+                if ( g_FileDialog.selectedExt == ".op2" )
+                {
+                    if (!opl3_bridge_op2::ImportOP2(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
+                        Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
+                    else
+                         Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
+                }
+
                 // else
-                // if (g_FileDialog.mSaveExt == ".fmi")
-                // {
-                //     if (g_FileDialog.selectedExt == "")
-                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                //     mFMEditor->saveInstrument(g_FileDialog.selectedFile);
-                // }
+                // if ( g_FileDialog.selectedExt == ".fmi" )
+                //     mFMEditor->loadInstrument(g_FileDialog.selectedFile);
                 // else
-                // if (g_FileDialog.mSaveExt == ".fms.wav")
-                // {
-                //     if (g_FileDialog.selectedExt == "")
-                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                //     mFMComposer->exportSongToWav(g_FileDialog.selectedFile);
-                // }
+                // if ( g_FileDialog.selectedExt == ".fms" )
+                //     mFMComposer->loadSong(g_FileDialog.selectedFile);
 
             }
-
-
-            //FIXME sfx
-            //reset
-            g_FileDialog.reset();
-        } else {
-            // if ( g_FileDialog.selectedExt == ".fmi" )
-            //     mFMEditor->loadInstrument(g_FileDialog.selectedFile);
-            // else
-            // if ( g_FileDialog.selectedExt == ".fms" )
-            //     mFMComposer->loadSong(g_FileDialog.selectedFile);
-
         }
+
     }
 
 
@@ -295,5 +361,77 @@ void SequencerGui::InitDockSpace()
     //
     //
     // ImGui::DockBuilderFinish(dockspace_id);
+}
+//------------------------------------------------------------------------------
+void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
+{
+
+
+    std::string cmd = fluxStr::getWord(cmdline,0);
+
+
+
+    if (cmd == "play")
+    {
+        /*
+         *     struct SongStep {
+         *        uint8_t note = 0;        // 0=None, 1-96 (C-0 to B-7), 255=Off
+         *        uint8_t instrument = 0;  // Index to Instrument table
+         *        uint8_t volume = 63;     // 0-63 OPL range
+         *        uint16_t effect = 0;     // Command (e.g., 0x0Axy for Volume Slide)
+         * };
+        */
+
+        std::string tone = "C-3";
+        if (fluxStr::getWord(cmdline,1) != "")
+            tone = fluxStr::toUpper(fluxStr::getWord(cmdline,1));
+
+
+        uint8_t instrument = 1;
+        if (fluxStr::getWord(cmdline,2) != "")
+        {
+            std::string word = fluxStr::getWord(cmdline, 2);
+            auto [ptr, ec] = std::from_chars(word.data(), word.data() + word.size(), instrument);
+        }
+
+        SongStep step{opl3::NoteToValue(tone),instrument,63};
+
+        getMain()->getController()->playNote(0,step);
+    }
+    else
+    if (cmd == "stop")
+    {
+        getMain()->getController()->stopNote(0);
+    }
+    else
+    if (cmd == "list")
+    {
+        for (int i = 0; i < getMain()->getController()->mSoundBank.size(); i++)
+        {
+            // Access individual instruments
+            OplInstrument instrument = getMain()->getController()->mSoundBank[i];
+            Log("#%d [%d] %s",i,instrument.isFourOp, instrument.name.c_str() );
+        }
+    }
+    else
+    if (cmd == "scale")
+    {
+        myTestSong = getMain()->getController()->createScaleSong();
+        getMain()->getController()->playSong(myTestSong);
+    }
+    else
+    if (cmd == "effects")
+    {
+        myTestSong = getMain()->getController()->createEffectTestSong();
+        getMain()->getController()->playSong(myTestSong);
+    }
+    else
+    {
+        console->AddLog("unknown command %s", cmd.c_str());
+    }
+
+
+
+
 }
 //------------------------------------------------------------------------------

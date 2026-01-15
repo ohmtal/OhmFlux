@@ -1,8 +1,12 @@
+// dear imgui, v1.92.5
+// (from demo code)
 //-----------------------------------------------------------------------------
-//HINT: Redirct commands:
+// : Redirct commands:
 // mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
 // ==>     void OnConsoleCommand(ImConsole* console, const char* cmd) {}
-//FIXME SDL_SetLogOutputFunction(MyLogCallback, optionalUserdataPointer)
+//
+// To redirect use:  SDL_SetLogOutputFunction(MyLogCallback, optionalUserdataPointer)
+//
 //-----------------------------------------------------------------------------
 #pragma once
 #include "imgui.h"
@@ -36,7 +40,7 @@ struct ImConsole
         Commands.push_back("CLASSIFY");
         AutoScroll = true;
         ScrollToBottom = false;
-        AddLog("Welcome to Dear ImGui!");
+        // AddLog("Welcome to Dear ImGui!");
     }
     ~ImConsole()
     {
@@ -89,17 +93,17 @@ struct ImConsole
             ImGui::EndPopup();
         }
 
-        ImGui::TextWrapped(
-            "This example implements a console with basic coloring, completion (TAB key) and history (Up/Down keys). A more elaborate "
-            "implementation may want to store entries along with extra data such as timestamp, emitter, etc.");
-        ImGui::TextWrapped("Enter 'HELP' for help.");
+        // ImGui::TextWrapped(
+        //     "This example implements a console with basic coloring, completion (TAB key) and history (Up/Down keys). A more elaborate "
+        //     "implementation may want to store entries along with extra data such as timestamp, emitter, etc.");
+        // ImGui::TextWrapped("Enter 'HELP' for help.");
 
         // TODO: display items starting from the bottom
 
-        if (ImGui::SmallButton("Add Debug Text"))  { AddLog("%d some text", Items.Size); AddLog("some more text"); AddLog("display very important message here!"); }
-        ImGui::SameLine();
-        if (ImGui::SmallButton("Add Debug Error")) { AddLog("[error] something went wrong"); }
-        ImGui::SameLine();
+        // if (ImGui::SmallButton("Add Debug Text"))  { AddLog("%d some text", Items.Size); AddLog("some more text"); AddLog("display very important message here!"); }
+        // ImGui::SameLine();
+        // if (ImGui::SmallButton("Add Debug Error")) { AddLog("[error] something went wrong"); }
+        // ImGui::SameLine();
         if (ImGui::SmallButton("Clear"))           { ClearLog(); }
         ImGui::SameLine();
         bool copy_to_clipboard = ImGui::SmallButton("Copy");

@@ -3,6 +3,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+#pragma once
 
 #include "opl3.h"
 
@@ -19,30 +20,26 @@ namespace opl3_bridge_op2 {
 
     //--------------------- IMPORT -----------------------------
 
-    // Mapping helper to fill your OpParams struct from raw OPL registers
-    inline  void FillOpParams(OplInstrument::OpPair::OpParams& op, const uint8_t* data, int offset) {
-        // Offset 0: 0x20-0x35 (AM, VIB, EG, KSR, MULTI)
-        op.am     = (data[offset + 0] >> 7) & 0x01;
-        op.vib    = (data[offset + 0] >> 6) & 0x01;
-        op.egTyp  = (data[offset + 0] >> 5) & 0x01;
-        op.ksr    = (data[offset + 0] >> 4) & 0x01;
-        op.multi  = data[offset + 0] & 0x0F;
+    inline void FillOpParams(OplInstrument::OpPair::OpParams& op, const uint8_t* data, int offset) {
+        // Standard OPL register order in OP2: 20, 40, 60, 80, E0
+        op.am      = (data[offset + 0] >> 7) & 0x01;
+        op.vib     = (data[offset + 0] >> 6) & 0x01;
+        op.egTyp   = (data[offset + 0] >> 5) & 0x01;
+        op.ksr     = (data[offset + 0] >> 4) & 0x01;
+        op.multi   = data[offset + 0] & 0x0F;
 
-        // Offset 1: 0x60-0x75 (Attack, Decay)
-        op.attack = (data[offset + 1] >> 4) & 0x0F;
-        op.decay  = data[offset + 1] & 0x0F;
+        op.ksl     = (data[offset + 1] >> 6) & 0x03;
+        op.tl      = data[offset + 1] & 0x3F; // Total Level is index 1
 
-        // Offset 2: 0x80-0x95 (Sustain, Release)
-        op.sustain = (data[offset + 2] >> 4) & 0x0F;
-        op.release = data[offset + 2] & 0x0F;
+        op.attack  = (data[offset + 2] >> 4) & 0x0F;
+        op.decay   = data[offset + 2] & 0x0F;
 
-        // Offset 3: 0xE0-0xF5 (Waveform)
-        op.wave    = data[offset + 3] & 0x07;
+        op.sustain = (data[offset + 3] >> 4) & 0x0F;
+        op.release = data[offset + 3] & 0x0F;
 
-        // Offset 4: 0x40-0x55 (KSL, Total Level)
-        op.ksl     = (data[offset + 4] >> 6) & 0x03;
-        op.tl      = data[offset + 4] & 0x3F;
+        op.wave    = data[offset + 4] & 0x07; // Waveform is index 4
     }
+
 
     inline bool ImportOP2(const std::string& filename, std::vector<OplInstrument>& bank) {
         std::ifstream file(filename, std::ios::binary);

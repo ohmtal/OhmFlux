@@ -4,6 +4,7 @@
 #pragma once
 
 #include <fluxMain.h>
+#include <OPL3Controller.h>
 #include "sequencerGui.h"
 
 class SequencerMain : public FluxMain
@@ -11,18 +12,24 @@ class SequencerMain : public FluxMain
     typedef FluxMain Parent;
 private:
 
-    SequencerGui* mEditorGui = nullptr;
+    SequencerGui* mSeqGui = nullptr;
+
+    OPL3Controller* mController = nullptr;
 
 public:
     SequencerMain() {}
     ~SequencerMain() {}
 
+
+    SequencerGui* getGui() { return mSeqGui; };
+    OPL3Controller* getController() { return mController; };
+
     bool Initialize() override
     {
         if (!Parent::Initialize()) return false;
 
-        mEditorGui = new SequencerGui();
-        if (!mEditorGui->Initialize())
+        mSeqGui = new SequencerGui();
+        if (!mSeqGui->Initialize())
             return false;
 
         FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED =  SDL_RegisterEvents(1);
@@ -41,6 +48,13 @@ public:
         }
 
 
+        mController = new OPL3Controller();
+        if (!mController->initController())
+        {
+            Log("[error] Failed to Initialize OPL3Controller!");
+            return false;
+        }
+
 
 
         return true;
@@ -48,8 +62,10 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        mEditorGui->Deinitialize();
-        SAFE_DELETE(mEditorGui);
+        mSeqGui->Deinitialize();
+        SAFE_DELETE(mSeqGui);
+
+        mController->shutDownController();
 
         Parent::Deinitialize();
     }
@@ -61,7 +77,7 @@ public:
         if (event.key == SDLK_F4 && isAlt  && isKeyUp)
             TerminateApplication();
         else
-            mEditorGui->onKeyEvent(event);
+            mSeqGui->onKeyEvent(event);
 
 
     }
@@ -70,22 +86,27 @@ public:
     //--------------------------------------------------------------------------------------
     void onEvent(SDL_Event event) override
     {
-        mEditorGui->onEvent(event);
+        mSeqGui->onEvent(event);
     }
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
         Parent::Update(dt);
+        if (mSeqGui)
+            mSeqGui->Update(dt);
     }
     //--------------------------------------------------------------------------------------
     // imGui must be put in here !!
     void onDrawTopMost() override
     {
-        mEditorGui->DrawGui();
+        mSeqGui->DrawGui();
     }
+    //--------------------------------------------------------------------------------------
+
 
 
 }; //classe ImguiTest
 
 extern SequencerMain* g_SeqMain;
 SequencerMain* getMain();
+

@@ -33,9 +33,7 @@ class OPL3Controller
 {
 private:
     // ---------- OPL/YMFM ----------------
-    // using OplChip = ymfm::ym3812; //OPL2
     using OplChip = ymfm::ymf262; //OPL3
-    // using OplChip = ymfm::ymf289b; //OPL3L
     OplChip* mChip; //OPL
     YMFMInterface mInterface;
 
@@ -43,7 +41,6 @@ private:
     double m_step = 49716.0 / 44100.0; // Ratio of OPL rate to SDL rate
     OplChip::output_data mOutput;
 
-    std::vector<OplInstrument> mSoundBank;
 
     // ---------- SDL3 ----------------
     SDL_AudioStream* mStream = nullptr;
@@ -75,20 +72,29 @@ private:
         uint16_t orderStopAt = 0;
 
         // Timing (Using double prevents tempo drift over long songs)
-        double samples_per_tick = 0.0;
+        // ... position tracking ...
+        uint8_t current_tick = 0;
+        uint8_t ticks_per_row = 6; // Standard tracker default
+
         double sample_accumulator = 0.0;
+        double samples_per_tick = 0.0; // Calculate this: (SampleRate * 60) / (BPM * TPL)
 
         const SongData* current_song = nullptr;
 
-        // UI Feedback for OPL3 (18 channels)
-        uint8_t last_notes[18] = {0};
-        bool note_updated = false;
+
+
+        // Channel State (Used for UI and Effect Logic)
+
+        SongStep last_steps[18] = {};
+        bool ui_dirty = false;
+
     };
     const SequencerState& getSequencerState() const { return mSeqState; }
 
     uint8_t mShadowRegs[512] = {0}; // register for read
 
     //------------
+    void generate(int16_t* out_buffer, int num_frames);
     void fillBuffer(int16_t* buffer, int total_frames);
     virtual void tickSequencer();
 
@@ -105,11 +111,14 @@ public:
     // ----------   Init ---------------
     OPL3Controller();
     ~OPL3Controller();
-    static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
     bool initController();
     bool shutDownController();
 
+    // ----------  ----------------
+    std::vector<OplInstrument> mSoundBank;
+
     // ---------- SDL3 ----------------
+    static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
     SDL_AudioStream* getAudioStream() { return mStream; }
     float getVolume() {
         if (mStream) {
@@ -134,7 +143,51 @@ public:
     void stopNote(uint8_t channel);
     void setChannelVolume(uint8_t channel, uint8_t oplVolume);
     void setChannelPanning(uint8_t channel, uint8_t pan);
+    void processStepEffects(uint8_t channel, const SongStep& step);
+    void modifyChannelPitch(uint8_t channel, int8_t amount);
 
+    void playSong(SongData& songData) {
+        std::lock_guard<std::recursive_mutex> lock(mDataMutex);
+
+        // 1. Assign Song Data
+        mSeqState.current_song = &songData;
+
+        // 2. Reset Sequencer Positions
+        mSeqState.orderIdx = 0;
+        mSeqState.rowIdx = 0;
+        mSeqState.current_tick = 0;
+        mSeqState.sample_accumulator = 0.f;
+
+        // 3. Reset Channel States using the new struct array
+        // This clears all redundancy checks so the first row of the song
+        // is guaranteed to write to the hardware registers.
+        for (int i = 0; i < 18; ++i) {
+            mSeqState.last_steps[i] = {}; // Resets note, vol, pan, effect
+            mSeqState.last_steps[i].volume = 255; // Force update on first row
+        }
+
+        // 4. Calculate timing
+        // In 2026, ensure hostRate is queried from your actual SDL audio device
+        double hostRate = 44100.0;
+        double ticks_per_sec = songData.bpm * 0.4;
+
+        // 2. Calculate samples per tick
+        if (ticks_per_sec > 0) {
+            // At 125 BPM: 44100 / 50 = 882 samples per tick
+            mSeqState.samples_per_tick = hostRate / ticks_per_sec;
+        } else {
+            mSeqState.samples_per_tick = hostRate;
+        }
+
+
+        // 5. Hard Reset Chip
+        mChip->reset();
+        write(0x105, 0x01); // RE-ENABLE OPL3 MODE (Mandatory after reset)
+
+        // 6. Start Playback
+        mSeqState.playing = true;
+        mSeqState.ui_dirty = true;
+    }
 
 
 
@@ -164,6 +217,67 @@ public:
     void setFrequency(uint8_t channel, uint16_t fnum, uint8_t octave);
     void setFrequencyLinear(uint8_t channel, float linearFreq);
 
+
+
+    // ------ import -------------
+    // ------ export -------------
+    //FIXME bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr);
+
+
+protected:
+    SequencerState mSeqState;
+
+
+    //------------------- TESTING ------------------------------------
+public:
+    void consoleSongOutput(bool useNumbers)
+    {
+        if (!mSeqState.playing)
+            return;
+        // 2026 Update: Check if the UI state has changed
+        if (mSeqState.ui_dirty) {
+            // Print current position (Pattern Index : Row Index)
+            printf("[%02d:%03d] ", mSeqState.orderIdx, mSeqState.rowIdx);
+
+            // OPL3 has 18 channels. We'll print them in two rows of 9
+            // or one long row depending on your terminal width.
+            for (int ch = 0; ch < 18; ch++) {
+                const SongStep& step = mSeqState.last_steps[ch];
+
+                // 1. Note Column
+                if (step.note == 255) {
+                    printf("==="); // Note Off
+                } else if (step.note == 0) {
+                    printf("..."); // Empty
+                } else {
+                    if (useNumbers) {
+                        printf("%02X", step.note);
+                    } else {
+                        // Assuming you have a helper that handles std::string_view or const char*
+                        printf("%3s", opl3::ValueToNote(step.note).c_str());
+                    }
+                }
+
+                // 2. Instrument & Volume Column (Visual: Ins Vol)
+                // Example output: "01 40" (Instrument 1, Volume 40)
+                printf(" %02X %02X", step.instrument, step.volume);
+
+                // 3. Effect Column (Visual: TypeVal)
+                // Example output: "A05" (Volume Slide 05)
+                if (step.effectType > 0) {
+                    printf("|%1X%02X ", step.effectType, step.effectVal);
+                } else {
+                    printf("|... ");
+                }
+
+                // Separator between channels
+                if (ch == 8) printf(" | ");
+            }
+
+            printf("\n");
+            mSeqState.ui_dirty = false;
+        }
+    }
 
     void TESTChip() {
         SDL_PauseAudioStreamDevice(mStream);
@@ -208,18 +322,119 @@ public:
 
     }
 
-    // ------ import -------------
-    // ------ export -------------
-    //FIXME bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr);
+    SongData createScaleSong() {
+        SongData song;
+        song.title = "OPL3 Scale Test";
+        song.bpm = 125.0f;
+        song.speed = 6;
+
+        // 1. Create a pattern with 32 rows
+        Pattern scalePat(32, 18);
+
+        // 2. Define the scale (C-4 to C-5)
+        // MIDI Notes: 48, 50, 52, 53, 55, 57, 59, 60
+        uint8_t scale[] = { 48, 50, 52, 53, 55, 57, 59, 60 };
+
+        for (int i = 0; i < 8; ++i) {
+            // Place a note every 4th row on channel 0
+            int row = i * 4;
+            SongStep& step = scalePat.steps[row * 18 + 0];
+
+            step.note = scale[i];
+            step.instrument = 0; // Ensure your soundbank has at least one instrument
+            step.volume = 63;
+        }
+
+        // 3. Add pattern and set order
+        song.patterns.push_back(scalePat);
+        song.orderList.push_back(0); // Play pattern 0
+
+        return song;
+    }
+
+    SongData createEffectTestSong() {
+        SongData song;
+        song.title = "OPL3 Effects Stress Test";
+        song.bpm = 90; //125.0f;
+        song.speed = 6;
+
+        // Create a 32-row pattern
+        Pattern testPat(64, 18);
+
+        // --- Channel 0: Volume Slide Test ---
+        // Trigger a long note on Row 0
+        SongStep& startNote = testPat.steps[0 * 18 + 0];
+        startNote.note = 48; // C-4
+        startNote.instrument = 0;
+        startNote.volume = 63;
+
+        // Starting at Row 1, slide volume DOWN
+        for (int r = 1; r < 16; ++r) {
+            SongStep& s = testPat.steps[r * 18 + 0];
+            s.effectType = EFF_VOL_SLIDE;
+            s.effectVal  = 0x04; // Slide down by 4 per tick (0x0y)
+        }
+
+        // --- Channel 1: Panning Test ---
+        // Trigger a note that jumps across speakers
+        for (int i = 0; i < 4; ++i) {
+            int row = i * 8;
+            SongStep& s = testPat.steps[row * 18 + 1];
+            s.note = 60; // C-5
+            s.instrument = 0;
+            s.volume = 50;
+
+            // Alternate Panning: 0 (Hard Left), 64 (Hard Right)
+            s.effectType = EFF_SET_PANNING;
+            s.effectVal  = (i % 2 == 0) ? 0 : 64;
+        }
+
+        // --- Channel 2: Note-Off Test ---
+        // Test if 255 correctly stops the OPL3 operators
+        for (int i = 0; i < 4; ++i) {
+            testPat.steps[(i * 8) * 18 + 2].note = 55;       // G-4 Key-On
+            testPat.steps[(i * 8) * 18 + 2].instrument = 0;
+            testPat.steps[(i * 8 + 4) * 18 + 2].note = 255;  // Key-Off 4 rows later
+        }
+
+        // --- Channel 3: Set Volume Test ---
+        // Directly setting volume via effect Cxx
+        for (int i = 0; i < 8; ++i) {
+            SongStep& s = testPat.steps[(i * 4) * 18 + 3];
+            s.note = 52; // E-4
+            s.instrument = 0;
+            s.effectType = EFF_SET_VOLUME;
+            s.effectVal  = (i % 2 == 0) ? 20 : 60; // Alternate quiet/loud
+        }
+
+
+        for (int i = 0; i < MAX_CHANNELS; i++)
+            testPat.steps[31 * 18 + i].note = 255;
+
+        // indexing for Row 32, Channel 0
+        SongStep& s = testPat.steps[32 * 18 + 0];
+        s.note = 52;
+        s.instrument = 0;
+        s.volume = 63;           // Start at max volume
+        s.effectType = EFF_VOL_SLIDE;
+        s.effectVal  = 0x04;
+
+        SongStep& s2 = testPat.steps[36 * 18 + 0];
+        s2.note = 52;
+        s2.instrument = 0;
+        s2.volume = 0;
+        s2.effectType = EFF_VOL_SLIDE;
+        s2.effectVal  = 0x40; // Slides volume UP by 4 units per tick
+
+        // testPat.steps[40 * 18 + 0].volume=0;
 
 
 
+        song.patterns.push_back(testPat);
+        song.orderList.push_back(0);
 
-
-
-
-protected:
-    SequencerState mSeqState;
+        return song;
+    }
 
 
 };  //class OPL3Controller

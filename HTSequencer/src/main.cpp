@@ -13,6 +13,8 @@ SequencerMain* getMain() {
     return g_SeqMain;
 }
 
+
+
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;

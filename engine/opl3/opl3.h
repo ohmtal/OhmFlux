@@ -23,6 +23,17 @@ namespace opl3 {
     };
 
     //--------------------------------------------------------------------------
+    enum OplEffect : uint8_t {
+        EFF_NONE         = 0x0,
+        EFF_PORTA_UP     = 0x1, // 1xx: Pitch Slide Up
+        EFF_PORTA_DOWN   = 0x2, // 2xx: Pitch Slide Down
+        EFF_VIBRATO      = 0x4, // 4xy: Vibrato
+        EFF_SET_PANNING  = 0x8, // 8xx Set Panning
+        EFF_VOL_SLIDE    = 0xA, // Axy: Volume Slide
+        EFF_SET_VOLUME   = 0xC, // Cxx: Set Volume
+        EFF_POSITION_JUMP= 0xB, // Bxx: Jump to Pattern
+    };
+    //--------------------------------------------------------------------------
     struct OplInstrument {
         std::string name = "New Instrument";
         bool isFourOp = false;  // OPL3 mode
@@ -45,19 +56,39 @@ namespace opl3 {
         OpPair pairs[2]; // Pair 0 (Ch A), Pair 1 (Ch B - only used if isFourOp is true)
     };
     //--------------------------------------------------------------------------
+    // struct SongStep {
+    //     uint8_t note = 0;        // 0=None, 1-96 (C-0 to B-7), 255=Off
+    //     uint8_t instrument = 0;  // Index to Instrument table
+    //     uint8_t volume = 63;     // 0-63 OPL range
+    //     uint16_t effect = 0;     // Command (e.g., 0x0Axy for Volume Slide)
+    // };
+
     struct SongStep {
-        uint8_t note = 0;        // 0=None, 1-96 (C-0 to B-7), 255=Off
-        uint8_t instrument = 0;  // Index to Instrument table
-        uint8_t volume = 63;     // 0-63 OPL range
-        uint16_t effect = 0;     // Command (e.g., 0x0Axy for Volume Slide)
+        uint8_t note       = 0;  // 0=None, 1-127 (MIDI range), 255=Off
+        uint8_t instrument = 0;  // 0=None, 1-255
+        uint8_t volume     = 63; // 0-63 (Standard tracker range)
+        uint8_t panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
+        uint8_t effectType = 0;  // High byte of effect (e.g., 'A')
+        uint8_t effectVal  = 0;  // Low byte of effect (e.g., 0x0F)
     };
     //--------------------------------------------------------------------------
     struct Pattern {
         uint16_t rowCount;
         std::vector<SongStep> steps;
 
-        Pattern(uint16_t rows, int channels) : rowCount(rows) {
+        // Use member initializer list for rowCount
+        Pattern(uint16_t rows, int channels = 18) : rowCount(rows) {
             steps.resize(rows * channels);
+
+            // Optional: Initialize steps to 'Empty' tracker state
+            for (auto& step : steps) {
+                step.note = 0;           // None
+                step.instrument = 0;     // Default
+                step.volume = 64;        // Max (Tracker Std)
+                step.panning = 32;       // Center
+                step.effectType = 0;
+                step.effectVal = 0;
+            }
         }
     };
     //--------------------------------------------------------------------------
