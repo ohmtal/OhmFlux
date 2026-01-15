@@ -70,6 +70,7 @@ namespace opl3_bridge_op2 {
 
             inst.fineTune = (int8_t)fineTune; // as signed
             inst.fixedNote = fixedNote;
+            inst.noteOffset = (int8_t)voice1[10];
 
             // Check if double-voice (Pseudo 4-Op)
             if (flags & 0x04) {

@@ -438,6 +438,15 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
             getMain()->getController()->initDefaultBank();
         }
     else
+        if (cmd == "test")
+        {
+            // getMain()->getController()->initDefaultBank();
+            getMain()->getController()->write(0xA0 , 0x69);
+            getMain()->getController()->write(0xB0 , 0x24);
+
+        }
+
+    else
     {
         console->AddLog("unknown command %s", cmd.c_str());
     }

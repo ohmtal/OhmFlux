@@ -17,6 +17,15 @@
 OPL3Controller::OPL3Controller(){
     mChip = new ymfm::ymf262(mInterface);//OPL3
 
+    uint32_t master_clock = 14318180;
+    mOutputSampleRate = mChip->sample_rate(master_clock);
+
+    Log("[error] sampleRate is: %d" , mOutputSampleRate );
+
+    m_opl3_accumulator = 0.0;
+    m_lastSampleL = 0;
+    m_lastSampleR = 0;
+
     reset();
 }
 //------------------------------------------------------------------------------
@@ -89,6 +98,9 @@ bool OPL3Controller::initController()
 
     SDL_ResumeAudioStreamDevice(mStream);
 
+    m_step = mOutputSampleRate / spec.freq;
+
+
     Log("OPL3 Controller initialized..");
 
     return true;
@@ -127,38 +139,91 @@ void OPL3Controller::generate(int16_t* buffer, int frames) {
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames) {
-    if (!mSeqState.playing) {
-        this->generate(buffer, total_frames);
-        return;
-    }
-
     int frames_left = total_frames;
     int buffer_offset = 0;
 
+    // The ratio of OPL3 native rate to your output rate (49715 / 44100)
+    double step = this->getStep();
+
     while (frames_left > 0) {
-        // Calculate remaining samples for the current tick
-        double samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+        if (mSeqState.playing) {
+            // Check if we need to tick the sequencer
+            double samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
 
-        if (samples_needed <= 0.0) {
-            this->tickSequencer();
-            // Subtract the length of one tick to keep precision
-            mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+            if (samples_needed <= 0.0) {
+                this->tickSequencer(); // Effects/Notes processed here
+                mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+                samples_needed = mSeqState.samples_per_tick;
+            }
 
-            // Re-calculate samples_needed for the NEW tick
-            samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+            // Chunk calculation for your effects (e.g., 6 ticks per row)
+            int chunk = std::min((int)frames_left, (int)std::max(1.0, samples_needed));
+
+            // Generate OPL3 samples with resampling for this chunk
+            for (int i = 0; i < chunk; i++) {
+                m_opl3_accumulator += step;
+
+                // If we've accumulated enough "time" for an OPL3 sample, generate it
+                while (m_opl3_accumulator >= 1.0) {
+                    ymfm::ymf262::output_data outputs;
+                    mChip->generate(&outputs);
+
+                    // Mix 4-channel OPL3 to Stereo
+                    m_lastSampleL = outputs.data[0] + outputs.data[2];
+                    m_lastSampleR = outputs.data[1] + outputs.data[3];
+
+                    m_opl3_accumulator -= 1.0;
+                }
+
+                // Write the resampled/last-known sample to the 44.1k buffer
+                buffer[(buffer_offset + i) * 2]     = m_lastSampleL;
+                buffer[(buffer_offset + i) * 2 + 1] = m_lastSampleR;
+            }
+
+            mSeqState.sample_accumulator += chunk;
+            buffer_offset += chunk;
+            frames_left -= chunk;
+        } else {
+            // Not playing: Just generate silent/idle OPL3 samples
+            this->generate(&buffer[buffer_offset * 2], frames_left);
+            break;
         }
-
-        // Determine how much we can generate in this pass
-        int chunk = std::min((int)frames_left, (int)std::max(1.0, samples_needed));
-
-        this->generate(&buffer[buffer_offset * 2], chunk);
-
-        mSeqState.sample_accumulator += chunk;
-        buffer_offset += chunk;
-        frames_left -= chunk;
     }
 }
 
+// void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames) {
+//     if (!mSeqState.playing) {
+//         this->generate(buffer, total_frames);
+//         return;
+//     }
+//
+//     int frames_left = total_frames;
+//     int buffer_offset = 0;
+//
+//     while (frames_left > 0) {
+//         // Calculate remaining samples for the current tick
+//         double samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+//
+//         if (samples_needed <= 0.0) {
+//             this->tickSequencer();
+//             // Subtract the length of one tick to keep precision
+//             mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+//
+//             // Re-calculate samples_needed for the NEW tick
+//             samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+//         }
+//
+//         // Determine how much we can generate in this pass
+//         int chunk = std::min((int)frames_left, (int)std::max(1.0, samples_needed));
+//
+//         this->generate(&buffer[buffer_offset * 2], chunk);
+//
+//         mSeqState.sample_accumulator += chunk;
+//         buffer_offset += chunk;
+//         frames_left -= chunk;
+//     }
+// }
+//
 // void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames) {
 //
 //     if (!mSeqState.playing) {
@@ -406,18 +471,37 @@ void OPL3Controller::reset() {
     memset(mSeqState.last_steps, 0, sizeof(mSeqState.last_steps));
     mSeqState.ui_dirty = false;
 
-    // 3. Enable OPL3 extensions (Bank 2 access)
-    // Writing 0x01 to register 0x105 is mandatory for 18-channel support
+    // 2. Enable OPL3 extensions (Bank 1 access)
     write(0x105, 0x01);
 
-    // 4. Disable 4-Operator modes (Register 0x104)
-    // Ensures all channels 0-17 start as 2-operator channels
+    // 3. Enable Waveform Select (Global for all 18 channels)
+    write(0x01, 0x20);
+
+    // 4. Disable 4-Operator modes initially
     write(0x104, 0x00);
 
-    // 5. Global Depth & Mode (Register 0xBD)
-    // 0xC0: AM/Vibrato depth high, Melodic mode (all channels independent)
+    // 5. Set Global Depth and Mode
     write(0xBD, 0xC0);
 
+    // 6. Clear Waveforms (0xE0 range) for BOTH banks
+    for (int i = 0x00; i < 22; i++) {
+        write(0xE0 + i, 0x00);  // Bank 0
+        write(0x1E0 + i, 0x00); // Bank 1
+    }
+
+    // 7. Silence all channels
+    for(int i = 0; i < 22; i++) {
+        // Total Level to 0x3F (silent)
+        write(0x40 + i, 0x3F);  // Bank 0
+        write(0x140 + i, 0x3F); // Bank 1
+
+        if (i < 9) {
+            write(0xB0 + i, 0x00);  // Key-Off Bank 0
+            write(0x1B0 + i, 0x00); // Key-Off Bank 1
+        }
+    }
+
+    mChip->generate(&mOutput); //flush
 
     // 6. Silence Hardware
     // This sets TL=63 for all 18 channels
@@ -468,94 +552,54 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
 }
 //------------------------------------------------------------------------------
 bool OPL3Controller::applyInstrument(uint8_t channel, uint8_t instrumentIndex) {
-    if (channel >= MAX_CHANNELS) return false;
-    if (instrumentIndex >= mSoundBank.size()) return false;
-
+    if (channel >= 18 || instrumentIndex >= mSoundBank.size()) return false;
     const auto& ins = mSoundBank[instrumentIndex];
 
-    // --- Configure 4-operator mode for this channel ---
+
+    bool isFourOp = ins.isFourOp;
+
+
+
+    // 1. Handle 4-Operator Enable Bit (Register 0x104)
+    // Bits 0,1,2 = Bank 0 (Ch 0,1,2); Bits 3,4,5 = Bank 1 (Ch 9,10,11)
     uint8_t fourOpReg = readShadow(0x104);
     uint8_t fourOpBit = 0;
-    uint8_t masterChannelRelativeIndex = channel % 9; // 0-8 for both banks
+    bool isMasterChannel = false;
 
-    // Determine the bit to set in 0x104 for this channel group
-    // 0x104 bits: 0-2 for channels 0-2, 3-5 for channels 9-11
-    if (channel < 3) { // Channels 0, 1, 2 are masters in bank 0
-        fourOpBit = (1 << masterChannelRelativeIndex);
-    } else if (channel >= 9 && channel < 12) { // Channels 9, 10, 11 are masters in bank 1
-        fourOpBit = (1 << (masterChannelRelativeIndex + 3)); // Map to bits 3, 4, 5 of 0x104
+    if (channel < 3) {
+        fourOpBit = (1 << channel);
+        isMasterChannel = true;
+    } else if (channel >= 9 && channel < 12) {
+        fourOpBit = (1 << (channel - 9 + 3));
+        isMasterChannel = true;
     }
 
-    if (ins.isFourOp) {
-        write(0x104, fourOpReg | fourOpBit); // Enable 4-op mode for this channel pair
-    } else {
-        write(0x104, fourOpReg & ~fourOpBit); // Disable 4-op mode
+    if (isMasterChannel) {
+        if (isFourOp) write(0x104, fourOpReg | fourOpBit);
+        else          write(0x104, fourOpReg & ~fourOpBit);
     }
 
+    // 2. Set Pair 0 (Modulator and Carrier)
+    setOperatorRegisters(get_modulator_offset(channel), ins.pairs[0].ops[0]);
+    setOperatorRegisters(get_carrier_offset(channel),   ins.pairs[0].ops[1]);
 
-    uint16_t m_off = get_modulator_offset(channel);
-    uint16_t c_off = get_carrier_offset(channel);
+    // $C0 Register for Pair 0
+    uint8_t c0Val = (ins.pairs[0].panning << 4) | (ins.pairs[0].feedback << 1) | ins.pairs[0].connection;
+    writeChannelReg(0xC0, channel, c0Val);
 
-    // Operator 0 (Modulator) of Pair 0
-    const auto& mod0 = ins.pairs[0].ops[0];
-    write(0x20 + m_off, mod0.multi | (mod0.ksr << 4) | (mod0.egTyp << 5) | (mod0.vib << 6) | (mod0.am << 7));
-    write(0x40 + m_off, mod0.tl | (mod0.ksl << 6));
-    write(0x60 + m_off, mod0.decay | (mod0.attack << 4));
-    write(0x80 + m_off, mod0.release | (mod0.sustain << 4));
-    write(0xE0 + m_off, mod0.wave & 0x07);
-
-    // Operator 1 (Carrier) of Pair 0
-    const auto& car0 = ins.pairs[0].ops[1];
-    write(0x20 + c_off, car0.multi | (car0.ksr << 4) | (car0.egTyp << 5) | (car0.vib << 6) | (car0.am << 7));
-    write(0x40 + c_off, car0.tl | (car0.ksl << 6));
-    write(0x60 + c_off, car0.decay | (car0.attack << 4));
-    write(0x80 + c_off, car0.release | (car0.sustain << 4));
-    write(0xE0 + c_off, car0.wave & 0x07);
-
-    // Connection / Feedback / Panning ($C0 Register) for the main channel
-    uint16_t c0Addr = ((channel <= 8) ? 0x000 : 0x100) + 0xC0 + (channel % 9);
-    uint8_t c0Val = (ins.pairs[0].panning << 4) | (ins.pairs[0].feedback << 1) | (ins.isFourOp ? 0x01 : ins.pairs[0].connection);
-    write(c0Addr, c0Val);
-
-    if (ins.isFourOp) {
-        // Configure operators for the linked channel (channel + 3)
+    // 3. Set Pair 1 (If 4-Op instrument and valid 4-Op slot)
+    if (isFourOp && isMasterChannel) {
         uint8_t linkedChannel = channel + 3;
-        uint16_t m1_off = get_modulator_offset(linkedChannel);
-        uint16_t c1_off = get_carrier_offset(linkedChannel);
+        setOperatorRegisters(get_modulator_offset(linkedChannel), ins.pairs[1].ops[0]);
+        setOperatorRegisters(get_carrier_offset(linkedChannel),   ins.pairs[1].ops[1]);
 
-        // Operator 0 (Modulator) of Pair 1 (which maps to Modulator 2 for 4-op)
-        const auto& mod1 = ins.pairs[1].ops[0];
-        write(0x20 + m1_off, mod1.multi | (mod1.ksr << 4) | (mod1.egTyp << 5) | (mod1.vib << 6) | (mod1.am << 7));
-        write(0x40 + m1_off, mod1.tl | (mod1.ksl << 6));
-        write(0x60 + m1_off, mod1.decay | (mod1.attack << 4));
-        write(0x80 + m1_off, mod1.release | (mod1.sustain << 4));
-        write(0xE0 + m1_off, mod1.wave & 0x07);
-
-        // Operator 1 (Carrier) of Pair 1 (which maps to Carrier 2 for 4-op)
-        const auto& car1 = ins.pairs[1].ops[1];
-        write(0x20 + c1_off, car1.multi | (car1.ksr << 4) | (car1.egTyp << 5) | (car1.vib << 6) | (car1.am << 7));
-        write(0x40 + c1_off, car1.tl | (car1.ksl << 6));
-        write(0x60 + c1_off, car1.decay | (car1.attack << 4));
-        write(0x80 + c1_off, car1.release | (car1.sustain << 4));
-        write(0xE0 + c1_off, car1.wave & 0x07);
-
-        // For 4-op mode, the linked channel's connection is always FM (0)
-        uint16_t c0LinkedAddr = ((linkedChannel <= 8) ? 0x000 : 0x100) + 0xC0 + (linkedChannel % 9);
-        uint8_t c0LinkedVal = (ins.pairs[1].panning << 4) | (ins.pairs[1].feedback << 1) | 0x00; // Force FM connection
-        write(c0LinkedAddr, c0LinkedVal);
-    } else {
-        // If not 4-op, and this channel *could* be a 4-op master, ensure its linked channel is reset to 2-op FM mode.
-        // This handles cases where a 4-op instrument was previously on this channel.
-        if ((channel >=0 && channel < 3) || (channel >= 9 && channel < 12)) {
-            uint8_t linkedChannel = channel + 3;
-            uint16_t c0LinkedAddr = ((linkedChannel <= 8) ? 0x000 : 0x100) + 0xC0 + (linkedChannel % 9);
-            uint8_t c0LinkedVal = readShadow(c0LinkedAddr);
-            write(c0LinkedAddr, c0LinkedVal & ~0x01); // Ensure FM connection
-        }
+        // $C0 Register for Pair 1
+        uint8_t c0LinkedVal = (ins.pairs[1].panning << 4) | (ins.pairs[1].feedback << 1) | ins.pairs[1].connection;
+        writeChannelReg(0xC0, linkedChannel, c0LinkedVal);
     }
-
     return true;
 }
+
 
 //------------------------------------------------------------------------------
 bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
@@ -593,6 +637,13 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
 
     // --- CASE 3: TRIGGER NEW NOTE ---
     stopNote(channel);
+
+    if (step.instrument >= mSoundBank.size())
+    {
+        Log("[error] Instrument out of bounds!");
+        return false;
+    }
+
     applyInstrument(channel, step.instrument);
 
     // Get the instrument for fixedNote and fineTune
@@ -602,58 +653,40 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     setChannelVolume(channel, getOplVol(step.volume));
     setChannelPanning(channel, step.panning);
 
-    // // Frequency Setup
-    // int midiNote = step.note;
-    //
-    // // Apply fixedNote if valid (1-96 tracker range)
-    // if (currentIns.fixedNote > 0 && currentIns.fixedNote <= 96 && currentIns.fixedNote != 255) {
-    //     // Convert tracker note (1-96) to MIDI note number
-    //     // Tracker note 1 (C-0) often corresponds to MIDI note 12 (C-0).
-    //     midiNote = currentIns.fixedNote + 11;
-    // }
-    //
-    // // Clamp midiNote to a reasonable range (e.g., 0-127)
-    // if (midiNote < 0) midiNote = 0;
-    // if (midiNote > 127) midiNote = 127;
-    //
-    // // Calculate OPL Octave (Block) and F-Number Index from MIDI note
-    // // Assuming OPL Block 0 corresponds to MIDI C-0 (MIDI note 12)
-    // const int MIDI_C0_FOR_OPL_BLOCK_0 = 12;
-    //
-    // int octave = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) / 12; // OPL Block 0-7
-    // int noteIndex = (midiNote - MIDI_C0_FOR_OPL_BLOCK_0) % 12; // Index into opl3::f_numbers (0-11)
 
-    // 4. Frequency Calculation (C-0 to B-7)
-    int internalNote = step.note - 1; // 0-based index
-    int octave = internalNote / 12;
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    // 1. Base calculation for op2 it must be much lower ! => - 24
+    int internalNote = (step.note - 1) + currentIns.noteOffset + mGlobalNoteOffSet;
+    int block = internalNote / 12;
     int noteIndex = internalNote % 12;
 
-    // Clamp octave to valid OPL range (0-7)
-    if (octave < 0) octave = 0;
-    if (octave > 7) octave = 7;
+    // 2. Fetch base F-Number (Octave 0 table: 0x0B5, etc.)
+    uint32_t fnum = opl3::f_numbers[noteIndex];
 
-    // Clamp noteIndex to valid range (0-11)
-    if (noteIndex < 0) noteIndex = 0;
-    if (noteIndex > 11) noteIndex = 11;
+    // 3. Apply Fine-Tune Table
+    fnum = (uint32_t)(fnum * fineTuneTable[currentIns.fineTune + 128]);
 
-    uint16_t fnum = opl3::f_numbers[noteIndex];
+    // 4. THE FIX: Normalize F-Number to the 10-bit range (0x200 - 0x3FF)
+    // If fnum is too high (causing tinnitus), shift it down and increase block
+    while (fnum >= 0x400 && block < 7) {
+        fnum >>= 1;
+        block++;
+    }
+    // If fnum is too low (losing resolution), shift it up and decrease block
+    while (fnum < 0x200 && block > 0) {
+        fnum <<= 1;
+        block--;
+    }
 
-    // Apply fineTune
-    fnum += currentIns.fineTune;
-
-    dLog("new fnum:%d, fineTune:%d",fnum, currentIns.fineTune); //FIXME remove this
-    // Clamp fnum to valid range (0-1023)
+    // 5. Final safety clamps
+    if (block > 7) block = 7;
     if (fnum > 1023) fnum = 1023;
-    if (fnum < 0) fnum = 0;
 
-    uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
-    uint8_t relChan = channel % 9;
+    // Now call playNote with these values
+    playNote(channel, (uint16_t)fnum, (uint8_t)block);
 
-    write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
-
-    // Key-On Bit (0x20)
-    uint8_t b0_val = 0x20 | (octave << 2) | ((fnum >> 8) & 0x03);
-    write(bankOffset + 0xB0 + relChan, b0_val);
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     return true;
 }
@@ -719,30 +752,68 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
 // }
 //------------------------------------------------------------------------------
 void OPL3Controller::stopNote(uint8_t channel) {
-    // Range check for OPL3 (0-17)
-    if (channel < 0 || channel >= 18) {
-        return;
-    }
-
+    if (channel >= 18) return;
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
-    // Determine the register bank offset
-    // Channels 0-8  -> Bank 1 (0x000)
-    // Channels 9-17 -> Bank 2 (0x100)
-    uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
-    uint8_t relativeChan = channel % 9;
-    uint16_t regAddr = bankOffset + 0xB0 + relativeChan;
+    auto keyOff = [&](uint8_t chan) {
+        uint16_t bankOffset = (chan <= 8) ? 0x000 : 0x100;
+        uint8_t relativeChan = chan % 9;
+        uint16_t regAddr = bankOffset + 0xB0 + relativeChan;
+        uint8_t currentB0 = readShadow(regAddr);
 
-    // Read current value from shadow to preserve Block (Octave) and F-Number bits
-    uint8_t currentB0 = readShadow(regAddr);
+        // Clear bit 5 (Key-On) to trigger the release phase
+        write(regAddr, currentB0 & ~0x20);
+    };
 
-    // Clear bit 5 (Key-On) to trigger the release phase
-    // 0x20 = 0010 0000 in binary
-    write(regAddr, currentB0 & ~0x20);
+    // Apply Key-Off to the primary channel
+    keyOff(channel);
+
+    // Check if this channel is the master of an active 4-Op group
+    uint8_t fourOpReg = readShadow(0x104);
+    bool isFourOpMaster = false;
+
+    if (channel < 3 && (fourOpReg & (1 << channel))) {
+        isFourOpMaster = true;
+    } else if (channel >= 9 && channel < 12 && (fourOpReg & (1 << (channel - 9 + 3)))) {
+        isFourOpMaster = true;
+    }
+
+    if (isFourOpMaster) {
+        // Apply Key-Off to the linked channel (+3) as well
+        keyOff(channel + 3);
+    }
 
     // Your critical fix remains at the bottom
     mChip->generate(&mOutput);
 }
+
+// void OPL3Controller::stopNote(uint8_t channel) {
+//     // Range check for OPL3 (0-17)
+//     if (channel < 0 || channel >= 18) {
+//         return;
+//     }
+//
+//     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
+//
+//     // Determine the register bank offset
+//     // Channels 0-8  -> Bank 1 (0x000)
+//     // Channels 9-17 -> Bank 2 (0x100)
+//     uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
+//     uint8_t relativeChan = channel % 9;
+//     uint16_t regAddr = bankOffset + 0xB0 + relativeChan;
+//
+//     // Read current value from shadow to preserve Block (Octave) and F-Number bits
+//     uint8_t currentB0 = readShadow(regAddr);
+//
+//     // Clear bit 5 (Key-On) to trigger the release phase
+//     // 0x20 = 0010 0000 in binary
+//     write(regAddr, currentB0 & ~0x20);
+//
+//
+//
+//     // Your critical fix remains at the bottom
+//     mChip->generate(&mOutput);
+// }
 //------------------------------------------------------------------------------
 void OPL3Controller::write(uint16_t reg, uint8_t val){
     mShadowRegs[reg] = val;
@@ -776,7 +847,7 @@ void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
     uint16_t c0Addr = ((channel < 9) ? 0x000 : 0x100) + 0xC0 + (channel % 9);
     uint8_t c0Val = readShadow(c0Addr) & 0xCF; // Keep feedback/connection bits
 
-    dLog("setChannelPanning: chan:%d row:%d pan:%d ", channel, mSeqState.rowIdx, pan); //FIXME remove this line
+    // dLog("setChannelPanning: chan:%d row:%d pan:%d ", channel, mSeqState.rowIdx, pan); //FIXME remove this line
 
     if (pan < 21)      c0Val |= 0x10; // Left
     else if (pan > 43) c0Val |= 0x20; // Right
@@ -813,6 +884,8 @@ void OPL3Controller::dumpInstrument(uint8_t instrumentIndex) {
     LogFMT("  Is Four-Op: {}", ins.isFourOp ? "Yes" : "No");
     LogFMT("  Fine Tune: {}", (int)ins.fineTune);
     LogFMT("  Fixed Note: {}", (ins.fixedNote == 255) ? "None" : std::to_string(ins.fixedNote));
+    LogFMT("  Note offset: {}", (int)ins.noteOffset);
+
 
     for (int pIdx = 0; pIdx < (ins.isFourOp ? 2 : 1); ++pIdx) {
         const auto& pair = ins.pairs[pIdx];
@@ -932,7 +1005,7 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
             }
 
 
-            dLog("Slide...channel:%d row:%d step.volume:%d( oplVolume: %d)", channel , mSeqState.rowIdx, currentVol, getOplVol(currentVol)); //FIXME remove this line
+            // dLog("Slide...channel:%d row:%d step.volume:%d( oplVolume: %d)", channel , mSeqState.rowIdx, currentVol, getOplVol(currentVol)); //FIXME remove this line
 
             // Update the state mirror
             mSeqState.last_steps[channel].volume = currentVol;

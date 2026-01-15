@@ -35,6 +35,7 @@ private:
     // ---------- OPL/YMFM ----------------
     using OplChip = ymfm::ymf262; //OPL3
     OplChip* mChip; //OPL
+    uint32_t mOutputSampleRate;
     YMFMInterface mInterface;
 
     double m_pos = 0.0;
@@ -116,6 +117,7 @@ public:
 
     // ----------  ----------------
     std::vector<OplInstrument> mSoundBank;
+    int mGlobalNoteOffSet = -36; //FIXME protected / getter/setter
 
     // ---------- SDL3 ----------------
     static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
@@ -139,7 +141,60 @@ public:
 
 
     bool applyInstrument(uint8_t channel, uint8_t instrumentIndex);
+
+    void writeChannelReg(uint16_t baseReg, uint8_t channel, uint8_t value) {
+        uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
+        write(bankOffset + baseReg + (channel % 9), value);
+    }
+
+    void setOperatorRegisters(uint16_t opOffset, const OplInstrument::OpPair::OpParams& op) {
+        // Standard OPL Register layout: 0x20, 0x40, 0x60, 0x80, 0xE0
+
+        // Register 0x20: [AM][VIB][EG-TYP][KSR][ MULTI (4 bits) ]
+        uint8_t reg20 = (op.multi   & 0x0F) | // Multiplikator (0-15)
+        (op.ksr     ? 0x10 : 0x00) | // Key Scale Rate
+        (op.egTyp   ? 0x20 : 0x00) | // EG-Typ (Sustain-Modus)
+        (op.vib     ? 0x40 : 0x00) | // Vibrato
+        (op.am      ? 0x80 : 0x00);  // Amplitude Modulation (Tremolo)
+
+        write(opOffset + 0x20, reg20);
+
+        // write(opOffset + 0x20, op.multi | (op.ksr << 4) | (op.egTyp << 5) | (op.vib << 6) | (op.am << 7));
+        write(opOffset + 0x40, op.tl | (op.ksl << 6));
+        write(opOffset + 0x60, op.decay | (op.attack << 4));
+        write(opOffset + 0x80, op.release | (op.sustain << 4));
+        write(opOffset + 0xE0, op.wave & 0x07);
+    }
+
+
     bool playNote(uint8_t channel, SongStep songStep);
+    void playNote(uint8_t channel, uint16_t fnum, uint8_t octave) {
+        // Write to the primary channel
+        uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
+        uint8_t relChan = channel % 9;
+
+        write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
+        write(bankOffset + 0xB0 + relChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
+
+        // Check if 4-OP is enabled for this channel via shadow register 0x104
+        uint8_t fourOpReg = readShadow(0x104);
+        bool isFourOp = false;
+        if (channel < 3 && (fourOpReg & (1 << channel))) isFourOp = true;
+        else if (channel >= 9 && channel < 12 && (fourOpReg & (1 << (channel - 9 + 3)))) isFourOp = true;
+
+        if (isFourOp) {
+            // Sync the linked channel (Channel + 3)
+            uint8_t linkedChan = channel + 3;
+            uint16_t linkedBankOffset = (linkedChan <= 8) ? 0x000 : 0x100;
+            uint8_t linkedRelChan = linkedChan % 9;
+
+            write(linkedBankOffset + 0xA0 + linkedRelChan, fnum & 0xFF);
+            // We write the same block and fnum, but often 4-op voices
+            // keep the linked channel's Key-On bit (0x20) active as well.
+            write(linkedBankOffset + 0xB0 + linkedRelChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
+        }
+    }
+
     void stopNote(uint8_t channel);
     void setChannelVolume(uint8_t channel, uint8_t oplVolume);
     void setChannelPanning(uint8_t channel, uint8_t pan);
@@ -227,6 +282,9 @@ public:
 protected:
     SequencerState mSeqState;
 
+    double m_opl3_accumulator = 0.0;
+    int16_t m_lastSampleL = 0;
+    int16_t m_lastSampleR = 0;
 
     //------------------- TESTING ------------------------------------
 public:

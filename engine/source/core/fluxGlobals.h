@@ -24,6 +24,7 @@
 #include <iostream>
 #include <vector>
 #include <string_view>
+#include <optional>
 
 #define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
 
