@@ -84,7 +84,7 @@ namespace opl3 {
             for (auto& step : steps) {
                 step.note = 0;           // None
                 step.instrument = 0;     // Default
-                step.volume = 64;        // Max (Tracker Std)
+                step.volume = 63;        // Max (Tracker Std)
                 step.panning = 32;       // Center
                 step.effectType = 0;
                 step.effectVal = 0;

@@ -352,11 +352,12 @@ public:
         return song;
     }
 
-    SongData createEffectTestSong() {
+    SongData createEffectTestSong(uint8_t ins = 0) {
         SongData song;
         song.title = "OPL3 Effects Stress Test";
-        song.bpm = 90; //125.0f;
+        song.bpm = 90.f; //125.0f;
         song.speed = 6;
+
 
         // Create a 32-row pattern
         Pattern testPat(64, 18);
@@ -365,7 +366,7 @@ public:
         // Trigger a long note on Row 0
         SongStep& startNote = testPat.steps[0 * 18 + 0];
         startNote.note = 48; // C-4
-        startNote.instrument = 0;
+        startNote.instrument = ins;
         startNote.volume = 63;
 
         // Starting at Row 1, slide volume DOWN
@@ -381,7 +382,7 @@ public:
             int row = i * 8;
             SongStep& s = testPat.steps[row * 18 + 1];
             s.note = 60; // C-5
-            s.instrument = 0;
+            s.instrument = ins;
             s.volume = 50;
 
             // Alternate Panning: 0 (Hard Left), 64 (Hard Right)
@@ -402,7 +403,7 @@ public:
         for (int i = 0; i < 8; ++i) {
             SongStep& s = testPat.steps[(i * 4) * 18 + 3];
             s.note = 52; // E-4
-            s.instrument = 0;
+            s.instrument = ins;
             s.effectType = EFF_SET_VOLUME;
             s.effectVal  = (i % 2 == 0) ? 20 : 60; // Alternate quiet/loud
         }
@@ -414,17 +415,17 @@ public:
         // indexing for Row 32, Channel 0
         SongStep& s = testPat.steps[32 * 18 + 0];
         s.note = 52;
-        s.instrument = 0;
+        s.instrument = ins;
         s.volume = 63;           // Start at max volume
         s.effectType = EFF_VOL_SLIDE;
-        s.effectVal  = 0x04;
+        s.effectVal  = 0x08;
 
-        SongStep& s2 = testPat.steps[36 * 18 + 0];
-        s2.note = 52;
-        s2.instrument = 0;
-        s2.volume = 0;
-        s2.effectType = EFF_VOL_SLIDE;
-        s2.effectVal  = 0x40; // Slides volume UP by 4 units per tick
+        // SongStep& s2 = testPat.steps[36 * 18 + 0];
+        // s2.note = 52;
+        // s2.instrument = 0;
+        // s2.volume = 0;
+        // s2.effectType = EFF_VOL_SLIDE;
+        // s2.effectVal  = 0x40; // Slides volume UP by 4 units per tick
 
         // testPat.steps[40 * 18 + 0].volume=0;
 

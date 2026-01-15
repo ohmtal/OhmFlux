@@ -422,7 +422,14 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "effects")
     {
-        myTestSong = getMain()->getController()->createEffectTestSong();
+        uint8_t instrument = 1;
+        if (fluxStr::getWord(cmdline,1) != "")
+        {
+            std::string word = fluxStr::getWord(cmdline, 1);
+            auto [ptr, ec] = std::from_chars(word.data(), word.data() + word.size(), instrument);
+        }
+
+        myTestSong = getMain()->getController()->createEffectTestSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
     else

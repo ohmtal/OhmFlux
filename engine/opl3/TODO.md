@@ -19,7 +19,8 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
     [ ] Gui for Soundbank
     [ ] FMI Importer 
     [ ] SBI Importer / Exporter
-    [X] OP2 Importer 
+    [.] OP2 Importer 
+       FIXME implemented but sound bad !!!! 
     [ ] WOPL Importer 
     
     Soundbanks: 

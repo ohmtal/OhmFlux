@@ -114,7 +114,8 @@ void OPL3Controller::generate(int16_t* buffer, int frames) {
         // OPL3 standard output: data[0] = Left, data[1] = Right
         for (int chan = 0; chan < 2; ++chan) {
             int32_t sample = mOutput.data[chan];
-            // int32_t sample = mOutput.data[chan] * 256;
+            //raise volume distortion sound bad :P
+            // sample = mOutput.data[chan] * 256;
 
             // 3. Optional: Manual Clamping for 16-bit safety
             if (sample > 32767)  sample = 32767;
@@ -443,7 +444,7 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
     //     assert(false);
     // }
 
-    // dLog("setChannelVolume: chan:%d row:%d oplVolume: %d ", channel, mSeqState.rowIdx, oplVolume);
+    // dLog("setChannelVolume: chan:%d row:%d oplVolume: %d ", channel, mSeqState.rowIdx, oplVolume); //FIXME remove this line
 
 
     uint16_t mod_off = get_modulator_offset(channel);
@@ -511,7 +512,7 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     mSeqState.last_steps[channel] = step;
     mSeqState.ui_dirty = true;
 
-    // Helper for hardware volume conversion (0-64 -> 63-0)
+    // Helper for hardware volume conversion (0-63 -> 63-0)
     auto getOplVol = [](uint8_t v) {
         uint8_t clamped = (v > 63) ? 63 : v;
         return (uint8_t)(63 - clamped);
@@ -679,6 +680,8 @@ void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
     uint16_t c0Addr = ((channel < 9) ? 0x000 : 0x100) + 0xC0 + (channel % 9);
     uint8_t c0Val = readShadow(c0Addr) & 0xCF; // Keep feedback/connection bits
 
+    dLog("setChannelPanning: chan:%d row:%d pan:%d ", channel, mSeqState.rowIdx, pan); //FIXME remove this line
+
     if (pan < 21)      c0Val |= 0x10; // Left
     else if (pan > 43) c0Val |= 0x20; // Right
     else               c0Val |= 0x30; // Center
@@ -689,15 +692,17 @@ void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
 //------------------------------------------------------------------------------
 void OPL3Controller::initDefaultBank(){
     mSoundBank.clear();
-    // Index 0 is often used as the "Silent" or "Default" slot
+    //FIXME need a better default bank !!
+    mSoundBank.push_back(GetDefaultInstrument());
+    mSoundBank.push_back(GetDefaultInstrument());
+    mSoundBank.push_back(GetDefaultInstrument());
+    mSoundBank.push_back(GetDefaultInstrument());
+    mSoundBank.push_back(GetDefaultInstrument());
+    mSoundBank.push_back(GetDefaultInstrument());
+    mSoundBank.push_back(GetDefaultInstrument());
     mSoundBank.push_back(GetDefaultInstrument());
 
-    //FIXME need a better default bank !!
-    for (uint8_t ch = 0; ch < MAX_CHANNELS; ch++)
-    {
-        applyInstrument(ch, 0);
-    }
-    mChip->generate(&mOutput); //force write
+
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::setFrequencyLinear(uint8_t channel, float linearFreq) {
@@ -768,7 +773,7 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
     uint8_t type = step.effectType;
     uint8_t val  = step.effectVal;
 
-    // Helper for hardware volume conversion (0-64 -> 63-0)
+    // Helper for hardware volume conversion (0-63 -> 63-0)
     auto getOplVol = [](uint8_t v) {
         uint8_t clamped = (v > 63) ? 63 : v;
         return (uint8_t)(63 - clamped);
@@ -783,13 +788,13 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
             uint8_t currentVol = mSeqState.last_steps[channel].volume;
 
             if (slideUp > 0) {
-                currentVol = (uint8_t)std::min(64, (int)currentVol + slideUp);
+                currentVol = (uint8_t)std::min(63, (int)currentVol + slideUp);
             } else if (slideDown > 0) {
                 currentVol = (currentVol > slideDown) ? currentVol - slideDown : 0;
             }
 
 
-            // dLog("Slide...channel:%d row:%d step.volume:%d( oplVolume: %d)", channel , mSeqState.rowIdx, currentVol, getOplVol(currentVol)); //FIXME remove this
+            dLog("Slide...channel:%d row:%d step.volume:%d( oplVolume: %d)", channel , mSeqState.rowIdx, currentVol, getOplVol(currentVol)); //FIXME remove this line
 
             // Update the state mirror
             mSeqState.last_steps[channel].volume = currentVol;
@@ -806,7 +811,7 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
         }
 
         case EFF_SET_VOLUME: {
-            uint8_t newVol = std::min((uint8_t)64, val);
+            uint8_t newVol = std::min((uint8_t)63, val);
             mSeqState.last_steps[channel].volume = newVol;
             mSeqState.ui_dirty = true;
 
@@ -815,8 +820,6 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
         }
 
         case EFF_SET_PANNING: {
-            mSeqState.last_steps[channel].panning = val;
-            mSeqState.ui_dirty = true;
 
             setChannelPanning(channel, val);
             break;
