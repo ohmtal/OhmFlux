@@ -1318,7 +1318,7 @@ opl3::SongData OPL3Controller::createEffectTestSong(uint8_t ins) {
         // Test if 255 correctly stops the OPL3 operators
         for (int i = 0; i < 4; ++i) {
             testPat.steps[(i * 8) * 18 + 2].note = 55;       // G-4 Key-On
-            testPat.steps[(i * 8) * 18 + 2].instrument = 0;
+            testPat.steps[(i * 8) * 18 + 2].instrument = ins;
             testPat.steps[(i * 8 + 4) * 18 + 2].note = 255;  // Key-Off 4 rows later
         }
 

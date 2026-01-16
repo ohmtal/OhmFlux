@@ -4,10 +4,12 @@
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
 #include <opl3_bridge_op2.h>
+#include <opl3_import_fm.h>
 
 #include <algorithm>
 #include <string>
 #include <cctype>
+
 //------------------------------------------------------------------------------
 
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
@@ -300,10 +302,22 @@ void SequencerGui::DrawGui()
                     else
                          Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
                 }
+                else
+                if ( g_FileDialog.selectedExt == ".fmi" ){
+                    std::array<uint8_t, 24> instrumentData;
+                    if (opl3_import_fm::loadInstrument(g_FileDialog.selectedFile,instrumentData)) {
+                        OplInstrument newIns=opl3_import_fm::fmiToInstrument(
+                            std::string( extractFilename(g_FileDialog.selectedFile) ),
+                            instrumentData
+                        );
+                        getMain()->getController()->mSoundBank.push_back(newIns);
+                        Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
 
-                // else
-                // if ( g_FileDialog.selectedExt == ".fmi" )
-                //     mFMEditor->loadInstrument(g_FileDialog.selectedFile);
+                    } else {
+                        Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                    }
+
+                }
                 // else
                 // if ( g_FileDialog.selectedExt == ".fms" )
                 //     mFMComposer->loadSong(g_FileDialog.selectedFile);

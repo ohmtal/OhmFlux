@@ -5,8 +5,12 @@
 //-----------------------------------------------------------------------------
 
 #include "opl3.h"
+#include <array>
+#include <fstream>
+#include <string>
 
 using namespace opl3;
+
 
 namespace opl3_import_fm {
 
@@ -35,42 +39,55 @@ namespace opl3_import_fm {
 // }
 
 
-    inline OplInstrument ImportFMI(const uint8_t lIns[24]) {
+
+    inline bool loadInstrument(const std::string& filename, std::array<uint8_t, 24>& instrumentData)
+    {
+        std::ifstream file(filename, std::ios::binary);
+        if (!file.is_open()) return false;
+
+        file.read(reinterpret_cast<char*>(instrumentData.data()), instrumentData.size());
+
+        return file.gcount() == 24;
+    }
+
+    inline OplInstrument fmiToInstrument(const std::string name, const std::array<uint8_t, 24>& instrumentData) {
         OplInstrument newIns;
+        newIns.name = name;
         newIns.isFourOp = false; // Old format is always 2-Op
 
+
         // Channel-level parameters (Pair 0)
-        newIns.pairs[0].feedback = lIns[20];
-        newIns.pairs[0].connection = lIns[21];
+        newIns.pairs[0].feedback = instrumentData[20];
+        newIns.pairs[0].connection = instrumentData[21];
         newIns.pairs[0].panning = 3; // Default to Center for OPL3
 
         // Modulator (Op 0) mapping
         auto& mod = newIns.pairs[0].ops[0];
-        mod.multi   = lIns[0];
-        mod.tl      = lIns[2];
-        mod.attack  = lIns[4];
-        mod.decay   = lIns[6];
-        mod.sustain = lIns[8];
-        mod.release = lIns[10];
-        mod.wave    = lIns[12];
-        mod.ksr     = lIns[14]; // Sustain mode / EG Type
-        mod.vib     = lIns[16];
-        mod.am      = lIns[18];
-        mod.ksl     = lIns[22];
+        mod.multi   = instrumentData[0];
+        mod.tl      = instrumentData[2];
+        mod.attack  = instrumentData[4];
+        mod.decay   = instrumentData[6];
+        mod.sustain = instrumentData[8];
+        mod.release = instrumentData[10];
+        mod.wave    = instrumentData[12];
+        mod.ksr     = instrumentData[14]; // Sustain mode / EG Type
+        mod.vib     = instrumentData[16];
+        mod.am      = instrumentData[18];
+        mod.ksl     = instrumentData[22];
 
         // Carrier (Op 1) mapping
         auto& car = newIns.pairs[0].ops[1];
-        car.multi   = lIns[1];
-        car.tl      = lIns[3];
-        car.attack  = lIns[5];
-        car.decay   = lIns[7];
-        car.sustain = lIns[9];
-        car.release = lIns[11];
-        car.wave    = lIns[13];
-        car.ksr     = lIns[15];
-        car.vib     = lIns[17];
-        car.am      = lIns[19];
-        car.ksl     = lIns[23];
+        car.multi   = instrumentData[1];
+        car.tl      = instrumentData[3];
+        car.attack  = instrumentData[5];
+        car.decay   = instrumentData[7];
+        car.sustain = instrumentData[9];
+        car.release = instrumentData[11];
+        car.wave    = instrumentData[13];
+        car.ksr     = instrumentData[15];
+        car.vib     = instrumentData[17];
+        car.am      = instrumentData[19];
+        car.ksl     = instrumentData[23];
 
         return newIns;
     }
