@@ -58,13 +58,13 @@ namespace opl3_import_fm {
 
         // Channel-level parameters (Pair 0)
         newIns.pairs[0].feedback = instrumentData[20];
-        newIns.pairs[0].connection = instrumentData[21];
+        newIns.pairs[0].connection = instrumentData[21]; //Modulation Mode
         newIns.pairs[0].panning = 3; // Default to Center for OPL3
 
         // Modulator (Op 0) mapping
         auto& mod = newIns.pairs[0].ops[0];
-        mod.multi   = instrumentData[0];
-        mod.tl      = instrumentData[2];
+        mod.multi   = instrumentData[0]; //Freqency
+        mod.tl      = instrumentData[2]; //Output
         mod.attack  = instrumentData[4];
         mod.decay   = instrumentData[6];
         mod.sustain = instrumentData[8];
@@ -73,7 +73,7 @@ namespace opl3_import_fm {
         mod.ksr     = instrumentData[14]; // Sustain mode / EG Type
         mod.vib     = instrumentData[16];
         mod.am      = instrumentData[18];
-        mod.ksl     = instrumentData[22];
+        mod.ksl     = instrumentData[22]; //scaling
 
         // Carrier (Op 1) mapping
         auto& car = newIns.pairs[0].ops[1];
