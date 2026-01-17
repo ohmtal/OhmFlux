@@ -117,7 +117,6 @@ public:
 
     // ----------  ----------------
     std::vector<OplInstrument> mSoundBank;
-    int mGlobalNoteOffSet = 0; //FIXME protected / getter/setter
 
     // ---------- SDL3 ----------------
     static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
@@ -183,7 +182,7 @@ public:
     void silenceAll(bool hardStop);
     //FIXME ?! void set_speed(uint8_t songspeed);
     void reset();
-    void write(uint16_t reg, uint8_t val, bool doLog = true);
+    void write(uint16_t reg, uint8_t val, bool doLog = false);
     uint8_t readShadow(uint16_t reg);
     bool isChannelAdditive(uint8_t channel);
     void initDefaultBank();

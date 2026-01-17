@@ -8,6 +8,27 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
     [X] port basic structure to OPL3Contoller 
     [X] 1 Custom instrument tested in TestBed :)
 
+[ ] unsorted next steps
+
+    [X] change tones to midi tones: Midi 0 = C(-1)
+    
+         Midi Notes start at oktave -1 and 127 is G-9
+         I have the special number 0 = "..." 255 = "==="
+         But 0 should be C on oktave -1 
+         defined:   
+         const uint8_t STOP_NOTE = 128;
+         const uint8_t NONE_NOTE= 255;
+         [X] NoteToValue
+         [X] ValueToNote
+         [X] playNote
+         
+  
+    [ ] fixe finetune -128 and is much to thin high 
+    [ ] create instrument editor 
+    [ ] wopl import 
+    [ ] fms import 
+
+
     
 [ ] GUI: 
 
@@ -17,7 +38,7 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
 [ ] Create an Instrument Bank and Instrument editor with 2 Banks for OPL3
 
     [ ] Gui for Soundbank
-    [ ] FMI Importer 
+    [X] FMI Importer 
     [ ] SBI Importer / Exporter
     [.] OP2 Importer 
        FIXME implemented but sound bad !!!! 

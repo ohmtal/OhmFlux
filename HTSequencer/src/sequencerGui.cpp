@@ -39,7 +39,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 
 void SequencerGui::Update(const double& dt)
 {
-    getMain()->getController()->consoleSongOutput(false, 8);
+    getMain()->getController()->consoleSongOutput(false);
 
 }
 //------------------------------------------------------------------------------
@@ -581,16 +581,32 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
     }
     else
-        if (cmd == "load")
-        {
-            std::string filename = "assets/op2/GENMIDI.op2";
-            if (!opl3_bridge_op2::ImportOP2(filename, getMain()->getController()->mSoundBank) )
-                Log("[error] Failed to load %s", filename.c_str());
-            else
-                Log("Loaded %s", filename.c_str());
+    if (cmd == "load")
+    {
+        std::string filename = "assets/op2/GENMIDI.op2";
+        if (!opl3_bridge_op2::ImportOP2(filename, getMain()->getController()->mSoundBank) )
+            Log("[error] Failed to load %s", filename.c_str());
+        else
+            Log("Loaded %s", filename.c_str());
 
+    }
+    else
+    if (cmd=="noteids")
+    {
+        std::string note_str;
+        uint8_t note_id;
+        for (uint16_t u = 0 ;u <= 255; u++ ) {
+
+            note_str = opl3::ValueToNote(u);
+            note_id  = opl3::NoteToValue(note_str);
+            Log("%d => %s => %d", u, note_str.c_str(), note_id);
         }
+        note_id  = opl3::NoteToValue("TOO LONG");
+        Log("invalid test: %d", note_id);
+        note_id  = opl3::NoteToValue("FOO");
+        Log("invalid test2: %d", note_id);
 
+    }
     else
     {
         console->AddLog("unknown command %s", cmd.c_str());

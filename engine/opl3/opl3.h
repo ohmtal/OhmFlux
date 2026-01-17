@@ -13,19 +13,33 @@ namespace opl3 {
     // Standard OPL3 has 18 channels (0-17)
     // 0-8  = Bank 1 ($000)
     // 9-17 = Bank 2 ($100)
-    const uint8_t MAX_CHANNELS = 18; // Total count
-    const uint8_t BANK_LIMIT = 8; // Channels <= 8 are in the first bank
+    constexpr uint8_t MAX_CHANNELS = 18; // Total count
+    constexpr uint8_t BANK_LIMIT = 8; // Channels <= 8 are in the first bank
+
+    constexpr uint8_t LAST_NOTE = 127; // G9
+    constexpr uint8_t STOP_NOTE = 128; // Represents Note Off (===)
+    constexpr uint8_t NONE_NOTE = 255; // Represents a Rest (...)
+    constexpr uint8_t INVALID_NOTE = 192; // for note string to value when invalid
+
+    constexpr uint8_t MAX_VOLUME = 63;
+
+    static constexpr std::array<const char*, 12> NOTE_NAMES = {
+        "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"
+    };
+
+
 
     // F-Numbers for a standard Chromatic Scale (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
-    // These values are designed for the OPL hardware to produce accurate pitches
-    static const uint16_t f_numbers[] = {
-        0x16B, 0x181, 0x198, 0x1B0, 0x1CA, 0x1E5, 0x202, 0x220, 0x241, 0x263, 0x287, 0x2AE
+    // F-Numbers mapped to the high range (0x200 - 0x3FF)
+    // This provides the most "bits" for your fineTuneTable to work with.
+    static constexpr uint16_t f_numbers[] = {
+        517, 547, 580, 615, 651, 690, 731, 774, 820, 869, 921, 975
     };
 
 
     // Fine-tune multiplier table for -128 to +127 cents
     // Formula: pow(2.0, index / 1200.0)
-    static const float fineTuneTable[256] = {
+    static constexpr float fineTuneTable[256] = {
         0.928477f, 0.929014f, 0.929551f, 0.930089f, 0.930626f, 0.931164f, 0.931703f, 0.932242f,
         0.932781f, 0.933320f, 0.933860f, 0.934400f, 0.934940f, 0.935481f, 0.936021f, 0.936563f,
         0.937104f, 0.937646f, 0.938188f, 0.938731f, 0.939274f, 0.939817f, 0.940360f, 0.940904f,
@@ -76,7 +90,7 @@ namespace opl3 {
         std::string name = "New Instrument";
         bool isFourOp = false;  // OPL3 mode
         int8_t fineTune = 0;
-        uint8_t fixedNote = 255;
+        uint8_t fixedNote = NONE_NOTE;
         int8_t noteOffset = 0;
 
 
@@ -106,7 +120,7 @@ namespace opl3 {
     // };
 
     struct SongStep {
-        uint8_t note       = 0;  // 0=None, 1-127 (MIDI range), 255=Off
+        uint8_t note       = NONE_NOTE;  // 255=None, 1-127 (MIDI range), 128=Off
         uint8_t instrument = 0;  // 0=None, 1-255
         uint8_t volume     = 63; // 0-63 (Standard tracker range)
         uint8_t panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
@@ -124,14 +138,14 @@ namespace opl3 {
         Pattern(uint16_t rows, int channels = 18) : rowCount(rows) {
             steps.resize(rows * channels);
 
-            // Optional: Initialize steps to 'Empty' tracker state
+            // Initialize steps to 'Empty' tracker state
             for (auto& step : steps) {
-                step.note = 0;           // None
+                step.note = NONE_NOTE;           // None
                 step.instrument = 0;     // Default
-                step.volume = 63;        // Max (Tracker Std)
-                step.panning = 32;       // Center
+                step.volume     = MAX_VOLUME + 1; // Max (Tracker Std)
+                step.panning    = 32;       // Center
                 step.effectType = 0;
-                step.effectVal = 0;
+                step.effectVal  = 0;
             }
         }
     };
@@ -158,43 +172,57 @@ namespace opl3 {
         }
     };
     //--------------------------------------------------------------------------
-    // Returns note value 1-96 (C-0 to B-7)
-    inline uint8_t NoteToValue(const std::string& name) {
-        if (name == "...") return 0;
-        if (name == "===") return 255;
+    inline std::string ValueToNote(uint8_t noteValue) {
+        if (noteValue == NONE_NOTE) return "...";
+        if (noteValue == STOP_NOTE) return "===";
+        if (noteValue > LAST_NOTE)  return "???";
 
-        static const std::array<std::string, 12> noteNames = {
-            "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"
-        };
+        int noteIndex = noteValue % 12;
+        int octave    = (noteValue / 12) - 1;
 
-        std::string notePart = name.substr(0, 2);
-        int octave = name[2] - '0';
+        std::string octStr = (octave == -1) ? "X" : std::to_string(octave);
 
-        for (int i = 0; i < 12; ++i) {
-            if (notePart == noteNames[i]) return (octave * 12) + i + 1;
-        }
-        return 0;
+        return std::string(NOTE_NAMES[noteIndex]) + octStr;
     }
     //--------------------------------------------------------------------------
-    inline std::string ValueToNote(uint8_t noteValue) {
-        if (noteValue == 0) return "...";   // No note
-        if (noteValue == 255) return "==="; // Note Off / Key Off
+    inline uint8_t NoteToValue(const std::string& name) {
+        // 1. Precise Fast-Path for Sequencer Commands
+        if (name == "...") return NONE_NOTE;
+        if (name == "===") return STOP_NOTE;
+        if (name == "???") return INVALID_NOTE;
 
-        static const std::array<const char*, 12> noteNames = {
-            "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"
-        };
+        // 2. Length Validation
+        // If it's "???", this catches it.
+        if (name.length() != 3) return INVALID_NOTE;
 
-        // Assuming 1 = C-0
-        int index = noteValue - 1;
-        int noteIndex = index % 12;
-        int octave = index / 12;
-
-        if (octave >= 0 && octave <= 8) {
-            return std::string(noteNames[noteIndex]) + std::to_string(octave);
+        // 3. Octave Parsing
+        int octave;
+        if (name[2] == 'X') {
+            octave = -1;
+        } else if (std::isdigit(name[2])) {
+            octave = name[2] - '0';
+        } else {
+            return INVALID_NOTE; // Catches strings like "C-?"
         }
 
-        return "???"; // Out of range
+        // 4. Note Name Validation
+        std::string notePart = name.substr(0, 2);
+        for (uint8_t i = 0; i < 12; ++i) {
+            if (notePart == NOTE_NAMES[i]) {
+                // 5. Final Range Calculation
+                int result = (octave + 1) * 12 + i;
+
+                // Ensure we don't return something in the 128-255 command range by mistake
+                if (result < 0 || result > 127) return INVALID_NOTE;
+
+                return static_cast<uint8_t>(result);
+            }
+        }
+
+        // 6. Fallback for strings that don't match NOTE_NAMES (like "??X")
+        return INVALID_NOTE;
     }
+
     //--------------------------------------------------------------------------
     struct ParamMeta {
         std::string name;

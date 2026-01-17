@@ -286,7 +286,7 @@ void OPL3Controller::tickSequencer() {
 
             // Logic: Trigger if there is a note, OR if the step contains
             // data (volume/pan) that differs from the current channel state.
-            bool noteTrigger = (step.note > 0);
+            bool noteTrigger = (step.note <= LAST_NOTE || step.note == STOP_NOTE);
             bool volumeChange = (step.volume != mSeqState.last_steps[ch].volume);
             bool panningChange = (step.panning != mSeqState.last_steps[ch].panning);
 
@@ -326,7 +326,7 @@ void OPL3Controller::tickSequencer() {
                     mSeqState.playing = false;
                     mSeqState.orderIdx = 0;
                     this->silenceAll(true);
-                    for (int i = 0; i < 18; ++i) {
+                    for (int i = 0; i < MAX_CHANNELS; ++i) {
                         mSeqState.last_steps[i] = {};
                     }
                     mSeqState.ui_dirty = true;
@@ -569,6 +569,7 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
         }
         // ... add other algorithm cases as needed
     } else {
+
         // 2 OP
         uint16_t mod_off = get_modulator_offset(channel);
         uint16_t car_off = get_carrier_offset(channel);
@@ -576,7 +577,7 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
         // 2. Update Carrier (Operator 1)
         // Preservation of KSL (bits 6-7) is critical to maintain instrument scaling
         uint8_t carReg = readShadow(0x40 + car_off);
-        write(0x40 + car_off, (carReg & 0xC0) | vol);
+        write(0x40 + car_off, (carReg & 0xC0) | vol, true); //FIXME
 
         // 3. Update Modulator (Operator 0)
         // Only applied if in Additive mode (Connection Bit 0 of $C0 is set)
@@ -586,7 +587,7 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
 
         if (isAdditive) {
             uint8_t modReg = readShadow(0x40 + mod_off);
-            write(0x40 + mod_off, (modReg & 0xC0) | vol);
+            write(0x40 + mod_off, (modReg & 0xC0) | vol, true);//FIXME
         }
 
     }
@@ -697,11 +698,12 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     };
 
     // --- CASE 1: MODULATION ONLY ---
-    if (step.note == 0) {
-        // THIS SUCKS !!!
-        // if (step.volume != prevStep.volume) {
-        //     setChannelVolume(channel, getOplVol(step.volume));
-        // }
+    if (step.note == NONE_NOTE) {
+        // TODO: keep it and revisit it for later optimation
+        if (step.volume <= MAX_VOLUME &&  step.volume != prevStep.volume) {
+            // dLog("Setting volume on NONE_NOTE step: %d ", step.volume);
+            setChannelVolume(channel, getOplVol(step.volume));
+        }
         // if (step.panning != prevStep.panning) {
         //     setChannelPanning(channel, step.panning);
         // }
@@ -709,7 +711,7 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     }
 
     // --- CASE 2: NOTE OFF ---
-    if (step.note == 255) {
+    if (step.note == STOP_NOTE) {
         stopNote(channel);
         return true;
     }
@@ -717,52 +719,53 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     // --- CASE 3: TRIGGER NEW NOTE ---
     stopNote(channel);
 
-    if (step.instrument >= mSoundBank.size())
-    {
-        Log("[error] Instrument out of bounds!");
-        return false;
-    }
-
+    if (step.instrument >= mSoundBank.size()) return false;
     applyInstrument(channel, step.instrument);
-
-    // Get the instrument for fixedNote and fineTune
     const auto& currentIns = mSoundBank[step.instrument];
 
-    // Apply converted volume and panning
     setChannelVolume(channel, getOplVol(step.volume));
     setChannelPanning(channel, step.panning);
 
+    // 1. Calculate Internal Note (MIDI 0 = C-X)
+    // Since mGlobalNoteOffSet is 0, internalNote = step.note + instrument offset
+    int internalNote = (int)step.note + currentIns.noteOffset;
 
-    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-    // 1. Base calculation for op2 it must be much lower ! => - 24
-    int internalNote = (step.note - 1) + currentIns.noteOffset + mGlobalNoteOffSet;
+    // 2. Derive Initial Block and Note Index
+    // Note: OPL3 Block 0 starts roughly at MIDI 12.
+    // If internalNote is < 12, it will result in Block 0 or negative.
     int block = internalNote / 12;
     int noteIndex = internalNote % 12;
 
-    // 2. Fetch base F-Number (Octave 0 table: 0x0B5, etc.)
-    uint32_t fnum = opl3::f_numbers[noteIndex];
+    // Handle negative notes (C-X range) to keep index 0-11
+    if (internalNote < 0) {
+        noteIndex = (12 + (internalNote % 12)) % 12;
+        block = (internalNote - 11) / 12;
+    }
 
-    // 3. Apply Fine-Tune Table
-    fnum = (uint32_t)(fnum * fineTuneTable[currentIns.fineTune + 128]);
+    // Initial fnum is high (e.g., 517 for C)
+    uint32_t fnum = f_numbers[noteIndex];
+    fnum = static_cast<uint32_t>(fnum * fineTuneTable[currentIns.fineTune + 128]);
 
-    // 4. THE FIX: Normalize F-Number to the 10-bit range (0x200 - 0x3FF)
-    // If fnum is too high (causing tinnitus), shift it down and increase block
+    // Normalize: If the instrument offset or high MIDI note makes fnum > 1023,
+    // we shift down and increase the OPL block to keep the pitch correct.
     while (fnum >= 0x400 && block < 7) {
         fnum >>= 1;
         block++;
     }
-    // If fnum is too low (losing resolution), shift it up and decrease block
+
+    // Normalize: If it's too low, shift up and decrease block.
+    // This is where Note 0 (C-X) will live if block > 0.
     while (fnum < 0x200 && block > 0) {
         fnum <<= 1;
         block--;
     }
 
-    // 5. Final safety clamps
+
+    // 5. Final Hardware Clamps
+    // OPL3 cannot go below Block 0. For C-X (Note 0), fnum will naturally be very low.
+    if (block < 0) block = 0;
     if (block > 7) block = 7;
     if (fnum > 1023) fnum = 1023;
-
-    // Now call playNote with these values
 
     playNote(channel, (uint16_t)fnum, (uint8_t)block);
 
@@ -770,6 +773,96 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
 
     return true;
 }
+
+// bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
+//     if (channel >= MAX_CHANNELS) return false;
+//
+//     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
+//
+//     SongStep prevStep = mSeqState.last_steps[channel];
+//     mSeqState.last_steps[channel] = step;
+//     mSeqState.ui_dirty = true;
+//
+//     // Helper for hardware volume conversion (0-63 -> 63-0)
+//     auto getOplVol = [](uint8_t v) {
+//         uint8_t clamped = (v > 63) ? 63 : v;
+//         return (uint8_t)(63 - clamped);
+//     };
+//
+//     // --- CASE 1: MODULATION ONLY ---
+//     if (step.note == NONE_NOTE) {
+//         // TODO: keep it and revisit it for later optimation
+//         // if (step.volume != prevStep.volume) {
+//         //     setChannelVolume(channel, getOplVol(step.volume));
+//         // }
+//         // if (step.panning != prevStep.panning) {
+//         //     setChannelPanning(channel, step.panning);
+//         // }
+//         return true;
+//     }
+//
+//     // --- CASE 2: NOTE OFF ---
+//     if (step.note == STOP_NOTE) {
+//         stopNote(channel);
+//         return true;
+//     }
+//
+//     // --- CASE 3: TRIGGER NEW NOTE ---
+//     stopNote(channel);
+//
+//     if (step.instrument >= mSoundBank.size())
+//     {
+//         Log("[error] Instrument out of bounds!");
+//         return false;
+//     }
+//
+//     applyInstrument(channel, step.instrument);
+//
+//     // Get the instrument for fixedNote and fineTune
+//     const auto& currentIns = mSoundBank[step.instrument];
+//
+//     // Apply converted volume and panning
+//     setChannelVolume(channel, getOplVol(step.volume));
+//     setChannelPanning(channel, step.panning);
+//
+//
+//     //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//
+//     // 1. Base calculation for op2 it must be much lower ! => - 24
+//     int internalNote = (step.note - 1) + currentIns.noteOffset + mGlobalNoteOffSet;
+//     int block = internalNote / 12;
+//     int noteIndex = internalNote % 12;
+//
+//     // 2. Fetch base F-Number (Octave 0 table: 0x0B5, etc.)
+//     uint32_t fnum = opl3::f_numbers[noteIndex];
+//
+//     // 3. Apply Fine-Tune Table
+//     fnum = (uint32_t)(fnum * fineTuneTable[currentIns.fineTune + 128]);
+//
+//     // 4. THE FIX: Normalize F-Number to the 10-bit range (0x200 - 0x3FF)
+//     // If fnum is too high (causing tinnitus), shift it down and increase block
+//     while (fnum >= 0x400 && block < 7) {
+//         fnum >>= 1;
+//         block++;
+//     }
+//     // If fnum is too low (losing resolution), shift it up and decrease block
+//     while (fnum < 0x200 && block > 0) {
+//         fnum <<= 1;
+//         block--;
+//     }
+//
+//     // 5. Final safety clamps
+//     if (block > 7) block = 7;
+//     if (fnum > 1023) fnum = 1023;
+//
+//     // Now call playNote with these values
+//
+//     playNote(channel, (uint16_t)fnum, (uint8_t)block);
+//
+//     // <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+//
+//     return true;
+// }
 
 // bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
 //     // 1. Hardware Limit Validation
@@ -849,7 +942,8 @@ void OPL3Controller::stopNote(uint8_t channel) {
     keyOff(channel);
 
     // Check if this channel is the master of an active 4-Op group
-    // XXTH TEST: removed again
+
+    // TEST not ?!
     // uint8_t fourOpReg = readShadow(0x104);
     // bool isFourOpMaster = false;
     //
@@ -968,7 +1062,7 @@ void OPL3Controller::dumpInstrument(uint8_t instrumentIndex) {
     LogFMT("--- Instrument Dump: {} (Index {}) ---", ins.name, instrumentIndex);
     LogFMT("  Is Four-Op: {}", ins.isFourOp ? "Yes" : "No");
     LogFMT("  Fine Tune: {}", (int)ins.fineTune);
-    LogFMT("  Fixed Note: {}", (ins.fixedNote == 255) ? "None" : std::to_string(ins.fixedNote));
+    LogFMT("  Fixed Note: {}", (ins.fixedNote == NONE_NOTE) ? "None" : std::to_string(ins.fixedNote));
     LogFMT("  Note offset: {}", (int)ins.noteOffset);
 
 
@@ -1172,9 +1266,9 @@ void OPL3Controller::consoleSongOutput(bool useNumbers, uint8_t upToChannel)
                 const SongStep& step = mSeqState.last_steps[ch];
 
                 // 1. Note Column
-                if (step.note == 255) {
+                if (step.note == STOP_NOTE) {
                     ptr += sprintf(ptr, "===");
-                } else if (step.note == 0) {
+                } else if (step.note == NONE_NOTE) {
                     ptr += sprintf(ptr, "...");
                 } else {
                     if (useNumbers) {
@@ -1255,18 +1349,14 @@ opl3::SongData OPL3Controller::createScaleSong(uint8_t instrumentIndex) {
         // 1. Create a pattern with 32 rows
         Pattern scalePat(32, 18);
 
-        // 2. Define the scale (C-4 to C-5)
-        // MIDI Notes: 48, 50, 52, 53, 55, 57, 59, 60
-        uint8_t scale[] = { 48, 50, 52, 53, 55, 57, 59, 60 };
-
         for (int i = 0; i < 8; ++i) {
             // Place a note every 4th row on channel 0
             int row = i * 4;
             SongStep& step = scalePat.steps[row * 18 + 0];
 
-            step.note = scale[i];
+            step.note = 60 + i;
             step.instrument = instrumentIndex; // Ensure your soundbank has at least one instrument
-            step.volume = 63;
+            step.volume = MAX_VOLUME;
         }
 
         // 3. Add pattern and set order
@@ -1283,13 +1373,13 @@ opl3::SongData OPL3Controller::createEffectTestSong(uint8_t ins) {
         song.speed = 6;
 
 
-        // Create a 32-row pattern
+        // Create pattern
         Pattern testPat(64, 18);
 
         // --- Channel 0: Volume Slide Test ---
         // Trigger a long note on Row 0
         SongStep& startNote = testPat.steps[0 * 18 + 0];
-        startNote.note = 48; // C-4
+        startNote.note = 48; // C-3
         startNote.instrument = ins;
         startNote.volume = 63;
 
@@ -1315,11 +1405,11 @@ opl3::SongData OPL3Controller::createEffectTestSong(uint8_t ins) {
         }
 
         // --- Channel 2: Note-Off Test ---
-        // Test if 255 correctly stops the OPL3 operators
+        // Test if STOP_NOTE correctly stops the OPL3 operators
         for (int i = 0; i < 4; ++i) {
             testPat.steps[(i * 8) * 18 + 2].note = 55;       // G-4 Key-On
             testPat.steps[(i * 8) * 18 + 2].instrument = ins;
-            testPat.steps[(i * 8 + 4) * 18 + 2].note = 255;  // Key-Off 4 rows later
+            testPat.steps[(i * 8 + 4) * 18 + 2].note = STOP_NOTE;  // Key-Off 4 rows later
         }
 
         // --- Channel 3: Set Volume Test ---
@@ -1334,7 +1424,7 @@ opl3::SongData OPL3Controller::createEffectTestSong(uint8_t ins) {
 
 
         for (int i = 0; i < MAX_CHANNELS; i++)
-            testPat.steps[31 * 18 + i].note = 255;
+            testPat.steps[31 * 18 + i].note = STOP_NOTE;
 
         // indexing for Row 32, Channel 0
         SongStep& s = testPat.steps[32 * 18 + 0];
@@ -1344,14 +1434,14 @@ opl3::SongData OPL3Controller::createEffectTestSong(uint8_t ins) {
         s.effectType = EFF_VOL_SLIDE;
         s.effectVal  = 0x08;
 
-        // SongStep& s2 = testPat.steps[36 * 18 + 0];
-        // s2.note = 52;
-        // s2.instrument = 0;
-        // s2.volume = 0;
-        // s2.effectType = EFF_VOL_SLIDE;
-        // s2.effectVal  = 0x40; // Slides volume UP by 4 units per tick
+        SongStep& s2 = testPat.steps[36 * 18 + 0];
+        s2.note = 52;
+        s2.instrument = 0;
+        s2.volume = 0;
+        s2.effectType = EFF_VOL_SLIDE;
+        s2.effectVal  = 0x40; // Slides volume UP by 4 units per tick
 
-        // testPat.steps[40 * 18 + 0].volume=0;
+        testPat.steps[40 * 18 + 0].volume=0;
 
 
 
@@ -1397,7 +1487,7 @@ void OPL3Controller::playSong(opl3::SongData& songData) {
 
         // 5. Hard Reset Chip
         mChip->reset();
-        //XXTH TEST replace write(0x105, 0x01); // RE-ENABLE OPL3 MODE (Mandatory after reset)
+        //XXTH TEST: replace write(0x105, 0x01); // RE-ENABLE OPL3 MODE (Mandatory after reset)
         write(0x05, 0x01);
 
         // 6. Start Playback
