@@ -5,6 +5,7 @@
 #include <utils/fluxSettingsManager.h>
 #include <opl3_bridge_op2.h>
 #include <opl3_import_fm.h>
+#include <opl3_bridge_sbi.h>
 
 #include <algorithm>
 #include <string>
@@ -87,7 +88,7 @@ bool SequencerGui::Initialize()
     }
 
     // FileManager
-    g_FileDialog.init( getGamePath(), {  ".op2", ".fmi", ".fms", ".wav", ".ogg" });
+    g_FileDialog.init( getGamePath(), { ".sbi", ".op2", ".fmi", ".fms", ".wav", ".ogg" });
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
@@ -306,7 +307,7 @@ void SequencerGui::DrawGui()
                 if ( g_FileDialog.selectedExt == ".fmi" ){
                     std::array<uint8_t, 24> instrumentData;
                     if (opl3_import_fm::loadInstrument(g_FileDialog.selectedFile,instrumentData)) {
-                        OplInstrument newIns=opl3_import_fm::fmiToInstrument(
+                        OplInstrument newIns=opl3_import_fm::toInstrument(
                             std::string( extractFilename(g_FileDialog.selectedFile) ),
                             instrumentData
                         );
@@ -607,6 +608,26 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         Log("invalid test2: %d", note_id);
 
     }
+    else
+    if (cmd == "t")
+    {
+        std::string filename = "assets/sbi/tumubar-bell-dmx.sbi";
+        OplInstrument newIns;
+        if (opl3_import_sbi::loadInstrument(filename,newIns)) {
+                getMain()->getController()->mSoundBank.push_back(newIns);
+                Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
+
+                SongStep step;
+                step.note = 48;
+                step.instrument = getMain()->getController()->mSoundBank.size()-1;
+                step.volume = 63;
+                getMain()->getController()->playNote(0,step);
+
+            } else {
+                Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+            }
+    }
+
     else
     {
         console->AddLog("unknown command %s", cmd.c_str());

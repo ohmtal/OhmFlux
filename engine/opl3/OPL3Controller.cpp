@@ -71,8 +71,16 @@ bool OPL3Controller::initController()
     spec.format = SDL_AUDIO_S16;
     spec.channels = 2;
     spec.freq = 44100;
-
     mStream = SDL_CreateAudioStream(&spec, &spec);
+
+    // TEST native ... so i can use the "normal f_numbers"
+    // SDL_AudioSpec srcSpec = { SDL_AUDIO_S16, 2, 49715 };
+    // SDL_AudioSpec dstSpec = { SDL_AUDIO_S16, 2, 44100 };
+    // mStream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
+
+
+    //-----
+
     if (!mStream) {
         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
         return false;
@@ -726,34 +734,32 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     setChannelVolume(channel, getOplVol(step.volume));
     setChannelPanning(channel, step.panning);
 
-    // --- 1. FIXED NOTE OVERRIDE ---
+    // ---  NOTE OVERRIDE ---
     uint8_t targetNote = (currentIns.fixedNote != 0) ? currentIns.fixedNote : step.note;
 
-    // --- 2. INTERNAL NOTE CALCULATION ---
+    // --- INTERNAL NOTE CALCULATION ---
     int internalNote = (int)targetNote + currentIns.noteOffset ;
 
-    // --- 3. ROBUST BLOCK/INDEX CALCULATION ---
-    // int block = ((internalNote - 12) >= 0) ? ((internalNote - 12) / 12) : (((internalNote - 12) - 11) / 12);
+    // --- BLOCK/INDEX CALCULATION ---
+    // octaves 0..7
     int block = (internalNote / 12 ) - 1;
     int noteIndex = internalNote % 12;
 
-    // --- 4. FREQUENCY CALCULATION ---
+    // --- FREQUENCY CALCULATION ---
     uint32_t fnum = f_numbers[noteIndex];
     // Ensure we don't out-of-bounds the fineTuneTable
     int tuneIdx = std::clamp((int)currentIns.fineTune + 128, 0, 255);
     fnum = static_cast<uint32_t>(fnum * fineTuneTable[tuneIdx]);
 
-    // --- 5. NORMALIZATION (The "Tinnitus" Fixer) ---
-    // Your 517-base table is high; this loop will push the block up if needed,
-    // but the -36 offset should keep the fiddle in Block 1 or 2.
-    while (fnum >= 0x400 && block < 7) {
-        fnum >>= 1;
-        block++;
-    }
-    while (fnum < 0x200 && block > 0) {
-        fnum <<= 1;
-        block--;
-    }
+    // --- NORMALIZATION ---
+    // while (fnum >= 0x400 && block < 7) {
+    //     fnum >>= 1;
+    //     block++;
+    // }
+    // while (fnum < 0x200 && block > 0) {
+    //     fnum <<= 1;
+    //     block--;
+    // }
 
 
     // --- 6. HARDWARE SAFETY ---
@@ -1078,18 +1084,18 @@ void OPL3Controller::dumpInstrument(uint8_t instrumentIndex) {
             LogFMT("    {} Operator:", opIdx == 0 ? "Modulator" : "Carrier");
 
             // Manual mapping to OplInstrument::OpParams members based on OPL_OP_METADATA order
-            LogFMT("      Multi:   0x{:02X}", op.multi);
-            LogFMT("      TL:      0x{:02X}", op.tl);
-            LogFMT("      Attack:  0x{:02X}", op.attack);
-            LogFMT("      Decay:   0x{:02X}", op.decay);
-            LogFMT("      Sustain: 0x{:02X}", op.sustain);
-            LogFMT("      Release: 0x{:02X}", op.release);
-            LogFMT("      Wave:    0x{:02X}", op.wave);
-            LogFMT("      KSR:     0x{:02X}", op.ksr);
-            LogFMT("      EGType:  0x{:02X}", op.egTyp);
-            LogFMT("      Vib:     0x{:02X}", op.vib);
-            LogFMT("      AM:      0x{:02X}", op.am);
-            LogFMT("      KSL:     0x{:02X}", op.ksl);
+            LogFMT("      Multi:   0x{:02X} ({:d})", op.multi, op.multi);
+            LogFMT("      TL:      0x{:02X} ({:d})", op.tl, op.tl);
+            LogFMT("      Attack:  0x{:02X} ({:d})", op.attack, op.attack);
+            LogFMT("      Decay:   0x{:02X} ({:d})", op.decay, op.decay);
+            LogFMT("      Sustain: 0x{:02X} ({:d})", op.sustain, op.sustain);
+            LogFMT("      Release: 0x{:02X} ({:d})", op.release, op.release);
+            LogFMT("      Wave:    0x{:02X} ({:d})", op.wave, op.wave);
+            LogFMT("      KSR:     0x{:02X} ({:d})", op.ksr, op.ksr);
+            LogFMT("      EGType:  0x{:02X} ({:d})", op.egTyp, op.egTyp);
+            LogFMT("      Vib:     0x{:02X} ({:d})", op.vib, op.vib);
+            LogFMT("      AM:      0x{:02X} ({:d})", op.am, op.am);
+            LogFMT("      KSL:     0x{:02X} ({:d})", op.ksl, op.ksl);
         }
     }
     LogFMT("-----------------------------------");
@@ -1507,7 +1513,6 @@ void OPL3Controller::playNote(uint8_t channel, uint16_t fnum, uint8_t octave) {
 
 
         write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
-        // write(bankOffset + 0xB0 + relChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
         write(bankOffset + 0xB0 + relChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
 
         // Check if 4-OP is enabled for this channel via shadow register 0x104

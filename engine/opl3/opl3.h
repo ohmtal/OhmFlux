@@ -32,8 +32,50 @@ namespace opl3 {
     // F-Numbers for a standard Chromatic Scale (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
     // F-Numbers mapped to the high range (0x200 - 0x3FF)
     // This provides the most "bits" for your fineTuneTable to work with.
-    static constexpr uint16_t f_numbers[] = {
-        517, 547, 580, 615, 651, 690, 731, 774, 820, 869, 921, 975
+    //TEST: XXTH
+    // C-3 sounds like A-3
+    // static constexpr uint16_t f_numbers[] = {
+    //     517, 547, 580, 615, 651, 690, 731, 774, 820, 869, 921, 975
+    // };
+    // static constexpr uint16_t f_numbers[] = {
+    //     0x16B, 0x181, 0x198, 0x1B0, 0x1CA, 0x1E5, 0x202, 0x220, 0x241, 0x263, 0x287, 0x2AE
+    //
+    // };
+    /**
+     * OPL3 F-Numbers for a standard chromatic scale.
+     *
+     * Formula used: f_num = (f_out * 2^20) / (fs * 2^(B-1))
+     * Values are calculated for an equal-tempered scale where
+     * F-Number 512 represents the midpoint of the phase increment.
+     */
+    // static constexpr uint16_t f_numbers[12] = {
+    //     345, // C
+    //     365, // C#
+    //     387, // D
+    //     410, // D#
+    //     435, // E
+    //     460, // F
+    //     488, // F#
+    //     517, // G
+    //     547, // G#
+    //     580, // A  (440Hz at Block 4)
+    //     614, // A#
+    //     651  // B
+    // };
+    // 44100 Hz =>
+    static constexpr uint16_t f_numbers[12] = {
+        389, // C
+        412, // C#
+        437, // D
+        463, // D#
+        490, // E
+        519, // F
+        550, // F#
+        583, // G
+        617, // G#
+        654, // A  (Should be ~440Hz at Block 4)
+        693, // A#
+        734  // B
     };
 
 
@@ -89,6 +131,7 @@ namespace opl3 {
     struct OplInstrument {
         std::string name = "New Instrument";
         bool isFourOp = false;  // OPL3 mode
+        bool isDoubleVoice = false; //pseudo 4OP not implemented so far (was the 0x105 stuff is disabled )
         int8_t fineTune = 0;
         uint8_t fixedNote = 0;
         int8_t noteOffset = 0;

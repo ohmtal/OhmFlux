@@ -3,6 +3,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+#pragma once
 
 #include "opl3.h"
 #include <array>
@@ -50,7 +51,7 @@ namespace opl3_import_fm {
         return file.gcount() == 24;
     }
 
-    inline OplInstrument fmiToInstrument(const std::string name, const std::array<uint8_t, 24>& instrumentData) {
+    inline OplInstrument toInstrument(const std::string name, const std::array<uint8_t, 24>& instrumentData) {
         OplInstrument newIns;
         newIns.name = name;
         newIns.isFourOp = false; // Old format is always 2-Op
