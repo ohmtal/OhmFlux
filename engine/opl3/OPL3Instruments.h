@@ -13,7 +13,7 @@ OplInstrument GetDefaultInstrument() {
     ins.name = "Default FM Sine";
     ins.isFourOp = false; // Start with standard 2-Op OPL2 style
     ins.fineTune = 0;
-    ins.fixedNote = 255;
+    ins.fixedNote = 0;
 
     // Pointer to the first pair (Modulator and Carrier)
     auto& pair = ins.pairs[0];

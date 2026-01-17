@@ -577,7 +577,7 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
         // 2. Update Carrier (Operator 1)
         // Preservation of KSL (bits 6-7) is critical to maintain instrument scaling
         uint8_t carReg = readShadow(0x40 + car_off);
-        write(0x40 + car_off, (carReg & 0xC0) | vol, true); //FIXME
+        write(0x40 + car_off, (carReg & 0xC0) | vol);
 
         // 3. Update Modulator (Operator 0)
         // Only applied if in Additive mode (Connection Bit 0 of $C0 is set)
@@ -587,7 +587,7 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
 
         if (isAdditive) {
             uint8_t modReg = readShadow(0x40 + mod_off);
-            write(0x40 + mod_off, (modReg & 0xC0) | vol, true);//FIXME
+            write(0x40 + mod_off, (modReg & 0xC0) | vol);
         }
 
     }
@@ -726,44 +726,44 @@ bool OPL3Controller::playNote(uint8_t channel, SongStep step) {
     setChannelVolume(channel, getOplVol(step.volume));
     setChannelPanning(channel, step.panning);
 
-    // 1. Calculate Internal Note (MIDI 0 = C-X)
-    // Since mGlobalNoteOffSet is 0, internalNote = step.note + instrument offset
-    int internalNote = (int)step.note + currentIns.noteOffset;
+    // --- 1. FIXED NOTE OVERRIDE ---
+    uint8_t targetNote = (currentIns.fixedNote != 0) ? currentIns.fixedNote : step.note;
 
-    // 2. Derive Initial Block and Note Index
-    // Note: OPL3 Block 0 starts roughly at MIDI 12.
-    // If internalNote is < 12, it will result in Block 0 or negative.
-    int block = internalNote / 12;
+    // --- 2. INTERNAL NOTE CALCULATION ---
+    int internalNote = (int)targetNote + currentIns.noteOffset ;
+
+    // --- 3. ROBUST BLOCK/INDEX CALCULATION ---
+    // int block = ((internalNote - 12) >= 0) ? ((internalNote - 12) / 12) : (((internalNote - 12) - 11) / 12);
+    int block = (internalNote / 12 ) - 1;
     int noteIndex = internalNote % 12;
 
-    // Handle negative notes (C-X range) to keep index 0-11
-    if (internalNote < 0) {
-        noteIndex = (12 + (internalNote % 12)) % 12;
-        block = (internalNote - 11) / 12;
-    }
-
-    // Initial fnum is high (e.g., 517 for C)
+    // --- 4. FREQUENCY CALCULATION ---
     uint32_t fnum = f_numbers[noteIndex];
-    fnum = static_cast<uint32_t>(fnum * fineTuneTable[currentIns.fineTune + 128]);
+    // Ensure we don't out-of-bounds the fineTuneTable
+    int tuneIdx = std::clamp((int)currentIns.fineTune + 128, 0, 255);
+    fnum = static_cast<uint32_t>(fnum * fineTuneTable[tuneIdx]);
 
-    // Normalize: If the instrument offset or high MIDI note makes fnum > 1023,
-    // we shift down and increase the OPL block to keep the pitch correct.
+    // --- 5. NORMALIZATION (The "Tinnitus" Fixer) ---
+    // Your 517-base table is high; this loop will push the block up if needed,
+    // but the -36 offset should keep the fiddle in Block 1 or 2.
     while (fnum >= 0x400 && block < 7) {
         fnum >>= 1;
         block++;
     }
-
-    // Normalize: If it's too low, shift up and decrease block.
-    // This is where Note 0 (C-X) will live if block > 0.
     while (fnum < 0x200 && block > 0) {
         fnum <<= 1;
         block--;
     }
 
 
-    // 5. Final Hardware Clamps
-    // OPL3 cannot go below Block 0. For C-X (Note 0), fnum will naturally be very low.
+    // --- 6. HARDWARE SAFETY ---
     if (block < 0) block = 0;
+    //OP2 hackfest
+    // if (block < 0) {
+    //     int shift = -block;
+    //     fnum >>= shift;
+    //     block = 0;
+    // }
     if (block > 7) block = 7;
     if (fnum > 1023) fnum = 1023;
 
@@ -1317,7 +1317,7 @@ void OPL3Controller::TESTChip() {
         write(0x60, 0xF0); write(0x63, 0xF0);
         // $80: Sustain/Release.
         write(0x80, 0xFF); write(0x83, 0xFF);
-        // $C0: Panning (Bits 4-5). 0x30 is BOTH (Center).
+        // $C0: Panning (Bits 4-5). 0x30 is BOTH (Center).<
         write(0xC0, 0x31); // 0x30 (Pan) | 0x01 (Connection)
 
         // 4. Trigger Note ($A0/$B0)
@@ -1507,6 +1507,7 @@ void OPL3Controller::playNote(uint8_t channel, uint16_t fnum, uint8_t octave) {
 
 
         write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
+        // write(bankOffset + 0xB0 + relChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
         write(bankOffset + 0xB0 + relChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
 
         // Check if 4-OP is enabled for this channel via shadow register 0x104

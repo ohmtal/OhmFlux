@@ -68,9 +68,14 @@ namespace opl3_bridge_op2 {
             inst.pairs[0].feedback   = (voice1[5] >> 1) & 0x07;
             inst.pairs[0].connection = voice1[5] & 0x01;
 
+            //HACKFEST:
+            // if (inst.pairs[0].ops[1].multi > 8) {
+            //     inst.pairs[0].ops[1].multi = 1; // Force standard pitch tracking
+            // }
+
             inst.fineTune = (int8_t)fineTune; // as signed
             inst.fixedNote = fixedNote;
-            inst.noteOffset = (int8_t)voice1[10];
+            inst.noteOffset = (int8_t)voice1[10] - 12; //NOTE: offset  hardcoded
 
             // Check if double-voice (Pseudo 4-Op)
             if (flags & 0x04) {

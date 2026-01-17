@@ -90,7 +90,7 @@ namespace opl3 {
         std::string name = "New Instrument";
         bool isFourOp = false;  // OPL3 mode
         int8_t fineTune = 0;
-        uint8_t fixedNote = NONE_NOTE;
+        uint8_t fixedNote = 0;
         int8_t noteOffset = 0;
 
 
