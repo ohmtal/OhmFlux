@@ -2,8 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Audio Reverb Digital
-// Chorus
+// Digital Sound Processing : Chorus
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -70,31 +69,33 @@ namespace DSP {
             mSettings = s;
         }
 
-        virtual void process(int16_t* buffer, int numSamples) override {
+
+        virtual void process(float* buffer, int numSamples) override {
             if (!inOn()) return;
 
             // Skip if wet mix is effectively zero
             if (mSettings.wet <= 0.001f) return;
 
-            for (int i = 0; i < numSamples; i++) {
-                float dry = static_cast<float>(buffer[i]);
+            const float TWO_PI = 2.0f * M_PI;
 
-                // 1. Determine LFO Phase for this specific channel
-                // We shift the phase for the Right channel (i % 2 != 0)
+            for (int i = 0; i < numSamples; i++) {
+                // 1. Dry signal is already float (-1.0 to 1.0)
+                float dry = buffer[i];
+
+                // 2. Determine LFO Phase for this specific channel
                 float channelPhase = mLfoPhase;
-                if (i % 2 != 0) {
-                    channelPhase += (mSettings.phaseOffset * 2.0f * M_PI);
-                    // Keep phase in 0 -> 2PI range
-                    if (channelPhase > 2.0f * M_PI) channelPhase -= 2.0f * M_PI;
+                if (i % 2 != 0) { // Right Channel
+                    channelPhase += (mSettings.phaseOffset * TWO_PI);
+                    // Wrap phase
+                    if (channelPhase >= TWO_PI) channelPhase -= TWO_PI;
                 }
 
-                // 2. Calculate modulated delay time in samples
-                // Sine wave wiggles the delay between (Base - Depth) and (Base + Depth)
+                // 3. Calculate modulated delay time
                 float lfo = std::sin(channelPhase);
                 float currentDelaySec = mSettings.delayBase + (lfo * mSettings.depth);
                 float delaySamples = currentDelaySec * mSampleRate;
 
-                // 3. Linear Interpolation (Reading between samples for high quality)
+                // 4. Linear Interpolation
                 float readPos = static_cast<float>(mWritePos) - delaySamples;
                 while (readPos < 0) readPos += static_cast<float>(mMaxBufferSize);
 
@@ -104,26 +105,24 @@ namespace DSP {
 
                 float wetSample = 0.0f;
                 if (i % 2 == 0) {
-                    // LEFT CHANNEL
+                    // LEFT CHANNEL (Ensure mDelayBufL is float*)
                     wetSample = mDelayBufL[idx1] * (1.0f - frac) + mDelayBufL[idx2] * frac;
-                    mDelayBufL[mWritePos] = dry; // Record dry signal
+                    mDelayBufL[mWritePos] = dry;
                 } else {
-                    // RIGHT CHANNEL
+                    // RIGHT CHANNEL (Ensure mDelayBufR is float*)
                     wetSample = mDelayBufR[idx1] * (1.0f - frac) + mDelayBufR[idx2] * frac;
-                    mDelayBufR[mWritePos] = dry; // Record dry signal
+                    mDelayBufR[mWritePos] = dry;
                 }
 
-                // 4. Mix Dry + (Wet * Mix)
-                float mixed = dry + (wetSample * mSettings.wet);
-                buffer[i] = static_cast<int16_t>(std::clamp(mixed, -32768.0f, 32767.0f));
+                // 5. Mix Dry + (Wet * Mix)
+                // No clamping needed. Final output remains in float range.
+                buffer[i] = dry + (wetSample * mSettings.wet);
 
-                // 5. Update LFO and Write Position once per stereo frame (after Right channel)
+                // 6. Update LFO and Write Position (after the Right channel/Stereo frame)
                 if (i % 2 != 0) {
-                    // Advance LFO
-                    mLfoPhase += (2.0f * M_PI * mSettings.rate) / mSampleRate;
-                    if (mLfoPhase > 2.0f * M_PI) mLfoPhase -= 2.0f * M_PI;
+                    mLfoPhase += (TWO_PI * mSettings.rate) / mSampleRate;
+                    if (mLfoPhase >= TWO_PI) mLfoPhase -= TWO_PI;
 
-                    // Advance Buffer Write Head
                     mWritePos = (mWritePos + 1) % mMaxBufferSize;
                 }
             }

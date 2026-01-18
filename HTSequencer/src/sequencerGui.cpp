@@ -6,6 +6,7 @@
 #include <opl3_bridge_op2.h>
 #include <opl3_bridge_fm.h>
 #include <opl3_bridge_sbi.h>
+#include <OPL3Tests.h>
 
 #include <algorithm>
 #include <string>
@@ -381,6 +382,7 @@ void SequencerGui::InitDockSpace()
 void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 {
 
+    OPL3Tests opl3Tests = OPL3Tests(getMain()->getController());
 
     std::string cmd = fluxStr::getWord(cmdline,0);
 
@@ -417,7 +419,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     {
         uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 0);
         Log ("Using Instrument %d",instrument);
-        myTestSong = getMain()->getController()->createScaleSong(instrument);
+        myTestSong = opl3Tests.createScaleSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
     else
@@ -425,7 +427,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     {
         uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 0);
         Log ("Using Instrument %d",instrument);
-        myTestSong = getMain()->getController()->createEffectTestSong(instrument);
+        myTestSong = opl3Tests.createEffectTestSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
     else

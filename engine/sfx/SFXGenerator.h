@@ -19,8 +19,6 @@
 #include <cstring> // For memset()
 #include <mutex>
 
-// Forward declaration for FILE, as it's used in method signatures
-// The actual definition comes from <cstdio> which is included above.
 
 // Parameters that define the sound
 struct SFXParams

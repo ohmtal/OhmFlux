@@ -10,11 +10,7 @@
 #include "opl3.h"
 #include "ymfmGlue.h"
 
-#include <DSP_Bitcrusher.h>
-#include <DSP_Chorus.h>
-#include <DSP_Limiter.h>
-#include <DSP_Reverb.h>
-#include <DSP_Warmth.h>
+#include <DSP.h>
 
 #include <fstream>
 #include <vector>
@@ -195,9 +191,8 @@ public:
     double getStep() const { return m_step; }
 
     void silenceAll(bool hardStop);
-    //FIXME ?! void set_speed(uint8_t songspeed);
     void reset();
-    void write(uint16_t reg, uint8_t val, bool doLog = true);
+    void write(uint16_t reg, uint8_t val, bool doLog = false);
     uint8_t readShadow(uint16_t reg);
     bool isChannelAdditive(uint8_t channel);
     void initDefaultBank();
@@ -206,6 +201,9 @@ public:
     void setChannelOn(uint8_t channel); // required for setFrequency!
     void setFrequency(uint8_t channel, uint16_t fnum, uint8_t octave);
     void setFrequencyLinear(uint8_t channel, float linearFreq);
+
+    // ------ Console -----------------------
+    void consoleSongOutput(bool useNumbers, uint8_t upToChannel = MAX_CHANNELS);
 
 
     // ------- DSP ---------------
@@ -224,89 +222,6 @@ protected:
     double m_opl3_accumulator = 0.0;
     int16_t m_lastSampleL = 0;
     int16_t m_lastSampleR = 0;
-
-    //------------------- TESTING ------------------------------------
-public:
-    void flush() {mChip->generate(&mOutput);}
-
-    void consoleSongOutput(bool useNumbers, uint8_t upToChannel = MAX_CHANNELS);
-    void TESTChip();
-    SongData createScaleSong(uint8_t instrumentIndex = 0);
-    SongData createEffectTestSong(uint8_t ins = 0);
-
-
-    // ------------- REVERB -------------------------------
-    // FIXME MOVE THIS TO A OTHER FILE  !!!
-    // struct ReverbSettings {
-    //     float decay;
-    //     int sizeL;   // Left delay size (e.g., 17640)
-    //     int sizeR;   // Right delay size (e.g., 17400 - slightly different!)
-    //     float wet;   // 0.0 (Dry) to 1.0 (Full Reverb)
-    // };
-    //
-    // const ReverbSettings DRY_OFF_REVERB   = { 0.00f,  1000, 1000,   0.00f }; // No effect
-    // //-----
-    // const ReverbSettings HALL_REVERB      = { 0.82f, 17640, 17201,  0.45f }; // Large, lush reflections Concert Hall
-    // const ReverbSettings CAVE_REVERB      = { 0.90f, 30000, 29800,  0.60f }; // Massive, long decay
-    // const ReverbSettings ROOM_REVERB      = { 0.40f,  4000,  3950,  0.25f }; // Short, tight reflections
-    // const ReverbSettings HAUNTED_REVERB   = { 0.88f, 22050, 21500,  0.60f }; // Haunted Corridor
-    //
-    //
-    // void setReverbEnvironment(ReverbSettings settings) {
-    //     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
-    //     mCurrentSettings = settings;
-    //     // Optional: Clear buffer when switching to avoid "ghost" echoes from previous room
-    //     std::memset(mReverbBufL, 0, sizeof(mReverbBufL));
-    //     std::memset(mReverbBufR, 0, sizeof(mReverbBufR));
-    //     mReverbPosL = 0;
-    //     mReverbPosR = 0;
-    // }
-
-
-protected:
-
-    // int16_t mReverbBufL[44100];
-    // int16_t mReverbBufR[44100];
-    // uint16_t mReverbPosL = 0;
-    // uint16_t mReverbPosR = 0;
-    // ReverbSettings mCurrentSettings = ROOM_REVERB;
-    //
-    //
-    // void ApplyReverbDSP(int16_t* buffer, int numSamples) {
-    //     if (mCurrentSettings.wet <= 0.01f) return;
-    //
-    //     if ( mReverbPosL >= 44100 || mReverbPosR >= 44100) {
-    //         Log("[error] something is wrong here !!! ReverbPos > 44100!!");
-    //         return;
-    //     }
-    //
-    //     for (int i = 0; i < numSamples; i++) {
-    //         float dry = (float)buffer[i];
-    //         float delayed = 0.0f;
-    //
-    //         if (i % 2 == 0) {
-    //             // --- LEFT CHANNEL ---
-    //             delayed = (float)mReverbBufL[mReverbPosL];
-    //             // Feedback loop for Left
-    //             mReverbBufL[mReverbPosL] = (int16_t)(dry + (delayed * mCurrentSettings.decay));
-    //             mReverbPosL = (mReverbPosL + 1) % mCurrentSettings.sizeL;
-    //         } else {
-    //             // --- RIGHT CHANNEL ---
-    //             delayed = (float)mReverbBufR[mReverbPosR];
-    //             // Feedback loop for Right
-    //             mReverbBufR[mReverbPosR] = (int16_t)(dry + (delayed * mCurrentSettings.decay));
-    //             mReverbPosR = (mReverbPosR + 1) % mCurrentSettings.sizeR;
-    //         }
-    //
-    //         // Mix back into the buffer
-    //         float mixed = (dry * (1.0f - mCurrentSettings.wet)) + (delayed * mCurrentSettings.wet);
-    //
-    //         // Clamp and cast
-    //         buffer[i] = (int16_t)std::clamp(mixed, -32768.0f, 32767.0f);
-    //     }
-    // }
-    //
-    //
 
 
 };  //class OPL3Controller

@@ -2,8 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Audio Reverb Digital
-// Base class Effect
+// Digital Sound Processing : Base class Effect
 //-----------------------------------------------------------------------------
 #pragma once
 #include <cstdint>
@@ -17,7 +16,7 @@ namespace DSP {
     public:
         Effect(bool switchOn = false) { mEnabled = switchOn;}
         virtual ~Effect() {}
-        virtual void process(int16_t* buffer, int numSamples) {}
+        virtual void process(float* buffer, int numSamples) {}
 
         void on() { mEnabled = true;}
         void off() { mEnabled = false;}

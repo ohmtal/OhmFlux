@@ -793,8 +793,6 @@ void SDLCALL SFXGenerator::audio_callback(void* userdata, SDL_AudioStream* strea
     if (!gen)
         return;
 
-
-
     // additional_amount ist in BYTES.
     // one float == 4 Bytes.
     int frames_to_generate = additional_amount / sizeof(float);
@@ -818,7 +816,7 @@ bool SFXGenerator::initSDLAudio()
 {
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_F32; // not: spec.format = SDL_AUDIO_S16;
-    spec.channels = 1; //NOT 2;
+    spec.channels = 1; // mono
     spec.freq = 44100;
 
 
@@ -851,30 +849,3 @@ bool SFXGenerator::initSDLAudio()
     return true;
 }
 
-
-
-// bool SFXGenerator::initSDLAudio() {
-//     SDL_AudioSpec spec;
-//     spec.format = SDL_AUDIO_F32; // not: spec.format = SDL_AUDIO_S16;
-//     spec.channels = 1; //NOT 2;
-//     spec.freq = 44100;
-//
-//     // Create the stream and a logical device connection in one go
-//     mStream = SDL_OpenAudioDeviceStream(
-//         SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
-//         &spec,
-//         SFXGenerator::audio_callback,
-//         this
-//     );
-//
-//     if (!mStream) {
-//         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
-//         return false;
-//     }
-//
-//     // SDL_SetAudioStreamGain(mStream, 1.2f);
-//
-//     // Mandatory: Start the device (it is created paused)
-//     SDL_ResumeAudioStreamDevice(mStream);
-//     return true;
-// }

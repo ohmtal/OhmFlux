@@ -2,12 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Audio Reverb Digital Sound Processing
-//-----------------------------------------------------------------------------
-// usage:
-// Add to your class:  AudioReverb mReverb;
-// SDL3: in audio_callback just before SDL_PutAudioStreamData
-//          controller->mReverb.process(buffer, framesNeeded * 2);
+// Digital Sound Processing : Reverb
 //-----------------------------------------------------------------------------
 #pragma once
 #include <vector>
@@ -38,52 +33,55 @@ constexpr ReverbSettings HAUNTED_REVERB   = { 0.88f, 22050, 21500,  0.60f }; // 
 
 class Reverb : public DSP::Effect {
 private:
-    std::vector<int16_t> mBufL;
-    std::vector<int16_t> mBufR;
+    // CHANGED: Must be float to maintain precision in feedback loops
+    std::vector<float> mBufL;
+    std::vector<float> mBufR;
     int mPosL = 0;
     int mPosR = 0;
     ReverbSettings mSettings;
 
 public:
     Reverb(bool switchOn = false) :
-        Effect(switchOn)
+    Effect(switchOn)
     {
-        // Allocate 1 second of buffer for 44.1kHz
-        mBufL.assign(44100, 0);
-        mBufR.assign(44100, 0);
+        // Allocate 1 second of buffer for 44.1kHz as float
+        mBufL.assign(44100, 0.0f);
+        mBufR.assign(44100, 0.0f);
         mSettings = ROOM_REVERB;
     }
 
     void setSettings(const ReverbSettings& s) {
         mSettings = s;
-        // Optional: clear buffers on change to prevent "ghost" sounds
-        std::fill(mBufL.begin(), mBufL.end(), 0);
-        std::fill(mBufR.begin(), mBufR.end(), 0);
-        mPosL = 0; mPosR = 0;
+        // Ensure size settings don't exceed the allocated 44100
+        // and reset positions to avoid clicks
+        std::fill(mBufL.begin(), mBufL.end(), 0.0f);
+        std::fill(mBufR.begin(), mBufR.end(), 0.0f);
+        mPosL = 0;
+        mPosR = 0;
     }
 
-    // Process interleaved stereo S16 buffer
-    void process(int16_t* buffer, int numSamples) override {
+    virtual void process(float* buffer, int numSamples) override {
         if (!inOn()) return;
-
         if (mSettings.wet <= 0.001f) return;
 
         for (int i = 0; i < numSamples; i++) {
-            float dry = static_cast<float>(buffer[i]);
+            float dry = buffer[i];
             float delayed;
 
-            if (i % 2 == 0) { // Left
-                delayed = static_cast<float>(mBufL[mPosL]);
-                mBufL[mPosL] = static_cast<int16_t>(dry + (delayed * mSettings.decay));
+            if (i % 2 == 0) { // Left Channel
+                delayed = mBufL[mPosL];
+                // FEEDBACK: High precision float math
+                mBufL[mPosL] = dry + (delayed * mSettings.decay);
+                // Wrap position based on current room size
                 mPosL = (mPosL + 1) % mSettings.sizeL;
-            } else { // Right
-                delayed = static_cast<float>(mBufR[mPosR]);
-                mBufR[mPosR] = static_cast<int16_t>(dry + (delayed * mSettings.decay));
+            } else { // Right Channel
+                delayed = mBufR[mPosR];
+                mBufR[mPosR] = dry + (delayed * mSettings.decay);
                 mPosR = (mPosR + 1) % mSettings.sizeR;
             }
 
-            float mixed = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
-            buffer[i] = static_cast<int16_t>(std::clamp(mixed, -32768.0f, 32767.0f));
+            // MIX: Linear interpolation between dry and wet
+            buffer[i] = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
         }
     }
 };
