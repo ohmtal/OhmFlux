@@ -4,6 +4,7 @@
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
 #include <opl3_bridge_op2.h>
+#include <opl3_bridge_wopl.h>
 #include <opl3_bridge_fm.h>
 #include <opl3_bridge_sbi.h>
 #include <OPL3Tests.h>
@@ -102,7 +103,7 @@ bool SequencerGui::Initialize()
     }
 
     // FileManager
-    g_FileDialog.init( getGamePath(), { ".sbi", ".op2", ".fmi", ".fms", ".wav", ".ogg" });
+    g_FileDialog.init( getGamePath(), { ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
@@ -326,12 +327,20 @@ void SequencerGui::DrawGui()
             } else {
                 if ( g_FileDialog.selectedExt == ".op2" )
                 {
-                    if (!opl3_bridge_op2::ImportOP2(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
+                    if (!opl3_bridge_op2::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
                         Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
                     else
                          Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
                 }
                 else
+                    if ( g_FileDialog.selectedExt == ".wopl" )
+                    {
+                        if (!opl3_bridge_wopl::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
+                            Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
+                        else
+                            Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
+                    }
+                    else
                 if ( g_FileDialog.selectedExt == ".sbi" )
                 {
                     OplInstrument newIns;
@@ -626,7 +635,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     if (cmd == "load")
     {
         std::string filename = "assets/op2/GENMIDI.op2";
-        if (!opl3_bridge_op2::ImportOP2(filename, getMain()->getController()->mSoundBank) )
+        if (!opl3_bridge_op2::importBank(filename, getMain()->getController()->mSoundBank) )
             Log("[error] Failed to load %s", filename.c_str());
         else
             Log("Loaded %s", filename.c_str());

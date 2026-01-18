@@ -37,35 +37,6 @@ using namespace opl3;
 
 namespace opl3_bridge_op2 {
 
-/*
- s tr*uct OplInstrument {
- std::string name = "New Instrument";
- bool isFourOp = false;  // OPL3 mode
- bool isDoubleVoice = false; //pseudo 4OP not implemented so far (was the 0x105 stuff is disabled )
- int8_t fineTune = 0;
- uint8_t fixedNote = 0;
- int8_t noteOffset = 0;
-
-
- // Each pair (Modulator + Carrier) matches your existing UI loop
- struct OpPair {
- // Shared per-pair settings (Register $C0)
- uint8_t feedback = 0;   // 0-7
- uint8_t connection = 0; // 0: FM, 1: Additive
- uint8_t panning = 3;    // 0: Mute, 1: Left, 2: Right, 3: Center (OPL3)
-
- // Operator data (Indices 0=Modulator, 1=Carrier)
- struct OpParams {
- uint8_t ksl = 0, tl = 0, multi = 0;
- uint8_t attack = 0, decay = 0, sustain = 0, release = 0;
- uint8_t wave = 0, ksr = 0, egTyp = 0, vib = 0, am = 0;
-} ops[2];
-};
-
-OpPair pairs[2]; // Pair 0 (Ch A), Pair 1 (Ch B - only used if isFourOp is true)
-};
-*/
-
     //--------------------- IMPORT -----------------------------
     // // for 44KHz
     inline void FillOpParams(OplInstrument::OpPair::OpParams& op, const uint8_t* data, int offset) {
@@ -94,7 +65,7 @@ OpPair pairs[2]; // Pair 0 (Ch A), Pair 1 (Ch B - only used if isFourOp is true)
     }
 
 
-    inline bool ImportOP2(const std::string& filename, std::vector<OplInstrument>& bank) {
+    inline bool importBank(const std::string& filename, std::vector<OplInstrument>& bank) {
         std::ifstream file(filename, std::ios::binary);
         if (!file) return false;
 
