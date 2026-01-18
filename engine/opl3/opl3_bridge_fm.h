@@ -13,7 +13,7 @@
 using namespace opl3;
 
 
-namespace opl3_import_fm {
+namespace opl3_bridge_fm {
 
 
 // void convertFmsNotesToSteps(const SongDataFMS& fms, Pattern& modernPattern) {

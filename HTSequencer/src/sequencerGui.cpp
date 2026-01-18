@@ -37,6 +37,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 
 
 }
+
 //------------------------------------------------------------------------------
 
 void SequencerGui::Update(const double& dt)
@@ -59,6 +60,18 @@ bool SequencerGui::Initialize()
     }
 
     mGuiSettings = SettingsManager().get("EditorGui::mEditorSettings", mDefaultGuiSettings);
+
+
+    auto* controller = getMain()->getController();
+    controller->getDSPBitCrusher()->setEnabled(SettingsManager().get("DSP_BitCrusher_ON", false));
+    controller->getDSPChorus()->setEnabled(SettingsManager().get("DSP_Chorus_ON", false));
+    controller->getDSPReverb()->setEnabled(SettingsManager().get("DSP_Reverb_ON", false));
+    controller->getDSPReverb()->setEnabled(SettingsManager().get("DSP_Warmth_ON", false));
+
+    controller->getDSPBitCrusher()->setSettings(SettingsManager().get<DSP::BitcrusherSettings>("DSP_BitCrusher", DSP::AMIGA_BITCRUSHER));
+    controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
+    controller->getDSPReverb()->setSettings(SettingsManager().get<DSP::ReverbSettings>("DSP_Reverb", DSP::HALL_REVERB));
+    controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::TUBEAMP_WARMTH));
 
 
 
@@ -112,6 +125,19 @@ void SequencerGui::Deinitialize()
 
     if (SettingsManager().IsInitialized()) {
         SettingsManager().set("EditorGui::mEditorSettings", mGuiSettings);
+
+        auto* controller = getMain()->getController();
+        SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings());
+        SettingsManager().set("DSP_Chorus",     controller->getDSPChorus()->getSettings());
+        SettingsManager().set("DSP_Reverb",     controller->getDSPReverb()->getSettings());
+        SettingsManager().set("DSP_Warmth",     controller->getDSPWarmth()->getSettings());
+
+        SettingsManager().set("DSP_BitCrusher_ON", controller->getDSPBitCrusher()->isEnabled());
+        SettingsManager().set("DSP_Chorus_ON", controller->getDSPChorus()->isEnabled());
+        SettingsManager().set("DSP_Reverb_ON", controller->getDSPReverb()->isEnabled());
+        SettingsManager().set("DSP_Warmth_ON", controller->getDSPWarmth()->isEnabled());
+
+
         SettingsManager().save();
     }
 
@@ -154,7 +180,7 @@ void SequencerGui::DrawMsgBoxPopup() {
         ImGui::EndPopup();
     }
 }
-
+//------------------------------------------------------------------------------
 void SequencerGui::ShowMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
@@ -181,7 +207,6 @@ void SequencerGui::ShowMenuBar()
             // ImGui::MenuItem("FM Instrument Editor", NULL, &mGuiSettings.mShowFMInstrumentEditor);
             // ImGui::MenuItem("FM Full Scale", NULL, &mEditorSettings.mShowCompleteScale);
 
-            ImGui::MenuItem("Test Menu", NULL);
 
             ImGui::EndMenu();
         }
@@ -193,6 +218,8 @@ void SequencerGui::ShowMenuBar()
             if (ImGui::MenuItem("Classic")) {ImGui::StyleColorsClassic(); }
             ImGui::EndMenu();
         }
+
+        ShowDSPWindow();
 
         // ----------- Master Volume
         float rightOffset = 230.0f;
@@ -305,11 +332,23 @@ void SequencerGui::DrawGui()
                          Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
                 }
                 else
+                if ( g_FileDialog.selectedExt == ".sbi" )
+                {
+                    OplInstrument newIns;
+                    if (opl3_bridge_sbi::loadInstrument(g_FileDialog.selectedFile, newIns))
+                    {
+                        getMain()->getController()->mSoundBank.push_back(newIns);
+                        Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
+                    }  else {
+                        Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                    }
+                }
+                else
                 if ( g_FileDialog.selectedExt == ".fmi" ){
                     std::array<uint8_t, 24> instrumentData;
-                    if (opl3_import_fm::loadInstrument(g_FileDialog.selectedFile,instrumentData)) {
-                        OplInstrument newIns=opl3_import_fm::toInstrument(
-                            std::string( extractFilename(g_FileDialog.selectedFile) ),
+                    if (opl3_bridge_fm::loadInstrument(g_FileDialog.selectedFile,instrumentData)) {
+                        OplInstrument newIns=opl3_bridge_fm::toInstrument(
+                            std::string( fluxStr::extractFilename(g_FileDialog.selectedFile) ),
                             instrumentData
                         );
                         getMain()->getController()->mSoundBank.push_back(newIns);
@@ -615,7 +654,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     {
         std::string filename = "assets/sbi/tumubar-bell-dmx.sbi";
         OplInstrument newIns;
-        if (opl3_import_sbi::loadInstrument(filename,newIns)) {
+        if (opl3_bridge_sbi::loadInstrument(filename,newIns)) {
                 getMain()->getController()->mSoundBank.push_back(newIns);
                 Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
 

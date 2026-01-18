@@ -23,8 +23,6 @@ namespace DSP {
         float wet;      // 0.0 to 1.0
     };
 
-    // 2026 Standard Presets
-    constexpr WarmthSettings OFF_WARMTH            = { 1.0f, 1.0f, 0.0f };
     constexpr WarmthSettings GENTLE_WARMTH         = { 0.85f, 1.1f, 0.5f };
     constexpr WarmthSettings ANALOGDESK_WARMTH     = { 0.70f, 1.3f, 0.8f };
     constexpr WarmthSettings TUBEAMP_WARMTH        = { 0.50f, 1.6f, 1.0f };
@@ -45,6 +43,9 @@ namespace DSP {
             std::memset(mPolesL, 0, sizeof(mPolesL));
             std::memset(mPolesR, 0, sizeof(mPolesR));
         }
+
+        const WarmthSettings& getSettings() { return mSettings; }
+
         void setSettings(const WarmthSettings& s) {
             mSettings = s;
             std::memset(mPolesL, 0, sizeof(mPolesL));
@@ -53,7 +54,7 @@ namespace DSP {
 
 
         virtual void process(float* buffer, int numSamples) override {
-            if (!inOn()) return;
+            if (!isEnabled()) return;
             if (mSettings.wet <= 0.001f) return;
 
             // alpha represents the cutoff frequency (0.01 to 0.99)

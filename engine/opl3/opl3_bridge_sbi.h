@@ -15,7 +15,7 @@
 using namespace opl3;
 
 
-namespace opl3_import_sbi {
+namespace opl3_bridge_sbi {
 
     /**
      * @brief Converts raw SBI data to an OplInstrument.

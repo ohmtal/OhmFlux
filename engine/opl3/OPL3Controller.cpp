@@ -160,7 +160,6 @@ bool OPL3Controller::initController()
     // bitcrusher:
     auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
     mDSPBitCrusher = bitcrusher.get();
-    mDSPBitCrusher->setSettings(DSP::NES_BITCRUSHER); //TEST
     mDspEffects.push_back(std::move(bitcrusher));
     //------------------------
     // Chrous:
@@ -175,7 +174,7 @@ bool OPL3Controller::initController()
     mDspEffects.push_back(std::move(reverb));
     //------------------------
     //Limiter Last !
-    mDspEffects.push_back(std::make_unique<DSP::Limiter>(false));
+    mDspEffects.push_back(std::make_unique<DSP::Limiter>(true));
     // ------------------------
 
     Log("OPL3 Controller initialized..");

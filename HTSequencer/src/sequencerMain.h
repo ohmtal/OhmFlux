@@ -28,6 +28,13 @@ public:
     {
         if (!Parent::Initialize()) return false;
 
+        mController = new OPL3Controller();
+        if (!mController->initController())
+        {
+            Log("[error] Failed to Initialize OPL3Controller!");
+            return false;
+        }
+
         mSeqGui = new SequencerGui();
         if (!mSeqGui->Initialize())
             return false;
@@ -48,12 +55,6 @@ public:
         }
 
 
-        mController = new OPL3Controller();
-        if (!mController->initController())
-        {
-            Log("[error] Failed to Initialize OPL3Controller!");
-            return false;
-        }
 
 
 

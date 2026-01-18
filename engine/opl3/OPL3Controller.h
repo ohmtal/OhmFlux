@@ -207,9 +207,9 @@ public:
 
 
     // ------- DSP ---------------
-    DSP::Reverb* getDSPReverb() {return mDSPReverb;}
-    DSP::Chorus* getDSPChorus() {return mDSPChorus;}
     DSP::Bitcrusher* getDSPBitCrusher()  { return mDSPBitCrusher; }
+    DSP::Chorus* getDSPChorus() {return mDSPChorus;}
+    DSP::Reverb* getDSPReverb() {return mDSPReverb;}
     DSP::Warmth* getDSPWarmth() { return mDSPWarmth; }
     // ------ import -------------
     // ------ export -------------

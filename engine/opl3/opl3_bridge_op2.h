@@ -119,6 +119,7 @@ OpPair pairs[2]; // Pair 0 (Ch A), Pair 1 (Ch B - only used if isFourOp is true)
 
             inst.isFourOp = false; // GENMIDI is NEVER hardware 4-Op
             inst.isDoubleVoice = (flags & 0x04) != 0; // Custom flag for your player
+
             inst.fineTune = (int8_t)fineTune;
             inst.fixedNote = fixedNote;
 

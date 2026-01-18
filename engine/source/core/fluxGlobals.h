@@ -700,6 +700,14 @@ namespace fluxStr {
         return safeStoi(str).value_or(defaultValue);
     }
 
+    inline std::string_view extractFilename(std::string_view path) {
+        size_t lastSlash = path.find_last_of("/\\");
+        if (lastSlash == std::string_view::npos) {
+            return path;
+        }
+        return path.substr(lastSlash + 1);
+    }
+
 
 } //namespace
 #endif //_FLUXGLOBALS_H_

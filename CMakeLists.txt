@@ -450,6 +450,8 @@ if(BUILD_HT_SEQ)
     set(GAME_SOURCES
         "${HTSEQ_DIR}/src/main.cpp"
         "${HTSEQ_DIR}/src/sequencerGui.cpp"
+        "${HTSEQ_DIR}/src/dspGui.cpp"
+        "${HTSEQ_DIR}/src/bankGui.cpp"
     )
     configure_demo_target(HT-Sequencer ${HTSEQ_DIR} "$HTSEQ_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()

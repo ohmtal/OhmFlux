@@ -10,7 +10,7 @@
 #include <core/fluxRenderObject.h>
 #include <gui/fluxGuiGlue.h>
 #include <gui/ImConsole.h>
-
+#include <DSP.h>
 #include "sequencerGlobals.h"
 #include <opl3.h>
 
@@ -35,6 +35,7 @@ public:
         bool mEditorGuiInitialized;
         bool mShowFileManager;
         bool mShowConsole;
+        bool mShowDSP;
 
     };
 
@@ -57,27 +58,37 @@ private:
 
         .mEditorGuiInitialized = false,
         .mShowFileManager = true,
-        .mShowConsole     = true
+        .mShowConsole     = true,
+        .mShowDSP         = true
     };
 
+
+    opl3::SongData myTestSong;
 
     void InitDockSpace();
     void OnConsoleCommand(ImConsole* console, const char* cmdline);
 
-    opl3::SongData myTestSong;
+
+    void ShowMenuBar();
+
+
+    void ShowDSPWindow();
+    void RenderBitCrusherUI();
+    void RenderChorusUI();
+    void RenderReverbUI();
+    void RenderWarmthUI();
+
 
 public:
     ImConsole mConsole;
-
     bool Initialize() override;
     void Deinitialize() override;
     void onEvent(SDL_Event event);
     void DrawMsgBoxPopup();
-    void ShowMenuBar();
+
     void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event);
     void Update(const double& dt) override;
-
 
 
 
@@ -93,4 +104,13 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::GuiSettings,
     mEditorGuiInitialized
     ,mShowFileManager
     ,mShowConsole
+    ,mShowDSP
 )
+
+namespace DSP {
+    // Macros generate the to_json/from_json functions automatically
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BitcrusherSettings, bits, sampleRate, wet)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ChorusSettings, rate, depth, delayBase, wet, phaseOffset)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReverbSettings, decay, sizeL, sizeR, wet)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarmthSettings, cutoff, drive, wet)
+}

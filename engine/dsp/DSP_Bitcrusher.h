@@ -47,6 +47,9 @@ namespace DSP {
             mSettings(AMIGA_BITCRUSHER)
             {}
 
+
+        const BitcrusherSettings& getSettings() { return mSettings; }
+
         void setSettings(const BitcrusherSettings& s) {
             mSettings = s;
             mSampleCount = 999999.0f;
@@ -54,7 +57,7 @@ namespace DSP {
 
         virtual void process(float* buffer, int numSamples) override
         {
-            if (!inOn()) return;
+            if (!isEnabled()) return;
             if (mSettings.wet <= 0.001f) return;
 
             float samplesToHold = 44100.0f / std::max(1.0f, mSettings.sampleRate);

@@ -50,6 +50,8 @@ public:
         mSettings = ROOM_REVERB;
     }
 
+    const ReverbSettings& getSettings() { return mSettings; }
+
     void setSettings(const ReverbSettings& s) {
         mSettings = s;
         // Ensure size settings don't exceed the allocated 44100
@@ -61,7 +63,7 @@ public:
     }
 
     virtual void process(float* buffer, int numSamples) override {
-        if (!inOn()) return;
+        if (!isEnabled()) return;
         if (mSettings.wet <= 0.001f) return;
 
         for (int i = 0; i < numSamples; i++) {

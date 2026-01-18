@@ -18,9 +18,8 @@ namespace DSP {
         virtual ~Effect() {}
         virtual void process(float* buffer, int numSamples) {}
 
-        void on() { mEnabled = true;}
-        void off() { mEnabled = false;}
-        bool inOn() { return mEnabled; }
+        void setEnabled(bool value) { mEnabled = value; }
+        bool isEnabled() { return mEnabled; }
 
     }; //class
 }; //namespace

@@ -30,7 +30,7 @@ namespace DSP {
             {}
 
         virtual void process(float* buffer, int numSamples) override {
-            if (!inOn()) return;
+            if (!isEnabled()) return;
 
             // Ensure mThreshold is in 0.0 to 1.0 range (e.g., 0.95f for a hard limiter)
             for (int i = 0; i < numSamples; i++) {
@@ -61,33 +61,6 @@ namespace DSP {
         }
 
 
-        // virtual void process(int16_t* buffer, int numSamples) override {
-        //     if (!inOn()) return;
-        //
-        //     for (int i = 0; i < numSamples; i++) {
-        //         // 1. Peak Detection: Get absolute level
-        //         float input = static_cast<float>(buffer[i]);
-        //         float absInput = std::abs(input);
-        //
-        //         // 2. Calculate Target Gain
-        //         float targetGain = 1.0f;
-        //         if (absInput > mThreshold) {
-        //             targetGain = mThreshold / absInput;
-        //         }
-        //
-        //         // 3. Smooth the Gain (Attack/Release)
-        //         // If we need to turn down, use Attack speed. If turning up, use Release.
-        //         if (targetGain < mCurrentGain) {
-        //             mCurrentGain += (targetGain - mCurrentGain) * mAttack;
-        //         } else {
-        //             mCurrentGain += (targetGain - mCurrentGain) * mRelease;
-        //         }
-        //
-        //         // 4. Apply Gain and Clamp
-        //         float output = input * mCurrentGain;
-        //         buffer[i] = static_cast<int16_t>(std::clamp(output, -32768.0f, 32767.0f));
-        //     }
-        // }
     };
 
 } // namespace DSP

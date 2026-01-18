@@ -65,13 +65,15 @@ namespace DSP {
             mSettings = LUSH80s_CHORUS;
         }
 
+        const ChorusSettings& getSettings() { return mSettings; }
+
         void setSettings(const ChorusSettings& s) {
             mSettings = s;
         }
 
 
         virtual void process(float* buffer, int numSamples) override {
-            if (!inOn()) return;
+            if (!isEnabled()) return;
 
             // Skip if wet mix is effectively zero
             if (mSettings.wet <= 0.001f) return;
