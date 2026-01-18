@@ -48,6 +48,7 @@ set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/engine/box2d")
 set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/engine/ymfm/src")
 set(OPL_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/opl")
 set(OPL3_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/opl3")
+set(DSP_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/dsp")
 set(SFX_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/sfx")
 set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/engine/imgui")
 set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/engine/json/single_include")
@@ -233,6 +234,7 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${YMFM_DIR}>
     $<BUILD_INTERFACE:${OPL_DIR}>
     $<BUILD_INTERFACE:${OPL3_DIR}>
+    $<BUILD_INTERFACE:${DSP_DIR}>
     $<BUILD_INTERFACE:${SFX_DIR}>
     $<BUILD_INTERFACE:${IMGGUI_DIR}>
     $<BUILD_INTERFACE:${JSON_DIR}>

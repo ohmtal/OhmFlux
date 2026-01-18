@@ -4,7 +4,7 @@
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
 #include <opl3_bridge_op2.h>
-#include <opl3_import_fm.h>
+#include <opl3_bridge_fm.h>
 #include <opl3_bridge_sbi.h>
 
 #include <algorithm>

@@ -9,6 +9,7 @@
 #include "OPL3Instruments.h"
 #include <mutex>
 
+
 #ifdef FLUX_ENGINE
 #include <audio/fluxAudio.h>
 #endif
@@ -42,26 +43,59 @@ OPL3Controller::~OPL3Controller(){
     }
 }
 //------------------------------------------------------------------------------
-void OPL3Controller::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
+void OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     auto* controller = static_cast<OPL3Controller*>(userdata);
     if (!controller) return;
 
-    // S16 stereo = 4 bytes per frame
-    int framesNeeded = additional_amount / 4;
+    // additional_amount is in BYTES.
+    // For S16 Stereo (2 bytes per sample * 2 channels), frames = bytes / 4.
+    int totalBytes = additional_amount;
+    if (totalBytes > 4096) totalBytes = 4096; // Stay within int16_t buffer[2048]
 
-    // Use a stack buffer for performance (typical 512-1024 frames)
-    // 2048 samples * 2 bytes = 4096 bytes on stack (safe)
+    int framesNeeded = totalBytes / 4;
     int16_t buffer[2048];
-    if (framesNeeded > 1024) framesNeeded = 1024;
 
     {
         std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
         controller->fillBuffer(buffer, framesNeeded);
-
     }
 
-    SDL_PutAudioStreamData(stream, buffer, framesNeeded * 4);
+    // DIGITAL SOUND PROCESSING :D
+    // Apply effect to the number of SAMPLES (frames * channels)
+    // framesNeeded * 2 (for Left and Right)
+    // controller->getReverb().process(buffer, framesNeeded * 2);
+    for (auto& effect : controller->mDspEffects) {
+        effect->process(buffer, framesNeeded * 2);
+    }
+
+
+
+    SDL_PutAudioStreamData(stream, buffer, totalBytes);
 }
+
+
+
+// pre reverb:
+// void OPL3Controller::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
+//     auto* controller = static_cast<OPL3Controller*>(userdata);
+//     if (!controller) return;
+//
+//     // S16 stereo = 4 bytes per frame
+//     int framesNeeded = additional_amount / 4;
+//
+//     // Use a stack buffer for performance (typical 512-1024 frames)
+//     // 2048 samples * 2 bytes = 4096 bytes on stack (safe)
+//     int16_t buffer[2048];
+//     if (framesNeeded > 1024) framesNeeded = 1024;
+//
+//
+//     {
+//     std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
+//     controller->fillBuffer(buffer, framesNeeded);
+//     }
+//
+//     SDL_PutAudioStreamData(stream, buffer, framesNeeded * 4);
+// }
 
 
 //------------------------------------------------------------------------------
@@ -109,6 +143,34 @@ bool OPL3Controller::initController()
 
     m_step = mOutputSampleRate / spec.freq;
 
+    // Digital post processing
+    //------------------------
+    // warmth:
+    auto warmth = std::make_unique<DSP::Warmth>(false);
+    mDSPWarmth = warmth.get();
+    mDspEffects.push_back(std::move(warmth));
+    //------------------------
+
+    // bitcrusher:
+    auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
+    mDSPBitCrusher = bitcrusher.get();
+    mDSPBitCrusher->setSettings(DSP::NES_BITCRUSHER); //TEST
+    mDspEffects.push_back(std::move(bitcrusher));
+    //------------------------
+    // Chrous:
+    auto chorus = std::make_unique<DSP::Chorus>(true);
+    mDSPChorus = chorus.get();
+    mDspEffects.push_back(std::move(chorus));
+
+    //------------------------
+    // Reverb:
+    auto reverb = std::make_unique<DSP::Reverb>(true);
+    mDSPReverb = reverb.get();
+    mDspEffects.push_back(std::move(reverb));
+    //------------------------
+    //Limiter Last !
+    mDspEffects.push_back(std::make_unique<DSP::Limiter>(true));
+    // ------------------------
 
     Log("OPL3 Controller initialized..");
 
@@ -122,6 +184,8 @@ bool OPL3Controller::shutDownController()
         SDL_DestroyAudioStream(mStream);
         mStream = nullptr;
     }
+
+
     return true;
 }
 //------------------------------------------------------------------------------
@@ -482,47 +546,13 @@ void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
 /**
  * @param oplVolume Attenuation level (0 = Max Volume, 63 = Muted)
  */
-// void OPL3Controller::setChannelVolume(uint8_t channel, uint8_t oplVolume) {
-//     // 1. Hardware Boundary Checks
-//     if (channel >= MAX_CHANNELS) return;
-//
-//
-//     if (oplVolume > 63) oplVolume = 63;
-//     uint8_t vol = oplVolume & 0x3F;
-//
-//     // if (mSeqState.rowIdx == 33){
-//     //     assert(false);
-//     // }
-//
-//     // dLog("setChannelVolume: chan:%d row:%d oplVolume: %d ", channel, mSeqState.rowIdx, oplVolume); //FIXME remove this line
-//
-//
-//     uint16_t mod_off = get_modulator_offset(channel);
-//     uint16_t car_off = get_carrier_offset(channel);
-//
-//     // 2. Update Carrier (Operator 1)
-//     // Preservation of KSL (bits 6-7) is critical to maintain instrument scaling
-//     uint8_t carReg = readShadow(0x40 + car_off);
-//     write(0x40 + car_off, (carReg & 0xC0) | vol);
-//
-//     // 3. Update Modulator (Operator 0)
-//     // Only applied if in Additive mode (Connection Bit 0 of $C0 is set)
-//     uint16_t bank = (channel < 9) ? 0x000 : 0x100;
-//     uint16_t c0Addr = bank + 0xC0 + (channel % 9);
-//     bool isAdditive = (readShadow(c0Addr) & 0x01);
-//
-//     if (isAdditive) {
-//         uint8_t modReg = readShadow(0x40 + mod_off);
-//         write(0x40 + mod_off, (modReg & 0xC0) | vol);
-//     }
-// }
 //------------------------------------------------------------------------------
 bool OPL3Controller::applyInstrument(uint8_t channel, uint8_t instrumentIndex) {
     if (channel >= 18 || instrumentIndex >= mSoundBank.size()) return false;
     const auto& ins = mSoundBank[instrumentIndex];
 
 
-    bool isFourOp = ins.isFourOp;
+    bool isFourOpOrDoubleVoice = ins.isFourOp || ins.isDoubleVoice; //FIXME real fourOP
 
     // 1. Handle 4-Operator Enable Bit (Register 0x104)
     // Bits 0,1,2 = Bank 0 (Ch 0,1,2); Bits 3,4,5 = Bank 1 (Ch 9,10,11)
@@ -539,7 +569,7 @@ bool OPL3Controller::applyInstrument(uint8_t channel, uint8_t instrumentIndex) {
     }
 
     if (isMasterChannel) {
-        if (isFourOp) write(0x104, fourOpReg | fourOpBit);
+        if (isFourOpOrDoubleVoice) write(0x104, fourOpReg | fourOpBit);
         else          write(0x104, fourOpReg & ~fourOpBit);
     }
 
@@ -552,7 +582,7 @@ bool OPL3Controller::applyInstrument(uint8_t channel, uint8_t instrumentIndex) {
     writeChannelReg(0xC0, channel, c0Val);
 
     // 3. Set Pair 1 (If 4-Op instrument and valid 4-Op slot)
-    if (isFourOp && isMasterChannel) {
+    if (isFourOpOrDoubleVoice && isMasterChannel) {
         uint8_t linkedChannel = channel + 3;
         setOperatorRegisters(get_modulator_offset(linkedChannel), ins.pairs[1].ops[0]);
         setOperatorRegisters(get_carrier_offset(linkedChannel),   ins.pairs[1].ops[1]);
@@ -671,19 +701,19 @@ void OPL3Controller::stopNote(uint8_t channel) {
     // Check if this channel is the master of an active 4-Op group
 
     // FIXME DoubleVoice 0x104  ??
-    // uint8_t fourOpReg = readShadow(0x104);
-    // bool isFourOpMaster = false;
-    //
-    // if (channel < 3 && (fourOpReg & (1 << channel))) {
-    //     isFourOpMaster = true;
-    // } else if (channel >= 9 && channel < 12 && (fourOpReg & (1 << (channel - 9 + 3)))) {
-    //     isFourOpMaster = true;
-    // }
-    //
-    // if (isFourOpMaster) {
-    //     // Apply Key-Off to the linked channel (+3) as well
-    //     keyOff(channel + 3);
-    // }
+    uint8_t fourOpReg = readShadow(0x104);
+    bool isFourOpMaster = false;
+
+    if (channel < 3 && (fourOpReg & (1 << channel))) {
+        isFourOpMaster = true;
+    } else if (channel >= 9 && channel < 12 && (fourOpReg & (1 << (channel - 9 + 3)))) {
+        isFourOpMaster = true;
+    }
+
+    if (isFourOpMaster) {
+        // Apply Key-Off to the linked channel (+3) as well
+        keyOff(channel + 3);
+    }
 
 
 
@@ -691,33 +721,6 @@ void OPL3Controller::stopNote(uint8_t channel) {
     mChip->generate(&mOutput);
 }
 
-// void OPL3Controller::stopNote(uint8_t channel) {
-//     // Range check for OPL3 (0-17)
-//     if (channel < 0 || channel >= 18) {
-//         return;
-//     }
-//
-//     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
-//
-//     // Determine the register bank offset
-//     // Channels 0-8  -> Bank 1 (0x000)
-//     // Channels 9-17 -> Bank 2 (0x100)
-//     uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
-//     uint8_t relativeChan = channel % 9;
-//     uint16_t regAddr = bankOffset + 0xB0 + relativeChan;
-//
-//     // Read current value from shadow to preserve Block (Octave) and F-Number bits
-//     uint8_t currentB0 = readShadow(regAddr);
-//
-//     // Clear bit 5 (Key-On) to trigger the release phase
-//     // 0x20 = 0010 0000 in binary
-//     write(regAddr, currentB0 & ~0x20);
-//
-//
-//
-//     // Your critical fix remains at the bottom
-//     mChip->generate(&mOutput);
-// }
 //------------------------------------------------------------------------------
 void OPL3Controller::write(uint16_t reg, uint8_t val, bool doLog){
     mShadowRegs[reg] = val;
@@ -789,13 +792,14 @@ void OPL3Controller::dumpInstrument(uint8_t instrumentIndex) {
     const auto& ins = mSoundBank[instrumentIndex];
 
     LogFMT("--- Instrument Dump: {} (Index {}) ---", ins.name, instrumentIndex);
-    LogFMT("  Is Four-Op: {}", ins.isFourOp ? "Yes" : "No");
-    LogFMT("  Fine Tune: {}", (int)ins.fineTune);
-    LogFMT("  Fixed Note: {}", (ins.fixedNote == NONE_NOTE) ? "None" : std::to_string(ins.fixedNote));
+    LogFMT("  Is Four-Op : {}", ins.isFourOp ? "Yes" : "No");
+    LogFMT("  DoubleVoice: {}", ins.isDoubleVoice ? "Yes" : "No");
+    LogFMT("  Fine Tune  : {}", (int)ins.fineTune);
+    LogFMT("  Fixed Note : {}", (ins.fixedNote == NONE_NOTE) ? "None" : std::to_string(ins.fixedNote));
     LogFMT("  Note offset: {}", (int)ins.noteOffset);
 
 
-    for (int pIdx = 0; pIdx < (ins.isFourOp ? 2 : 1); ++pIdx) {
+    for (int pIdx = 0; pIdx < ((ins.isFourOp || ins.isDoubleVoice) ? 2 : 1); ++pIdx) {
         const auto& pair = ins.pairs[pIdx];
         LogFMT("  --- Operator Pair {} ---", pIdx);
         LogFMT("    Feedback: {}", pair.feedback);
@@ -1232,24 +1236,25 @@ void OPL3Controller::playNote(uint8_t channel, uint16_t fnum, uint8_t octave) {
         write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
         write(bankOffset + 0xB0 + relChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
 
-        // FIXME DoubleVoice
+        // FIXME DoubleVoice/real fourOp
         // Check if 4-OP is enabled for this channel via shadow register 0x104
-        // uint8_t pesudoFourOpReg = readShadow(0x104);
-        // bool isFourOp = false;
-        // if (channel < 3 && (fourOpReg & (1 << channel))) isFourOp = true;
-        // else if (channel >= 9 && channel < 12 && (fourOpReg & (1 << (channel - 9 + 3)))) isFourOp = true;
-        // if (isFourOp) {
-        //
-        //     // Sync the linked channel (Channel + 3)
-        //     uint8_t linkedChan = channel + 3;
-        //     uint16_t linkedBankOffset = (linkedChan <= 8) ? 0x000 : 0x100;
-        //     uint8_t linkedRelChan = linkedChan % 9;
-        //     write(linkedBankOffset + 0xA0 + linkedRelChan, fnum & 0xFF);
-        //     // We write the same block and fnum, but often 4-op voices
-        //     // keep the linked channel's Key-On bit (0x20) active as well.
-        //     write(linkedBankOffset + 0xB0 + linkedRelChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
-        //
-        // }
+
+        uint8_t fourOpReg = readShadow(0x104);
+        bool isFourOp = false;
+        if (channel < 3 && (fourOpReg & (1 << channel))) isFourOp = true;
+        else if (channel >= 9 && channel < 12 && (fourOpReg & (1 << (channel - 9 + 3)))) isFourOp = true;
+        if (isFourOp) {
+
+            // Sync the linked channel (Channel + 3)
+            uint8_t linkedChan = channel + 3;
+            uint16_t linkedBankOffset = (linkedChan <= 8) ? 0x000 : 0x100;
+            uint8_t linkedRelChan = linkedChan % 9;
+            write(linkedBankOffset + 0xA0 + linkedRelChan, fnum & 0xFF);
+            // We write the same block and fnum, but often 4-op voices
+            // keep the linked channel's Key-On bit (0x20) active as well.
+            write(linkedBankOffset + 0xB0 + linkedRelChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
+
+        }
 
     }
 

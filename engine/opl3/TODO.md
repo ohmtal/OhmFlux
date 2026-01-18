@@ -10,7 +10,7 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
 
 [ ] unsorted next steps
 
-    [ ] change tones to midi tones: Midi 0 = C(-1)
+    [X] change tones to midi tones: Midi 0 = C(-1)
     
          Midi Notes start at oktave -1 and 127 is G-9
          I have the special number 0 = "..." 255 = "==="
@@ -22,10 +22,12 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
          [X] ValueToNote
          [X] playNote
         
-        [ ] Notes seams to be still out of sync!
+        [X] Notes seams to be still out of sync!
             C-3 sounds like A-4
+            => new f_numbers
   
-    [ ] fixe finetune -128 and is much to thin high 
+    [~] fixe finetune -128 and is much to thin high  << fixed with op2 import
+    [X] fixed op2 import 
     [ ] create instrument editor 
     [ ] wopl import 
     [ ] fms import 

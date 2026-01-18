@@ -66,6 +66,7 @@ public:
         SAFE_DELETE(mSeqGui);
 
         mController->shutDownController();
+        SAFE_DELETE(mController);
 
         Parent::Deinitialize();
     }

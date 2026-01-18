@@ -1,0 +1,133 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Ohmtal Game Studio
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
+// Audio Reverb Digital
+// Chorus
+//-----------------------------------------------------------------------------
+#pragma once
+
+#include <cmath>
+#include <vector>
+
+namespace DSP {
+
+    struct ChorusSettings {
+        float rate;      // Speed of wiggle (0.1 - 2.0 Hz)
+        float depth;     // Intensity (0.001 - 0.005)
+        float delayBase; // Offset (0.01 - 0.03)
+        float wet;       // Mix (0.0 - 0.5)
+        float phaseOffset; // NEW: 0.0 to 1.0 (Phase shift between ears)
+    };
+
+
+    // OFF
+    constexpr ChorusSettings OFF_CHORUS           = { 0.0f,  0.0f,   0.0f,   0.0f,  0.0f };
+
+    // Lush 80s: Standard wide stereo chorus
+    constexpr ChorusSettings LUSH80s_CHORUS       = { 0.4f,  0.003f, 0.025f, 0.4f,  0.25f };
+
+    // Deep Ensemble: Very slow, very wide, thickens pads
+    constexpr ChorusSettings DEEPENSEMPLE_CHORUS  = { 0.1f,  0.005f, 0.040f, 0.5f,  0.50f };
+
+    // Fast Leslie: Simulates a rotating speaker
+    constexpr ChorusSettings FASTLESLIE_CHORUS    = { 2.5f,  0.002f, 0.010f, 0.3f,  0.15f };
+
+    // Juno-60 Style: Famous thick BBD chorus (Fast rate, high depth)
+    constexpr ChorusSettings JUNO60_CHORUS        = { 0.9f,  0.004f, 0.015f, 0.5f,  0.20f };
+
+    // Vibrato: 100% Wet so you only hear the pitch wiggle
+    constexpr ChorusSettings VIBRATO_CHORUS       = { 1.5f,  0.002f, 0.010f, 1.0f,  0.00f };
+
+    // Flanger: Very short delay creates the "jet plane" comb filter effect
+    constexpr ChorusSettings FLANGER_CHORUS       = { 0.2f,  0.001f, 0.003f, 0.5f,  0.10f };
+
+
+
+    class Chorus : public Effect {
+    private:
+        // Two separate buffers for true stereo de-correlation
+        std::vector<float> mDelayBufL;
+        std::vector<float> mDelayBufR;
+
+        int mWritePos = 0;
+        float mLfoPhase = 0.0f;
+        const float mSampleRate = 44100.0f;
+        const int mMaxBufferSize = 4410; // 100ms at 44.1kHz
+
+        ChorusSettings mSettings;
+
+    public:
+        Chorus(bool switchOn = false) :
+            Effect(switchOn)
+        {
+            mDelayBufL.assign(mMaxBufferSize, 0.0f);
+            mDelayBufR.assign(mMaxBufferSize, 0.0f);
+            mSettings = LUSH80s_CHORUS;
+        }
+
+        void setSettings(const ChorusSettings& s) {
+            mSettings = s;
+        }
+
+        virtual void process(int16_t* buffer, int numSamples) override {
+            if (!inOn()) return;
+
+            // Skip if wet mix is effectively zero
+            if (mSettings.wet <= 0.001f) return;
+
+            for (int i = 0; i < numSamples; i++) {
+                float dry = static_cast<float>(buffer[i]);
+
+                // 1. Determine LFO Phase for this specific channel
+                // We shift the phase for the Right channel (i % 2 != 0)
+                float channelPhase = mLfoPhase;
+                if (i % 2 != 0) {
+                    channelPhase += (mSettings.phaseOffset * 2.0f * M_PI);
+                    // Keep phase in 0 -> 2PI range
+                    if (channelPhase > 2.0f * M_PI) channelPhase -= 2.0f * M_PI;
+                }
+
+                // 2. Calculate modulated delay time in samples
+                // Sine wave wiggles the delay between (Base - Depth) and (Base + Depth)
+                float lfo = std::sin(channelPhase);
+                float currentDelaySec = mSettings.delayBase + (lfo * mSettings.depth);
+                float delaySamples = currentDelaySec * mSampleRate;
+
+                // 3. Linear Interpolation (Reading between samples for high quality)
+                float readPos = static_cast<float>(mWritePos) - delaySamples;
+                while (readPos < 0) readPos += static_cast<float>(mMaxBufferSize);
+
+                int idx1 = static_cast<int>(readPos) % mMaxBufferSize;
+                int idx2 = (idx1 + 1) % mMaxBufferSize;
+                float frac = readPos - static_cast<float>(idx1);
+
+                float wetSample = 0.0f;
+                if (i % 2 == 0) {
+                    // LEFT CHANNEL
+                    wetSample = mDelayBufL[idx1] * (1.0f - frac) + mDelayBufL[idx2] * frac;
+                    mDelayBufL[mWritePos] = dry; // Record dry signal
+                } else {
+                    // RIGHT CHANNEL
+                    wetSample = mDelayBufR[idx1] * (1.0f - frac) + mDelayBufR[idx2] * frac;
+                    mDelayBufR[mWritePos] = dry; // Record dry signal
+                }
+
+                // 4. Mix Dry + (Wet * Mix)
+                float mixed = dry + (wetSample * mSettings.wet);
+                buffer[i] = static_cast<int16_t>(std::clamp(mixed, -32768.0f, 32767.0f));
+
+                // 5. Update LFO and Write Position once per stereo frame (after Right channel)
+                if (i % 2 != 0) {
+                    // Advance LFO
+                    mLfoPhase += (2.0f * M_PI * mSettings.rate) / mSampleRate;
+                    if (mLfoPhase > 2.0f * M_PI) mLfoPhase -= 2.0f * M_PI;
+
+                    // Advance Buffer Write Head
+                    mWritePos = (mWritePos + 1) % mMaxBufferSize;
+                }
+            }
+        }
+    }; //class
+
+} // namespace DSP
