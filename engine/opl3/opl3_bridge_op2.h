@@ -1,5 +1,4 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 1993 T.Huehn (XXTH)
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
@@ -11,27 +10,6 @@
 #include <vector>
 #include <string>
 #include <cstdint>
-
-
-/*
- C orrected 16-Byte Voice Mappi*ng
- Each voice in a GENMIDI entry (175 instruments total) consists of two operators (Modulator and Carrier). The 16-byte structure per voice follows this specific pattern:
- Offset
- Parameter	Hardware Reg	Logic
- 0	Tremolo/Vibrato/EG/KSR/Multi	0x20
- Combined as bitfield
- 1	Key Scale Level (KSL)	0x40	Separate byte (0-3)
- 2	Total Level (TL)	0x40	Separate byte (0-63)
- 3	Attack Rate	0x60	Separate byte (0-15)
- 4	Decay Rate	0x60	Separate byte (0-15)
- 5	Sustain Level	0x80	Separate byte (0-15)
- 6	Release Rate	0x80	Separate byte (0-15)
- 7	Waveform	0xE0	(0-7)
- 8	Feedback / Connection	0xC0	Bits 3-1: FB, Bit 0: Conn
- 9-15	Reserved / Padding	-	Usually 0
-
-*/
-
 
 using namespace opl3;
 
