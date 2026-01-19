@@ -13,6 +13,7 @@
 #include <DSP.h>
 #include "sequencerGlobals.h"
 #include <opl3.h>
+#include <OPL3Tests.h>
 
 // #include "fluxSfxEditor.h"
 // #include "fluxFMEditor.h"
@@ -31,11 +32,11 @@ public:
         // bool mShowSFXEditor;
         // bool mShowFMInstrumentEditor;
         // bool mShowFMComposer;
-        // bool mShowCompleteScale;
         bool mEditorGuiInitialized;
         bool mShowFileManager;
         bool mShowConsole;
         bool mShowDSP;
+        bool mShowSoundBankEditor;
 
     };
 
@@ -56,14 +57,14 @@ private:
         // .mShowFMComposer = true,
         // .mShowCompleteScale = false,
 
-        .mEditorGuiInitialized = false,
-        .mShowFileManager = true,
-        .mShowConsole     = true,
-        .mShowDSP         = true
+          .mEditorGuiInitialized = false
+        , .mShowFileManager = true
+        , .mShowConsole     = true
+        , .mShowDSP         = false
+        , .mShowSoundBankEditor  = true
     };
 
 
-    opl3::SongData myTestSong;
 
     void InitDockSpace();
     void OnConsoleCommand(ImConsole* console, const char* cmdline);
@@ -72,14 +73,29 @@ private:
     void ShowMenuBar();
 
 
+    // ----- Tests ------
+    std::unique_ptr<OPL3Tests> mOpl3Tests;
+    opl3::SongData myTestSong;
+
+    // ----- DSP ------
     void ShowDSPWindow();
     void RenderBitCrusherUI();
     void RenderChorusUI();
     void RenderReverbUI();
     void RenderWarmthUI();
 
+    // ---- Bank / Instruments -----
+    int mCurrentInstrumentId = 0;
+    void ShowSoundBankWindow();
+    void RenderInstrumentListUI(bool standAlone = false);
+    void RenderInstrumentEditorUI(bool standAlone = false);
+    void RenderScalePlayerUI(bool standAlone = false);
+
 
 public:
+    SequencerGui() {}
+    ~SequencerGui() {}
+
     ImConsole mConsole;
     bool Initialize() override;
     void Deinitialize() override;
@@ -105,6 +121,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::GuiSettings,
     ,mShowFileManager
     ,mShowConsole
     ,mShowDSP
+    ,mShowSoundBankEditor
 )
 
 namespace DSP {

@@ -7,11 +7,11 @@
 #include <opl3_bridge_wopl.h>
 #include <opl3_bridge_fm.h>
 #include <opl3_bridge_sbi.h>
-#include <OPL3Tests.h>
-
+//
 #include <algorithm>
 #include <string>
 #include <cctype>
+
 
 //------------------------------------------------------------------------------
 
@@ -38,7 +38,6 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 
 
 }
-
 //------------------------------------------------------------------------------
 
 void SequencerGui::Update(const double& dt)
@@ -107,6 +106,10 @@ bool SequencerGui::Initialize()
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
+
+
+    // tests
+    mOpl3Tests = std::make_unique<OPL3Tests>(getMain()->getController());
 
 
 
@@ -195,6 +198,9 @@ void SequencerGui::ShowMenuBar()
         if (ImGui::BeginMenu("Window"))
         {
             ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
+            ImGui::MenuItem("Sound Bank", NULL, &mGuiSettings.mShowSoundBankEditor);
+
+
             ImGui::MenuItem("File Manager", NULL, &mGuiSettings.mShowFileManager);
             ImGui::MenuItem("Console", NULL, &mGuiSettings.mShowConsole);
 
@@ -223,6 +229,7 @@ void SequencerGui::ShowMenuBar()
         }
 
         ShowDSPWindow();
+        ShowSoundBankWindow();
 
         // ----------- Master Volume
         float rightOffset = 230.0f;
@@ -432,7 +439,7 @@ void SequencerGui::InitDockSpace()
 void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 {
 
-    OPL3Tests opl3Tests = OPL3Tests(getMain()->getController());
+
 
     std::string cmd = fluxStr::getWord(cmdline,0);
 
@@ -468,17 +475,21 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "scale")
     {
-        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 0);
+        int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
+        if ( instrument < 0 )
+            instrument = mCurrentInstrumentId;
         Log ("Using Instrument %d",instrument);
-        myTestSong = opl3Tests.createScaleSong(instrument);
+        myTestSong = mOpl3Tests->createScaleSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
     else
     if (cmd == "effects")
     {
-        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 0);
+        int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
+        if ( instrument < 0 )
+            instrument = mCurrentInstrumentId;
         Log ("Using Instrument %d",instrument);
-        myTestSong = opl3Tests.createEffectTestSong(instrument);
+        myTestSong = mOpl3Tests->createEffectTestSong(instrument);
         getMain()->getController()->playSong(myTestSong);
     }
     else
@@ -699,3 +710,84 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
 }
 //------------------------------------------------------------------------------
+void SequencerGui::ShowSoundBankWindow()
+{
+    if (!mGuiSettings.mShowSoundBankEditor) return;
+    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
+    if (!ImGui::Begin("Sound Bank", &mGuiSettings.mShowSoundBankEditor))
+    {
+        ImGui::End();
+        return;
+    }
+
+    if (ImGui::BeginPopupContextItem())
+    {
+        if (ImGui::MenuItem("Close"))
+            mGuiSettings.mShowSoundBankEditor = false;
+        ImGui::EndPopup();
+    }
+
+    RenderInstrumentListUI();
+    RenderInstrumentEditorUI();
+    RenderScalePlayerUI();
+
+
+    ImGui::End();
+
+}
+//------------------------------------------------------------------------------
+void SequencerGui::RenderInstrumentListUI(bool standAlone)
+{
+    if (standAlone)
+    {
+        ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Instruments");
+    }
+
+
+    std::string instrumentCaption = "";
+    if (ImGui::BeginChild("BC_Box", ImVec2(200, 600), ImGuiChildFlags_Borders)) {
+        std::vector<opl3::OplInstrument>& bank = getMain()->getController()->mSoundBank;
+
+        if (ImGui::BeginListBox("##InstList", ImVec2(-FLT_MIN, -FLT_MIN))) {
+            for (int n = 0; n < (int)bank.size(); n++) {
+                const bool is_selected = (mCurrentInstrumentId == n);
+                instrumentCaption = std::format("{:03}: {}##{}", n, bank[n].name, n);
+                if (ImGui::Selectable(instrumentCaption.c_str(), is_selected)) {
+                    mCurrentInstrumentId = n;
+                }
+
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+
+                    //FIXME TEST double click
+                    Log ("Using Instrument %d",mCurrentInstrumentId);
+                    myTestSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
+                    getMain()->getController()->playSong(myTestSong);
+                }
+
+
+                if (is_selected) ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndListBox();
+    }
+    ImGui::EndChild();
+
+
+    if (standAlone)
+    {
+        ImGui::End();
+    }
+}
+//------------------------------------------------------------------------------
+void SequencerGui::RenderInstrumentEditorUI(bool standAlone)
+{
+
+}
+//------------------------------------------------------------------------------
+void SequencerGui::RenderScalePlayerUI(bool standAlone)
+{
+
+}
+
+

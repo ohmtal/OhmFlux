@@ -7,7 +7,6 @@
 // file format specification:
 // https://github.com/Wohlstand/OPL3BankEditor/blob/master/Specifications/WOPL-and-OPLI-Specification.txt
 //
-// FIXME need to test if it's working correctly '
 //
 //-----------------------------------------------------------------------------
 
@@ -225,11 +224,95 @@ namespace opl3_bridge_wopl {
             }
         }
 
-        // Skip the Percussion Instruments section entirely
-        if (PBanks > 0) {
-            size_t percussion_data_size = (size_t)bytes_to_read * 128ULL * PBanks;
-            f.seekg(percussion_data_size, std::ios::cur);
-            debug += std::format("SKIP {} bytes (percussion instruments)\n", percussion_data_size);
+        // Basicly the same as before but i dont have the names :/
+        for (uint16_t idx_bank = 0; idx_bank < MBanks; idx_bank++)
+        {
+            for (uint8_t idx_inst = 0; idx_inst < 128; idx_inst++)
+            {
+                f.read(reinterpret_cast<char*>(d), bytes_to_read);
+                if (f.gcount() < bytes_to_read) {
+                    // guess the file is currupted
+                    bank.clear();
+                    f.close();
+                    return false;
+                }
+                opl3::OplInstrument inst;
+                needle = 0;
+
+                // 1. Name (Bytes 0-31)
+                inst.name = std::string(reinterpret_cast<const char*>(&d[needle]),
+                                        strnlen(reinterpret_cast<const char*>(&d[needle]), 32));
+
+
+
+                // if (inst.name.empty()) {
+                //     inst.name = GM_PATCH_NAMES[idx_inst];
+                // }
+
+                needle += 32;
+
+                // 2. Note Offsets (Bytes 32-35)
+                // Master offset
+                inst.noteOffset = (static_cast<int16_t>(d[needle]) << 8) | d[needle + 1];
+                needle += 2;
+                // Second voice offset
+                inst.noteOffset2 = (static_cast<int16_t>(d[needle]) << 8) | d[needle + 1];
+                needle += 2;
+
+                // 3. Velocity and Detune (Bytes 36-37)
+                int8_t velocityOffset = static_cast<int8_t>(d[needle++]);  //FIXME
+                // int8_t detune = static_cast<int8_t>(d[needle++]); // //FIXME  Used if isDoubleVoice is true
+                inst.fineTune = static_cast<int8_t>(d[needle++]); // Mapping Detune to your fineTune
+
+                // 4. Percussion Key and Flags (Bytes 38-39)
+                inst.fixedNote = d[needle++]; // Percussion key number
+                uint8_t flags = d[needle++];
+
+                inst.isFourOp      = (flags & 0x01) != 0;
+                inst.isDoubleVoice = (flags & 0x02) != 0;
+                // inst.isBlank    = (flags & 0x04) != 0; //FIXME
+
+                // 5. Feedback / Connection (Bytes 40-41)
+                // Byte 40: Feedback/Conn for Ops 1 & 2
+                inst.pairs[0].feedback   = (d[needle] >> 1) & 0x07;
+                inst.pairs[0].connection = (d[needle] & 0x01);
+                needle++;
+
+                // Byte 41: Feedback/Conn for Ops 3 & 4
+                inst.pairs[1].feedback   = (d[needle] >> 1) & 0x07;
+                inst.pairs[1].connection = (d[needle] & 0x01);
+                needle++;
+
+                // 6. Operator Data (Bytes 42-61)
+                // We map WOPL's sequence to your Modulator/Carrier slots
+
+                // --- Pair 0 (Ch A) ---
+                // WOPL Op 1 is the CARRIER for Pair 0
+                FillOpParamsFromWopl(inst.pairs[0].ops[1], d, needle);
+                needle += 5;
+                // WOPL Op 2 is the MODULATOR for Pair 0
+                FillOpParamsFromWopl(inst.pairs[0].ops[0], d, needle);
+                needle += 5;
+
+                // --- Pair 1 (Ch B) ---
+                // WOPL Op 3 is the CARRIER for Pair 1
+                FillOpParamsFromWopl(inst.pairs[1].ops[1], d, needle);
+                needle += 5;
+                // WOPL Op 4 is the MODULATOR for Pair 1
+                FillOpParamsFromWopl(inst.pairs[1].ops[0], d, needle);
+                needle += 5;
+
+
+                // 7. Version 3 Extra Fields (Bytes 62-65)
+                if (version >= 3) {
+                    inst.delayOn   = (static_cast<uint16_t>(d[needle]) << 8) | d[needle + 1]; //FIXME
+                    needle += 2;
+                    inst.delayOff = (static_cast<uint16_t>(d[needle]) << 8) | d[needle + 1]; //FIXME
+                    needle += 2;
+                    // Map these to your struct if you add delay fields later
+                }
+                bank.push_back(inst);
+            }
         }
 
 

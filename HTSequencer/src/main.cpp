@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// ohmFlux FluxEditor
+// HT-Sequencer
 //-----------------------------------------------------------------------------
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 #include "sequencerMain.h"
