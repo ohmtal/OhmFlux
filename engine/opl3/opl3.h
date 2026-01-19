@@ -1,5 +1,4 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 1993 T.Huehn (XXTH)
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
@@ -135,6 +134,10 @@ namespace opl3 {
         int8_t fineTune = 0;
         uint8_t fixedNote = 0;
         int8_t noteOffset = 0;
+        int8_t noteOffset2 = 0; //unused do far;
+        uint8_t  velocityOffset = 0; //unused do far;
+        uint16_t delayOn   = 0; //unused do far;
+        uint16_t delayOff  = 0; //unused do far;
 
 
         // Each pair (Modulator + Carrier) matches your existing UI loop

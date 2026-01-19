@@ -67,7 +67,7 @@ bool SequencerGui::Initialize()
     controller->getDSPBitCrusher()->setEnabled(SettingsManager().get("DSP_BitCrusher_ON", false));
     controller->getDSPChorus()->setEnabled(SettingsManager().get("DSP_Chorus_ON", false));
     controller->getDSPReverb()->setEnabled(SettingsManager().get("DSP_Reverb_ON", false));
-    controller->getDSPReverb()->setEnabled(SettingsManager().get("DSP_Warmth_ON", false));
+    controller->getDSPWarmth()->setEnabled(SettingsManager().get("DSP_Warmth_ON", false));
 
     controller->getDSPBitCrusher()->setSettings(SettingsManager().get<DSP::BitcrusherSettings>("DSP_BitCrusher", DSP::AMIGA_BITCRUSHER));
     controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
@@ -194,8 +194,10 @@ void SequencerGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
+            ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
             ImGui::MenuItem("File Manager", NULL, &mGuiSettings.mShowFileManager);
             ImGui::MenuItem("Console", NULL, &mGuiSettings.mShowConsole);
+
 
 
 
@@ -451,6 +453,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     if (cmd == "stop")
     {
         getMain()->getController()->stopNote(0);
+        getMain()->getController()->silenceAll(false);
     }
     else
     if (cmd == "list")
@@ -677,7 +680,15 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
                 Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
             }
     }
-
+    else
+    if (cmd == "l")
+    {
+        std::string filename = "assets/wopl/fatman-4op.wopl";
+        if (!opl3_bridge_wopl::importBank(filename, getMain()->getController()->mSoundBank) )
+            Log("[error] Failed to load %s",filename.c_str() );
+        else
+            Log("Soundbank %s loaded! %zu instruments",filename.c_str(), getMain()->getController()->mSoundBank.size() );
+    }
     else
     {
         console->AddLog("unknown command %s", cmd.c_str());

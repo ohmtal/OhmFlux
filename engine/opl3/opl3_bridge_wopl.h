@@ -2,138 +2,243 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// !! I only import the melodic instruments !!
+//
+// file format specification:
+// https://github.com/Wohlstand/OPL3BankEditor/blob/master/Specifications/WOPL-and-OPLI-Specification.txt
+//
+// FIXME need to test if it's working correctly '
+//
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include "opl3.h"
+#include "patch_names.h"
+
 #include <fstream>
 #include <vector>
 #include <string>
 #include <cstdint>
 #include <cstring>
+#include <format>
+#include <string_view>
+#include <algorithm>
 
-// FIXME this is NOT working !!!!
+
 
 
 namespace opl3_bridge_wopl {
 
+    std::string error = "";
+    std::string debug = "";
+
     // Helper to fill OplInstrument::OpPair::OpParams from Wopl instrument data (62 bytes)
     // op_idx: 0=Mod1, 1=Car1, 2=Mod2, 3=Car2
-    inline void FillOpParamsFromWopl(opl3::OplInstrument::OpPair::OpParams& op, const uint8_t* instData, int op_idx) {
-        // Offset mapping based on WOPL spec: Operators start at byte 10
-        // Each operator block is 13 bytes: [20, 40, 60, 80, E0, BaseDetune]
-        const uint8_t* o = instData + 10 + (op_idx * 13);
+    inline void FillOpParamsFromWopl(opl3::OplInstrument::OpPair::OpParams& op, const uint8_t* d, int offset) {
+        // Byte 0: AM(1) Vib(1) EGT(1) KSR(1) Multi(4)
+        op.am    = (d[offset] >> 7) & 0x01;
+        op.vib   = (d[offset] >> 6) & 0x01;
+        op.egTyp = (d[offset] >> 5) & 0x01;
+        op.ksr   = (d[offset] >> 4) & 0x01;
+        op.multi = (d[offset] & 0x0F);
 
-        op.am      = (o[0] >> 7) & 0x01;
-        op.vib     = (o[0] >> 6) & 0x01;
-        op.egTyp   = (o[0] >> 5) & 0x01;
-        op.ksr     = (o[0] >> 4) & 0x01;
-        op.multi   = o[0] & 0x0F;
+        // Byte 1: KSL(2) TL(6)
+        op.ksl   = (d[offset + 1] >> 6) & 0x03;
+        op.tl    = (d[offset + 1] & 0x3F);
 
-        op.ksl     = (o[1] >> 6) & 0x03;
-        op.tl      = o[1] & 0x3F;
+        // Byte 2: Attack(4) Decay(4)
+        op.attack = (d[offset + 2] >> 4) & 0x0F;
+        op.decay  = (d[offset + 2] & 0x0F);
 
-        op.attack  = (o[2] >> 4) & 0x0F;
-        op.decay   = o[2] & 0x0F;
+        // Byte 3: Sustain(4) Release(4)
+        op.sustain = (d[offset + 3] >> 4) & 0x0F;
+        op.release = (d[offset + 3] & 0x0F);
 
-        op.sustain = (o[3] >> 4) & 0x0F;
-        op.release = o[3] & 0x0F;
-
-        op.wave    = o[4] & 0x07;
+        // Byte 4: Waveform(3)
+        op.wave = (d[offset + 4] & 0x07);
     }
 
-    // Helper to pack OpParams back into Wopl format
-    inline void PackOpParamsToWopl(const opl3::OplInstrument::OpPair::OpParams& op, uint8_t* instData, int op_idx) {
-        uint8_t* o = instData + 10 + (op_idx * 13);
-        o[0] = (op.am << 7) | (op.vib << 6) | (op.egTyp << 5) | (op.ksr << 4) | (op.multi & 0x0F);
-        o[1] = (op.ksl << 6) | (op.tl & 0x3F);
-        o[2] = (op.attack << 4) | (op.decay & 0x0F);
-        o[3] = (op.sustain << 4) | (op.release & 0x0F);
-        o[4] = (op.wave & 0x07);
-    }
 
     //--------------------- IMPORT -----------------------------
+
     inline bool importBank(const std::string& filename, std::vector<opl3::OplInstrument>& bank) {
 
         std::ifstream f(filename, std::ios::binary);
         if (!f) return false;
 
-        char header[12];
-        f.read(header, 12); // "WOPL3-BANK\0\0"
-        if (std::strncmp(header, "WOPL3-BANK", 10) != 0) return false;
+        error = "";
+        debug = "";
 
-        f.seekg(19, std::ios::beg); // Skip version and metadata header
+        char buffer[64];
+        // 11            | Magic number "WOPL3-BANK\0". Where '\0' is a zero byte  which termiates the string
+        f.read(buffer, 11); // "WOPL3-BANK\0"
+        if (std::strncmp(buffer, "WOPL3-BANK\0", 11) != 0) {
+            error += std::format("Invalid Magic {}\n", buffer);
+            return false;
+        }
+        debug += "* magic ok\n";
 
-        // WOPL usually contains 128 melodic + 47 percussion = 175 total instruments
-        bank.clear();
-        for (int i = 0; i < 175; ++i) {
-            uint8_t d[62];
-            f.read(reinterpret_cast<char*>(d), 62);
-            if (f.gcount() < 62) break;
+        // 2 | Version. Little endian Unsigned 16-bit integer. Latest version is 3
+        f.read(buffer, 2);
+        uint16_t version = static_cast<uint8_t>(buffer[0]) | (static_cast<uint8_t>(buffer[1]) << 8);
 
-            opl3::OplInstrument inst;
-            inst.isFourOp = (d[0] & 0x01);
-            // Pseudo 4-op (isDoubleVoice) is usually bit 0x02 in WOPL flag byte
-            inst.isDoubleVoice = (d[0] & 0x02);
+        debug += std::format("* found version {}\n", version);
 
-            inst.noteOffset = static_cast<int8_t>(d[1]);
-            // WOPL 62-byte name starts at byte 30 (for 32 bytes)
-            char nameBuf[33];
-            std::memcpy(nameBuf, &d[30], 32);
-            nameBuf[32] = '\0';
-            inst.name = std::string(nameBuf);
+        // 2 | [MBanks] Unsigned 16-bit BE integer, count of melodic MIDI banks
+        f.read(buffer, 2);
+        uint16_t MBanks = (static_cast<uint8_t>(buffer[0]) << 8) | static_cast<uint8_t>(buffer[1]);
+        debug += std::format("* melodic bank count {}\n", MBanks);
 
-            // Pair 0
-            inst.pairs[0].feedback = (d[2] >> 1) & 0x07;
-            inst.pairs[0].connection = d[2] & 0x01;
-            FillOpParamsFromWopl(inst.pairs[0].ops[0], d, 0);
-            FillOpParamsFromWopl(inst.pairs[0].ops[1], d, 1);
+        // 2  | [PBanks] Unsigned 16-bit BE integer, count of percussion  MIDI banks (every bank contains 128 instruments)
+        f.read(buffer, 2);
+        uint16_t PBanks = (static_cast<uint8_t>(buffer[0]) << 8) | static_cast<uint8_t>(buffer[1]);
 
-            // Pair 1 (if 4-op)
-            inst.pairs[1].feedback = (d[3] >> 1) & 0x07;
-            inst.pairs[1].connection = d[3] & 0x01;
-            FillOpParamsFromWopl(inst.pairs[1].ops[0], d, 2);
-            FillOpParamsFromWopl(inst.pairs[1].ops[1], d, 3);
+        debug += std::format("* percussion bank count {}\n", PBanks);
 
-            bank.push_back(inst);
+        // skip 2 bytes
+        // 1  8-bit unsigned integer, Global bank ...
+        // 1 ADLMIDI's volume scaling model ...
+        f.seekg(2,  std::ios::cur);
+
+        // SKIP
+        // (repeat MBanks times)
+        // 32            | Name of melodic bank null-terminated string
+        // 1             | LSB index of bank (unsigned char)
+        // 1             | MSB index of bank (unsigned char)
+        // --VERSION >= 2---Percussion bank meta-data--
+        // (repeat PBanks times)
+        // 32            | Name of melodic bank null-terminated string
+        // 1             | LSB index of bank (unsigned char)
+        // 1             | MSB index of bank (unsigned char)
+
+        if (version >= 2) {
+            size_t bytes_to_skip = 34ULL * (MBanks + PBanks);
+            f.seekg(bytes_to_skip, std::ios::cur);
+            debug += std::format("SKIP {} bytes (bank meta data)\n", bytes_to_skip);
         }
 
+        // InsSize:
+        // --62 bytes in up to version 2
+        // --66 bytes since version 3 and later
+        //
+        // -----------Melodic Instruments--------------
+        // InsSize * 128 * MBanks  | 128 [Single-instrument entries] per each bank,
+        // |     look at top of this text file
+        // ---------Percussion Instruments-------------
+        // InsSize * 128 * PBanks  | 128 [Single-instrument entries] per each bank,
+        // |     look at top of this text file
+        // --------------------------------------------
+
+        bank.clear();
+
+        uint8_t bytes_to_read = version > 2 ? 66 : 62;
+        uint8_t needle = 0;
+        uint8_t d[66];
+
+        for (uint16_t idx_bank = 0; idx_bank < MBanks; idx_bank++)
+        {
+            for (uint8_t idx_inst = 0; idx_inst < 128; idx_inst++)
+            {
+                f.read(reinterpret_cast<char*>(d), bytes_to_read);
+                if (f.gcount() < bytes_to_read) {
+                    // guess the file is currupted
+                    bank.clear();
+                    f.close();
+                    return false;
+                }
+                opl3::OplInstrument inst;
+                needle = 0;
+
+                // 1. Name (Bytes 0-31)
+                inst.name = std::string(reinterpret_cast<const char*>(&d[needle]),
+                                        strnlen(reinterpret_cast<const char*>(&d[needle]), 32));
+
+
+                if (inst.name.empty()) {
+                     inst.name = GM_PATCH_NAMES[idx_inst];
+                }
+
+                needle += 32;
+
+                // 2. Note Offsets (Bytes 32-35)
+                // Master offset
+                inst.noteOffset = (static_cast<int16_t>(d[needle]) << 8) | d[needle + 1];
+                needle += 2;
+                // Second voice offset
+                inst.noteOffset2 = (static_cast<int16_t>(d[needle]) << 8) | d[needle + 1];
+                needle += 2;
+
+                // 3. Velocity and Detune (Bytes 36-37)
+                int8_t velocityOffset = static_cast<int8_t>(d[needle++]);  //FIXME
+                // int8_t detune = static_cast<int8_t>(d[needle++]); // //FIXME  Used if isDoubleVoice is true
+                inst.fineTune = static_cast<int8_t>(d[needle++]); // Mapping Detune to your fineTune
+
+                // 4. Percussion Key and Flags (Bytes 38-39)
+                inst.fixedNote = d[needle++]; // Percussion key number
+                uint8_t flags = d[needle++];
+
+                inst.isFourOp      = (flags & 0x01) != 0;
+                inst.isDoubleVoice = (flags & 0x02) != 0;
+                // inst.isBlank    = (flags & 0x04) != 0; //FIXME
+
+                // 5. Feedback / Connection (Bytes 40-41)
+                // Byte 40: Feedback/Conn for Ops 1 & 2
+                inst.pairs[0].feedback   = (d[needle] >> 1) & 0x07;
+                inst.pairs[0].connection = (d[needle] & 0x01);
+                needle++;
+
+                // Byte 41: Feedback/Conn for Ops 3 & 4
+                inst.pairs[1].feedback   = (d[needle] >> 1) & 0x07;
+                inst.pairs[1].connection = (d[needle] & 0x01);
+                needle++;
+
+                // 6. Operator Data (Bytes 42-61)
+                // We map WOPL's sequence to your Modulator/Carrier slots
+
+                // --- Pair 0 (Ch A) ---
+                // WOPL Op 1 is the CARRIER for Pair 0
+                FillOpParamsFromWopl(inst.pairs[0].ops[1], d, needle);
+                needle += 5;
+                // WOPL Op 2 is the MODULATOR for Pair 0
+                FillOpParamsFromWopl(inst.pairs[0].ops[0], d, needle);
+                needle += 5;
+
+                // --- Pair 1 (Ch B) ---
+                // WOPL Op 3 is the CARRIER for Pair 1
+                FillOpParamsFromWopl(inst.pairs[1].ops[1], d, needle);
+                needle += 5;
+                // WOPL Op 4 is the MODULATOR for Pair 1
+                FillOpParamsFromWopl(inst.pairs[1].ops[0], d, needle);
+                needle += 5;
+
+
+                // 7. Version 3 Extra Fields (Bytes 62-65)
+                if (version >= 3) {
+                    inst.delayOn   = (static_cast<uint16_t>(d[needle]) << 8) | d[needle + 1]; //FIXME
+                    needle += 2;
+                    inst.delayOff = (static_cast<uint16_t>(d[needle]) << 8) | d[needle + 1]; //FIXME
+                    needle += 2;
+                    // Map these to your struct if you add delay fields later
+                }
+                bank.push_back(inst);
+            }
+        }
+
+        // Skip the Percussion Instruments section entirely
+        if (PBanks > 0) {
+            size_t percussion_data_size = (size_t)bytes_to_read * 128ULL * PBanks;
+            f.seekg(percussion_data_size, std::ios::cur);
+            debug += std::format("SKIP {} bytes (percussion instruments)\n", percussion_data_size);
+        }
+
+
+        printf("%s", debug.c_str());;
+
+        f.close();
         return true;
     }
 
     //--------------------- EXPORT -----------------------------
-    inline bool exportBank(const std::string& filename, const std::vector<opl3::OplInstrument>& bank) {
-        std::ofstream f(filename, std::ios::binary);
-        if (!f) return false;
 
-        // Write Header
-        f.write("WOPL3-BANK\0\0", 12);
-        uint8_t ver[3] = {3, 0, 0}; // Version 3
-        f.write(reinterpret_cast<char*>(ver), 3);
-        uint16_t counts[2] = {128, 47}; // Melodic, Percussion
-        f.write(reinterpret_cast<char*>(counts), 4);
-
-        for (const auto& inst : bank) {
-            uint8_t d[62];
-            std::memset(d, 0, 62);
-
-            d[0] |= inst.isFourOp ? 0x01 : 0x00;
-            d[0] |= inst.isDoubleVoice ? 0x02 : 0x00;
-            d[1] = static_cast<uint8_t>(inst.noteOffset);
-
-            d[2] = (inst.pairs[0].feedback << 1) | (inst.pairs[0].connection & 0x01);
-            d[3] = (inst.pairs[1].feedback << 1) | (inst.pairs[1].connection & 0x01);
-
-            PackOpParamsToWopl(inst.pairs[0].ops[0], d, 0);
-            PackOpParamsToWopl(inst.pairs[0].ops[1], d, 1);
-            PackOpParamsToWopl(inst.pairs[1].ops[0], d, 2);
-            PackOpParamsToWopl(inst.pairs[1].ops[1], d, 3);
-
-            // Name (last 32 bytes)
-            std::strncpy(reinterpret_cast<char*>(&d[30]), inst.name.c_str(), 31);
-
-            f.write(reinterpret_cast<char*>(d), 62);
-        }
-
-        return true;
-    }
 };

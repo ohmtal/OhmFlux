@@ -12,6 +12,7 @@
 
 //------------------------------------------------------------------------------
 void SequencerGui::ShowDSPWindow(){
+    if (!mGuiSettings.mShowDSP) return;
     ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Digital Sound Processing", &mGuiSettings.mShowDSP))
     {
