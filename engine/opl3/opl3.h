@@ -152,10 +152,41 @@ namespace opl3 {
                 uint8_t ksl = 0, tl = 0, multi = 0;
                 uint8_t attack = 0, decay = 0, sustain = 0, release = 0;
                 uint8_t wave = 0, ksr = 0, egTyp = 0, vib = 0, am = 0;
+
+                bool operator==(const OpParams& other) const {
+                    return ksl == other.ksl && tl == other.tl && multi == other.multi &&
+                           attack == other.attack && decay == other.decay &&
+                           sustain == other.sustain && release == other.release &&
+                           wave == other.wave && ksr == other.ksr &&
+                           egTyp == other.egTyp && vib == other.vib && am == other.am;
+                }
             } ops[2];
+
+            bool operator==(const OpPair& other) const {
+                return feedback == other.feedback &&
+                       connection == other.connection &&
+                       panning == other.panning &&
+                       ops[0] == other.ops[0] &&
+                       ops[1] == other.ops[1];
+            }
         };
 
         OpPair pairs[2]; // Pair 0 (Ch A), Pair 1 (Ch B - only used if isFourOp is true)
+
+        bool operator==(const OplInstrument& other) const {
+            return name == other.name &&
+                   isFourOp == other.isFourOp &&
+                   isDoubleVoice == other.isDoubleVoice &&
+                   fineTune == other.fineTune &&
+                   fixedNote == other.fixedNote &&
+                   noteOffset == other.noteOffset &&
+                   noteOffset2 == other.noteOffset2 &&
+                   velocityOffset == other.velocityOffset &&
+                   delayOn == other.delayOn &&
+                   delayOff == other.delayOff &&
+                   pairs[0] == other.pairs[0] &&
+                   pairs[1] == other.pairs[1];
+        }
     };
     //--------------------------------------------------------------------------
     // struct SongStep {
@@ -172,6 +203,15 @@ namespace opl3 {
         uint8_t panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
         uint8_t effectType = 0;  // High byte of effect (e.g., 'A')
         uint8_t effectVal  = 0;  // Low byte of effect (e.g., 0x0F)
+
+        bool operator==(const SongStep& other) const {
+            return note == other.note &&
+                   instrument == other.instrument &&
+                   volume == other.volume &&
+                   panning == other.panning &&
+                   effectType == other.effectType &&
+                   effectVal == other.effectVal;
+        }
     };
     //--------------------------------------------------------------------------
     struct Pattern {
@@ -194,6 +234,13 @@ namespace opl3 {
                 step.effectVal  = 0;
             }
         }
+
+        bool operator==(const Pattern& other) const {
+            return name == other.name &&
+                   color == other.color &&
+                   rowCount == other.rowCount &&
+                   steps == other.steps;
+        }
     };
     //--------------------------------------------------------------------------
     struct SongData {
@@ -215,6 +262,15 @@ namespace opl3 {
                 total += patterns[patIdx].rowCount;
             }
             return total;
+        }
+
+        bool operator==(const SongData& other) const {
+            return title == other.title &&
+                   bpm == other.bpm &&
+                   speed == other.speed &&
+                   instruments == other.instruments &&
+                   patterns == other.patterns &&
+                   orderList == other.orderList;
         }
     };
     //--------------------------------------------------------------------------
