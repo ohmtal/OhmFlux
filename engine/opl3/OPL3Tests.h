@@ -7,6 +7,7 @@
 #include "ymfm_opl.h"
 #include "opl3.h"
 #include "OPL3Controller.h"
+#include "opl3_bridge_htseq.h"
 #include <SDL3/SDL_audio.h>
 
 
@@ -181,6 +182,59 @@ public:
         song.orderList.push_back(0);
 
         return song;
+    }
+
+    void testSaveLoadSongData() {
+        LogFMT("Running testSaveLoadSongData...");
+
+        // 1. Create a dummy SongData object
+        opl3::SongData originalSong;
+        originalSong.title = "Test Song for Saving";
+        originalSong.bpm = 130.0f;
+        originalSong.speed = 8;
+
+        opl3::OplInstrument inst1;
+        inst1.name = "Test Instrument 1";
+        inst1.isFourOp = true;
+        inst1.pairs[0].feedback = 5;
+        inst1.pairs[0].ops[0].attack = 10;
+        originalSong.instruments.push_back(inst1);
+
+        opl3::Pattern pat1(16, opl3::SongData::CHANNELS);
+        pat1.name = "Test Pattern 1";
+        pat1.steps[0].note = 60;
+        pat1.steps[0].instrument = 0;
+        pat1.steps[0].volume = 40;
+        originalSong.patterns.push_back(pat1);
+
+        originalSong.orderList.push_back(0);
+
+        // 2. Define a temporary file path
+        std::string testFilePath = "/home/tom/.gemini/tmp/c4313b765886bd9bba3d6ab9ebd027480ef04e8c88750d4fed4e603cc795dd6a/test_song.htseq";
+
+        // 3. Save the song data
+        bool saveSuccess = opl3_bridge_htseq::saveSongData(testFilePath, originalSong);
+        if (!saveSuccess) {
+            LogFMT("ERROR: Failed to save song data to {}", testFilePath);
+            return;
+        }
+        LogFMT("Successfully saved song data to {}.", testFilePath);
+
+        // 4. Load the song data back
+        opl3::SongData loadedSong;
+        bool loadSuccess = opl3_bridge_htseq::loadSongData(testFilePath, loadedSong);
+        if (!loadSuccess) {
+            LogFMT("ERROR: Failed to load song data from {}", testFilePath);
+            return;
+        }
+        LogFMT("Successfully loaded song data from {}.", testFilePath);
+
+        // 5. Compare original and loaded song data
+        if (originalSong == loadedSong) {
+            LogFMT("SUCCESS: Original and loaded song data match!");
+        } else {
+            LogFMT("ERROR: Original and loaded song data MISMATCH!");
+        }
     }
 
 };  // namespace OPL3
