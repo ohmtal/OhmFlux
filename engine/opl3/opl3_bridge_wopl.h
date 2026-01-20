@@ -2,8 +2,9 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// !! I only import the melodic instruments !!
-//
+// !! FIXME precussion added on bottom with redundant import code !!
+//    and without names ... TODO......
+//-----------------------------------------------------------------------------
 // file format specification:
 // https://github.com/Wohlstand/OPL3BankEditor/blob/master/Specifications/WOPL-and-OPLI-Specification.txt
 //

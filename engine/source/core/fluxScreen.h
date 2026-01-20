@@ -68,6 +68,8 @@ public:
 	bool setIcon(const char* lFilename);
 	bool setCursor(const char* lFilename,  int hot_x = 0, int hot_y = 0);
 
+
+
 	void setWidth(S32 value)  { _mWidth =  value; _mCenterX = (S32)(_mWidth/2.f); }
 	void setHeight(S32 value) { _mHeight = value; _mCenterY = (S32)(_mHeight/2.f);}
 	S32  getWidth()		 const { return _mWidth; }
@@ -95,6 +97,22 @@ public:
 
 	void setScaleScreen(bool value) 	{mScaleScreen = value;}
 	bool setScaleScreen() 	const {return mScaleScreen;}
+
+	bool getWindowMaximized() {
+		mWindowMaximized = (SDL_GetWindowFlags(mWindow) & SDL_WINDOW_MAXIMIZED) != 0;
+		return mWindowMaximized;
+	}
+	void setWindowMaximized(bool value) {
+		if (value) {
+			SDL_MaximizeWindow(mWindow);
+		} else {
+			SDL_RestoreWindow(mWindow);
+		}
+		mWindowMaximized = (SDL_GetWindowFlags(mWindow) & SDL_WINDOW_MAXIMIZED) != 0;
+	}
+
+
+
 
 };
 

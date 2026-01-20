@@ -38,6 +38,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 
 
 }
+
 //------------------------------------------------------------------------------
 
 void SequencerGui::Update(const double& dt)
@@ -67,11 +68,18 @@ bool SequencerGui::Initialize()
     controller->getDSPChorus()->setEnabled(SettingsManager().get("DSP_Chorus_ON", false));
     controller->getDSPReverb()->setEnabled(SettingsManager().get("DSP_Reverb_ON", false));
     controller->getDSPWarmth()->setEnabled(SettingsManager().get("DSP_Warmth_ON", false));
+    controller->getDSPLimiter()->setEnabled(SettingsManager().get("DSP_LIMITER_ON", true));
+    controller->getDSPEquilzer9Band()->setEnabled(SettingsManager().get("DSP_EQ9BAND_ON", true));
+
 
     controller->getDSPBitCrusher()->setSettings(SettingsManager().get<DSP::BitcrusherSettings>("DSP_BitCrusher", DSP::AMIGA_BITCRUSHER));
     controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
     controller->getDSPReverb()->setSettings(SettingsManager().get<DSP::ReverbSettings>("DSP_Reverb", DSP::HALL_REVERB));
     controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::TUBEAMP_WARMTH));
+    controller->getDSPEquilzer9Band()->setSettings( SettingsManager().get<DSP::Equalizer9BandSettings>("DSP_EQ9BAND", DSP::FLAT_EQ ));
+
+
+    getScreenObject()->setWindowMaximized(SettingsManager().get("WINDOW_MAXIMIZED", getMain()->mSettings.WindowMaximized ));
 
 
 
@@ -119,7 +127,6 @@ bool SequencerGui::Initialize()
 void SequencerGui::Deinitialize()
 {
 
-    //FIXME unbind to null!
     SDL_SetLogOutputFunction(nullptr, nullptr);
 
     // SAFE_DELETE(mFMComposer); //Composer before FMEditor !!!
@@ -135,12 +142,17 @@ void SequencerGui::Deinitialize()
         SettingsManager().set("DSP_Chorus",     controller->getDSPChorus()->getSettings());
         SettingsManager().set("DSP_Reverb",     controller->getDSPReverb()->getSettings());
         SettingsManager().set("DSP_Warmth",     controller->getDSPWarmth()->getSettings());
+        SettingsManager().set("DSP_EQ9BAND",     controller->getDSPEquilzer9Band()->getSettings());
 
         SettingsManager().set("DSP_BitCrusher_ON", controller->getDSPBitCrusher()->isEnabled());
         SettingsManager().set("DSP_Chorus_ON", controller->getDSPChorus()->isEnabled());
         SettingsManager().set("DSP_Reverb_ON", controller->getDSPReverb()->isEnabled());
         SettingsManager().set("DSP_Warmth_ON", controller->getDSPWarmth()->isEnabled());
+        SettingsManager().set("DSP_LIMITER_ON", controller->getDSPLimiter()->isEnabled());
+        SettingsManager().set("DSP_EQ9BAND_ON", controller->getDSPEquilzer9Band()->isEnabled());
 
+
+        SettingsManager().set("WINDOW_MAXIMIZED", getScreenObject()->getWindowMaximized());
 
         SettingsManager().save();
     }
@@ -330,8 +342,6 @@ void SequencerGui::DrawGui()
                 }
 
 
-                //FIXME sfx
-                //reset
                 g_FileDialog.reset();
             } else {
                 if ( g_FileDialog.selectedExt == ".op2" )
@@ -709,85 +719,3 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
 
 }
-//------------------------------------------------------------------------------
-void SequencerGui::ShowSoundBankWindow()
-{
-    if (!mGuiSettings.mShowSoundBankEditor) return;
-    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Sound Bank", &mGuiSettings.mShowSoundBankEditor))
-    {
-        ImGui::End();
-        return;
-    }
-
-    if (ImGui::BeginPopupContextItem())
-    {
-        if (ImGui::MenuItem("Close"))
-            mGuiSettings.mShowSoundBankEditor = false;
-        ImGui::EndPopup();
-    }
-
-    RenderInstrumentListUI();
-    RenderInstrumentEditorUI();
-    RenderScalePlayerUI();
-
-
-    ImGui::End();
-
-}
-//------------------------------------------------------------------------------
-void SequencerGui::RenderInstrumentListUI(bool standAlone)
-{
-    if (standAlone)
-    {
-        ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Instruments");
-    }
-
-
-    std::string instrumentCaption = "";
-    if (ImGui::BeginChild("BC_Box", ImVec2(200, 600), ImGuiChildFlags_Borders)) {
-        std::vector<opl3::OplInstrument>& bank = getMain()->getController()->mSoundBank;
-
-        if (ImGui::BeginListBox("##InstList", ImVec2(-FLT_MIN, -FLT_MIN))) {
-            for (int n = 0; n < (int)bank.size(); n++) {
-                const bool is_selected = (mCurrentInstrumentId == n);
-                instrumentCaption = std::format("{:03}: {}##{}", n, bank[n].name, n);
-                if (ImGui::Selectable(instrumentCaption.c_str(), is_selected)) {
-                    mCurrentInstrumentId = n;
-                }
-
-                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-
-                    //FIXME TEST double click
-                    Log ("Using Instrument %d",mCurrentInstrumentId);
-                    myTestSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
-                    getMain()->getController()->playSong(myTestSong);
-                }
-
-
-                if (is_selected) ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndListBox();
-    }
-    ImGui::EndChild();
-
-
-    if (standAlone)
-    {
-        ImGui::End();
-    }
-}
-//------------------------------------------------------------------------------
-void SequencerGui::RenderInstrumentEditorUI(bool standAlone)
-{
-
-}
-//------------------------------------------------------------------------------
-void SequencerGui::RenderScalePlayerUI(bool standAlone)
-{
-
-}
-
-

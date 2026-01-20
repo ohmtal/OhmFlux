@@ -83,12 +83,17 @@ private:
     void RenderChorusUI();
     void RenderReverbUI();
     void RenderWarmthUI();
+    void RenderLimiterUI();
+    void RenderEquilizer9BandUI();
 
     // ---- Bank / Instruments -----
-    int mCurrentInstrumentId = 0;
+    uint16_t mCurrentInstrumentId = 0;
     void ShowSoundBankWindow();
     void RenderInstrumentListUI(bool standAlone = false);
+
     void RenderInstrumentEditorUI(bool standAlone = false);
+    void RenderOpParam(const ParamMeta& meta, OplInstrument::OpPair::OpParams& op, int metaIdx);
+
     void RenderScalePlayerUI(bool standAlone = false);
 
 
@@ -106,7 +111,7 @@ public:
     void onKeyEvent(SDL_KeyboardEvent event);
     void Update(const double& dt) override;
 
-
+    //------------------------------------------------------------------------------
 
 }; //class
 
@@ -130,4 +135,5 @@ namespace DSP {
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ChorusSettings, rate, depth, delayBase, wet, phaseOffset)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReverbSettings, decay, sizeL, sizeR, wet)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarmthSettings, cutoff, drive, wet)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Equalizer9BandSettings, gains)
 }

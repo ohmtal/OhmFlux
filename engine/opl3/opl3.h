@@ -167,7 +167,7 @@ namespace opl3 {
 
     struct SongStep {
         uint8_t note       = NONE_NOTE;  // 255=None, 1-127 (MIDI range), 128=Off
-        uint8_t instrument = 0;  // 0=None, 1-255
+        uint16_t instrument = 0;  // up to 64k should be enough
         uint8_t volume     = 63; // 0-63 (Standard tracker range)
         uint8_t panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
         uint8_t effectType = 0;  // High byte of effect (e.g., 'A')
@@ -273,7 +273,6 @@ namespace opl3 {
     struct ParamMeta {
         std::string name;
         uint8_t maxValue;
-        // Offset into an "OpParams" struct if you want to automate mapping
     };
 
     const std::vector<ParamMeta> OPL_OP_METADATA = {

@@ -112,6 +112,9 @@ private:
     DSP::Warmth* mDSPWarmth;
     DSP::Reverb* mDSPReverb;
     DSP::Chorus* mDSPChorus;
+    DSP::Limiter* mLimiter;
+    DSP::Equalizer9Band* mEquilzer9Band;
+
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
 
     // ------ import -------------
@@ -211,6 +214,10 @@ public:
     DSP::Chorus* getDSPChorus() {return mDSPChorus;}
     DSP::Reverb* getDSPReverb() {return mDSPReverb;}
     DSP::Warmth* getDSPWarmth() { return mDSPWarmth; }
+    DSP::Limiter* getDSPLimiter() { return mLimiter; }
+    DSP::Equalizer9Band* getDSPEquilzer9Band() { return mEquilzer9Band; }
+
+
     // ------ import -------------
     // ------ export -------------
     //FIXME bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr);

@@ -173,8 +173,16 @@ bool OPL3Controller::initController()
     mDSPReverb = reverb.get();
     mDspEffects.push_back(std::move(reverb));
     //------------------------
+    // 9Band:
+    auto eq9band = std::make_unique<DSP::Equalizer9Band>(false);
+    mEquilzer9Band = eq9band.get();
+    mDspEffects.push_back(std::move(eq9band));
+
+    //------------------------
     //Limiter Last !
-    mDspEffects.push_back(std::make_unique<DSP::Limiter>(true));
+    auto limiter = std::make_unique<DSP::Limiter>(true);
+    mLimiter = limiter.get();
+    mDspEffects.push_back(std::move(limiter));
     // ------------------------
 
     Log("OPL3 Controller initialized..");
