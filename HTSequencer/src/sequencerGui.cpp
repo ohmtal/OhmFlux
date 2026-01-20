@@ -7,6 +7,7 @@
 #include <opl3_bridge_wopl.h>
 #include <opl3_bridge_fm.h>
 #include <opl3_bridge_sbi.h>
+#include "opl3_bridge_htseq.h"
 //
 #include <algorithm>
 #include <string>
@@ -669,6 +670,52 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     }
     else if (cmd=="chord") {
         getMain()->getController()->playChord(mCurrentInstrumentId, 60, opl3::CHORD_MAJOR);
+    }
+    else
+    if (cmd == "savesong")
+    {
+        int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
+        if ( instrument < 0 )
+            instrument = mCurrentInstrumentId;
+        Log ("Using Instrument %d",instrument);
+        myTestSong = mOpl3Tests->createEffectTestSong(instrument);
+        // sync instruments from soundBank!
+        myTestSong.instruments = getMain()->getController()->mSoundBank;
+
+        // Save the song data
+        std::string testFilePath = "./test_song.htseq";
+        bool saveSuccess = opl3_bridge_htseq::saveSong(testFilePath, myTestSong);
+        if (!saveSuccess) {
+            LogFMT("[error] Failed to save song data to {}", testFilePath);
+        }  else {
+            LogFMT("Song successfully saved to {}", testFilePath);
+        }
+
+    }
+    else
+    if (cmd == "loadsong")
+    {
+        myTestSong.clear();
+        std::string testFilePath = "./test_song.htseq";
+        bool success = opl3_bridge_htseq::loadSong(testFilePath, myTestSong);
+        if (!success) {
+            LogFMT("[error] Failed to load song data to {}", testFilePath);
+        }  else {
+            LogFMT("Song successfully loaded {}", testFilePath);
+        }
+        // sync instruments to soundBank!
+        getMain()->getController()->mSoundBank =  myTestSong.instruments;
+
+    }
+    else
+    if (cmd == "clearsong")
+    {
+        myTestSong.clear();
+    }
+    else
+    if (cmd == "playsong")
+    {
+       Log("Playsong is: %d", getMain()->getController()->playSong(myTestSong));
     }
     else
     {

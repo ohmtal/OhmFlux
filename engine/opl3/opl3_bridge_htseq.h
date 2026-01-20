@@ -2,6 +2,10 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// WARNING THIS IS NOT READY TO USE !!!! DO NOT USE IT !! :P
+// TODO: Define the format and update the read/writes
+// TODO: helper function for soundBank Sync!
+//-----------------------------------------------------------------------------
 #pragma once
 
 #include "opl3.h"
@@ -159,7 +163,7 @@ namespace opl3_bridge_htseq {
     }
 
     // Main serialization function
-    bool saveSongData(const std::string& filePath, const opl3::SongData& song) {
+    bool saveSong(const std::string& filePath, const opl3::SongData& song) {
         std::ofstream ofs(filePath, std::ios::binary);
         if (!ofs.is_open()) {
             return false;
@@ -196,7 +200,7 @@ namespace opl3_bridge_htseq {
     }
 
     // Main deserialization function
-    bool loadSongData(const std::string& filePath, opl3::SongData& song) {
+    bool loadSong(const std::string& filePath, opl3::SongData& song) {
         std::ifstream ifs(filePath, std::ios::binary);
         if (!ifs.is_open()) {
             return false;

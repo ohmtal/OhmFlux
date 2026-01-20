@@ -220,6 +220,8 @@ namespace opl3 {
         uint16_t rowCount;
         std::vector<SongStep> steps;
 
+         Pattern() = default;
+
         // Use member initializer list for rowCount
         Pattern(uint16_t rows, int channels = 18) : rowCount(rows) {
             steps.resize(rows * channels);
@@ -254,6 +256,18 @@ namespace opl3 {
         std::vector<OplInstrument> instruments;
         std::vector<Pattern> patterns;
         std::vector<uint8_t> orderList; // The "playlist" of pattern indices
+
+        void clear() {
+            // Reset basic info
+            title = "New OPL Song";
+            bpm = 125.0f;
+            speed = 6;
+
+            // Empty the collections
+            instruments.clear();
+            patterns.clear();
+            orderList.clear();
+        }
 
         // Utility: Calculate total song length in rows
         size_t getTotalRows() const {

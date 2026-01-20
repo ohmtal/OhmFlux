@@ -1032,7 +1032,34 @@ void OPL3Controller::consoleSongOutput(bool useNumbers, uint8_t upToChannel)
     }
 }
 //------------------------------------------------------------------------------
-void OPL3Controller::playSong(opl3::SongData& songData) {
+bool OPL3Controller::playSong(opl3::SongData& songData)  {
+
+    if (songData.patterns.size() == 0) return false;
+
+
+    // 1. Validate Pattern Indices in OrderList
+    for (size_t i = 0; i < songData.orderList.size(); ++i) {
+        uint8_t patternIdx = songData.orderList[i];
+        if (patternIdx >= songData.patterns.size()) {
+            // // Log error and stop to prevent crash
+            // std::cerr << "Error: OrderList[" << i << "] points to invalid Pattern "
+            // << (int)patternIdx << " (Max is " << songData.patterns.size() - 1 << ")" << std::endl;
+            return false;
+        }
+    }
+
+    // 2. Validate Instrument Indices within Patterns
+    for (const auto& pattern : songData.patterns) {
+        for (const auto& step : pattern.steps) {
+            // Only check if it's not an empty note
+            if (step.note != NONE_NOTE && step.instrument >= songData.instruments.size()) {
+                // std::cerr << "Error: Pattern " << pattern.name
+                // << " uses invalid Instrument " << (int)step.instrument << std::endl;
+                return false;
+            }
+        }
+    }
+
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
     // 1. Assign Song Data
@@ -1074,6 +1101,8 @@ void OPL3Controller::playSong(opl3::SongData& songData) {
     // 6. Start Playback
     mSeqState.playing = true;
     mSeqState.ui_dirty = true;
+
+    return true;
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::playNote(uint8_t channel, uint16_t fnum, uint8_t octave) {

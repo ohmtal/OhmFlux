@@ -179,7 +179,7 @@ public:
 
 
 
-    void playSong(SongData& songData);
+    bool playSong(SongData& songData);
 
 
 
