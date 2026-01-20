@@ -28,15 +28,12 @@ public:
     // a.) mDefaultEditorSettings
     // b.) on the bottom to the json macro!!! 
     struct GuiSettings {
-        // bool mShowDemo;
-        // bool mShowSFXEditor;
-        // bool mShowFMInstrumentEditor;
-        // bool mShowFMComposer;
         bool mEditorGuiInitialized;
         bool mShowFileManager;
         bool mShowConsole;
         bool mShowDSP;
         bool mShowSoundBankEditor;
+        bool mShowScalePlayer;
 
     };
 
@@ -44,24 +41,16 @@ public:
 private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
-    // FluxSfxEditor* mSfxEditor = nullptr;
-    // FluxFMEditor* mFMEditor = nullptr;
-    // FluxComposer* mFMComposer = nullptr;
 
 
     GuiSettings mGuiSettings;
     GuiSettings mDefaultGuiSettings = {
-        // .mShowDemo = false,
-        // .mShowSFXEditor = true,
-        // .mShowFMInstrumentEditor = true,
-        // .mShowFMComposer = true,
-        // .mShowCompleteScale = false,
-
           .mEditorGuiInitialized = false
         , .mShowFileManager = true
         , .mShowConsole     = true
         , .mShowDSP         = false
         , .mShowSoundBankEditor  = true
+        , .mShowScalePlayer = true
     };
 
 
@@ -71,6 +60,8 @@ private:
 
 
     void ShowMenuBar();
+
+    void ShowFileManager();
 
 
     // ----- Tests ------
@@ -117,16 +108,12 @@ public:
 
 // macro for JSON support
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::GuiSettings,
-    // mShowDemo,
-    // mShowSFXEditor,
-    // mShowFMInstrumentEditor,
-    // mShowFMComposer,
-    // mShowCompleteScale,
     mEditorGuiInitialized
     ,mShowFileManager
     ,mShowConsole
     ,mShowDSP
     ,mShowSoundBankEditor
+    ,mShowScalePlayer
 )
 
 namespace DSP {

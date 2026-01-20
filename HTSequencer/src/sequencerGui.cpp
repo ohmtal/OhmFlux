@@ -35,8 +35,91 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 
     // bad if we are gone !!
     getMain()->getGui()->mConsole.AddLog("%s", message);
+}
+//------------------------------------------------------------------------------
+void SequencerGui::ShowFileManager(){
+    if (g_FileDialog.Draw()) {
+        // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+
+        if (g_FileDialog.mSaveMode)
+        {
+            if (!g_FileDialog.mCancelPressed)
+            {
+                // if (g_FileDialog.mSaveExt == ".fms")
+                // {
+                //     if (g_FileDialog.selectedExt == "")
+                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                //     mFMComposer->saveSong(g_FileDialog.selectedFile);
+                // }
+                // else
+                // if (g_FileDialog.mSaveExt == ".fmi")
+                // {
+                //     if (g_FileDialog.selectedExt == "")
+                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                //     mFMEditor->saveInstrument(g_FileDialog.selectedFile);
+                // }
+                // else
+                // if (g_FileDialog.mSaveExt == ".fms.wav")
+                // {
+                //     if (g_FileDialog.selectedExt == "")
+                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                //     mFMComposer->exportSongToWav(g_FileDialog.selectedFile);
+                // }
+
+            }
 
 
+            g_FileDialog.reset();
+        } else {
+            if ( g_FileDialog.selectedExt == ".op2" )
+            {
+                if (!opl3_bridge_op2::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
+                    Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
+                else
+                    Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
+            }
+            else
+                if ( g_FileDialog.selectedExt == ".wopl" )
+                {
+                    if (!opl3_bridge_wopl::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
+                        Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
+                    else
+                        Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
+                }
+                else
+                    if ( g_FileDialog.selectedExt == ".sbi" )
+                    {
+                        OplInstrument newIns;
+                        if (opl3_bridge_sbi::loadInstrument(g_FileDialog.selectedFile, newIns))
+                        {
+                            getMain()->getController()->mSoundBank.push_back(newIns);
+                            Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
+                        }  else {
+                            Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                        }
+                    }
+                    else
+                        if ( g_FileDialog.selectedExt == ".fmi" ){
+                            std::array<uint8_t, 24> instrumentData;
+                            if (opl3_bridge_fm::loadInstrument(g_FileDialog.selectedFile,instrumentData)) {
+                                OplInstrument newIns=opl3_bridge_fm::toInstrument(
+                                    std::string( fluxStr::extractFilename(g_FileDialog.selectedFile) ),
+                                                                                  instrumentData
+                                );
+                                getMain()->getController()->mSoundBank.push_back(newIns);
+                                Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
+
+                            } else {
+                                Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                            }
+
+                        }
+                        // else
+                        // if ( g_FileDialog.selectedExt == ".fms" )
+                        //     mFMComposer->loadSong(g_FileDialog.selectedFile);
+
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -199,6 +282,7 @@ void SequencerGui::DrawMsgBoxPopup() {
 //------------------------------------------------------------------------------
 void SequencerGui::ShowMenuBar()
 {
+
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
@@ -209,24 +293,13 @@ void SequencerGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
             ImGui::MenuItem("Sound Bank", NULL, &mGuiSettings.mShowSoundBankEditor);
-
-
+            ImGui::MenuItem("Scale Player", NULL, &mGuiSettings.mShowScalePlayer);
+            ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
+            ImGui::Separator();
             ImGui::MenuItem("File Manager", NULL, &mGuiSettings.mShowFileManager);
             ImGui::MenuItem("Console", NULL, &mGuiSettings.mShowConsole);
 
-
-
-
-            // ImGui::MenuItem("IMGui Demo", NULL, &mGuiSettings.mShowDemo);
-            // ImGui::MenuItem("IMGui Demo", NULL, &mGuiSettings.mShowDemo);
-            // ImGui::Separator();
-            // ImGui::MenuItem("Sound Effects Generator", NULL, &mGuiSettings.mShowSFXEditor);
-            // ImGui::Separator();
-            // ImGui::MenuItem("FM Composer", NULL, &mGuiSettings.mShowFMComposer);
-            // ImGui::MenuItem("FM Instrument Editor", NULL, &mGuiSettings.mShowFMInstrumentEditor);
-            // ImGui::MenuItem("FM Full Scale", NULL, &mEditorSettings.mShowCompleteScale);
 
 
             ImGui::EndMenu();
@@ -240,8 +313,6 @@ void SequencerGui::ShowMenuBar()
             ImGui::EndMenu();
         }
 
-        ShowDSPWindow();
-        ShowSoundBankWindow();
 
         // ----------- Master Volume
         float rightOffset = 230.0f;
@@ -270,131 +341,17 @@ void SequencerGui::DrawGui()
     mGuiGlue->DrawBegin();
     ShowMenuBar();
 
-
-    // if ( mEditorSettings.mShowDemo )
-    // {
-    //     // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-    //     ImGui::ShowDemoWindow();
-    // }
-
-
-    // if ( mEditorSettings.mShowFMComposer ) {
-    //     // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-    //     mFMComposer->DrawComposer();
-    // }
-
-    // if ( mEditorSettings.mShowFMInstrumentEditor ) {
-    //     // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-    //     mFMEditor->DrawInstrumentEditor();
-    // }
-
-    // if ( mParameter.mShowPianoScale ) {
-    //     // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-    //     mFMEditor->DrawPianoScale();
-    // }
-
-    // if ( mEditorSettings.mShowCompleteScale ) {
-    //     mFMEditor->DrawScalePlayer();
-    // }
-
-    // if (mEditorSettings.mShowSFXEditor) {
-    //     // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-    //     mSfxEditor->Draw();
-    // }
-
-
     DrawMsgBoxPopup();
 
     mConsole.Draw("Console", &mGuiSettings.mShowConsole);
 
+    if (mGuiSettings.mShowScalePlayer) RenderScalePlayerUI(true);
+
+    ShowDSPWindow();
+    ShowSoundBankWindow();
 
 
-    if (mGuiSettings.mShowFileManager)
-    {
-        if (g_FileDialog.Draw()) {
-            // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
-
-            if (g_FileDialog.mSaveMode)
-            {
-                if (!g_FileDialog.mCancelPressed)
-                {
-                    // if (g_FileDialog.mSaveExt == ".fms")
-                    // {
-                    //     if (g_FileDialog.selectedExt == "")
-                    //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                    //     mFMComposer->saveSong(g_FileDialog.selectedFile);
-                    // }
-                    // else
-                    // if (g_FileDialog.mSaveExt == ".fmi")
-                    // {
-                    //     if (g_FileDialog.selectedExt == "")
-                    //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                    //     mFMEditor->saveInstrument(g_FileDialog.selectedFile);
-                    // }
-                    // else
-                    // if (g_FileDialog.mSaveExt == ".fms.wav")
-                    // {
-                    //     if (g_FileDialog.selectedExt == "")
-                    //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                    //     mFMComposer->exportSongToWav(g_FileDialog.selectedFile);
-                    // }
-
-                }
-
-
-                g_FileDialog.reset();
-            } else {
-                if ( g_FileDialog.selectedExt == ".op2" )
-                {
-                    if (!opl3_bridge_op2::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
-                        Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
-                    else
-                         Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
-                }
-                else
-                    if ( g_FileDialog.selectedExt == ".wopl" )
-                    {
-                        if (!opl3_bridge_wopl::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
-                            Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
-                        else
-                            Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
-                    }
-                    else
-                if ( g_FileDialog.selectedExt == ".sbi" )
-                {
-                    OplInstrument newIns;
-                    if (opl3_bridge_sbi::loadInstrument(g_FileDialog.selectedFile, newIns))
-                    {
-                        getMain()->getController()->mSoundBank.push_back(newIns);
-                        Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
-                    }  else {
-                        Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
-                    }
-                }
-                else
-                if ( g_FileDialog.selectedExt == ".fmi" ){
-                    std::array<uint8_t, 24> instrumentData;
-                    if (opl3_bridge_fm::loadInstrument(g_FileDialog.selectedFile,instrumentData)) {
-                        OplInstrument newIns=opl3_bridge_fm::toInstrument(
-                            std::string( fluxStr::extractFilename(g_FileDialog.selectedFile) ),
-                            instrumentData
-                        );
-                        getMain()->getController()->mSoundBank.push_back(newIns);
-                        Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
-
-                    } else {
-                        Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
-                    }
-
-                }
-                // else
-                // if ( g_FileDialog.selectedExt == ".fms" )
-                //     mFMComposer->loadSong(g_FileDialog.selectedFile);
-
-            }
-        }
-
-    }
+    if (mGuiSettings.mShowFileManager) ShowFileManager();
 
 
 
@@ -709,6 +666,9 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
             Log("[error] Failed to load %s",filename.c_str() );
         else
             Log("Soundbank %s loaded! %zu instruments",filename.c_str(), getMain()->getController()->mSoundBank.size() );
+    }
+    else if (cmd=="chord") {
+        getMain()->getController()->playChord(mCurrentInstrumentId, 60, opl3::CHORD_MAJOR);
     }
     else
     {

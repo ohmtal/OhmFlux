@@ -293,6 +293,14 @@ namespace opl3 {
         CLONE_CARD,  // 8kHz + No Blending
         MODERN_LPF   // 12kHz
     };
+    //--------------------------------------------------------------------------
+    const std::vector<int> CHORD_MAJOR     = {0, 4, 7};
+    const std::vector<int> CHORD_MINOR     = {0, 3, 7};
+    const std::vector<int> CHORD_AUGMENTED = {0, 4, 8};
+    const std::vector<int> CHORD_DIMINISHED = {0, 3, 6};
+    const std::vector<int> CHORD_MAJOR_7   = {0, 4, 7, 11};
+    const std::vector<int> CHORD_MINOR_7   = {0, 3, 7, 10};
+    const std::vector<int> CHORD_DOM_7     = {0, 4, 7, 10}; // Dominant 7th
 
 
 

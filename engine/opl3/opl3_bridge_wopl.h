@@ -226,7 +226,7 @@ namespace opl3_bridge_wopl {
         }
 
         // Basicly the same as before but i dont have the names :/
-        for (uint16_t idx_bank = 0; idx_bank < MBanks; idx_bank++)
+        for (uint16_t idx_bank = 0; idx_bank < PBanks; idx_bank++)
         {
             for (uint8_t idx_inst = 0; idx_inst < 128; idx_inst++)
             {
@@ -237,6 +237,27 @@ namespace opl3_bridge_wopl {
                     f.close();
                     return false;
                 }
+
+
+                // DEBUG:
+                // for (size_t i = 0; i < bytes_to_read; ++i) {
+                //     // Cast to unsigned char to avoid sign extension
+                //     printf("%02x ", static_cast<unsigned char>(d[i]));
+                // }
+                // printf("\n");
+
+                // check instrument is empty ....
+                // checking the first 39 bytes
+                bool is_empty = std::all_of(d, d + 39, [](char c) {
+                     return c == 0;
+                });
+                if (is_empty)
+                    continue;
+
+
+
+
+
                 opl3::OplInstrument inst;
                 needle = 0;
 
@@ -246,9 +267,9 @@ namespace opl3_bridge_wopl {
 
 
 
-                // if (inst.name.empty()) {
-                //     inst.name = GM_PATCH_NAMES[idx_inst];
-                // }
+                if (inst.name.empty()) {
+                    inst.name = std::format("Percussion {:01}{:03}", idx_bank, idx_inst);
+                }
 
                 needle += 32;
 

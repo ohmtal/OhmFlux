@@ -438,7 +438,8 @@ void OPL3Controller::reset() {
 
     // 2. Enable OPL3 extensions (Bank 1 access)
     //XXTH TEST
-    write(0x105, 0x01); // OPL3 Mode enabled ?!
+    // write(0x105, 0x01); // OPL3 Mode enabled ?!
+    write(0x005, 0x01); // OPL3 Mode enabled ?!
 
     // 3. Enable Waveform Select (Global for all 18 channels)
     write(0x01, 0x20);
@@ -1129,3 +1130,14 @@ void OPL3Controller::writeChannelReg(uint16_t baseReg, uint8_t channel, uint8_t 
     write(bankOffset + baseReg + (channel % 9), value);
 }
 //------------------------------------------------------------------------------
+void OPL3Controller::toggleDeepEffects(bool deepTremolo, bool deepVibrato) {
+    uint8_t currentBD = readShadow(0xBD);
+
+    if (deepTremolo) currentBD |= 0x80;  // Set Bit 7
+    else             currentBD &= ~0x80; // Clear Bit 7
+
+    if (deepVibrato) currentBD |= 0x40;  // Set Bit 6
+    else             currentBD &= ~0x40; // Clear Bit 6
+
+    write(0xBD, currentBD);
+}

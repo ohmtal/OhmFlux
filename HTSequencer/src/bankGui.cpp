@@ -26,11 +26,14 @@ void SequencerGui::ShowSoundBankWindow()
         ImGui::EndPopup();
     }
 
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+
+
     // Outer table with 2 columns
     if (ImGui::BeginTable("InstrumentLayoutTable", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV)) {
 
         // --- COLUMN 1: Sidebar (List) ---
-        ImGui::TableSetupColumn("Sidebar", ImGuiTableColumnFlags_WidthFixed, 250.0f);
+        ImGui::TableSetupColumn("Sidebar", ImGuiTableColumnFlags_WidthFixed, 150.0f);
         // --- COLUMN 2: Content (Editor & Scale Player) ---
         ImGui::TableSetupColumn("Content", ImGuiTableColumnFlags_WidthStretch);
 
@@ -62,7 +65,9 @@ void SequencerGui::ShowSoundBankWindow()
         ImGui::EndTable();
     }
 
-    RenderScalePlayerUI(true);
+    // RenderScalePlayerUI(true);
+
+    ImGui::PopStyleVar();
 
     ImGui::End();
 
@@ -86,16 +91,21 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
                 const bool is_selected = (mCurrentInstrumentId == n);
 
                 // std::format is great for 2026!
-                std::string instrumentCaption = std::format("{:03}: {}##{}", n, bank[n].name, n);
+                std::string instrumentCaption = std::format("{}##{}", bank[n].name, n);
 
                 if (ImGui::Selectable(instrumentCaption.c_str(), is_selected)) {
                     mCurrentInstrumentId = n;
                 }
 
-                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-                    Log("Using Instrument %d", mCurrentInstrumentId);
-                    myTestSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
-                    getMain()->getController()->playSong(myTestSong);
+                if (ImGui::IsItemHovered()) {
+
+                    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                        Log("Using Instrument %d", mCurrentInstrumentId);
+                        myTestSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
+                        getMain()->getController()->playSong(myTestSong);
+                    }
+
+                    ImGui::SetTooltip("#%d %s", n, instrumentCaption.c_str());
                 }
 
                 if (is_selected) ImGui::SetItemDefaultFocus();
@@ -109,22 +119,36 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
 }
 //------------------------------------------------------------------------------
 void SequencerGui::RenderScalePlayerUI(bool standAlone) {
-
-
-    if (standAlone)
-    {
-        ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Scale Player");
+    if (standAlone) {
+        ImGui::SetNextWindowSize(ImVec2(520, 450), ImGuiCond_FirstUseEver);
+        if (!ImGui::Begin("Scale Player")) { ImGui::End(); return; }
     }
 
+    // --- SINGLE COMBO BOX FOR MODE ---
+    static int selectedTypeIdx = 0;
+    const char* typeNames[] = {
+        "Single Note", "Chord: Major", "Chord: Minor",
+        "Chord: Augmented", "Chord: Diminished", "Chord: Major 7", "Chord: Minor 7"
+    };
+
+    // Helper map to match the combo index to the offset vectors
+    // Index 0 is nullptr because it's handled as a single note
+    const std::vector<int>* chordOffsets[] = {
+        nullptr,
+        &opl3::CHORD_MAJOR, &opl3::CHORD_MINOR, &opl3::CHORD_AUGMENTED,
+        &opl3::CHORD_DIMINISHED, &opl3::CHORD_MAJOR_7, &opl3::CHORD_MINOR_7
+    };
 
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Scale Player");
 
-    // 13 columns: 1 for Octave Label + 12 for Notes
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(200);
+    ImGui::Combo("##Play Mode", &selectedTypeIdx, typeNames, IM_ARRAYSIZE(typeNames));
+
+    // --- MIDI GRID ---
     static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit;
 
     if (ImGui::BeginTable("MidiGrid", 13, flags)) {
-        // --- Header Row ---
         ImGui::TableSetupColumn("Oct", ImGuiTableColumnFlags_WidthFixed, 40.0f);
         const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
         for (int i = 0; i < 12; i++) {
@@ -132,58 +156,54 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
         }
         ImGui::TableHeadersRow();
 
-        // --- Data Rows (Octaves -1 to 9) ---
-        // for (int octave = -1; octave <= 9; octave++) {
         for (int octave = 0; octave <= 7; octave++) {
             ImGui::TableNextRow();
-
-            // Column 0: Octave Label
             ImGui::TableSetColumnIndex(0);
-            // ImGui::Text("%d", octave);
-            ImGui::Text("%s",
-                        (octave == -1) ? "-" : (octave == 0) ? "0" : (octave == 1) ? "I" :
-                        (octave == 2) ? "II" :(octave == 3) ? "III" :
-                        (octave == 4) ? "IV" : (octave == 5) ? "V" : (octave == 6) ? "VI" :
-                        (octave == 7) ? "VII" : "VIII");
 
-            // Columns 1-12: MIDI Note Numbers
+            // Roman Numerals for Octaves
+            const char* octLabels[] = { "0", "I", "II", "III", "IV", "V", "VI", "VII" };
+            ImGui::Text("%s", octLabels[octave]);
+
             for (uint8_t n = 0; n < 12; n++) {
                 uint8_t midiNote = (octave + 1) * 12 + n;
-                if (midiNote > 127) break; // MIDI cap
+                if (midiNote > 127) break;
 
                 ImGui::TableSetColumnIndex(n + 1);
-
-                // Check if it's a sharp note (C#, D#, F#, G#, A#)
                 bool isSharp = (n == 1 || n == 3 || n == 6 || n == 8 || n == 10);
 
-                // if (isSharp) {
-                //     // Set background to a dark gray/blue for sharps
-                //     ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImVec4(0.2f, 0.2f, 0.25f, 1.0f)));
-                //
-                // }
-
                 ImGui::PushID(midiNote);
-                // Make the MIDI number a button to preview the note
-                // if (ImGui::Selectable(std::to_string(midiNote).c_str(), false, ImGuiSelectableFlags_None, ImVec2(0, 20))) {
-                //     // Logic: controller->playNote(midiNote);
-                //     SongStep step{midiNote,mCurrentInstrumentId,63};
-                //     getMain()->getController()->playNote(0,step);
-                // }
 
-                if (isSharp) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
+                // Styling
+                if (isSharp) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                } else {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+                }
+
                 ImGui::Button(std::to_string(midiNote).c_str(), ImVec2(-FLT_MIN, 0.0f));
+                ImGui::PopStyleColor(2);
+
+                // --- LOGIC ---
                 if (ImGui::IsItemActivated()) {
-                    SongStep step{midiNote,mCurrentInstrumentId,63};
-                    getMain()->getController()->playNote(1,step); //FIXME CHANNEL ?!
+                    if (selectedTypeIdx == 0) {
+                        // Single Note
+                        SongStep step{midiNote, mCurrentInstrumentId};
+                        getMain()->getController()->playNote(1, step);
+                    } else {
+                        // Chord - using the pointer from our helper array
+                        getMain()->getController()->playChord(mCurrentInstrumentId, midiNote, *chordOffsets[selectedTypeIdx]);
+                    }
                 }
+
                 if (ImGui::IsItemDeactivated()) {
-                    getMain()->getController()->stopNote(1); //FIXME CHANNEL ?!
+                    // Safety: Stop channels 1 through 4 to cover all possible notes in the chord
+                    for (int i = 1; i <= 4; i++) {
+                        getMain()->getController()->stopNote(i);
+                    }
                 }
-                if (isSharp) ImGui::PopStyleColor();
 
-
-
-                // Tooltip to show Note Name + Octave on hover
                 if (ImGui::IsItemHovered()) {
                     ImGui::SetTooltip("%s%d (MIDI %d)", noteNames[n], octave, midiNote);
                 }
@@ -193,13 +213,111 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
         ImGui::EndTable();
 
         ImGui::Separator();
-        if (ImGui::Button("Silence all.", ImVec2(-FLT_MIN, 0))) {
+        if (ImGui::Button("Silence all (Panic)", ImVec2(-FLT_MIN, 35))) {
             getMain()->getController()->silenceAll(false);
         }
-
     }
     if (standAlone) ImGui::End();
 }
+
+
+// void SequencerGui::RenderScalePlayerUI(bool standAlone) {
+//
+//
+//     if (standAlone)
+//     {
+//         ImGui::SetNextWindowSize(ImVec2(480, 300)); //, ImGuiCond_FirstUseEver);
+//         ImGui::Begin("Scale Player");
+//     }
+//
+//
+//     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Scale Player");
+//
+//     // 13 columns: 1 for Octave Label + 12 for Notes
+//     static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit;
+//
+//     if (ImGui::BeginTable("MidiGrid", 13, flags)) {
+//         // --- Header Row ---
+//         ImGui::TableSetupColumn("Oct", ImGuiTableColumnFlags_WidthFixed, 40.0f);
+//         const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+//         for (int i = 0; i < 12; i++) {
+//             ImGui::TableSetupColumn(noteNames[i], ImGuiTableColumnFlags_WidthFixed, 25.0f);
+//         }
+//         ImGui::TableHeadersRow();
+//
+//         // --- Data Rows (Octaves -1 to 9) ---
+//         // for (int octave = -1; octave <= 9; octave++) {
+//         for (int octave = 0; octave <= 7; octave++) {
+//             ImGui::TableNextRow();
+//
+//             // Column 0: Octave Label
+//             ImGui::TableSetColumnIndex(0);
+//             // ImGui::Text("%d", octave);
+//             ImGui::Text("%s",
+//                         (octave == -1) ? "-" : (octave == 0) ? "0" : (octave == 1) ? "I" :
+//                         (octave == 2) ? "II" :(octave == 3) ? "III" :
+//                         (octave == 4) ? "IV" : (octave == 5) ? "V" : (octave == 6) ? "VI" :
+//                         (octave == 7) ? "VII" : "VIII");
+//
+//             // Columns 1-12: MIDI Note Numbers
+//             for (uint8_t n = 0; n < 12; n++) {
+//                 uint8_t midiNote = (octave + 1) * 12 + n;
+//                 if (midiNote > 127) break; // MIDI cap
+//
+//                 ImGui::TableSetColumnIndex(n + 1);
+//
+//                 // Check if it's a sharp note (C#, D#, F#, G#, A#)
+//                 bool isSharp = (n == 1 || n == 3 || n == 6 || n == 8 || n == 10);
+//
+//                 ImGui::PushID(midiNote);
+//
+//
+//                 if (isSharp)
+//                 {
+//                     // Sharp: Black button with White text
+//                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+//                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+//                 }
+//                 else
+//                 {
+//                     // Natural: White button with Black text
+//                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+//                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+//                 }
+//
+//                 ImGui::Button(std::to_string(midiNote).c_str(), ImVec2(-FLT_MIN, 0.0f));
+//
+//                 // Pop both the Button color and the Text color
+//                 ImGui::PopStyleColor(2);
+//
+//
+//                 if (ImGui::IsItemActivated()) {
+//                     SongStep step{midiNote,mCurrentInstrumentId};
+//                     getMain()->getController()->playNote(1,step); //FIXME CHANNEL ?!
+//                 }
+//                 if (ImGui::IsItemDeactivated()) {
+//                     getMain()->getController()->stopNote(1); //FIXME CHANNEL ?!
+//                 }
+//
+//
+//
+//                 // Tooltip to show Note Name + Octave on hover
+//                 if (ImGui::IsItemHovered()) {
+//                     ImGui::SetTooltip("%s%d (MIDI %d)", noteNames[n], octave, midiNote);
+//                 }
+//                 ImGui::PopID();
+//             } //for ...
+//         }
+//         ImGui::EndTable();
+//
+//         ImGui::Separator();
+//         if (ImGui::Button("Silence all.", ImVec2(-FLT_MIN, 0))) {
+//             getMain()->getController()->silenceAll(false);
+//         }
+//
+//     }
+//     if (standAlone) ImGui::End();
+// }
 //------------------------------------------------------------------------------
 
 void SequencerGui::RenderOpParam(const opl3::ParamMeta& meta, opl3::OplInstrument::OpPair::OpParams& op, int metaIdx) {
@@ -245,7 +363,7 @@ void SequencerGui::RenderOpParam(const opl3::ParamMeta& meta, opl3::OplInstrumen
         ImGui::PopID();
     }
 }
-
+//------------------------------------------------------------------------------
 void SequencerGui::RenderInstrumentEditorUI(bool standAlone) {
 
     if (getMain()->getController()->mSoundBank.size() < mCurrentInstrumentId+1)
@@ -270,26 +388,62 @@ void SequencerGui::RenderInstrumentEditorUI(bool standAlone) {
     static const int8_t minFine = -128, maxFine = 127;
     static const int8_t minOff = -24, maxOff = 24;
     static const uint8_t minFeed = 0, maxFeed = 7;
+    static const int8_t minFixed = 0, maxFixed = 127;
 
 
 
     // --- Header Section ---
+
+
+
     char nameBuf[64];
     strncpy(nameBuf, inst.name.c_str(), sizeof(nameBuf));
-    if (ImGui::InputText("Instrument Name", nameBuf, sizeof(nameBuf))) {
+    ImGui::Text("Instrument Name");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(200);
+    if (ImGui::InputText("##Instrument Name", nameBuf, sizeof(nameBuf))) {
         inst.name = nameBuf;
     }
 
+    ImGui::SameLine();
     ImGui::Checkbox("4-Op Mode", &inst.isFourOp);
     ImGui::SameLine();
     ImGui::Checkbox("Double Voice", &inst.isDoubleVoice);
 
     if (ImGui::TreeNodeEx("Global Tuning", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::SetNextItemWidth(150);
-        ImGui::SliderScalar("Fine Tune", ImGuiDataType_S8, &inst.fineTune, &minFine, &maxFine);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(150);
-        ImGui::SliderScalar("Note Offset", ImGuiDataType_S8, &inst.noteOffset, &minOff, &maxOff);
+        // 3 columns for your 3 sliders
+        if (ImGui::BeginTable("SliderTable", 3))
+        {
+            // --- ROW 1: Labels ---
+            ImGui::TableNextRow();
+
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted("Fine Tune");
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted("Note Offset");
+
+            ImGui::TableSetColumnIndex(2);
+            ImGui::TextUnformatted("Fixed Note");
+
+            // --- ROW 2: Sliders ---
+            ImGui::TableNextRow();
+
+            ImGui::TableSetColumnIndex(0);
+            ImGui::SetNextItemWidth(-FLT_MIN); // -FLT_MIN tells the slider to use all available column width
+            ImGui::SliderScalar("##FineTune", ImGuiDataType_S8, &inst.fineTune, &minFine, &maxFine);
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::SliderScalar("##NoteOffset", ImGuiDataType_S8, &inst.noteOffset, &minOff, &maxOff);
+
+            ImGui::TableSetColumnIndex(2);
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::SliderScalar("##FixedNote", ImGuiDataType_S8, &inst.fixedNote, &minFixed, &maxFixed);
+
+            ImGui::EndTable();
+        }
+
         ImGui::TreePop();
     }
 
@@ -303,25 +457,50 @@ void SequencerGui::RenderInstrumentEditorUI(bool standAlone) {
 
         if (ImGui::CollapsingHeader(p == 0 ? "Operator Pair 1 (Primary)" : "Operator Pair 2 (Secondary)", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-            // Pair Configuration (Feedback & Connection)
-            ImGui::Columns(3, "pair_cfg", false);
-            ImGui::SetColumnWidth(0, 150);
-            ImGui::SetColumnWidth(1, 150);
-            ImGui::SliderScalar("Feedback", ImGuiDataType_U8, &pair.feedback, &minFeed, &maxFeed);
-            ImGui::NextColumn();
+            // 3 Columns, fixed widths as requested (150, 150, and remaining)
+            if (ImGui::BeginTable("pair_cfg", 3))
+            {
+                // --- ROW 1: CAPTIONS ---
+                ImGui::TableNextRow();
 
-            const char* connTypes[] = { "FM (Serial)", "Additive (Parallel)" };
-            int connIdx = (int)pair.connection;
-            if (ImGui::Combo("Connection", &connIdx, connTypes, 2)) {
-                pair.connection = (uint8_t)connIdx;
-            }
-            ImGui::NextColumn();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted("Feedback");
 
-            const char* panTypes[] = { "Mute", "Left", "Right", "Center" };
-            int panIdx = (int)pair.panning;
-            if (ImGui::Combo("Panning", &panIdx, panTypes, 4)) {
-                pair.panning = (uint8_t)panIdx;
+                ImGui::TableSetColumnIndex(1);
+                ImGui::TextUnformatted("Connection");
+
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextUnformatted("Panning");
+
+                // --- ROW 2: WIDGETS ---
+                ImGui::TableNextRow();
+
+                // Feedback Slider
+                ImGui::TableSetColumnIndex(0);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                ImGui::SliderScalar("##Feedback", ImGuiDataType_U8, &pair.feedback, &minFeed, &maxFeed);
+
+                // Connection Combo
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                const char* connTypes[] = { "FM (Serial)", "Additive (Parallel)" };
+                int connIdx = (int)pair.connection;
+                if (ImGui::Combo("##Connection", &connIdx, connTypes, 2)) {
+                    pair.connection = (uint8_t)connIdx;
+                }
+
+                // Panning Combo
+                ImGui::TableSetColumnIndex(2);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                const char* panTypes[] = { "Mute", "Left", "Right", "Center" };
+                int panIdx = (int)pair.panning;
+                if (ImGui::Combo("##Panning", &panIdx, panTypes, 4)) {
+                    pair.panning = (uint8_t)panIdx;
+                }
+
+                ImGui::EndTable();
             }
+
             ImGui::Columns(1);
 
             ImGui::Spacing();

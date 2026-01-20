@@ -175,6 +175,9 @@ public:
     void setChannelPanning(uint8_t channel, uint8_t pan);
     void processStepEffects(uint8_t channel, const SongStep& step);
     void modifyChannelPitch(uint8_t channel, int8_t amount);
+    void toggleDeepEffects(bool deepTremolo, bool deepVibrato);
+
+
 
     void playSong(SongData& songData);
 
@@ -205,6 +208,8 @@ public:
     void setFrequency(uint8_t channel, uint16_t fnum, uint8_t octave);
     void setFrequencyLinear(uint8_t channel, float linearFreq);
 
+
+
     // ------ Console -----------------------
     void consoleSongOutput(bool useNumbers, uint8_t upToChannel = MAX_CHANNELS);
 
@@ -216,6 +221,25 @@ public:
     DSP::Warmth* getDSPWarmth() { return mDSPWarmth; }
     DSP::Limiter* getDSPLimiter() { return mLimiter; }
     DSP::Equalizer9Band* getDSPEquilzer9Band() { return mEquilzer9Band; }
+
+
+    // ----- chords --------------
+    // getMain()->getController()->playChord(mCurrentInstrument, 60, OPL3Controller::CHORD_MAJOR)
+
+    void playChord(uint16_t instrument,  uint8_t rootNote, const std::vector<int>& offsets) {
+
+        for (size_t i = 0; i < offsets.size(); i++) {
+            // Assign each note to a unique OPL3 channel (1, 2, 3...)
+            uint8_t channel = (uint8_t)(i + 1);
+            uint8_t midiNote = rootNote + offsets[i];
+
+            if (midiNote <= 127) {
+                SongStep step{midiNote, instrument, 63};
+                this->playNote(channel, step);
+            }
+        }
+    }
+
 
 
     // ------ import -------------
