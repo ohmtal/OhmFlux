@@ -309,7 +309,7 @@ namespace opl3_bridge_fm {
         // -------- BPM
         // it's a bit faster then OPLController class but this does
         // also not match the old dos composer 100%
-        opl3SongData.bpm = (float)fmsSongData.song_delay * 7.f;
+        opl3SongData.bpm = (float)fmsSongData.song_delay * 6.f; // this match the dos composer !
         Log("Speed id %d setting bpm to %5.2f",fmsSongData.song_delay, opl3SongData.bpm );
 
 
