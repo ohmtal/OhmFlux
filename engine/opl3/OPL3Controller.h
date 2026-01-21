@@ -119,7 +119,7 @@ private:
 
     // ------ import -------------
     // ------ export -------------
-    // FIXME bool saveWavFile(const std::string& filename, const std::vector<int16_t>& data, int sampleRate);
+    bool saveWavFile(const std::string& filename, const std::vector<int16_t>& data, int sampleRate);
 
 public:
     // ----------   Init ---------------
@@ -180,8 +180,12 @@ public:
 
 
     bool playSong(SongData& songData, bool loop = false);
+    bool songValid(SongData& songData);
     void stopSong(bool hardStop = false) { mSeqState.playing = false; silenceAll(hardStop);}
     void continueSong() { mSeqState.playing = true;}
+    bool isPlaying() { return mSeqState.playing;}
+    void setLoop(bool value) { mSeqState.loop = value; }
+    bool getLoop() { return mSeqState.loop;}
 
 
 
@@ -248,7 +252,7 @@ public:
 
     // ------ import -------------
     // ------ export -------------
-    //FIXME bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr);
+    bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr, bool applyEffects = false);
 
 
 protected:

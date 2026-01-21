@@ -406,21 +406,7 @@ struct Vertex2D {
     // Optional: float textureIndex; (If using Multi-texture batching)
 };
 
-//-------------------------------------- util for filenames
 
-inline std::string sanitizeFilenameWithUnderScores(std::string name)
-{
-    std::string result;
-    for (unsigned char c : name) {
-        if (std::isalnum(c)) {
-            result += c;
-        } else if (std::isspace(c)) {
-            result += '_';
-        }
-        // Special characters (like '.') are ignored/dropped here
-    }
-    return result;
-}
 
 //-------------------------------------- game parameter structs
 
@@ -450,10 +436,13 @@ struct FluxAppStatus
 
 const U32 DEFAULT_MAX_SPRITES = 4000;
 
+//FWD:
+namespace fluxStr{ inline std::string sanitizeFilenameWithUnderScores(std::string name); }
+
 struct FluxSettings
 {
-    U32 ScreenWidth  = 800;
-    U32	ScreenHeight = 600;
+    U32 ScreenWidth  = 1152;
+    U32	ScreenHeight = 648;
     bool FullScreen  = false;
     bool initialVsync = true; //only used when screen starts
     bool ScaleScreen = true;
@@ -490,10 +479,10 @@ struct FluxSettings
     }
 
     std::string getSafeCompany() {
-        return sanitizeFilenameWithUnderScores(Company);
+        return fluxStr::sanitizeFilenameWithUnderScores(Company);
     }
     std::string getSafeCaption() {
-        return sanitizeFilenameWithUnderScores(Caption);
+        return fluxStr::sanitizeFilenameWithUnderScores(Caption);
     }
 
 } ;
@@ -563,11 +552,12 @@ static S32 FLUX_EVENT_SCALE_CHANGED = 0;
 
 namespace fluxStr {
 
+    //--------------------------------------------------------------------------
     inline std::string toUpper(std::string s) {
         std::ranges::transform(s, s.begin(), [](unsigned char c){ return std::toupper(c); });
         return s;
     }
-
+    //--------------------------------------------------------------------------
     // Returns the number of words separated by spaces
     inline int getWordCount(std::string_view str) {
         int count = 0;
@@ -580,8 +570,7 @@ namespace fluxStr {
         }
         return count;
     }
-
-
+    //--------------------------------------------------------------------------
     // Helper to find the start/end bounds of a word index
     inline std::string getWords(std::string_view text, int index, int endIndex = 999999) {
         size_t startPos = std::string_view::npos;
@@ -608,7 +597,7 @@ namespace fluxStr {
 
         return std::string(text.substr(startPos, endPos - startPos));
     }
-
+    //--------------------------------------------------------------------------
     inline std::string setWord(std::string text, int index, std::string_view replace) {
         int count = 0;
         size_t start = text.find_first_not_of(' ');
@@ -625,7 +614,7 @@ namespace fluxStr {
         }
         return text; // Return original if index not found
     }
-
+    //--------------------------------------------------------------------------
     inline std::string removeWord(std::string text, int index) {
         int count = 0;
         size_t start = text.find_first_not_of(' ');
@@ -645,8 +634,7 @@ namespace fluxStr {
         }
         return text;
     }
-
-
+    //--------------------------------------------------------------------------
     // Returns the word at index 'no' (0-based). Returns empty string if not found.
     inline std::string getWord(std::string_view str, int no) {
         int count = 0;
@@ -665,7 +653,7 @@ namespace fluxStr {
         }
         return "";
     }
-
+    //--------------------------------------------------------------------------
     inline std::vector<std::string_view> Tokenize(std::string_view str, char delimiter = ' ') {
         std::vector<std::string_view> tokens;
         size_t start = 0;
@@ -686,7 +674,7 @@ namespace fluxStr {
 
         return tokens;
     }
-
+    //--------------------------------------------------------------------------
     inline std::optional<int> safeStoi(const std::string& str) {
         try {
             return std::stoi(str);
@@ -694,18 +682,34 @@ namespace fluxStr {
             return std::nullopt;
         }
     }
-
+    //--------------------------------------------------------------------------
     // Wrapper mit Default-Wert
     inline int strToInt(const std::string& str, int defaultValue) {
         return safeStoi(str).value_or(defaultValue);
     }
-
+    //--------------------------------------------------------------------------
+    // ----- filename tools but string only -----
+    //--------------------------------------------------------------------------
     inline std::string_view extractFilename(std::string_view path) {
         size_t lastSlash = path.find_last_of("/\\");
         if (lastSlash == std::string_view::npos) {
             return path;
         }
         return path.substr(lastSlash + 1);
+    }
+    //--------------------------------------------------------------------------
+    inline std::string sanitizeFilenameWithUnderScores(std::string name)
+    {
+        std::string result;
+        for (unsigned char c : name) {
+            if (std::isalnum(c)) {
+                result += c;
+            } else if (std::isspace(c)) {
+                result += '_';
+            }
+            // Special characters (like '.') are ignored/dropped here
+        }
+        return result;
     }
 
 

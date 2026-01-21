@@ -107,7 +107,7 @@ public:
 
 
 
-}; //classe ImguiTest
+}; //class
 
 extern SequencerMain* g_SeqMain;
 SequencerMain* getMain();

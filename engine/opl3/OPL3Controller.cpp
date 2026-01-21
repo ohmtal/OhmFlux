@@ -1046,31 +1046,8 @@ void OPL3Controller::consoleSongOutput(bool useNumbers, uint8_t upToChannel)
 //------------------------------------------------------------------------------
 bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
 
-    if (songData.patterns.size() == 0) {
-        Log("[error] OPL3Controller::playSong pattern size is 0!");
+    if (!songValid(songData))
         return false;
-    }
-
-
-    // 1. Validate Pattern Indices in OrderList
-    for (size_t i = 0; i < songData.orderList.size(); ++i) {
-        uint8_t patternIdx = songData.orderList[i];
-        if (patternIdx >= songData.patterns.size()) {
-            Log("[error] OPL3Controller::playSong OrderList points to invalid Pattern");
-            return false;
-        }
-    }
-
-    // 2. Validate Instrument Indices within Patterns
-    for (const auto& pattern : songData.patterns) {
-        for (const auto& step : pattern.steps) {
-            // Only check if it's not an empty note
-            if (step.note != NONE_NOTE && step.instrument >= mSoundBank.size()) {
-                Log("[error] OPL3Controller::playSong Pattern using an invalid instrument! => %d", step.instrument);
-                return false;
-            }
-        }
-    }
 
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
@@ -1184,3 +1161,171 @@ void OPL3Controller::toggleDeepEffects(bool deepTremolo, bool deepVibrato) {
 
     write(0xBD, currentBD);
 }
+//------------------------------------------------------------------------------
+bool OPL3Controller::songValid(opl3::SongData& songData) {
+    if (songData.patterns.size() == 0) {
+        Log("[error] OPL3Controller::playSong pattern size is 0!");
+        return false;
+    }
+
+
+    // 1. Validate Pattern Indices in OrderList
+    for (size_t i = 0; i < songData.orderList.size(); ++i) {
+        uint8_t patternIdx = songData.orderList[i];
+        if (patternIdx >= songData.patterns.size()) {
+            Log("[error] OPL3Controller::playSong OrderList points to invalid Pattern");
+            return false;
+        }
+    }
+
+    // 2. Validate Instrument Indices within Patterns
+    for (const auto& pattern : songData.patterns) {
+        for (const auto& step : pattern.steps) {
+            // Only check if it's not an empty note
+            if (step.note != NONE_NOTE && step.instrument >= mSoundBank.size()) {
+                Log("[error] OPL3Controller::playSong Pattern using an invalid instrument! => %d", step.instrument);
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+//------------------------------------------------------------------------------
+bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename, float* progressOut, bool applyEffects) {
+    // unbind the audio stream
+    SDL_PauseAudioStreamDevice(mStream);
+    SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
+
+
+    //start the song
+    playSong( sd, false);
+
+    // calculate duration based on the speed
+    uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerSecond * 1; // using your 1 tick per step logic
+    uint32_t total_samples = total_ticks * mSeqState.samples_per_tick;
+    double durationInSeconds = (double)total_samples / 44100.0;
+
+
+    int sampleRate = 44100; // Match your chip's output rate
+    int totalFrames = durationInSeconds * sampleRate;
+    int chunkSize = 4096;   // Process in small batches
+
+    std::vector<int16_t> exportBuffer(totalFrames * 2); // Stereo
+    int framesProcessed = 0;
+
+    // Reset your sequencer state before starting
+    mSeqState.sample_accumulator = 0;
+    m_pos = 0;
+
+    while (framesProcessed < totalFrames) {
+        int remaining = totalFrames - framesProcessed;
+        int toWrite = std::min(chunkSize, remaining);
+
+        // Fill the buffer starting at the current offset
+        this->fillBuffer(&exportBuffer[framesProcessed * 2], toWrite);
+        framesProcessed += toWrite;
+
+
+        if (progressOut) {
+            if (applyEffects)
+                *progressOut = (float)framesProcessed / (float)total_samples * 0.70f; //0.70 because of post processing
+            else
+                *progressOut = (float)framesProcessed / (float)total_samples;
+        }
+    } //while
+
+    this->stopSong(true);
+
+    if (applyEffects) {
+        // --------------- effects >>>>>>>>>>>>>>>>>><
+        // to float
+        std::vector<float> f32ExportBuffer(exportBuffer.size());
+        for (size_t i = 0; i < exportBuffer.size(); ++i) {
+            f32ExportBuffer[i] = exportBuffer[i] / 32768.0f;
+        }
+
+        if (progressOut) *progressOut = 0.8f;
+
+        // my effects
+        for (auto& effect : this->mDspEffects) {
+            // Note: totalSamples = totalFrames * 2 for stereo
+            effect->process(f32ExportBuffer.data(), f32ExportBuffer.size());
+        }
+
+        if (progressOut) *progressOut = 0.9f;
+
+        // normalize
+        DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
+
+        if (progressOut) *progressOut = 0.95f;
+
+        // back to S32
+        for (size_t i = 0; i < exportBuffer.size(); ++i) {
+            float sample = f32ExportBuffer[i] * 32768.0f;
+
+            // Strict clamping to 16-bit range
+            if (sample > 32767.0f) sample = 32767.0f;
+            if (sample < -32768.0f) sample = -32768.0f;
+
+            exportBuffer[i] = static_cast<int16_t>(sample);
+        }
+
+        if (progressOut) *progressOut = 1.0f;
+
+        //<<<<<<<<<<< Effects
+    }
+
+
+    // rebind the audio stream!
+    SDL_SetAudioStreamGetCallback(mStream, OPL3Controller::audio_callback, this);
+    SDL_ResumeAudioStreamDevice(mStream);
+
+
+    // Now write exportBuffer to a wav file
+    return saveWavFile(filename, exportBuffer, sampleRate);
+}
+//------------------------------------------------------------------------------
+bool OPL3Controller::saveWavFile(const std::string& filename, const std::vector< int16_t >& data, int sampleRate) {
+    // Open the file for writing using SDL3's IO system
+    SDL_IOStream* io = SDL_IOFromFile(filename.c_str(), "wb");
+    if (!io) {
+        LogFMT("ERROR:Failed to open file for writing: %s", SDL_GetError());
+        return false;
+    }
+
+    uint32_t numChannels = 2; // Stereo as per your fillBuffer
+    uint32_t bitsPerSample = 16;
+    uint32_t dataSize = (uint32_t)(data.size() * sizeof(int16_t));
+    uint32_t fileSize = 36 + dataSize;
+    uint32_t byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+    uint16_t blockAlign = (uint16_t)(numChannels * (bitsPerSample / 8));
+
+    // Write the 44-byte WAV Header
+    SDL_WriteIO(io, "RIFF", 4);
+    SDL_WriteU32LE(io, fileSize);
+    SDL_WriteIO(io, "WAVE", 4);
+    SDL_WriteIO(io, "fmt ", 4);
+    SDL_WriteU32LE(io, 16);          // Subchunk1Size (16 for PCM)
+    SDL_WriteU16LE(io, 1);           // AudioFormat (1 for PCM)
+    SDL_WriteU16LE(io, (uint16_t)numChannels);
+    SDL_WriteU32LE(io, (uint32_t)sampleRate);
+    SDL_WriteU32LE(io, byteRate);
+    SDL_WriteU16LE(io, blockAlign);
+    SDL_WriteU16LE(io, (uint16_t)bitsPerSample);
+    SDL_WriteIO(io, "data", 4);
+    SDL_WriteU32LE(io, dataSize);
+
+    // Write the actual PCM sample data
+    SDL_WriteIO(io, data.data(), dataSize);
+
+    // Close the stream
+    SDL_CloseIO(io);
+    LogFMT("Successfully exported {}", filename);
+
+
+
+    return true;
+}
+//------------------------------------------------------------------------------
+

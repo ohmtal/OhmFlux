@@ -76,7 +76,7 @@ public:
         SongData song;
         song.title = "OPL3 Scale Test";
         song.bpm = 125.0f;
-        song.speed = 6;
+        song.ticksPerSecond = 6;
 
         // 1. Create a pattern with 32 rows
         Pattern scalePat(32, 18);
@@ -102,7 +102,7 @@ public:
         SongData song;
         song.title = "OPL3 Effects Stress Test";
         song.bpm = 90.f; //125.0f;
-        song.speed = 6;
+        song.ticksPerSecond = 6;
 
 
         // Create pattern

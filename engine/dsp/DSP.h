@@ -13,3 +13,28 @@
 #include "DSP_Warmth.h"
 #include "DSP_Equilizer.h"
 #include "DSP_Equilizer9Band.h"
+
+
+namespace DSP {
+
+ // normalize a stream
+ inline void normalizeBuffer(float* buffer, size_t count, float targetPeak = 1.0f) {
+        float currentPeak = 0.0f;
+
+        // Pass 1: Find the absolute maximum peak
+        for (size_t i = 0; i < count; ++i) {
+            float absValue = std::abs(buffer[i]);
+            if (absValue > currentPeak) {
+                currentPeak = absValue;
+            }
+        }
+
+        // Pass 2: Scale all samples (only if the buffer isn't silent)
+        if (currentPeak > 0.0f) {
+            float factor = targetPeak / currentPeak;
+            for (size_t i = 0; i < count; ++i) {
+                buffer[i] *= factor;
+            }
+        }
+    }
+}

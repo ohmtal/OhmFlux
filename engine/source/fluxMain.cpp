@@ -71,7 +71,7 @@ bool FluxMain::Initialize()
 	if (mSettings.enableLogFile)
 	{
 #ifdef FLUX_DEBUG
-		std::string lLogFileString = sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+		std::string lLogFileString = fluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
 #else 
 		std::string lLogFileString = mSettings.getPrefsPath() 
 				+ sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";

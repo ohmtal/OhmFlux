@@ -15,10 +15,25 @@
 #include <opl3.h>
 #include <OPL3Tests.h>
 
-// #include "fluxSfxEditor.h"
-// #include "fluxFMEditor.h"
-// #include "fluxComposer.h"
+// ------------- Wav export in a thread >>>>>>>>>>>>>>
+struct ExportTask {
+    OPL3Controller* controller;
+    opl3::SongData song;
+    std::string filename;
+    float progress = 0.0f; // Track progress here
+    bool applyEffects = false;
+    bool isFinished = false;
+};
 
+// This is the function the thread actually runs
+static int SDLCALL ExportThreadFunc(void* data) {
+    auto* task = static_cast<ExportTask*>(data);
+
+    task->controller->exportToWav(task->song, task->filename, &task->progress, task->applyEffects);
+
+    task->isFinished = true;
+    return 0;
+}
 
 
 class SequencerGui: public FluxBaseObject
@@ -34,11 +49,12 @@ public:
         bool mShowDSP;
         bool mShowSoundBankEditor;
         bool mShowScalePlayer;
-
+        bool mShowSongGui;
     };
 
 
 private:
+
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
 
@@ -48,12 +64,21 @@ private:
           .mEditorGuiInitialized = false
         , .mShowFileManager = true
         , .mShowConsole     = true
-        , .mShowDSP         = false
+        , .mShowDSP         = true
         , .mShowSoundBankEditor  = true
         , .mShowScalePlayer = true
+        , .mShowSongGui = true
     };
 
 
+    // -------- song -------
+    opl3::SongData mCurrentSong;
+    bool mLoopSong = false;
+    bool mExportWithEffects = false;
+
+
+
+    //-------
 
     void InitDockSpace();
     void OnConsoleCommand(ImConsole* console, const char* cmdline);
@@ -66,7 +91,6 @@ private:
 
     // ----- Tests ------
     std::unique_ptr<OPL3Tests> mOpl3Tests;
-    opl3::SongData myTestSong;
 
     // ----- DSP ------
     void ShowDSPWindow();
@@ -86,6 +110,21 @@ private:
     void RenderOpParam(const ParamMeta& meta, OplInstrument::OpPair::OpParams& op, int metaIdx);
 
     void RenderScalePlayerUI(bool standAlone = false);
+
+
+    // ------- songGui / Sequencer ---------
+    void callSaveSong();
+    void playSong(U8 playMode = 0);
+    void stopSong();
+    void newSong();
+    void callExportSong();
+    ExportTask* mCurrentExport = nullptr; //<<< for export to wav
+    bool exportSongToWav(std::string filename);
+
+
+    void RenderSequencerUI(bool standAlone = true);
+    void DrawExportStatus();
+
 
 
 public:
@@ -114,6 +153,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::GuiSettings,
     ,mShowDSP
     ,mShowSoundBankEditor
     ,mShowScalePlayer
+    ,mShowSongGui
 )
 
 namespace DSP {

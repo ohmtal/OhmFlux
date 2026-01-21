@@ -262,7 +262,7 @@ namespace opl3 {
     struct SongData {
         std::string title = "New OPL Song";
         float bpm = 125.0f;
-        uint8_t speed = 6;      // Ticks per row
+        uint8_t ticksPerSecond = 6;      // Ticks per row
 
         // OPL3 max channels is 18. OPL2 is 9.
         static constexpr int CHANNELS = 18;
@@ -279,7 +279,7 @@ namespace opl3 {
             // Reset basic info
             title = "New OPL Song";
             bpm = 125.0f;
-            speed = 6;
+            ticksPerSecond = 6;
 
             // Empty the collections
             instruments.clear();
@@ -299,7 +299,7 @@ namespace opl3 {
         bool operator==(const SongData& other) const {
             return title == other.title &&
                    bpm == other.bpm &&
-                   speed == other.speed &&
+                   ticksPerSecond == other.ticksPerSecond &&
                    instruments == other.instruments &&
                    patterns == other.patterns &&
                    orderList == other.orderList;

@@ -1,8 +1,6 @@
 #include "sequencerGui.h"
 #include "sequencerMain.h"
-#include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
-#include <utils/fluxSettingsManager.h>
 
 #include <algorithm>
 #include <string>
@@ -101,8 +99,8 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
 
                     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                         Log("Using Instrument %d", mCurrentInstrumentId);
-                        myTestSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
-                        getMain()->getController()->playSong(myTestSong);
+                        mCurrentSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
+                        getMain()->getController()->playSong(mCurrentSong);
                     }
 
                     ImGui::SetTooltip("#%d %s", n, instrumentCaption.c_str());
@@ -220,105 +218,6 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
     }
     if (standAlone) ImGui::End();
 }
-
-
-// void SequencerGui::RenderScalePlayerUI(bool standAlone) {
-//
-//
-//     if (standAlone)
-//     {
-//         ImGui::SetNextWindowSize(ImVec2(480, 300)); //, ImGuiCond_FirstUseEver);
-//         ImGui::Begin("Scale Player");
-//     }
-//
-//
-//     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Scale Player");
-//
-//     // 13 columns: 1 for Octave Label + 12 for Notes
-//     static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit;
-//
-//     if (ImGui::BeginTable("MidiGrid", 13, flags)) {
-//         // --- Header Row ---
-//         ImGui::TableSetupColumn("Oct", ImGuiTableColumnFlags_WidthFixed, 40.0f);
-//         const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-//         for (int i = 0; i < 12; i++) {
-//             ImGui::TableSetupColumn(noteNames[i], ImGuiTableColumnFlags_WidthFixed, 25.0f);
-//         }
-//         ImGui::TableHeadersRow();
-//
-//         // --- Data Rows (Octaves -1 to 9) ---
-//         // for (int octave = -1; octave <= 9; octave++) {
-//         for (int octave = 0; octave <= 7; octave++) {
-//             ImGui::TableNextRow();
-//
-//             // Column 0: Octave Label
-//             ImGui::TableSetColumnIndex(0);
-//             // ImGui::Text("%d", octave);
-//             ImGui::Text("%s",
-//                         (octave == -1) ? "-" : (octave == 0) ? "0" : (octave == 1) ? "I" :
-//                         (octave == 2) ? "II" :(octave == 3) ? "III" :
-//                         (octave == 4) ? "IV" : (octave == 5) ? "V" : (octave == 6) ? "VI" :
-//                         (octave == 7) ? "VII" : "VIII");
-//
-//             // Columns 1-12: MIDI Note Numbers
-//             for (uint8_t n = 0; n < 12; n++) {
-//                 uint8_t midiNote = (octave + 1) * 12 + n;
-//                 if (midiNote > 127) break; // MIDI cap
-//
-//                 ImGui::TableSetColumnIndex(n + 1);
-//
-//                 // Check if it's a sharp note (C#, D#, F#, G#, A#)
-//                 bool isSharp = (n == 1 || n == 3 || n == 6 || n == 8 || n == 10);
-//
-//                 ImGui::PushID(midiNote);
-//
-//
-//                 if (isSharp)
-//                 {
-//                     // Sharp: Black button with White text
-//                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-//                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-//                 }
-//                 else
-//                 {
-//                     // Natural: White button with Black text
-//                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-//                     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-//                 }
-//
-//                 ImGui::Button(std::to_string(midiNote).c_str(), ImVec2(-FLT_MIN, 0.0f));
-//
-//                 // Pop both the Button color and the Text color
-//                 ImGui::PopStyleColor(2);
-//
-//
-//                 if (ImGui::IsItemActivated()) {
-//                     SongStep step{midiNote,mCurrentInstrumentId};
-//                     getMain()->getController()->playNote(1,step); //FIXME CHANNEL ?!
-//                 }
-//                 if (ImGui::IsItemDeactivated()) {
-//                     getMain()->getController()->stopNote(1); //FIXME CHANNEL ?!
-//                 }
-//
-//
-//
-//                 // Tooltip to show Note Name + Octave on hover
-//                 if (ImGui::IsItemHovered()) {
-//                     ImGui::SetTooltip("%s%d (MIDI %d)", noteNames[n], octave, midiNote);
-//                 }
-//                 ImGui::PopID();
-//             } //for ...
-//         }
-//         ImGui::EndTable();
-//
-//         ImGui::Separator();
-//         if (ImGui::Button("Silence all.", ImVec2(-FLT_MIN, 0))) {
-//             getMain()->getController()->silenceAll(false);
-//         }
-//
-//     }
-//     if (standAlone) ImGui::End();
-// }
 //------------------------------------------------------------------------------
 
 void SequencerGui::RenderOpParam(const opl3::ParamMeta& meta, opl3::OplInstrument::OpPair::OpParams& op, int metaIdx) {

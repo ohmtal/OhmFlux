@@ -14,10 +14,10 @@
 #include <type_traits>
 
 
-namespace opl3_bridge_soundflux {
+namespace opl3_bridge_fms3 {
 
     // Unique file identifier and version
-    const char FILE_IDENTIFIER[] = "SOUNDFLUX";
+    const char FILE_IDENTIFIER[] = "Huehn Thomas FM OPL3 Song"; //<< this should be uniqe !!
     constexpr size_t ID_SIZE = sizeof(FILE_IDENTIFIER) - 1;
     constexpr uint16_t FILE_VERSION = 1;
 
@@ -282,7 +282,7 @@ namespace opl3_bridge_soundflux {
             // Write SongData members
             write_string(ofs, song.title);
             write_binary(ofs, song.bpm);
-            write_binary(ofs, song.speed);
+            write_binary(ofs, song.ticksPerSecond);
 
             // 18 byte default instruments for a channel
             for (uint8_t ch = 0; ch < song.CHANNELS; ch ++)
@@ -360,7 +360,7 @@ namespace opl3_bridge_soundflux {
             // Read SongData members
             read_string(ifs, song.title);
             read_binary(ifs, song.bpm);
-            read_binary(ifs, song.speed);
+            read_binary(ifs, song.ticksPerSecond);
 
             // 18 byte default instruments for a channel
             for (uint8_t ch = 0; ch < song.CHANNELS; ch ++)

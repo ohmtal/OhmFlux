@@ -7,7 +7,7 @@
 #include <opl3_bridge_wopl.h>
 #include <opl3_bridge_fm.h>
 #include <opl3_bridge_sbi.h>
-#include "opl3_bridge_soundflux.h"
+#include "opl3_bridge_fms3.h"
 //
 #include <algorithm>
 #include <string>
@@ -37,6 +37,9 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     getMain()->getGui()->mConsole.AddLog("%s", message);
 }
+
+
+
 //------------------------------------------------------------------------------
 void SequencerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
@@ -46,30 +49,21 @@ void SequencerGui::ShowFileManager(){
         {
             if (!g_FileDialog.mCancelPressed)
             {
-                // if (g_FileDialog.mSaveExt == ".fms")
-                // {
-                //     if (g_FileDialog.selectedExt == "")
-                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                //     mFMComposer->saveSong(g_FileDialog.selectedFile);
-                // }
-                // else
-                // if (g_FileDialog.mSaveExt == ".fmi")
-                // {
-                //     if (g_FileDialog.selectedExt == "")
-                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                //     mFMEditor->saveInstrument(g_FileDialog.selectedFile);
-                // }
-                // else
-                // if (g_FileDialog.mSaveExt == ".fms.wav")
-                // {
-                //     if (g_FileDialog.selectedExt == "")
-                //         g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                //     mFMComposer->exportSongToWav(g_FileDialog.selectedFile);
-                // }
-
+                if ( g_FileDialog.selectedExt == ".fms3" ) {
+                    mCurrentSong.instruments = getMain()->getController()->mSoundBank;
+                    if (opl3_bridge_fms3::saveSong(g_FileDialog.selectedFile, mCurrentSong)) {
+                        Log("Song saved to g_FileDialog.selectedFile.");
+                    } else {
+                        Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                    }
+                }
+                if (g_FileDialog.mSaveExt == ".wav")
+                {
+                    if (g_FileDialog.selectedExt == "")
+                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    this->exportSongToWav(g_FileDialog.selectedFile);
+                }
             }
-
-
             g_FileDialog.reset();
         } else {
             if ( g_FileDialog.selectedExt == ".op2" )
@@ -117,8 +111,16 @@ void SequencerGui::ShowFileManager(){
             }
             else
             if ( g_FileDialog.selectedExt == ".fms" ) {
-                if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, myTestSong)) {
-                    getMain()->getController()->mSoundBank = myTestSong.instruments;
+                if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, mCurrentSong)) {
+                    getMain()->getController()->mSoundBank = mCurrentSong.instruments;
+
+                } else {
+                    Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                }
+            }
+            if ( g_FileDialog.selectedExt == ".fms3" ) {
+                if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, mCurrentSong)) {
+                    getMain()->getController()->mSoundBank = mCurrentSong.instruments;
 
                 } else {
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
@@ -134,6 +136,8 @@ void SequencerGui::ShowFileManager(){
 
 void SequencerGui::Update(const double& dt)
 {
+
+    if (mCurrentExport != nullptr) return; // not while we exporting!
     getMain()->getController()->consoleSongOutput(false);
 
 }
@@ -201,7 +205,7 @@ bool SequencerGui::Initialize()
     }
 
     // FileManager
-    g_FileDialog.init( getGamePath(), { ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
+    g_FileDialog.init( getGamePath(), { ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg", ".fms3" });
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
@@ -301,6 +305,7 @@ void SequencerGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
+            ImGui::MenuItem("Sequencer", NULL, &mGuiSettings.mShowSongGui);
             ImGui::MenuItem("Sound Bank", NULL, &mGuiSettings.mShowSoundBankEditor);
             ImGui::MenuItem("Scale Player", NULL, &mGuiSettings.mShowScalePlayer);
             ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
@@ -354,6 +359,12 @@ void SequencerGui::DrawGui()
     mConsole.Draw("Console", &mGuiSettings.mShowConsole);
 
     if (mGuiSettings.mShowScalePlayer) RenderScalePlayerUI(true);
+
+    if (mGuiSettings.mShowSongGui) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+        RenderSequencerUI(true);
+        ImGui::PopStyleVar();
+    }
 
     ShowDSPWindow();
     ShowSoundBankWindow();
@@ -454,8 +465,8 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         if ( instrument < 0 )
             instrument = mCurrentInstrumentId;
         Log ("Using Instrument %d",instrument);
-        myTestSong = mOpl3Tests->createScaleSong(instrument);
-        getMain()->getController()->playSong(myTestSong);
+        mCurrentSong = mOpl3Tests->createScaleSong(instrument);
+        getMain()->getController()->playSong(mCurrentSong);
     }
     else
     if (cmd == "effects")
@@ -464,8 +475,8 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         if ( instrument < 0 )
             instrument = mCurrentInstrumentId;
         Log ("Using Instrument %d",instrument);
-        myTestSong = mOpl3Tests->createEffectTestSong(instrument);
-        getMain()->getController()->playSong(myTestSong);
+        mCurrentSong = mOpl3Tests->createEffectTestSong(instrument);
+        getMain()->getController()->playSong(mCurrentSong);
     }
     else
     if (cmd == "dump")
@@ -681,30 +692,30 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "savesong")
     {
-        if (myTestSong.patterns.size() == 0)
+        if (mCurrentSong.patterns.size() == 0)
         {
             int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
             if ( instrument < 0 )
                 instrument = mCurrentInstrumentId;
             Log ("Using Instrument %d",instrument);
-            myTestSong = mOpl3Tests->createEffectTestSong(instrument);
+            mCurrentSong = mOpl3Tests->createEffectTestSong(instrument);
         }
 
         // sync instruments from soundBank!
-        myTestSong.instruments = getMain()->getController()->mSoundBank;
+        mCurrentSong.instruments = getMain()->getController()->mSoundBank;
 
         LogFMT("\tPattern: {}\n\tInstruments: {}\n\tSequences: {}\n",
-               myTestSong.patterns.size(), myTestSong.instruments.size(),
-               myTestSong.orderList.size()
+               mCurrentSong.patterns.size(), mCurrentSong.instruments.size(),
+               mCurrentSong.orderList.size()
         );
 
 
         // Save the song data
         std::string testFilePath = "./test_song.htseq";
-        bool saveSuccess = opl3_bridge_soundflux::saveSong(testFilePath, myTestSong);
+        bool saveSuccess = opl3_bridge_fms3::saveSong(testFilePath, mCurrentSong);
         if (!saveSuccess) {
             LogFMT("[error] Failed to save song data to {}", testFilePath);
-            Log("%s",opl3_bridge_soundflux::errors.c_str());
+            Log("%s",opl3_bridge_fms3::errors.c_str());
         }  else {
             LogFMT("Song successfully saved to {}", testFilePath);
         }
@@ -713,34 +724,34 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "loadsong")
     {
-        myTestSong.init();
+        mCurrentSong.init();
         std::string testFilePath = "./test_song.htseq";
-        bool success = opl3_bridge_soundflux::loadSong(testFilePath, myTestSong);
+        bool success = opl3_bridge_fms3::loadSong(testFilePath, mCurrentSong);
         if (!success) {
             LogFMT("[error] Failed to load song data to {}", testFilePath);
-            Log("%s",opl3_bridge_soundflux::errors.c_str());
+            Log("%s",opl3_bridge_fms3::errors.c_str());
         }  else {
             LogFMT("Song successfully loaded {}", testFilePath);
             LogFMT("\tPattern: {}\n\tInstruments: {}\n\tSequences: {}\n",
-                   myTestSong.patterns.size(), myTestSong.instruments.size(),
-                   myTestSong.orderList.size()
+                   mCurrentSong.patterns.size(), mCurrentSong.instruments.size(),
+                   mCurrentSong.orderList.size()
                    );
 
         }
         // sync instruments to soundBank!
-        getMain()->getController()->mSoundBank =  myTestSong.instruments;
+        getMain()->getController()->mSoundBank =  mCurrentSong.instruments;
 
     }
     else
     if (cmd == "clearsong")
     {
         getMain()->getController()->stopSong(true);
-        myTestSong.init();
+        mCurrentSong.init();
     }
     else
     if (cmd == "playsong")
     {
-       Log("Playsong is: %d", getMain()->getController()->playSong(myTestSong, true));
+       Log("Playsong is: %d", getMain()->getController()->playSong(mCurrentSong, true));
     }
     else
     if (cmd == "stopsong")
@@ -756,3 +767,4 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
 
 }
+//------------------------------------------------------------------------------
