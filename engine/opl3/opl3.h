@@ -22,6 +22,16 @@ namespace opl3 {
 
     constexpr uint8_t MAX_VOLUME = 63;
 
+    // for safety
+    constexpr uint16_t MAX_INSTRUMENTS = 1024;
+    constexpr uint16_t MAX_PATTERN = 1024;
+    constexpr uint16_t MAX_PATTERN_ROWS = 4096; //per pattern
+    constexpr uint16_t MAX_STRING_LENGTH = 256; // should be enough for a name!
+    // pattern 4096 * 18 channel => 73728 steps
+    constexpr uint32_t MAX_VECTOR_ELEMENTS = 100000; // should be enough
+
+
+
     static constexpr std::array<const char*, 12> NOTE_NAMES = {
         "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"
     };
@@ -260,6 +270,10 @@ namespace opl3 {
         std::vector<OplInstrument> instruments;
         std::vector<Pattern> patterns;
         std::vector<uint8_t> orderList; // The "playlist" of pattern indices
+
+        // we save a default instrument for each channel
+        uint8_t channelInstrument[18] = {0};
+
 
         void init() {
             // Reset basic info

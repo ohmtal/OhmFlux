@@ -169,7 +169,7 @@ public:
         SongStep& s2 = testPat.steps[36 * 18 + 0];
         s2.note = 52;
         s2.instrument = 0;
-        s2.volume = 0;
+        s2.volume = 1;
         s2.effectType = EFF_VOL_SLIDE;
         s2.effectVal  = 0x40; // Slides volume UP by 4 units per tick
 

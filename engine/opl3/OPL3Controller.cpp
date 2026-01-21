@@ -287,6 +287,22 @@ void OPL3Controller::tickSequencer() {
     if (!mSeqState.playing || !mSeqState.current_song) return;
 
     const SongData& song = *mSeqState.current_song;
+
+    // 1. Safety check: Is the order index valid?
+    if (mSeqState.orderIdx >= song.orderList.size()) {
+        dLog("[error] sequence index exceeded sequence list!");
+        mSeqState.playing = false; // Stop playback if we've run out of orders
+        return;
+    }
+
+    // 2. Safety check: Is the pattern index in the order list valid?
+    uint32_t patternIdx = song.orderList[mSeqState.orderIdx];
+    if (patternIdx >= song.patterns.size()) {
+        LogFMT("[error] Invalid pattern index {} at order {}", patternIdx, mSeqState.orderIdx);
+        mSeqState.playing = false;
+        return;
+    }
+
     const Pattern& pat = song.patterns[song.orderList[mSeqState.orderIdx]];
 
     if (mSeqState.rowIdx >= pat.rowCount) {

@@ -7,7 +7,7 @@
 #include <opl3_bridge_wopl.h>
 #include <opl3_bridge_fm.h>
 #include <opl3_bridge_sbi.h>
-#include "opl3_bridge_htseq.h"
+#include "opl3_bridge_soundflux.h"
 //
 #include <algorithm>
 #include <string>
@@ -688,15 +688,23 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
                 instrument = mCurrentInstrumentId;
             Log ("Using Instrument %d",instrument);
             myTestSong = mOpl3Tests->createEffectTestSong(instrument);
-            // sync instruments from soundBank!
-            myTestSong.instruments = getMain()->getController()->mSoundBank;
         }
+
+        // sync instruments from soundBank!
+        myTestSong.instruments = getMain()->getController()->mSoundBank;
+
+        LogFMT("\tPattern: {}\n\tInstruments: {}\n\tSequences: {}\n",
+               myTestSong.patterns.size(), myTestSong.instruments.size(),
+               myTestSong.orderList.size()
+        );
+
 
         // Save the song data
         std::string testFilePath = "./test_song.htseq";
-        bool saveSuccess = opl3_bridge_htseq::saveSong(testFilePath, myTestSong);
+        bool saveSuccess = opl3_bridge_soundflux::saveSong(testFilePath, myTestSong);
         if (!saveSuccess) {
             LogFMT("[error] Failed to save song data to {}", testFilePath);
+            Log("%s",opl3_bridge_soundflux::errors.c_str());
         }  else {
             LogFMT("Song successfully saved to {}", testFilePath);
         }
@@ -707,11 +715,17 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     {
         myTestSong.init();
         std::string testFilePath = "./test_song.htseq";
-        bool success = opl3_bridge_htseq::loadSong(testFilePath, myTestSong);
+        bool success = opl3_bridge_soundflux::loadSong(testFilePath, myTestSong);
         if (!success) {
             LogFMT("[error] Failed to load song data to {}", testFilePath);
+            Log("%s",opl3_bridge_soundflux::errors.c_str());
         }  else {
             LogFMT("Song successfully loaded {}", testFilePath);
+            LogFMT("\tPattern: {}\n\tInstruments: {}\n\tSequences: {}\n",
+                   myTestSong.patterns.size(), myTestSong.instruments.size(),
+                   myTestSong.orderList.size()
+                   );
+
         }
         // sync instruments to soundBank!
         getMain()->getController()->mSoundBank =  myTestSong.instruments;
