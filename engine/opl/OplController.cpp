@@ -304,9 +304,21 @@ void OplController::playNoteDOS(int channel, int noteIndex) {
     stopNote(channel);
     uint8_t b0_val = myDosScale[noteIndex][0];
     uint8_t a0_val = myDosScale[noteIndex][1];
-
     write(0xA0 + channel, a0_val);
     write(0xB0 + channel, b0_val);
+
+    // OplRegs calibrated = convertSampleRate(myDosScale[noteIndex][1], myDosScale[noteIndex][0]);
+    // write(0xA0 + channel, calibrated.a0);
+    // write(0xB0 + channel, calibrated.b0);
+
+    // uint8_t b0_val = myDosScaleCalibrated[noteIndex][0];
+    // uint8_t a0_val = myDosScaleCalibrated[noteIndex][1];
+    // write(0xA0 + channel, a0_val);
+    // write(0xB0 + channel, b0_val);
+    //
+
+
+
     //XXTH TEST last_block_values[channel] = b0_val;
 }
 
@@ -449,10 +461,12 @@ bool OplController::loadSongFMS(const std::string& filename, SongDataFMS& sd) {
     for (int ch = 1; ch <= 9; ++ch) {
         if (!file.read(reinterpret_cast<char*>(sd.actual_ins[ch]), 256)) {
             Log("ERROR: Failed reading Name for Channel %d at offset %ld", ch, (long)file.tellg());
+            file.close();
             return false;
         }
         if (!file.read(reinterpret_cast<char*>(sd.ins_set[ch]), 24)) {
             Log("ERROR: Failed reading Settings for Channel %d at offset %ld", ch, (long)file.tellg());
+            file.close();
             return false;
         }
     }
@@ -460,10 +474,12 @@ bool OplController::loadSongFMS(const std::string& filename, SongDataFMS& sd) {
     // 2. Load Speed (1 byte) and Length (2 bytes)
     if (!file.read(reinterpret_cast<char*>(&sd.song_delay), 1)) {
         Log("ERROR: Failed reading song_speed");
+        file.close();
         return false;
     }
     if (!file.read(reinterpret_cast<char*>(&sd.song_length), 2)) {
         Log("ERROR: Failed reading song_length");
+        file.close();
         return false;
     }
 
@@ -472,6 +488,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongDataFMS& sd) {
     // Safety check for 2026 memory limits
     if (sd.song_length > FMS_MAX_SONG_LENGTH) {
         Log("ERROR: song_length (%u) exceeds maximum allowed (1000)", sd.song_length);
+        file.close();
         return false;
     }
 
@@ -481,6 +498,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongDataFMS& sd) {
             int16_t temp_note;
             if (!file.read(reinterpret_cast<char*>(&temp_note), 2)) {
                 Log("ERROR: Failed reading Note at Tick %d, Channel %d", i, j);
+                file.close();
                 return false;
             }
             // Store it 0-based so sd.song[0][0] is the first note
@@ -497,6 +515,7 @@ bool OplController::loadSongFMS(const std::string& filename, SongDataFMS& sd) {
         setInstrumentNameInCache(ch, GetInstrumentName(sd,ch).c_str());
     }
 
+    file.close();
     return true;
 }
 //------------------------------------------------------------------------------

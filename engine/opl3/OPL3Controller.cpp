@@ -309,6 +309,9 @@ void OPL3Controller::tickSequencer() {
             if (noteTrigger || volumeChange || panningChange) {
                 // playNote handles Note 0 (modulation only) vs Note 1-255 (trigger/stop)
                 this->playNote(ch, step);
+            } else if (step.note == NONE_NOTE ) {
+                mSeqState.last_steps[ch]=step;
+                mSeqState.ui_dirty = true;
             }
 
             // Process non-continuous effects that start on Tick 0 (like Position Jump)
@@ -774,15 +777,8 @@ void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
 //------------------------------------------------------------------------------
 void OPL3Controller::initDefaultBank(){
     mSoundBank.clear();
-    //FIXME need a better default bank !!
-    mSoundBank.push_back(GetDefaultInstrument());
-    mSoundBank.push_back(GetDefaultInstrument());
-    mSoundBank.push_back(GetDefaultInstrument());
-    mSoundBank.push_back(GetDefaultInstrument());
-    mSoundBank.push_back(GetDefaultInstrument());
-    mSoundBank.push_back(GetDefaultInstrument());
-    mSoundBank.push_back(GetDefaultInstrument());
-    mSoundBank.push_back(GetDefaultInstrument());
+    for (int i = 0; i < 6; i++ )
+        mSoundBank.push_back(OPL3InstrumentPresets::GetMelodicDefault(i));
 
 }
 //------------------------------------------------------------------------------
@@ -1032,18 +1028,19 @@ void OPL3Controller::consoleSongOutput(bool useNumbers, uint8_t upToChannel)
     }
 }
 //------------------------------------------------------------------------------
-bool OPL3Controller::playSong(opl3::SongData& songData)  {
+bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
 
-    if (songData.patterns.size() == 0) return false;
+    if (songData.patterns.size() == 0) {
+        Log("[error] OPL3Controller::playSong pattern size is 0!");
+        return false;
+    }
 
 
     // 1. Validate Pattern Indices in OrderList
     for (size_t i = 0; i < songData.orderList.size(); ++i) {
         uint8_t patternIdx = songData.orderList[i];
         if (patternIdx >= songData.patterns.size()) {
-            // // Log error and stop to prevent crash
-            // std::cerr << "Error: OrderList[" << i << "] points to invalid Pattern "
-            // << (int)patternIdx << " (Max is " << songData.patterns.size() - 1 << ")" << std::endl;
+            Log("[error] OPL3Controller::playSong OrderList points to invalid Pattern");
             return false;
         }
     }
@@ -1052,9 +1049,8 @@ bool OPL3Controller::playSong(opl3::SongData& songData)  {
     for (const auto& pattern : songData.patterns) {
         for (const auto& step : pattern.steps) {
             // Only check if it's not an empty note
-            if (step.note != NONE_NOTE && step.instrument >= songData.instruments.size()) {
-                // std::cerr << "Error: Pattern " << pattern.name
-                // << " uses invalid Instrument " << (int)step.instrument << std::endl;
+            if (step.note != NONE_NOTE && step.instrument >= mSoundBank.size()) {
+                Log("[error] OPL3Controller::playSong Pattern using an invalid instrument! => %d", step.instrument);
                 return false;
             }
         }
@@ -1070,6 +1066,7 @@ bool OPL3Controller::playSong(opl3::SongData& songData)  {
     mSeqState.rowIdx = 0;
     mSeqState.current_tick = 0;
     mSeqState.sample_accumulator = 0.f;
+    mSeqState.loop = loop;
 
     // 3. Reset Channel States using the new struct array
     // This clears all redundancy checks so the first row of the song
@@ -1112,6 +1109,7 @@ void OPL3Controller::playNote(uint8_t channel, uint16_t fnum, uint8_t octave) {
 
     write(bankOffset + 0xA0 + relChan, fnum & 0xFF);
     write(bankOffset + 0xB0 + relChan, 0x20 | ((octave & 0x07) << 2) | ((fnum >> 8) & 0x03));
+
 
     // FIXME DoubleVoice/real fourOp
     // Check if 4-OP is enabled for this channel via shadow register 0x104

@@ -2,8 +2,6 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// WARNING THIS IS NOT READY TO USE !!!! DO NOT USE IT !! :P
-// TODO: Define the format and update the read/writes
 // TODO: helper function for soundBank Sync!
 //-----------------------------------------------------------------------------
 #pragma once
@@ -21,6 +19,8 @@ namespace opl3_bridge_htseq {
     // Unique file identifier and version
     const char FILE_IDENTIFIER[] = "HTSEQ\0";
     constexpr uint16_t FILE_VERSION = 1;
+
+    constexpr uint8_t DUMMYBYTE = 0; // a dummy for reserve bytes
 
     // Helper to write fundamental types
     template <typename T>
@@ -80,6 +80,7 @@ namespace opl3_bridge_htseq {
     void write_song_data(std::ofstream& ofs, const opl3::SongData& song);
     void read_song_data(std::ifstream& ifs, opl3::SongData& song);
 
+    //--------------------------------------------------------------------------
     // Implementations for nested structs
     void write_opl_instrument(std::ofstream& ofs, const opl3::OplInstrument& inst) {
         write_string(ofs, inst.name);
@@ -92,6 +93,13 @@ namespace opl3_bridge_htseq {
         write_binary(ofs, inst.velocityOffset);
         write_binary(ofs, inst.delayOn);
         write_binary(ofs, inst.delayOff);
+
+        // write 16 Byte dummy for future use
+        // i guess i will never fill that all up but
+        // even if we have 256 Instruments * 16 = 4096 come on
+        for (uint8_t dummy = 0 ; dummy < 16; dummy++)
+            write_binary(ofs, DUMMYBYTE);
+
 
         for (int i = 0; i < 2; ++i) {
             write_binary(ofs, inst.pairs[i].feedback);
@@ -114,6 +122,7 @@ namespace opl3_bridge_htseq {
         }
     }
 
+    //--------------------------------------------------------------------------
     void read_opl_instrument(std::ifstream& ifs, opl3::OplInstrument& inst) {
         read_string(ifs, inst.name);
         read_binary(ifs, inst.isFourOp);
@@ -125,6 +134,10 @@ namespace opl3_bridge_htseq {
         read_binary(ifs, inst.velocityOffset);
         read_binary(ifs, inst.delayOn);
         read_binary(ifs, inst.delayOff);
+
+        // skip 16 Byte dummy
+        ifs.seekg(16,  std::ios::cur);
+
 
         for (int i = 0; i < 2; ++i) {
             read_binary(ifs, inst.pairs[i].feedback);
@@ -147,21 +160,34 @@ namespace opl3_bridge_htseq {
         }
     }
 
+    //--------------------------------------------------------------------------
     void write_pattern(std::ofstream& ofs, const opl3::Pattern& pat) {
         write_string(ofs, pat.name);
         write_binary(ofs, pat.color);
         write_binary(ofs, pat.rowCount);
         // SongStep is a POD-like struct, so we can write the vector directly
         write_vector(ofs, pat.steps);
+
+        // write 64 Byte dummy
+        for (uint8_t dummy = 0 ; dummy < 64; dummy++)
+            write_binary(ofs, DUMMYBYTE);
+
+
     }
 
+    //--------------------------------------------------------------------------
     void read_pattern(std::ifstream& ifs, opl3::Pattern& pat) {
         read_string(ifs, pat.name);
         read_binary(ifs, pat.color);
         read_binary(ifs, pat.rowCount);
         read_vector(ifs, pat.steps);
+
+        // skip 64 Byte dummy
+        ifs.seekg(64,  std::ios::cur);
+
     }
 
+    //--------------------------------------------------------------------------
     // Main serialization function
     bool saveSong(const std::string& filePath, const opl3::SongData& song) {
         std::ofstream ofs(filePath, std::ios::binary);
@@ -177,6 +203,11 @@ namespace opl3_bridge_htseq {
         write_string(ofs, song.title);
         write_binary(ofs, song.bpm);
         write_binary(ofs, song.speed);
+
+        // write 64 Byte dummy
+        for (uint8_t dummy = 0 ; dummy < 64; dummy++)
+            write_binary(ofs, DUMMYBYTE);
+
 
         // Write instruments
         uint32_t numInstruments = song.instruments.size();
@@ -199,6 +230,7 @@ namespace opl3_bridge_htseq {
         return true;
     }
 
+    //--------------------------------------------------------------------------
     // Main deserialization function
     bool loadSong(const std::string& filePath, opl3::SongData& song) {
         std::ifstream ifs(filePath, std::ios::binary);
@@ -228,6 +260,9 @@ namespace opl3_bridge_htseq {
         read_string(ifs, song.title);
         read_binary(ifs, song.bpm);
         read_binary(ifs, song.speed);
+
+        // skip 64 Byte dummy
+        ifs.seekg(64,  std::ios::cur);
 
         // Read instruments
         uint32_t numInstruments;

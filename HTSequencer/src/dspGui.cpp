@@ -222,7 +222,7 @@ void SequencerGui::RenderReverbUI() {
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
             if (ImGui::SmallButton("Reset")) {
                 currentSettings = DSP::ROOM_REVERB;
-                selectedPreset = 0;
+                selectedPreset = 2;
                 changed = true;
             }
 

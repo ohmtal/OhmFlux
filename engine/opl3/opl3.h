@@ -204,6 +204,10 @@ namespace opl3 {
         uint8_t effectType = 0;  // High byte of effect (e.g., 'A')
         uint8_t effectVal  = 0;  // Low byte of effect (e.g., 0x0F)
 
+        uint8_t dummy[32] = {0}; //space for future use
+
+
+
         bool operator==(const SongStep& other) const {
             return note == other.note &&
                    instrument == other.instrument &&
@@ -257,7 +261,7 @@ namespace opl3 {
         std::vector<Pattern> patterns;
         std::vector<uint8_t> orderList; // The "playlist" of pattern indices
 
-        void clear() {
+        void init() {
             // Reset basic info
             title = "New OPL Song";
             bpm = 125.0f;

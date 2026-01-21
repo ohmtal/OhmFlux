@@ -16,6 +16,7 @@ using namespace opl3;
 
 namespace opl3_bridge_sbi {
 
+
     /**
      * @brief Converts raw SBI data to an OplInstrument.
      * @param nameData Pointer to the 32-byte name field in the SBI file.
@@ -64,7 +65,6 @@ namespace opl3_bridge_sbi {
         inst.isFourOp = false;
     }
 
-
     inline bool loadInstrument(const std::string& filename, OplInstrument& inst)
     {
         std::ifstream file(filename, std::ios::binary);
@@ -88,6 +88,7 @@ namespace opl3_bridge_sbi {
                       inst
         );
 
+        file.close();
         return true;
     }
 
@@ -162,5 +163,7 @@ namespace opl3_bridge_sbi {
         file.close();
         return true;
     }
+
+
 
 } //namespace

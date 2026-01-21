@@ -190,7 +190,7 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
                     if (selectedTypeIdx == 0) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(1, step);
+                        getMain()->getController()->playNote(MAX_CHANNELS - 1, step);
                     } else {
                         // Chord - using the pointer from our helper array
                         getMain()->getController()->playChord(mCurrentInstrumentId, midiNote, *chordOffsets[selectedTypeIdx]);
@@ -198,9 +198,10 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
                 }
 
                 if (ImGui::IsItemDeactivated()) {
+                    // i play on last channels !
                     // Safety: Stop channels 1 through 4 to cover all possible notes in the chord
-                    for (int i = 1; i <= 4; i++) {
-                        getMain()->getController()->stopNote(i);
+                    for (uint8_t ch = MAX_CHANNELS - 5; ch < MAX_CHANNELS; ch++) {
+                        getMain()->getController()->stopNote(ch);
                     }
                 }
 

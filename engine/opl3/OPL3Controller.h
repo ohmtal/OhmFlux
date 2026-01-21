@@ -179,7 +179,9 @@ public:
 
 
 
-    bool playSong(SongData& songData);
+    bool playSong(SongData& songData, bool loop = false);
+    void stopSong(bool hardStop = false) { mSeqState.playing = false; silenceAll(hardStop);}
+    void continueSong() { mSeqState.playing = true;}
 
 
 
@@ -228,9 +230,11 @@ public:
 
     void playChord(uint16_t instrument,  uint8_t rootNote, const std::vector<int>& offsets) {
 
+        // we use the last channels
+        uint8_t startChannel = MAX_CHANNELS - offsets.size();
         for (size_t i = 0; i < offsets.size(); i++) {
-            // Assign each note to a unique OPL3 channel (1, 2, 3...)
-            uint8_t channel = (uint8_t)(i + 1);
+            // Assign each note to a unique OPL3 channel
+            uint8_t channel = (uint8_t)(startChannel + i);
             uint8_t midiNote = rootNote + offsets[i];
 
             if (midiNote <= 127) {
