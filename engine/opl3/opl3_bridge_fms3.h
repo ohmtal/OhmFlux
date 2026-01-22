@@ -284,9 +284,13 @@ namespace opl3_bridge_fms3 {
             write_binary(ofs, song.bpm);
             write_binary(ofs, song.ticksPerSecond);
 
-            // 18 byte default instruments for a channel
-            for (uint8_t ch = 0; ch < song.CHANNELS; ch ++)
+            // 18*3 byte default instruments/Octave/Step
+            for (uint8_t ch = 0; ch < song.CHANNELS; ch ++) {
                 write_binary(ofs, song.channelInstrument[ch]);
+                write_binary(ofs, song.channelOctave[ch]);
+                write_binary(ofs, song.channelStep[ch]);
+            }
+
 
             // write 64 Byte dummy
             for (uint8_t dummy = 0 ; dummy < 64; dummy++)
@@ -362,10 +366,12 @@ namespace opl3_bridge_fms3 {
             read_binary(ifs, song.bpm);
             read_binary(ifs, song.ticksPerSecond);
 
-            // 18 byte default instruments for a channel
-            for (uint8_t ch = 0; ch < song.CHANNELS; ch ++)
+            // 18*3 byte default instruments/Octave/Step
+            for (uint8_t ch = 0; ch < song.CHANNELS; ch ++) {
                 read_binary(ifs, song.channelInstrument[ch]);
-
+                read_binary(ifs, song.channelOctave[ch]);
+                read_binary(ifs, song.channelStep[ch]);
+            }
 
             // skip 64 Byte dummy
             ifs.seekg(64,  std::ios::cur);

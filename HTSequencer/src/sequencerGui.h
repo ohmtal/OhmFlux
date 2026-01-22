@@ -47,9 +47,11 @@ public:
         bool mShowFileManager;
         bool mShowConsole;
         bool mShowDSP;
-        bool mShowSoundBankEditor;
+        bool mShowSoundBankList;
+        bool mShowFMEditor;
         bool mShowScalePlayer;
         bool mShowSongGui;
+        bool mShowPiano;
     };
 
 
@@ -65,9 +67,11 @@ private:
         , .mShowFileManager = true
         , .mShowConsole     = true
         , .mShowDSP         = true
-        , .mShowSoundBankEditor  = true
+        , .mShowSoundBankList = true
+        , .mShowFMEditor = true
         , .mShowScalePlayer = true
         , .mShowSongGui = true
+        , .mShowPiano = false
     };
 
 
@@ -75,6 +79,7 @@ private:
     opl3::SongData mCurrentSong;
     bool mLoopSong = false;
     bool mExportWithEffects = false;
+    bool mInsertMode = false;
 
 
 
@@ -109,7 +114,6 @@ private:
     void RenderInstrumentEditorUI(bool standAlone = false);
     void RenderOpParam(const ParamMeta& meta, OplInstrument::OpPair::OpParams& op, int metaIdx);
 
-    void RenderScalePlayerUI(bool standAlone = false);
 
 
     // ------- songGui / Sequencer ---------
@@ -121,9 +125,17 @@ private:
     ExportTask* mCurrentExport = nullptr; //<<< for export to wav
     bool exportSongToWav(std::string filename);
 
+    uint8_t getCurrentChannel();
+    void insertTone( uint8_t midiNote);
+
 
     void RenderSequencerUI(bool standAlone = true);
     void DrawExportStatus();
+
+    // ----- keyboards / scale player  -----
+    void RenderScalePlayerUI(bool standAlone = false);
+    void RenderPianoUI(bool standAlone = true);
+
 
 
 
@@ -151,9 +163,12 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::GuiSettings,
     ,mShowFileManager
     ,mShowConsole
     ,mShowDSP
-    ,mShowSoundBankEditor
+    ,mShowSoundBankList
+    ,mShowFMEditor
     ,mShowScalePlayer
     ,mShowSongGui
+    ,mShowPiano
+
 )
 
 namespace DSP {

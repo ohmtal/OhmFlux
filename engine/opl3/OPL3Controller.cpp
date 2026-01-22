@@ -1164,7 +1164,7 @@ void OPL3Controller::toggleDeepEffects(bool deepTremolo, bool deepVibrato) {
 //------------------------------------------------------------------------------
 bool OPL3Controller::songValid(opl3::SongData& songData) {
     if (songData.patterns.size() == 0) {
-        Log("[error] OPL3Controller::playSong pattern size is 0!");
+        // Log("[error] OPL3Controller::playSong pattern size is 0!");
         return false;
     }
 
@@ -1173,7 +1173,7 @@ bool OPL3Controller::songValid(opl3::SongData& songData) {
     for (size_t i = 0; i < songData.orderList.size(); ++i) {
         uint8_t patternIdx = songData.orderList[i];
         if (patternIdx >= songData.patterns.size()) {
-            Log("[error] OPL3Controller::playSong OrderList points to invalid Pattern");
+            // Log("[error] OPL3Controller::playSong OrderList points to invalid Pattern");
             return false;
         }
     }
@@ -1183,7 +1183,7 @@ bool OPL3Controller::songValid(opl3::SongData& songData) {
         for (const auto& step : pattern.steps) {
             // Only check if it's not an empty note
             if (step.note != NONE_NOTE && step.instrument >= mSoundBank.size()) {
-                Log("[error] OPL3Controller::playSong Pattern using an invalid instrument! => %d", step.instrument);
+                // Log("[error] OPL3Controller::playSong Pattern using an invalid instrument! => %d", step.instrument);
                 return false;
             }
         }

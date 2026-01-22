@@ -153,6 +153,6 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
 
 
+
     if (standAlone) ImGui::End();
 }
-//------------------------------------------------------------------------------

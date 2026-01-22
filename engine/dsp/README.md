@@ -5,5 +5,6 @@
 - Chorus 
 - Reverb
 - Limiter
-
+- 9 Band Equilizer
+- Normalizer for export to Wav 
 

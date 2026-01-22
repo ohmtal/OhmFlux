@@ -454,6 +454,7 @@ if(BUILD_HT_SEQ)
         "${HTSEQ_DIR}/src/bankGui.cpp"
         "${HTSEQ_DIR}/src/songGui.cpp"
         "${HTSEQ_DIR}/src/songFunc.cpp"
+        "${HTSEQ_DIR}/src/keyboardGui.cpp"
     )
     configure_demo_target(HT-Sequencer ${HTSEQ_DIR} "$HTSEQ_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()

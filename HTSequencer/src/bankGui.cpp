@@ -9,65 +9,65 @@
 //------------------------------------------------------------------------------
 void SequencerGui::ShowSoundBankWindow()
 {
-    if (!mGuiSettings.mShowSoundBankEditor) return;
-    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Sound Bank", &mGuiSettings.mShowSoundBankEditor))
-    {
-        ImGui::End();
-        return;
-    }
-
-    if (ImGui::BeginPopupContextItem())
-    {
-        if (ImGui::MenuItem("Close"))
-            mGuiSettings.mShowSoundBankEditor = false;
-        ImGui::EndPopup();
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
-
-
-    // Outer table with 2 columns
-    if (ImGui::BeginTable("InstrumentLayoutTable", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV)) {
-
-        // --- COLUMN 1: Sidebar (List) ---
-        ImGui::TableSetupColumn("Sidebar", ImGuiTableColumnFlags_WidthFixed, 150.0f);
-        // --- COLUMN 2: Content (Editor & Scale Player) ---
-        ImGui::TableSetupColumn("Content", ImGuiTableColumnFlags_WidthStretch);
-
-        ImGui::TableNextRow();
-
-        // Left Side
-        ImGui::TableSetColumnIndex(0);
-        if (ImGui::BeginChild("ListRegion")) {
-            RenderInstrumentListUI();
-        }
-        ImGui::EndChild();
-
-        // Right Side
-        ImGui::TableSetColumnIndex(1);
-        if (ImGui::BeginChild("ContentRegion")) {
-
-            // Top: Instrument Editor
-            RenderInstrumentEditorUI();
-
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-
-            // Bottom: Scale Player
-            // RenderScalePlayerUI();
-        }
-        ImGui::EndChild();
-
-        ImGui::EndTable();
-    }
-
-    // RenderScalePlayerUI(true);
-
-    ImGui::PopStyleVar();
-
-    ImGui::End();
+    // if (!mGuiSettings.mShowSoundBankEditor) return;
+    // ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
+    // if (!ImGui::Begin("Sound Bank", &mGuiSettings.mShowSoundBankEditor))
+    // {
+    //     ImGui::End();
+    //     return;
+    // }
+    //
+    // if (ImGui::BeginPopupContextItem())
+    // {
+    //     if (ImGui::MenuItem("Close"))
+    //         mGuiSettings.mShowSoundBankEditor = false;
+    //     ImGui::EndPopup();
+    // }
+    //
+    // ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+    //
+    //
+    // // Outer table with 2 columns
+    // if (ImGui::BeginTable("InstrumentLayoutTable", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV)) {
+    //
+    //     // --- COLUMN 1: Sidebar (List) ---
+    //     ImGui::TableSetupColumn("Sidebar", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+    //     // --- COLUMN 2: Content (Editor & Scale Player) ---
+    //     ImGui::TableSetupColumn("Content", ImGuiTableColumnFlags_WidthStretch);
+    //
+    //     ImGui::TableNextRow();
+    //
+    //     // Left Side
+    //     ImGui::TableSetColumnIndex(0);
+    //     if (ImGui::BeginChild("ListRegion")) {
+    //         RenderInstrumentListUI();
+    //     }
+    //     ImGui::EndChild();
+    //
+    //     // Right Side
+    //     ImGui::TableSetColumnIndex(1);
+    //     if (ImGui::BeginChild("ContentRegion")) {
+    //
+    //         // Top: Instrument Editor
+    //         RenderInstrumentEditorUI();
+    //
+    //         ImGui::Spacing();
+    //         ImGui::Separator();
+    //         ImGui::Spacing();
+    //
+    //         // Bottom: Scale Player
+    //         // RenderScalePlayerUI();
+    //     }
+    //     ImGui::EndChild();
+    //
+    //     ImGui::EndTable();
+    // }
+    //
+    // // RenderScalePlayerUI(true);
+    //
+    // ImGui::PopStyleVar();
+    //
+    // ImGui::End();
 
 }
 //------------------------------------------------------------------------------
@@ -113,109 +113,6 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
     }
     ImGui::EndChild();
 
-    if (standAlone) ImGui::End();
-}
-//------------------------------------------------------------------------------
-void SequencerGui::RenderScalePlayerUI(bool standAlone) {
-    if (standAlone) {
-        ImGui::SetNextWindowSize(ImVec2(520, 450), ImGuiCond_FirstUseEver);
-        if (!ImGui::Begin("Scale Player")) { ImGui::End(); return; }
-    }
-
-    // --- SINGLE COMBO BOX FOR MODE ---
-    static int selectedTypeIdx = 0;
-    const char* typeNames[] = {
-        "Single Note", "Chord: Major", "Chord: Minor",
-        "Chord: Augmented", "Chord: Diminished", "Chord: Major 7", "Chord: Minor 7"
-    };
-
-    // Helper map to match the combo index to the offset vectors
-    // Index 0 is nullptr because it's handled as a single note
-    const std::vector<int>* chordOffsets[] = {
-        nullptr,
-        &opl3::CHORD_MAJOR, &opl3::CHORD_MINOR, &opl3::CHORD_AUGMENTED,
-        &opl3::CHORD_DIMINISHED, &opl3::CHORD_MAJOR_7, &opl3::CHORD_MINOR_7
-    };
-
-    ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Scale Player");
-
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(200);
-    ImGui::Combo("##Play Mode", &selectedTypeIdx, typeNames, IM_ARRAYSIZE(typeNames));
-
-    // --- MIDI GRID ---
-    static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit;
-
-    if (ImGui::BeginTable("MidiGrid", 13, flags)) {
-        ImGui::TableSetupColumn("Oct", ImGuiTableColumnFlags_WidthFixed, 40.0f);
-        const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-        for (int i = 0; i < 12; i++) {
-            ImGui::TableSetupColumn(noteNames[i], ImGuiTableColumnFlags_WidthFixed, 25.0f);
-        }
-        ImGui::TableHeadersRow();
-
-        for (int octave = 0; octave <= 7; octave++) {
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-
-            // Roman Numerals for Octaves
-            const char* octLabels[] = { "0", "I", "II", "III", "IV", "V", "VI", "VII" };
-            ImGui::Text("%s", octLabels[octave]);
-
-            for (uint8_t n = 0; n < 12; n++) {
-                uint8_t midiNote = (octave + 1) * 12 + n;
-                if (midiNote > 127) break;
-
-                ImGui::TableSetColumnIndex(n + 1);
-                bool isSharp = (n == 1 || n == 3 || n == 6 || n == 8 || n == 10);
-
-                ImGui::PushID(midiNote);
-
-                // Styling
-                if (isSharp) {
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                } else {
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-                }
-
-                ImGui::Button(std::to_string(midiNote).c_str(), ImVec2(-FLT_MIN, 0.0f));
-                ImGui::PopStyleColor(2);
-
-                // --- LOGIC ---
-                if (ImGui::IsItemActivated()) {
-                    if (selectedTypeIdx == 0) {
-                        // Single Note
-                        SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(MAX_CHANNELS - 1, step);
-                    } else {
-                        // Chord - using the pointer from our helper array
-                        getMain()->getController()->playChord(mCurrentInstrumentId, midiNote, *chordOffsets[selectedTypeIdx]);
-                    }
-                }
-
-                if (ImGui::IsItemDeactivated()) {
-                    // i play on last channels !
-                    // Safety: Stop channels 1 through 4 to cover all possible notes in the chord
-                    for (uint8_t ch = MAX_CHANNELS - 5; ch < MAX_CHANNELS; ch++) {
-                        getMain()->getController()->stopNote(ch);
-                    }
-                }
-
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s%d (MIDI %d)", noteNames[n], octave, midiNote);
-                }
-                ImGui::PopID();
-            }
-        }
-        ImGui::EndTable();
-
-        ImGui::Separator();
-        if (ImGui::Button("Silence all (Panic)", ImVec2(-FLT_MIN, 35))) {
-            getMain()->getController()->silenceAll(false);
-        }
-    }
     if (standAlone) ImGui::End();
 }
 //------------------------------------------------------------------------------
@@ -276,7 +173,7 @@ void SequencerGui::RenderInstrumentEditorUI(bool standAlone) {
     if (standAlone)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Instrument Frequenz Modulatuion");
+        ImGui::Begin("FM Editor");
     }
 
 

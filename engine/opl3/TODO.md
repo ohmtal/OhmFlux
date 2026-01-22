@@ -28,11 +28,21 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
   
     [~] fixe finetune -128 and is much to thin high  << fixed with op2 import
     [X] fixed op2 import 
-    [ ] create instrument editor 
-    [ ] wopl import 
-    [ ] fms import 
+    [X] create instrument editor 
+    [X] wopl import 
+    [X] fms import 
+    [X] fms3 load/save
 
+[ ] DSP
 
+   [X] Add DSP Effects 
+    - Warmth
+    - Bit Crusher "Lo-Fi" Filter
+    - Chorus 
+    - Reverb
+    - Limiter
+    - 9 Band Equilizer
+   
     
 [ ] GUI: 
 
@@ -41,15 +51,11 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
 
 [ ] Create an Instrument Bank and Instrument editor with 2 Banks for OPL3
 
-    [ ] Gui for Soundbank
+    [X] Gui for Soundbank
     [X] FMI Importer 
-    [ ] SBI Importer / Exporter
-    [.] OP2 Importer 
-       FIXME implemented but sound bad !!!! 
-       This is ignored so far:
-        file.read((char*)&fineTune, 1);
-        file.read((char*)&fixedNote, 1);
-    [ ] WOPL Importer 
+    [X] SBI Importer / Exporter
+    [X] OP2 Importer 
+    [X] WOPL Importer 
     
     Soundbanks: 
     https://github.com/Wohlstand/OPL3BankEditor/tree/master/Bank_Examples
@@ -62,6 +68,6 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
 
 [ ] Exporter 
 
-    [ ] Wav (when Sequencer works: copy paste from TomsOldFMComposerReloaded)
+    [X] Wav export with DSP Effects :)
 
 [ ] Finally OPL can be removed from OhmFlux and a I put it into TomsOldFMComposerReloaded 

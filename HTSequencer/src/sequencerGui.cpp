@@ -38,8 +38,6 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     getMain()->getGui()->mConsole.AddLog("%s", message);
 }
 
-
-
 //------------------------------------------------------------------------------
 void SequencerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
@@ -214,6 +212,7 @@ bool SequencerGui::Initialize()
     // tests
     mOpl3Tests = std::make_unique<OPL3Tests>(getMain()->getController());
 
+    mCurrentSong.init();
 
 
     return true;
@@ -306,9 +305,12 @@ void SequencerGui::ShowMenuBar()
         if (ImGui::BeginMenu("Window"))
         {
             ImGui::MenuItem("Sequencer", NULL, &mGuiSettings.mShowSongGui);
-            ImGui::MenuItem("Sound Bank", NULL, &mGuiSettings.mShowSoundBankEditor);
-            ImGui::MenuItem("Scale Player", NULL, &mGuiSettings.mShowScalePlayer);
+            ImGui::MenuItem("Instruments", NULL, &mGuiSettings.mShowSoundBankList);
+            ImGui::MenuItem("FM Editor", NULL, &mGuiSettings.mShowFMEditor);
             ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
+            ImGui::Separator();
+            ImGui::MenuItem("Piano", NULL, &mGuiSettings.mShowPiano);
+            ImGui::MenuItem("Scale Player", NULL, &mGuiSettings.mShowScalePlayer);
             ImGui::Separator();
             ImGui::MenuItem("File Manager", NULL, &mGuiSettings.mShowFileManager);
             ImGui::MenuItem("Console", NULL, &mGuiSettings.mShowConsole);
@@ -358,13 +360,20 @@ void SequencerGui::DrawGui()
 
     mConsole.Draw("Console", &mGuiSettings.mShowConsole);
 
-    if (mGuiSettings.mShowScalePlayer) RenderScalePlayerUI(true);
 
     if (mGuiSettings.mShowSongGui) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
         RenderSequencerUI(true);
         ImGui::PopStyleVar();
+
     }
+
+    if (mGuiSettings.mShowSoundBankList) RenderInstrumentListUI(true);
+    if (mGuiSettings.mShowFMEditor) RenderInstrumentEditorUI(true);
+
+
+    if (mGuiSettings.mShowScalePlayer) RenderScalePlayerUI(true);
+    if (mGuiSettings.mShowPiano) RenderPianoUI(true);
 
     ShowDSPWindow();
     ShowSoundBankWindow();

@@ -271,15 +271,26 @@ namespace opl3 {
         std::vector<Pattern> patterns;
         std::vector<uint8_t> orderList; // The "playlist" of pattern indices
 
-        // we save a default instrument for each channel
-        uint8_t channelInstrument[18] = {0};
+        // usefull for editor !!
+        std::array<int8_t, CHANNELS> channelInstrument = {};
+        std::array<int16_t, CHANNELS> channelOctave = {};
+        std::array<int8_t, CHANNELS> channelStep = {};
 
+
+        int8_t  getInstrumentByChannel( uint8_t channel ) { return channelInstrument.at(channel); }
+        int16_t getOctaveByChannel( uint8_t channel ) { return channelOctave.at(channel); }
+        int8_t  getStepByChannel( uint8_t channel ) { return channelStep.at(channel); }
 
         void init() {
             // Reset basic info
-            title = "New OPL Song";
+            title = "New Song";
             bpm = 125.0f;
             ticksPerSecond = 6;
+
+            channelInstrument.fill(0);
+            channelOctave.fill(4);
+            channelStep.fill(1);
+
 
             // Empty the collections
             instruments.clear();
