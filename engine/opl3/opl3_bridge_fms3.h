@@ -222,11 +222,11 @@ namespace opl3_bridge_fms3 {
 
     //--------------------------------------------------------------------------
     void write_pattern(std::ofstream& ofs, const opl3::Pattern& pat) {
-        write_string(ofs, pat.name);
-        write_binary(ofs, pat.color);
-        write_binary(ofs, pat.rowCount);
+        write_string(ofs, pat.mName);
+        write_binary(ofs, pat.mColor);
+        // NOT! write_binary(ofs, pat.getRowCount());
         // SongStep is a POD-like struct, so we can write the vector directly
-        write_vector(ofs, pat.steps);
+        write_vector(ofs, pat.getSteps());
 
         // write 64 Byte dummy
         for (uint8_t dummy = 0 ; dummy < 64; dummy++)
@@ -237,10 +237,9 @@ namespace opl3_bridge_fms3 {
 
     //--------------------------------------------------------------------------
     void read_pattern(std::ifstream& ifs, opl3::Pattern& pat) {
-        read_string(ifs, pat.name);
-        read_binary(ifs, pat.color);
-        read_binary(ifs, pat.rowCount);
-        read_vector(ifs, pat.steps);
+        read_string(ifs, pat.mName);
+        read_binary(ifs, pat.mColor);
+        read_vector(ifs, pat.getStepsMutable());
 
         // skip 64 Byte dummy
         ifs.seekg(64,  std::ios::cur);

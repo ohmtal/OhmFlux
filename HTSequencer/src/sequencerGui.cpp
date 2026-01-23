@@ -136,7 +136,7 @@ void SequencerGui::Update(const double& dt)
 {
 
     if (mCurrentExport != nullptr) return; // not while we exporting!
-    getMain()->getController()->consoleSongOutput(false);
+    getMain()->getController()->consoleSongOutput(false,true); //FIXME set to false again !!
 
 }
 //------------------------------------------------------------------------------
@@ -449,12 +449,11 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
         uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,2) , 0);
         SongStep step{opl3::NoteToValue(tone),instrument,63};
-        getMain()->getController()->playNote(0,step);
+        getMain()->getController()->playNoteHW(0,step);
     }
     else
     if (cmd == "stop")
     {
-        getMain()->getController()->stopNote(0);
         getMain()->getController()->silenceAll(false);
     }
     else
@@ -505,7 +504,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
             mConsole.ClearLog();
             Log("TEST piano tone and sound like a piano (not as good as in opl3bankeeditor)");
-            getMain()->getController()->stopNote(0);
+            getMain()->getController()->stopNoteHW(0);
 
             // 1. CHIP INITIALISIERUNG
             getMain()->getController()->write(0x01, 0x00);   // Test-Bits AUS (Wichtig für Ton)
@@ -554,7 +553,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
         mConsole.ClearLog();
         Log("TEST2 piano ");
-        getMain()->getController()->stopNote(0);
+        getMain()->getController()->stopNoteHW(0);
 
         // 1. HARD RESET & MODE ENABLE
         getMain()->getController()->write(0x01,  0x00); // Mute off
@@ -597,7 +596,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     if (cmd == "test6") {
         mConsole.ClearLog();
         Log("TEST6 still not as good as test more a organ then a piano");
-        getMain()->getController()->stopNote(0);
+        getMain()->getController()->stopNoteHW(0);
         // 1. Hardware Init
         getMain()->getController()->write(0x01, 0x00);
         getMain()->getController()->write(0x05, 0x01);
@@ -680,7 +679,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
                 step.note = 48;
                 step.instrument = getMain()->getController()->mSoundBank.size()-1;
                 step.volume = 63;
-                getMain()->getController()->playNote(0,step);
+                getMain()->getController()->playNoteHW(0,step);
 
             } else {
                 Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
@@ -694,9 +693,6 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
             Log("[error] Failed to load %s",filename.c_str() );
         else
             Log("Soundbank %s loaded! %zu instruments",filename.c_str(), getMain()->getController()->mSoundBank.size() );
-    }
-    else if (cmd=="chord") {
-        getMain()->getController()->playChord(mCurrentInstrumentId, 60, opl3::CHORD_MAJOR);
     }
     else
     if (cmd == "savesong")
@@ -766,6 +762,22 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     if (cmd == "stopsong")
     {
         getMain()->getController()->stopSong(true);
+    }
+    else
+    if (cmd == "dumpsteps") {
+        if (!mCurrentSong.patterns.empty()) {
+            // 1. Get the full multi-line string
+            std::string fullDump = mCurrentSong.patterns[0].dumpSteps();
+
+            // 2. Wrap it in a stream for line-by-line processing
+            std::istringstream iss(fullDump);
+            std::string line;
+
+            // 3. Extract and log each line independently
+            while (std::getline(iss, line)) {
+                LogFMT("{}", line);
+            }
+        }
     }
     else
     {

@@ -284,17 +284,17 @@ namespace opl3_bridge_fm {
         // -------- Pattern
         // Create a pattern with song_length rows
         int fmsNoteIndex  = -1;
-        Pattern scalePat(fmsSongData.song_length, 18);
+        Pattern scalePat(fmsSongData.song_length);
         for (int row = 0; row < fmsSongData.song_length; row++ ) {
             printf("#%04d ", row);
             for (int ch = 0; ch < FMS_MAX_CHANNEL; ch++)
             {
-                SongStep& step = scalePat.steps[row * 18 + ch];
+                SongStep& step = scalePat.getStep(row, ch);    //mSteps[row * 18 + ch];
                 step.instrument = ch; //match the channel we
                 step.note = NONE_NOTE;
 
                 // tricky converting DosScale id's to current
-                int fmsNoteIndex = fmsSongData.song[row][ch];
+                fmsNoteIndex = fmsSongData.song[row][ch];
                 step.note = getMidiNoteIdFromFMSNoteId(fmsNoteIndex);
                 printf("| %2d => %3d ", fmsNoteIndex, step.note);
 

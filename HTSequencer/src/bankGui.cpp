@@ -99,8 +99,8 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
 
                     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                         Log("Using Instrument %d", mCurrentInstrumentId);
-                        mCurrentSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
-                        getMain()->getController()->playSong(mCurrentSong);
+                        mTestNoteSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
+                        getMain()->getController()->playSong(mTestNoteSong);
                     }
 
                     ImGui::SetTooltip("#%d %s", n, instrumentCaption.c_str());

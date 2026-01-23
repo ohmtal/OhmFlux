@@ -13,7 +13,7 @@
 //------------------------------------------------------------------------------
 uint8_t SequencerGui::getCurrentChannel(){
     // LogFMT("[warn] FIXME insertTone!! getCurrentChannel");
-    return 0;
+    return 6; //first 2OP channel FIXME
 
 }
 void SequencerGui::insertTone( uint8_t midiNote)  {
@@ -47,6 +47,8 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
         ImGui::SetNextWindowSize(ImVec2(520, 450), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("Scale Player")) { ImGui::End(); return; }
     }
+
+    uint8_t channel = getCurrentChannel();
 
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Scale Player");
 
@@ -99,18 +101,19 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
                     if (chords::selectedTypeIdx == 0) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(MAX_CHANNELS - 1, step);
+                        getMain()->getController()->playNote(channel, step);
                     } else {
                         // Chord - using the pointer from our helper array
-                        getMain()->getController()->playChord(mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
+                        getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
                     }
                 }
 
                 if (ImGui::IsItemDeactivated()) {
                     // i play on last channels !
                     // Safety: Stop channels 1 through 4 to cover all possible notes in the chord
-                    for (uint8_t ch = MAX_CHANNELS - 5; ch < MAX_CHANNELS; ch++) {
-                        getMain()->getController()->stopNote(ch);
+                    for (uint8_t ch = channel; ch < channel+4 ; ch++) {
+                        if (ch < SOFTWARE_CHANNEL_COUNT)
+                            getMain()->getController()->stopNote(ch);
                     }
                 }
 
@@ -136,6 +139,7 @@ void SequencerGui::RenderPianoUI(bool standAlone )
     if (!controller)
         return;
 
+    uint8_t channel = getCurrentChannel();
 
     if (standAlone) {
         ImGui::SetNextWindowSize(ImVec2(1100, 200), ImGuiCond_FirstUseEver);
@@ -242,18 +246,17 @@ void SequencerGui::RenderPianoUI(bool standAlone )
                     if (chords::selectedTypeIdx == 0) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(MAX_CHANNELS - 1, step);
+                        getMain()->getController()->playNote(channel, step);
                     } else {
                         // Chord - using the pointer from our helper array
-                        getMain()->getController()->playChord(mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
+                        getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
                     }
                 }
 
                 if (ImGui::IsItemDeactivated()) {
-                    // i play on last channels !
-                    // Safety: Stop channels 1 through 4 to cover all possible notes in the chord
-                    for (uint8_t ch = MAX_CHANNELS - 5; ch < MAX_CHANNELS; ch++) {
-                        getMain()->getController()->stopNote(ch);
+                    for (uint8_t ch = channel; ch < channel+4 ; ch++) {
+                        if (ch < SOFTWARE_CHANNEL_COUNT)
+                            getMain()->getController()->stopNote(ch);
                     }
                 }
 
@@ -289,18 +292,17 @@ void SequencerGui::RenderPianoUI(bool standAlone )
                     if (chords::selectedTypeIdx == 0) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(MAX_CHANNELS - 1, step);
+                        getMain()->getController()->playNote(channel, step);
                     } else {
                         // Chord - using the pointer from our helper array
-                        getMain()->getController()->playChord(mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
+                        getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
                     }
                 }
 
                 if (ImGui::IsItemDeactivated()) {
-                    // i play on last channels !
-                    // Safety: Stop channels 1 through 4 to cover all possible notes in the chord
-                    for (uint8_t ch = MAX_CHANNELS - 5; ch < MAX_CHANNELS; ch++) {
-                        getMain()->getController()->stopNote(ch);
+                    for (uint8_t ch = channel; ch < channel+4 ; ch++) {
+                        if (ch < SOFTWARE_CHANNEL_COUNT)
+                            getMain()->getController()->stopNote(ch);
                     }
                 }
 

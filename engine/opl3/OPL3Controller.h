@@ -39,6 +39,7 @@ class OPL3Controller
 private:
     // ---------- OPL/YMFM ----------------
     using OplChip = ymfm::ymf262; //OPL3
+
     OplChip* mChip; //OPL
     uint32_t mOutputSampleRate;
     YMFMInterface mInterface;
@@ -91,7 +92,7 @@ private:
 
         // Channel State (Used for UI and Effect Logic)
 
-        SongStep last_steps[18] = {};
+        SongStep last_steps[MAX_HW_CHANNELS] = {};
         bool ui_dirty = false;
 
     };
@@ -153,18 +154,25 @@ public:
     void togglePause();
 
 
-    bool applyInstrument(uint8_t channel, uint8_t instrumentIndex);
-
-    void writeChannelReg(uint16_t baseReg, uint8_t channel, uint8_t value);
-
-    void setOperatorRegisters(uint16_t opOffset, const OplInstrument::OpPair::OpParams& op);
+    // not used ... for what ? bool applyInstrumentSW(uint8_t softwareChannel, uint8_t instrumentIndex);
+    bool applyInstrumentHW(uint8_t channel, uint8_t instrumentIndex);
 
 
-    bool playNote(uint8_t channel, SongStep songStep);
-    void playNote(uint8_t channel, uint16_t fnum, uint8_t octave);
+    void writeChannelRegHW(uint16_t baseReg, uint8_t channel, uint8_t value);
+    // void setOperatorRegisters(uint16_t opOffset, const OplInstrument::OpPair::OpParams& op);
+    void setOperatorRegisters(uint16_t bank, uint8_t opOffset, const opl3::OplInstrument::OpPair::OpParams& op);
 
-    void stopNote(uint8_t channel);
+
+    bool playNote(uint8_t softwareChannel, SongStep songStep);
+    bool playNoteHW(uint8_t channel, SongStep songStep);
+    void playNoteByFNumHW(uint8_t channel, uint16_t fnum, uint8_t octave);
+
+    bool stopNote(uint8_t softwareChannel);
+    bool stopNoteHW(uint8_t channel);
+
     void setChannelVolume(uint8_t channel, uint8_t oplVolume);
+
+
     // Helper to keep KSL and update TL
     void updateOpVolume(uint8_t channel, bool isCarrier, uint8_t vol) {
         uint16_t offset = isCarrier ? get_carrier_offset(channel) : get_modulator_offset(channel);
@@ -180,7 +188,7 @@ public:
 
 
     bool playSong(SongData& songData, bool loop = false);
-    bool songValid(SongData& songData);
+    bool songValid(const opl3::SongData& songData);
     void stopSong(bool hardStop = false) { mSeqState.playing = false; silenceAll(hardStop);}
     void continueSong() { mSeqState.playing = true;}
     bool isPlaying() { return mSeqState.playing;}
@@ -217,7 +225,7 @@ public:
 
 
     // ------ Console -----------------------
-    void consoleSongOutput(bool useNumbers, uint8_t upToChannel = MAX_CHANNELS);
+    void consoleSongOutput(bool useNumbers, bool showHWChannels = false);
 
 
     // ------- DSP ---------------
@@ -232,13 +240,21 @@ public:
     // ----- chords --------------
     // getMain()->getController()->playChord(mCurrentInstrument, 60, OPL3Controller::CHORD_MAJOR)
 
-    void playChord(uint16_t instrument,  uint8_t rootNote, const std::vector<int>& offsets) {
+
+    void playChord(uint8_t softwareChannel, uint16_t instrument,  uint8_t rootNote, const std::vector<int>& offsets) {
 
         // we use the last channels
-        uint8_t startChannel = MAX_CHANNELS - offsets.size();
+
         for (size_t i = 0; i < offsets.size(); i++) {
             // Assign each note to a unique OPL3 channel
-            uint8_t channel = (uint8_t)(startChannel + i);
+            uint8_t channel = (uint8_t)(softwareChannel + i);
+            if (channel >= SOFTWARE_CHANNEL_COUNT )
+            {
+                //NOTE should i post an error ?!
+                continue;
+            }
+
+
             uint8_t midiNote = rootNote + offsets[i];
 
             if (midiNote <= 127) {

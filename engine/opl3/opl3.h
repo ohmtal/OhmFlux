@@ -7,12 +7,16 @@
 #include <string>
 #include <array>
 #include <cstdint>
+#include <errorlog.h>
 
 namespace opl3 {
+
+
+
     // Standard OPL3 has 18 channels (0-17)
     // 0-8  = Bank 1 ($000)
     // 9-17 = Bank 2 ($100)
-    constexpr uint8_t MAX_CHANNELS = 18; // Total count
+    constexpr uint8_t MAX_HW_CHANNELS = 18; // Total count
     constexpr uint8_t BANK_LIMIT = 8; // Channels <= 8 are in the first bank
 
     constexpr uint8_t LAST_NOTE = 127; // G9
@@ -125,6 +129,148 @@ namespace opl3 {
         1.071594f, 1.072211f, 1.072828f, 1.073446f, 1.074064f, 1.074682f, 1.075301f, 1.075920f
     };
 
+
+    //--------------------------------------------------------------------------
+    // ---- channel mapping -----
+    // software channel >  SOFTWARE_CHANNEL_COUNT are ignored
+    //--------------------------------------------------------------------------
+    constexpr uint8_t SOFTWARE_CHANNEL_COUNT = 12;
+
+    struct ChannelMappingType {
+        uint8_t hardwareChannel;
+        uint8_t softwareChannel;
+        bool isOP4Master;
+        bool isOP4Slave;
+    };
+
+
+    // --------- fallback if i dont get 9,10,11 working:
+    // i made so many changes to get it work, that i hope i
+    // did not break it ....
+    // const std::vector<ChannelMappingType> ChannelMapping = {
+    //     // OP4 Bank 1
+    //     { 0 ,  0, true, false},
+    //     { 1 ,  1, true, false},
+    //     { 2 ,  2, true, false},
+    //     { 3 ,103, false, true},
+    //     { 4 ,104, false, true},
+    //     { 5 ,105, false, true},
+    //     // OP2 Bank 1
+    //     { 6 ,  3, false, false},
+    //     { 7 ,  4, false, false},
+    //     { 8 ,  5, false, false},
+    //     // OP4 Bank 2
+    //     { 9 ,109, false, false},
+    //     {10 ,110, false, false},
+    //     {11 ,111, false, false},
+    //     {12 , 6, false, false},
+    //     {13 , 7, false, false},
+    //     {14 , 8, false, false},
+    //     // OP2 Bank 2
+    //     {15 ,  9, false, false},
+    //     {16 , 10, false, false},
+    //     {17 , 11, false, false}
+    // };
+    //
+    // const std::vector<uint8_t> ChannelMappingSoToHw = {
+    //     0,  1,   2,
+    //     6,  7,   8,
+    //     12, 13, 14,
+    //     15, 16, 17
+    // };
+    //
+
+
+    // -------------so it should be ! ---------------------
+    const std::vector<ChannelMappingType> ChannelMapping = {
+        // OP4 Bank 1
+        { 0 ,  0, true, false},
+        { 1 ,  1, true, false},
+        { 2 ,  2, true, false},
+        { 3 ,103, false, true},
+        { 4 ,104, false, true},
+        { 5 ,105, false, true},
+        // OP2 Bank 1
+        { 6 ,  6, false, false},
+        { 7 ,  7, false, false},
+        { 8 ,  8, false, false},
+        // OP4 Bank 2
+        { 9 ,  3, true, false},
+        {10 ,  4, true, false},
+        {11 ,  5, true, false},
+        {12 ,112, false, true},
+        {13 ,113, false, true},
+        {14 ,114, false, true},
+        // OP2 Bank 2
+        {15 ,  9, false, false},
+        {16 , 10, false, false},
+        {17 , 11, false, false}
+    };
+
+    const std::vector<uint8_t> ChannelMappingSoToHw = {
+        0,  1,  2,
+        9, 10, 11,
+        6,  7,  8,
+        15, 16, 17
+    };
+
+
+    // // -------------testing: ---------------------
+    // const std::vector<ChannelMappingType> ChannelMapping = {
+    //     // OP4 Bank 1
+    //     { 0 ,  3, false, false},
+    //     { 1 ,  4, false, false},
+    //     { 2 ,  5, false, false},
+    //     { 3 ,103, false, true},
+    //     { 4 ,104, false, true},
+    //     { 5 ,105, false, true},
+    //     // OP2 Bank 1
+    //     { 6 ,  6, false, false},
+    //     { 7 ,  7, false, false},
+    //     { 8 ,  8, false, false},
+    //     // OP4 Bank 2
+    //     { 9 ,  0, false, false},
+    //     {10 ,  1, false, false},
+    //     {11 ,  2, false, false},
+    //     {12 ,112, false, true},
+    //     {13 ,113, false, true},
+    //     {14 ,114, false, true},
+    //     // OP2 Bank 2
+    //     {15 ,  9, false, false},
+    //     {16 , 10, false, false},
+    //     {17 , 11, false, false}
+    // };
+
+    // const std::vector<uint8_t> ChannelMappingSoToHw = {
+    //     9, 10, 11,
+    //     0,  1,  2,
+    //     6,  7,  8,
+    //     15, 16, 17
+    // };
+
+
+
+
+    inline uint8_t getSoftwareChannel (uint8_t hwChannel) {
+        if (hwChannel > MAX_HW_CHANNELS) {
+            Log("[error] getSoftwareChannel out of bounds! => %d", hwChannel);
+            return 0;
+        }
+        uint8_t result = ChannelMapping[hwChannel].softwareChannel;
+        if (result > SOFTWARE_CHANNEL_COUNT) {
+            Log("[error] getSoftwareChannel out of bounds! => %d", hwChannel);
+            return 0;
+        }
+        return result;
+    }
+
+    inline uint8_t getHardWareChannel(uint8_t softwareChannel) {
+        if (softwareChannel > SOFTWARE_CHANNEL_COUNT) {
+            Log("[error] getHardWareChannel out of bounds! => %d", softwareChannel);
+        }
+        return ChannelMappingSoToHw[softwareChannel];
+    }
+
     //--------------------------------------------------------------------------
     enum OplEffect : uint8_t {
         EFF_NONE         = 0x0,
@@ -229,19 +375,89 @@ namespace opl3 {
     };
     //--------------------------------------------------------------------------
     struct Pattern {
-        std::string name = "New Pattern";
-        uint32_t color = 0xFFFFFFFF; // RGBA
-        uint16_t rowCount;
-        std::vector<SongStep> steps;
+        std::string mName = "New Pattern";
+        uint32_t mColor = 0xFFFFFFFF; // RGBA
+    protected:
+        std::vector<SongStep> mSteps;
+
+    public:
+
 
          Pattern() = default;
+         //------------------ channelCount
+         uint16_t getChannelCount() const { return SOFTWARE_CHANNEL_COUNT; }
+         //------------------ rowCount
+         uint16_t getRowCount() const {
+             if (SOFTWARE_CHANNEL_COUNT == 0) return 0;
+             return static_cast<uint16_t>(mSteps.size() / SOFTWARE_CHANNEL_COUNT);
+         }
+         //------------------ setStep
+         bool setStep(uint16_t row, uint8_t softwareChannel, SongStep step)
+         {
+             // Bounds check for Row
+             if (row >= getRowCount()) {
+                 // Use a logging framework or return false
+                 return false;
+             }
 
+             // Bounds check for Software Channel
+             if (softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
+                 return false;
+             }
+
+             // Calculate Correct Index
+             // Grid: [Row 0: Ch0, Ch1...][Row 1: Ch0, Ch1...]
+             size_t index = (static_cast<size_t>(row) * SOFTWARE_CHANNEL_COUNT) + softwareChannel;
+
+             //  Final safety check against vector size
+             if (index < mSteps.size()) {
+                 mSteps[index] = step;
+                 return true;
+             }
+             return false;
+         }
+         //------------------ getStep
+         const SongStep* begin() const { return mSteps.data(); }
+         const SongStep* end() const   { return mSteps.data() + mSteps.size(); }
+
+         // 1. CONST version for the Playback Engine (Read-Only)
+         const SongStep& getStep(uint16_t row, uint8_t softwareChannel) const
+         {
+             if (row >= getRowCount() || softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
+                 static const SongStep emptyStep; // Static ensures a valid address
+                 return emptyStep;
+             }
+
+             size_t index = (static_cast<size_t>(row) * SOFTWARE_CHANNEL_COUNT) + softwareChannel;
+             return mSteps[index];
+         }
+
+         // 2. MUTABLE version for the Tracker UI (Read-Write)
+         SongStep& getStep(uint16_t row, uint8_t softwareChannel)
+         {
+             if (row >= getRowCount() || softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
+                 static SongStep dummyStep;
+                 return dummyStep;
+             }
+
+             size_t index = (static_cast<size_t>(row) * SOFTWARE_CHANNEL_COUNT) + softwareChannel;
+             return mSteps[index];
+         }
+
+         //------------------  getSteps
+         const std::vector<SongStep>& getSteps() const {
+             return mSteps;
+         }
+        std::vector<SongStep>& getStepsMutable() { return mSteps; }
+        //------------------ constructor un
         // Use member initializer list for rowCount
-        Pattern(uint16_t rows, int channels = 18) : rowCount(rows) {
-            steps.resize(rows * channels);
+        // using softwareChannel !!!
+        // WE ALWAYS USE , int softwareChannels = SOFTWARE_CHANNEL_COUNT !!!!
+        Pattern(uint16_t rows) {
+            mSteps.resize(rows * SOFTWARE_CHANNEL_COUNT);
 
             // Initialize steps to 'Empty' tracker state
-            for (auto& step : steps) {
+            for (auto& step : mSteps) {
                 step.note = NONE_NOTE;           // None
                 step.instrument = 0;     // Default
                 step.volume     = MAX_VOLUME + 1; // Max (Tracker Std)
@@ -251,11 +467,42 @@ namespace opl3 {
             }
         }
 
+        // ------------------ operator ==
         bool operator==(const Pattern& other) const {
-            return name == other.name &&
-                   color == other.color &&
-                   rowCount == other.rowCount &&
-                   steps == other.steps;
+            return mName == other.mName &&
+                   mColor == other.mColor &&
+                   mSteps == other.mSteps;
+        }
+
+        // -------------- dump ----
+        std::string dumpSteps() const {
+            // 1. Initial Header
+            std::string result = std::format("Pattern '{}' ({} steps, {} rows)\n",
+                                             mName, mSteps.size(), getRowCount());
+
+            result += "Row |";
+            for(int c=0; c < SOFTWARE_CHANNEL_COUNT; ++c) result += std::format(" Ch{:02}|", c);
+            result += "\n----|" + std::string(SOFTWARE_CHANNEL_COUNT * 6, '-') + "\n";
+
+            for (size_t i = 0; i < mSteps.size(); ++i) {
+                if (i % SOFTWARE_CHANNEL_COUNT == 0) {
+                    result += std::format("{:03} |", i / SOFTWARE_CHANNEL_COUNT);
+                }
+
+                const auto& step = mSteps[i];
+                uint8_t note = step.note;
+                if (note == STOP_NOTE) {
+                    result += " === |";
+                } else if (note == NONE_NOTE) {
+                    result += " ... |";
+                } else {
+                    result += std::format(" {:>3} |", note);
+                }
+                if ((i + 1) % SOFTWARE_CHANNEL_COUNT == 0) {
+                    result += "\n";
+                }
+            }
+            return result;
         }
     };
     //--------------------------------------------------------------------------
@@ -264,8 +511,8 @@ namespace opl3 {
         float bpm = 125.0f;
         uint8_t ticksPerSecond = 6;      // Ticks per row
 
-        // OPL3 max channels is 18. OPL2 is 9.
-        static constexpr int CHANNELS = 18;
+        // OPL3 max channels is 18. OPL2 is 9. I use the SOFTWARE_CHANNEL_COUNT !!!
+        static constexpr int CHANNELS = SOFTWARE_CHANNEL_COUNT;
 
         std::vector<OplInstrument> instruments;
         std::vector<Pattern> patterns;
@@ -302,7 +549,7 @@ namespace opl3 {
         size_t getTotalRows() const {
             size_t total = 0;
             for (uint8_t patIdx : orderList) {
-                total += patterns[patIdx].rowCount;
+                total += patterns[patIdx].getRowCount();
             }
             return total;
         }
@@ -400,6 +647,7 @@ namespace opl3 {
     const std::vector<int> CHORD_MAJOR_7   = {0, 4, 7, 11};
     const std::vector<int> CHORD_MINOR_7   = {0, 3, 7, 10};
     const std::vector<int> CHORD_DOM_7     = {0, 4, 7, 10}; // Dominant 7th
+    //--------------------------------------------------------------------------
 
 
 

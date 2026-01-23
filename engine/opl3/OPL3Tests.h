@@ -79,12 +79,12 @@ public:
         song.ticksPerSecond = 6;
 
         // 1. Create a pattern with 32 rows
-        Pattern scalePat(32, 18);
+        Pattern scalePat(4 * 12);
 
-        for (int i = 0; i < 8; ++i) {
+        for (int i = 0; i < 12; ++i) {
             // Place a note every 4th row on channel 0
             int row = i * 4;
-            SongStep& step = scalePat.steps[row * 18 + 0];
+            SongStep& step = scalePat.getStep(row, i);
 
             step.note = 60 + i;
             step.instrument = instrumentIndex; // Ensure your soundbank has at least one instrument
@@ -106,18 +106,18 @@ public:
 
 
         // Create pattern
-        Pattern testPat(64, 18);
+        Pattern testPat(64);
 
         // --- Channel 0: Volume Slide Test ---
         // Trigger a long note on Row 0
-        SongStep& startNote = testPat.steps[0 * 18 + 0];
+        SongStep& startNote = testPat.getStep(0,0); //  steps[0 * 18 + 0];
         startNote.note = 48; // C-3
         startNote.instrument = ins;
         startNote.volume = 63;
 
         // Starting at Row 1, slide volume DOWN
         for (int r = 1; r < 16; ++r) {
-            SongStep& s = testPat.steps[r * 18 + 0];
+            SongStep& s = testPat.getStep(r,0); //steps[r * 18 + 0];
             s.effectType = EFF_VOL_SLIDE;
             s.effectVal  = 0x04; // Slide down by 4 per tick (0x0y)
         }
@@ -126,7 +126,7 @@ public:
         // Trigger a note that jumps across speakers
         for (int i = 0; i < 4; ++i) {
             int row = i * 8;
-            SongStep& s = testPat.steps[row * 18 + 1];
+            SongStep& s = testPat.getStep(row,1); // .steps[row * 18 + 1];
             s.note = 60; // C-5
             s.instrument = ins;
             s.volume = 50;
@@ -139,15 +139,20 @@ public:
         // --- Channel 2: Note-Off Test ---
         // Test if STOP_NOTE correctly stops the OPL3 operators
         for (int i = 0; i < 4; ++i) {
-            testPat.steps[(i * 8) * 18 + 2].note = 55;       // G-4 Key-On
-            testPat.steps[(i * 8) * 18 + 2].instrument = ins;
-            testPat.steps[(i * 8 + 4) * 18 + 2].note = STOP_NOTE;  // Key-Off 4 rows later
+            // testPat.steps[(i * 8) * 18 + 2].note = 55;       // G-4 Key-On
+            // testPat.steps[(i * 8) * 18 + 2].instrument = ins;
+            // testPat.steps[(i * 8 + 4) * 18 + 2].note = STOP_NOTE;  // Key-Off 4 rows later
+
+            testPat.getStep(i*8, 2).note = 55;
+            testPat.getStep(i*8, 2).instrument = ins;
+            testPat.getStep(i*8, 4).note = STOP_NOTE;
+
         }
 
         // --- Channel 3: Set Volume Test ---
         // Directly setting volume via effect Cxx
         for (int i = 0; i < 8; ++i) {
-            SongStep& s = testPat.steps[(i * 4) * 18 + 3];
+            SongStep& s = testPat.getStep(i*4, 3); //  .steps[(i * 4) * 18 + 3];
             s.note = 52; // E-4
             s.instrument = ins;
             s.effectType = EFF_SET_VOLUME;
@@ -155,25 +160,25 @@ public:
         }
 
 
-        for (int i = 0; i < MAX_CHANNELS; i++)
-            testPat.steps[31 * 18 + i].note = STOP_NOTE;
+        for (int i = 0; i < testPat.getChannelCount(); i++)
+            testPat.getStep(31, i).note = STOP_NOTE; //   steps[31 * 18 + i].note = STOP_NOTE;
 
         // indexing for Row 32, Channel 0
-        SongStep& s = testPat.steps[32 * 18 + 0];
+        SongStep& s = testPat.getStep(32,0); //   steps[32 * 18 + 0];
         s.note = 52;
         s.instrument = ins;
         s.volume = 63;           // Start at max volume
         s.effectType = EFF_VOL_SLIDE;
         s.effectVal  = 0x08;
 
-        SongStep& s2 = testPat.steps[36 * 18 + 0];
+        SongStep& s2 = testPat.getStep(32,0); //  steps[36 * 18 + 0];
         s2.note = 52;
         s2.instrument = 0;
         s2.volume = 1;
         s2.effectType = EFF_VOL_SLIDE;
         s2.effectVal  = 0x40; // Slides volume UP by 4 units per tick
 
-        testPat.steps[40 * 18 + 0].volume=0;
+        testPat.getStep(40,0); //  steps[40 * 18 + 0].volume=0;
 
 
 
