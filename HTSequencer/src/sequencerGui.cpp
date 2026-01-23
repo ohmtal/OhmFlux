@@ -130,15 +130,11 @@ void SequencerGui::ShowFileManager(){
         }
     }
 }
-
 //------------------------------------------------------------------------------
-
 void SequencerGui::Update(const double& dt)
 {
-
     if (mCurrentExport != nullptr) return; // not while we exporting!
-    getMain()->getController()->consoleSongOutput(false,true); //FIXME set to false again !!
-
+    getMain()->getController()->consoleSongOutput(false);
 }
 //------------------------------------------------------------------------------
 bool SequencerGui::Initialize()
@@ -172,28 +168,11 @@ bool SequencerGui::Initialize()
     controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::TUBEAMP_WARMTH));
     controller->getDSPEquilzer9Band()->setSettings( SettingsManager().get<DSP::Equalizer9BandSettings>("DSP_EQ9BAND", DSP::FLAT_EQ ));
 
-
     getScreenObject()->setWindowMaximized(SettingsManager().get("WINDOW_MAXIMIZED", getMain()->mSettings.WindowMaximized ));
-
-
 
     mGuiGlue = new FluxGuiGlue(true, false, nullptr);
     if (!mGuiGlue->Initialize())
         return false;
-
-
-
-    // mSfxEditor = new FluxSfxEditor();
-    // if (!mSfxEditor->Initialize())
-    //     return false;
-    //
-    // mFMEditor = new FluxFMEditor();
-    // if (!mFMEditor->Initialize())
-    //     return false;
-    //
-    // mFMComposer = new FluxComposer( mFMEditor->getController());
-    // if (!mFMComposer->Initialize())
-    //     return false;
 
     // not centered ?!?!?! i guess center is not in place yet ?
     mBackground = new FluxRenderObject(getMain()->loadTexture("assets/background.png"));

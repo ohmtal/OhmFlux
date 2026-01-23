@@ -5,7 +5,7 @@
 #pragma once
 // #include "ymfm.h"
 #include "ymfm_opl.h"
-#include "opl3.h"
+#include "opl3_base.h"
 #include "OPL3Controller.h"
 #include <SDL3/SDL_audio.h>
 
@@ -76,7 +76,7 @@ public:
         SongData song;
         song.title = "OPL3 Scale Test";
         song.bpm = 125.0f;
-        song.ticksPerSecond = 6;
+        song.ticksPerRow = 6;
 
         // 1. Create a pattern with 32 rows
         Pattern scalePat(4 * 12);
@@ -102,7 +102,7 @@ public:
         SongData song;
         song.title = "OPL3 Effects Stress Test";
         song.bpm = 90.f; //125.0f;
-        song.ticksPerSecond = 6;
+        song.ticksPerRow = 6;
 
 
         // Create pattern

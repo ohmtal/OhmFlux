@@ -4,7 +4,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#include "opl3.h"
+#include "opl3_base.h"
 
 #include <fstream>
 #include <vector>

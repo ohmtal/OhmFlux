@@ -142,10 +142,10 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         ImGui::InputFloat("##BPM", &mCurrentSong.bpm,  1.0f, 10.0f, "%.0f");
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Ticks per Row");ImGui::SameLine();
-        int tempSpeed = mCurrentSong.ticksPerSecond;
+        int tempSpeed = mCurrentSong.ticksPerRow;
         ImGui::SetNextItemWidth(80);
         if (ImGui::InputInt("##Ticks per Row", &tempSpeed, 1, 1)) {
-            mCurrentSong.ticksPerSecond = static_cast<uint8_t>(std::clamp(tempSpeed, 1, 32));
+            mCurrentSong.ticksPerRow = static_cast<uint8_t>(std::clamp(tempSpeed, 1, 32));
         }
 
     }

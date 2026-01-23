@@ -12,7 +12,7 @@
 #include <gui/ImConsole.h>
 #include <DSP.h>
 #include "sequencerGlobals.h"
-#include <opl3.h>
+#include <opl3_base.h>
 #include <OPL3Tests.h>
 
 // ------------- Wav export in a thread >>>>>>>>>>>>>>
@@ -28,6 +28,9 @@ struct ExportTask {
 // This is the function the thread actually runs
 static int SDLCALL ExportThreadFunc(void* data) {
     auto* task = static_cast<ExportTask*>(data);
+
+    if (task->isFinished)
+        return 0;
 
     task->controller->exportToWav(task->song, task->filename, &task->progress, task->applyEffects);
 

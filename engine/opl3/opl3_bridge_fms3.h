@@ -4,7 +4,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#include "opl3.h"
+#include "opl3_base.h"
 #include <fstream>
 #include <vector>
 #include <string>
@@ -281,7 +281,7 @@ namespace opl3_bridge_fms3 {
             // Write SongData members
             write_string(ofs, song.title);
             write_binary(ofs, song.bpm);
-            write_binary(ofs, song.ticksPerSecond);
+            write_binary(ofs, song.ticksPerRow);
 
             // 18*3 byte default instruments/Octave/Step
             for (uint8_t ch = 0; ch < song.CHANNELS; ch ++) {
@@ -363,7 +363,7 @@ namespace opl3_bridge_fms3 {
             // Read SongData members
             read_string(ifs, song.title);
             read_binary(ifs, song.bpm);
-            read_binary(ifs, song.ticksPerSecond);
+            read_binary(ifs, song.ticksPerRow);
 
             // 18*3 byte default instruments/Octave/Step
             for (uint8_t ch = 0; ch < song.CHANNELS; ch ++) {

@@ -7,7 +7,9 @@
 
 #include "ymfm.h"
 #include "ymfm_opl.h"
-#include "opl3.h"
+#include "OplInterface.h"
+
+#include "opl3_base.h"
 #include "ymfmGlue.h"
 
 #include <DSP.h>
@@ -39,14 +41,15 @@ class OPL3Controller
 private:
     // ---------- OPL/YMFM ----------------
     using OplChip = ymfm::ymf262; //OPL3
-
     OplChip* mChip; //OPL
+    OplInterface mInterface;
+    OplChip::output_data mOutput;
+
     uint32_t mOutputSampleRate;
-    YMFMInterface mInterface;
+    // YMFMInterface mInterface;
 
     double m_pos = 0.0;
     double m_step = 49716.0 / 44100.0; // Ratio of OPL rate to SDL rate
-    OplChip::output_data mOutput;
 
 
     // ---------- SDL3 ----------------

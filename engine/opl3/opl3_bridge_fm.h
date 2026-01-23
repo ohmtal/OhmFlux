@@ -4,7 +4,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#include "opl3.h"
+#include "opl3_base.h"
 #include <array>
 #include <fstream>
 #include <string>
@@ -286,7 +286,7 @@ namespace opl3_bridge_fm {
         int fmsNoteIndex  = -1;
         Pattern scalePat(fmsSongData.song_length);
         for (int row = 0; row < fmsSongData.song_length; row++ ) {
-            printf("#%04d ", row);
+            // printf("#%04d ", row);
             for (int ch = 0; ch < FMS_MAX_CHANNEL; ch++)
             {
                 SongStep& step = scalePat.getStep(row, ch);    //mSteps[row * 18 + ch];
@@ -296,10 +296,10 @@ namespace opl3_bridge_fm {
                 // tricky converting DosScale id's to current
                 fmsNoteIndex = fmsSongData.song[row][ch];
                 step.note = getMidiNoteIdFromFMSNoteId(fmsNoteIndex);
-                printf("| %2d => %3d ", fmsNoteIndex, step.note);
+                // printf("| %2d => %3d ", fmsNoteIndex, step.note);
 
             }
-            printf("\n");
+            // printf("\n");
         }
 
         opl3SongData.patterns.push_back(scalePat);

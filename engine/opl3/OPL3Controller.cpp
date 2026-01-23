@@ -2,27 +2,11 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-//                      *****  CRITICAL *******
-// FIXME: i dont get ymfm work in OPL3 mode 0x105 does not work ....
-//        bank 1 and  bank 2 are bound together and if one stop the other
-//        stops too.
-//        POSSIBLE TODO's:
-//              ~ try an other  version of ymfm ?! this from libMidi ?
-//                 //DONE DID NOT FIX IT !!
-//              - replace ONE chip and use libMidi interface src/chips
-//                  => this is the best solution i guess !!
-//                  => need to cleanup all the ymfm hacks then for sure
-//              - find out why i have to stop the note ?!
-//                  => maybe cached write /generate
-//              - try nuked ( playnote -> stopnote should be removed  )
-//-----------------------------------------------------------------------------
-
 #include "OPL3Controller.h"
 #include "ymfmGlue.h"
-#include "opl3.h"
+#include "opl3_base.h"
 #include "OPL3Instruments.h"
 #include <mutex>
-
 
 #ifdef FLUX_ENGINE
 #include <audio/fluxAudio.h>
@@ -30,8 +14,8 @@
 
 //------------------------------------------------------------------------------
 OPL3Controller::OPL3Controller(){
-    mChip = new ymfm::ymf262(mInterface);//OPL3
 
+    mChip = new ymfm::ymf262(mInterface);//OPL3
     uint32_t master_clock = 14318180;
     mOutputSampleRate = mChip->sample_rate(master_clock);
 
@@ -51,6 +35,7 @@ OPL3Controller::~OPL3Controller(){
         SDL_DestroyAudioStream(mStream);
         mStream = nullptr;
     }
+
     if (mChip) {
         delete mChip;
         mChip = nullptr;
@@ -272,8 +257,8 @@ void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames)
 
                 // If we've accumulated enough "time" for an OPL3 sample, generate it
                 while (m_opl3_accumulator >= 1.0) {
-                    mChip->generate(&mOutput);
 
+                    mChip->generate(&mOutput);
                     // Mix 4-channel OPL3 to Stereo
                     m_lastSampleL = mOutput.data[0] + mOutput.data[2];
                     m_lastSampleR = mOutput.data[1] + mOutput.data[3];
@@ -506,6 +491,7 @@ void OPL3Controller::reset() {
 
     // 1. Hardware & Shadow Reset
     mChip->reset();
+
     m_pos = 0.0;
 
     // Crucial: Reset your shadow registers to 0 to match ymfm's fresh state
@@ -780,19 +766,6 @@ bool OPL3Controller::playNote(uint8_t softwareChannel, SongStep songStep) {
 bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
     if (channel >= MAX_HW_CHANNELS) return false;
 
-    // // 1 is the problem channel  when 10 is playing ?!
-    // if (!((channel == 10) || (channel == 1)))
-    //      return false;
-    //
-    // // remap test: same !!
-    // if (channel == 1)
-    //     channel = 6;
-    //
-    // if (channel == 10)
-    //     channel = 15 ;
-    //
-
-
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
     SongStep prevStep = mSeqState.last_steps[channel];
@@ -818,13 +791,14 @@ bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
         return true;
     }
 
-
-
     // --- NOTE OFF ---
     if (step.note == STOP_NOTE) {
         stopNoteHW(channel);
         return true;
     }
+
+    // --- TRIGGER NEW NOTE  also with nuked ---
+    stopNoteHW(channel);
 
 
     if (step.instrument >= mSoundBank.size()) return false;
@@ -872,9 +846,6 @@ bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
     if (block > 7) block = 7;
     if (fnum > 1023) fnum = 1023;
 
-    // --- TRIGGER NEW NOTE ---
-    stopNoteHW(channel);
-
 
 
     playNoteByFNumHW(channel, (uint16_t)fnum, (uint8_t)block);
@@ -907,16 +878,13 @@ bool OPL3Controller::stopNoteHW(uint8_t channel) {
         uint8_t currentB0 = readShadow(regAddr);
 
         // Clear bit 5 (Key-On) to trigger the release phase
-        write(regAddr, currentB0 & ~0x20, true); //FIXME
+        write(regAddr, currentB0 & ~0x20);
     };
 
     // Apply Key-Off to the primary channel
-
     keyOff(channel);
 
     // Check if this channel is the master of an active 4-Op group
-
-
     uint8_t fourOpReg = readShadow(0x104);
     bool isFourOpMaster = false;
     int bit = -1;
@@ -932,10 +900,7 @@ bool OPL3Controller::stopNoteHW(uint8_t channel) {
         keyOff(channel + 3);
     }
 
-
-
-
-    // Your critical fix remains at the bottom
+    // crtitical:
     mChip->generate(&mOutput);
 
     return true;
@@ -952,25 +917,17 @@ void OPL3Controller::write(uint16_t reg, uint8_t val, bool doLog)
     mShadowRegs[reg] = val;
 
 
-    // reg bit 8 (0x100) determines the port pair
     uint32_t portBase = (reg & 0x100) ? 2 : 0;
     uint8_t index = reg & 0xFF;
-
-    // 1. Send the register index to the Address Port (0 or 2)
     mChip->write(portBase + 0, index);
-
-    // 2. Send the actual data to the Data Port (1 or 3)
     mChip->write(portBase + 1, val);
-
-
     // mChip->write_address(reg);
     // mChip->write_data(val);
     if (doLog) {
         Log("OPL_WRITE Bank:%d portBase:%d Reg:%02X Data:%02X", reg >> 8, portBase,  reg & 0xFF, val);
     }
-
-
 }
+
 // was a test for channel 9,10,11 but did not help
 // void OPL3Controller::write(uint16_t reg, uint8_t val, bool doLog) {
 //     if (reg > 512 ) {
@@ -1342,17 +1299,18 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
 
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
-    // 1. Assign Song Data
+    // Assign Song Data
     mSeqState.current_song = &songData;
 
-    // 2. Reset Sequencer Positions
+    // Reset Sequencer Positions
     mSeqState.orderIdx = 0;
     mSeqState.rowIdx = 0;
     mSeqState.current_tick = 0;
     mSeqState.sample_accumulator = 0.f;
     mSeqState.loop = loop;
+    mSeqState.ticks_per_row = songData.ticksPerRow;
 
-    // 3. Reset Channel States using the new struct array
+    // Reset Channel States using the new struct array
     // This clears all redundancy checks so the first row of the song
     // is guaranteed to write to the hardware registers.
     for (int i = 0; i < MAX_HW_CHANNELS; ++i) {
@@ -1360,11 +1318,11 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
         mSeqState.last_steps[i].volume = 255; // Force update on first row
     }
 
-    // 4. Calculate timing
+    // Calculate timing
     double hostRate = 44100.0;
     double ticks_per_sec = songData.bpm * 0.4; //songData.ticksPerSecond does nothing ?!?!?! TODO ?
 
-    // 2. Calculate samples per tick
+    // Calculate samples per tick
     if (ticks_per_sec > 0) {
         // At 125 BPM: 44100 / 50 = 882 samples per tick
         mSeqState.samples_per_tick = hostRate / ticks_per_sec;
@@ -1373,10 +1331,8 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
     }
 
 
-    // 5. Hard Reset Chip
-    mChip->reset();
 
-    // 6. Start Playback
+    // Start Playback
     mSeqState.playing = true;
     mSeqState.ui_dirty = true;
 
@@ -1514,12 +1470,13 @@ bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename
     SDL_PauseAudioStreamDevice(mStream);
     SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
 
+    dLog("[info] OPL3Controller::exportToWav.....");
 
     //start the song
     playSong( sd, false);
 
     // calculate duration based on the speed
-    uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerSecond * 1; // using your 1 tick per step logic
+    uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerRow * 1; // using your 1 tick per step logic
     uint32_t total_samples = total_ticks * mSeqState.samples_per_tick;
     double durationInSeconds = (double)total_samples / 44100.0;
 
@@ -1610,6 +1567,7 @@ bool OPL3Controller::saveWavFile(const std::string& filename, const std::vector<
         LogFMT("ERROR:Failed to open file for writing: %s", SDL_GetError());
         return false;
     }
+    dLog("[info] OPL3Controller::saveWavFile.....");
 
     uint32_t numChannels = 2; // Stereo as per your fillBuffer
     uint32_t bitsPerSample = 16;

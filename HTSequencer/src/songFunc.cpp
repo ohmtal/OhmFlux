@@ -14,7 +14,9 @@ bool SequencerGui::exportSongToWav(std::string filename)
         return false;
     }
 
-    getMain()->getController()->exportToWav(mCurrentSong, filename, nullptr);
+    dLog("[info] start export to wav filename:%s", filename.c_str());
+
+    //getMain()->getController()->exportToWav(mCurrentSong, filename, nullptr);
 
 
     if (mCurrentExport || !getMain()->getController()->songValid(mCurrentSong)) return false; // Already exporting!
