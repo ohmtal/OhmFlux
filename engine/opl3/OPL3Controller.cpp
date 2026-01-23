@@ -7,7 +7,8 @@
 //        bank 1 and  bank 2 are bound together and if one stop the other
 //        stops too.
 //        POSSIBLE TODO's:
-//              - try an other  version of ymfm ?! this from libMidi ?
+//              ~ try an other  version of ymfm ?! this from libMidi ?
+//                 //DONE DID NOT FIX IT !!
 //              - replace ONE chip and use libMidi interface src/chips
 //                  => this is the best solution i guess !!
 //                  => need to cleanup all the ymfm hacks then for sure
@@ -536,7 +537,7 @@ void OPL3Controller::reset() {
     // 1. Reset / Clear Registers (Standard OPL practice)
 
     // Enable OPL3 extensions (BANK 1, Register 0x05)
-     write(0x105, 0x01);
+    write(0x105, 0x01);
 
     // Enable Waveform Select (Bank 0, Register 0x01)
     write(0x01, 0x20);

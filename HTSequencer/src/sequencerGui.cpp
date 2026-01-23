@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+#include <sstream>
 
 
 //------------------------------------------------------------------------------
