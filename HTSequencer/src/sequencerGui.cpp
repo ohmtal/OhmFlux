@@ -19,11 +19,9 @@
 
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
 {
-
-    char lBuffer[512];
+    char lBuffer[1024];
     if (priority == SDL_LOG_PRIORITY_ERROR)
     {
-        // snprintf ensures you don't overflow lBuffer
         snprintf(lBuffer, sizeof(lBuffer), "[ERROR] %s", message);
     }
     else if (priority == SDL_LOG_PRIORITY_WARN)

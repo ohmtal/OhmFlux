@@ -84,7 +84,7 @@ public:
         for (int i = 0; i < 12; ++i) {
             // Place a note every 4th row on channel 0
             int row = i * 4;
-            SongStep& step = scalePat.getStep(row, i);
+            SongStep& step = scalePat.getStep(row, 0);
 
             step.note = 60 + i;
             step.instrument = instrumentIndex; // Ensure your soundbank has at least one instrument

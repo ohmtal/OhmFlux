@@ -346,7 +346,7 @@ namespace opl3 {
          const SongStep* begin() const { return mSteps.data(); }
          const SongStep* end() const   { return mSteps.data() + mSteps.size(); }
 
-         // 1. CONST version for the Playback Engine (Read-Only)
+         // CONST version for the Playback Engine (Read-Only)
          const SongStep& getStep(uint16_t row, uint8_t softwareChannel) const
          {
              if (row >= getRowCount() || softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
@@ -358,11 +358,12 @@ namespace opl3 {
              return mSteps[index];
          }
 
-         // 2. MUTABLE version for the Tracker UI (Read-Write)
+         // MUTABLE version for the Tracker UI (Read-Write)
          SongStep& getStep(uint16_t row, uint8_t softwareChannel)
          {
              if (row >= getRowCount() || softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
                  static SongStep dummyStep;
+                 Log("[error] channel out of bounds! channel: %d max:%d ", softwareChannel, SOFTWARE_CHANNEL_COUNT);
                  return dummyStep;
              }
 
