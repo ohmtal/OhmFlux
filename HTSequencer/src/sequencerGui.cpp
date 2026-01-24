@@ -793,6 +793,11 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         getMain()->getController()->attachAudio();
     }
     else
+        if (cmd == "v") {
+            LogFMT("Voice active: {}", getMain()->getController()->isAnyVoiceActive());
+        }
+
+    else
     {
         console->AddLog("unknown command %s", cmd.c_str());
     }

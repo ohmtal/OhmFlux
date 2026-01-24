@@ -209,25 +209,38 @@ bool OPL3Controller::shutDownController()
     return true;
 }
 //------------------------------------------------------------------------------
-bool OPL3Controller::isAnyVoiceActive() {
-    // 1. If sequencer is running, we are active.
+bool OPL3Controller::checkAnyVoiceActive(float* buffer, int total_frames) {
+    // 1. If sequencer is playing, we are ALWAYS active.
     if (mSeqState.playing) return true;
 
-    // 2. If the logic thread just told us to wake up (mIsSilent was set to false manually)
-    if (!mIsSilent.load()) {
-        // Only allow going back to sleep if the samples are actually zero
-        if (m_lastSampleL != 0.0f || m_lastSampleR != 0.0f) {
+    // 2. Wake-up override (from playNoteByFNumHW)
+    if (isAnyVoiceActive()) {
+
+        // 3. Scan the buffer we JUST filled to see if there is any sound
+        bool bufferHasSound = false;
+        const float EPSILON = 0.00001f; // Ignore digital floor noise
+
+        for (int i = 0; i < total_frames * 2; ++i) {
+            if (std::abs(buffer[i]) > EPSILON) {
+                bufferHasSound = true;
+                break;
+            }
+        }
+
+        if (bufferHasSound) {
             mSilenceCounter = 0;
             return true;
         }
-        // Increment counter while samples are zero
-        mSilenceCounter++;
+
+        // 4. If the buffer was silent, increment counter
+        mSilenceCounter += total_frames;
+
         if (mSilenceCounter > SILENCE_THRESHOLD) {
             mIsSilent = true;
         }
-        return true; // Still "Active" while counting down to sleep
+        return true;
     }
-    return false; // Fully asleep
+    return false;
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::generate(float* buffer, int frames) {
@@ -250,15 +263,15 @@ void OPL3Controller::fillBuffer(float* buffer, int total_frames)
     const float inv32768 = 1.0f / 32768.0f;
     int buffer_offset = 0;
 
-    // Shortcut: If not playing a song and no manual notes are active, just zero out
-    if (!mSeqState.playing && !this->isAnyVoiceActive()) {
-        std::memset(buffer, 0, total_frames * 2 * sizeof(float));
+    if (mIsSilent.load() && !mSeqState.playing) {
+        std::memset(buffer, 0, total_frames * sizeof(float) * 2);
         return;
     }
 
     // If not playing a song, but manual notes are active
     if (!mSeqState.playing) {
         this->generate(buffer, total_frames); // Refactored generate() below
+        this->checkAnyVoiceActive(buffer, total_frames);
         return;
     }
 

@@ -118,19 +118,9 @@ private:
     float m_lastSampleL = 0.0f;
     float m_lastSampleR = 0.0f;
 
-
-
-    bool isAnyVoiceActive();
     void generate(float* buffer, int frames);
     void fillBuffer(float* buffer, int total_frames);
-
-
-
-    // int16_t m_lastSampleL = 0;
-    // int16_t m_lastSampleR = 0;
-
-    // void generate(int16_t* out_buffer, int num_frames);
-    // void fillBuffer(int16_t* buffer, int total_frames);
+    bool checkAnyVoiceActive(float* buffer, int total_frames);
 
     //------------
     virtual void tickSequencer();
@@ -257,6 +247,9 @@ public:
     void setFrequency(uint8_t channel, uint16_t fnum, uint8_t octave);
     void setFrequencyLinear(uint8_t channel, float linearFreq);
 
+    bool isAnyVoiceActive() { return !mIsSilent.load(); }
+
+
 
 
     // ------ Console -----------------------
@@ -301,7 +294,6 @@ public:
 
 
 
-    // ------ import -------------
     // ------ export -------------
     void detachAudio();
     void attachAudio();
