@@ -22,8 +22,10 @@ OPL3Controller::OPL3Controller(){
     Log("OPL SampleRate is: %d" , mOutputSampleRate );
 
     m_opl3_accumulator = 0.0;
-    m_lastSampleL = 0;
-    m_lastSampleR = 0;
+    m_lastSampleL = 0.f;
+    m_lastSampleR = 0.f;
+
+    mF32Buffer.resize(MAX_FRAMES * 2);
 
     reset();
 }
@@ -44,69 +46,75 @@ OPL3Controller::~OPL3Controller(){
 //------------------------------------------------------------------------------
 void SDLCALL OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     auto* controller = static_cast<OPL3Controller*>(userdata);
-    if (!controller) return;
+    if (!controller || additional_amount <= 0) return;
 
-    // 1. SDL3 additional_amount is in BYTES.
-    // For F32 Stereo: 1 frame = 8 bytes.
+    // Calculate frames (F32 Stereo = 8 bytes per frame)
     int framesNeeded = additional_amount / 8;
-
-    // Use a fixed size or std::vector for the intermediate buffers
-    // 2048 frames * 2 channels = 4096 samples
     const int MAX_FRAMES = 2048;
     if (framesNeeded > MAX_FRAMES) framesNeeded = MAX_FRAMES;
+    int totalSamples = framesNeeded * 2;
 
-    int16_t s16Buffer[MAX_FRAMES * 2];
-    float f32Buffer[MAX_FRAMES * 2];
+    // Use the pre-allocated member buffer from your class
+    // This avoids creating 16KB-24KB on the stack every callback
+    float* f32Buffer = controller->mF32Buffer.data();
 
+    // Fill Buffer
     {
         std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
-        // Fill using your legacy int16_t logic
-        controller->fillBuffer(s16Buffer, framesNeeded);
+        // Note: We call the NEW float version of fillBuffer
+        controller->fillBuffer(f32Buffer, framesNeeded);
     }
 
-    // 2. Convert S16 legacy data to F32 for the DSP effects
-    int totalSamples = framesNeeded * 2;
-    for (int i = 0; i < totalSamples; ++i) {
-        f32Buffer[i] = s16Buffer[i] / 32768.0f;
-    }
 
-    // DSP
+    // DSP Effects
     for (auto& effect : controller->mDspEffects) {
         effect->process(f32Buffer, totalSamples);
     }
 
-    // 4. Put the processed FLOAT data into the stream
-    // The byte size is framesNeeded * 8 (or totalSamples * 4)
+    // Send to SDL3
     SDL_PutAudioStreamData(stream, f32Buffer, framesNeeded * 8);
+
 }
 
-// pre SDL_AUDIO_F32
-// void OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
+// void SDLCALL OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
 //     auto* controller = static_cast<OPL3Controller*>(userdata);
-//     if (!controller) return;
+//     if ( !controller || additional_amount == 0 ) return;
 //
-//     // additional_amount is in BYTES.
-//     // For S16 Stereo (2 bytes per sample * 2 channels), frames = bytes / 4.
-//     int totalBytes = additional_amount;
-//     if (totalBytes > 4096) totalBytes = 4096; // Stay within int16_t buffer[2048]
+//     // 1. SDL3 additional_amount is in BYTES.
+//     // For F32 Stereo: 1 frame = 8 bytes.
+//     int framesNeeded = additional_amount / 8;
 //
-//     int framesNeeded = totalBytes / 4;
-//     int16_t buffer[2048];
+//     // Use a fixed size or std::vector for the intermediate buffers
+//     // 2048 frames * 2 channels = 4096 samples
+//     const int MAX_FRAMES = 2048;
+//     if (framesNeeded > MAX_FRAMES) framesNeeded = MAX_FRAMES;
+//
+//     int16_t s16Buffer[MAX_FRAMES * 2];
+//     float f32Buffer[MAX_FRAMES * 2];
 //
 //     {
 //         std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
-//         controller->fillBuffer(buffer, framesNeeded);
+//         // Fill using your legacy int16_t logic
+//         controller->fillBuffer(s16Buffer, framesNeeded);
 //     }
 //
-//     // DIGITAL SOUND PROCESSING :D
-//     // Apply effect to the number of SAMPLES (frames * channels)
-//     // framesNeeded * 2 (for Left and Right)
-//     // controller->getReverb().process(buffer, framesNeeded * 2);
-//     for (auto& effect : controller->mDspEffects) {
-//         effect->process(buffer, framesNeeded * 2);
+//     // 2. Convert S16 legacy data to F32 for the DSP effects
+//     int totalSamples = framesNeeded * 2;
+//     const float inv32768 = 1.0f / 32768.0f;
+//     for (int i = 0; i < totalSamples; ++i) {
+//         f32Buffer[i] = s16Buffer[i] * inv32768;
 //     }
-//     SDL_PutAudioStreamData(stream, buffer, totalBytes);
+//
+//     // DSP
+//     for (auto& effect : controller->mDspEffects) {
+//         effect->process(f32Buffer, totalSamples);
+//     }
+//
+//     // 4. Put the processed FLOAT data into the stream
+//     // The byte size is framesNeeded * 8 (or totalSamples * 4)
+//     SDL_PutAudioStreamData(stream, f32Buffer, framesNeeded * 8);
 // }
+//
 
 //------------------------------------------------------------------------------
 bool OPL3Controller::initController()
@@ -151,7 +159,7 @@ bool OPL3Controller::initController()
     // Digital post processing
     //------------------------
     // warmth:
-    auto warmth = std::make_unique<DSP::Warmth>(true);
+    auto warmth = std::make_unique<DSP::Warmth>(false);
     mDSPWarmth = warmth.get();
     mDspEffects.push_back(std::move(warmth));
     //------------------------
@@ -179,7 +187,7 @@ bool OPL3Controller::initController()
 
     //------------------------
     //Limiter Last !
-    auto limiter = std::make_unique<DSP::Limiter>(true);
+    auto limiter = std::make_unique<DSP::Limiter>(false);
     mLimiter = limiter.get();
     mDspEffects.push_back(std::move(limiter));
     // ------------------------
@@ -201,86 +209,180 @@ bool OPL3Controller::shutDownController()
     return true;
 }
 //------------------------------------------------------------------------------
-void OPL3Controller::generate(int16_t* buffer, int frames) {
+bool OPL3Controller::isAnyVoiceActive() {
+    // 1. If sequencer is running, we are active.
+    if (mSeqState.playing) return true;
+
+    // 2. If the logic thread just told us to wake up (mIsSilent was set to false manually)
+    if (!mIsSilent.load()) {
+        // Only allow going back to sleep if the samples are actually zero
+        if (m_lastSampleL != 0.0f || m_lastSampleR != 0.0f) {
+            mSilenceCounter = 0;
+            return true;
+        }
+        // Increment counter while samples are zero
+        mSilenceCounter++;
+        if (mSilenceCounter > SILENCE_THRESHOLD) {
+            mIsSilent = true;
+        }
+        return true; // Still "Active" while counting down to sleep
+    }
+    return false; // Fully asleep
+}
+//------------------------------------------------------------------------------
+void OPL3Controller::generate(float* buffer, int frames) {
+    const float inv32768 = 1.0f / 32768.0f;
     for (int i = 0; i < frames; ++i) {
-        // 1. Ask ymfm to compute one sample of data
-        // This populates mOutput.data[] with the current chip state
         mChip->generate(&mOutput);
 
-        // 2. Interleave the Left and Right channels into your int16_t buffer
-        // OPL3 standard output: data[0] = Left, data[1] = Right
-        for (int chan = 0; chan < 2; ++chan) {
-            int32_t sample = mOutput.data[chan];
-            //raise volume distortion sound bad :P
-            // sample = mOutput.data[chan] * 256;
+        // Convert to float while mixing
+        float L = (mOutput.data[0] + mOutput.data[2]) * inv32768;
+        float R = (mOutput.data[1] + mOutput.data[3]) * inv32768;
 
-            // 3. Optional: Manual Clamping for 16-bit safety
-            if (sample > 32767)  sample = 32767;
-            if (sample < -32768) sample = -32768;
-
-            *buffer++ = static_cast<int16_t>(sample);
-        }
+        // Direct write to float buffer
+        *buffer++ = L;
+        *buffer++ = R;
     }
 }
 //------------------------------------------------------------------------------
-void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames)
+void OPL3Controller::fillBuffer(float* buffer, int total_frames)
 {
-    //for playTone without a song:
+    const float inv32768 = 1.0f / 32768.0f;
+    int buffer_offset = 0;
+
+    // Shortcut: If not playing a song and no manual notes are active, just zero out
+    if (!mSeqState.playing && !this->isAnyVoiceActive()) {
+        std::memset(buffer, 0, total_frames * 2 * sizeof(float));
+        return;
+    }
+
+    // If not playing a song, but manual notes are active
     if (!mSeqState.playing) {
-        this->generate(buffer, total_frames);
+        this->generate(buffer, total_frames); // Refactored generate() below
         return;
     }
 
     int frames_left = total_frames;
-    int buffer_offset = 0;
-
-    // The ratio of OPL3 native rate to your output rate (49715 / 44100)
     double step = this->getStep();
 
     while (frames_left > 0) {
-        if (mSeqState.playing) {
-            // Check if we need to tick the sequencer
-            double samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+        // 1. Calculate how many samples until the next sequencer tick
+        double samples_until_tick = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+        int chunk = std::min(frames_left, (int)std::max(1.0, samples_until_tick));
 
-            if (samples_needed <= 0.0) {
-                this->tickSequencer(); // Effects/Notes processed here
-                mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
-                samples_needed = mSeqState.samples_per_tick;
+        // 2. Generate and Resample this chunk
+        for (int i = 0; i < chunk; i++) {
+            m_opl3_accumulator += step;
+
+            // Generate new OPL3 data only when needed
+            while (m_opl3_accumulator >= 1.0) {
+                mChip->generate(&mOutput);
+                // Mix and convert to float IMMEDIATELY
+                // OPL3 uses 4-channel output usually mapped: 0+2 = Left, 1+3 = Right
+                m_lastSampleL = (mOutput.data[0] + mOutput.data[2]) * inv32768;
+                m_lastSampleR = (mOutput.data[1] + mOutput.data[3]) * inv32768;
+                m_opl3_accumulator -= 1.0;
             }
-
-            // Chunk calculation for your effects (e.g., 6 ticks per row)
-            int chunk = std::min((int)frames_left, (int)std::max(1.0, samples_needed));
-
-            // Generate OPL3 samples with resampling for this chunk
-            for (int i = 0; i < chunk; i++) {
-                m_opl3_accumulator += step;
-
-                // If we've accumulated enough "time" for an OPL3 sample, generate it
-                while (m_opl3_accumulator >= 1.0) {
-
-                    mChip->generate(&mOutput);
-                    // Mix 4-channel OPL3 to Stereo
-                    m_lastSampleL = mOutput.data[0] + mOutput.data[2];
-                    m_lastSampleR = mOutput.data[1] + mOutput.data[3];
-
-                    m_opl3_accumulator -= 1.0;
-                }
-
-                // Write the resampled/last-known sample to the 44.1k buffer
-                buffer[(buffer_offset + i) * 2]     = m_lastSampleL;
-                buffer[(buffer_offset + i) * 2 + 1] = m_lastSampleR;
-            }
-
-            mSeqState.sample_accumulator += chunk;
-            buffer_offset += chunk;
-            frames_left -= chunk;
-        } else {
-            // Not playing: Just generate silent/idle OPL3 samples
-            this->generate(&buffer[buffer_offset * 2], frames_left);
-            break;
+            // Write the stored float values to the buffer
+            buffer[(buffer_offset + i) * 2]     = m_lastSampleL;
+            buffer[(buffer_offset + i) * 2 + 1] = m_lastSampleR;
         }
+
+        // 3. Update Sequencer state
+        mSeqState.sample_accumulator += chunk;
+        if (mSeqState.sample_accumulator >= mSeqState.samples_per_tick) {
+            this->tickSequencer();
+            mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+        }
+
+        buffer_offset += chunk;
+        frames_left -= chunk;
     }
 }
+
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// void OPL3Controller::generate(int16_t* buffer, int frames) {
+//     for (int i = 0; i < frames; ++i) {
+//         // 1. Ask ymfm to compute one sample of data
+//         // This populates mOutput.data[] with the current chip state
+//         mChip->generate(&mOutput);
+//
+//         // 2. Interleave the Left and Right channels into your int16_t buffer
+//         // OPL3 standard output: data[0] = Left, data[1] = Right
+//         for (int chan = 0; chan < 2; ++chan) {
+//             int32_t sample = mOutput.data[chan];
+//             //raise volume distortion sound bad :P
+//             // sample = mOutput.data[chan] * 256;
+//
+//             // 3. Optional: Manual Clamping for 16-bit safety
+//             if (sample > 32767)  sample = 32767;
+//             if (sample < -32768) sample = -32768;
+//
+//             *buffer++ = static_cast<int16_t>(sample);
+//         }
+//     }
+// }
+// //------------------------------------------------------------------------------
+// void OPL3Controller::fillBuffer(int16_t* buffer, int total_frames)
+// {
+//     //for playTone without a song:
+//     if (!mSeqState.playing) {
+//         this->generate(buffer, total_frames);
+//         return;
+//     }
+//
+//     int frames_left = total_frames;
+//     int buffer_offset = 0;
+//
+//     // The ratio of OPL3 native rate to your output rate (49715 / 44100)
+//     double step = this->getStep();
+//
+//     while (frames_left > 0) {
+//         if (mSeqState.playing) {
+//             // Check if we need to tick the sequencer
+//             double samples_needed = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+//
+//             if (samples_needed <= 0.0) {
+//                 this->tickSequencer(); // Effects/Notes processed here
+//                 mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+//                 samples_needed = mSeqState.samples_per_tick;
+//             }
+//
+//             // Chunk calculation for your effects (e.g., 6 ticks per row)
+//             int chunk = std::min((int)frames_left, (int)std::max(1.0, samples_needed));
+//
+//             // Generate OPL3 samples with resampling for this chunk
+//             for (int i = 0; i < chunk; i++) {
+//                 m_opl3_accumulator += step;
+//
+//                 // If we've accumulated enough "time" for an OPL3 sample, generate it
+//                 while (m_opl3_accumulator >= 1.0) {
+//
+//                     mChip->generate(&mOutput);
+//                     // Mix 4-channel OPL3 to Stereo
+//                     m_lastSampleL = mOutput.data[0] + mOutput.data[2];
+//                     m_lastSampleR = mOutput.data[1] + mOutput.data[3];
+//
+//                     m_opl3_accumulator -= 1.0;
+//                 }
+//
+//                 // Write the resampled/last-known sample to the 44.1k buffer
+//                 buffer[(buffer_offset + i) * 2]     = m_lastSampleL;
+//                 buffer[(buffer_offset + i) * 2 + 1] = m_lastSampleR;
+//             }
+//
+//             mSeqState.sample_accumulator += chunk;
+//             buffer_offset += chunk;
+//             frames_left -= chunk;
+//         } else {
+//             // Not playing: Just generate silent/idle OPL3 samples
+//             this->generate(&buffer[buffer_offset * 2], frames_left);
+//             break;
+//         }
+//     }
+// }
 //------------------------------------------------------------------------------
 void OPL3Controller::tickSequencer() {
     if (!mSeqState.playing || !mSeqState.current_song) return;
@@ -1342,6 +1444,9 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
 void OPL3Controller::playNoteByFNumHW(uint8_t channel, uint16_t fnum, uint8_t octave) {
     if (channel >= MAX_HW_CHANNELS) return;
 
+    // reset silent check
+    mIsSilent = false;
+    mSilenceCounter = 0;
 
     uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
     uint8_t relChan = (channel <= 8) ? channel : (channel - 9);
@@ -1466,141 +1571,117 @@ bool OPL3Controller::songValid(const opl3::SongData& songData) {
 }
 //------------------------------------------------------------------------------
 bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename, float* progressOut, bool applyEffects) {
-    // unbind the audio stream
-    SDL_PauseAudioStreamDevice(mStream);
-    SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
+    detachAudio();
+    dLog("[info] OPL3Controller::exportToWav (Optimized Float Pipeline)...");
 
-    dLog("[info] OPL3Controller::exportToWav.....");
+    playSong(sd, false);
 
-    //start the song
-    playSong( sd, false);
+    // 1. Calculate dimensions
+    uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerRow;
+    uint32_t totalFrames = static_cast<uint32_t>(total_ticks * mSeqState.samples_per_tick);
+    int sampleRate = 44100;
+    int chunkSize = 4096;
 
-    // calculate duration based on the speed
-    uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerRow * 1; // using your 1 tick per step logic
-    uint32_t total_samples = total_ticks * mSeqState.samples_per_tick;
-    double durationInSeconds = (double)total_samples / 44100.0;
-
-
-    int sampleRate = 44100; // Match your chip's output rate
-    int totalFrames = durationInSeconds * sampleRate;
-    int chunkSize = 4096;   // Process in small batches
-
-    std::vector<int16_t> exportBuffer(totalFrames * 2); // Stereo
+    // 2. Allocate FLOAT buffer for the entire export
+    // This is the "Working Master" buffer
+    std::vector<float> f32ExportBuffer(totalFrames * 2);
     int framesProcessed = 0;
 
-    // Reset your sequencer state before starting
     mSeqState.sample_accumulator = 0;
     m_pos = 0;
 
+    // 3. Generation Loop
     while (framesProcessed < totalFrames) {
-        int remaining = totalFrames - framesProcessed;
-        int toWrite = std::min(chunkSize, remaining);
+        int toWrite = std::min(chunkSize, (int)(totalFrames - framesProcessed));
 
-        // Fill the buffer starting at the current offset
-        this->fillBuffer(&exportBuffer[framesProcessed * 2], toWrite);
+        // Use the new FLOAT fillBuffer directly
+        this->fillBuffer(&f32ExportBuffer[framesProcessed * 2], toWrite);
+
         framesProcessed += toWrite;
 
-
         if (progressOut) {
-            if (applyEffects)
-                *progressOut = (float)framesProcessed / (float)total_samples * 0.70f; //0.70 because of post processing
-            else
-                *progressOut = (float)framesProcessed / (float)total_samples;
+            float progressScale = applyEffects ? 0.70f : 1.0f;
+            *progressOut = (float)framesProcessed / (float)totalFrames * progressScale;
         }
-    } //while
+    }
 
     this->stopSong(true);
 
+    // 4. Processing Phase
     if (applyEffects) {
-        // --------------- effects >>>>>>>>>>>>>>>>>><
-        // to float
-        std::vector<float> f32ExportBuffer(exportBuffer.size());
-        for (size_t i = 0; i < exportBuffer.size(); ++i) {
-            f32ExportBuffer[i] = exportBuffer[i] / 32768.0f;
-        }
+        if (progressOut) *progressOut = 0.75f;
 
-        if (progressOut) *progressOut = 0.8f;
-
-        // my effects
+        // Apply DSP directly to the master float buffer
         for (auto& effect : this->mDspEffects) {
-            // Note: totalSamples = totalFrames * 2 for stereo
             effect->process(f32ExportBuffer.data(), f32ExportBuffer.size());
         }
+        if (progressOut) *progressOut = 0.85f;
 
-        if (progressOut) *progressOut = 0.9f;
-
-        // normalize
+        // Normalize
         DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
-
-        if (progressOut) *progressOut = 0.95f;
-
-        // back to S32
-        for (size_t i = 0; i < exportBuffer.size(); ++i) {
-            float sample = f32ExportBuffer[i] * 32768.0f;
-
-            // Strict clamping to 16-bit range
-            if (sample > 32767.0f) sample = 32767.0f;
-            if (sample < -32768.0f) sample = -32768.0f;
-
-            exportBuffer[i] = static_cast<int16_t>(sample);
-        }
-
-        if (progressOut) *progressOut = 1.0f;
-
-        //<<<<<<<<<<< Effects
+        if (progressOut) *progressOut = 0.90f;
     }
 
+    if (progressOut) *progressOut = 1.0f;
 
-    // rebind the audio stream!
-    SDL_SetAudioStreamGetCallback(mStream, OPL3Controller::audio_callback, this);
-    SDL_ResumeAudioStreamDevice(mStream);
+    attachAudio();
 
 
-    // Now write exportBuffer to a wav file
-    return saveWavFile(filename, exportBuffer, sampleRate);
+    return saveWavFile(filename, f32ExportBuffer, sampleRate);
 }
 //------------------------------------------------------------------------------
-bool OPL3Controller::saveWavFile(const std::string& filename, const std::vector< int16_t >& data, int sampleRate) {
+bool OPL3Controller::saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate)  {
     // Open the file for writing using SDL3's IO system
     SDL_IOStream* io = SDL_IOFromFile(filename.c_str(), "wb");
     if (!io) {
         LogFMT("ERROR:Failed to open file for writing: %s", SDL_GetError());
         return false;
     }
-    dLog("[info] OPL3Controller::saveWavFile.....");
 
-    uint32_t numChannels = 2; // Stereo as per your fillBuffer
-    uint32_t bitsPerSample = 16;
-    uint32_t dataSize = (uint32_t)(data.size() * sizeof(int16_t));
+    dLog("[info] OPL3Controller::saveWavFile (32-bit Float).....");
+
+    uint32_t numChannels = 2;
+    uint32_t bitsPerSample = 32; // 32 bits for float
+    uint32_t dataSize = (uint32_t)(data.size() * sizeof(float));
     uint32_t fileSize = 36 + dataSize;
     uint32_t byteRate = sampleRate * numChannels * (bitsPerSample / 8);
     uint16_t blockAlign = (uint16_t)(numChannels * (bitsPerSample / 8));
 
-    // Write the 44-byte WAV Header
+    // Write the WAV Header
     SDL_WriteIO(io, "RIFF", 4);
     SDL_WriteU32LE(io, fileSize);
     SDL_WriteIO(io, "WAVE", 4);
     SDL_WriteIO(io, "fmt ", 4);
-    SDL_WriteU32LE(io, 16);          // Subchunk1Size (16 for PCM)
-    SDL_WriteU16LE(io, 1);           // AudioFormat (1 for PCM)
+    SDL_WriteU32LE(io, 16);
+
+    // IMPORTANT: AudioFormat 3 is IEEE Float (instead of 1 for PCM)
+    SDL_WriteU16LE(io, 3);
+
     SDL_WriteU16LE(io, (uint16_t)numChannels);
     SDL_WriteU32LE(io, (uint32_t)sampleRate);
     SDL_WriteU32LE(io, byteRate);
     SDL_WriteU16LE(io, blockAlign);
     SDL_WriteU16LE(io, (uint16_t)bitsPerSample);
+
     SDL_WriteIO(io, "data", 4);
     SDL_WriteU32LE(io, dataSize);
 
-    // Write the actual PCM sample data
+    // Write the raw float data directly - no conversion needed!
     SDL_WriteIO(io, data.data(), dataSize);
 
-    // Close the stream
     SDL_CloseIO(io);
-    LogFMT("Successfully exported {}", filename);
-
-
+    LogFMT("Successfully exported WAV {}", filename);
 
     return true;
 }
 //------------------------------------------------------------------------------
+void OPL3Controller::detachAudio(){
+    SDL_PauseAudioStreamDevice(mStream);
+    SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
+}
 
+void OPL3Controller::attachAudio(){
+    SDL_SetAudioStreamGetCallback(mStream, OPL3Controller::audio_callback, this);
+    SDL_ResumeAudioStreamDevice(mStream);
+}
+//------------------------------------------------------------------------------

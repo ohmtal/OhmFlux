@@ -68,6 +68,9 @@ private:
     // ---------- ThreadSafety ---------------
     std::recursive_mutex mDataMutex;
 
+
+
+
     // --------- SequencerState --------------
     struct SequencerState {
         bool playing = false;
@@ -102,9 +105,34 @@ private:
 
     uint8_t mShadowRegs[512] = {0}; // register for read
 
+    // ------- audio_callback and buffers ----------
+
+    static constexpr int MAX_FRAMES = 2048;
+    std::vector<float> mF32Buffer;
+
+    const int SILENCE_THRESHOLD = 44100;
+    std::atomic<bool> mIsSilent{true};
+    std::atomic<int> mSilenceCounter{0};
+
+    double m_opl3_accumulator = 0.0;
+    float m_lastSampleL = 0.0f;
+    float m_lastSampleR = 0.0f;
+
+
+
+    bool isAnyVoiceActive();
+    void generate(float* buffer, int frames);
+    void fillBuffer(float* buffer, int total_frames);
+
+
+
+    // int16_t m_lastSampleL = 0;
+    // int16_t m_lastSampleR = 0;
+
+    // void generate(int16_t* out_buffer, int num_frames);
+    // void fillBuffer(int16_t* buffer, int total_frames);
+
     //------------
-    void generate(int16_t* out_buffer, int num_frames);
-    void fillBuffer(int16_t* buffer, int total_frames);
     virtual void tickSequencer();
 
     uint16_t get_modulator_offset(uint8_t channel);
@@ -122,7 +150,8 @@ private:
 
     // ------ import -------------
     // ------ export -------------
-    bool saveWavFile(const std::string& filename, const std::vector<int16_t>& data, int sampleRate);
+    bool saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate);
+    // bool saveWavFile(const std::string& filename, const std::vector<int16_t>& data, int sampleRate);
 
 public:
     // ----------   Init ---------------
@@ -274,15 +303,14 @@ public:
 
     // ------ import -------------
     // ------ export -------------
+    void detachAudio();
+    void attachAudio();
     bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr, bool applyEffects = false);
 
 
 protected:
     SequencerState mSeqState;
 
-    double m_opl3_accumulator = 0.0;
-    int16_t m_lastSampleL = 0;
-    int16_t m_lastSampleR = 0;
 
 
 };  //class OPL3Controller

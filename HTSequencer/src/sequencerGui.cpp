@@ -356,7 +356,9 @@ void SequencerGui::DrawGui()
 
     DrawMsgBoxPopup();
 
-    mConsole.Draw("Console", &mGuiSettings.mShowConsole);
+
+    if (mGuiSettings.mShowConsole)
+        mConsole.Draw("Console", &mGuiSettings.mShowConsole);
 
 
     if (mGuiSettings.mShowSongGui) {
@@ -781,6 +783,14 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
                 LogFMT("{}", line);
             }
         }
+    }
+    else
+    if (cmd == "detach") {
+        getMain()->getController()->detachAudio();
+    }
+    else
+    if (cmd == "attach") {
+        getMain()->getController()->attachAudio();
     }
     else
     {

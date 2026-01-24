@@ -682,6 +682,7 @@ int main(int argc, char *argv[])
 	lDemoGame->mSettings.cursorHotSpotX = 11;
 	lDemoGame->mSettings.cursorHotSpotY = 3;
 	lDemoGame->mSettings.initialVsync = false;
+	lDemoGame->mSettings.WorldBounds = { 0, 0, 1152, 648 };
 
 	lDemoGame->mSettings.maxSprites = 100000;
 

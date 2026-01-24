@@ -296,7 +296,7 @@ void SequencerGui::DrawOperatorGrid(opl3::OplInstrument::OpPair::OpParams& op) {
             if (lastStep.note < LAST_NOTE)
             {
                 lMidiNote = lastStep.note;
-                dLog("[info] lMidiNote is %d", lMidiNote);
+                // dLog("[info] lMidiNote is %d", lMidiNote);
             }
             if ( getMain()->getController()->isPlaying() && lastStep.volume <= MAX_VOLUME) {
                 float newVol = (float)lastStep.volume / (float)MAX_VOLUME;

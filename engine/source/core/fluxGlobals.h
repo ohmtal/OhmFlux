@@ -459,7 +459,7 @@ struct FluxSettings
     S32 cursorHotSpotX = 0;       // offset for mousepointer click position X
     S32 cursorHotSpotY = 0;       // offset for mousepointer click position Y
     bool useQuadTree    = false;
-    RectI WorldBounds = { -1000, -1000, 2000, 2000 };
+    RectI WorldBounds = { -2048, -2048, 4096, 4096 };
 
     U32 maxSprites = DEFAULT_MAX_SPRITES; // this need to be set since we use Batchrendering
 
