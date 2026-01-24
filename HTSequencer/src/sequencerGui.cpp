@@ -36,9 +36,6 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     getMain()->getGui()->mConsole.AddLog("%s", message);
 }
-
-
-
 //------------------------------------------------------------------------------
 void SequencerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
@@ -159,7 +156,7 @@ bool SequencerGui::Initialize()
         LogFMT("Error: Can not open setting file: {}", lSettingsFile);
     }
 
-    mGuiSettings = SettingsManager().get("EditorGui::mEditorSettings", mDefaultGuiSettings);
+    mSettings = SettingsManager().get("EditorGui::mEditorSettings", mDefaultSettings);
 
 
     auto* controller = getMain()->getController();
@@ -228,7 +225,7 @@ void SequencerGui::Deinitialize()
     SAFE_DELETE(mGuiGlue);
 
     if (SettingsManager().IsInitialized()) {
-        SettingsManager().set("EditorGui::mEditorSettings", mGuiSettings);
+        SettingsManager().set("EditorGui::mEditorSettings", mSettings);
 
         auto* controller = getMain()->getController();
         SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings());
@@ -304,16 +301,16 @@ void SequencerGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::MenuItem("Sequencer", NULL, &mGuiSettings.mShowSongGui);
-            ImGui::MenuItem("Instruments", NULL, &mGuiSettings.mShowSoundBankList);
-            ImGui::MenuItem("Instrument Editor", NULL, &mGuiSettings.mShowFMEditor);
-            ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
+            ImGui::MenuItem("Sequencer", NULL, &mSettings.ShowSongGui);
+            ImGui::MenuItem("Instruments", NULL, &mSettings.ShowSoundBankList);
+            ImGui::MenuItem("Instrument Editor", NULL, &mSettings.ShowFMEditor);
+            ImGui::MenuItem("Digital Sound Processing", NULL, &mSettings.ShowDSP);
             ImGui::Separator();
-            ImGui::MenuItem("Piano", NULL, &mGuiSettings.mShowPiano);
-            ImGui::MenuItem("Scale Player", NULL, &mGuiSettings.mShowScalePlayer);
+            ImGui::MenuItem("Piano", NULL, &mSettings.ShowPiano);
+            ImGui::MenuItem("Scale Player", NULL, &mSettings.ShowScalePlayer);
             ImGui::Separator();
-            ImGui::MenuItem("File Browser", NULL, &mGuiSettings.mShowFileBrowser);
-            ImGui::MenuItem("Console", NULL, &mGuiSettings.mShowConsole);
+            ImGui::MenuItem("File Browser", NULL, &mSettings.ShowFileBrowser);
+            ImGui::MenuItem("Console", NULL, &mSettings.ShowConsole);
 
 
 
@@ -359,19 +356,19 @@ void SequencerGui::DrawGui()
     DrawMsgBoxPopup();
 
 
-    if (mGuiSettings.mShowConsole)
-        mConsole.Draw("Console", &mGuiSettings.mShowConsole);
+    if (mSettings.ShowConsole)
+        mConsole.Draw("Console", &mSettings.ShowConsole);
 
 
-    if (mGuiSettings.mShowSongGui) {
+    if (mSettings.ShowSongGui) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
         RenderSequencerUI(true);
         ImGui::PopStyleVar();
 
     }
 
-    if (mGuiSettings.mShowSoundBankList) RenderInstrumentListUI(true);
-    if (mGuiSettings.mShowFMEditor) {
+    if (mSettings.ShowSoundBankList) RenderInstrumentListUI(true);
+    if (mSettings.ShowFMEditor) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 12.0f);
         RenderInstrumentEditorUI(true);
@@ -379,14 +376,14 @@ void SequencerGui::DrawGui()
     }
 
 
-    if (mGuiSettings.mShowScalePlayer) RenderScalePlayerUI(true);
-    if (mGuiSettings.mShowPiano) RenderPianoUI(true);
+    if (mSettings.ShowScalePlayer) RenderScalePlayerUI(true);
+    if (mSettings.ShowPiano) RenderPianoUI(true);
 
     ShowDSPWindow();
     ShowSoundBankWindow();
 
 
-    if (mGuiSettings.mShowFileBrowser) ShowFileManager();
+    if (mSettings.ShowFileBrowser) ShowFileManager();
 
 
 
@@ -408,10 +405,10 @@ void SequencerGui::onKeyEvent(SDL_KeyboardEvent event)
 //------------------------------------------------------------------------------
 void SequencerGui::InitDockSpace()
 {
-    if (mGuiSettings.mEditorGuiInitialized)
+    if (mSettings.EditorGuiInitialized)
         return; 
 
-    mGuiSettings.mEditorGuiInitialized = true;
+    mSettings.EditorGuiInitialized = true;
 
     // ImGuiID dockspace_id = mGuiGlue->getDockSpaceId();
     //

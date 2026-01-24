@@ -16,8 +16,6 @@ bool SequencerGui::exportSongToWav(std::string filename)
 
     dLog("[info] start export to wav filename:%s", filename.c_str());
 
-    //getMain()->getController()->exportToWav(mCurrentSong, filename, nullptr);
-
 
     if (mCurrentExport || !getMain()->getController()->songValid(mCurrentSong)) return false; // Already exporting!
 
@@ -102,6 +100,22 @@ void SequencerGui::callExportSong(){
 void SequencerGui::newSong(){
     stopSong();
     mCurrentSong.init();
+
+    // add a 128 row pattern
+    // TODO: put this in a function? see also DrawNewPatternModal
+    Pattern p;
+    p.mName = "Pat 01";
+    p.getStepsMutable().resize(128 * opl3::SOFTWARE_CHANNEL_COUNT);
+    for(auto& s : p.getStepsMutable()) {
+        s.note = 255;
+        s.volume = 63;
+        s.panning = 32;
+    }
+
+    mCurrentSong.patterns.push_back(std::move(p));
+    uint8_t newPatternIdx = (uint8_t)mCurrentSong.patterns.size() - 1;
+    mCurrentSong.orderList.push_back(newPatternIdx);
+
 }
 //------------------------------------------------------------------------------
 void SequencerGui::stopSong(){

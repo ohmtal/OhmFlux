@@ -14,12 +14,45 @@
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 uint8_t SequencerGui::getCurrentChannel(){
-    // LogFMT("[warn] FIXME insertTone!! getCurrentChannel");
-    return 0; //first 2OP channel FIXME
 
+    if ( getCurrentPattern() )
+        return mPatternEditorState.cursorCol;
+
+    // maybe a other ?!
+    return 0;
 }
-void SequencerGui::insertTone( uint8_t midiNote)  {
-    LogFMT("[warn] FIXME insertTone!! {}", midiNote);
+bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
+{
+    if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
+        return false;
+
+    PatternEditorState& state = mPatternEditorState;
+    if ( mSettings.InsertMode ) {
+        Pattern* lPat = this->getCurrentPattern();
+        if (lPat)
+        {
+            // lPat.getStep(state.cursorRow, state.cursorCol).note = note;
+            // i need this when i play cords!
+            // FIXME EFFECTS or simple setStep!
+
+            SongStep& tmpStep = lPat->getStep(state.cursorRow, softwareChannel);
+
+            dLog("set step row:%d, col:%d, instrument:%d note:%d",
+                 state.cursorRow, softwareChannel, step.instrument, step.note);
+
+            // This will now modify the original memory
+            tmpStep.instrument = step.instrument;
+            tmpStep.note = step.note;
+
+        } else {
+            dLog("unable to get current pattern while mInsertMode is active, that can be ok!");
+            // mInsertMode = false;
+            return false;
+
+        }
+    }
+
+    return getMain()->getController()->playNote(softwareChannel, step);
 }
 
 
@@ -36,6 +69,7 @@ int mScancodeToChannel[SDL_SCANCODE_COUNT]; //FIXME INIT with -1 !!!
 
 int /*SequencerGui::*/getPianoMapOffset(SDL_Scancode scancode) {
     switch (scancode) {
+
         // --- Lower Octave (Physical Bottom Row) ---
         case SDL_SCANCODE_Z:        return 0;  // C
         case SDL_SCANCODE_S:        return 1;  // C#
@@ -75,6 +109,8 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
     // Ignore OS key repeats to prevent re-triggering FM envelopes
     if (event.repeat) return;
 
+
+
     ImGuiIO& io = ImGui::GetIO();
     if (io.WantTextInput /*FIXME console does ? || io.WantCaptureKeyboard*/) {
         return;
@@ -85,22 +121,31 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
 
 
     // --- 1. OCTAVE CONTROL ---
-    // Physical Arrow Up/Down keys shift the range of the keyboard
-    if (event.down) {
-        if (event.scancode == SDL_SCANCODE_UP) {
+    // plus minus mapped keys
+    // WITH CTRL !!
+    if (event.down /*&& event.mod & SDL_KMOD_CTRL*/) {
+        if (event.key == SDLK_PLUS) {
             if (mCurrentStartOctave < 8) mCurrentStartOctave++;
             return;
         }
-        if (event.scancode == SDL_SCANCODE_DOWN) {
+        if (event.key == SDLK_MINUS) {
             if (mCurrentStartOctave > 0) mCurrentStartOctave--;
             return;
         }
+    }
+
+
+    // Exit if any of these functional modifiers are pressed
+    const SDL_Keymod activeMods = SDL_KMOD_SHIFT | SDL_KMOD_CTRL | SDL_KMOD_ALT | SDL_KMOD_GUI;
+    if (event.mod & activeMods) {
+        return;
     }
 
     // --- 2. MUSICAL MAPPING ---
     // Convert physical key location to a semi-tone offset (0-24)
     int offset = getPianoMapOffset(event.scancode);
     if (offset == -1) return; // Not a musical key
+
 
     if (event.down) {
         // --- NOTE ON ---
@@ -138,8 +183,9 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
         // mChannelToNote[targetSwChan] = midiNote;
         mChannelLastUsed[targetSwChan] = ++mGlobalCounter;
 
+
         SongStep step{midiNote, mCurrentInstrumentId};
-        getMain()->getController()->playNote(targetSwChan, step);
+        this->playNote(targetSwChan, step);
     }
     else {
         // --- NOTE OFF ---
@@ -237,7 +283,8 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
                     if (chords::selectedTypeIdx == 0) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(channel, step);
+                        this->playNote(channel, step);
+
                     } else {
                         // Chord - using the pointer from our helper array
                         getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
@@ -298,15 +345,15 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     }
 
 
-    if (controller->isPlaying())
-        ImGui::BeginDisabled();
-    ImGui::SameLine();
-    ImGui::TextColored(ImColor4F(cl_Green),"Play Mode:");
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(200);
-    ImGui::Combo("##Play Mode", &chords::selectedTypeIdx, chords::typeNames, IM_ARRAYSIZE(chords::typeNames));
-    if (controller->isPlaying())
-        ImGui::EndDisabled();
+    // if (controller->isPlaying())
+    //     ImGui::BeginDisabled();
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImColor4F(cl_Green),"Play Mode:");
+    // ImGui::SameLine();
+    // ImGui::SetNextItemWidth(200);
+    // ImGui::Combo("##Play Mode", &chords::selectedTypeIdx, chords::typeNames, IM_ARRAYSIZE(chords::typeNames));
+    // if (controller->isPlaying())
+    //     ImGui::EndDisabled();
 
 
 
@@ -349,21 +396,24 @@ void SequencerGui::RenderPianoUI(bool standAlone)
             ImGui::PushID(midiNote);
 
             // Color Logic: Use SkyBlue if active, else your default color
-            ImVec4 color = isActive ? ImColor4F(cl_SkyBlue) : (mInsertMode ? ImColor4F(cl_White) : ImColor4F(cl_LightGray));
+            ImVec4 color = isActive ? ImColor4F(cl_SkyBlue) : (mSettings.InsertMode ? ImColor4F(cl_White) : ImColor4F(cl_LightGray));
             ImGui::PushStyleColor(ImGuiCol_Button, color);
 
             ImGui::SetNextItemAllowOverlap();
             ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
 
             if (ImGui::IsItemActivated()) {
-                if (chords::selectedTypeIdx == 0 || controller->isPlaying()) {
-                    // Single Note
-                    SongStep step{midiNote, mCurrentInstrumentId};
-                    getMain()->getController()->playNote(channel, step);
-                } else {
-                    // Chord - using the pointer from our helper array
-                    getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
-                }
+                SongStep step{midiNote, mCurrentInstrumentId};
+                this->playNote(channel, step);
+
+                // if (chords::selectedTypeIdx == 0 || controller->isPlaying()) {
+                //     // Single Note
+                //     SongStep step{midiNote, mCurrentInstrumentId};
+                //     this->playNote(channel, step);
+                // } else {
+                //     // Chord - using the pointer from our helper array
+                //     getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
+                // }
             }
 
             if (ImGui::IsItemDeactivated()) {
@@ -404,14 +454,16 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 
 
                 if (ImGui::IsItemActivated()) {
-                    if (chords::selectedTypeIdx == 0 || controller->isPlaying()) {
-                        // Single Note
-                        SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(channel, step);
-                    } else {
-                        // Chord - using the pointer from our helper array
-                        getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
-                    }
+                    SongStep step{midiNote, mCurrentInstrumentId};
+                    getMain()->getController()->playNote(channel, step);
+                    // if (chords::selectedTypeIdx == 0 || controller->isPlaying()) {
+                    //     // Single Note
+                    //     SongStep step{midiNote, mCurrentInstrumentId};
+                    //     getMain()->getController()->playNote(channel, step);
+                    // } else {
+                    //     // Chord - using the pointer from our helper array
+                    //     getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
+                    // }
                 }
 
                 if (ImGui::IsItemDeactivated()) {

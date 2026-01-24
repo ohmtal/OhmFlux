@@ -366,6 +366,16 @@ namespace opl3 {
         uint8_t dummy[32] = {0}; //space for future use
 
 
+        // this can also be used to clear a step
+        void init() {
+            note       = NONE_NOTE;  // 255=None, 1-127 (MIDI range), 128=Off
+            instrument = 0;  // up to 64k should be enough
+            volume     = 63; // 0-63 (Standard tracker range)
+            panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
+            effectType = 0;  // High byte of effect (e.g., 'A')
+            effectVal  = 0;  // Low byte of effect (e.g., 0x0F)
+        }
+
 
         bool operator==(const SongStep& other) const {
             return note == other.note &&
@@ -379,7 +389,7 @@ namespace opl3 {
     //--------------------------------------------------------------------------
     struct Pattern {
         std::string mName = "New Pattern";
-        uint32_t mColor = 0xFFFFFFFF; // RGBA
+        uint32_t mColor = 0xFFFF0F0F; // ABGR !!!!
     protected:
         std::vector<SongStep> mSteps;
 

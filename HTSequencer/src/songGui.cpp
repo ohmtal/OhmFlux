@@ -5,6 +5,40 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+
+//------------------------------------------------------------------------------
+// TODO:
+// [ ] New Song add a default Pattern
+// [ ] OPL3Controller => play pattern WITH active channel only  -> ticktrigger i guess
+// [ ] live playing << MUST have
+//   [ ] row cursor must react to the playing or not ?! << in FluxEditor it stucks when it followed in edit mode
+//   [ ] FIXME first: add a custom stop note (so a STOP_NOTE is added to the pattern )
+//       ONLY IN LIVE PLAYING
+//   [ ] play pattern starts when first note is pressed
+//
+// [ ] reset pattern - i need this for sure :)
+// [ ] set default instrument / step for each channel / also an octave ?!
+//   [ ] update fms import with default Instrument
+//
+        // in songdata:
+        // channelInstrument.fill(0);
+        // channelOctave.fill(4);
+        // channelStep.fill(1);
+
+        // std::array<int8_t, CHANNELS> channelInstrument = {};
+        // std::array<int16_t, CHANNELS> channelOctave = {};
+        // std::array<int8_t, CHANNELS> channelStep = {};
+
+// [ ] select a rect with mouse or shift cursor : shift up/down = row select and ctrl shift cell select
+//     ==> ImGui::BeginMultiSelect ....
+// [ ] del should reset the selected (one cell or rect cells)
+// [ ] ctrl-c copy to a mWorkPattern for pasting somewhere
+// [ ] ctrl + del delete rows -> a check that full rows selected
+// [ ] ctrl + ins insert a row (see also InsertRow)
+// -------- FUTURE
+// [ ] OrderList Editor
+
+
 //------------------------------------------------------------------------------
 void SequencerGui::DrawExportStatus() {
     // Check if the thread task exists
@@ -43,7 +77,8 @@ void SequencerGui::DrawExportStatus() {
 void SequencerGui::RenderSequencerUI(bool standAlone)
 {
 
-    const ImVec2 lButtonSize = ImVec2(70,35);
+    const ImVec2 lButtonSize = ImVec2(70,32);
+
     OPL3Controller*  controller = getMain()->getController();
     if (!controller)
         return;
@@ -108,6 +143,24 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         newSong();
     }
     ImGui::SameLine();
+    ImGui::Dummy(ImVec2(6.f, 0.f));
+    ImGui::SameLine();
+    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+    ImGui::SameLine();
+    ImGui::Dummy(ImVec2(6.f, 0.f));
+    ImGui::SameLine();
+    static bool sShowNewPatternPopup = false;
+    if (ImGui::Button("Pattern +",lButtonSize))
+    {
+        sShowNewPatternPopup = true;
+        ImGui::OpenPopup("New Pattern Configuration");
+    }
+    if (DrawNewPatternModal(mCurrentSong, mNewPatternSettings)) {
+        sShowNewPatternPopup = "false";
+    }
+
+
+    ImGui::SameLine();
     if (ImGui::Button("Save",lButtonSize))
     {
         callSaveSong();
@@ -140,19 +193,36 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "BPM");ImGui::SameLine();
         ImGui::SetNextItemWidth(80);
         ImGui::InputFloat("##BPM", &mCurrentSong.bpm,  1.0f, 10.0f, "%.0f");
+
+        // NOTE: not sure if i want to change the ticks ......
+        // ImGui::SameLine();
+        // ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Ticks per Row");ImGui::SameLine();
+        // int tempSpeed = mCurrentSong.ticksPerRow;
+        // ImGui::SetNextItemWidth(80);
+        // if (ImGui::InputInt("##Ticks per Row", &tempSpeed, 1, 1)) {
+        //     mCurrentSong.ticksPerRow = static_cast<uint8_t>(std::clamp(tempSpeed, 1, 32));
+        // }
+
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Ticks per Row");ImGui::SameLine();
-        int tempSpeed = mCurrentSong.ticksPerRow;
-        ImGui::SetNextItemWidth(80);
-        if (ImGui::InputInt("##Ticks per Row", &tempSpeed, 1, 1)) {
-            mCurrentSong.ticksPerRow = static_cast<uint8_t>(std::clamp(tempSpeed, 1, 32));
+        ImGui::Checkbox("Insert Mode",&mSettings.InsertMode);
+        // ImGui::Dummy(ImVec2(0.f, 5.f)); ImGui::Separator();
+
+
+        DrawPatternSelector(mCurrentSong, mPatternEditorState);
+        if (mPatternEditorState.currentPatternIdx >= 0) {
+            Pattern* lCurrentPattern = &mCurrentSong.patterns[mPatternEditorState.currentPatternIdx];
+
+            // Apply pattern-specific color to the editor background if desired
+            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImGui::ColorConvertU32ToFloat4(lCurrentPattern->mColor));
+
+            DrawPatternEditor(*lCurrentPattern, mPatternEditorState);
+
+            ImGui::PopStyleColor();
         }
-
     }
+
+
     ImGui::EndChild();
-
-
-
 
     if (standAlone) ImGui::End();
 }
