@@ -27,7 +27,7 @@ void SequencerGui::insertTone( uint8_t midiNote)  {
 // In SequencerGui.h (Private members)
 // Tracks which MIDI note is currently occupying which software channel
 // FIXME ADD TO HEADER !!
-static int mCurrentStartOctave = 2;
+static int mCurrentStartOctave = 3;
 // int mChannelToNote[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 uint64_t mChannelLastUsed[12] = { 0 };
 uint64_t mGlobalCounter = 0;
@@ -106,7 +106,7 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
         // --- NOTE ON ---
 
         // Calculate MIDI note based on the octave at the moment of pressing
-        uint8_t midiNote = (mCurrentStartOctave * 12) + offset;
+        uint8_t midiNote = (mCurrentStartOctave * 12) + offset +  12;
 
         // Step A: Find an available software channel (0-11)
         int targetSwChan = -1;
@@ -298,11 +298,15 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     }
 
 
+    if (controller->isPlaying())
+        ImGui::BeginDisabled();
     ImGui::SameLine();
     ImGui::TextColored(ImColor4F(cl_Green),"Play Mode:");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(200);
     ImGui::Combo("##Play Mode", &chords::selectedTypeIdx, chords::typeNames, IM_ARRAYSIZE(chords::typeNames));
+    if (controller->isPlaying())
+        ImGui::EndDisabled();
 
 
 
@@ -336,7 +340,7 @@ void SequencerGui::RenderPianoUI(bool standAlone)
         for (int key = 0; key < 12; key++) {
             if (keys[key].isBlack) continue;
 
-            uint8_t midiNote = (octave * 12) + keys[key].offset;
+            uint8_t midiNote = (octave * 12) + keys[key].offset  + 12;
             bool isActive = checkNoteActive(midiNote);
 
             float xPos = startPos.x + (whiteKeyCount * whiteWidth);
@@ -352,7 +356,7 @@ void SequencerGui::RenderPianoUI(bool standAlone)
             ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
 
             if (ImGui::IsItemActivated()) {
-                if (chords::selectedTypeIdx == 0) {
+                if (chords::selectedTypeIdx == 0 || controller->isPlaying()) {
                     // Single Note
                     SongStep step{midiNote, mCurrentInstrumentId};
                     getMain()->getController()->playNote(channel, step);
@@ -363,10 +367,8 @@ void SequencerGui::RenderPianoUI(bool standAlone)
             }
 
             if (ImGui::IsItemDeactivated()) {
-                for (uint8_t ch = channel; ch < channel+4 ; ch++) {
-                    if (ch < SOFTWARE_CHANNEL_COUNT)
-                        getMain()->getController()->stopNote(ch);
-                }
+                if (controller->isPlaying()) getMain()->getController()->stopNote(channel);
+                else getMain()->getController()->stopPlayedNotes();
             }
 
 
@@ -386,7 +388,7 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     for (int octave = mCurrentStartOctave; octave <= endOctave; octave++) {
         for (int key = 0; key < 12; key++) {
             if (keys[key].isBlack) {
-                uint8_t midiNote = (octave * 12) + keys[key].offset;
+                uint8_t midiNote = (octave * 12) + keys[key].offset  + 12;
                 bool isActive = checkNoteActive(midiNote);
 
                 float xPos = startPos.x + (whiteKeyCount * whiteWidth) - (blackWidth / 2.0f);
@@ -402,7 +404,7 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 
 
                 if (ImGui::IsItemActivated()) {
-                    if (chords::selectedTypeIdx == 0) {
+                    if (chords::selectedTypeIdx == 0 || controller->isPlaying()) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
                         getMain()->getController()->playNote(channel, step);
@@ -413,7 +415,8 @@ void SequencerGui::RenderPianoUI(bool standAlone)
                 }
 
                 if (ImGui::IsItemDeactivated()) {
-                    getMain()->getController()->stopPlayedNotes();
+                    if (controller->isPlaying()) getMain()->getController()->stopNote(channel);
+                    else getMain()->getController()->stopPlayedNotes();
                 }
 
 

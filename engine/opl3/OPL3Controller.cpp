@@ -595,6 +595,8 @@ void OPL3Controller::silenceAll(bool hardStop) {
             write(0x80 + car_offset, 0x0F); // Max Release
         }
     }
+    for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
+        mChannelToNote[i] = -1;
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::togglePause() {
@@ -680,6 +682,7 @@ void OPL3Controller::reset() {
     this->silenceAll(true);
 
     this->initDefaultBank();
+
 
 
     Log("OPL3 Controller Reset: 18 Channels enabled, Shadows cleared, Sequencer at Start.");
