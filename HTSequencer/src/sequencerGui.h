@@ -47,7 +47,7 @@ public:
     // b.) on the bottom to the json macro!!! 
     struct GuiSettings {
         bool mEditorGuiInitialized;
-        bool mShowFileManager;
+        bool mShowFileBrowser;
         bool mShowConsole;
         bool mShowDSP;
         bool mShowSoundBankList;
@@ -63,11 +63,12 @@ private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
 
+    DSP::SpectrumAnalyzer* mSpectrumAnalyzer;
 
     GuiSettings mGuiSettings;
     GuiSettings mDefaultGuiSettings = {
           .mEditorGuiInitialized = false
-        , .mShowFileManager = true
+        , .mShowFileBrowser = true
         , .mShowConsole     = true
         , .mShowDSP         = true
         , .mShowSoundBankList = true
@@ -109,6 +110,7 @@ private:
     void RenderWarmthUI();
     void RenderLimiterUI();
     void RenderEquilizer9BandUI();
+    void RenderSpectrumAnalyzer();
 
     // ---- Bank / Instruments -----
     uint16_t mCurrentInstrumentId = 0;
@@ -117,6 +119,19 @@ private:
 
     void RenderInstrumentEditorUI(bool standAlone = false);
     void RenderOpParam(const ParamMeta& meta, OplInstrument::OpPair::OpParams& op, int metaIdx);
+    void DrawOperatorGrid(OplInstrument::OpPair::OpParams& op);
+    void DrawWaveformIcon(ImDrawList* drawList, ImVec2 pos, int waveIdx, float size, ImU32 color);
+    void RenderWaveformSelector(uint8_t& waveVal);
+    void DrawADSRGraphBezier(ImVec2 size, const opl3::OplInstrument::OpPair::OpParams& op, int virtualNote = 60, float pulseVol = 0.f);
+
+    // fancy 4OP overlays
+    void DrawAlgorithmHoverFunc(const OplInstrument inst);
+    void Draw4OP_Algorithm0Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
+    void Draw4OP_Algorithm1Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
+    void Draw4OP_Algorithm3Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
+    void Draw4OP_Algorithm2Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
+    void Draw2OP_FM_Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
+    void Draw2OP_Additive_Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
 
 
 
@@ -164,7 +179,7 @@ public:
 // macro for JSON support
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::GuiSettings,
     mEditorGuiInitialized
-    ,mShowFileManager
+    ,mShowFileBrowser
     ,mShowConsole
     ,mShowDSP
     ,mShowSoundBankList

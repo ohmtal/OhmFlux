@@ -505,16 +505,17 @@ inline std::string getMusicPath()     { return getUserFolder( SDL_FOLDER_MUSIC )
 inline std::string getPicturesPath()  { return getUserFolder( SDL_FOLDER_PICTURES ) ; }
 inline std::string getVideosPath()    { return getUserFolder( SDL_FOLDER_VIDEOS ) ; }
 
-inline const std::string getGamePath(){
-    const char* rawPath = SDL_GetBasePath();
+inline const std::string getGamePath() {
+    static std::string cachedPath = "";
+    if (!cachedPath.empty()) return cachedPath;
+    char* rawPath = (char*)SDL_GetBasePath();
     if (rawPath) {
-        std::string result(rawPath);
-        SDL_free(const_cast<char*>(rawPath));
-        return result;
+        cachedPath = rawPath;
+        SDL_free(rawPath);
+        return cachedPath;
     }
     return "";
 }
-
 
 // example: dumpPathes(&game->mSettings);
 inline void dumpPathes(FluxSettings* settings=nullptr) {

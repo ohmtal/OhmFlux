@@ -51,6 +51,8 @@ void SequencerGui::callSaveSong() {
     g_FileDialog.mSaveMode = true;
     g_FileDialog.mSaveExt = ".fms3";
     g_FileDialog.mLabel = "Save Song (.fms3)";
+    g_FileDialog.mFilters = {".fms3"};
+    g_FileDialog.mDirty  = true;
 }
 //------------------------------------------------------------------------------
 /*
@@ -82,12 +84,19 @@ void SequencerGui::playSong(U8 playMode)
 }
 //------------------------------------------------------------------------------
 void SequencerGui::callExportSong(){
+    if (!getMain()->getController()->songValid(mCurrentSong))
+        return;
+
     stopSong();
+
     std::string fileName = fluxStr::sanitizeFilenameWithUnderScores(mCurrentSong.title) + ".wav";
     g_FileDialog.setFileName(fileName);
     g_FileDialog.mSaveMode = true;
     g_FileDialog.mSaveExt = ".wav";
     g_FileDialog.mLabel = "Export Song (.wav)";
+    g_FileDialog.mFilters = {".wav"};
+    g_FileDialog.mDirty  = true;
+
 }
 //------------------------------------------------------------------------------
 void SequencerGui::newSong(){

@@ -7,13 +7,14 @@
 #include <cctype>
 //------------------------------------------------------------------------------
 // FIXME
+// - StopNote is bad when song is playing it kill 5 channel
 // - channel !!
 // - show what i'am playing
 // - save / restore : start/end octave
 //------------------------------------------------------------------------------
 uint8_t SequencerGui::getCurrentChannel(){
     // LogFMT("[warn] FIXME insertTone!! getCurrentChannel");
-    return 6; //first 2OP channel FIXME
+    return 0; //first 2OP channel FIXME
 
 }
 void SequencerGui::insertTone( uint8_t midiNote)  {

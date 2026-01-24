@@ -269,6 +269,82 @@ namespace opl3 {
                    pairs[0] == other.pairs[0] &&
                    pairs[1] == other.pairs[1];
         }
+
+        /**
+         * Configures the instrument for 4-OP mode.
+         * @param instrument The OPL instrument to modify.
+         * @param copyPair1 If true, initializes Pair 1 (Ops 3&4) with values from Pair 0 (Ops 1&2).
+         */
+        void setupOP4Mode(OplInstrument& instrument, bool copyPair1) {
+            instrument.isFourOp = true;
+
+            if (copyPair1) {
+                // Copy high-level pair settings
+                instrument.pairs[1].feedback = instrument.pairs[0].feedback;
+                instrument.pairs[1].panning  = instrument.pairs[0].panning;
+
+                // In 4-OP, the 'connection' bit in Register $C0 has different meanings
+                // across the two channels. We'll default to a common serial algorithm (FM-FM).
+                instrument.pairs[0].connection = 0;
+                instrument.pairs[1].connection = 0;
+
+                // Deep copy operator parameters from Pair 0 to Pair 1
+                instrument.pairs[1].ops[0] = instrument.pairs[0].ops[0];
+                instrument.pairs[1].ops[1] = instrument.pairs[0].ops[1];
+
+                // UX Tip: If copying for a chorus effect, you might want to slightly
+                // detune the second pair here, but usually, it's better to let the user do it.
+            } else {
+                // Default "Clean" 4-OP state if not copying
+                // Reset Pair 1 to standard sine waves with a basic envelope
+                instrument.pairs[1] = OplInstrument::OpPair(); // Use default constructor
+
+                // Ensure standard OPL3 panning (Center)
+                instrument.pairs[1].panning = 3;
+
+                // Set a basic carrier/modulator relationship for the new pair
+                instrument.pairs[1].ops[1].tl = 0; // Carrier at max volume
+                instrument.pairs[1].ops[1].attack = 15;
+                instrument.pairs[1].ops[1].sustain = 15;
+                instrument.pairs[1].ops[1].release = 5;
+            }
+        }
+        /**
+         * Toggles 4-OP mode and optionally clones the sound of the first pair.
+         * @param enable If true, turns on 4-OP; if false, reverts to 2-OP.
+         * @param cloneContent If true, copies Pair 0 data to Pair 1.
+         */
+        void setFourOpMode(bool enable, bool cloneContent = false) {
+            isFourOp = enable;
+
+            if (isFourOp && cloneContent) {
+                // Copy high-level pair settings (Feedback, Panning)
+                pairs[1].feedback   = pairs[0].feedback;
+                pairs[1].panning    = pairs[0].panning;
+
+                // In 4-OP, the combination of connection bits determines
+                // the 4-OP algorithm. We default to 1 (Additive).
+                pairs[0].connection = 1;
+                pairs[1].connection = 1;
+
+                // Deep copy operator parameters (Envelopes, Waveforms, Multipliers)
+                pairs[1].ops[0] = pairs[0].ops[0];
+                pairs[1].ops[1] = pairs[0].ops[1];
+            }
+            else if (isFourOp && !cloneContent) {
+                // Initialize Pair 1 with a "Clean" carrier (Basic Sine)
+                // This prevents Pair 1 from being silent or "garbage" data
+                pairs[1] = OpPair();
+                pairs[1].panning = 3; // Center
+                pairs[1].ops[1].attack = 15; // Quick attack
+                pairs[1].ops[1].sustain = 15; // Sustained sound
+                pairs[1].ops[1].release = 5;
+            }
+            else {
+                //reset connection to 0
+                pairs[0].connection = 0;
+            }
+        }
     };
     //--------------------------------------------------------------------------
     // struct SongStep {

@@ -37,11 +37,11 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     getMain()->getGui()->mConsole.AddLog("%s", message);
 }
 
+
+
 //------------------------------------------------------------------------------
 void SequencerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
-        // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
-
         if (g_FileDialog.mSaveMode)
         {
             if (!g_FileDialog.mCancelPressed)
@@ -63,6 +63,8 @@ void SequencerGui::ShowFileManager(){
             }
             g_FileDialog.reset();
         } else {
+            // ------------------ OPEN:  --------------------
+
             if ( g_FileDialog.selectedExt == ".op2" )
             {
                 if (!opl3_bridge_op2::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
@@ -107,7 +109,12 @@ void SequencerGui::ShowFileManager(){
 
             }
             else
+            if ( g_FileDialog.selectedExt == ".wav"  || g_FileDialog.selectedExt == ".ogg") {
+                    showMessageBox("FIXME wav/ogg", "Wav/Ogg Player not implemented so far.");
+            }
+            else
             if ( g_FileDialog.selectedExt == ".fms" ) {
+                getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, mCurrentSong)) {
                     getMain()->getController()->mSoundBank = mCurrentSong.instruments;
 
@@ -115,7 +122,9 @@ void SequencerGui::ShowFileManager(){
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
                 }
             }
+            else
             if ( g_FileDialog.selectedExt == ".fms3" ) {
+                getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, mCurrentSong)) {
                     getMain()->getController()->mSoundBank = mCurrentSong.instruments;
 
@@ -152,6 +161,13 @@ bool SequencerGui::Initialize()
 
 
     auto* controller = getMain()->getController();
+
+    auto specAna = std::make_unique<DSP::SpectrumAnalyzer>(false);
+    mSpectrumAnalyzer = specAna.get();
+    controller->getDspEffects().push_back(std::move(specAna));
+
+
+    mSpectrumAnalyzer->setEnabled(SettingsManager().get("DSP_SpectrumAnalyzer_ON", false));
     controller->getDSPBitCrusher()->setEnabled(SettingsManager().get("DSP_BitCrusher_ON", false));
     controller->getDSPChorus()->setEnabled(SettingsManager().get("DSP_Chorus_ON", false));
     controller->getDSPReverb()->setEnabled(SettingsManager().get("DSP_Reverb_ON", false));
@@ -193,6 +209,9 @@ bool SequencerGui::Initialize()
     mCurrentSong.init();
 
 
+
+
+
     return true;
 }
 //------------------------------------------------------------------------------
@@ -216,6 +235,7 @@ void SequencerGui::Deinitialize()
         SettingsManager().set("DSP_Warmth",     controller->getDSPWarmth()->getSettings());
         SettingsManager().set("DSP_EQ9BAND",     controller->getDSPEquilzer9Band()->getSettings());
 
+        SettingsManager().set("DSP_SpectrumAnalyzer_ON", mSpectrumAnalyzer->isEnabled());
         SettingsManager().set("DSP_BitCrusher_ON", controller->getDSPBitCrusher()->isEnabled());
         SettingsManager().set("DSP_Chorus_ON", controller->getDSPChorus()->isEnabled());
         SettingsManager().set("DSP_Reverb_ON", controller->getDSPReverb()->isEnabled());
@@ -284,13 +304,13 @@ void SequencerGui::ShowMenuBar()
         {
             ImGui::MenuItem("Sequencer", NULL, &mGuiSettings.mShowSongGui);
             ImGui::MenuItem("Instruments", NULL, &mGuiSettings.mShowSoundBankList);
-            ImGui::MenuItem("FM Editor", NULL, &mGuiSettings.mShowFMEditor);
+            ImGui::MenuItem("Instrument Editor", NULL, &mGuiSettings.mShowFMEditor);
             ImGui::MenuItem("Digital Sound Processing", NULL, &mGuiSettings.mShowDSP);
             ImGui::Separator();
             ImGui::MenuItem("Piano", NULL, &mGuiSettings.mShowPiano);
             ImGui::MenuItem("Scale Player", NULL, &mGuiSettings.mShowScalePlayer);
             ImGui::Separator();
-            ImGui::MenuItem("File Manager", NULL, &mGuiSettings.mShowFileManager);
+            ImGui::MenuItem("File Browser", NULL, &mGuiSettings.mShowFileBrowser);
             ImGui::MenuItem("Console", NULL, &mGuiSettings.mShowConsole);
 
 
@@ -347,7 +367,12 @@ void SequencerGui::DrawGui()
     }
 
     if (mGuiSettings.mShowSoundBankList) RenderInstrumentListUI(true);
-    if (mGuiSettings.mShowFMEditor) RenderInstrumentEditorUI(true);
+    if (mGuiSettings.mShowFMEditor) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 12.0f);
+        RenderInstrumentEditorUI(true);
+        ImGui::PopStyleVar(2);
+    }
 
 
     if (mGuiSettings.mShowScalePlayer) RenderScalePlayerUI(true);
@@ -357,7 +382,7 @@ void SequencerGui::DrawGui()
     ShowSoundBankWindow();
 
 
-    if (mGuiSettings.mShowFileManager) ShowFileManager();
+    if (mGuiSettings.mShowFileBrowser) ShowFileManager();
 
 
 

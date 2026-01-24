@@ -20,6 +20,9 @@
 #include <backends/imgui_impl_opengl3.h>
 
 
+inline ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs) {
+    return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y);
+}
 // convert Color4F to ImVec4
 inline ImVec4 ImColor4F(const Color4F& c) {
     return ImVec4(c.r, c.g, c.b, c.a);

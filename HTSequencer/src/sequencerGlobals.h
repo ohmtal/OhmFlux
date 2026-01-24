@@ -17,7 +17,7 @@ inline bool POPUP_MSGBOX_ACTIVE = false;
 inline std::string POPUP_MSGBOX_CAPTION = "Msg";
 inline std::string POPUP_MSGBOX_TEXT   = "..";
 
-inline void showMessage(std::string caption, std::string text)
+inline void showMessageBox(std::string caption, std::string text)
 {
     POPUP_MSGBOX_CAPTION = caption;
     POPUP_MSGBOX_TEXT   = text;

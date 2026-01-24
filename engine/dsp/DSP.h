@@ -13,6 +13,7 @@
 #include "DSP_Warmth.h"
 #include "DSP_Equilizer.h"
 #include "DSP_Equilizer9Band.h"
+#include "DSP_SpectrumAnalyzer.h"
 
 
 namespace DSP {

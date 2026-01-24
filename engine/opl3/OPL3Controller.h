@@ -99,7 +99,6 @@ private:
         bool ui_dirty = false;
 
     };
-    const SequencerState& getSequencerState() const { return mSeqState; }
 
     uint8_t mShadowRegs[512] = {0}; // register for read
 
@@ -134,7 +133,11 @@ public:
 
     // ----------  ----------------
     std::vector<OplInstrument> mSoundBank;
+    const SequencerState& getSequencerState() const { return mSeqState; }
 
+    std::vector<std::unique_ptr<DSP::Effect>>& getDspEffects() {
+        return mDspEffects;
+    }
 
     // ---------- SDL3 ----------------
     static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);

@@ -27,6 +27,7 @@ void SequencerGui::ShowDSPWindow(){
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
 
+    RenderSpectrumAnalyzer();
     RenderWarmthUI();
     RenderBitCrusherUI();
     RenderChorusUI();
@@ -434,6 +435,26 @@ void SequencerGui::RenderEquilizer9BandUI() {
     } else {
         ImGui::Separator();
     }
+
+    ImGui::EndGroup();
+    ImGui::PopID();
+    ImGui::Spacing();
+}
+//------------------------------------------------------------------------------
+void SequencerGui::RenderSpectrumAnalyzer() {
+    ImGui::PushID("SpectrumAnalyzer_Effect_Row");
+    ImGui::BeginGroup();
+
+    static bool isEnabled = mSpectrumAnalyzer->isEnabled();
+    if (ImGui::Checkbox("##Active", &isEnabled))
+        mSpectrumAnalyzer->setEnabled(isEnabled);
+
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(1.0f, 1.4f, 0.4f, 1.0f), "SPECTRUM ANALYSER");
+
+    float fullWidth = ImGui::GetContentRegionAvail().x;
+
+    DSP::DrawSpectrumAnalyzer(mSpectrumAnalyzer, ImVec2(fullWidth, 80.0f));
 
     ImGui::EndGroup();
     ImGui::PopID();
