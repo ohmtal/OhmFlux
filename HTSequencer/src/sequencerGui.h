@@ -170,6 +170,7 @@ public:
 
     void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event);
+    void onKeyEventKeyBoard(SDL_KeyboardEvent event);
     void Update(const double& dt) override;
 
     //------------------------------------------------------------------------------

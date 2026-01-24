@@ -117,6 +117,7 @@ void SequencerGui::ShowFileManager(){
                 getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, mCurrentSong)) {
                     getMain()->getController()->mSoundBank = mCurrentSong.instruments;
+                    Log("Loaded legacy fms Song:  %s", g_FileDialog.selectedFile.c_str());
 
                 } else {
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
@@ -127,6 +128,7 @@ void SequencerGui::ShowFileManager(){
                 getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, mCurrentSong)) {
                     getMain()->getController()->mSoundBank = mCurrentSong.instruments;
+                    Log("Loaded Song:  %s", g_FileDialog.selectedFile.c_str());
 
                 } else {
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
@@ -189,7 +191,7 @@ bool SequencerGui::Initialize()
         return false;
 
     // not centered ?!?!?! i guess center is not in place yet ?
-    mBackground = new FluxRenderObject(getMain()->loadTexture("assets/background.png"));
+    mBackground = new FluxRenderObject(getMain()->loadTexture(getGamePath()+"assets/background.png"));
     if (mBackground) {
         mBackground->setPos(getMain()->getScreen()->getCenterF());
         mBackground->setSize(getMain()->getScreen()->getScreenSize());
@@ -197,7 +199,7 @@ bool SequencerGui::Initialize()
     }
 
     // FileManager
-    g_FileDialog.init( getGamePath(), { ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg", ".fms3" });
+    g_FileDialog.init( getGamePath(), {".fms3", ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
@@ -398,7 +400,11 @@ void SequencerGui::onKeyEvent(SDL_KeyboardEvent event)
 {
     // if ( mEditorSettings.mShowFMComposer )
     //     mFMComposer->onKeyEvent(event);
+
+    onKeyEventKeyBoard(event);
+
 }
+
 //------------------------------------------------------------------------------
 void SequencerGui::InitDockSpace()
 {

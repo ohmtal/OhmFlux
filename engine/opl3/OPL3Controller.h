@@ -143,6 +143,7 @@ private:
     bool saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate);
     // bool saveWavFile(const std::string& filename, const std::vector<int16_t>& data, int sampleRate);
 
+
 public:
     // ----------   Init ---------------
     OPL3Controller();
@@ -268,6 +269,18 @@ public:
     // ----- chords --------------
     // getMain()->getController()->playChord(mCurrentInstrument, 60, OPL3Controller::CHORD_MAJOR)
 
+    // ------- manuall playing ----------
+    int16_t mChannelToNote[SOFTWARE_CHANNEL_COUNT] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+
+
+    void stopPlayedNotes() {
+        for (uint8_t i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
+        {
+            if (mChannelToNote[i] >= 0)
+                stopNote(i);
+        }
+
+    }
 
     void playChord(uint8_t softwareChannel, uint16_t instrument,  uint8_t rootNote, const std::vector<int>& offsets) {
 

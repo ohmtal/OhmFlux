@@ -7,10 +7,11 @@
 #include <cctype>
 //------------------------------------------------------------------------------
 // FIXME
-// - StopNote is bad when song is playing it kill 5 channel
+// - octave missmatch !!!!!!!!!! C-4 should be 60 !!
+// - move to header ...
 // - channel !!
-// - show what i'am playing
 // - save / restore : start/end octave
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 uint8_t SequencerGui::getCurrentChannel(){
     // LogFMT("[warn] FIXME insertTone!! getCurrentChannel");
@@ -21,6 +22,140 @@ void SequencerGui::insertTone( uint8_t midiNote)  {
     LogFMT("[warn] FIXME insertTone!! {}", midiNote);
 }
 
+
+//------------------------------------------------------------------------------
+// In SequencerGui.h (Private members)
+// Tracks which MIDI note is currently occupying which software channel
+// FIXME ADD TO HEADER !!
+static int mCurrentStartOctave = 2;
+// int mChannelToNote[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+uint64_t mChannelLastUsed[12] = { 0 };
+uint64_t mGlobalCounter = 0;
+uint8_t getCurrentStartOctave() { return mCurrentStartOctave;}
+int mScancodeToChannel[SDL_SCANCODE_COUNT]; //FIXME INIT with -1 !!!
+
+int /*SequencerGui::*/getPianoMapOffset(SDL_Scancode scancode) {
+    switch (scancode) {
+        // --- Lower Octave (Physical Bottom Row) ---
+        case SDL_SCANCODE_Z:        return 0;  // C
+        case SDL_SCANCODE_S:        return 1;  // C#
+        case SDL_SCANCODE_X:        return 2;  // D
+        case SDL_SCANCODE_D:        return 3;  // D#
+        case SDL_SCANCODE_C:        return 4;  // E
+        case SDL_SCANCODE_V:        return 5;  // F
+        case SDL_SCANCODE_G:        return 6;  // F#
+        case SDL_SCANCODE_B:        return 7;  // G
+        case SDL_SCANCODE_H:        return 8;  // G#
+        case SDL_SCANCODE_N:        return 9;  // A
+        case SDL_SCANCODE_J:        return 10; // A#
+        case SDL_SCANCODE_M:        return 11; // B
+        case SDL_SCANCODE_COMMA:    return 12; // C (Next Octave)
+
+        // --- Upper Octave (Physical Middle Row) ---
+        case SDL_SCANCODE_Q:        return 12; // C
+        case SDL_SCANCODE_2:        return 13; // C#
+        case SDL_SCANCODE_W:        return 14; // D
+        case SDL_SCANCODE_3:        return 15; // D#
+        case SDL_SCANCODE_E:        return 16; // E
+        case SDL_SCANCODE_R:        return 17; // F
+        case SDL_SCANCODE_5:        return 18; // F#
+        case SDL_SCANCODE_T:        return 19; // G
+        case SDL_SCANCODE_6:        return 20; // G#
+        case SDL_SCANCODE_Y:        return 21; // A (Physical 'Y' key position)
+        case SDL_SCANCODE_7:        return 22; // A#
+        case SDL_SCANCODE_U:        return 23; // B
+        case SDL_SCANCODE_I:        return 24; // C (Next Octave)
+
+        default: return -1;
+    }
+}
+
+
+void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
+    // Ignore OS key repeats to prevent re-triggering FM envelopes
+    if (event.repeat) return;
+
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantTextInput /*FIXME console does ? || io.WantCaptureKeyboard*/) {
+        return;
+    }
+    if (ImGui::IsAnyItemActive()) {
+        return;
+    }
+
+
+    // --- 1. OCTAVE CONTROL ---
+    // Physical Arrow Up/Down keys shift the range of the keyboard
+    if (event.down) {
+        if (event.scancode == SDL_SCANCODE_UP) {
+            if (mCurrentStartOctave < 8) mCurrentStartOctave++;
+            return;
+        }
+        if (event.scancode == SDL_SCANCODE_DOWN) {
+            if (mCurrentStartOctave > 0) mCurrentStartOctave--;
+            return;
+        }
+    }
+
+    // --- 2. MUSICAL MAPPING ---
+    // Convert physical key location to a semi-tone offset (0-24)
+    int offset = getPianoMapOffset(event.scancode);
+    if (offset == -1) return; // Not a musical key
+
+    if (event.down) {
+        // --- NOTE ON ---
+
+        // Calculate MIDI note based on the octave at the moment of pressing
+        uint8_t midiNote = (mCurrentStartOctave * 12) + offset;
+
+        // Step A: Find an available software channel (0-11)
+        int targetSwChan = -1;
+        for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; ++i) {
+            if (getMain()->getController()->mChannelToNote[i] == -1) {
+                targetSwChan = i;
+                break;
+            }
+        }
+
+        // Step B: VOICE STEALING
+        // If all 12 channels are busy, find the one used longest ago
+        if (targetSwChan == -1) {
+            uint64_t oldest = UINT64_MAX;
+            for (int i = 0; i < 12; ++i) {
+                if (mChannelLastUsed[i] < oldest) {
+                    oldest = mChannelLastUsed[i];
+                    targetSwChan = i;
+                }
+            }
+            // Stop the oldest note immediately to free the channel
+            getMain()->getController()->stopNote(targetSwChan);
+        }
+
+        // Step C: TRACKING & EXECUTION
+        // Map the physical scancode to the channel so NoteOff works correctly
+        // even if the octave is changed while the key is held.
+        mScancodeToChannel[event.scancode] = targetSwChan;
+        // mChannelToNote[targetSwChan] = midiNote;
+        mChannelLastUsed[targetSwChan] = ++mGlobalCounter;
+
+        SongStep step{midiNote, mCurrentInstrumentId};
+        getMain()->getController()->playNote(targetSwChan, step);
+    }
+    else {
+        // --- NOTE OFF ---
+
+        // Retrieve which software channel was assigned to this physical key
+        int chan = mScancodeToChannel[event.scancode];
+        if (chan != -1) {
+            // Tell the OPL3 controller to enter the Release phase for this slot
+            getMain()->getController()->stopNote(chan);
+
+            // Mark the tracking slots as free/empty
+            // mChannelToNote[chan] = -1;
+            mScancodeToChannel[event.scancode] = -1;
+        }
+    }
+}
 
 //------------------------------------------------------------------------------
 namespace chords {
@@ -111,11 +246,7 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
 
                 if (ImGui::IsItemDeactivated()) {
                     // i play on last channels !
-                    // Safety: Stop channels 1 through 4 to cover all possible notes in the chord
-                    for (uint8_t ch = channel; ch < channel+4 ; ch++) {
-                        if (ch < SOFTWARE_CHANNEL_COUNT)
-                            getMain()->getController()->stopNote(ch);
-                    }
+                    getMain()->getController()->stopPlayedNotes();
                 }
 
                 if (ImGui::IsItemHovered()) {
@@ -134,38 +265,38 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
     if (standAlone) ImGui::End();
 }
 //------------------------------------------------------------------------------
-void SequencerGui::RenderPianoUI(bool standAlone )
+void SequencerGui::RenderPianoUI(bool standAlone)
 {
-    OPL3Controller*  controller = getMain()->getController();
-    if (!controller)
-        return;
+    OPL3Controller* controller = getMain()->getController();
+    if (!controller) return;
 
     uint8_t channel = getCurrentChannel();
 
     if (standAlone) {
-        ImGui::SetNextWindowSize(ImVec2(1100, 200), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(1100, 250), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("Piano")) { ImGui::End(); return; }
     }
 
-
-    static int startOctave = 2;
-    static int endOctave = 5;
+    // --- 1. Fix Octave Range Logic ---
+    static int visibleOctaves = 3; // How many octaves to show
     ImGui::AlignTextToFramePadding();
-    ImGui::TextColored(ImColor4F(cl_Yellow),"Octaves");
+    ImGui::TextColored(ImColor4F(cl_Yellow), "Octaves");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(70);
-    if (ImGui::InputInt("##startOctave", &startOctave))
-        startOctave = std::clamp(startOctave, 0,6);
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(70);
-    if (ImGui::InputInt("##endOctave", &endOctave))
-        endOctave = std::clamp(endOctave, startOctave,7);
+    ImGui::SetNextItemWidth(60);
+    if (ImGui::InputInt("##Start##startOct", (int*)&mCurrentStartOctave))
+        mCurrentStartOctave = std::clamp((int)mCurrentStartOctave, 0, 7);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Start Octave %d", mCurrentStartOctave);
+    }
 
     ImGui::SameLine();
+    ImGui::SetNextItemWidth(60);
+    if (ImGui::InputInt("##Visible##visOct", &visibleOctaves))
+        visibleOctaves = std::clamp(visibleOctaves, 1, 7);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Visible Octaves %d", visibleOctaves);
+    }
 
-    ImVec2 lButtonSize = ImVec2(80, 0);
-
-    // ---- Header -----
 
     ImGui::SameLine();
     ImGui::TextColored(ImColor4F(cl_Green),"Play Mode:");
@@ -174,122 +305,103 @@ void SequencerGui::RenderPianoUI(bool standAlone )
     ImGui::Combo("##Play Mode", &chords::selectedTypeIdx, chords::typeNames, IM_ARRAYSIZE(chords::typeNames));
 
 
-    ImGui::BeginDisabled(!mInsertMode);
-    ImGui::SameLine();
-    if (ImGui::Button("add (===)", lButtonSize)) {
-        insertTone(opl3::STOP_NOTE);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("add (...)", lButtonSize)) {
-        insertTone(opl3::NONE_NOTE);
-    }
-    // if (ImGui::Button("Add: ...", lButtonSize)) {}
-    ImGui::EndDisabled();
 
-    ImGui::SameLine();
-    if (ImGui::Button("Silence all.", lButtonSize)) {
-        controller->silenceAll(false);
-    }
+    int endOctave = std::min(7, (int)mCurrentStartOctave + visibleOctaves - 1);
 
-
-
-    // ---- Scale ------
-    // int lScaleCount = 12 * 8;
-    // // int lOctaveAdd = -1;
-    // int  currentOctave = 0;
+    // ... [Keep Header/PlayMode code same] ...
 
     struct PianoKey { const char* name; int offset; bool isBlack; };
     PianoKey keys[] = {
         {"C-", 0, false}, {"C#", 1, true}, {"D-", 2, false}, {"D#", 3, true},
-        {"E-", 4, false},  {"F-", 5, false}, {"F#", 6, true}, {"G-", 7, false},
+        {"E-", 4, false}, {"F-", 5, false}, {"F#", 6, true}, {"G-", 7, false},
         {"G#", 8, true}, {"A-", 9, false}, {"A#", 10, true}, {"B-", 11, false}
     };
-
-
 
     ImVec2 startPos = ImGui::GetCursorScreenPos();
     float whiteWidth = 35.0f, whiteHeight = 90.0f;
     float blackWidth = 26.0f, blackHeight = 50.0f;
 
-    // float whiteWidth = 30.0f, whiteHeight = 70.0f;
-    // float blackWidth = 26.0f, blackHeight = 40.0f;
-
-    ImVec4 lWhileColor = ImColor4F(cl_LightGray);
-    // ImVec4 lWhileColorHoover = ImColor4F(cl_SkyBlue);
-    if (mInsertMode) {
-        lWhileColor = ImColor4F(cl_White);
-    }
-
-    // 1. Draw White Keys (Allowing Overlap)
-    int whiteKeyCount = 0;
-
-    // bool isNull = !controller->songValid(mCurrentSong);
-    int id = 0;
-
-    // if (isNull) ImGui::BeginDisabled();
+    auto checkNoteActive = [&](int midiNote) -> bool {
+        for (int i = 0; i < 12; i++) {
+            if (getMain()->getController()->mChannelToNote[i] == midiNote) return true;
+        }
+        return false;
+    };
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-    // PASS 1: WHITE KEYS
-    for (int octave = startOctave; octave <= endOctave; octave++) {
+
+    // --- PASS 1: WHITE KEYS ---
+    int whiteKeyCount = 0;
+    for (int octave = mCurrentStartOctave; octave <= endOctave; octave++) {
         for (int key = 0; key < 12; key++) {
-            if (!keys[key].isBlack) {
-                float xPos = startPos.x + (whiteKeyCount * whiteWidth);
-                ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
+            if (keys[key].isBlack) continue;
 
-                ImGui::PushID((octave * 12) + key);
-                ImGui::SetNextItemAllowOverlap();
-                ImGui::PushStyleColor(ImGuiCol_Button, lWhileColor);
-                ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
+            uint8_t midiNote = (octave * 12) + keys[key].offset;
+            bool isActive = checkNoteActive(midiNote);
 
-                // --- Note Logic for White Keys ---
-                if (ImGui::IsItemActivated()) {
-                    uint8_t midiNote = (octave * 12) + keys[key].offset + 12;
-                    if (chords::selectedTypeIdx == 0) {
-                        // Single Note
-                        SongStep step{midiNote, mCurrentInstrumentId};
-                        getMain()->getController()->playNote(channel, step);
-                    } else {
-                        // Chord - using the pointer from our helper array
-                        getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
-                    }
+            float xPos = startPos.x + (whiteKeyCount * whiteWidth);
+            ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
+
+            ImGui::PushID(midiNote);
+
+            // Color Logic: Use SkyBlue if active, else your default color
+            ImVec4 color = isActive ? ImColor4F(cl_SkyBlue) : (mInsertMode ? ImColor4F(cl_White) : ImColor4F(cl_LightGray));
+            ImGui::PushStyleColor(ImGuiCol_Button, color);
+
+            ImGui::SetNextItemAllowOverlap();
+            ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
+
+            if (ImGui::IsItemActivated()) {
+                if (chords::selectedTypeIdx == 0) {
+                    // Single Note
+                    SongStep step{midiNote, mCurrentInstrumentId};
+                    getMain()->getController()->playNote(channel, step);
+                } else {
+                    // Chord - using the pointer from our helper array
+                    getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
                 }
-
-                if (ImGui::IsItemDeactivated()) {
-                    for (uint8_t ch = channel; ch < channel+4 ; ch++) {
-                        if (ch < SOFTWARE_CHANNEL_COUNT)
-                            getMain()->getController()->stopNote(ch);
-                    }
-                }
-
-                if (key == 0)
-                {
-                    ImGui::SetCursorScreenPos(ImVec2(startPos.x + 5 + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight - 20.f));
-                    ImGui::TextColored(ImColor4F(cl_Black), "%s%d",keys[key].name,  octave);
-                }
-
-
-                ImGui::PopStyleColor(1);
-                ImGui::PopID();
-                whiteKeyCount++;
             }
+
+            if (ImGui::IsItemDeactivated()) {
+                for (uint8_t ch = channel; ch < channel+4 ; ch++) {
+                    if (ch < SOFTWARE_CHANNEL_COUNT)
+                        getMain()->getController()->stopNote(ch);
+                }
+            }
+
+
+            if (key == 0) {
+                ImGui::SetCursorScreenPos(ImVec2(xPos + 5, startPos.y + whiteHeight - 20.f));
+                ImGui::TextColored(ImColor4F(cl_Black), "C%d", octave);
+            }
+
+            ImGui::PopStyleColor();
+            ImGui::PopID();
+            whiteKeyCount++;
         }
     }
 
-    // PASS 2: BLACK KEYS
+    // --- PASS 2: BLACK KEYS ---
     whiteKeyCount = 0;
-    for (int octave = startOctave; octave <= endOctave; octave++) {
+    for (int octave = mCurrentStartOctave; octave <= endOctave; octave++) {
         for (int key = 0; key < 12; key++) {
             if (keys[key].isBlack) {
+                uint8_t midiNote = (octave * 12) + keys[key].offset;
+                bool isActive = checkNoteActive(midiNote);
+
                 float xPos = startPos.x + (whiteKeyCount * whiteWidth) - (blackWidth / 2.0f);
                 ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
 
-                ImGui::PushID((octave * 12) + key);
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.05f, 0.05f, 0.05f, 1.0f));
+                ImGui::PushID(midiNote);
+
+                // Color Logic: Highlight black keys if active
+                ImVec4 color = isActive ? ImColor4F(cl_SkyBlue) : ImVec4(0.05f, 0.05f, 0.05f, 1.0f);
+                ImGui::PushStyleColor(ImGuiCol_Button, color);
+
                 ImGui::Button("##black", ImVec2(blackWidth, blackHeight));
 
-                // --- Note Logic for Black Keys ---
+
                 if (ImGui::IsItemActivated()) {
-                    uint8_t midiNote = (octave * 12) + keys[key].offset + 12;
                     if (chords::selectedTypeIdx == 0) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
@@ -301,23 +413,20 @@ void SequencerGui::RenderPianoUI(bool standAlone )
                 }
 
                 if (ImGui::IsItemDeactivated()) {
-                    for (uint8_t ch = channel; ch < channel+4 ; ch++) {
-                        if (ch < SOFTWARE_CHANNEL_COUNT)
-                            getMain()->getController()->stopNote(ch);
-                    }
+                    getMain()->getController()->stopPlayedNotes();
                 }
 
 
-                ImGui::PopStyleColor(1);
+
+                ImGui::PopStyleColor();
                 ImGui::PopID();
             } else {
                 whiteKeyCount++;
             }
         }
     }
-    ImGui::PopStyleVar(1);   // Pop FrameBorderSize
 
-    // if (isNull) ImGui::EndDisabled();
+    ImGui::PopStyleVar(1);
 
     // Correctly extend window boundary
     ImVec2 finalPos = ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight);
@@ -326,5 +435,199 @@ void SequencerGui::RenderPianoUI(bool standAlone )
 
 
     if (standAlone) ImGui::End();
+
 }
 
+
+
+// void SequencerGui::RenderPianoUI(bool standAlone )
+// {
+//     OPL3Controller*  controller = getMain()->getController();
+//     if (!controller)
+//         return;
+//
+//     uint8_t channel = getCurrentChannel();
+//
+//     if (standAlone) {
+//         ImGui::SetNextWindowSize(ImVec2(1100, 200), ImGuiCond_FirstUseEver);
+//         if (!ImGui::Begin("Piano")) { ImGui::End(); return; }
+//     }
+//
+//
+//     static int endOctave = 5;
+//     ImGui::AlignTextToFramePadding();
+//     ImGui::TextColored(ImColor4F(cl_Yellow),"Octaves");
+//     ImGui::SameLine();
+//     ImGui::SetNextItemWidth(70);
+//     if (ImGui::InputInt("##startOctave", &mCurrentStartOctave))
+//         mCurrentStartOctave = std::clamp(mCurrentStartOctave, 0,6);
+//     ImGui::SameLine();
+//     ImGui::SetNextItemWidth(70);
+//     if (ImGui::InputInt("##endOctave", &endOctave))
+//         endOctave = std::clamp(endOctave, mCurrentStartOctave,7);
+//
+//     ImGui::SameLine();
+//
+//     ImVec2 lButtonSize = ImVec2(80, 0);
+//
+//     // ---- Header -----
+//
+//     ImGui::SameLine();
+//     ImGui::TextColored(ImColor4F(cl_Green),"Play Mode:");
+//     ImGui::SameLine();
+//     ImGui::SetNextItemWidth(200);
+//     ImGui::Combo("##Play Mode", &chords::selectedTypeIdx, chords::typeNames, IM_ARRAYSIZE(chords::typeNames));
+//
+//
+//     ImGui::BeginDisabled(!mInsertMode);
+//     ImGui::SameLine();
+//     if (ImGui::Button("add (===)", lButtonSize)) {
+//         insertTone(opl3::STOP_NOTE);
+//     }
+//     ImGui::SameLine();
+//     if (ImGui::Button("add (...)", lButtonSize)) {
+//         insertTone(opl3::NONE_NOTE);
+//     }
+//     // if (ImGui::Button("Add: ...", lButtonSize)) {}
+//     ImGui::EndDisabled();
+//
+//     ImGui::SameLine();
+//     if (ImGui::Button("Silence all.", lButtonSize)) {
+//         controller->silenceAll(false);
+//     }
+//
+//     // ---- Scale ------
+//     // int lScaleCount = 12 * 8;
+//     // // int lOctaveAdd = -1;
+//     // int  currentOctave = 0;
+//
+//     struct PianoKey { const char* name; int offset; bool isBlack; };
+//     PianoKey keys[] = {
+//         {"C-", 0, false}, {"C#", 1, true}, {"D-", 2, false}, {"D#", 3, true},
+//         {"E-", 4, false},  {"F-", 5, false}, {"F#", 6, true}, {"G-", 7, false},
+//         {"G#", 8, true}, {"A-", 9, false}, {"A#", 10, true}, {"B-", 11, false}
+//     };
+//
+//
+//
+//     ImVec2 startPos = ImGui::GetCursorScreenPos();
+//     float whiteWidth = 35.0f, whiteHeight = 90.0f;
+//     float blackWidth = 26.0f, blackHeight = 50.0f;
+//
+//     // float whiteWidth = 30.0f, whiteHeight = 70.0f;
+//     // float blackWidth = 26.0f, blackHeight = 40.0f;
+//
+//     ImVec4 lWhileColor = ImColor4F(cl_LightGray);
+//     // ImVec4 lWhileColorHoover = ImColor4F(cl_SkyBlue);
+//     if (mInsertMode) {
+//         lWhileColor = ImColor4F(cl_White);
+//     }
+//
+//     // 1. Draw White Keys (Allowing Overlap)
+//     int whiteKeyCount = 0;
+//
+//     // bool isNull = !controller->songValid(mCurrentSong);
+//     int id = 0;
+//
+//     // if (isNull) ImGui::BeginDisabled();
+//
+//     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+//     // PASS 1: WHITE KEYS
+//     for (int octave = mCurrentStartOctave; octave <= endOctave; octave++) {
+//         for (int key = 0; key < 12; key++) {
+//             if (!keys[key].isBlack) {
+//                 float xPos = startPos.x + (whiteKeyCount * whiteWidth);
+//                 ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
+//
+//                 ImGui::PushID((octave * 12) + key);
+//                 ImGui::SetNextItemAllowOverlap();
+//                 ImGui::PushStyleColor(ImGuiCol_Button, lWhileColor);
+//                 ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
+//
+//                 // --- Note Logic for White Keys ---
+//                 if (ImGui::IsItemActivated()) {
+//                     uint8_t midiNote = (octave * 12) + keys[key].offset + 12;
+//                     if (chords::selectedTypeIdx == 0) {
+//                         // Single Note
+//                         SongStep step{midiNote, mCurrentInstrumentId};
+//                         getMain()->getController()->playNote(channel, step);
+//                     } else {
+//                         // Chord - using the pointer from our helper array
+//                         getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
+//                     }
+//                 }
+//
+//                 if (ImGui::IsItemDeactivated()) {
+//                     for (uint8_t ch = channel; ch < channel+4 ; ch++) {
+//                         if (ch < SOFTWARE_CHANNEL_COUNT)
+//                             getMain()->getController()->stopNote(ch);
+//                     }
+//                 }
+//
+//                 if (key == 0)
+//                 {
+//                     ImGui::SetCursorScreenPos(ImVec2(startPos.x + 5 + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight - 20.f));
+//                     ImGui::TextColored(ImColor4F(cl_Black), "%s%d",keys[key].name,  octave);
+//                 }
+//
+//
+//                 ImGui::PopStyleColor(1);
+//                 ImGui::PopID();
+//                 whiteKeyCount++;
+//             }
+//         }
+//     }
+//
+//     // PASS 2: BLACK KEYS
+//     whiteKeyCount = 0;
+//     for (int octave = mCurrentStartOctave; octave <= endOctave; octave++) {
+//         for (int key = 0; key < 12; key++) {
+//             if (keys[key].isBlack) {
+//                 float xPos = startPos.x + (whiteKeyCount * whiteWidth) - (blackWidth / 2.0f);
+//                 ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
+//
+//                 ImGui::PushID((octave * 12) + key);
+//                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.05f, 0.05f, 0.05f, 1.0f));
+//                 ImGui::Button("##black", ImVec2(blackWidth, blackHeight));
+//
+//                 // --- Note Logic for Black Keys ---
+//                 if (ImGui::IsItemActivated()) {
+//                     uint8_t midiNote = (octave * 12) + keys[key].offset + 12;
+//                     if (chords::selectedTypeIdx == 0) {
+//                         // Single Note
+//                         SongStep step{midiNote, mCurrentInstrumentId};
+//                         getMain()->getController()->playNote(channel, step);
+//                     } else {
+//                         // Chord - using the pointer from our helper array
+//                         getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
+//                     }
+//                 }
+//
+//                 if (ImGui::IsItemDeactivated()) {
+//                     for (uint8_t ch = channel; ch < channel+4 ; ch++) {
+//                         if (ch < SOFTWARE_CHANNEL_COUNT)
+//                             getMain()->getController()->stopNote(ch);
+//                     }
+//                 }
+//
+//
+//                 ImGui::PopStyleColor(1);
+//                 ImGui::PopID();
+//             } else {
+//                 whiteKeyCount++;
+//             }
+//         }
+//     }
+//     ImGui::PopStyleVar(1);   // Pop FrameBorderSize
+//
+//     // if (isNull) ImGui::EndDisabled();
+//
+//     // Correctly extend window boundary
+//     ImVec2 finalPos = ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight);
+//     ImGui::SetCursorScreenPos(finalPos);
+//     ImGui::Dummy(ImVec2(0, 10));
+//
+//
+//     if (standAlone) ImGui::End();
+// }
+//

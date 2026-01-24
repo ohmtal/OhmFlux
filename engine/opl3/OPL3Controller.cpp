@@ -67,8 +67,11 @@ void SDLCALL OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *str
 
 
     // DSP Effects
-    for (auto& effect : controller->mDspEffects) {
-        effect->process(f32Buffer, totalSamples);
+    if (controller->isAnyVoiceActive())
+    {
+        for (auto& effect : controller->mDspEffects) {
+            effect->process(f32Buffer, totalSamples);
+        }
     }
 
     // Send to SDL3
@@ -237,6 +240,7 @@ bool OPL3Controller::checkAnyVoiceActive(float* buffer, int total_frames) {
 
         if (mSilenceCounter > SILENCE_THRESHOLD) {
             mIsSilent = true;
+            dLog("OPL3Controller enter Sleep Mode");
         }
         return true;
     }
@@ -263,7 +267,7 @@ void OPL3Controller::fillBuffer(float* buffer, int total_frames)
     const float inv32768 = 1.0f / 32768.0f;
     int buffer_offset = 0;
 
-    if (mIsSilent.load() && !mSeqState.playing) {
+    if (!isAnyVoiceActive() && !mSeqState.playing) {
         std::memset(buffer, 0, total_frames * sizeof(float) * 2);
         return;
     }
@@ -875,6 +879,7 @@ bool OPL3Controller::playNote(uint8_t softwareChannel, SongStep songStep) {
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
         return false;
 
+    mChannelToNote[softwareChannel] = songStep.note;
     return this->playNoteHW(getHardWareChannel(softwareChannel), songStep);
 }
 //------------------------------------------------------------------------------
@@ -975,6 +980,8 @@ bool OPL3Controller::stopNote(uint8_t softwareChannel) {
 
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
         return false;
+
+    mChannelToNote[softwareChannel] = -1;
 
     return this->stopNoteHW(getHardWareChannel(softwareChannel));
 

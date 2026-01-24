@@ -16,6 +16,7 @@ namespace opl3 {
     // Standard OPL3 has 18 channels (0-17)
     // 0-8  = Bank 1 ($000)
     // 9-17 = Bank 2 ($100)
+    constexpr uint8_t SOFTWARE_CHANNEL_COUNT = 12;
     constexpr uint8_t MAX_HW_CHANNELS = 18; // Total count
     constexpr uint8_t BANK_LIMIT = 8; // Channels <= 8 are in the first bank
 
@@ -134,7 +135,7 @@ namespace opl3 {
     // ---- channel mapping -----
     // software channel >  SOFTWARE_CHANNEL_COUNT are ignored
     //--------------------------------------------------------------------------
-    constexpr uint8_t SOFTWARE_CHANNEL_COUNT = 12;
+
 
     struct ChannelMappingType {
         uint8_t hardwareChannel;

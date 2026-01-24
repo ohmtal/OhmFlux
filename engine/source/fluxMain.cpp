@@ -259,7 +259,7 @@ bool FluxMain::queueDelete(FluxBaseObject* lObject)
 //--------------------------------------------------------------------------------------
 // Texture load wrapper
 // 2026-01-01 optimized with thread safety and prevent multiple loading
-FluxTexture* FluxMain::loadTexture(const char* filename, int cols, int rows, bool setColorKeyAtZeroPixel, bool usePixelPerfect)
+FluxTexture* FluxMain::loadTexture(std::string filename, int cols, int rows, bool setColorKeyAtZeroPixel, bool usePixelPerfect)
 {
 	// Create a key using string_view to avoid allocation during the search
 	// Note: We use a helper auto-key to check existence
@@ -276,11 +276,11 @@ FluxTexture* FluxMain::loadTexture(const char* filename, int cols, int rows, boo
 	if (!usePixelPerfect) result->setUseTrilinearFiltering();
 
 	bool success = (!setColorKeyAtZeroPixel)
-	? result->loadTextureDirect(filename)
-	: result->loadTexture(filename, setColorKeyAtZeroPixel);
+	? result->loadTextureDirect(filename.c_str())
+	: result->loadTexture(filename.c_str(), setColorKeyAtZeroPixel);
 
 	if (!success) {
-		Log("Cannot load graphic: %s", filename);
+		LogFMT("[error] Cannot load graphic: %s", filename);
 		SAFE_DELETE(result);
 		return nullptr;
 	}

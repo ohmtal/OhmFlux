@@ -81,7 +81,7 @@ public:
 
 	// FluxTexture* loadTransparentTexture(const char* filename, int cols = 1, int rows = 1);
 	// usePixelPerfect is set so a pixel color looks like a pixel
-	FluxTexture* loadTexture(const char* filename, int cols = 1, int rows = 1, bool setColorKeyAtZeroPixel = false, bool usePixelPerfect  = false);
+	FluxTexture* loadTexture(std::string filename, int cols = 1, int rows = 1, bool setColorKeyAtZeroPixel = false, bool usePixelPerfect  = false);
 
 	bool toggleFullScreen();
 	FluxSettings mSettings;
