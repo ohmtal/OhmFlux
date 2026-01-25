@@ -6,7 +6,63 @@
 #include <string>
 #include <cctype>
 //------------------------------------------------------------------------------
+void SequencerGui::InsertRow(opl3::Pattern& pat, int rowIndex){
+    auto& steps = pat.getStepsMutable();
+    auto pos = steps.begin() + (rowIndex * SOFTWARE_CHANNEL_COUNT);
+    // Insert 12 empty steps
+    steps.insert(pos, SOFTWARE_CHANNEL_COUNT, SongStep{});
+}
+//------------------------------------------------------------------------------
+opl3::Pattern* SequencerGui::getCurrentPattern()
+{
+    PatternEditorState& state = mPatternEditorState;
+    SongData& song = mCurrentSong;
 
+    if (song.patterns.empty())
+        return nullptr;
+
+    // Safety clamping
+    if (state.currentPatternIdx < 0)
+        state.currentPatternIdx = 0;
+
+    if (state.currentPatternIdx >= (int)song.patterns.size()) {
+        state.currentPatternIdx = (int)song.patterns.size() - 1;
+    }
+
+    // Return the memory address of the pattern in the vector
+    return &song.patterns[state.currentPatternIdx];
+}
+//------------------------------------------------------------------------------
+opl3::SongData SequencerGui::CreateTempSelection(const opl3::Pattern& activePattern, const PatternEditorState& state) {
+    SongData temp;
+    int minR = std::min(state.selectStartRow, state.selectEndRow);
+    int maxR = std::max(state.selectStartRow, state.selectEndRow);
+
+    Pattern subPattern;
+    subPattern.mName = "SelectionClip";
+
+    // Resize to accommodate the selected rows
+    auto& steps = subPattern.getStepsMutable();
+    int rowCount = (maxR - minR) + 1;
+    steps.resize(rowCount * SOFTWARE_CHANNEL_COUNT);
+
+    for (int r = minR; r <= maxR; r++) {
+        for (int c = 0; c < SOFTWARE_CHANNEL_COUNT; c++) {
+            if (state.isSelected(r, c)) {
+                steps[(r - minR) * SOFTWARE_CHANNEL_COUNT + c] = activePattern.getStep(r, c);
+            } else {
+                // Fill unselected channels in the range with empty notes
+                steps[(r - minR) * SOFTWARE_CHANNEL_COUNT + c].note = 255;
+            }
+        }
+    }
+
+    temp.patterns.push_back(subPattern);
+    temp.orderList.push_back(0);
+    return temp;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 bool SequencerGui::exportSongToWav(std::string filename)
 {
     if (!getMain()->getController()->songValid(mCurrentSong)) {

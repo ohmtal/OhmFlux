@@ -36,6 +36,8 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     getMain()->getGui()->mConsole.AddLog("%s", message);
 }
+
+
 //------------------------------------------------------------------------------
 void SequencerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
@@ -205,11 +207,7 @@ bool SequencerGui::Initialize()
     // tests
     mOpl3Tests = std::make_unique<OPL3Tests>(getMain()->getController());
 
-    mCurrentSong.init();
-
-
-
-
+    newSong();
 
     return true;
 }

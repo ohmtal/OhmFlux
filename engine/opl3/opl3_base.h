@@ -390,6 +390,7 @@ namespace opl3 {
     struct Pattern {
         std::string mName = "New Pattern";
         uint32_t mColor = 0xFFFF0F0F; // ABGR !!!!
+        uint8_t mColCount = SOFTWARE_CHANNEL_COUNT; //FIXME
     protected:
         std::vector<SongStep> mSteps;
 
@@ -525,7 +526,7 @@ namespace opl3 {
         float bpm = 125.0f;
         uint8_t ticksPerRow = 6;      // Ticks per row
 
-        // OPL3 max channels is 18. OPL2 is 9. I use the SOFTWARE_CHANNEL_COUNT !!!
+        // OPL3 max channels is 18. OPL2 is 9. I use the SOFTWARE_CHANNEL_COUNT = 12 !!!
         static constexpr int CHANNELS = SOFTWARE_CHANNEL_COUNT;
 
         std::vector<OplInstrument> instruments;

@@ -153,6 +153,20 @@ public:
 
     // ----------  ----------------
     std::vector<OplInstrument> mSoundBank;
+
+    OplInstrument* getInstrument( int index ) {
+        if (index >= mSoundBank.size())
+            return nullptr;
+        return &mSoundBank[index];
+    }
+
+    std::string getInstrumentName( int index ) {
+        if (index >= mSoundBank.size())
+            return "";
+        return mSoundBank[index].name;
+    }
+
+
     const SequencerState& getSequencerState() const { return mSeqState; }
 
     std::vector<std::unique_ptr<DSP::Effect>>& getDspEffects() {

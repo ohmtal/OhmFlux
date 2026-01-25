@@ -220,7 +220,7 @@ namespace opl3_bridge_fm {
         SongDataFMS fmsSongData;
         fmsSongData.init();
 
-        // 1. Interleaved Load: Name then Settings for each channel
+        // Channel
         for (int ch = 1; ch <= 9; ++ch) {
             if (!file.read(reinterpret_cast<char*>(fmsSongData.actual_ins[ch]), 256)) {
                 Log("ERROR: Failed reading Name for Channel %d at offset %ld", ch, (long)file.tellg());
@@ -232,9 +232,12 @@ namespace opl3_bridge_fm {
                 file.close();
                 return false;
             }
+            // i can set the default instrument here
+            // FMS set the instruments bind on channel
+            opl3SongData.channelInstrument[ch] = ch;
         }
 
-        // 2. Load Speed (1 byte) and Length (2 bytes)
+        // Speed
         if (!file.read(reinterpret_cast<char*>(&fmsSongData.song_delay), 1)) {
             Log("ERROR: Failed reading song_speed");
             file.close();
@@ -291,6 +294,7 @@ namespace opl3_bridge_fm {
             {
                 SongStep& step = scalePat.getStep(row, ch);    //mSteps[row * 18 + ch];
                 step.instrument = ch; //match the channel we
+                step.volume = 63;
                 step.note = NONE_NOTE;
 
                 // tricky converting DosScale id's to current
