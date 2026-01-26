@@ -102,8 +102,10 @@ private:
         int selectStartRow = -1, selectStartCol = -1;
         int selectEndRow = -1, selectEndCol = -1;
 
+        opl3::Pattern* pattern = nullptr; //mhhh we also have the index here ...
 
-
+        //------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------
         bool isSelected(int r, int c) const {
             if (selectStartRow == -1) return false;
             int minR = std::min(selectStartRow, selectEndRow);
@@ -111,6 +113,22 @@ private:
             int minC = std::min(selectStartCol, selectEndCol);
             int maxC = std::max(selectStartCol, selectEndCol);
             return (r >= minR && r <= maxR && c >= minC && c <= maxC);
+        }
+
+        //------------------------------------------------------------------------------
+        void moveCursorPosition(int rowAdd, int colAdd) {
+            setCursorPosition(cursorRow + rowAdd, cursorCol+colAdd);
+        }
+        //------------------------------------------------------------------------------
+        void setCursorPosition(int row, int col) {
+            if (!pattern) return;
+            row = std::clamp(row, 0, pattern->getRowCount() -1 );
+            col = std::clamp(col, 0, pattern->getColCount() -1 );
+            if ( row == cursorRow && col == cursorCol )
+                return ;
+            cursorRow = row;
+            cursorCol = col;
+            scrollToSelected = true;
         }
     };
 
@@ -126,6 +144,8 @@ private:
     PatternEditorState mPatternEditorState;
 
     bool playNote(uint8_t softwareChannel, SongStep step ); //play or insert a note
+    bool stopNote(uint8_t softwareChannel );
+    bool stopPlayedNotes( );
     uint8_t getCurrentChannel();   // get the current channel (mPatternEditorState.cursorCol)
 
 
@@ -224,9 +244,9 @@ public:
     bool DrawNewPatternModal(SongData& song, NewPatternSettings& settings);
     void DrawPatternSelector(SongData& song, PatternEditorState& state);
     void RenderStepCell(SongStep& step, bool isSelected, int r, int c, PatternEditorState& state);
-    void setCursorPosition(int row, int col);
-    void moveCursorPosition(int rowAdd, int colAdd);
-    void DrawPatternEditor(Pattern& pattern, PatternEditorState& state);
+
+    void DrawPatternEditor(PatternEditorState& state);
+    void ActionPatternEditor(PatternEditorState& state); //FIXME TO PRIVATE
     SongData CreateTempSelection(const Pattern& activePattern, const PatternEditorState& state);
 
     bool isPlaying();

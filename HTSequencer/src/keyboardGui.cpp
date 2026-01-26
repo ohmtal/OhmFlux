@@ -12,67 +12,11 @@
 // - channel !!
 // - save / restore : start/end octave
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-uint8_t SequencerGui::getCurrentChannel(){
-
-    if ( getCurrentPattern() )
-        return mPatternEditorState.cursorCol;
-
-    // maybe a other ?!
-    return 0;
-}
-bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
-{
-    if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
-        return false;
-
-    PatternEditorState& state = mPatternEditorState;
-
-
-    if ( mSettings.InsertMode ) {
-        Pattern* lPat = this->getCurrentPattern();
-        if (lPat)
-        {
-            // lPat.getStep(state.cursorRow, state.cursorCol).note = note;
-            // i need this when i play cords!
-            // FIXME EFFECTS or simple setStep!
-
-            uint16_t row =  isPlaying() ? getPlayingRow() : state.cursorRow;
-
-            SongStep& tmpStep = lPat->getStep(row, softwareChannel);
-
-            dLog("set step row:%d, col:%d, instrument:%d note:%d",
-                 state.cursorRow, softwareChannel, step.instrument, step.note);
-
-
-            tmpStep.instrument = step.instrument;
-            tmpStep.note = step.note;
-
-
-            //Lol when playing cords this is really funny
-            //FIXME but how ? i can schedule it but which step to take since i
-            //      have it for each channel
-            // moveCursorPosition(mCurrentSong.getStepByChannel(softwareChannel), 0);
-
-
-        } else {
-            dLog("unable to get current pattern while mInsertMode is active, that can be ok!");
-            // mInsertMode = false;
-            return false;
-
-        }
-    }
-
-    return getMain()->getController()->playNote(softwareChannel, step);
-}
-
-
-//------------------------------------------------------------------------------
 // In SequencerGui.h (Private members)
 // Tracks which MIDI note is currently occupying which software channel
 // FIXME ADD TO HEADER !!
 static int mCurrentStartOctave = 3;
-// int mChannelToNote[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+int guiChannelToNote[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 uint64_t mChannelLastUsed[12] = { 0 };
 uint64_t mGlobalCounter = 0;
 uint8_t getCurrentStartOctave() { return mCurrentStartOctave;}
@@ -114,6 +58,101 @@ int /*SequencerGui::*/getPianoMapOffset(SDL_Scancode scancode) {
         default: return -1;
     }
 }
+//------------------------------------------------------------------------------
+uint8_t SequencerGui::getCurrentChannel(){
+
+    if ( getCurrentPattern() )
+        return mPatternEditorState.cursorCol;
+
+    // maybe a other ?!
+    return 0;
+}
+//------------------------------------------------------------------------------
+bool SequencerGui::stopPlayedNotes( )
+{
+    for (uint8_t i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
+    {
+        if (guiChannelToNote[i] >= 0)
+            stopNote(i);
+    }
+    return true;
+}
+
+
+bool SequencerGui::stopNote(uint8_t softwareChannel)
+{
+    if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
+        return false;
+
+    guiChannelToNote[softwareChannel] = -1;
+
+    PatternEditorState& state = mPatternEditorState;
+
+    // only when playing!
+    if ( mSettings.InsertMode  && isPlaying() ) {
+        Pattern* lPat = this->getCurrentPattern();
+        if (lPat)
+        {
+            uint16_t row =  getPlayingRow();
+            SongStep& tmpStep = lPat->getStep(row, softwareChannel);
+            tmpStep.note = STOP_NOTE;
+        } else {
+            dLog("unable to get current pattern while mInsertMode is active, that can be ok!");
+            return false;
+        }
+    }
+
+    return getMain()->getController()->stopNote(softwareChannel);
+}
+//------------------------------------------------------------------------------
+bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
+{
+    if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
+        return false;
+
+    if (step.note < LAST_NOTE)
+        guiChannelToNote[softwareChannel] = step.note;
+
+    PatternEditorState& state = mPatternEditorState;
+
+
+    if ( mSettings.InsertMode ) {
+        Pattern* lPat = this->getCurrentPattern();
+        if (lPat)
+        {
+            // lPat.getStep(state.cursorRow, state.cursorCol).note = note;
+            // i need this when i play cords!
+            // FIXME EFFECTS or simple setStep!
+
+            uint16_t row =  isPlaying() ? getPlayingRow() : state.cursorRow;
+
+            SongStep& tmpStep = lPat->getStep(row, softwareChannel);
+
+            dLog("set step row:%d, col:%d, instrument:%d note:%d",
+                 state.cursorRow, softwareChannel, step.instrument, step.note);
+
+
+            tmpStep.instrument = step.instrument;
+            tmpStep.note = step.note;
+
+
+            //Lol when playing cords this is really funny
+            //FIXME but how ? i can schedule it but which step to take since i
+            //      have it for each channel
+            // moveCursorPosition(mCurrentSong.getStepByChannel(softwareChannel), 0);
+
+
+        } else {
+            dLog("unable to get current pattern while mInsertMode is active, that can be ok!");
+            // mInsertMode = false;
+            return false;
+
+        }
+    }
+
+    return getMain()->getController()->playNote(softwareChannel, step);
+}
+//------------------------------------------------------------------------------
 
 
 void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
@@ -165,9 +204,10 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
         uint8_t midiNote = (mCurrentStartOctave * 12) + offset +  12;
 
         // Step A: Find an available software channel (0-11)
+
         int targetSwChan = -1;
-        for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; ++i) {
-            if (getMain()->getController()->mChannelToNote[i] == -1) {
+        for (int i = getCurrentChannel(); i < SOFTWARE_CHANNEL_COUNT; ++i) {
+            if (guiChannelToNote[i] == -1) {
                 targetSwChan = i;
                 break;
             }
@@ -184,7 +224,7 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
                 }
             }
             // Stop the oldest note immediately to free the channel
-            getMain()->getController()->stopNote(targetSwChan);
+            this->stopNote(targetSwChan);
         }
 
         // Step C: TRACKING & EXECUTION
@@ -205,7 +245,7 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
         int chan = mScancodeToChannel[event.scancode];
         if (chan != -1) {
             // Tell the OPL3 controller to enter the Release phase for this slot
-            getMain()->getController()->stopNote(chan);
+            this->stopNote(chan);
 
             // Mark the tracking slots as free/empty
             // mChannelToNote[chan] = -1;
@@ -294,7 +334,7 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
                     if (chords::selectedTypeIdx == 0) {
                         // Single Note
                         SongStep step{midiNote, mCurrentInstrumentId};
-                        this->playNote(channel, step);
+                        getMain()->getController()->playNote(channel, step); //scale player
 
                     } else {
                         // Chord - using the pointer from our helper array
@@ -304,7 +344,7 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
 
                 if (ImGui::IsItemDeactivated()) {
                     // i play on last channels !
-                    getMain()->getController()->stopPlayedNotes();
+                    getMain()->getController()->stopPlayedNotes();//scale player
                 }
 
                 if (ImGui::IsItemHovered()) {
@@ -385,7 +425,7 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 
     auto checkNoteActive = [&](int midiNote) -> bool {
         for (int i = 0; i < 12; i++) {
-            if (getMain()->getController()->mChannelToNote[i] == midiNote) return true;
+            if (guiChannelToNote[i] == midiNote) return true;
         }
         return false;
     };
@@ -428,8 +468,8 @@ void SequencerGui::RenderPianoUI(bool standAlone)
             }
 
             if (ImGui::IsItemDeactivated()) {
-                if (controller->isPlaying()) getMain()->getController()->stopNote(channel);
-                else getMain()->getController()->stopPlayedNotes();
+                if (controller->isPlaying()) this->stopNote(channel);
+                else this->stopPlayedNotes();
             }
 
 
@@ -478,8 +518,8 @@ void SequencerGui::RenderPianoUI(bool standAlone)
                 }
 
                 if (ImGui::IsItemDeactivated()) {
-                    if (controller->isPlaying()) getMain()->getController()->stopNote(channel);
-                    else getMain()->getController()->stopPlayedNotes();
+                    if (controller->isPlaying()) this->stopNote(channel);
+                    else this->stopPlayedNotes();
                 }
 
 
@@ -503,197 +543,3 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     if (standAlone) ImGui::End();
 
 }
-
-
-
-// void SequencerGui::RenderPianoUI(bool standAlone )
-// {
-//     OPL3Controller*  controller = getMain()->getController();
-//     if (!controller)
-//         return;
-//
-//     uint8_t channel = getCurrentChannel();
-//
-//     if (standAlone) {
-//         ImGui::SetNextWindowSize(ImVec2(1100, 200), ImGuiCond_FirstUseEver);
-//         if (!ImGui::Begin("Piano")) { ImGui::End(); return; }
-//     }
-//
-//
-//     static int endOctave = 5;
-//     ImGui::AlignTextToFramePadding();
-//     ImGui::TextColored(ImColor4F(cl_Yellow),"Octaves");
-//     ImGui::SameLine();
-//     ImGui::SetNextItemWidth(70);
-//     if (ImGui::InputInt("##startOctave", &mCurrentStartOctave))
-//         mCurrentStartOctave = std::clamp(mCurrentStartOctave, 0,6);
-//     ImGui::SameLine();
-//     ImGui::SetNextItemWidth(70);
-//     if (ImGui::InputInt("##endOctave", &endOctave))
-//         endOctave = std::clamp(endOctave, mCurrentStartOctave,7);
-//
-//     ImGui::SameLine();
-//
-//     ImVec2 lButtonSize = ImVec2(80, 0);
-//
-//     // ---- Header -----
-//
-//     ImGui::SameLine();
-//     ImGui::TextColored(ImColor4F(cl_Green),"Play Mode:");
-//     ImGui::SameLine();
-//     ImGui::SetNextItemWidth(200);
-//     ImGui::Combo("##Play Mode", &chords::selectedTypeIdx, chords::typeNames, IM_ARRAYSIZE(chords::typeNames));
-//
-//
-//     ImGui::BeginDisabled(!mInsertMode);
-//     ImGui::SameLine();
-//     if (ImGui::Button("add (===)", lButtonSize)) {
-//         insertTone(opl3::STOP_NOTE);
-//     }
-//     ImGui::SameLine();
-//     if (ImGui::Button("add (...)", lButtonSize)) {
-//         insertTone(opl3::NONE_NOTE);
-//     }
-//     // if (ImGui::Button("Add: ...", lButtonSize)) {}
-//     ImGui::EndDisabled();
-//
-//     ImGui::SameLine();
-//     if (ImGui::Button("Silence all.", lButtonSize)) {
-//         controller->silenceAll(false);
-//     }
-//
-//     // ---- Scale ------
-//     // int lScaleCount = 12 * 8;
-//     // // int lOctaveAdd = -1;
-//     // int  currentOctave = 0;
-//
-//     struct PianoKey { const char* name; int offset; bool isBlack; };
-//     PianoKey keys[] = {
-//         {"C-", 0, false}, {"C#", 1, true}, {"D-", 2, false}, {"D#", 3, true},
-//         {"E-", 4, false},  {"F-", 5, false}, {"F#", 6, true}, {"G-", 7, false},
-//         {"G#", 8, true}, {"A-", 9, false}, {"A#", 10, true}, {"B-", 11, false}
-//     };
-//
-//
-//
-//     ImVec2 startPos = ImGui::GetCursorScreenPos();
-//     float whiteWidth = 35.0f, whiteHeight = 90.0f;
-//     float blackWidth = 26.0f, blackHeight = 50.0f;
-//
-//     // float whiteWidth = 30.0f, whiteHeight = 70.0f;
-//     // float blackWidth = 26.0f, blackHeight = 40.0f;
-//
-//     ImVec4 lWhileColor = ImColor4F(cl_LightGray);
-//     // ImVec4 lWhileColorHoover = ImColor4F(cl_SkyBlue);
-//     if (mInsertMode) {
-//         lWhileColor = ImColor4F(cl_White);
-//     }
-//
-//     // 1. Draw White Keys (Allowing Overlap)
-//     int whiteKeyCount = 0;
-//
-//     // bool isNull = !controller->songValid(mCurrentSong);
-//     int id = 0;
-//
-//     // if (isNull) ImGui::BeginDisabled();
-//
-//     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-//     // PASS 1: WHITE KEYS
-//     for (int octave = mCurrentStartOctave; octave <= endOctave; octave++) {
-//         for (int key = 0; key < 12; key++) {
-//             if (!keys[key].isBlack) {
-//                 float xPos = startPos.x + (whiteKeyCount * whiteWidth);
-//                 ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
-//
-//                 ImGui::PushID((octave * 12) + key);
-//                 ImGui::SetNextItemAllowOverlap();
-//                 ImGui::PushStyleColor(ImGuiCol_Button, lWhileColor);
-//                 ImGui::Button("##white", ImVec2(whiteWidth, whiteHeight));
-//
-//                 // --- Note Logic for White Keys ---
-//                 if (ImGui::IsItemActivated()) {
-//                     uint8_t midiNote = (octave * 12) + keys[key].offset + 12;
-//                     if (chords::selectedTypeIdx == 0) {
-//                         // Single Note
-//                         SongStep step{midiNote, mCurrentInstrumentId};
-//                         getMain()->getController()->playNote(channel, step);
-//                     } else {
-//                         // Chord - using the pointer from our helper array
-//                         getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
-//                     }
-//                 }
-//
-//                 if (ImGui::IsItemDeactivated()) {
-//                     for (uint8_t ch = channel; ch < channel+4 ; ch++) {
-//                         if (ch < SOFTWARE_CHANNEL_COUNT)
-//                             getMain()->getController()->stopNote(ch);
-//                     }
-//                 }
-//
-//                 if (key == 0)
-//                 {
-//                     ImGui::SetCursorScreenPos(ImVec2(startPos.x + 5 + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight - 20.f));
-//                     ImGui::TextColored(ImColor4F(cl_Black), "%s%d",keys[key].name,  octave);
-//                 }
-//
-//
-//                 ImGui::PopStyleColor(1);
-//                 ImGui::PopID();
-//                 whiteKeyCount++;
-//             }
-//         }
-//     }
-//
-//     // PASS 2: BLACK KEYS
-//     whiteKeyCount = 0;
-//     for (int octave = mCurrentStartOctave; octave <= endOctave; octave++) {
-//         for (int key = 0; key < 12; key++) {
-//             if (keys[key].isBlack) {
-//                 float xPos = startPos.x + (whiteKeyCount * whiteWidth) - (blackWidth / 2.0f);
-//                 ImGui::SetCursorScreenPos(ImVec2(xPos, startPos.y));
-//
-//                 ImGui::PushID((octave * 12) + key);
-//                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.05f, 0.05f, 0.05f, 1.0f));
-//                 ImGui::Button("##black", ImVec2(blackWidth, blackHeight));
-//
-//                 // --- Note Logic for Black Keys ---
-//                 if (ImGui::IsItemActivated()) {
-//                     uint8_t midiNote = (octave * 12) + keys[key].offset + 12;
-//                     if (chords::selectedTypeIdx == 0) {
-//                         // Single Note
-//                         SongStep step{midiNote, mCurrentInstrumentId};
-//                         getMain()->getController()->playNote(channel, step);
-//                     } else {
-//                         // Chord - using the pointer from our helper array
-//                         getMain()->getController()->playChord(channel, mCurrentInstrumentId, midiNote, *chords::chordOffsets[chords::selectedTypeIdx]);
-//                     }
-//                 }
-//
-//                 if (ImGui::IsItemDeactivated()) {
-//                     for (uint8_t ch = channel; ch < channel+4 ; ch++) {
-//                         if (ch < SOFTWARE_CHANNEL_COUNT)
-//                             getMain()->getController()->stopNote(ch);
-//                     }
-//                 }
-//
-//
-//                 ImGui::PopStyleColor(1);
-//                 ImGui::PopID();
-//             } else {
-//                 whiteKeyCount++;
-//             }
-//         }
-//     }
-//     ImGui::PopStyleVar(1);   // Pop FrameBorderSize
-//
-//     // if (isNull) ImGui::EndDisabled();
-//
-//     // Correctly extend window boundary
-//     ImVec2 finalPos = ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight);
-//     ImGui::SetCursorScreenPos(finalPos);
-//     ImGui::Dummy(ImVec2(0, 10));
-//
-//
-//     if (standAlone) ImGui::End();
-// }
-//

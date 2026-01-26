@@ -113,9 +113,9 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     if (controller->isPlaying())
     {
         ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Black));
-        ImGui::PushStyleColor(ImGuiCol_Button, ImColor4F(cl_Orange));        // Normal
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow)); // Hover
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Gold));  // Geklickt
+        ImGui::PushStyleColor(ImGuiCol_Button, ImColor4F(cl_Orange));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Gold));
 
         if (ImGui::Button("Stop",lButtonSize))
         {
@@ -124,9 +124,9 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         ImGui::PopStyleColor(4);
     } else {
         ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Black));
-        ImGui::PushStyleColor(ImGuiCol_Button, ImColor4F(cl_Gold));        // Normal
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow)); // Hover
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Orange));  // Geklickt
+        ImGui::PushStyleColor(ImGuiCol_Button, ImColor4F(cl_Gold));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Orange));
 
         if (ImGui::Button("Play",lButtonSize))
         {
@@ -255,10 +255,9 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
             // <<< scroll
 
             Pattern* lCurrentPattern = &mCurrentSong.patterns[mPatternEditorState.currentPatternIdx];
-            // Apply pattern-specific color to the editor background if desired
-            // ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImGui::ColorConvertU32ToFloat4(lCurrentPattern->mColor));
-            DrawPatternEditor(*lCurrentPattern, mPatternEditorState);
-            // ImGui::PopStyleColor();
+            //FIXME ?!
+            mPatternEditorState.pattern = lCurrentPattern;
+            DrawPatternEditor(mPatternEditorState);
         }
 
     }
@@ -269,9 +268,29 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     if (standAlone) ImGui::End();
 }
 //------------------------------------------------------------------------------
+void SequencerGui::ActionPatternEditor(PatternEditorState& state)
+{
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) {
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))    state.moveCursorPosition(-1, 0);
+        if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))  state.moveCursorPosition( 1, 0);
+        if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  state.moveCursorPosition( 0,-1);
+        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) state.moveCursorPosition( 0, 1);
+        if (ImGui::IsKeyPressed(ImGuiKey_PageUp))     state.moveCursorPosition(-16, 0);
+        if (ImGui::IsKeyPressed(ImGuiKey_PageDown))   state.moveCursorPosition( 16, 0);
+        if (ImGui::IsKeyPressed(ImGuiKey_Home))       state.moveCursorPosition(-10000, 0);
+        if (ImGui::IsKeyPressed(ImGuiKey_End))        state.moveCursorPosition( 10000, 0);
+
+        if ( ImGui::IsKeyPressed(ImGuiKey_Space)) state.pattern->getStep(state.cursorRow, state.cursorCol).note = opl3::STOP_NOTE;
+        // //FIXME delete selected func
+        if ( ImGui::IsKeyPressed(ImGuiKey_Delete)) state.pattern->getStep(state.cursorRow, state.cursorCol).init();
+    } // is focused
+}
 //------------------------------------------------------------------------------
-void SequencerGui::DrawPatternEditor(opl3::Pattern& pattern, PatternEditorState& state) {
-    const int numRows = (int)pattern.getRowCount();
+void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
+    if (!state.pattern)
+        return;
+
+    const int numRows = (int)state.pattern->getRowCount();
 
 
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()) {
@@ -347,7 +366,12 @@ void SequencerGui::DrawPatternEditor(opl3::Pattern& pattern, PatternEditorState&
             // TODO header states
             // ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Lime));
             // ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Gray));
+
+            if (channel ==  state.cursorCol)
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_DeepSea));
+
             ImGui::TableHeader(lColCaption.c_str());
+
             // ImGui::PopStyleColor();
 
             // --------------- Header Popup
@@ -429,18 +453,10 @@ void SequencerGui::DrawPatternEditor(opl3::Pattern& pattern, PatternEditorState&
                 // NOTE: Version ... not soo bad but bad
                 if ( lDoScroll && lScrolltoRow > clipper.DisplayEnd - 3 )
                 {
-                    ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterY);
+
+                    ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterY );
                     //ImGui::SetScrollHereY(0.5f);
                 }
-
-                // if ( lScrolltoRow > clipper.DisplayEnd - 3 )
-                // {
-                //     ImGui::SetScrollY(CellHeight * 5);
-                //
-                // }
-
-
-
 
                 ImGui::PushID(row);
 
@@ -448,27 +464,32 @@ void SequencerGui::DrawPatternEditor(opl3::Pattern& pattern, PatternEditorState&
                 ImGui::TableSetColumnIndex(0);
                 if ( isPlaying() && getPlayingRow() == row )
                 {
-                   ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Yellow));
+                   // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Coral));
+
                    ImGui::TextColored(Color4FIm(cl_Black), "%03d", row);
+
+                   ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm(cl_Coral));
                 } else {
                     ImGui::TextDisabled("%03d", row);
                 }
 
                 // Columns 1-12: Channel Steps
                 for (int col = 0; col < opl3::SOFTWARE_CHANNEL_COUNT; col++) {
+
+
+                    if ( lDoScroll && col == state.cursorCol) {
+                        ImGui::SetScrollHereX(0.0f);
+                        // ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterX );
+                        // lDoScroll = false;
+                    }
+
+
                     ImGui::TableSetColumnIndex(col + 1);
-                    SongStep& step = pattern.getStep(row, col);
+                    SongStep& step = state.pattern->getStep(row, col);
                     ImGui::PushID(row * opl3::SOFTWARE_CHANNEL_COUNT + col);
                     // Pass current row/column and state to the cell renderer
                     bool isCursorPos = (state.cursorRow == row && state.cursorCol == col);
                     RenderStepCell(step, isCursorPos, row, col, state);
-
-                    // LOL ....
-                    // if ( lDoScroll && col == state.cursorCol )
-                    // {
-                    //     ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleEdgeX);
-                    //
-                    // }
 
 
                     ImGui::PopID();
@@ -483,52 +504,35 @@ void SequencerGui::DrawPatternEditor(opl3::Pattern& pattern, PatternEditorState&
         } //while
         ImGui::EndTable();
 
-
-
-        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) {
-            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))    moveCursorPosition(-1, 0);
-            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))  moveCursorPosition( 1, 0);
-            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  moveCursorPosition( 0,-1);
-            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) moveCursorPosition( 0, 1);
-            if (ImGui::IsKeyPressed(ImGuiKey_PageUp))     moveCursorPosition(-16, 0);
-            if (ImGui::IsKeyPressed(ImGuiKey_PageDown))   moveCursorPosition( 16, 0);
-            if (ImGui::IsKeyPressed(ImGuiKey_Home))       moveCursorPosition(-10000, 0);
-            if (ImGui::IsKeyPressed(ImGuiKey_End))        moveCursorPosition( 10000, 0);
-
-            if ( ImGui::IsKeyPressed(ImGuiKey_Space)) pattern.getStep(state.cursorRow, state.cursorCol).note = opl3::STOP_NOTE;
-            // //FIXME delete selected func
-            if ( ImGui::IsKeyPressed(ImGuiKey_Delete)) pattern.getStep(state.cursorRow, state.cursorCol).init();
-
-
-        } // is focused
+        ActionPatternEditor(state);
 
     } //PatternTable
     ImGui::PopStyleColor(4);
     ImGui::PopStyleVar();
 }
-//------------------------------------------------------------------------------
-void SequencerGui::moveCursorPosition(int rowAdd, int colAdd) {
-    PatternEditorState& state = mPatternEditorState;
-    setCursorPosition(state.cursorRow + rowAdd, state.cursorCol+colAdd);
-}
-void SequencerGui::setCursorPosition(int row, int col) {
-    PatternEditorState& state = mPatternEditorState;
-    Pattern* pattern = getCurrentPattern();
-    if (!pattern) return;
-
-    row = std::clamp(row, 0, pattern->getRowCount() -1 );
-    col = std::clamp(col, 0, pattern->getColCount() -1 );
-
-    if ( row == state.cursorRow && col == state.cursorCol )
-        return ;
-
-
-    state.cursorRow = row;
-    state.cursorCol = col;
-
-    state.scrollToSelected = true;
-
-}
+// //------------------------------------------------------------------------------
+// void SequencerGui::state.moveCursorPosition(int rowAdd, int colAdd) {
+//     PatternEditorState& state = mPatternEditorState;
+//     setCursorPosition(state.cursorRow + rowAdd, state.cursorCol+colAdd);
+// }
+// void SequencerGui::setCursorPosition(int row, int col) {
+//     PatternEditorState& state = mPatternEditorState;
+//     Pattern* pattern = getCurrentPattern();
+//     if (!pattern) return;
+//
+//     row = std::clamp(row, 0, pattern->getRowCount() -1 );
+//     col = std::clamp(col, 0, pattern->getColCount() -1 );
+//
+//     if ( row == state.cursorRow && col == state.cursorCol )
+//         return ;
+//
+//
+//     state.cursorRow = row;
+//     state.cursorCol = col;
+//
+//     state.scrollToSelected = true;
+//
+// }
 //------------------------------------------------------------------------------
 void SequencerGui::RenderStepCell(opl3::SongStep& step, bool isSelected, int r, int c, PatternEditorState& state) {
     // Construct the tracker-style string: "C-4 01 v63 A0F"
@@ -564,7 +568,7 @@ void SequencerGui::RenderStepCell(opl3::SongStep& step, bool isSelected, int r, 
     // Highlight if this is the active selection/cursor
     if (isSelected /*&& !state.scrollToSelected*/) {
         // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_HeaderActive));
-        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Red));
+        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Blue));
 
     }
 

@@ -181,6 +181,16 @@ void SequencerGui::newSong(){
         s.panning = 32;
     }
 
+    // set default instruments
+
+    int maxCnt = (int)getMain()->getController()->getSoundBank().size();
+
+    for (int i = 0;  i < SOFTWARE_CHANNEL_COUNT; i++)
+    {
+        mCurrentSong.channelInstrument[i]= (i < maxCnt) ? i : 0;
+
+    }
+
     mCurrentSong.patterns.push_back(std::move(p));
     uint8_t newPatternIdx = (uint8_t)mCurrentSong.patterns.size() - 1;
     mCurrentSong.orderList.push_back(newPatternIdx);
