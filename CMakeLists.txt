@@ -428,7 +428,10 @@ endif()
 # --- 6. ImguiTest ---
 option(BUILD_IMGGUITEST "Build ImguiTest application" ON)
 if(BUILD_IMGGUITEST)
-    set(GAME_SOURCES "${IMGGUITEST_DIR}/src/main.cpp")
+    set(GAME_SOURCES
+        "${IMGGUITEST_DIR}/src/main.cpp"
+        "${IMGGUITEST_DIR}/src/FluxGuiTest.cpp"
+    )
     configure_demo_target(ImguiTest ${IMGGUITEST_DIR} "${IMGGUITEST_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
