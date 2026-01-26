@@ -131,8 +131,8 @@ namespace opl3_bridge_fms3 {
     }
 
     // Forward declarations for serialization functions
-    void write_opl_instrument(std::ofstream& ofs, const opl3::OplInstrument& inst);
-    void read_opl_instrument(std::ifstream& ifs, opl3::OplInstrument& inst);
+    void write_opl_instrument(std::ofstream& ofs, const opl3::Instrument& inst);
+    void read_opl_instrument(std::ifstream& ifs, opl3::Instrument& inst);
 
     void write_pattern(std::ofstream& ofs, const opl3::Pattern& pat);
     void read_pattern(std::ifstream& ifs, opl3::Pattern& pat);
@@ -142,7 +142,7 @@ namespace opl3_bridge_fms3 {
 
     //--------------------------------------------------------------------------
     // Implementations for nested structs
-    void write_opl_instrument(std::ofstream& ofs, const opl3::OplInstrument& inst) {
+    void write_opl_instrument(std::ofstream& ofs, const opl3::Instrument& inst) {
         write_string(ofs, inst.name);
         write_binary(ofs, inst.isFourOp);
         write_binary(ofs, inst.isDoubleVoice);
@@ -183,7 +183,7 @@ namespace opl3_bridge_fms3 {
     }
 
     //--------------------------------------------------------------------------
-    void read_opl_instrument(std::ifstream& ifs, opl3::OplInstrument& inst) {
+    void read_opl_instrument(std::ifstream& ifs, opl3::Instrument& inst) {
         read_string(ifs, inst.name);
         read_binary(ifs, inst.isFourOp);
         read_binary(ifs, inst.isDoubleVoice);

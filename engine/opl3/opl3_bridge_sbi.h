@@ -23,7 +23,7 @@ namespace opl3_bridge_sbi {
      * @param regData Pointer to the register data (starting at SBI offset 36).
      * @param inst Output instrument structure.
      */
-    inline void _toInstrument(const char* nameData, const uint8_t* regData, OplInstrument& inst) {
+    inline void _toInstrument(const char* nameData, const uint8_t* regData, Instrument& inst) {
         // 1. Extract Name (SBI names are up to 32 chars, null-terminated or space-padded)
         // We use a helper to ensure we don't read past 32 bytes.
         inst.name = std::string(nameData, strnlen(nameData, 32));
@@ -65,7 +65,7 @@ namespace opl3_bridge_sbi {
         inst.isFourOp = false;
     }
 
-    inline bool loadInstrument(const std::string& filename, OplInstrument& inst)
+    inline bool loadInstrument(const std::string& filename, Instrument& inst)
     {
         std::ifstream file(filename, std::ios::binary);
         if (!file.is_open()) return false;
@@ -104,7 +104,7 @@ namespace opl3_bridge_sbi {
      * @param inst The instrument structure to save.
      * @return true if successful, false on file error.
      */
-    inline bool saveInstrument(const std::string& filename, const OplInstrument& inst) {
+    inline bool saveInstrument(const std::string& filename, const Instrument& inst) {
         std::ofstream file(filename, std::ios::binary);
         if (!file.is_open()) return false;
 

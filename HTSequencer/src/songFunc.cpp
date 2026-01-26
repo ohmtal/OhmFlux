@@ -5,6 +5,19 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+
+//------------------------------------------------------------------------------
+
+bool SequencerGui::isPlaying() {
+    return getMain()->getController()->getSequencerState().playing;
+}
+uint16_t SequencerGui::getPlayingRow() {
+    return getMain()->getController()->getSequencerState().rowIdx;
+}
+uint16_t SequencerGui::getPlayingSequenceIndex() {
+    return getMain()->getController()->getSequencerState().orderIdx;
+}
+
 //------------------------------------------------------------------------------
 void SequencerGui::InsertRow(opl3::Pattern& pat, int rowIndex){
     auto& steps = pat.getStepsMutable();

@@ -35,7 +35,7 @@ namespace opl3_bridge_wopl {
 
     // Helper to fill OplInstrument::OpPair::OpParams from Wopl instrument data (62 bytes)
     // op_idx: 0=Mod1, 1=Car1, 2=Mod2, 3=Car2
-    inline void FillOpParamsFromWopl(opl3::OplInstrument::OpPair::OpParams& op, const uint8_t* d, int offset) {
+    inline void FillOpParamsFromWopl(opl3::Instrument::OpPair::OpParams& op, const uint8_t* d, int offset) {
         // Byte 0: AM(1) Vib(1) EGT(1) KSR(1) Multi(4)
         op.am    = (d[offset] >> 7) & 0x01;
         op.vib   = (d[offset] >> 6) & 0x01;
@@ -62,7 +62,7 @@ namespace opl3_bridge_wopl {
 
     //--------------------- IMPORT -----------------------------
 
-    inline bool importBank(const std::string& filename, std::vector<opl3::OplInstrument>& bank) {
+    inline bool importBank(const std::string& filename, std::vector<opl3::Instrument>& bank) {
 
         std::ifstream f(filename, std::ios::binary);
         if (!f) return false;
@@ -147,7 +147,7 @@ namespace opl3_bridge_wopl {
                     f.close();
                     return false;
                 }
-                opl3::OplInstrument inst;
+                opl3::Instrument inst;
                 needle = 0;
 
                 // 1. Name (Bytes 0-31)
@@ -258,7 +258,7 @@ namespace opl3_bridge_wopl {
 
 
 
-                opl3::OplInstrument inst;
+                opl3::Instrument inst;
                 needle = 0;
 
                 // 1. Name (Bytes 0-31)

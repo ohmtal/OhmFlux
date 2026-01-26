@@ -38,12 +38,44 @@ using namespace opl3;
 //------------------------------------------------------------------------------
 class OPL3Controller
 {
+public:
+    // --------- SequencerState --------------
+    struct SequencerState {
+        bool playing = false;
+        bool loop = false;
+
+        // Position Tracking
+        uint16_t orderIdx = 0;   // Current index in song.orderList
+        uint16_t rowIdx = 0;     // Current row index in the active pattern
+
+        // Limits (replaces song_startAt/stopAt for Pattern logic)
+        uint16_t orderStartAt = 0;
+        uint16_t orderStopAt = 0;
+
+        // Timing (Using double prevents tempo drift over long songs)
+        // ... position tracking ...
+        uint8_t current_tick = 0;
+        uint8_t ticks_per_row = 6; // Standard tracker default
+
+        double sample_accumulator = 0.0;
+        double samples_per_tick = 0.0; // Calculate this: (SampleRate * 60) / (BPM * TPL)
+
+        const SongData* current_song = nullptr;
+
+        // Channel State (Used for UI and Effect Logic)
+        SongStep last_steps[MAX_HW_CHANNELS] = {};
+        bool ui_dirty = false;
+
+    };
+
+
 private:
     // ---------- OPL/YMFM ----------------
     using OplChip = ymfm::ymf262; //OPL3
     OplChip* mChip; //OPL
     OplInterface mInterface;
     OplChip::output_data mOutput;
+
 
     uint32_t mOutputSampleRate;
     // YMFMInterface mInterface;
@@ -71,37 +103,6 @@ private:
 
 
 
-    // --------- SequencerState --------------
-    struct SequencerState {
-        bool playing = false;
-        bool loop = false;
-
-        // Position Tracking
-        uint16_t orderIdx = 0;   // Current index in song.orderList
-        uint16_t rowIdx = 0;     // Current row index in the active pattern
-
-        // Limits (replaces song_startAt/stopAt for Pattern logic)
-        uint16_t orderStartAt = 0;
-        uint16_t orderStopAt = 0;
-
-        // Timing (Using double prevents tempo drift over long songs)
-        // ... position tracking ...
-        uint8_t current_tick = 0;
-        uint8_t ticks_per_row = 6; // Standard tracker default
-
-        double sample_accumulator = 0.0;
-        double samples_per_tick = 0.0; // Calculate this: (SampleRate * 60) / (BPM * TPL)
-
-        const SongData* current_song = nullptr;
-
-
-
-        // Channel State (Used for UI and Effect Logic)
-
-        SongStep last_steps[MAX_HW_CHANNELS] = {};
-        bool ui_dirty = false;
-
-    };
 
     uint8_t mShadowRegs[512] = {0}; // register for read
 
@@ -138,6 +139,8 @@ private:
 
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
 
+    std::vector<Instrument> mSoundBank;
+
     // ------ import -------------
     // ------ export -------------
     bool saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate);
@@ -152,9 +155,17 @@ public:
     bool shutDownController();
 
     // ----------  ----------------
-    std::vector<OplInstrument> mSoundBank;
+    // Mutable getter: returns a reference
+    std::vector<Instrument>& getSoundBank() {
+        return mSoundBank;
+    }
+    // Const getter
+    const std::vector<Instrument>& getSoundBank() const {
+        return mSoundBank;
+    }
 
-    OplInstrument* getInstrument( int index ) {
+
+    Instrument* getInstrument( int index ) {
         if (index >= mSoundBank.size())
             return nullptr;
         return &mSoundBank[index];
@@ -200,7 +211,7 @@ public:
 
     void writeChannelRegHW(uint16_t baseReg, uint8_t channel, uint8_t value);
     // void setOperatorRegisters(uint16_t opOffset, const OplInstrument::OpPair::OpParams& op);
-    void setOperatorRegisters(uint16_t bank, uint8_t opOffset, const opl3::OplInstrument::OpPair::OpParams& op);
+    void setOperatorRegisters(uint16_t bank, uint8_t opOffset, const opl3::Instrument::OpPair::OpParams& op);
 
 
     bool playNote(uint8_t softwareChannel, SongStep songStep);

@@ -210,7 +210,9 @@ namespace opl3 {
         EFF_POSITION_JUMP= 0xB, // Bxx: Jump to Pattern
     };
     //--------------------------------------------------------------------------
-    struct OplInstrument {
+    // OplInstrument
+    //--------------------------------------------------------------------------
+    struct Instrument {
         std::string name = "New Instrument";
         bool isFourOp = false;  // OPL3 mode
         bool isDoubleVoice = false; //pseudo 4OP not implemented so far (was the 0x105 stuff is disabled )
@@ -256,7 +258,7 @@ namespace opl3 {
 
         OpPair pairs[2]; // Pair 0 (Ch A), Pair 1 (Ch B - only used if isFourOp is true)
 
-        bool operator==(const OplInstrument& other) const {
+        bool operator==(const Instrument& other) const {
             return name == other.name &&
                    isFourOp == other.isFourOp &&
                    isDoubleVoice == other.isDoubleVoice &&
@@ -276,7 +278,7 @@ namespace opl3 {
          * @param instrument The OPL instrument to modify.
          * @param copyPair1 If true, initializes Pair 1 (Ops 3&4) with values from Pair 0 (Ops 1&2).
          */
-        void setupOP4Mode(OplInstrument& instrument, bool copyPair1) {
+        void setupOP4Mode(Instrument& instrument, bool copyPair1) {
             instrument.isFourOp = true;
 
             if (copyPair1) {
@@ -298,7 +300,7 @@ namespace opl3 {
             } else {
                 // Default "Clean" 4-OP state if not copying
                 // Reset Pair 1 to standard sine waves with a basic envelope
-                instrument.pairs[1] = OplInstrument::OpPair(); // Use default constructor
+                instrument.pairs[1] = Instrument::OpPair(); // Use default constructor
 
                 // Ensure standard OPL3 panning (Center)
                 instrument.pairs[1].panning = 3;
@@ -387,10 +389,12 @@ namespace opl3 {
         }
     };
     //--------------------------------------------------------------------------
+    // Pattern
+    //--------------------------------------------------------------------------
     struct Pattern {
         std::string mName = "New Pattern";
         uint32_t mColor = 0xFFFF0F0F; // ABGR !!!!
-        uint8_t mColCount = SOFTWARE_CHANNEL_COUNT; //FIXME
+        uint8_t mColCount = SOFTWARE_CHANNEL_COUNT;
     protected:
         std::vector<SongStep> mSteps;
 
@@ -398,12 +402,39 @@ namespace opl3 {
 
 
          Pattern() = default;
+
+         //------------------ constructor
+         // Use member initializer list for rowCount
+         // using softwareChannel !!!
+         // WE ALWAYS USE , int softwareChannels = SOFTWARE_CHANNEL_COUNT !!!!
+
+         Pattern(uint16_t rows, uint8_t cols = SOFTWARE_CHANNEL_COUNT) {
+             if (cols < 1 || cols > SOFTWARE_CHANNEL_COUNT)
+                 cols = SOFTWARE_CHANNEL_COUNT;
+
+             mColCount = cols;
+
+
+             mSteps.resize(rows * mColCount);
+
+             // Initialize steps to 'Empty' tracker state
+             for (auto& step : mSteps) {
+                 step.note = NONE_NOTE;           // None
+                 step.instrument = 0;     // Default
+                 step.volume     = MAX_VOLUME + 1; // Max (Tracker Std)
+                 step.panning    = 32;       // Center
+                 step.effectType = 0;
+                 step.effectVal  = 0;
+             }
+         }
+
          //------------------ channelCount
-         uint16_t getChannelCount() const { return SOFTWARE_CHANNEL_COUNT; }
+         uint16_t getColCount() const { return mColCount; }
+         uint16_t getChannelCount() const { return mColCount; }
          //------------------ rowCount
          uint16_t getRowCount() const {
-             if (SOFTWARE_CHANNEL_COUNT == 0) return 0;
-             return static_cast<uint16_t>(mSteps.size() / SOFTWARE_CHANNEL_COUNT);
+             if (mColCount == 0) return 0;
+             return static_cast<uint16_t>(mSteps.size() / mColCount);
          }
          //------------------ setStep
          bool setStep(uint16_t row, uint8_t softwareChannel, SongStep step)
@@ -415,13 +446,13 @@ namespace opl3 {
              }
 
              // Bounds check for Software Channel
-             if (softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
+             if (softwareChannel >= mColCount) {
                  return false;
              }
 
              // Calculate Correct Index
              // Grid: [Row 0: Ch0, Ch1...][Row 1: Ch0, Ch1...]
-             size_t index = (static_cast<size_t>(row) * SOFTWARE_CHANNEL_COUNT) + softwareChannel;
+             size_t index = (static_cast<size_t>(row) * mColCount) + softwareChannel;
 
              //  Final safety check against vector size
              if (index < mSteps.size()) {
@@ -437,25 +468,25 @@ namespace opl3 {
          // CONST version for the Playback Engine (Read-Only)
          const SongStep& getStep(uint16_t row, uint8_t softwareChannel) const
          {
-             if (row >= getRowCount() || softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
+             if (row >= getRowCount() || softwareChannel >= mColCount) {
                  static const SongStep emptyStep; // Static ensures a valid address
                  return emptyStep;
              }
 
-             size_t index = (static_cast<size_t>(row) * SOFTWARE_CHANNEL_COUNT) + softwareChannel;
+             size_t index = (static_cast<size_t>(row) * mColCount) + softwareChannel;
              return mSteps[index];
          }
 
          // MUTABLE version for the Tracker UI (Read-Write)
          SongStep& getStep(uint16_t row, uint8_t softwareChannel)
          {
-             if (row >= getRowCount() || softwareChannel >= SOFTWARE_CHANNEL_COUNT) {
+             if (row >= getRowCount() || softwareChannel >= mColCount) {
                  static SongStep dummyStep;
-                 Log("[error] channel out of bounds! channel: %d max:%d ", softwareChannel, SOFTWARE_CHANNEL_COUNT);
+                 Log("[error] channel out of bounds! channel: %d max:%d ", softwareChannel, mColCount);
                  return dummyStep;
              }
 
-             size_t index = (static_cast<size_t>(row) * SOFTWARE_CHANNEL_COUNT) + softwareChannel;
+             size_t index = (static_cast<size_t>(row) * mColCount) + softwareChannel;
              return mSteps[index];
          }
 
@@ -464,23 +495,6 @@ namespace opl3 {
              return mSteps;
          }
         std::vector<SongStep>& getStepsMutable() { return mSteps; }
-        //------------------ constructor un
-        // Use member initializer list for rowCount
-        // using softwareChannel !!!
-        // WE ALWAYS USE , int softwareChannels = SOFTWARE_CHANNEL_COUNT !!!!
-        Pattern(uint16_t rows) {
-            mSteps.resize(rows * SOFTWARE_CHANNEL_COUNT);
-
-            // Initialize steps to 'Empty' tracker state
-            for (auto& step : mSteps) {
-                step.note = NONE_NOTE;           // None
-                step.instrument = 0;     // Default
-                step.volume     = MAX_VOLUME + 1; // Max (Tracker Std)
-                step.panning    = 32;       // Center
-                step.effectType = 0;
-                step.effectVal  = 0;
-            }
-        }
 
         // ------------------ operator ==
         bool operator==(const Pattern& other) const {
@@ -490,18 +504,23 @@ namespace opl3 {
         }
 
         // -------------- dump ----
-        std::string dumpSteps() const {
+        std::string dump() const {
             // 1. Initial Header
-            std::string result = std::format("Pattern '{}' ({} steps, {} rows)\n",
-                                             mName, mSteps.size(), getRowCount());
+            std::string result = std::format("Pattern '{}' ({} steps, {} rows {} cols)\n",
+                                             mName, mSteps.size(), getRowCount(), getColCount());
+
+            result.append(77,'-');
+            result += "\n";
 
             result += "Row |";
-            for(int c=0; c < SOFTWARE_CHANNEL_COUNT; ++c) result += std::format(" Ch{:02}|", c);
-            result += "\n----|" + std::string(SOFTWARE_CHANNEL_COUNT * 6, '-') + "\n";
+            for(int c=0; c < mColCount; ++c) result += std::format(" Ch{:02}|", c);
+            result += "\n----|" + std::string(mColCount * 6, '-') + "\n";
+
+
 
             for (size_t i = 0; i < mSteps.size(); ++i) {
-                if (i % SOFTWARE_CHANNEL_COUNT == 0) {
-                    result += std::format("{:03} |", i / SOFTWARE_CHANNEL_COUNT);
+                if (i % mColCount == 0) {
+                    result += std::format("{:03} |", i / mColCount);
                 }
 
                 const auto& step = mSteps[i];
@@ -513,13 +532,15 @@ namespace opl3 {
                 } else {
                     result += std::format(" {:>3} |", note);
                 }
-                if ((i + 1) % SOFTWARE_CHANNEL_COUNT == 0) {
+                if ((i + 1) % mColCount == 0) {
                     result += "\n";
                 }
             }
             return result;
         }
-    };
+    }; //Pattern
+    //--------------------------------------------------------------------------
+    // SongData
     //--------------------------------------------------------------------------
     struct SongData {
         std::string title = "New OPL Song";
@@ -529,7 +550,7 @@ namespace opl3 {
         // OPL3 max channels is 18. OPL2 is 9. I use the SOFTWARE_CHANNEL_COUNT = 12 !!!
         static constexpr int CHANNELS = SOFTWARE_CHANNEL_COUNT;
 
-        std::vector<OplInstrument> instruments;
+        std::vector<Instrument> instruments;
         std::vector<Pattern> patterns;
         std::vector<uint8_t> orderList; // The "playlist" of pattern indices
 

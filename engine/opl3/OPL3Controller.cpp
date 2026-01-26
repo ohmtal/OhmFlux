@@ -882,7 +882,7 @@ bool OPL3Controller::playNote(uint8_t softwareChannel, SongStep songStep) {
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
         return false;
 
-    mChannelToNote[softwareChannel] = songStep.note;
+    if (songStep.note < LAST_NOTE) mChannelToNote[softwareChannel] = songStep.note;
     return this->playNoteHW(getHardWareChannel(softwareChannel), songStep);
 }
 //------------------------------------------------------------------------------
@@ -1515,7 +1515,7 @@ void OPL3Controller::playNoteByFNumHW(uint8_t channel, uint16_t fnum, uint8_t oc
 }
 
 //------------------------------------------------------------------------------
-void OPL3Controller::setOperatorRegisters(uint16_t bank, uint8_t opOffset, const opl3::OplInstrument::OpPair::OpParams& op) {
+void OPL3Controller::setOperatorRegisters(uint16_t bank, uint8_t opOffset, const opl3::Instrument::OpPair::OpParams& op) {
     // 1. Calculate parameters
     uint8_t reg20 = (op.multi & 0x0F) |
     (op.ksr   ? 0x10 : 0x00) |

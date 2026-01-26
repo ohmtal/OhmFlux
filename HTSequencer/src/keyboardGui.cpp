@@ -27,6 +27,8 @@ bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
         return false;
 
     PatternEditorState& state = mPatternEditorState;
+
+
     if ( mSettings.InsertMode ) {
         Pattern* lPat = this->getCurrentPattern();
         if (lPat)
@@ -35,14 +37,23 @@ bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
             // i need this when i play cords!
             // FIXME EFFECTS or simple setStep!
 
-            SongStep& tmpStep = lPat->getStep(state.cursorRow, softwareChannel);
+            uint16_t row =  isPlaying() ? getPlayingRow() : state.cursorRow;
+
+            SongStep& tmpStep = lPat->getStep(row, softwareChannel);
 
             dLog("set step row:%d, col:%d, instrument:%d note:%d",
                  state.cursorRow, softwareChannel, step.instrument, step.note);
 
-            // This will now modify the original memory
+
             tmpStep.instrument = step.instrument;
             tmpStep.note = step.note;
+
+
+            //Lol when playing cords this is really funny
+            //FIXME but how ? i can schedule it but which step to take since i
+            //      have it for each channel
+            // moveCursorPosition(mCurrentSong.getStepByChannel(softwareChannel), 0);
+
 
         } else {
             dLog("unable to get current pattern while mInsertMode is active, that can be ok!");

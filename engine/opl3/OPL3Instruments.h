@@ -136,7 +136,7 @@ namespace OPL3InstrumentPresets {
         };
     }
 
-    opl3::OplInstrument  GetMelodicDefault(uint8_t index) {
+    opl3::Instrument  GetMelodicDefault(uint8_t index) {
 
 
         std::array< uint8_t, 24 > data = GetDefaultInstrument(); // Start with your basic Sine template

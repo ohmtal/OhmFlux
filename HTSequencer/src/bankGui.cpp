@@ -80,8 +80,8 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
     }
 
     // CHANGED: Use ImVec2(0, 0) so it fills the Table Column/Sidebar width and height
-    if (ImGui::BeginChild("BC_Box", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
-        std::vector<opl3::OplInstrument>& bank = getMain()->getController()->mSoundBank;
+    if (ImGui::BeginChild("INSTRUMENT_Box", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
+        std::vector<opl3::Instrument>& bank = getMain()->getController()->getSoundBank();
 
         // Use -FLT_MIN to ensure the ListBox fills the entire child area
         if (ImGui::BeginListBox("##InstList", ImVec2(-FLT_MIN, -FLT_MIN))) {
@@ -116,7 +116,7 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
     if (standAlone) ImGui::End();
 }
 //------------------------------------------------------------------------------
-uint8_t* GetValPtr(opl3::OplInstrument::OpPair::OpParams& op, int metaIdx)
+uint8_t* GetValPtr(opl3::Instrument::OpPair::OpParams& op, int metaIdx)
 {
         // Mapping metadata index to struct members
         switch (metaIdx) {
@@ -136,7 +136,7 @@ uint8_t* GetValPtr(opl3::OplInstrument::OpPair::OpParams& op, int metaIdx)
         return nullptr;
 }
 
-void SequencerGui::RenderOpParam(const opl3::ParamMeta& meta, opl3::OplInstrument::OpPair::OpParams& op, int metaIdx) {
+void SequencerGui::RenderOpParam(const opl3::ParamMeta& meta, opl3::Instrument::OpPair::OpParams& op, int metaIdx) {
     uint8_t* val = GetValPtr(op, metaIdx);
     if (!val) return;
 
@@ -204,7 +204,7 @@ void DrawPanningMeter(ImVec2 size, uint8_t panValue) {
 }
 
 //------------------------------------------------------------------------------
-void SequencerGui::DrawOperatorGrid(opl3::OplInstrument::OpPair::OpParams& op) {
+void SequencerGui::DrawOperatorGrid(opl3::Instrument::OpPair::OpParams& op) {
     const auto& metas = OPL_OP_METADATA;
 
     ImGui::PushID(&op);
@@ -401,7 +401,7 @@ void SequencerGui::RenderWaveformSelector(uint8_t& waveVal) {
 }
 
 //------------------------------------------------------------------------------
-void SequencerGui::DrawADSRGraphBezier(ImVec2 size, const opl3::OplInstrument::OpPair::OpParams& op, int virtualNote, float pulseVol) {
+void SequencerGui::DrawADSRGraphBezier(ImVec2 size, const opl3::Instrument::OpPair::OpParams& op, int virtualNote, float pulseVol) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     ImVec2 startPos = ImGui::GetCursorScreenPos();
 
@@ -476,7 +476,7 @@ void SequencerGui::DrawADSRGraphBezier(ImVec2 size, const opl3::OplInstrument::O
 
 void SequencerGui::RenderInstrumentEditorUI(bool standAlone) {
 
-    if (getMain()->getController()->mSoundBank.size() < mCurrentInstrumentId+1)
+    if (getMain()->getController()->getSoundBank().size() < mCurrentInstrumentId+1)
     {
         Log("[error] Current Instrument out of bounds!");
         mCurrentInstrumentId = 0;
@@ -490,7 +490,7 @@ void SequencerGui::RenderInstrumentEditorUI(bool standAlone) {
     }
 
 
-    OplInstrument& inst = getMain()->getController()->mSoundBank[mCurrentInstrumentId];
+    Instrument& inst = getMain()->getController()->getSoundBank()[mCurrentInstrumentId];
 
     ImGui::PushID("OPL_Editor");
 

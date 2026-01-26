@@ -8,7 +8,14 @@
 
 //------------------------------------------------------------------------------
 // TODO:
-// [ ] Pattern with mColCount instead of fixed for copy paste / template
+// [ ] table drives me crazy lol >> look at IMGui demo of AssetBrowser !!
+// [X] Pattern with mColCount instead of fixed for copy paste / template
+// [X] instrument select combo => Widget_InstrumentCombo
+// [ ] Bank editor
+//   [ ] save
+//   [ ] load
+//   [ ] add
+//   [ ] replace
 // [X] New Song add a default Pattern
 // [ ] OPL3Controller => play pattern WITH active channel only  -> ticktrigger i guess
 // [ ] live playing << MUST have
@@ -38,7 +45,8 @@
 // [ ] ctrl + ins insert a row (see also InsertRow)
 // -------- FUTURE
 // [ ] OrderList Editor
-
+//------------------------------------------------------------------------------
+constexpr float CellHeight = 20.f;
 
 //------------------------------------------------------------------------------
 void SequencerGui::DrawExportStatus() {
@@ -87,8 +95,11 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     DrawExportStatus();
 
     if (standAlone) {
-        ImGui::SetNextWindowSize(ImVec2(1100, 600), ImGuiCond_FirstUseEver);
-        if (!ImGui::Begin("Sequencer")) { ImGui::End(); return; }
+        // ImGui::SetNextWindowSize(ImVec2(1100, 600), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 300.0f), ImVec2(FLT_MAX, FLT_MAX));
+        //NOTE added flags (table madness ) ==
+        if (!ImGui::Begin("Sequencer")) //, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse))
+            { ImGui::End(); return; }
     }
 
 
@@ -143,22 +154,6 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     {
         newSong();
     }
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(6.f, 0.f));
-    ImGui::SameLine();
-    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-    ImGui::SameLine();
-    ImGui::Dummy(ImVec2(6.f, 0.f));
-    ImGui::SameLine();
-    static bool sShowNewPatternPopup = false;
-    if (ImGui::Button("Pattern +",lButtonSize))
-    {
-        sShowNewPatternPopup = true;
-        ImGui::OpenPopup("New Pattern Configuration");
-    }
-    if (DrawNewPatternModal(mCurrentSong, mNewPatternSettings)) {
-        sShowNewPatternPopup = "false";
-    }
 
 
     ImGui::SameLine();
@@ -201,29 +196,69 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     //     mCurrentSong.ticksPerRow = static_cast<uint8_t>(std::clamp(tempSpeed, 1, 32));
     // }
 
+
+
     ImGui::SameLine();
     ImGui::Checkbox("Insert Mode",&mSettings.InsertMode);
 
     ImGui::SameLine();
-    ImGui::Checkbox("Enhanved Step View",&mSettings.EnhancedStepView);
+    ImGui::Checkbox("E.View",&mSettings.EnhancedStepView);
+
+    ImGui::SameLine();
+    ImGui::Text("ROW:%d, COL:%d, currentChannel:%d", mPatternEditorState.cursorRow, mPatternEditorState.cursorCol, getCurrentChannel());
+    // if (isPlaying())
+    {
+        std::string lChannelToNoteStates = "";
+        for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
+            lChannelToNoteStates += std::format(" {:03}", getMain()->getController()->mChannelToNote[i]);
+        // ImGui::SameLine();
+        const OPL3Controller::SequencerState& lSeqState = getMain()->getController()->getSequencerState();
+        ImGui::TextColored(ImColor4F(cl_AcidGreen),
+                "SEQ: seq:%d row:%d ChannelNoteStates: %s"
+                ,lSeqState.orderIdx
+                ,lSeqState.rowIdx
+                ,lChannelToNoteStates.c_str()
+                );
+    }
 
 //
     // ImGui::Dummy(ImVec2(0.f, 5.f)); ImGui::Separator();
 
+    DrawPatternSelector(mCurrentSong, mPatternEditorState);
 
-    if (ImGui::BeginChild("BC_Box", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
-        ImGui::AlignTextToFramePadding();
-
-        DrawPatternSelector(mCurrentSong, mPatternEditorState);
+    // ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse
+    if (ImGui::BeginChild("PATTERN_Box",
+        ImVec2(0, -ImGui::GetTextLineHeightWithSpacing()), //ImVec2(0, 0),
+        ImGuiChildFlags_Borders,
+        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+        // ImGui::AlignTextToFramePadding();
         if (mPatternEditorState.currentPatternIdx >= 0) {
+
+
+            // ~~~~~~~~~ scroll attempt 1001 ~~~~~~~~~~~~~~+
+            // int lScrolltoRow = isPlaying() ? getPlayingRow() : mPatternEditorState.cursorRow;
+            // bool lDoScroll =  isPlaying() || mPatternEditorState.scrollToSelected;
+            // if (lDoScroll) {
+            //     // Use GetContentRegionAvail() to get the exact inner visible height
+            //     float visibleHeight = ImGui::GetContentRegionAvail().y;
+            //
+            //     // Formula: (Target Row * Height) - (Half of Visible Area) + (Half of Item Height)
+            //     float scrollY = (lScrolltoRow * CellHeight)
+            //     - (visibleHeight * 0.5f)
+            //     + (CellHeight * 0.5f);
+            //
+            //     ImGui::SetScrollY(scrollY);
+            //     mPatternEditorState.scrollToSelected = false;
+            // }
+            //
+
+            // <<< scroll
+
             Pattern* lCurrentPattern = &mCurrentSong.patterns[mPatternEditorState.currentPatternIdx];
-
             // Apply pattern-specific color to the editor background if desired
-            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImGui::ColorConvertU32ToFloat4(lCurrentPattern->mColor));
-
+            // ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImGui::ColorConvertU32ToFloat4(lCurrentPattern->mColor));
             DrawPatternEditor(*lCurrentPattern, mPatternEditorState);
-
-            ImGui::PopStyleColor();
+            // ImGui::PopStyleColor();
         }
 
     }
@@ -236,122 +271,257 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void SequencerGui::DrawPatternEditor(opl3::Pattern& pattern, PatternEditorState& state) {
-    const int numRows = (int)pattern.getSteps().size() / opl3::SOFTWARE_CHANNEL_COUNT;
+    const int numRows = (int)pattern.getRowCount();
+
 
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()) {
         ImGui::SetKeyboardFocusHere();
     }
 
-    // Style the table for a tight tracker look
+    // Style
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
+    // NOTE: IMPORTANT Push transparent colors to hide the highlight
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_NavHighlight, ImVec4(0, 0, 0, 0));
 
-    static ImGuiTableFlags flags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH |
-    ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg /*| ImGuiTableFlags_Resizable*/; //NOTE: Resizable ? or not
+    static ImGuiTableFlags flags =
+                ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH
+                | ImGuiTableFlags_ScrollY  | ImGuiTableFlags_ScrollX
+                | ImGuiTableFlags_RowBg
+                /*| ImGuiTableFlags_Resizable*/ //NOTE: Resizable ? or not
+                ;
 
-    if (ImGui::BeginTable("PatternGrid", opl3::SOFTWARE_CHANNEL_COUNT + 1, flags, ImVec2(0, 600))) {
+
+
+    int lChannelCount = opl3::SOFTWARE_CHANNEL_COUNT;
+    int lColCount =  lChannelCount + 1;
+
+
+    if (ImGui::BeginTable("PatternTable", lColCount, flags, ImVec2(0, 0))) {
 
         // Setup Row Index Column
         ImGui::TableSetupScrollFreeze(0, 1); // Freeze header row
         ImGui::TableSetupColumn("##Row", ImGuiTableColumnFlags_WidthFixed, 35.0f);
 
-        // Setup Channel Columns
-        for (int i = 0; i < opl3::SOFTWARE_CHANNEL_COUNT; i++) {
-            char name[16];
-            if (i < 6) {
-                snprintf(name, sizeof(name), "CH %02d (4OP)", i + 1);
-            } else {
-                snprintf(name, sizeof(name), "CH %02d (2OP)", i + 1);
-            }
+
+        for (int col = 0; col < lChannelCount; col++) {
+
+            char tmpbuf[128];
+            int lIdx = mCurrentSong.channelInstrument[col];
+
+            snprintf(tmpbuf,sizeof(tmpbuf)
+                    , "[%d]%s##%d"
+                    , col
+                    , getMain()->getController()->getInstrumentName(lIdx).c_str()
+                    , col
+                    );
+
+
+            // if (col < 6) {
+            //     snprintf(name, sizeof(name), "[%02d]##channel", col + 1);
+            // } else {
+            //     snprintf(name, sizeof(name), "[%02d]##channel", col + 1);
+            // }
 
             if ( mSettings.EnhancedStepView )
-                ImGui::TableSetupColumn(name, ImGuiTableColumnFlags_WidthFixed, 120.0f);
+                ImGui::TableSetupColumn(tmpbuf, ImGuiTableColumnFlags_WidthFixed, 120.0f);
             else
-                ImGui::TableSetupColumn(name, ImGuiTableColumnFlags_WidthFixed, 50.0f);
+                ImGui::TableSetupColumn(tmpbuf, ImGuiTableColumnFlags_WidthFixed, 50.0f);
 
         }
-        ImGui::TableHeadersRow();
+        // ImGui::TableHeadersRow();
+        // ------------- custom draw header
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        int channel = 0;
+        for (int col = 0; col <= lChannelCount; col++) {
+            // Maybe we need the top left too
 
+
+            channel = col -1 ;
+            if (!ImGui::TableSetColumnIndex(col)) continue;
+
+            static std::string lColCaption;
+            lColCaption = ImGui::TableGetColumnName(col);
+            // TODO header states
+            // ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Lime));
+            // ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Gray));
+            ImGui::TableHeader(lColCaption.c_str());
+            // ImGui::PopStyleColor();
+
+            // --------------- Header Popup
+            if (channel >= 0)
+            {
+                if (ImGui::BeginPopupContextItem())
+                {
+                    ImGui::TextColored(ImColor4F(cl_Crimson), "Channel %d", channel + 1);
+                    ImGui::Separator();
+                    if (channel < 6) {
+                        ImGui::TextColored(ImColor4F(cl_Blue), "Four Operator channel");
+                    } else {
+                        ImGui::TextColored(ImColor4F(cl_Yellow), "Two Operator channel");
+                    }
+
+                    // instrument
+                    ImGui::Text("Instrument:");
+                    ImGui::SetNextItemWidth(140.0f); // Often needed as menus are narrow by default
+                    int newInst = Widget_InstrumentCombo(mCurrentSong.channelInstrument[channel], getMain()->getController()->getSoundBank() );
+                    if ( newInst >= 0)
+                    {
+                        mCurrentSong.channelStep[channel] = newInst;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("U")) {
+                        //FIXME add function to update all Step!
+                        Log("[warning] update steps with new instrument not implemented");
+                    }
+
+                    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Update all Steps with this instrument");
+
+
+
+                    ImGui::Separator();
+
+                    // Step ..
+                    int lStep = mCurrentSong.channelStep[channel];
+                    ImGui::Text("Step:");
+                    ImGui::SetNextItemWidth(100.0f); // Often needed as menus are narrow by default
+                    if (ImGui::InputInt("##step", &lStep)) {
+                        lStep = std::clamp(lStep, 0, 127);
+                        mCurrentSong.channelStep[channel] = lStep;
+                    }
+                    //<<< Step
+
+                    ImGui::Separator();
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 60) * 0.5f);
+                    if (ImGui::Button("Close", ImVec2(60, 0))) { ImGui::CloseCurrentPopup(); }
+
+                    //-----
+                    ImGui::EndPopup();
+                }
+                // --------------- Header Popup
+            } // channel >= 0
+        } // Header stuff
+
+        //--------------------- TABLE CONTENT ------------------------------
         // High-performance clipping
-        ImGuiListClipper clipper;
-        clipper.Begin(numRows);
 
-        //FIXME  only if request scroll  add something like state.ScrollToSelected
-        // clipper.IncludeItemByIndex(state.cursorRow);
+        int lScrolltoRow = isPlaying() ? getPlayingRow() : state.cursorRow;
+        bool lDoScroll =  isPlaying() || state.scrollToSelected;
+
+        ImGuiListClipper clipper;
+        clipper.Begin(numRows, CellHeight);
+
+        // NOTE: Version ... not soo bad but bad
+        if (lDoScroll) {
+            clipper.IncludeItemByIndex(lScrolltoRow); // NOTE: scrolling
+            state.scrollToSelected = false;
+        }
 
         while (clipper.Step()) {
 
-            for (int r = clipper.DisplayStart; r < clipper.DisplayEnd; r++) {
-                ImGui::TableNextRow();
+            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
 
-                // if (r == state.cursorRow /*&& state.cursorRow > clipper.DisplayEnd - 3*/) //
-                //     ImGui::SetScrollHereY(0.5f);
+                ImGui::TableNextRow(ImGuiTableRowFlags_None, CellHeight);
+
+                // ~~~~~~~~~~~ scrolling madness ~~~~~~~~~~~~~~~~~~~
+                // NOTE: Version ... not soo bad but bad
+                if ( lDoScroll && lScrolltoRow > clipper.DisplayEnd - 3 )
+                {
+                    ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterY);
+                    //ImGui::SetScrollHereY(0.5f);
+                }
+
+                // if ( lScrolltoRow > clipper.DisplayEnd - 3 )
+                // {
+                //     ImGui::SetScrollY(CellHeight * 5);
+                //
+                // }
+
+
+
+
+                ImGui::PushID(row);
 
                 // Column 0: Row Number
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextDisabled("%03d", r);
+                if ( isPlaying() && getPlayingRow() == row )
+                {
+                   ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Yellow));
+                   ImGui::TextColored(Color4FIm(cl_Black), "%03d", row);
+                } else {
+                    ImGui::TextDisabled("%03d", row);
+                }
 
                 // Columns 1-12: Channel Steps
-                for (int c = 0; c < opl3::SOFTWARE_CHANNEL_COUNT; c++) {
-                    ImGui::TableSetColumnIndex(c + 1);
+                for (int col = 0; col < opl3::SOFTWARE_CHANNEL_COUNT; col++) {
+                    ImGui::TableSetColumnIndex(col + 1);
+                    SongStep& step = pattern.getStep(row, col);
+                    ImGui::PushID(row * opl3::SOFTWARE_CHANNEL_COUNT + col);
+                    // Pass current row/column and state to the cell renderer
+                    bool isCursorPos = (state.cursorRow == row && state.cursorCol == col);
+                    RenderStepCell(step, isCursorPos, row, col, state);
 
-                    // on OP channels :
-                    // if (c < 6) {
-                    //     ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImVec4(0.2f, 0.2f, 0.4f, 0.3f)));
+                    // LOL ....
+                    // if ( lDoScroll && col == state.cursorCol )
+                    // {
+                    //     ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleEdgeX);
+                    //
                     // }
 
 
-                    SongStep& step = pattern.getStep(r, c);
-
-                    ImGui::PushID(r * opl3::SOFTWARE_CHANNEL_COUNT + c);
-
-                    // Pass current row/column and state to the cell renderer
-                    bool isCursorPos = (state.cursorRow == r && state.cursorCol == c);
-                    RenderStepCell(step, isCursorPos, r, c, state);
-
                     ImGui::PopID();
                 } //columns
+                // -----------
 
 
-            }
+                ImGui::PopID(); //row
 
+
+            } // for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) ...
         } //while
         ImGui::EndTable();
 
+
+
         if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) {
-            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))    state.cursorRow = std::max(0, state.cursorRow - 1);
-            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))  state.cursorRow = std::min((int)pattern.getSteps().size()/12 - 1, state.cursorRow + 1);
-            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  state.cursorCol = std::max(0, state.cursorCol - 1);
-            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) state.cursorCol = std::min(opl3::SOFTWARE_CHANNEL_COUNT - 1, state.cursorCol + 1);
+            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))    moveCursorPosition(-1, 0);
+            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))  moveCursorPosition( 1, 0);
+            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  moveCursorPosition( 0,-1);
+            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) moveCursorPosition( 0, 1);
+            if (ImGui::IsKeyPressed(ImGuiKey_PageUp))     moveCursorPosition(-16, 0);
+            if (ImGui::IsKeyPressed(ImGuiKey_PageDown))   moveCursorPosition( 16, 0);
+            if (ImGui::IsKeyPressed(ImGuiKey_Home))       moveCursorPosition(-10000, 0);
+            if (ImGui::IsKeyPressed(ImGuiKey_End))        moveCursorPosition( 10000, 0);
 
             if ( ImGui::IsKeyPressed(ImGuiKey_Space)) pattern.getStep(state.cursorRow, state.cursorCol).note = opl3::STOP_NOTE;
-
             // //FIXME delete selected func
             if ( ImGui::IsKeyPressed(ImGuiKey_Delete)) pattern.getStep(state.cursorRow, state.cursorCol).init();
 
-            if (ImGui::IsKeyPressed(ImGuiKey_PageUp)) state.cursorRow =std::max(0, state.cursorRow - 16);
-            if (ImGui::IsKeyPressed(ImGuiKey_PageDown)) state.cursorRow = std::min((int)pattern.getSteps().size()/12 - 1, state.cursorRow + 16);
-            if (ImGui::IsKeyPressed(ImGuiKey_Home)) state.cursorRow = 0;
-            if (ImGui::IsKeyPressed(ImGuiKey_End)) state.cursorRow = (int)pattern.getSteps().size()/12 - 1;
 
         } // is focused
 
-    }
+    } //PatternTable
+    ImGui::PopStyleColor(4);
     ImGui::PopStyleVar();
 }
 //------------------------------------------------------------------------------
+void SequencerGui::moveCursorPosition(int rowAdd, int colAdd) {
+    PatternEditorState& state = mPatternEditorState;
+    setCursorPosition(state.cursorRow + rowAdd, state.cursorCol+colAdd);
+}
 void SequencerGui::setCursorPosition(int row, int col) {
     PatternEditorState& state = mPatternEditorState;
     Pattern* pattern = getCurrentPattern();
     if (!pattern) return;
 
-    row = std::min( (int) pattern->getSteps().size()/SOFTWARE_CHANNEL_COUNT - 1, row);
-    row = std::max(0, state.cursorRow - 1);
-
-    col = std::min( SOFTWARE_CHANNEL_COUNT - 1, col);
-    col = std::max( 0 , col);
+    row = std::clamp(row, 0, pattern->getRowCount() -1 );
+    col = std::clamp(col, 0, pattern->getColCount() -1 );
 
     if ( row == state.cursorRow && col == state.cursorCol )
         return ;
+
 
     state.cursorRow = row;
     state.cursorCol = col;
@@ -392,8 +562,10 @@ void SequencerGui::RenderStepCell(opl3::SongStep& step, bool isSelected, int r, 
 
 
     // Highlight if this is the active selection/cursor
-    if (isSelected && !state.scrollToSelected) {
-        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_HeaderActive));
+    if (isSelected /*&& !state.scrollToSelected*/) {
+        // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_HeaderActive));
+        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Red));
+
     }
 
     // 3. Make the cell clickable to set the cursor
@@ -412,13 +584,23 @@ void SequencerGui::RenderStepCell(opl3::SongStep& step, bool isSelected, int r, 
 //------------------------------------------------------------------------------
 void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState& state) {
 
+    static bool sShowNewPatternPopup = false;
+    if (ImGui::SmallButton("[+]"))
+    {
+        sShowNewPatternPopup = true;
+        ImGui::OpenPopup("New Pattern Configuration");
+    }
+    if (DrawNewPatternModal(mCurrentSong, mNewPatternSettings)) {
+        sShowNewPatternPopup = "false";
+    }
+    ImGui::SameLine();
+
 
     if (song.patterns.empty()) {
         ImGui::Text("No patterns created.");
         state.currentPatternIdx = -1;
         return;
     }
-
 
     if (state.currentPatternIdx < 0) state.currentPatternIdx = 0;
     else
@@ -450,7 +632,7 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
                 char popupId[32];
                 snprintf(popupId, sizeof(popupId), "TabCtx%d", i);
                 if (ImGui::BeginPopupContextItem(popupId)) {
-                    ImGui::TextColored(ImColor4F(cl_DarkGray), "Pattern settings");
+                    ImGui::TextColored(ImColor4F(cl_Emerald), "Pattern settings");
                     char patName[64];
                     strncpy(patName, p.mName.c_str(), sizeof(patName));
                     ImGui::TextDisabled("Pattern Name");
@@ -463,6 +645,10 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
                     if (ImGui::ColorEdit4("##Pattern Color", (float*)&tempCol)) {
                         p.mColor = ImGui::ColorConvertFloat4ToU32(tempCol);
                     }
+
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 60) * 0.5f);
+                    if (ImGui::Button("Close", ImVec2(60, 0))) { ImGui::CloseCurrentPopup(); }
+
                     ImGui::EndPopup();
                 }
 

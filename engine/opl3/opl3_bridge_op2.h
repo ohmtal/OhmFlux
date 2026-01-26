@@ -17,7 +17,7 @@ namespace opl3_bridge_op2 {
 
     //--------------------- IMPORT -----------------------------
     // // for 44KHz
-    inline void FillOpParams(OplInstrument::OpPair::OpParams& op, const uint8_t* data, int offset) {
+    inline void FillOpParams(Instrument::OpPair::OpParams& op, const uint8_t* data, int offset) {
 
         //--- 0
         op.am      = (data[offset + 0] >> 7) & 0x01;
@@ -43,7 +43,7 @@ namespace opl3_bridge_op2 {
     }
 
 
-    inline bool importBank(const std::string& filename, std::vector<OplInstrument>& bank) {
+    inline bool importBank(const std::string& filename, std::vector<Instrument>& bank) {
         std::ifstream file(filename, std::ios::binary);
         if (!file) return false;
 
@@ -55,7 +55,7 @@ namespace opl3_bridge_op2 {
 
         bank.clear();
         for (int i = 0; i < 175; ++i) {
-            OplInstrument inst;
+            Instrument inst;
             uint16_t flags;
             uint8_t fineTune, fixedNote;
             uint8_t voice1[16], voice2[16];

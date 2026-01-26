@@ -95,7 +95,8 @@ private:
         int currentPatternIdx = 0;
         int cursorRow = 0;
         int cursorCol = 0;
-        bool scrollToSelected;
+        bool scrollToSelected = false;
+        bool following = false;
 
         // Selection (start and end points for range-based operations)
         int selectStartRow = -1, selectStartCol = -1;
@@ -159,14 +160,14 @@ private:
     void RenderInstrumentListUI(bool standAlone = false);
 
     void RenderInstrumentEditorUI(bool standAlone = false);
-    void RenderOpParam(const ParamMeta& meta, OplInstrument::OpPair::OpParams& op, int metaIdx);
-    void DrawOperatorGrid(OplInstrument::OpPair::OpParams& op);
+    void RenderOpParam(const ParamMeta& meta, Instrument::OpPair::OpParams& op, int metaIdx);
+    void DrawOperatorGrid(Instrument::OpPair::OpParams& op);
     void DrawWaveformIcon(ImDrawList* drawList, ImVec2 pos, int waveIdx, float size, ImU32 color);
     void RenderWaveformSelector(uint8_t& waveVal);
-    void DrawADSRGraphBezier(ImVec2 size, const opl3::OplInstrument::OpPair::OpParams& op, int virtualNote = 60, float pulseVol = 0.f);
+    void DrawADSRGraphBezier(ImVec2 size, const opl3::Instrument::OpPair::OpParams& op, int virtualNote = 60, float pulseVol = 0.f);
 
     // fancy 4OP overlays
-    void DrawAlgorithmHoverFunc(const OplInstrument inst);
+    void DrawAlgorithmHoverFunc(const Instrument inst);
     void Draw4OP_Algorithm0Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
     void Draw4OP_Algorithm1Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
     void Draw4OP_Algorithm3Overlay(float nodeSize = 35.0f, float spacing = 20.0f);
@@ -224,9 +225,49 @@ public:
     void DrawPatternSelector(SongData& song, PatternEditorState& state);
     void RenderStepCell(SongStep& step, bool isSelected, int r, int c, PatternEditorState& state);
     void setCursorPosition(int row, int col);
+    void moveCursorPosition(int rowAdd, int colAdd);
     void DrawPatternEditor(Pattern& pattern, PatternEditorState& state);
     SongData CreateTempSelection(const Pattern& activePattern, const PatternEditorState& state);
 
+    bool isPlaying();
+    uint16_t getPlayingRow();
+    uint16_t getPlayingSequenceIndex();
+
+
+    /**
+     * Widget_InstrumentCombo
+     * return -1 if no instrument is selected
+     */
+    int Widget_InstrumentCombo(int currentIdx, const std::vector<opl3::Instrument>& bank) {
+        int result = -1; // Default: no change
+
+        // 1. Determine the text to show in the collapsed box
+        const char* previewText = (currentIdx >= 0 && currentIdx < (int)bank.size())
+        ? bank[currentIdx].name.c_str()
+        : "Select Instrument...";
+
+        // 2. Start the Combo
+        if (ImGui::BeginCombo("##instrunmentCombo", previewText)) {
+            for (int i = 0; i < (int)bank.size(); i++) {
+                const bool isSelected = (currentIdx == i);
+
+                // Use ## suffix to ensure unique IDs even if names are identical
+                std::string itemLabel = bank[i].name + "##" + std::to_string(i);
+
+                if (ImGui::Selectable(itemLabel.c_str(), isSelected)) {
+                    result = i; // Selection occurred!
+                }
+
+                // Set initial focus to the current selection when opening
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        return result;
+    }
 
 
     //--------------------------------------------------------------------------

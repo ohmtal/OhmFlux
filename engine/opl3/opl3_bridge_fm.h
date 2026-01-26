@@ -29,8 +29,8 @@ namespace opl3_bridge_fm {
     }
 
     //--------------------------------------------------------------------------
-    inline OplInstrument toInstrument(const std::string name, const std::array<uint8_t, 24>& instrumentData) {
-        OplInstrument newIns;
+    inline Instrument toInstrument(const std::string name, const std::array<uint8_t, 24>& instrumentData) {
+        Instrument newIns;
         newIns.name = name;
         newIns.isFourOp = false; // Old format is always 2-Op
 
@@ -71,7 +71,7 @@ namespace opl3_bridge_fm {
         return newIns;
     }
     //--------------------------------------------------------------------------
-    inline bool loadInstrument(const std::string& filename,  OplInstrument& inst, std::string instrumentName = "") {
+    inline bool loadInstrument(const std::string& filename,  Instrument& inst, std::string instrumentName = "") {
 
         std::array<uint8_t, 24> instrumentData;
         if (!loadInstrumentData(filename,instrumentData))

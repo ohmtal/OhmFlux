@@ -46,7 +46,7 @@ void SequencerGui::ShowFileManager(){
             if (!g_FileDialog.mCancelPressed)
             {
                 if ( g_FileDialog.selectedExt == ".fms3" ) {
-                    mCurrentSong.instruments = getMain()->getController()->mSoundBank;
+                    mCurrentSong.instruments = getMain()->getController()->getSoundBank();
                     if (opl3_bridge_fms3::saveSong(g_FileDialog.selectedFile, mCurrentSong)) {
                         Log("Song saved to g_FileDialog.selectedFile.");
                     } else {
@@ -66,27 +66,27 @@ void SequencerGui::ShowFileManager(){
 
             if ( g_FileDialog.selectedExt == ".op2" )
             {
-                if (!opl3_bridge_op2::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
+                if (!opl3_bridge_op2::importBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank()) )
                     Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
                 else
-                    Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
+                    Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size() );
             }
             else
             if ( g_FileDialog.selectedExt == ".wopl" )
             {
-                if (!opl3_bridge_wopl::importBank(g_FileDialog.selectedFile, getMain()->getController()->mSoundBank) )
+                if (!opl3_bridge_wopl::importBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank()) )
                     Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
                 else
-                    Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size() );
+                    Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size() );
             }
             else
             if ( g_FileDialog.selectedExt == ".sbi" )
             {
-                OplInstrument newIns;
+                Instrument newIns;
                 if (opl3_bridge_sbi::loadInstrument(g_FileDialog.selectedFile, newIns))
                 {
-                    getMain()->getController()->mSoundBank.push_back(newIns);
-                    Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
+                    getMain()->getController()->getSoundBank().push_back(newIns);
+                    Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size()-1);
                 }  else {
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
                 }
@@ -95,12 +95,12 @@ void SequencerGui::ShowFileManager(){
             if ( g_FileDialog.selectedExt == ".fmi" ){
                 std::array<uint8_t, 24> instrumentData;
                 if (opl3_bridge_fm::loadInstrumentData(g_FileDialog.selectedFile,instrumentData)) {
-                    OplInstrument newIns=opl3_bridge_fm::toInstrument(
+                    Instrument newIns=opl3_bridge_fm::toInstrument(
                         std::string( fluxStr::extractFilename(g_FileDialog.selectedFile) ),
                         instrumentData
                     );
-                    getMain()->getController()->mSoundBank.push_back(newIns);
-                    Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
+                    getMain()->getController()->getSoundBank().push_back(newIns);
+                    Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size()-1);
 
                 } else {
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
@@ -115,7 +115,7 @@ void SequencerGui::ShowFileManager(){
             if ( g_FileDialog.selectedExt == ".fms" ) {
                 getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, mCurrentSong)) {
-                    getMain()->getController()->mSoundBank = mCurrentSong.instruments;
+                    getMain()->getController()->getSoundBank() = mCurrentSong.instruments;
                     Log("Loaded legacy fms Song:  %s", g_FileDialog.selectedFile.c_str());
 
                 } else {
@@ -126,7 +126,7 @@ void SequencerGui::ShowFileManager(){
             if ( g_FileDialog.selectedExt == ".fms3" ) {
                 getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, mCurrentSong)) {
-                    getMain()->getController()->mSoundBank = mCurrentSong.instruments;
+                    getMain()->getController()->getSoundBank() = mCurrentSong.instruments;
                     Log("Loaded Song:  %s", g_FileDialog.selectedFile.c_str());
 
                 } else {
@@ -465,10 +465,10 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "list")
     {
-        for (int i = 0; i < getMain()->getController()->mSoundBank.size(); i++)
+        for (int i = 0; i < getMain()->getController()->getSoundBank().size(); i++)
         {
             // Access individual instruments
-            OplInstrument instrument = getMain()->getController()->mSoundBank[i];
+            Instrument instrument = getMain()->getController()->getSoundBank()[i];
             Log("#%d [%d] %s",i,instrument.isFourOp, instrument.name.c_str() );
         }
     }
@@ -493,7 +493,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         getMain()->getController()->playSong(mCurrentSong);
     }
     else
-    if (cmd == "dump")
+    if (cmd == "insdump")
     {
         uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
         Log ("Using Instrument %d",instrument);
@@ -649,7 +649,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     if (cmd == "load")
     {
         std::string filename = "assets/op2/GENMIDI.op2";
-        if (!opl3_bridge_op2::importBank(filename, getMain()->getController()->mSoundBank) )
+        if (!opl3_bridge_op2::importBank(filename, getMain()->getController()->getSoundBank()) )
             Log("[error] Failed to load %s", filename.c_str());
         else
             Log("Loaded %s", filename.c_str());
@@ -676,14 +676,14 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     if (cmd == "t")
     {
         std::string filename = "assets/sbi/tumubar-bell-dmx.sbi";
-        OplInstrument newIns;
+        Instrument newIns;
         if (opl3_bridge_sbi::loadInstrument(filename,newIns)) {
-                getMain()->getController()->mSoundBank.push_back(newIns);
-                Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->mSoundBank.size()-1);
+                getMain()->getController()->getSoundBank().push_back(newIns);
+                Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size()-1);
 
                 SongStep step;
                 step.note = 48;
-                step.instrument = getMain()->getController()->mSoundBank.size()-1;
+                step.instrument = getMain()->getController()->getSoundBank().size()-1;
                 step.volume = 63;
                 getMain()->getController()->playNoteHW(0,step);
 
@@ -695,10 +695,10 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     if (cmd == "l")
     {
         std::string filename = "assets/wopl/fatman-4op.wopl";
-        if (!opl3_bridge_wopl::importBank(filename, getMain()->getController()->mSoundBank) )
+        if (!opl3_bridge_wopl::importBank(filename, getMain()->getController()->getSoundBank()) )
             Log("[error] Failed to load %s",filename.c_str() );
         else
-            Log("Soundbank %s loaded! %zu instruments",filename.c_str(), getMain()->getController()->mSoundBank.size() );
+            Log("Soundbank %s loaded! %zu instruments",filename.c_str(), getMain()->getController()->getSoundBank().size() );
     }
     else
     if (cmd == "savesong")
@@ -713,7 +713,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         }
 
         // sync instruments from soundBank!
-        mCurrentSong.instruments = getMain()->getController()->mSoundBank;
+        mCurrentSong.instruments = getMain()->getController()->getSoundBank();
 
         LogFMT("\tPattern: {}\n\tInstruments: {}\n\tSequences: {}\n",
                mCurrentSong.patterns.size(), mCurrentSong.instruments.size(),
@@ -750,7 +750,7 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
         }
         // sync instruments to soundBank!
-        getMain()->getController()->mSoundBank =  mCurrentSong.instruments;
+        getMain()->getController()->getSoundBank() =  mCurrentSong.instruments;
 
     }
     else
@@ -770,10 +770,15 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
         getMain()->getController()->stopSong(true);
     }
     else
-    if (cmd == "dumpsteps") {
+    if (cmd == "patdump") {
         if (!mCurrentSong.patterns.empty()) {
             // 1. Get the full multi-line string
-            std::string fullDump = mCurrentSong.patterns[0].dumpSteps();
+            Pattern* pat = getCurrentPattern();
+            if (!pat) {
+                Log("[error] no pattern found !! ");
+                return ;
+            }
+            std::string fullDump = pat->dump();
 
             // 2. Wrap it in a stream for line-by-line processing
             std::istringstream iss(fullDump);

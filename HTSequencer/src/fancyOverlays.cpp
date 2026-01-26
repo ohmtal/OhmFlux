@@ -7,7 +7,7 @@
 #include <cctype>
 
 //------------------------------------------------------------------------------
-void SequencerGui::DrawAlgorithmHoverFunc(const opl3::OplInstrument inst){
+void SequencerGui::DrawAlgorithmHoverFunc(const opl3::Instrument inst){
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) {
         if (ImGui::BeginTooltip())
         {
