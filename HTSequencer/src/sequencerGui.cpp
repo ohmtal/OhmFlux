@@ -37,7 +37,6 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     getMain()->getGui()->mConsole.AddLog("%s", message);
 }
 
-
 //------------------------------------------------------------------------------
 void SequencerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
@@ -113,6 +112,7 @@ void SequencerGui::ShowFileManager(){
             }
             else
             if ( g_FileDialog.selectedExt == ".fms" ) {
+                getMain()->getController()->stopSong();
                 getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, mCurrentSong)) {
                     getMain()->getController()->getSoundBank() = mCurrentSong.instruments;
@@ -124,6 +124,7 @@ void SequencerGui::ShowFileManager(){
             }
             else
             if ( g_FileDialog.selectedExt == ".fms3" ) {
+                getMain()->getController()->stopSong();
                 getMain()->getController()->silenceAll(false);
                 if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, mCurrentSong)) {
                     getMain()->getController()->getSoundBank() = mCurrentSong.instruments;
@@ -177,11 +178,17 @@ bool SequencerGui::Initialize()
     controller->getDSPEquilzer9Band()->setEnabled(SettingsManager().get("DSP_EQ9BAND_ON", true));
 
 
+
     controller->getDSPBitCrusher()->setSettings(SettingsManager().get<DSP::BitcrusherSettings>("DSP_BitCrusher", DSP::AMIGA_BITCRUSHER));
     controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
     controller->getDSPReverb()->setSettings(SettingsManager().get<DSP::ReverbSettings>("DSP_Reverb", DSP::HALL_REVERB));
     controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::TUBEAMP_WARMTH));
     controller->getDSPEquilzer9Band()->setSettings( SettingsManager().get<DSP::Equalizer9BandSettings>("DSP_EQ9BAND", DSP::FLAT_EQ ));
+
+
+    controller->getSoundCardEmulation()->setEnabled(SettingsManager().get("DSP_RENDERMODE_ON", false));
+    controller->getSoundCardEmulation()->setSettings( SettingsManager().get<DSP::SoundCardEmulationSettings>("DSP_RenderMode", DSP::BLENDED_MODE));
+
 
     getScreenObject()->setWindowMaximized(SettingsManager().get("WINDOW_MAXIMIZED", getMain()->mSettings.WindowMaximized ));
 
@@ -240,7 +247,11 @@ void SequencerGui::Deinitialize()
         SettingsManager().set("DSP_LIMITER_ON", controller->getDSPLimiter()->isEnabled());
         SettingsManager().set("DSP_EQ9BAND_ON", controller->getDSPEquilzer9Band()->isEnabled());
 
+        SettingsManager().set("DSP_RENDERMODE_ON", controller->getSoundCardEmulation()->isEnabled());
+        SettingsManager().set("DSP_RenderMode", controller->getSoundCardEmulation()->getSettings());
 
+
+        //.....
         SettingsManager().set("WINDOW_MAXIMIZED", getScreenObject()->getWindowMaximized());
 
         SettingsManager().save();
@@ -395,6 +406,14 @@ void SequencerGui::onKeyEvent(SDL_KeyboardEvent event)
 {
     // if ( mEditorSettings.mShowFMComposer )
     //     mFMComposer->onKeyEvent(event);
+
+    if (event.key == SDLK_ESCAPE) {
+        if (isPlaying())
+            stopSong();
+
+        return ;
+    }
+
 
     onKeyEventKeyBoard(event);
 

@@ -15,6 +15,7 @@
 #include <opl3_base.h>
 #include <OPL3Tests.h>
 
+
 // ------------- Wav export in a thread >>>>>>>>>>>>>>
 struct ExportTask {
     OPL3Controller* controller;
@@ -90,6 +91,62 @@ private:
     // bool mInsertMode = false;
 
 
+    // -------- PatternSelection -------
+    struct PatternSelection {
+        bool active = false;
+        std::array<uint16_t, 2>  startPoint = {0, 0}; // [0]=row, [1]=col
+        std::array<uint16_t, 2>  endPoint = {0, 0};
+
+
+        // -------------- sort
+        void sort() {
+            if (!active) return;
+            auto [minR, maxR] = std::minmax(startPoint[0], endPoint[0]);
+            auto [minC, maxC] = std::minmax(startPoint[1], endPoint[1]);
+            startPoint[0] = minR;
+            startPoint[1] = minC;
+            endPoint[0] = maxR;
+            endPoint[1] = maxC;
+        }
+        // -------------- init
+        void init() {
+            active = false;
+            startPoint = {0, 0};
+            endPoint = {0, 0};
+        }
+        // ----------- isSelected
+
+        int minRow() const { return std::min((int)startPoint[0], (int)endPoint[0]); }
+        int maxRow() const { return std::max((int)startPoint[0], (int)endPoint[0]); }
+        int minCol() const { return std::min((int)startPoint[1], (int)endPoint[1]); }
+        int maxCol() const { return std::max((int)startPoint[1], (int)endPoint[1]); }
+
+        // Your requested action getters
+        int getRowCount() const { return active ? (maxRow() - minRow() + 1) : 0; }
+        int getColCount() const { return active ? (maxCol() - minCol() + 1) : 0; }
+        int getCount() const { return getRowCount() * getColCount(); }
+
+        bool isSelected(int r, int c) const {
+            if (!active) return false;
+            return (r >= minRow() && r <= maxRow() && c >= minCol() && c <= maxCol());
+        }
+
+    }; //PatternSelection
+    //--------------------------------------------------------------------------
+    struct PatternClipboard {
+        std::vector<SongStep> data;
+        int rows = 0;
+        int cols = 0;
+        bool active = false;
+
+        void clear() {
+            data.clear();
+            rows = 0;
+            cols = 0;
+            active = false;
+        }
+    };
+    //--------------------------------------------------------------------------
     // Pattern Editor:
     struct PatternEditorState {
         int currentPatternIdx = 0;
@@ -98,28 +155,52 @@ private:
         bool scrollToSelected = false;
         bool following = false;
 
-        // Selection (start and end points for range-based operations)
-        int selectStartRow = -1, selectStartCol = -1;
-        int selectEndRow = -1, selectEndCol = -1;
+        PatternSelection selection;
+
+        // for popup:
+        int contextRow  = -1;
+        int contextCol = -1;
+        bool showContextRequest = false;
+
+        // for shift + click
+        int selectionAnchorRow = -1;
+        int selectionAnchorCol = -1;
+
+
 
         opl3::Pattern* pattern = nullptr; //mhhh we also have the index here ...
 
-        //------------------------------------------------------------------------------
-        //------------------------------------------------------------------------------
-        bool isSelected(int r, int c) const {
-            if (selectStartRow == -1) return false;
-            int minR = std::min(selectStartRow, selectEndRow);
-            int maxR = std::max(selectStartRow, selectEndRow);
-            int minC = std::min(selectStartCol, selectEndCol);
-            int maxC = std::max(selectStartCol, selectEndCol);
-            return (r >= minR && r <= maxR && c >= minC && c <= maxC);
+        // ---------- isSelected
+        bool isSelected(int row, int col) const {
+            return selection.isSelected(row,col);
         }
 
-        //------------------------------------------------------------------------------
+        // --------- getSelectedSteps
+        std::vector<SongStep> getSelectedSteps() const {
+            std::vector<SongStep> selectionData;
+            if (!selection.active || !pattern) return selectionData;
+
+            int minR = std::min((int)selection.startPoint[0], (int)selection.endPoint[0]);
+            int maxR = std::max((int)selection.startPoint[0], (int)selection.endPoint[0]);
+            int minC = std::min((int)selection.startPoint[1], (int)selection.endPoint[1]);
+            int maxC = std::max((int)selection.startPoint[1], (int)selection.endPoint[1]);
+
+            // Pre-calculate size for efficiency
+            selectionData.reserve((maxR - minR + 1) * (maxC - minC + 1));
+
+            for (int r = minR; r <= maxR; ++r) {
+                for (int c = minC; c <= maxC; ++c) {
+                    // Use your existing flat-indexing logic
+                    selectionData.push_back(pattern->getStep(r, c));
+                }
+            }
+            return selectionData;
+        }
+        // -------------- moveCursorPosition
         void moveCursorPosition(int rowAdd, int colAdd) {
             setCursorPosition(cursorRow + rowAdd, cursorCol+colAdd);
         }
-        //------------------------------------------------------------------------------
+        // -------------- setCursorPosition
         void setCursorPosition(int row, int col) {
             if (!pattern) return;
             row = std::clamp(row, 0, pattern->getRowCount() -1 );
@@ -130,7 +211,7 @@ private:
             cursorCol = col;
             scrollToSelected = true;
         }
-    };
+    }; //PatternEditorState
 
     struct NewPatternSettings {
         char name[64] = "New Pattern";
@@ -142,6 +223,7 @@ private:
 
     NewPatternSettings mNewPatternSettings;
     PatternEditorState mPatternEditorState;
+    PatternClipboard   mPatternClipBoard;
 
     bool playNote(uint8_t softwareChannel, SongStep step ); //play or insert a note
     bool stopNote(uint8_t softwareChannel );
@@ -173,6 +255,9 @@ private:
     void RenderLimiterUI();
     void RenderEquilizer9BandUI();
     void RenderSpectrumAnalyzer();
+    void RenderSoundCardEmuUI();
+
+
 
     // ---- Bank / Instruments -----
     uint16_t mCurrentInstrumentId = 0;
@@ -201,9 +286,21 @@ private:
     bool mLiveInsert = false; // TODO IMPORTANT! (see also songGui todo's )
 
     void callSaveSong();
-    void playSong(U8 playMode = 0);
+    bool playSong();
     void stopSong();
     void newSong();
+
+    bool playSelected(PatternEditorState& state);
+    bool clearSelectedSteps(PatternEditorState& state);
+    void copyStepsToClipboard(PatternEditorState& state, PatternClipboard& cb);
+    void pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb);
+    void selectPatternAll(PatternEditorState& state);
+    void selectPatternRow(PatternEditorState& state);
+    void selectPatternCol(PatternEditorState& state);
+
+    void transposeSelection(PatternEditorState& state, int semitones);
+    void insertAndshiftDataDown(PatternEditorState& state);
+    void deleteAndShiftDataUp(PatternEditorState& state);
 
 
     void RenderSequencerUI(bool standAlone = true);
@@ -218,6 +315,7 @@ private:
     ExportTask* mCurrentExport = nullptr; //<<< for export to wav
     bool exportSongToWav(std::string filename);
     void DrawExportStatus();
+
 
 
 
@@ -243,11 +341,10 @@ public:
 
     bool DrawNewPatternModal(SongData& song, NewPatternSettings& settings);
     void DrawPatternSelector(SongData& song, PatternEditorState& state);
-    void RenderStepCell(SongStep& step, bool isSelected, int r, int c, PatternEditorState& state);
-
+    void DrawStepCell(SongStep& step, bool isSelected, int row, int col, PatternEditorState& state);
+    void DrawStepCellPopup(PatternEditorState& state);
     void DrawPatternEditor(PatternEditorState& state);
     void ActionPatternEditor(PatternEditorState& state); //FIXME TO PRIVATE
-    SongData CreateTempSelection(const Pattern& activePattern, const PatternEditorState& state);
 
     bool isPlaying();
     uint16_t getPlayingRow();
@@ -317,4 +414,7 @@ namespace DSP {
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReverbSettings, decay, sizeL, sizeR, wet)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarmthSettings, cutoff, drive, wet)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Equalizer9BandSettings, gains)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SoundCardEmulationSettings, renderMode)
+
+
 }

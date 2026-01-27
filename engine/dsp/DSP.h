@@ -14,6 +14,7 @@
 #include "DSP_Equilizer.h"
 #include "DSP_Equilizer9Band.h"
 #include "DSP_SpectrumAnalyzer.h"
+#include "DSP_SoundCardEmulation.h"
 
 
 namespace DSP {

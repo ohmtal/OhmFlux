@@ -27,12 +27,14 @@ void SequencerGui::ShowDSPWindow(){
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
 
+    // Sound Renderer Combo box
     RenderSpectrumAnalyzer();
-    RenderWarmthUI();
     RenderBitCrusherUI();
+    RenderSoundCardEmuUI();
+    RenderWarmthUI();
+    RenderEquilizer9BandUI();
     RenderChorusUI();
     RenderReverbUI();
-    RenderEquilizer9BandUI();
     RenderLimiterUI();
 
     ImGui::PopStyleVar();
@@ -40,9 +42,64 @@ void SequencerGui::ShowDSPWindow(){
     ImGui::End();
 
 }
-
 //------------------------------------------------------------------------------
+void SequencerGui::RenderSoundCardEmuUI() {
+    auto* lEmu = getMain()->getController()->getSoundCardEmulation();
 
+
+    // 1. Use PushID to prevent name collisions with other effects (e.g., if multiple have a "Wet" slider)
+    ImGui::PushID("RenderSoundCardEmu_Effect_Row");
+
+    // 2. Start a Group to treat this whole section as a single unit
+    ImGui::BeginGroup();
+
+    static bool isEnabled = lEmu->isEnabled();
+
+    if (ImGui::Checkbox("##Active", &isEnabled))
+      lEmu->setEnabled(isEnabled);
+
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(0.2f, 0.7f, 0.5f, 1.0f), "Sound rendering");
+
+    if (isEnabled) {
+        if (ImGui::BeginChild("BC_Box", ImVec2(0, 30), ImGuiChildFlags_Borders)) {
+
+            DSP::RenderMode currentMode = lEmu->getMode();
+
+            // Mapping for display names
+            const char* modeNames[] = {
+                "Blended (Smooth)", "Modern LPF (Warm)",
+                "Sound Blaster Pro", "Sound Blaster", "AdLib Gold", "Sound Blaster Clone"
+            };
+
+            // The preview label shown when combo is closed
+            const char* previewValue = modeNames[(int)currentMode];
+
+            if (ImGui::BeginCombo("##Render Mode", previewValue)) {
+                for (int lRenderModeInt = 0; lRenderModeInt <= (int)DSP::RenderMode::CLONE_CARD; lRenderModeInt++) {
+                    bool isSelected = ((int)currentMode == lRenderModeInt);
+                    if (ImGui::Selectable(modeNames[lRenderModeInt], isSelected)) {
+                        lEmu->setSettings({ (DSP::RenderMode)lRenderModeInt });
+                    }
+
+                    // Set the initial focus when opening the combo (2026 standard)
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+    ImGui::EndChild();
+    } else {
+        ImGui::Separator();
+    }
+
+    ImGui::EndGroup();
+    ImGui::PopID();
+    ImGui::Spacing(); // Add visual gap before the next effect
+}
+//------------------------------------------------------------------------------
 void SequencerGui::RenderBitCrusherUI() {
     // 1. Use PushID to prevent name collisions with other effects (e.g., if multiple have a "Wet" slider)
     ImGui::PushID("BitCrusher_Effect_Row");
@@ -435,6 +492,7 @@ void SequencerGui::RenderEquilizer9BandUI() {
     } else {
         ImGui::Separator();
     }
+
 
     ImGui::EndGroup();
     ImGui::PopID();

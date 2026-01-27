@@ -40,17 +40,33 @@ class OPL3Controller
 {
 public:
     // --------- SequencerState --------------
+    struct PlaySequencePatternRange {
+        bool active = false;
+        uint16_t patternIdx = 0;
+        // row , col !!
+        std::array<uint16_t, 2> startPoint = { 0,0} ;// play this pattern if >=0
+        std::array<int32_t, 2> stopPoint  = {-1,-1} ;
+
+        void init() {
+            active = false;
+            patternIdx = 0;
+            // row , col !!
+            startPoint = { 0,0} ;// play this pattern if >=0
+            stopPoint  = {-1,-1} ;
+        }
+    };
+
     struct SequencerState {
         bool playing = false;
         bool loop = false;
+
+        PlaySequencePatternRange playRange;
 
         // Position Tracking
         uint16_t orderIdx = 0;   // Current index in song.orderList
         uint16_t rowIdx = 0;     // Current row index in the active pattern
 
-        // Limits (replaces song_startAt/stopAt for Pattern logic)
-        uint16_t orderStartAt = 0;
-        uint16_t orderStopAt = 0;
+
 
         // Timing (Using double prevents tempo drift over long songs)
         // ... position tracking ...
@@ -88,14 +104,14 @@ private:
     SDL_AudioStream* mStream = nullptr;
 
     // ---------- RenderMode -----------------
-    RenderMode mRenderMode = RenderMode::RAW;
-    float mRenderAlpha = 1.0f;
-    bool mRenderUseBlending = false;
-    float mRenderGain = 1.0f; // Global gain to simulate hot Sound Blaster output
-    // Render State Members
-    float mRender_lpf_l = 0.0f, mRender_lpf_r = 0.0f;
-    float mCurrentFiltered_l = 0.0f, mCurrentFiltered_r = 0.0f; // New
-    int32_t mRender_prev_l = 0, mRender_prev_r = 0;             // Changed to int32 for OPL3 summing
+    // RenderMode mRenderMode = RenderMode::RAW;
+    // float mRenderAlpha = 1.0f;
+    // bool mRenderUseBlending = false;
+    // float mRenderGain = 1.0f; // Global gain to simulate hot Sound Blaster output
+    // // Render State Members
+    // float mRender_lpf_l = 0.0f, mRender_lpf_r = 0.0f;
+    // float mCurrentFiltered_l = 0.0f, mCurrentFiltered_r = 0.0f; // New
+    // int32_t mRender_prev_l = 0, mRender_prev_r = 0;             // Changed to int32 for OPL3 summing
 
     // ---------- ThreadSafety ---------------
     std::recursive_mutex mDataMutex;
@@ -136,6 +152,7 @@ private:
     DSP::Chorus* mDSPChorus;
     DSP::Limiter* mLimiter;
     DSP::Equalizer9Band* mEquilzer9Band;
+    DSP::SoundCardEmulation* mSoundCardEmulation;
 
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
 
@@ -179,6 +196,7 @@ public:
 
 
     const SequencerState& getSequencerState() const { return mSeqState; }
+    SequencerState* getSequencerStateMutable() { return &mSeqState; }
 
     std::vector<std::unique_ptr<DSP::Effect>>& getDspEffects() {
         return mDspEffects;
@@ -248,10 +266,6 @@ public:
 
 
 
-    // --------- RenderMode ------------
-    void setRenderMode(RenderMode mode);
-    RenderMode getRenderMode() { return mRenderMode; }
-
     // ---------  ------------
 
     OplChip* getChip() { return mChip; }
@@ -289,6 +303,7 @@ public:
     DSP::Warmth* getDSPWarmth() { return mDSPWarmth; }
     DSP::Limiter* getDSPLimiter() { return mLimiter; }
     DSP::Equalizer9Band* getDSPEquilzer9Band() { return mEquilzer9Band; }
+    DSP::SoundCardEmulation* getSoundCardEmulation() { return mSoundCardEmulation; }
 
 
     // ----- chords --------------

@@ -393,7 +393,7 @@ namespace opl3 {
     //--------------------------------------------------------------------------
     struct Pattern {
         std::string mName = "New Pattern";
-        uint32_t mColor = 0xFFFF0F0F; // ABGR !!!!
+        uint32_t mColor = 0xFF0000FF; // ABGR !!!!
         uint8_t mColCount = SOFTWARE_CHANNEL_COUNT;
     protected:
         std::vector<SongStep> mSteps;
@@ -560,8 +560,12 @@ namespace opl3 {
         std::array<int8_t, CHANNELS> channelStep = {};
 
 
+        //unused!!
         int8_t  getInstrumentByChannel( uint8_t channel ) { return channelInstrument.at(channel); }
+        //unused!!
         int16_t getOctaveByChannel( uint8_t channel ) { return channelOctave.at(channel); }
+
+
         int8_t  getStepByChannel( uint8_t channel ) { return channelStep.at(channel); }
 
         void init() {
@@ -572,7 +576,7 @@ namespace opl3 {
 
             channelInstrument.fill(0);
             channelOctave.fill(4);
-            channelStep.fill(1);
+            channelStep.fill(4);
 
 
             // Empty the collections
@@ -664,16 +668,6 @@ namespace opl3 {
         {"Waveform", 0x7},        {"KSR (Scaling)", 0x1},
         {"EG Type", 0x1},         {"Vibrato", 0x1},
         {"Amp Mod", 0x1},         {"KSL", 0x3}
-    };
-    //--------------------------------------------------------------------------
-    enum class RenderMode {
-        RAW,
-        BLENDED,
-        SBPRO,       // 3.2kHz
-        SB_ORIGINAL, // 2.8kHz (Muffled+)
-        ADLIB_GOLD,  // 16kHz (Hi-Fi)
-        CLONE_CARD,  // 8kHz + No Blending
-        MODERN_LPF   // 12kHz
     };
     //--------------------------------------------------------------------------
     const std::vector<int> CHORD_MAJOR     = {0, 4, 7};

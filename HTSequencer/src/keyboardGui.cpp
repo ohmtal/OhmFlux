@@ -105,6 +105,8 @@ bool SequencerGui::stopNote(uint8_t softwareChannel)
     return getMain()->getController()->stopNote(softwareChannel);
 }
 //------------------------------------------------------------------------------
+int moveSchedId = -1;
+
 bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
 {
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
@@ -113,7 +115,7 @@ bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
     if (step.note < LAST_NOTE)
         guiChannelToNote[softwareChannel] = step.note;
 
-    PatternEditorState& state = mPatternEditorState;
+    PatternEditorState& state = this->mPatternEditorState;
 
 
     if ( mSettings.InsertMode ) {
@@ -139,7 +141,23 @@ bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
             //Lol when playing cords this is really funny
             //FIXME but how ? i can schedule it but which step to take since i
             //      have it for each channel
-            // moveCursorPosition(mCurrentSong.getStepByChannel(softwareChannel), 0);
+
+
+            if (!isPlaying())
+            {
+                if (!FluxSchedule.isPending(moveSchedId)) {
+                    int stepval = mCurrentSong.getStepByChannel(softwareChannel);
+                    moveSchedId = FluxSchedule.add(1.0, nullptr, [&state, stepval]() mutable {
+                        state.moveCursorPosition(stepval, 0);
+                    });
+                    dLog("Schedule step %d", stepval);
+                } else {
+                    dLog("Schedule is pending ...");
+                }
+            }
+
+            // state.moveCursorPosition(mCurrentSong.getStepByChannel(softwareChannel), 0);
+
 
 
         } else {
