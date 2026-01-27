@@ -66,6 +66,7 @@ private:
     FluxGuiGlue* mGuiGlue = nullptr;
 
     ImFont* mIconFont = nullptr; //<< font
+    ImFont* mTinyFont = nullptr;
 
     DSP::SpectrumAnalyzer* mSpectrumAnalyzer;
 
@@ -186,28 +187,6 @@ private:
         bool isSelected(int row, int col) const {
             return selection.isSelected(row,col);
         }
-
-        // --------- getSelectedSteps
-        std::vector<SongStep> getSelectedSteps() const {
-            std::vector<SongStep> selectionData;
-            if (!selection.active || !pattern) return selectionData;
-
-            int minR = std::min((int)selection.startPoint[0], (int)selection.endPoint[0]);
-            int maxR = std::max((int)selection.startPoint[0], (int)selection.endPoint[0]);
-            int minC = std::min((int)selection.startPoint[1], (int)selection.endPoint[1]);
-            int maxC = std::max((int)selection.startPoint[1], (int)selection.endPoint[1]);
-
-            // Pre-calculate size for efficiency
-            selectionData.reserve((maxR - minR + 1) * (maxC - minC + 1));
-
-            for (int r = minR; r <= maxR; ++r) {
-                for (int c = minC; c <= maxC; ++c) {
-                    // Use your existing flat-indexing logic
-                    selectionData.push_back(pattern->getStep(r, c));
-                }
-            }
-            return selectionData;
-        }
         // -------------- moveCursorPosition
         void moveCursorPosition(int rowAdd, int colAdd) {
             setCursorPosition(cursorRow + rowAdd, cursorCol+colAdd);
@@ -310,6 +289,7 @@ private:
     void selectPatternRow(PatternEditorState& state);
     void selectPatternCol(PatternEditorState& state);
 
+    void setInstrumentSelection(PatternEditorState& state, uint16_t instrumentIndex);
     void transposeSelection(PatternEditorState& state, int semitones);
     void insertAndshiftDataDown(PatternEditorState& state);
     void deleteAndShiftDataUp(PatternEditorState& state);

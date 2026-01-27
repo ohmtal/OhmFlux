@@ -36,6 +36,12 @@ bool SequencerGui::playSelected(PatternEditorState& state, bool forcePatternPlay
         lPlayRange.startPoint[1] = state.selection.startPoint[1];
         lPlayRange.stopPoint[0]  = state.selection.endPoint[0];
         lPlayRange.stopPoint[1]  = state.selection.endPoint[1];
+
+        // dLog("PlaySelected PlayRange: %d, %d - %d, %d",
+        //      lPlayRange.startPoint[0], lPlayRange.startPoint[1],
+        //      lPlayRange.stopPoint[0], lPlayRange.stopPoint[1]
+        //      );
+
     }
     lPlayRange.patternIdx  = state.currentPatternIdx;
     return playSong();
@@ -255,6 +261,23 @@ void SequencerGui::insertAndshiftDataDown(PatternEditorState& state) {
         }
         // Clear the entry point
         state.pattern->getStep(startR, c).init();
+    }
+}
+//------------------------------------------------------------------------------
+void SequencerGui::setInstrumentSelection(PatternEditorState& state, uint16_t instrumentIndex)
+{
+    if (!state.selection.active || !state.pattern) return;
+    if (instrumentIndex >= getMain()->getController()->getSoundBank().size()) {
+        Log("[error] changeInstrumentSelection instrumentIndex out of bounds! %d", instrumentIndex);
+        return;
+    }
+
+    state.selection.sort();
+    for (int r = state.selection.startPoint[0]; r <= state.selection.endPoint[0]; ++r) {
+        for (int c = state.selection.startPoint[1]; c <= state.selection.endPoint[1]; ++c) {
+            auto& step = state.pattern->getStep(r, c);
+            step.instrument = instrumentIndex;
+        }
     }
 }
 //------------------------------------------------------------------------------

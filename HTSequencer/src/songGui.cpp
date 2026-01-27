@@ -15,7 +15,11 @@
 //  [X] play pattern  plays single (selected)
 //  [X] right mouse always use selected cell ==> fixed for paste (useContextPoint)
 //  [X] Added Icons Font mIconFont ++ ICON_FA_...
-//  [ ] need change instrument !! for channel
+//  [X] colored step cell rendering
+//  [ ] need change instrument !! for channel or better selection
+//
+// [ ] Effects
+//  [ ] how to editor then the best way / context menu
 
 // [ ] change fms3 format again :P better now than later
 //    [ ] save / load ALL the DSP effects
@@ -58,10 +62,11 @@
 // [X] ctrl + ins insert using selection
 // [X] ctrl+up transpose up
 // [X] ctrl+down transpose down
-// [X] ctrl+up transpose octave up
+// [X] ctrl+pageup transpose octave up
 // [X] ctrl+pagedown octave transpose down
 //------------------------------------------------------------------------------
-constexpr float CellHeight = 20.f;
+constexpr float CellHeight = 24.f;
+ImVec2 cellSize = {50, CellHeight};
 
 //------------------------------------------------------------------------------
 void SequencerGui::DrawExportStatus() {
@@ -136,7 +141,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
         ImGui::PushFont(mIconFont);
 
-        if (ImGui::Button(ICON_FA_CIRCLE_STOP "##Stop",lButtonSize))
+        if (ImGui::Button(ICON_FA_STOP "##Stop",lButtonSize))
         {
             stopSong();
         }
@@ -150,7 +155,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
 //FONT TEST
         ImGui::PushFont(mIconFont);
-        if (ImGui::Button(ICON_FA_CIRCLE_PLAY "##Play",lButtonSize))
+        if (ImGui::Button(ICON_FA_PLAY "##Play",lButtonSize))
         {
             playSong(); //autodetect
         }
@@ -158,7 +163,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         ImGui::PopStyleColor(4);
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-        ImGui::SetTooltip("press F1");
+        ImGui::SetTooltip("To play or stop press [F1]");
     }
 
 
@@ -313,6 +318,7 @@ void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
         ImGui::OpenPopup("PatternCellContext");
         state.showContextRequest = false; // Reset the flag immediately
 
+        state.selection.sort();
 
         dLog("[info] Selection: count:%d, rowcount=%d, colcount=%d, startpoint=%d,%d, endPoint=%d,%d ",
              state.selection.getCount()
@@ -337,14 +343,46 @@ void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
 
 
         if (isPlaying()) {
-            if (ImGui::MenuItem(ICON_FA_CIRCLE_STOP " Stop")) {
+            if (ImGui::MenuItem(ICON_FA_STOP " Stop")) {
                 stopSong();
             }
         } else  {
-            if (ImGui::MenuItem(ICON_FA_CIRCLE_PLAY " Play selected")) {
+            if (ImGui::MenuItem(ICON_FA_PLAY " Play selected")) {
                 playSelected(state);
             }
         }
+        ImGui::Separator();
+        if (ImGui::BeginMenu(ICON_FA_ARROWS_UP_DOWN " Transpose")) {
+            if (ImGui::MenuItem(ICON_FA_SORT_UP   " Octave Up", "Ctrl+PageUp")) { transposeSelection(state, 12); }
+            if (ImGui::MenuItem(ICON_FA_SORT_DOWN " Octave Down", "Ctrl+PageDown")) { transposeSelection(state, -12); }
+            ImGui::Separator();
+            if (ImGui::MenuItem(ICON_FA_ARROW_UP   " Semitone Up", "Ctrl+Up")) { transposeSelection(state, 1); }
+            if (ImGui::MenuItem(ICON_FA_ARROW_DOWN " Semitone Down", "Ctrl+Down")) { transposeSelection(state, -1); }
+            ImGui::EndMenu(); // End Transpose
+        }
+        if (ImGui::BeginMenu(ICON_FA_MUSIC " Change Instrument")) {
+            char buff[256];
+
+            if ( mCurrentInstrumentId <= getMain()->getController()->getSoundBank().size())
+            {
+                snprintf(buff, sizeof(buff), "Selected: %02X %s", mCurrentInstrumentId, getMain()->getController()->getSoundBank()[mCurrentInstrumentId].name.c_str());
+                if (ImGui::MenuItem(buff, "")) { setInstrumentSelection(state, mCurrentInstrumentId); }
+            }
+
+
+            if (ImGui::BeginMenu("Instruments")) {
+                for ( int i = 0; i < getMain()->getController()->getSoundBank().size(); i++ )
+                {
+                    snprintf(buff, sizeof(buff), "%02X %s", i, getMain()->getController()->getSoundBank()[i].name.c_str());
+                    if (ImGui::MenuItem(buff, "")) { setInstrumentSelection(state, i); }
+                }
+                ImGui::EndMenu(); // Instruments
+            }
+
+
+            ImGui::EndMenu(); // Instrument
+        }
+
 
         ImGui::Separator();
         if (ImGui::MenuItem(ICON_FA_COPY " Copy", "Ctrl+C | Ctrl+INSERT")) {
@@ -400,20 +438,24 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
         // 1. Capture modifier state
         bool shiftHeld = ImGui::GetIO().KeyShift;
         bool ctrlHeld = ImGui::GetIO().KeyCtrl;
+        bool altHeld = ImGui::GetIO().KeyAlt;
 
 
         // 2. Determine if we are moving the cursor this frame
         int oldRow = state.cursorRow;
         int oldCol = state.cursorCol;
         bool moved = false;
-        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))    { state.moveCursorPosition(-1, 0);  moved = true; }
-        if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))  { state.moveCursorPosition( 1, 0);  moved = true; }
-        if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  { state.moveCursorPosition( 0,-1);  moved = true; }
-        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) { state.moveCursorPosition( 0, 1);  moved = true; }
-        if (ImGui::IsKeyPressed(ImGuiKey_PageUp))     { state.moveCursorPosition(-16, 0); moved = true; }
-        if (ImGui::IsKeyPressed(ImGuiKey_PageDown))   { state.moveCursorPosition( 16, 0); moved = true; }
-        if (ImGui::IsKeyPressed(ImGuiKey_Home))       { state.moveCursorPosition(-10000, 0); moved = true; }
-        if (ImGui::IsKeyPressed(ImGuiKey_End))        { state.moveCursorPosition( 10000, 0); moved = true; }
+        if (!ctrlHeld && !altHeld)
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow))    { state.moveCursorPosition(-1, 0);  moved = true; }
+            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow))  { state.moveCursorPosition( 1, 0);  moved = true; }
+            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow))  { state.moveCursorPosition( 0,-1);  moved = true; }
+            if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) { state.moveCursorPosition( 0, 1);  moved = true; }
+            if (ImGui::IsKeyPressed(ImGuiKey_PageUp))     { state.moveCursorPosition(-16, 0); moved = true; }
+            if (ImGui::IsKeyPressed(ImGuiKey_PageDown))   { state.moveCursorPosition( 16, 0); moved = true; }
+            if (ImGui::IsKeyPressed(ImGuiKey_Home))       { state.moveCursorPosition(-10000, 0); moved = true; }
+            if (ImGui::IsKeyPressed(ImGuiKey_End))        { state.moveCursorPosition( 10000, 0); moved = true; }
+        }
 
         // 3. Selection Logic
         if (moved) {
@@ -432,7 +474,12 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
                 state.selection.endPoint[1] = state.cursorCol;
             } else {
                 // Moved without shift: Clear selection
-                state.selection.init();
+                //state.selection.init();
+                // i set a single selected
+                state.selection.active = true;
+                state.selection.startPoint[0] = state.selection.endPoint[0] = state.cursorRow;
+                state.selection.startPoint[1] = state.selection.endPoint[1] = state.cursorCol;
+
             }
         }
 
@@ -441,12 +488,13 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
         if (ImGui::IsKeyPressed(ImGuiKey_Delete)) clearSelectedSteps(state);
 
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_UpArrow)) transposeSelection(state, +1);
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_DownArrow)) transposeSelection(state, -1);
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_PageUp)) transposeSelection(state, +12);
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_PageDown)) transposeSelection(state, -12);
-
-
-
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_C)) copyStepsToClipboard(state, mPatternClipBoard);
         else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_Insert)) copyStepsToClipboard(state, mPatternClipBoard);
@@ -469,7 +517,7 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
 
         //-------- other actions
         else
-        if (ImGui::IsKeyPressed(ImGuiKey_F1)) if (isPlaying()) {stopSong();} else {playSong();}
+        if (ImGui::IsKeyPressed(ImGuiKey_F1))  {if (isPlaying()) stopSong(); else playSong();}
 
     }
 }
@@ -481,6 +529,9 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
     const int numRows = (int)state.pattern->getRowCount();
 
+    cellSize.x = mSettings.EnhancedStepView ? 105.f : 50.f;
+
+
 
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()) {
         ImGui::SetKeyboardFocusHere();
@@ -488,6 +539,9 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
     // Style
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
+    // InvisibleButton add some space set cellPadding to 0!
+    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
+
     // NOTE: IMPORTANT Push transparent colors to hide the highlight
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
@@ -528,10 +582,7 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
 
 
-            if ( mSettings.EnhancedStepView )
-                ImGui::TableSetupColumn(tmpbuf, ImGuiTableColumnFlags_WidthFixed, 120.0f);
-            else
-                ImGui::TableSetupColumn(tmpbuf, ImGuiTableColumnFlags_WidthFixed, 50.0f);
+            ImGui::TableSetupColumn(tmpbuf, ImGuiTableColumnFlags_WidthFixed, cellSize.x);
 
         }
         // ImGui::TableHeadersRow();
@@ -624,6 +675,7 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
         int lScrolltoRow = isPlaying() ? getPlayingRow() : state.cursorRow;
         bool lDoScroll =  isPlaying() || state.scrollToSelected;
 
+
         ImGuiListClipper clipper;
         clipper.Begin(numRows, CellHeight);
 
@@ -661,7 +713,7 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm(cl_Coral));
                 } else {
                     if (row % 4 == 0)
-                        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm(cl_Slate));
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm({0.12f,0.12f,0.12f,1.f}));
                     else
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm(cl_Black));
 
@@ -705,8 +757,39 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
     } //PatternTable
     ImGui::PopStyleColor(4);
+    ImGui::PopStyleVar(/*ImGuiStyleVar_CellPadding, ImVec2(0, 0)*/);
     ImGui::PopStyleVar();
 }
+//------------------------------------------------------------------------------
+//FIXME TO HEADER
+// FIXME unfinished !!!
+std::string GetStepText(SongStep& step, bool enhanced)
+{
+
+
+    std::string result ="";
+    //1. Note
+    result += opl3::ValueToNote(step.note);
+
+    if ( step.note <= LAST_NOTE )
+        result += std::format(" {:02X}", step.instrument);
+    else
+        result += "   ";
+
+    if ( enhanced ) {
+        if ( step.volume > 63 )
+            result += "  ";
+        else
+            result += std::format("{:02d}", step.volume);
+
+
+    }
+
+
+    return result;
+
+}
+
 //------------------------------------------------------------------------------
 void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, int col, PatternEditorState& state) {
 
@@ -715,47 +798,137 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
     // Construct the tracker-style string: "C-4 01 v63 A0F"
     std::string noteStr = opl3::ValueToNote(step.note);
 
-    char buf[32];
     char hintBuffer[256];
+
+    std::string insName = getMain()->getController()->getInstrumentName(step.instrument);
 
 
     //TODO nicer hint:
-    snprintf(hintBuffer, sizeof(hintBuffer), "%s\n%s (%d)\nVol:%02d\nEff:%c%02X",
+    snprintf(hintBuffer, sizeof(hintBuffer), "%s\n%s (%02X)\nVol:%02d\nEffect Type:%d\nEffectValue:%02X",
              noteStr.c_str(),
-             getMain()->getController()->getInstrumentName(step.instrument).c_str(),step.instrument,
+             insName.c_str(),step.instrument,
              step.volume,
-             (step.effectType == 0 ? '.' : (char)step.effectType),
+             step.effectType,
              step.effectVal);
 
+    //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+
+    //FIXME
+    ImGui::InvisibleButton("##hitbox", cellSize);
+
+    if (isSelected) {
+        // drawList->AddRectFilled(pos, ImVec2(pos.x + cellSize.x, pos.y + cellSize.y)
+        const float rectadd = 0.f;
+        drawList->AddRectFilled(
+            ImVec2(pos.x - rectadd, pos.y - rectadd)
+          , ImVec2(pos.x + cellSize.x + rectadd, pos.y + cellSize.y + rectadd)
+          , Color4FIm(cl_Blue));
+    }
+
+    // Note
+    float offsetX = 4.0f; // Padding
+    float centerY = (cellSize.y - ImGui::GetFontSize()) * 0.5f + 3.f; //add Y
+
+    drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
+                        Color4FIm(cl_White), noteStr.c_str());
+
+    offsetX += ImGui::CalcTextSize(noteStr.c_str()).x;
+
+    // instrument
+    if ( step.note <= LAST_NOTE )
+    {
+        if (mSettings.EnhancedStepView)
+        {
+            ImGui::PushFont(mTinyFont);
+            drawList->AddText(ImVec2(pos.x + 1.f/*+ offsetX*/, pos.y - 1.f /*+ centerY*/),
+                              Color4FIm(cl_Sand ) * (float)( step.instrument + 1),
+                              std::format("{}",insName.substr(0, std::min<size_t>(insName.size(), 30))).c_str()
+            );
 
 
+            ImGui::PopFont(/*mTinyFont*/);
+        }
 
+        drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
+                          Color4FIm(cl_Sand),
+                          std::format(" {:02X}", step.instrument).c_str());
+
+    }
+    offsetX += ImGui::CalcTextSize("   ").x;
 
     if (mSettings.EnhancedStepView)
     {
-        snprintf(buf, sizeof(buf), "%s %02X %02d %c%02X",
-                 noteStr.c_str(),
-                 step.instrument,
-                 step.volume,
-                 (step.effectType == 0 ? '.' : (char)step.effectType),
-                 step.effectVal);
-    } else {
-        if (step.note < LAST_NOTE)
-            snprintf(buf, sizeof(buf), "%s %d",noteStr.c_str(), step.instrument);
+        std::string tmpStr = "";
+        if ( step.volume > 63)
+            tmpStr = "    ";
+        else if ( step.volume == 63 )
+            tmpStr = " .. ";
         else
-            snprintf(buf, sizeof(buf), "%s ",noteStr.c_str());
+            tmpStr = std::format(" {:02d} ", step.volume);
+
+        drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
+                          Color4FIm({0.8f,0.5f,0.5f}),
+                          tmpStr.c_str());
+
+        offsetX += ImGui::CalcTextSize(tmpStr.c_str()).x;
+
+        //effects
+        if (step.effectType > 0)
+        {
+            tmpStr = std::format("{:X} ",step.effectType);
+            drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
+                              Color4FIm({0.5f,0.5f,1.f}),
+                              tmpStr.c_str());
+            offsetX += ImGui::CalcTextSize(tmpStr.c_str()).x;
+            tmpStr = std::format("{:02X} ",step.effectVal);
+            drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
+                              Color4FIm({0.8f,0.4f,0.8f}),
+                              tmpStr.c_str());
+
+        }
     }
 
 
-    // Highlight if this is the active selection/cursor
-    if (isSelected /*&& !state.scrollToSelected*/) {
-        // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_HeaderActive));
-        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Blue));
 
-    }
 
-    // A. Render the Selectable purely for the visual feedback/hitbox
-    ImGui::Selectable(buf, isSelected, ImGuiSelectableFlags_AllowOverlap);
+
+
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    // char buf[32];
+    // if (mSettings.EnhancedStepView)
+    // {
+    //
+    //     if (step.note >= LAST_NOTE && step.effectVal == 0 && step.volume >= 63)
+    //     {
+    //         snprintf(buf, sizeof(buf), "...");
+    //
+    //     } else {
+    //         snprintf(buf, sizeof(buf), "%s %02X %02d %dv%02X",
+    //                  noteStr.c_str(),
+    //                  step.instrument,
+    //                  step.volume,
+    //                  step.effectType,
+    //                  step.effectVal);
+    //     }
+    //
+    //     snprintf(buf, sizeof(buf),"%s", GetStepText(step,true).c_str());
+    //
+    // } else {
+    //     if (step.note < LAST_NOTE)
+    //         snprintf(buf, sizeof(buf), "%s %d",noteStr.c_str(), step.instrument);
+    //     else
+    //         snprintf(buf, sizeof(buf), "%s ",noteStr.c_str());
+    // }
+    // // Highlight if this is the active selection/cursor
+    // if (isSelected /*&& !state.scrollToSelected*/) {
+    //     // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_HeaderActive));
+    //     ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Blue));
+    //
+    // }
+    // // A. Render the Selectable purely for the visual feedback/hitbox
+    // ImGui::Selectable(buf, isSelected, ImGuiSelectableFlags_AllowOverlap, cellSize);
 
     // B. SNAPPY CURSOR: Use IsItemClicked(0) for immediate response on mouse-down
     if (ImGui::IsItemClicked(0)) {

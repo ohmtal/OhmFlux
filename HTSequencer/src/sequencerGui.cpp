@@ -214,6 +214,7 @@ bool SequencerGui::Initialize()
     icon_config.MergeMode = false; // <--- IMPORTANT: DO NOT MERGE
     // Store this pointer in your class or a global variable
     mIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 24.0f, &icon_config, ranges);
+    mTinyFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size,  6.0f, &icon_config, ranges);
     //<<<<<<<<<< fonts
 
 

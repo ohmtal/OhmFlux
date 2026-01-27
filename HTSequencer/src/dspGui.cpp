@@ -32,9 +32,9 @@ void SequencerGui::ShowDSPWindow(){
     RenderBitCrusherUI();
     RenderSoundCardEmuUI();
     RenderWarmthUI();
-    RenderEquilizer9BandUI();
     RenderChorusUI();
     RenderReverbUI();
+    RenderEquilizer9BandUI();
     RenderLimiterUI();
 
     ImGui::PopStyleVar();

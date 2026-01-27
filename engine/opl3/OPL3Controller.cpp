@@ -176,11 +176,6 @@ bool OPL3Controller::initController()
     mDSPWarmth = warmth.get();
     mDspEffects.push_back(std::move(warmth));
     //------------------------
-    // 9Band:
-    auto eq9band = std::make_unique<DSP::Equalizer9Band>(false);
-    mEquilzer9Band = eq9band.get();
-    mDspEffects.push_back(std::move(eq9band));
-    //------------------------
     // Chrous:
     auto chorus = std::make_unique<DSP::Chorus>(false);
     mDSPChorus = chorus.get();
@@ -190,6 +185,11 @@ bool OPL3Controller::initController()
     auto reverb = std::make_unique<DSP::Reverb>(false);
     mDSPReverb = reverb.get();
     mDspEffects.push_back(std::move(reverb));
+    //------------------------
+    // 9Band:
+    auto eq9band = std::make_unique<DSP::Equalizer9Band>(false);
+    mEquilzer9Band = eq9band.get();
+    mDspEffects.push_back(std::move(eq9band));
     //------------------------
     //Limiter Last !
     auto limiter = std::make_unique<DSP::Limiter>(false);
@@ -334,8 +334,8 @@ void OPL3Controller::tickSequencer() {
 
 
    //NOTE PlayRange!!
-   bool playRange = mSeqState.playRange.active;
-   uint32_t patternIdx = playRange ? mSeqState.playRange.patternIdx : song.orderList[mSeqState.orderIdx];
+   bool doPlayRange = mSeqState.playRange.active;
+   uint32_t patternIdx = doPlayRange ? mSeqState.playRange.patternIdx : song.orderList[mSeqState.orderIdx];
 
     if (patternIdx >= song.patterns.size()) {
         LogFMT("[error] Invalid pattern index {} at order {}", patternIdx, mSeqState.orderIdx);
@@ -351,8 +351,8 @@ void OPL3Controller::tickSequencer() {
     }
 
 
-    uint8_t lStartChan = playRange ? mSeqState.playRange.startPoint[1] : 0;
-    uint8_t lEndChan   = ( playRange && mSeqState.playRange.stopPoint[1] > 0 )? mSeqState.playRange.stopPoint[1]  : SOFTWARE_CHANNEL_COUNT - 1;
+    uint8_t lStartChan = doPlayRange ? mSeqState.playRange.startPoint[1] : 0;
+    uint8_t lEndChan   = ( doPlayRange && mSeqState.playRange.stopPoint[1] >= 0 )? mSeqState.playRange.stopPoint[1]  : SOFTWARE_CHANNEL_COUNT - 1;
 
     for (uint8_t softChan = lStartChan; softChan <= lEndChan; ++softChan) {
         const SongStep& step = pat.getStep(mSeqState.rowIdx, softChan);
@@ -391,8 +391,8 @@ void OPL3Controller::tickSequencer() {
     // --- Timing Advancement ---
     mSeqState.current_tick++;
 
-    uint16_t lStartRow = playRange ? mSeqState.playRange.startPoint[0] : 0;
-    uint16_t lEndRow   = ( playRange && mSeqState.playRange.stopPoint[0] >= 0 ) ? mSeqState.playRange.stopPoint[0] + 1 : pat.getRowCount();
+    uint16_t lStartRow = doPlayRange ? mSeqState.playRange.startPoint[0] : 0;
+    uint16_t lEndRow   = ( doPlayRange && mSeqState.playRange.stopPoint[0] >= 0 ) ? mSeqState.playRange.stopPoint[0] + 1 : pat.getRowCount();
 
     if (mSeqState.current_tick >= mSeqState.ticks_per_row) {
         mSeqState.current_tick = 0;
@@ -405,7 +405,7 @@ void OPL3Controller::tickSequencer() {
             mSeqState.orderIdx++;  // also with PlayRange let it tick
 
             // we readed the end .....
-            if (playRange || mSeqState.orderIdx >= song.orderList.size() )
+            if (doPlayRange || mSeqState.orderIdx >= song.orderList.size() )
             {
                 if ( mSeqState.loop ) {
                     // nothing todo on playRange
@@ -1392,6 +1392,13 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
             return false;
 
         }
+
+        dLog("[info] OPL3Controller PlayRange: %d, %d - %d, %d",
+             mSeqState.playRange.startPoint[0], mSeqState.playRange.startPoint[1],
+             mSeqState.playRange.stopPoint[0], mSeqState.playRange.stopPoint[1]
+        );
+
+
         //should be ok we set at least the start Row
         mSeqState.rowIdx = mSeqState.playRange.startPoint[0];
 
