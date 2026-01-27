@@ -23,18 +23,19 @@ bool SequencerGui::playSong() {
    return  getMain()->getController()->playSong(mCurrentSong, mLoopSong);
 }
 //------------------------------------------------------------------------------
-bool SequencerGui::playSelected(PatternEditorState& state)
+bool SequencerGui::playSelected(PatternEditorState& state, bool forcePatternPlay)
 {
     OPL3Controller::PlaySequencePatternRange& lPlayRange = getMain()->getController()->getSequencerStateMutable()->playRange;
 
     lPlayRange.init();
     lPlayRange.active = true;
-    if ( state.selection.active &&  state.selection.getCount() > 0 )
+    if (!forcePatternPlay &&  state.selection.active &&  state.selection.getCount() > 0 )
     {
         state.selection.sort(); //make sure its in the right position
-        lPlayRange.startPoint = state.selection.startPoint;
-        lPlayRange.stopPoint[0] = state.selection.endPoint[0];
-        lPlayRange.stopPoint[1] = state.selection.endPoint[1];
+        lPlayRange.startPoint[0] = state.selection.startPoint[0];
+        lPlayRange.startPoint[1] = state.selection.startPoint[1];
+        lPlayRange.stopPoint[0]  = state.selection.endPoint[0];
+        lPlayRange.stopPoint[1]  = state.selection.endPoint[1];
     }
     lPlayRange.patternIdx  = state.currentPatternIdx;
     return playSong();
@@ -301,14 +302,17 @@ void SequencerGui::selectPatternAll(PatternEditorState& state){
     };
 }
 //------------------------------------------------------------------------------
-void SequencerGui::pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb) {
+void SequencerGui::pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb, bool useContextPoint) {
     if (!cb.active || !state.pattern) return;
+
+
 
     int sourceIdx = 0;
     for (int r = 0; r < cb.rows; ++r) {
         for (int c = 0; c < cb.cols; ++c) {
-            int targetR = state.cursorRow + r;
-            int targetC = state.cursorCol + c;
+
+            int targetR = useContextPoint ? state.contextRow + r : state.cursorRow + r;
+            int targetC = useContextPoint ? state.contextCol + r :state.cursorCol + c;
 
             // 3. Boundary Check: Ensure we don't write outside the pattern
             // Assuming your pattern has a way to check max rows/cols
@@ -318,13 +322,14 @@ void SequencerGui::pasteStepsFromClipboard(PatternEditorState& state, const Patt
             sourceIdx++;
         }
     }
-    dLog("[Clipboard] Pasted area at R%d C%d", state.cursorRow, state.cursorCol);
+    dLog("[info] Clipboard: Pasted area at R%d C%d", state.cursorRow, state.cursorCol);
 }
 //------------------------------------------------------------------------------
 void SequencerGui::copyStepsToClipboard(PatternEditorState& state, PatternClipboard& cb) {
     if (!state.selection.active || !state.pattern) return;
-    // 1. Normalize selection so startPoint is top-left
+    dLog("[info] 1: selection count:%d", state.selection.getCount());
     state.selection.sort();
+    dLog("[info] 2: selection count:%d", state.selection.getCount());
     cb.clear();
     cb.rows = state.selection.getRowCount();
     cb.cols = state.selection.getColCount();
@@ -337,7 +342,7 @@ void SequencerGui::copyStepsToClipboard(PatternEditorState& state, PatternClipbo
         }
     }
     cb.active = true;
-    dLog("[Clipboard] Copied %d x %d area", cb.rows, cb.cols);
+    dLog("[info] Clipboard:Copied %d x %d area", cb.rows, cb.cols);
 }
 //------------------------------------------------------------------------------
 

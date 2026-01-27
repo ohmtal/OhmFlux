@@ -5,10 +5,18 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+#include <src/fonts/IconsFontAwesome6.h>
 
 //------------------------------------------------------------------------------
 // TODO:
-// [X] Add Soundrender to DSP window and also to effects (not in Controller directly)
+// [ ] current 2026-01-27
+//  [X] new pattern added as 02 but is 01!
+//  [X] reverse selected  does paste reverse ? => sort was broken
+//  [X] play pattern  plays single (selected)
+//  [X] right mouse always use selected cell ==> fixed for paste (useContextPoint)
+//  [X] Added Icons Font mIconFont ++ ICON_FA_...
+//  [ ] need change instrument !! for channel
+
 // [ ] change fms3 format again :P better now than later
 //    [ ] save / load ALL the DSP effects
 //          i dont care the filesize (some bytes)
@@ -28,7 +36,11 @@
 //
 // [ ] OrderList Editor
 //
+// [ ] Undo
 //
+// [ ] Make it nice with buttons (icons)
+//
+// [X] Add Soundrender to DSP window and also to effects (not in Controller directly)
 // [X] table drives me crazy lol >> look at IMGui demo of AssetBrowser  => it's ok for me now
 // [X] Pattern with mColCount instead of fixed for copy paste / template
 // [X] instrument select combo => Widget_InstrumentCombo
@@ -122,10 +134,13 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Gold));
 
-        if (ImGui::Button("Stop",lButtonSize))
+        ImGui::PushFont(mIconFont);
+
+        if (ImGui::Button(ICON_FA_CIRCLE_STOP "##Stop",lButtonSize))
         {
             stopSong();
         }
+        ImGui::PopFont();
         ImGui::PopStyleColor(4);
     } else {
         ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Black));
@@ -133,13 +148,19 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor4F(cl_Yellow));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor4F(cl_Orange));
 
-        if (ImGui::Button("Play",lButtonSize))
+//FONT TEST
+        ImGui::PushFont(mIconFont);
+        if (ImGui::Button(ICON_FA_CIRCLE_PLAY "##Play",lButtonSize))
         {
-
             playSong(); //autodetect
         }
+       ImGui::PopFont();
         ImGui::PopStyleColor(4);
     }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+        ImGui::SetTooltip("press F1");
+    }
+
 
     if (ImGui::Checkbox("Loop", &mLoopSong))
     {
@@ -315,27 +336,42 @@ void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
         }
 
 
-        if (ImGui::MenuItem("Play selected")) {
-            playSelected(state);
+        if (isPlaying()) {
+            if (ImGui::MenuItem(ICON_FA_CIRCLE_STOP " Stop")) {
+                stopSong();
+            }
+        } else  {
+            if (ImGui::MenuItem(ICON_FA_CIRCLE_PLAY " Play selected")) {
+                playSelected(state);
+            }
         }
+
         ImGui::Separator();
-        if (ImGui::MenuItem("Copy", "Ctrl+C")) {
+        if (ImGui::MenuItem(ICON_FA_COPY " Copy", "Ctrl+C | Ctrl+INSERT")) {
             copyStepsToClipboard(state, mPatternClipBoard);
         }
-        if (ImGui::MenuItem("Paste", "Ctrl+V")) {
-            pasteStepsFromClipboard(state, mPatternClipBoard);
+        if (ImGui::MenuItem(ICON_FA_PASTE " Paste", "Ctrl+V | Shift+INSERT")) {
+            pasteStepsFromClipboard(state, mPatternClipBoard, true);
         }
+
+        if (ImGui::MenuItem(ICON_FA_PASTE ICON_FA_ARROW_DOWN " Insert and shift down", "Insert")) {
+            insertAndshiftDataDown(state);
+        }
+
         ImGui::Separator();
-        if (ImGui::MenuItem("Cut", "Ctrl+X")) {
+        if (ImGui::MenuItem(ICON_FA_HAND_SCISSORS " Cut", "Ctrl+X")) {
             copyStepsToClipboard(state, mPatternClipBoard);
             clearSelectedSteps(state);
             state.selection.init(); // Clear selection after cut
         }
 
-        if (ImGui::MenuItem("Clear", "Del")) {
-            clearSelectedSteps(state);
+        if (ImGui::MenuItem(ICON_FA_DELETE_LEFT ICON_FA_ARROW_UP " Delete and shift up", "Ctrl+Delete")) {
+            insertAndshiftDataDown(state);
         }
 
+        if (ImGui::MenuItem(ICON_FA_BEER_MUG_EMPTY " Clear", "Del")) {
+            clearSelectedSteps(state);
+        }
 
         ImGui::Separator();
 
@@ -412,17 +448,28 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
 
 
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_C)) copyStepsToClipboard(state, mPatternClipBoard);
+        else
+        if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_Insert)) copyStepsToClipboard(state, mPatternClipBoard);
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_V)) pasteStepsFromClipboard(state, mPatternClipBoard);
-
+        else
+        if (shiftHeld && ImGui::IsKeyPressed(ImGuiKey_Insert)) copyStepsToClipboard(state, mPatternClipBoard);
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_X)) {
             copyStepsToClipboard(state, mPatternClipBoard);
             clearSelectedSteps(state);
             state.selection.init(); // Clear selection after cut
         }
-
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_A)) selectPatternAll(state);
-        if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_Insert)) insertAndshiftDataDown(state);
+        else
+        if (ImGui::IsKeyPressed(ImGuiKey_Insert)) insertAndshiftDataDown(state);
+        else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_Delete)) deleteAndShiftDataUp(state);
+
+        //-------- other actions
+        else
+        if (ImGui::IsKeyPressed(ImGuiKey_F1)) if (isPlaying()) {stopSong();} else {playSong();}
 
     }
 }
@@ -544,7 +591,7 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
                     //     Log("[warning] update steps with new instrument not implemented");
                     // }
 
-                    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Update all Steps with this instrument");
+                    // if (ImGui::IsItemHovered()) ImGui::SetTooltip("Update all Steps with this instrument");
 
 
 
@@ -827,28 +874,40 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
                         lPat.mColor = ImGui::ColorConvertFloat4ToU32(tempCol);
                     }
 
-
-                    //FIXME func ?!
-                    if (ImGui::Button("Play", ImVec2(120, 0))) {
-                        playSelected(state);
+                    //FIXME USE ICONS !
+                    const int tmpWidth = 180;
+                    ImGui::Spacing();
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - tmpWidth) * 0.5f);
+                    if (isPlaying())
+                    {
+                        if (ImGui::Button("Stop", ImVec2(tmpWidth, 0))) {
+                            stopSong();
+                        }
+                    } else {
+                        if (ImGui::Button("Play Pattern", ImVec2(tmpWidth, 0))) {
+                            playSelected(state, true);
+                        }
                     }
-
+                    ImGui::Spacing();
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - tmpWidth) * 0.5f);
                     //FIXME temp ?!
-                    if (ImGui::Button("Append to Orders", ImVec2(120, 0))) {
+                    if (ImGui::Button("Append to Orders", ImVec2(tmpWidth, 0))) {
                         mCurrentSong.orderList.push_back(lPatternIndex);
                     }
 
-                    //FIXME as func
-                    if (ImGui::Button("Clone", ImVec2(120, 0))) {
+                    ImGui::Spacing();
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 180) * 0.5f);
+                    if (ImGui::Button("Clone", ImVec2(tmpWidth, 0))) {
                         Pattern clonePat = lPat;
                         clonePat.mName += " (Copy)";
                         song.patterns.push_back(std::move(clonePat));
                     }
 
+                    ImGui::Spacing();
+                    ImGui::Separator();
 
                     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 60) * 0.5f);
                     if (ImGui::Button("Close", ImVec2(60, 0))) { ImGui::CloseCurrentPopup(); }
-
 
 
                     ImGui::EndPopup();
@@ -897,9 +956,8 @@ bool SequencerGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings&
                 s.panning = 32;
             }
 
-            song.patterns.push_back(std::move(p));
-            // automatic add to orderlist ! you can edit it later
             uint8_t newPatternIdx = (uint8_t)song.patterns.size();
+            song.patterns.push_back(std::move(p));
             song.orderList.push_back(newPatternIdx);
             ImGui::CloseCurrentPopup();
             result = true;

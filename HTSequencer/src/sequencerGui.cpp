@@ -1,5 +1,6 @@
 #include "sequencerGui.h"
 #include "sequencerMain.h"
+#include "fonts/fa.h"
 #include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
@@ -13,6 +14,7 @@
 #include <string>
 #include <cctype>
 #include <sstream>
+#include <src/fonts/IconsFontAwesome6.h>
 
 
 //------------------------------------------------------------------------------
@@ -196,6 +198,29 @@ bool SequencerGui::Initialize()
     if (!mGuiGlue->Initialize())
         return false;
 
+    // fonts >>>>
+    // NOTE: Example from: https://github.com/caiocinel/imgui-fontawesome-example/tree/master
+    ImGuiIO& io = ImGui::GetIO();
+    // --- 1. DEFAULT FONT (Proggy + Small Icons merged) ---
+    io.Fonts->AddFontDefault();
+    ImFontConfig merge_config;
+    merge_config.MergeMode = true;
+    static const ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+    // 13 ? io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 13.0f, &merge_config, ranges);
+    io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 15.0f, &merge_config, ranges);
+
+    // --- 2. BIG ICON FONT (Standalone) ---
+    ImFontConfig icon_config;
+    icon_config.MergeMode = false; // <--- IMPORTANT: DO NOT MERGE
+    // Store this pointer in your class or a global variable
+    mIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 24.0f, &icon_config, ranges);
+    //<<<<<<<<<< fonts
+
+
+
+
+
+
     // not centered ?!?!?! i guess center is not in place yet ?
     mBackground = new FluxRenderObject(getMain()->loadTexture(getGamePath()+"assets/background.png"));
     if (mBackground) {
@@ -209,6 +234,7 @@ bool SequencerGui::Initialize()
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
+
 
 
     // tests
@@ -369,13 +395,6 @@ void SequencerGui::DrawGui()
         mConsole.Draw("Console", &mSettings.ShowConsole);
 
 
-    if (mSettings.ShowSongGui) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
-        RenderSequencerUI(true);
-        ImGui::PopStyleVar();
-
-    }
-
     if (mSettings.ShowSoundBankList) RenderInstrumentListUI(true);
     if (mSettings.ShowFMEditor) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
@@ -390,9 +409,15 @@ void SequencerGui::DrawGui()
 
     ShowDSPWindow();
     ShowSoundBankWindow();
-
-
     if (mSettings.ShowFileBrowser) ShowFileManager();
+
+    //... LAST FOR FOCUS ....
+    if (mSettings.ShowSongGui) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+        RenderSequencerUI(true);
+        ImGui::PopStyleVar();
+
+    }
 
 
 

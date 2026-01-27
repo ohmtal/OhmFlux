@@ -394,7 +394,7 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     }
 
     // --- 1. Fix Octave Range Logic ---
-    static int visibleOctaves = 3; // How many octaves to show
+    static int visibleOctaves = 5; // How many octaves to show
     ImGui::AlignTextToFramePadding();
     ImGui::TextColored(ImColor4F(cl_Yellow), "Octaves");
     ImGui::SameLine();

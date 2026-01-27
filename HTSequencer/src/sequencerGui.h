@@ -65,6 +65,8 @@ private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
 
+    ImFont* mIconFont = nullptr; //<< font
+
     DSP::SpectrumAnalyzer* mSpectrumAnalyzer;
 
     SeqSettings mSettings;
@@ -94,20 +96,30 @@ private:
     // -------- PatternSelection -------
     struct PatternSelection {
         bool active = false;
-        std::array<uint16_t, 2>  startPoint = {0, 0}; // [0]=row, [1]=col
-        std::array<uint16_t, 2>  endPoint = {0, 0};
+        std::array<int32_t, 2>  startPoint = {0, 0}; // [0]=row, [1]=col
+        std::array<int32_t, 2>  endPoint = {0, 0};
 
 
         // -------------- sort
         void sort() {
             if (!active) return;
-            auto [minR, maxR] = std::minmax(startPoint[0], endPoint[0]);
-            auto [minC, maxC] = std::minmax(startPoint[1], endPoint[1]);
-            startPoint[0] = minR;
-            startPoint[1] = minC;
-            endPoint[0] = maxR;
-            endPoint[1] = maxC;
+            Log("1: start: %d, %d end: %d, %d", startPoint[0], startPoint[1], endPoint[0], endPoint[1]);
+
+            // Explicitly find the values first
+            int32_t r0 = startPoint[0];
+            int32_t r1 = endPoint[0];
+            int32_t c0 = startPoint[1];
+            int32_t c1 = endPoint[1];
+
+            startPoint[0] = std::min(r0, r1);
+            endPoint[0]   = std::max(r0, r1);
+
+            startPoint[1] = std::min(c0, c1);
+            endPoint[1]   = std::max(c0, c1);
+            Log("2: start: %d, %d end: %d, %d", startPoint[0], startPoint[1], endPoint[0], endPoint[1]);
+
         }
+
         // -------------- init
         void init() {
             active = false;
@@ -290,10 +302,10 @@ private:
     void stopSong();
     void newSong();
 
-    bool playSelected(PatternEditorState& state);
+    bool playSelected(PatternEditorState& state, bool forcePatternPlay = false);
     bool clearSelectedSteps(PatternEditorState& state);
     void copyStepsToClipboard(PatternEditorState& state, PatternClipboard& cb);
-    void pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb);
+    void pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb, bool useContextPoint=false);
     void selectPatternAll(PatternEditorState& state);
     void selectPatternRow(PatternEditorState& state);
     void selectPatternCol(PatternEditorState& state);
@@ -320,6 +332,7 @@ private:
 
 
 public:
+
     SequencerGui() {}
     ~SequencerGui() {}
 
@@ -333,6 +346,8 @@ public:
     void onKeyEvent(SDL_KeyboardEvent event);
     void onKeyEventKeyBoard(SDL_KeyboardEvent event);
     void Update(const double& dt) override;
+
+
 
     //------------------------------------------------------------------------------
     // ---- songGui / pattern ----
