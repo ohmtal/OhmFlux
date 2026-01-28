@@ -20,6 +20,7 @@ uint16_t SequencerGui::getPlayingSequenceIndex() {
 
 
 bool SequencerGui::playSong() {
+    getMain()->getController()->getSequencerStateMutable()->playRange.init();
    return  getMain()->getController()->playSong(mCurrentSong, mLoopSong);
 }
 //------------------------------------------------------------------------------
@@ -44,7 +45,7 @@ bool SequencerGui::playSelected(PatternEditorState& state, bool forcePatternPlay
 
     }
     lPlayRange.patternIdx  = state.currentPatternIdx;
-    return playSong();
+    return  getMain()->getController()->playSong(mCurrentSong, mLoopSong);
 }
 //------------------------------------------------------------------------------
 bool SequencerGui::clearSelectedSteps(PatternEditorState& state) {
@@ -201,13 +202,14 @@ void SequencerGui::newSong(){
 
     // set default instruments
 
-    int maxCnt = (int)getMain()->getController()->getSoundBank().size();
-
-    for (int i = 0;  i < SOFTWARE_CHANNEL_COUNT; i++)
-    {
-        mCurrentSong.channelInstrument[i]= (i < maxCnt) ? i : 0;
-
-    }
+    // UNUSED !!!
+    // int maxCnt = (int)getMain()->getController()->getSoundBank().size();
+    //
+    // for (int i = 0;  i < SOFTWARE_CHANNEL_COUNT; i++)
+    // {
+    //     mCurrentSong.channelInstrument[i]= (i < maxCnt) ? i : 0;
+    //
+    // }
 
     mCurrentSong.patterns.push_back(std::move(p));
     uint8_t newPatternIdx = (uint8_t)mCurrentSong.patterns.size() - 1;

@@ -45,6 +45,7 @@
 #include <string>
 #include <algorithm>
 #include <core/fluxGlobals.h>
+#include <imgui_internal.h>
 
 namespace fs = std::filesystem;
 
@@ -55,6 +56,7 @@ struct ImFileDialog {
     std::string selectedFile = "";
     std::string selectedExt = "";
     std::string mExt = "";
+    std::string mUserData = "";
 
     std::vector<fs::directory_entry> mEntries;
     bool mDirty = true;
@@ -91,6 +93,7 @@ struct ImFileDialog {
         mCancelPressed = false;
         mDirty = true;
         setFileName("");
+        mUserData = "";
     }
     //--------------------------------------------------------------------------
     bool fetchFiles()
@@ -263,7 +266,8 @@ struct ImFileDialog {
         }
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
 
-        if (ImGui::Begin(mLabel.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        std::string mWindowIdStr = mLabel+"##FileBrowser";
+        if (ImGui::Begin(mWindowIdStr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
 
             DrawHeader();
@@ -272,7 +276,13 @@ struct ImFileDialog {
 
 
             ImVec2 listSize = ImVec2(-FLT_MIN, -FLT_MIN - 25);
-            if ( mSaveMode ) listSize.y = 200.f;
+
+            // if ( mSaveMode ) listSize.y = 200.f;
+            ImGuiWindow* window = ImGui::FindWindowByName(mWindowIdStr.c_str());
+            if ( window && !window->DockIsActive)
+                listSize.y = 200.f;
+
+
             if (ImGui::BeginChild("FileList", listSize, true)) {
                 if (ImGui::Selectable("..", false, ImGuiSelectableFlags_AllowDoubleClick)) {
                     if (ImGui::IsMouseDoubleClicked(0)) {
@@ -329,7 +339,7 @@ struct ImFileDialog {
                     result = true;
                 }
             }
-            if (mSaveMode)
+            // if (mSaveMode)
             {
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel")) {

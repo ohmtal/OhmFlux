@@ -24,3 +24,11 @@ inline void showMessageBox(std::string caption, std::string text)
     POPUP_MSGBOX_ACTIVE = true;
 }
 
+inline void showMessageNotImplemented(std::string caption)
+{
+    POPUP_MSGBOX_CAPTION = caption;
+    POPUP_MSGBOX_TEXT   = "sorry, not implemented, yet";
+    POPUP_MSGBOX_ACTIVE = true;
+    Log("[warn] called NOT implemented: %s", caption.c_str());
+}
+

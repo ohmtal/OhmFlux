@@ -9,16 +9,21 @@
 
 //------------------------------------------------------------------------------
 // TODO:
-// [ ] current 2026-01-27
+// [X] current 2026-01-27
 //  [X] new pattern added as 02 but is 01!
 //  [X] reverse selected  does paste reverse ? => sort was broken
 //  [X] play pattern  plays single (selected)
 //  [X] right mouse always use selected cell ==> fixed for paste (useContextPoint)
 //  [X] Added Icons Font mIconFont ++ ICON_FA_...
 //  [X] colored step cell rendering
-//  [ ] need change instrument !! for channel or better selection
+//  [X] need change instrument !! for channel or better selection
 //
-// [ ] Effects
+//
+// [ ] Limiter settings (maybe only Threshold )
+//  [ ] jsON def and save/load
+//  [ ] Gui Slider 0.1..0.99 + default
+//
+// [ ] OPL Effects
 //  [ ] how to editor then the best way / context menu
 
 // [ ] change fms3 format again :P better now than later
@@ -298,13 +303,17 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         // ImGui::SameLine();
         const OPL3Controller::SequencerState& lSeqState = getMain()->getController()->getSequencerState();
 
-        ImGui::TextColored(ImColor4F(cl_AcidGreen),
-                           "SEQ: order:%d pat:%d row:%d ChannelNoteStates:%s"
-                           ,lSeqState.orderIdx
-                           ,mCurrentSong.orderList[lSeqState.orderIdx]
-                           ,lSeqState.rowIdx
-                           ,lChannelToNoteStates.c_str()
-        );
+        if (lSeqState.orderIdx < mCurrentSong.orderList.size())
+        {
+            ImGui::TextColored(ImColor4F(cl_AcidGreen),
+                               "SEQ: order:%d pat:%d row:%d ChannelNoteStates:%s"
+                               ,lSeqState.orderIdx
+                               ,mCurrentSong.orderList[lSeqState.orderIdx]
+                               ,lSeqState.rowIdx
+                               ,lChannelToNoteStates.c_str()
+            );
+        }
+
     }
 
 
@@ -501,7 +510,7 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
         else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_V)) pasteStepsFromClipboard(state, mPatternClipBoard);
         else
-        if (shiftHeld && ImGui::IsKeyPressed(ImGuiKey_Insert)) copyStepsToClipboard(state, mPatternClipBoard);
+        if (shiftHeld && ImGui::IsKeyPressed(ImGuiKey_Insert)) pasteStepsFromClipboard(state, mPatternClipBoard);
         else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_X)) {
             copyStepsToClipboard(state, mPatternClipBoard);
@@ -842,9 +851,14 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
         if (mSettings.EnhancedStepView)
         {
             ImGui::PushFont(mTinyFont);
-            drawList->AddText(ImVec2(pos.x + 1.f/*+ offsetX*/, pos.y - 1.f /*+ centerY*/),
-                              Color4FIm(cl_Sand ) * (float)( step.instrument + 1),
-                              std::format("{}",insName.substr(0, std::min<size_t>(insName.size(), 30))).c_str()
+            float hue = (float)step.instrument * 0.03125f;
+            ImVec4 colRGB;
+            ImGui::ColorConvertHSVtoRGB(hue, 1.0f, 1.0f, colRGB.x, colRGB.y, colRGB.z);
+            colRGB.w = 1.0f; // Full opacity
+            ImU32 instrumentColor = ImGui::GetColorU32(colRGB);
+            drawList->AddText(ImVec2(pos.x + 4.f/*+ offsetX*/, pos.y - 1.f /*+ centerY*/),
+                              instrumentColor,
+                              std::format("{}",insName.substr(0, std::min<size_t>(insName.size(), 20))).c_str()
             );
 
 

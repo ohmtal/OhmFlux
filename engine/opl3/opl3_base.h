@@ -207,7 +207,8 @@ namespace opl3 {
         EFF_SET_PANNING  = 0x8, // 8xx Set Panning
         EFF_VOL_SLIDE    = 0xA, // Axy: Volume Slide
         EFF_SET_VOLUME   = 0xC, // Cxx: Set Volume
-        EFF_POSITION_JUMP= 0xB, // Bxx: Jump to Pattern
+        EFF_POSITION_JUMP= 0xB, // Bxx: Jump to Pattern FIXME
+        EFF_SET_SPEED    = 0xD, // Dxx: Speed modifier FIXME
     };
     //--------------------------------------------------------------------------
     // OplInstrument

@@ -61,7 +61,7 @@ void SequencerGui::ShowFileManager(){
                     this->exportSongToWav(g_FileDialog.selectedFile);
                 }
             }
-            g_FileDialog.reset();
+
         } else {
             // ------------------ OPEN:  --------------------
 
@@ -71,6 +71,8 @@ void SequencerGui::ShowFileManager(){
                     Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
                 else
                     Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size() );
+
+
             }
             else
             if ( g_FileDialog.selectedExt == ".wopl" )
@@ -116,8 +118,15 @@ void SequencerGui::ShowFileManager(){
             if ( g_FileDialog.selectedExt == ".fms" ) {
                 getMain()->getController()->stopSong();
                 getMain()->getController()->silenceAll(false);
-                if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, mCurrentSong)) {
-                    getMain()->getController()->getSoundBank() = mCurrentSong.instruments;
+
+                SongData* lTargetSong = &mCurrentSong;
+                if (g_FileDialog.mUserData == "ImportBank")
+                {
+                    lTargetSong = &mTempSong;
+                }
+
+                if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, *lTargetSong)) {
+                    getMain()->getController()->getSoundBank() = lTargetSong->instruments;
                     Log("Loaded legacy fms Song:  %s", g_FileDialog.selectedFile.c_str());
 
                 } else {
@@ -128,8 +137,15 @@ void SequencerGui::ShowFileManager(){
             if ( g_FileDialog.selectedExt == ".fms3" ) {
                 getMain()->getController()->stopSong();
                 getMain()->getController()->silenceAll(false);
-                if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, mCurrentSong)) {
-                    getMain()->getController()->getSoundBank() = mCurrentSong.instruments;
+
+                SongData* lTargetSong = &mCurrentSong;
+                if (g_FileDialog.mUserData == "ImportBank")
+                {
+                    lTargetSong = &mTempSong;
+                }
+
+                if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, *lTargetSong)) {
+                    getMain()->getController()->getSoundBank() = lTargetSong->instruments;
                     Log("Loaded Song:  %s", g_FileDialog.selectedFile.c_str());
 
                 } else {
@@ -139,6 +155,7 @@ void SequencerGui::ShowFileManager(){
 
 
         }
+        g_FileDialog.reset();
     }
 }
 //------------------------------------------------------------------------------
@@ -214,12 +231,8 @@ bool SequencerGui::Initialize()
     icon_config.MergeMode = false; // <--- IMPORTANT: DO NOT MERGE
     // Store this pointer in your class or a global variable
     mIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 24.0f, &icon_config, ranges);
-    mTinyFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size,  6.0f, &icon_config, ranges);
+    mTinyFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size,  7.0f, &icon_config, ranges);
     //<<<<<<<<<< fonts
-
-
-
-
 
 
     // not centered ?!?!?! i guess center is not in place yet ?
@@ -235,8 +248,6 @@ bool SequencerGui::Initialize()
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
-
-
 
     // tests
     mOpl3Tests = std::make_unique<OPL3Tests>(getMain()->getController());
@@ -396,7 +407,12 @@ void SequencerGui::DrawGui()
         mConsole.Draw("Console", &mSettings.ShowConsole);
 
 
-    if (mSettings.ShowSoundBankList) RenderInstrumentListUI(true);
+    if (mSettings.ShowSoundBankList) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 8.0f);
+        RenderInstrumentListUI(true);
+        ImGui::PopStyleVar(2);
+    }
     if (mSettings.ShowFMEditor) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 12.0f);

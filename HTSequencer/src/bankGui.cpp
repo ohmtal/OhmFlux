@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+#include <src/fonts/IconsFontAwesome6.h>
 
 //------------------------------------------------------------------------------
 void SequencerGui::ShowSoundBankWindow()
@@ -73,23 +74,53 @@ void SequencerGui::ShowSoundBankWindow()
 //------------------------------------------------------------------------------
 void SequencerGui::RenderInstrumentListUI(bool standAlone)
 {
+    const ImVec2 lButtonSize = { 32.f, 32.f};
     if (standAlone)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
         ImGui::Begin("Instruments");
     }
 
-    // CHANGED: Use ImVec2(0, 0) so it fills the Table Column/Sidebar width and height
     if (ImGui::BeginChild("INSTRUMENT_Box", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
         std::vector<opl3::Instrument>& bank = getMain()->getController()->getSoundBank();
 
-        // Use -FLT_MIN to ensure the ListBox fills the entire child area
+        //Buttons
+        if (ImGui::Button(ICON_FA_SQUARE_PLUS "##New", lButtonSize )){
+            getMain()->getController()->initDefaultBank();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("New - this reset the default Sound Bank ");
+
+        ImGui::SameLine();
+        if (ImGui::Button(ICON_FA_FOLDER_OPEN "##Import Bank", lButtonSize )){
+            g_FileDialog.setFileName("");
+            g_FileDialog.mSaveMode = false;
+            g_FileDialog.mSaveExt = "";
+            g_FileDialog.mLabel = "Import Soundbank";
+            g_FileDialog.mFilters = {".fms3", ".fms", ".op2", ".wopl"};
+            g_FileDialog.mUserData = "ImportBank";
+            g_FileDialog.mDirty  = true;
+
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Import Bank");
+
+        ImGui::SameLine();
+        if (ImGui::Button(ICON_FA_FLOPPY_DISK "##Export Bank", lButtonSize )){
+            //FIXME
+            showMessageNotImplemented("Export Bank");
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Export Bank");
+
+        ImGui::Separator();
+
+
+        // List
+        std::string instrumentCaption;
+
         if (ImGui::BeginListBox("##InstList", ImVec2(-FLT_MIN, -FLT_MIN))) {
             for (int n = 0; n < (int)bank.size(); n++) {
                 const bool is_selected = (mCurrentInstrumentId == n);
 
-                // std::format is great for 2026!
-                std::string instrumentCaption = std::format("{}##{}", bank[n].name, n);
+                instrumentCaption = std::format("{:02X} {}", n, bank[n].name);
 
                 if (ImGui::Selectable(instrumentCaption.c_str(), is_selected)) {
                     mCurrentInstrumentId = n;
@@ -99,14 +130,33 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
 
                     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                         Log("Using Instrument %d", mCurrentInstrumentId);
-                        mTestNoteSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
-                        getMain()->getController()->playSong(mTestNoteSong);
+                        mTempSong = mOpl3Tests->createScaleSong(mCurrentInstrumentId);
+                        getMain()->getController()->playSong(mTempSong);
                     }
-
-                    ImGui::SetTooltip("#%d %s", n, instrumentCaption.c_str());
+                    ImGui::SetTooltip("#%d %s\nFour-OP:%s", n, instrumentCaption.c_str(), bank[n].isFourOp ? "Yes" : "No");
                 }
 
-                if (is_selected) ImGui::SetItemDefaultFocus();
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+
+                    if (ImGui::BeginPopupContextItem("##InstListInstrumentPopup")) {
+                        ImGui::TextColored(Color4FIm(cl_SkyBlue), "%s", instrumentCaption.c_str());
+                        ImGui::Separator();
+                        if (ImGui::MenuItem("Delete Instrument")) {
+                            showMessageNotImplemented("Delete Instrument");
+                        }
+                        if (ImGui::MenuItem("Insert Instrument")) {
+                            showMessageNotImplemented("Insert Instrument");
+                        }
+                        if (ImGui::MenuItem("Replace Instrument")) {
+                            showMessageNotImplemented("Replace Instrument");
+                        }
+                        ImGui::EndPopup();
+                    }
+                }
+
+
+
             }
             ImGui::EndListBox();
         }

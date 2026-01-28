@@ -88,7 +88,7 @@ private:
 
     // -------- song -------
     opl3::SongData mCurrentSong;
-    opl3::SongData mTestNoteSong;
+    opl3::SongData mTempSong;
     bool mLoopSong = false;
     bool mExportWithEffects = false;
     // bool mInsertMode = false;
