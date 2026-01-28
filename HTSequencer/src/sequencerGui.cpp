@@ -222,9 +222,13 @@ bool SequencerGui::Initialize()
     io.Fonts->AddFontDefault();
     ImFontConfig merge_config;
     merge_config.MergeMode = true;
+
+    merge_config.OversampleH = merge_config.OversampleV = 1;
+    merge_config.PixelSnapH = true;
+
     static const ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
     // 13 ? io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 13.0f, &merge_config, ranges);
-    io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 15.0f, &merge_config, ranges);
+    io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 13.0f, &merge_config, ranges);
 
     // --- 2. BIG ICON FONT (Standalone) ---
     ImFontConfig icon_config;
@@ -429,6 +433,7 @@ void SequencerGui::DrawGui()
     if (mSettings.ShowFileBrowser) ShowFileManager();
 
     //... LAST FOR FOCUS ....
+    mPatternEditorState.visible = false;
     if (mSettings.ShowSongGui) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
         RenderSequencerUI(true);

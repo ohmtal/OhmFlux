@@ -394,7 +394,7 @@ namespace opl3 {
     //--------------------------------------------------------------------------
     struct Pattern {
         std::string mName = "New Pattern";
-        uint32_t mColor = 0xFF0000FF; // ABGR !!!!
+        uint32_t mColor = 0xFF0A0AF0; // ABGR !!!!
         uint8_t mColCount = SOFTWARE_CHANNEL_COUNT;
     protected:
         std::vector<SongStep> mSteps;

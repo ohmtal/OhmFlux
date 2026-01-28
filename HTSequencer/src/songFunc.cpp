@@ -247,7 +247,7 @@ void SequencerGui::deleteAndShiftDataUp(PatternEditorState& state) {
     if (state.selection.active) state.selection.init();
 }
 //------------------------------------------------------------------------------
-void SequencerGui::insertAndshiftDataDown(PatternEditorState& state) {
+void SequencerGui::insertBlanksAndshiftDataDown(PatternEditorState& state) {
     if (!state.pattern) return;
 
     // Determine range: Selection or single cell?
@@ -330,18 +330,20 @@ void SequencerGui::selectPatternAll(PatternEditorState& state){
 void SequencerGui::pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb, bool useContextPoint) {
     if (!cb.active || !state.pattern) return;
 
+    int maxRows = cb.rows >= state.pattern->getRowCount() ? state.pattern->getRowCount() : cb.rows;
+    int maxCols = cb.cols >= state.pattern->getColCount() ? state.pattern->getColCount() : cb.cols;
 
 
     int sourceIdx = 0;
-    for (int r = 0; r < cb.rows; ++r) {
-        for (int c = 0; c < cb.cols; ++c) {
+    for (int r = 0; r < maxRows; ++r) {
+        for (int c = 0; c < maxCols; ++c) {
 
             int targetR = useContextPoint ? state.contextRow + r : state.cursorRow + r;
             int targetC = useContextPoint ? state.contextCol + r :state.cursorCol + c;
 
             // 3. Boundary Check: Ensure we don't write outside the pattern
             // Assuming your pattern has a way to check max rows/cols
-            if (targetR < state.pattern->getRowCount() && targetC < 12 /* channel count */) {
+            if (targetR < state.pattern->getRowCount() && targetC < SOFTWARE_CHANNEL_COUNT /* channel count */) {
                 state.pattern->getStep(targetR, targetC) = cb.data[sourceIdx];
             }
             sourceIdx++;

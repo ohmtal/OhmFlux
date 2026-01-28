@@ -10,10 +10,12 @@
 #include <core/fluxRenderObject.h>
 #include <gui/fluxGuiGlue.h>
 #include <gui/ImConsole.h>
+#include <gui/ImFlux.h>
 #include <DSP.h>
 #include "sequencerGlobals.h"
 #include <opl3_base.h>
 #include <OPL3Tests.h>
+
 
 
 // ------------- Wav export in a thread >>>>>>>>>>>>>>
@@ -179,6 +181,7 @@ private:
         int selectionAnchorRow = -1;
         int selectionAnchorCol = -1;
 
+        bool visible = false;
 
 
         opl3::Pattern* pattern = nullptr; //mhhh we also have the index here ...
@@ -206,7 +209,7 @@ private:
 
     struct NewPatternSettings {
         char name[64] = "New Pattern";
-        ImVec4 color = ImVec4(0.2f, 0.2f, 0.2f, 1.f);
+        ImVec4 color = ImVec4(0.2f, 0.6f, 0.2f, 1.f);
         int rowCount = 64; // Default tracker length
         bool isOpen = false;
     };
@@ -291,7 +294,7 @@ private:
 
     void setInstrumentSelection(PatternEditorState& state, uint16_t instrumentIndex);
     void transposeSelection(PatternEditorState& state, int semitones);
-    void insertAndshiftDataDown(PatternEditorState& state);
+    void insertBlanksAndshiftDataDown(PatternEditorState& state);
     void deleteAndShiftDataUp(PatternEditorState& state);
 
 

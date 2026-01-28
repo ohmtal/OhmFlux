@@ -9,15 +9,26 @@
 
 //------------------------------------------------------------------------------
 // TODO:
-// [X] current 2026-01-27
-//  [X] new pattern added as 02 but is 01!
-//  [X] reverse selected  does paste reverse ? => sort was broken
-//  [X] play pattern  plays single (selected)
-//  [X] right mouse always use selected cell ==> fixed for paste (useContextPoint)
-//  [X] Added Icons Font mIconFont ++ ICON_FA_...
-//  [X] colored step cell rendering
-//  [X] need change instrument !! for channel or better selection
-//
+// [ ] current 2026-01-28
+//  [X] Insertmode
+//    [X] to keyboard gui ==> NEW LED :D and namespace ImFlux!
+//    [X] only when window is visible
+//  [ ] Instrument Colors: Do not render the name !! and center the text again (better a small rect with color)
+//  [ ] CellPopup:
+//      check insert and shift makes no sense there ?!
+//      - delete and shift is wrong call copy&paste i guess
+//  [ ] Paste is broken if copied from a longer pattern and paste into
+//      example copy column of 256 row pattern into 63 row pattern
+//  [ ] Pattern: delete (also update order list)
+//  [ ] Pattern editor follow
+//      [ ] check mCurrentSong is playing (via pointer? )
+//      [ ] not when exporting !
+//  [X] * reset bank icon
+//  [ ] * rename instrument
+//  [ ] * export bank .. Which format(s) ....wopl+own i guess
+//  [ ]
+//  [ ]
+//  [ ]
 //
 // [ ] Limiter settings (maybe only Threshold )
 //  [ ] jsON def and save/load
@@ -48,6 +59,15 @@
 // [ ] Undo
 //
 // [ ] Make it nice with buttons (icons)
+//
+// [X] current 2026-01-27
+//  [X] new pattern added as 02 but is 01!
+//  [X] reverse selected  does paste reverse ? => sort was broken
+//  [X] play pattern  plays single (selected)
+//  [X] right mouse always use selected cell ==> fixed for paste (useContextPoint)
+//  [X] Added Icons Font mIconFont ++ ICON_FA_...
+//  [X] colored step cell rendering
+//  [X] need change instrument !! for channel or better selection
 //
 // [X] Add Soundrender to DSP window and also to effects (not in Controller directly)
 // [X] table drives me crazy lol >> look at IMGui demo of AssetBrowser  => it's ok for me now
@@ -268,6 +288,10 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         ImVec2(0, -ImGui::GetTextLineHeightWithSpacing()), //ImVec2(0, 0),
         ImGuiChildFlags_Borders,
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+
+
+
+
         // ImGui::AlignTextToFramePadding();
         if (mPatternEditorState.currentPatternIdx >= 0) {
 
@@ -284,6 +308,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
             Pattern* lCurrentPattern = &mCurrentSong.patterns[mPatternEditorState.currentPatternIdx];
             mPatternEditorState.pattern = lCurrentPattern;
             DrawPatternEditor(mPatternEditorState);
+            mPatternEditorState.visible = true;
 
         }
 
@@ -401,24 +426,24 @@ void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
             pasteStepsFromClipboard(state, mPatternClipBoard, true);
         }
 
-        if (ImGui::MenuItem(ICON_FA_PASTE ICON_FA_ARROW_DOWN " Insert and shift down", "Insert")) {
-            insertAndshiftDataDown(state);
+        ImGui::Separator();
+
+        if (ImGui::MenuItem(ICON_FA_DELETE_LEFT " Delete (clear steps)", "Del")) {
+            clearSelectedSteps(state);
         }
 
-        ImGui::Separator();
+
         if (ImGui::MenuItem(ICON_FA_HAND_SCISSORS " Cut", "Ctrl+X")) {
             copyStepsToClipboard(state, mPatternClipBoard);
             clearSelectedSteps(state);
             state.selection.init(); // Clear selection after cut
+
         }
 
-        if (ImGui::MenuItem(ICON_FA_DELETE_LEFT ICON_FA_ARROW_UP " Delete and shift up", "Ctrl+Delete")) {
-            insertAndshiftDataDown(state);
+        if (ImGui::MenuItem(ICON_FA_ARROW_UP " Delete and shift up", "Ctrl+Delete")) {
+            deleteAndShiftDataUp(state);
         }
 
-        if (ImGui::MenuItem(ICON_FA_BEER_MUG_EMPTY " Clear", "Del")) {
-            clearSelectedSteps(state);
-        }
 
         ImGui::Separator();
 
@@ -520,7 +545,7 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
         else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_A)) selectPatternAll(state);
         else
-        if (ImGui::IsKeyPressed(ImGuiKey_Insert)) insertAndshiftDataDown(state);
+        if (ImGui::IsKeyPressed(ImGuiKey_Insert)) insertBlanksAndshiftDataDown(state);
         else
         if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_Delete)) deleteAndShiftDataUp(state);
 
@@ -838,7 +863,13 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
 
     // Note
     float offsetX = 4.0f; // Padding
-    float centerY = (cellSize.y - ImGui::GetFontSize()) * 0.5f + 3.f; //add Y
+    float centerY;
+
+    if (mSettings.EnhancedStepView) {
+        centerY = (cellSize.y - ImGui::GetFontSize()) * 0.5f + 3.f; //add Y for instrument display
+    } else {
+        centerY = (cellSize.y - ImGui::GetFontSize()) * 0.5f;
+    }
 
     drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
                         Color4FIm(cl_White), noteStr.c_str());

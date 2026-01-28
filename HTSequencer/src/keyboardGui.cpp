@@ -2,6 +2,7 @@
 #include "sequencerMain.h"
 #include <imgui_internal.h>
 
+
 #include <algorithm>
 #include <string>
 #include <cctype>
@@ -118,7 +119,8 @@ bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
     PatternEditorState& state = this->mPatternEditorState;
 
 
-    if ( mSettings.InsertMode ) {
+
+    if ( mSettings.InsertMode && state.visible ) {
         Pattern* lPat = this->getCurrentPattern();
         if (lPat)
         {
@@ -188,10 +190,11 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
     }
 
 
-    // --- 1. OCTAVE CONTROL ---
-    // plus minus mapped keys
-    // WITH CTRL !!
+
+    // NOTE: global input
     if (event.down /*&& event.mod & SDL_KMOD_CTRL*/) {
+        // --- OCTAVE CONTROL ---
+        // plus minus mapped keys
         if (event.key == SDLK_PLUS) {
             if (mCurrentStartOctave < 8) mCurrentStartOctave++;
             return;
@@ -200,7 +203,16 @@ void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
             if (mCurrentStartOctave > 0) mCurrentStartOctave--;
             return;
         }
+
+        // F8 INSERT MODE
+        if (event.key == SDLK_F8) {
+            mSettings.InsertMode = !mSettings.InsertMode;
+            return;
+        }
+
+
     }
+
 
 
     // Exit if any of these functional modifiers are pressed
@@ -393,7 +405,23 @@ void SequencerGui::RenderPianoUI(bool standAlone)
         if (!ImGui::Begin("Piano")) { ImGui::End(); return; }
     }
 
-    // --- 1. Fix Octave Range Logic ---
+
+    if (mPatternEditorState.visible)
+    {
+        if (ImFlux::DrawLED("Notes will be insert to Pattern. you can also press [F8] to toggle."
+            , mSettings.InsertMode, ImFlux::LED_GREEN_GLOW  )) {
+                mSettings.InsertMode = !mSettings.InsertMode;
+        }
+    } else {
+        if (ImFlux::DrawLED("Insert Mode is on, but Pattern are not visible"
+            , mSettings.InsertMode, ImFlux::LED_BLUE_GLOW  )) {
+            mSettings.InsertMode = !mSettings.InsertMode;
+            }
+    }
+    ImGui::SameLine();
+
+
+    // --- Octave Range  ---
     static int visibleOctaves = 5; // How many octaves to show
     ImGui::AlignTextToFramePadding();
     ImGui::TextColored(ImColor4F(cl_Yellow), "Octaves");
@@ -425,6 +453,14 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     //     ImGui::EndDisabled();
 
 
+    // ImGui::SameLine();
+    // ImGui::Checkbox("Insert Mode",&mSettings.InsertMode);
+
+
+
+
+
+    //-----------
 
     int endOctave = std::min(7, (int)mCurrentStartOctave + visibleOctaves - 1);
 
@@ -464,8 +500,10 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 
             ImGui::PushID(midiNote);
 
-            // Color Logic: Use SkyBlue if active, else your default color
-            ImVec4 color = isActive ? ImColor4F(cl_SkyBlue) : (mSettings.InsertMode ? ImColor4F(cl_White) : ImColor4F(cl_LightGray));
+
+            // ImVec4 color = isActive ? ImColor4F(cl_SkyBlue) : (mSettings.InsertMode ? ImColor4F(cl_White) : ImColor4F(cl_LightGray));
+            ImVec4 color = isActive ? ImColor4F(cl_SkyBlue) :  ImColor4F(cl_LightGray);
+
             ImGui::PushStyleColor(ImGuiCol_Button, color);
 
             ImGui::SetNextItemAllowOverlap();

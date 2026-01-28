@@ -74,7 +74,7 @@ void SequencerGui::ShowSoundBankWindow()
 //------------------------------------------------------------------------------
 void SequencerGui::RenderInstrumentListUI(bool standAlone)
 {
-    const ImVec2 lButtonSize = { 32.f, 32.f};
+    const ImVec2 lButtonSize = { 28.f, 28.f};
     if (standAlone)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
@@ -85,10 +85,10 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
         std::vector<opl3::Instrument>& bank = getMain()->getController()->getSoundBank();
 
         //Buttons
-        if (ImGui::Button(ICON_FA_SQUARE_PLUS "##New", lButtonSize )){
+        if (ImGui::Button(ICON_FA_ANCHOR "##Reset", lButtonSize )){
             getMain()->getController()->initDefaultBank();
         }
-        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("New - this reset the default Sound Bank ");
+        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Reset the default Sound Bank ");
 
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_FOLDER_OPEN "##Import Bank", lButtonSize )){

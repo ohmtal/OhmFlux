@@ -278,7 +278,7 @@ struct ImFileDialog {
             ImVec2 listSize = ImVec2(-FLT_MIN, -FLT_MIN - 25);
 
             // if ( mSaveMode ) listSize.y = 200.f;
-            ImGuiWindow* window = ImGui::FindWindowByName(mWindowIdStr.c_str());
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
             if ( window && !window->DockIsActive)
                 listSize.y = 200.f;
 
@@ -339,7 +339,7 @@ struct ImFileDialog {
                     result = true;
                 }
             }
-            // if (mSaveMode)
+             if (!window->DockIsActive)
             {
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel")) {
