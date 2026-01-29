@@ -133,7 +133,7 @@ namespace ImFlux {
             ImVec4 gc = ImVec4(ImMin(bc.x * 1.8f, 1.0f), ImMin(bc.y * 1.8f, 1.0f), ImMin(bc.z * 1.8f, 1.0f), 1.0f);
 
             for (int i = 1; i <= 10; i++) { // More layers for smoother spread
-                float spread = (float)i * 2.0f; // Wider spread (was 1.2f)
+                float spread = (float)i * 0.9f; //  spread (was 1.2f)
 
                 // Linear-ish falloff is much more visible than quadratic (i*i)
                 // We use glowAlpha to modulate the whole effect
