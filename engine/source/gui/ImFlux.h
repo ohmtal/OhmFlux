@@ -13,10 +13,10 @@
 
 namespace ImFlux {
 
-
-    //------------------------------------------------------------------------------
-    // ... const ImVec2& size = ImVec2(0, 0) ...
-    //------------------------------------------------------------------------------
+    // -------- we alter the color
+    inline ImVec4 ModifierColor(ImVec4 col, float factor) {
+        return ImVec4(col.x * factor, col.y * factor, col.z * factor, col.w);
+    }
     //---------------- Hint
     inline void Hint(std::string tooltip)
     {
@@ -37,7 +37,427 @@ namespace ImFlux {
         ImGui::SameLine();
     }
 
+    //------------------------------------------------------------------------------
+    enum ButtonMouseOverEffects {
+        BUTTON_MO_HIGHLIGHT,  // Static brightness boost
+        BUTTON_MO_PULSE,      // Brightness waves
+        BUTTON_MO_GLOW,       // Outer glow/bloom
+        BUTTON_MO_SHAKE,      // Subtle wiggle (good for errors/warnings)
+        BUTTON_MO_BOUNCE,     // Slight vertical offset
+        BUTTON_MO_GLOW_PULSE  // Glow and Pulse
+    };
 
+    struct ButtonParams {
+        ImU32 color = IM_COL32(64, 64, 64, 255);
+        ImVec2 size = { 24.f, 24.f };
+        bool   bevel = true;
+        bool   gloss = true;
+        bool   shadowText = true;
+        float  rounding = -1.0f; // -1 use global style
+        float  animationSpeed = 1.0f; //NOTE: unused
+        ButtonMouseOverEffects mouseOverEffect = BUTTON_MO_HIGHLIGHT;
+    };
+
+    constexpr ButtonParams DEFAULT_BUTTON;
+
+
+    inline bool ButtonFancy(std::string label, ButtonParams params = DEFAULT_BUTTON)
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) return false;
+
+        const ImGuiID id = window->GetID(label.c_str());
+        const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + params.size);
+        ImGui::ItemSize(params.size);
+        if (!ImGui::ItemAdd(bb, id)) return false;
+
+        bool hovered, held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+
+        ImDrawList* dl = window->DrawList;
+        const float rounding = params.rounding < 0 ? ImGui::GetStyle().FrameRounding : params.rounding;
+
+        // Use double for time calculation to keep it smooth during long sessions
+        double time = ImGui::GetTime();
+
+        ImVec4 colFactor = ImVec4(1, 1, 1, 1);
+        ImVec2 renderOffset = ImVec2(0, 0);
+        float glowAlpha = 0.0f;
+
+        if (held) {
+            colFactor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+        }
+        else if (hovered) {
+            switch (params.mouseOverEffect) {
+                case BUTTON_MO_HIGHLIGHT:
+                    colFactor = ImVec4(1.2f, 1.2f, 1.2f, 1.0f);
+                    break;
+                case BUTTON_MO_PULSE: {
+                    float p = (sinf((float)(time * 10.0)) * 0.5f) + 0.5f;
+                    float s = 1.0f + (p * 0.3f);
+                    colFactor = ImVec4(s, s, s, 1.0f);
+                    break;
+                }
+                case BUTTON_MO_GLOW:
+                    glowAlpha = 1.0f; // Static glow on hover
+                    break;
+                case BUTTON_MO_GLOW_PULSE:
+                    glowAlpha = (sinf((float)(time * 10.0)) * 0.5f) + 0.5f;
+                    break;
+                case BUTTON_MO_SHAKE:
+                    renderOffset.x = sinf((float)(time * 30.0)) * 1.5f;
+                    break;
+                case BUTTON_MO_BOUNCE:
+                    renderOffset.y = -fabsf(sinf((float)(time * 10.0))) * 3.0f;
+                    break;
+            }
+        }
+
+        ImRect rbb = ImRect(bb.Min + renderOffset, bb.Max + renderOffset);
+        ImU32 finalCol = ImGui::ColorConvertFloat4ToU32(ImGui::ColorConvertU32ToFloat4(params.color) * colFactor);
+
+        // --- Render Glow ---
+        // if (glowAlpha > 0.0f) {
+        //     ImVec4 bc = ImGui::ColorConvertU32ToFloat4(params.color);
+        //     ImVec4 gc = ImVec4(ImMin(bc.x * 1.5f, 1.0f), ImMin(bc.y * 1.5f, 1.0f), ImMin(bc.z * 1.5f, 1.0f), 1.0f);
+        //     for (int i = 1; i <= 8; i++) {
+        //         float spread = (float)i * 1.2f;
+        //         float alpha = (0.35f * glowAlpha) / (float)(i * i);
+        //         ImU32 layerCol = ImGui::ColorConvertFloat4ToU32(ImVec4(gc.x, gc.y, gc.z, alpha));
+        //         dl->AddRect(rbb.Min - ImVec2(spread, spread), rbb.Max + ImVec2(spread, spread), layerCol, rounding + spread, 0, 1.5f);
+        //     }
+        // }
+        if (glowAlpha > 0.001f) {
+            ImVec4 bc = ImGui::ColorConvertU32ToFloat4(params.color);
+            // Brighten the core of the glow significantly
+            ImVec4 gc = ImVec4(ImMin(bc.x * 1.8f, 1.0f), ImMin(bc.y * 1.8f, 1.0f), ImMin(bc.z * 1.8f, 1.0f), 1.0f);
+
+            for (int i = 1; i <= 10; i++) { // More layers for smoother spread
+                float spread = (float)i * 2.0f; // Wider spread (was 1.2f)
+
+                // Linear-ish falloff is much more visible than quadratic (i*i)
+                // We use glowAlpha to modulate the whole effect
+                float alpha = (0.5f * glowAlpha) / (float)i;
+
+                ImU32 layerCol = ImGui::ColorConvertFloat4ToU32(ImVec4(gc.x, gc.y, gc.z, alpha));
+
+                // Thicker lines (2.5f) create a solid "cloud" of light
+                dl->AddRect(rbb.Min - ImVec2(spread, spread),
+                            rbb.Max + ImVec2(spread, spread),
+                            layerCol, rounding + spread, 0, 2.5f);
+            }
+
+            // Optional: One extra "Hard Glow" line right at the edge
+            dl->AddRect(rbb.Min - ImVec2(1,1), rbb.Max + ImVec2(1,1),
+                        ImGui::ColorConvertFloat4ToU32(ImVec4(gc.x, gc.y, gc.z, glowAlpha * 0.6f)), rounding + 1.0f, 0, 1.0f);
+        }
+
+
+        // --- Render Body, Bevel, Gloss & Text ---
+        dl->AddRectFilled(rbb.Min, rbb.Max, finalCol, rounding);
+
+        if (params.bevel) {
+            dl->AddRect(rbb.Min, rbb.Max, IM_COL32(255, 255, 255, 40), rounding);
+            dl->AddRect(rbb.Min + ImVec2(1,1), rbb.Max - ImVec2(1,1), IM_COL32(0, 0, 0, 40), rounding);
+        }
+
+        if (params.gloss) {
+            dl->AddRectFilledMultiColor(
+                rbb.Min + ImVec2(rounding * 0.2f, 0), ImVec2(rbb.Max.x - rounding * 0.2f, rbb.Min.y + params.size.y * 0.5f),
+                                        IM_COL32(255, 255, 255, 50), IM_COL32(255, 255, 255, 50),
+                                        IM_COL32(255, 255, 255, 0),  IM_COL32(255, 255, 255, 0)
+            );
+        }
+
+        ImVec2 textSize = ImGui::CalcTextSize(label.c_str());
+        ImVec2 textPos = rbb.Min + (params.size - textSize) * 0.5f;
+        if (params.shadowText) dl->AddText(textPos + ImVec2(1, 1), IM_COL32(0, 0, 0, 200), label.c_str());
+        dl->AddText(textPos, IM_COL32_WHITE, label.c_str());
+
+        return pressed;
+    }
+
+    // ----------------- Fancy !! ButtonFancy ....
+    // inline bool ButtonFancy(std::string label, ButtonParams params = DEFAULT_BUTTON)
+    // {
+    //     ImGuiWindow* window = ImGui::GetCurrentWindow();
+    //     if (window->SkipItems) return false;
+    //
+    //     const ImGuiID id = window->GetID(label.c_str());
+    //     const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + params.size);
+    //     ImGui::ItemSize(params.size);
+    //     if (!ImGui::ItemAdd(bb, id)) return false;
+    //
+    //     bool hovered, held;
+    //     bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+    //
+    //     ImDrawList* dl = window->DrawList;
+    //     const float rounding = params.rounding < 0 ? ImGui::GetStyle().FrameRounding : params.rounding;
+    //
+    //     // --- 1. Handle Mouse Over Effects & Color Logic ---
+    //     ImVec4 colFactor = ImVec4(1, 1, 1, 1);
+    //     ImVec2 renderOffset = ImVec2(0, 0);
+    //     float glowAlpha = 0.0f;
+    //
+    //
+    //     // Use double for the base time to prevent jittering/stuttering
+    //     // after the application has been running for a long time.
+    //     double baseTime = ImGui::GetTime();
+    //
+    //     if (held) {
+    //         colFactor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+    //     }
+    //     else if (hovered) {
+    //         float speed = params.animationSpeed;
+    //         switch (params.mouseOverEffect) {
+    //             case BUTTON_MO_HIGHLIGHT:
+    //                 colFactor = ImVec4(1.2f, 1.2f, 1.2f, 1.0f);
+    //                 break;
+    //             case BUTTON_MO_PULSE: {
+    //                 float p = (sinf((float)(baseTime * 10.0 * speed)) * 0.5f) + 0.5f;
+    //                 float s = 1.0f + (p * 0.3f);
+    //                 colFactor = ImVec4(s, s, s, 1.0f);
+    //                 break;
+    //             }
+    //             case BUTTON_MO_GLOW:
+    //             case BUTTON_MO_GLOW_PULSE: {
+    //                 float p = (params.mouseOverEffect == BUTTON_MO_GLOW) ? 1.0f : (sinf((float)(baseTime * 10.0 * speed)) * 0.5f) + 0.5f;
+    //                 glowAlpha = p;
+    //                 break;
+    //             }
+    //             case BUTTON_MO_SHAKE: {
+    //                 renderOffset.x = sinf((float)(baseTime * 30.0 * speed)) * 1.5f;
+    //                 break;
+    //             }
+    //             case BUTTON_MO_BOUNCE: {
+    //                 renderOffset.y = -fabsf(sinf((float)(baseTime * 10.0 * speed))) * 3.0f;
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //
+    //
+    //     ImRect rbb = ImRect(bb.Min + renderOffset, bb.Max + renderOffset);
+    //     ImU32 finalCol = ImGui::ColorConvertFloat4ToU32(ImGui::ColorConvertU32ToFloat4(params.color) * colFactor);
+    //
+    //
+    //
+    //     // --- 2. Render Background & Glow ---
+    //     // if (glowAlpha > 0.0f) {
+    //     //     // Create a brighter version of the button color for the glow
+    //     //     ImVec4 bc = ImGui::ColorConvertU32ToFloat4(params.color);
+    //     //     ImVec4 gc = ImVec4(ImMin(bc.x * 1.5f, 1.0f), ImMin(bc.y * 1.5f, 1.0f), ImMin(bc.z * 1.5f, 1.0f), 1.0f);
+    //     //
+    //     //     for (int i = 1; i <= 8; i++) {
+    //     //         float spread = (float)i * 1.2f;
+    //     //         // Use glowAlpha with a quadratic falloff for a soft bloom
+    //     //         float alpha = (0.4f * glowAlpha) / (float)(i * i);
+    //     //         ImU32 layerCol = ImGui::ColorConvertFloat4ToU32(ImVec4(gc.x, gc.y, gc.z, alpha));
+    //     //
+    //     //         dl->AddRect(rbb.Min - ImVec2(spread, spread),
+    //     //                     rbb.Max + ImVec2(spread, spread),
+    //     //                     layerCol, rounding + spread, 0, 2.0f);
+    //     //     }
+    //     // }
+    //     // --- 2. Render Background & Glow ---
+    //     if (glowAlpha > 0.0f) {
+    //         ImVec4 bc = ImGui::ColorConvertU32ToFloat4(params.color);
+    //         // Tint the glow slightly towards white for more "light"
+    //         ImVec4 gc = ImVec4(ImMin(bc.x + 0.2f, 1.0f), ImMin(bc.y + 0.2f, 1.0f), ImMin(bc.z + 0.2f, 1.0f), 1.0f);
+    //
+    //         for (int i = 1; i <= 8; i++) {
+    //             float spread = (float)i * 1.2f;
+    //             // Quadratic falloff for soft edges
+    //             float alpha = (0.35f * glowAlpha) / (float)(i * i);
+    //             ImU32 layerCol = ImGui::ColorConvertFloat4ToU32(ImVec4(gc.x, gc.y, gc.z, alpha));
+    //
+    //             dl->AddRect(rbb.Min - ImVec2(spread, spread),
+    //                         rbb.Max + ImVec2(spread, spread),
+    //                         layerCol, rounding + spread, 0, 1.5f);
+    //         }
+    //     }
+    //
+    //     // Draw body after glow so the button sits "on top" of the light
+    //     dl->AddRectFilled(rbb.Min, rbb.Max, finalCol, rounding);
+    //
+    //     // --- 3. Render Bevel ---
+    //     if (params.bevel) {
+    //         dl->AddRect(rbb.Min, rbb.Max, IM_COL32(255, 255, 255, 40), rounding); // Light edge
+    //         dl->AddRect(rbb.Min + ImVec2(1,1), rbb.Max - ImVec2(1,1), IM_COL32(0, 0, 0, 40), rounding); // Shadow edge
+    //     }
+    //
+    //     // --- 4. Render Gloss ---
+    //     if (params.gloss) {
+    //         dl->AddRectFilledMultiColor(
+    //             rbb.Min + ImVec2(rounding * 0.2f, 0), ImVec2(rbb.Max.x - rounding * 0.2f, rbb.Min.y + params.size.y * 0.5f),
+    //                                     IM_COL32(255, 255, 255, 50), IM_COL32(255, 255, 255, 50),
+    //                                     IM_COL32(255, 255, 255, 0),  IM_COL32(255, 255, 255, 0)
+    //         );
+    //     }
+    //
+    //     // --- 5. Render Text ---
+    //     ImVec2 textSize = ImGui::CalcTextSize(label.c_str());
+    //     ImVec2 textPos = rbb.Min + (params.size - textSize) * 0.5f;
+    //     if (params.shadowText) {
+    //         dl->AddText(textPos + ImVec2(1, 1), IM_COL32(0, 0, 0, 200), label.c_str());
+    //     }
+    //     dl->AddText(textPos, IM_COL32_WHITE, label.c_str());
+    //
+    //     return pressed;
+    // }
+
+    //-------------- Demo ShowButtonFancyGallery
+    inline void ShowButtonFancyGallery() {
+        ImGui::Begin("Fancy Button Gallery");
+
+        // Standard styling for the whole gallery
+        static ButtonParams p;
+        p.size = ImVec2(120, 40);
+        p.rounding = 4.0f;
+
+        // --- ROW 1: Mouse Over Effects ---
+        ImGui::Text("Mouse Over Effects:");
+
+        p.color = IM_COL32(50, 100, 200, 255); // Blueish
+        p.mouseOverEffect = BUTTON_MO_HIGHLIGHT;
+        ButtonFancy("Highlight", p); ImGui::SameLine();
+
+        p.mouseOverEffect = BUTTON_MO_PULSE;
+        ButtonFancy("Pulse", p); ImGui::SameLine();
+
+        p.mouseOverEffect = BUTTON_MO_GLOW;
+        ButtonFancy("Glow", p); ImGui::SameLine();
+
+        p.mouseOverEffect = BUTTON_MO_GLOW_PULSE;
+        ButtonFancy("Glow and Pulse", p); ImGui::SameLine();
+
+        p.mouseOverEffect = BUTTON_MO_SHAKE;
+        ButtonFancy("Shake", p); ImGui::SameLine();
+
+        p.mouseOverEffect = BUTTON_MO_BOUNCE;
+        ButtonFancy("Bounce", p);
+
+        ImGui::Separator();
+
+        // ImGui::Text("Animation Speed");
+        // p.mouseOverEffect = BUTTON_MO_GLOW_PULSE;
+        // p.color = IM_COL32(200, 40, 40, 255);
+        //
+        // p.animationSpeed = 5.0f;
+        // ButtonFancy("Slow Pulse", p); ImGui::SameLine();
+        //
+        // p.animationSpeed = 25.0f;
+        // ButtonFancy("URGENT", p);
+
+
+        ImGui::Separator();
+
+        // --- ROW 2: Shapes & Rounding ---
+        ImGui::Text("Shapes & Rounding:");
+
+        p.mouseOverEffect = BUTTON_MO_HIGHLIGHT;
+        p.color = IM_COL32(100, 100, 100, 255); // Grey
+
+        p.rounding = 0.0f;
+        ButtonFancy("Square", p); ImGui::SameLine();
+
+        p.rounding = 8.0f;
+        ButtonFancy("Rounded", p); ImGui::SameLine();
+
+        p.rounding = p.size.y * 0.5f; // Perfect Capsule
+        ButtonFancy("Capsule", p);
+
+        ImGui::Separator();
+
+        // --- ROW 3: Toggle Features ---
+        ImGui::Text("Feature Toggles:");
+
+        p.rounding = 4.0f;
+        p.color = IM_COL32(40, 150, 40, 255); // Green
+
+        p.bevel = true; p.gloss = true;
+        ButtonFancy("Bevel+Gloss", p); ImGui::SameLine();
+
+        p.bevel = false; p.gloss = false;
+        ButtonFancy("Flat Style", p); ImGui::SameLine();
+
+        p.shadowText = false;
+        ButtonFancy("No Shadow", p);
+
+        ImGui::End();
+    }
+
+
+
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    inline bool ColoredButton(const char* label, ImU32 color, ImVec2 size) {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) return false;
+
+        const ImGuiID id = window->GetID(label);
+        const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+        ImGui::ItemSize(size);
+        if (!ImGui::ItemAdd(bb, id)) return false;
+
+        bool hovered, held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+
+        ImDrawList* dl = window->DrawList;
+        const float rounding = ImGui::GetStyle().FrameRounding;
+
+        // 1. Interaction & Pulse Logic
+        ImU32 baseCol = color;
+        if (held) {
+            // Darken when clicked
+            baseCol = ImGui::ColorConvertFloat4ToU32(ImGui::ColorConvertU32ToFloat4(color) * ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+        } else if (hovered) {
+            // Pulse brightness on hover
+            float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+            float boost = 1.0f + (pulse * 0.25f);
+            ImVec4 c = ImGui::ColorConvertU32ToFloat4(color);
+            baseCol = ImGui::ColorConvertFloat4ToU32(ImVec4(c.x * boost, c.y * boost, c.z * boost, c.w));
+        }
+
+        // 2. Main Body (Respects FrameRounding)
+        dl->AddRectFilled(bb.Min, bb.Max, baseCol, rounding);
+
+        // 3. Hardware Bevel Logic
+        // We draw two concentric rounded rectangles to simulate the 3D edge without line-bleeding
+        if (rounding > 0.0f) {
+            // Highlight top-left arc
+            dl->AddRect(bb.Min, bb.Max, IM_COL32(255, 255, 255, 45), rounding, 0, 1.0f);
+            // Inner shadow to give depth
+            dl->AddRect(bb.Min + ImVec2(1,1), bb.Max - ImVec2(1,1), IM_COL32(0, 0, 0, 40), rounding, 0, 1.0f);
+        }
+
+        // 4. Glossy Overlay
+        // Note: AddRectFilledMultiColor is always rectangular.
+        // We draw it slightly inset or on top half to simulate a glass reflection.
+        dl->AddRectFilledMultiColor(
+            bb.Min + ImVec2(rounding * 0.2f, 0), ImVec2(bb.Max.x - rounding * 0.2f, bb.Min.y + size.y * 0.5f),
+                                    IM_COL32(255, 255, 255, 50), IM_COL32(255, 255, 255, 50),
+                                    IM_COL32(255, 255, 255, 0),  IM_COL32(255, 255, 255, 0)
+        );
+
+        // 5. Centered Shadowed Text
+        ImVec2 textSize = ImGui::CalcTextSize(label);
+        ImVec2 textPos = bb.Min + (size - textSize) * 0.5f;
+
+        // Draw Shadow
+        dl->AddText(textPos + ImVec2(1.0f, 1.0f), IM_COL32(0, 0, 0, 200), label);
+        // Draw Main Text
+        dl->AddText(textPos, IM_COL32_WHITE, label);
+
+        // 6. External Pulse Border (Only on Hover)
+        if (hovered && !held) {
+            float p = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+            dl->AddRect(bb.Min - ImVec2(0.5f, 0.5f), bb.Max + ImVec2(0.5f, 0.5f),
+                        IM_COL32(255, 255, 255, (int)(p * 180)), rounding, 0, 1.0f);
+        }
+
+        return pressed;
+    }
     //------------------------------------------------------------------------------
     // ------------ BitEditor
     inline void BitEditor(const char* label, uint8_t* bits, ImU32  color_on = IM_COL32(255, 0, 0, 255)) {
@@ -60,7 +480,9 @@ namespace ImFlux {
         ImGui::NewLine();
     }
 
+
     //------------------------------------------------------------------------------
+    // Simple PeakMeter
     inline void PeakMeter(float level) {
         ImVec2 p = ImGui::GetCursorScreenPos();
         ImVec2 size = ImVec2(100, 6);

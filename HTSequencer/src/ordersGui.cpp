@@ -7,6 +7,111 @@
 #include <cctype>
 #include <src/fonts/IconsFontAwesome6.h>
 
+//-----------------------------------------------------------------------------
+/*
+ *  Like DrawFancyOrderList but vertical, no append button or header caption,
+ *  small colored pattern with index only name via tooltip
+ */
+void SequencerGui::DrawMiniOrderList(SongData& song, int currentIndex, float buttonSize, ImVec2 controlSize) {
+    static int move_from = -1, move_to = -1;
+    int delete_idx = -1, insert_idx = -1;
+
+    ImVec2 btnSize = ImVec2(buttonSize, buttonSize);
+    bool isPlaying = (currentIndex >= 0);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+
+
+    // Style for tight horizontal layout
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 0));
+    ImGui::BeginChild("MiniOrderScroll", controlSize, false, ImGuiWindowFlags_HorizontalScrollbar);
+
+    for (int n = 0; n < (int)song.orderList.size(); n++) {
+        uint8_t& patIdx = song.orderList[n];
+        Pattern& pat = song.patterns[patIdx];
+        bool isCurrent = (currentIndex == n);
+
+        ImGui::PushID(n);
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+
+        // 1. Interaction (Disabled if playing, except for tooltips/menus)
+        ImGui::BeginDisabled(isPlaying);
+        ImGui::InvisibleButton("tile", btnSize);
+        ImGui::EndDisabled();
+
+        // 2. Tooltip (Always active)
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip("Order: %02d\nPattern: [%02d] %s", n, patIdx, pat.mName.c_str());
+        }
+
+
+        // Base Color
+        dl->AddRectFilled(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y), pat.mColor, 2.0f);
+
+        if (isCurrent) {
+            // "Playing" Visual Effect: Pulsing white border
+            float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+            ImU32 pulseCol = ImGui::GetColorU32(ImVec4(1, 1, 1, 0.5f + pulse * 0.5f));
+            dl->AddRect(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y), pulseCol, 3.0f, 0, 2.0f);
+        } else if (ImGui::IsItemHovered() && !isPlaying) {
+            dl->AddRect(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y), IM_COL32_WHITE, 1.0f);
+        }
+
+        // Display Pattern Index (patIdx) instead of Order Index (n)
+        char buf[4]; snprintf(buf, 4, "%02d", patIdx);
+        ImVec2 ts = ImGui::CalcTextSize(buf);
+        dl->AddText(ImVec2(pos.x + (btnSize.x - ts.x) * 0.5f, pos.y + (btnSize.y - ts.y) * 0.5f),
+                    IM_COL32_WHITE, buf);
+
+        // 4. Full Context Menu (Insert / Change / Remove)
+        if (ImGui::BeginPopupContextItem("mini_row_menu")) {
+            if (ImGui::MenuItem("Insert before")) insert_idx = n;
+            if (ImGui::MenuItem("Remove")) delete_idx = n;
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Change Pattern")) {
+                for (int p = 0; p < (int)song.patterns.size(); p++) {
+                    if (ImGui::Selectable(song.patterns[p].mName.c_str(), patIdx == p)) patIdx = p;
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndPopup();
+        }
+
+        // 5. Drag & Drop (Disabled if playing)
+        if (!isPlaying) {
+            if (ImGui::BeginDragDropSource()) {
+                ImGui::SetDragDropPayload("DND_ORDER", &n, sizeof(int));
+                ImGui::Text("Move Pattern %02d", patIdx);
+                ImGui::EndDragDropSource();
+            }
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_ORDER")) {
+                    move_from = *(const int*)payload->Data;
+                    move_to = n;
+                }
+                ImGui::EndDragDropTarget();
+            }
+        }
+
+        ImGui::SameLine();
+        ImGui::PopID();
+    }
+
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+
+    // Deferred Logic execution
+    if (delete_idx != -1) song.orderList.erase(song.orderList.begin() + delete_idx);
+    if (insert_idx != -1) song.orderList.insert(song.orderList.begin() + insert_idx, song.orderList[insert_idx]);
+    if (move_from != -1 && move_to != -1) {
+        auto it_f = song.orderList.begin() + move_from;
+        auto it_t = song.orderList.begin() + move_to;
+        if (move_from < move_to) std::rotate(it_f, it_f + 1, it_t + 1);
+        else std::rotate(it_t, it_f, it_f + 1);
+        move_from = move_to = -1;
+    }
+}
+//------------------------------------------------------------------------------
+// DrawFancyOrderList
 //------------------------------------------------------------------------------
 void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 controlSize) {
 

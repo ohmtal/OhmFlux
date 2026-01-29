@@ -33,6 +33,11 @@ inline ImColor Color4FIm(const Color4F& c) {
     return ImColor (c.r, c.g, c.b, c.a);
 }
 
+inline ImU32 Color4FImU32(const Color4F& c) {
+    return ImGui::ColorConvertFloat4ToU32(ImVec4(c.r, c.g, c.b, c.a));
+}
+
+
 
 class FluxGuiGlue : public FluxBaseObject
 {

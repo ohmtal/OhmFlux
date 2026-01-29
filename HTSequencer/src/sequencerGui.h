@@ -60,6 +60,8 @@ public:
         bool ShowPiano;
         bool InsertMode;  // when playing a note is insert
         bool EnhancedStepView; // if false only the note is displayed
+        bool ShowPlayList;
+
     };
 
 private:
@@ -85,6 +87,7 @@ private:
         , .ShowPiano = false
         , .InsertMode = false
         , .EnhancedStepView = false
+        , .ShowPlayList = false
     };
 
 
@@ -351,6 +354,9 @@ public:
     bool Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank);
 
     // -----
+    void DrawMiniOrderList(SongData& song, int currentIndex = -1,  float buttonSize = 24.f , ImVec2 controlSize = {0,0});
+
+    void DrawMiniOrderList1(SongData& song, bool standAlone = false, ImVec2 controlSize = {0,0});
     void DrawFancyOrderList(SongData& song, bool standAlone = true, ImVec2 controlSize = {0,0});
     void DrawOrderListEditor(SongData& song);
 
@@ -370,7 +376,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::SeqSettings,
     ,ShowSongGui
     ,ShowPiano
     ,InsertMode
-    , EnhancedStepView
+    ,EnhancedStepView
+    ,ShowPlayList
 
 )
 

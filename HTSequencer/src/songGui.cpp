@@ -9,7 +9,9 @@
 
 //------------------------------------------------------------------------------
 // TODO:
-// [ ] current 2026-01-28
+// [ ] current:
+//  [ ] Volume and panning should be not overwritten all the time ... not sure how (effects)
+
 //  [X] Insertmode
 //    [X] to keyboard gui ==> NEW LED :D and namespace ImFlux!
 //    [X] only when window is visible
@@ -101,7 +103,6 @@
 // [X] ctrl+down transpose down
 // [X] ctrl+pageup transpose octave up
 // [X] ctrl+pagedown octave transpose down
-//------------------------------------------------------------------------------
 constexpr float CellHeight = 24.f;
 ImVec2 cellSize = {50, CellHeight};
 
@@ -149,12 +150,11 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     if (!controller)
         return;
 
+    const OPL3Controller::SequencerState& lSeqState = getMain()->getController()->getSequencerState();
+
+
     DrawExportStatus();
     DrawStepCellPopup(mPatternEditorState);
-
-    // DrawOrderListEditor(mCurrentSong);
-    DrawFancyOrderList(mCurrentSong); //NOTE: maybe integrate here default is standAlone
-
 
 
     if (standAlone) {
@@ -287,13 +287,17 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     ImGui::Text("ROW:%d, COL:%d, currentChannel:%d", mPatternEditorState.cursorRow, mPatternEditorState.cursorCol, getCurrentChannel());
 
 
-    std::string lSeqOrder = "Orders:";
-    for ( int i = 0 ; i < mCurrentSong.orderList.size(); i++ )
-    {
-        lSeqOrder += std::format("{:02} ", mCurrentSong.orderList[i]);
-    }
-    ImGui::SameLine();
-    ImGui::TextColored(ImColor4F(cl_Magenta), "%s", lSeqOrder.c_str());
+    // std::string lSeqOrder = "Orders:";
+    // for ( int i = 0 ; i < mCurrentSong.orderList.size(); i++ )
+    // {
+    //     lSeqOrder += std::format("{:02} ", mCurrentSong.orderList[i]);
+    // }
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImColor4F(cl_Magenta), "%s", lSeqOrder.c_str());
+
+
+    DrawMiniOrderList(mCurrentSong, controller->isPlayingSong() ? lSeqState.orderIdx : -1 ,  20.f, ImVec2(300,30.f));
+    // DrawMiniOrderList1(mCurrentSong, false, ImVec2(300.f,30.f));
 
 
 
@@ -346,7 +350,6 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
             lChannelToNoteStates += std::format(" {:03}", getMain()->getController()->mChannelToNote[i]);
         // ImGui::SameLine();
-        const OPL3Controller::SequencerState& lSeqState = getMain()->getController()->getSequencerState();
 
         if (lSeqState.orderIdx < mCurrentSong.orderList.size())
         {
@@ -585,8 +588,6 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
     cellSize.x = mSettings.EnhancedStepView ? 105.f : 50.f;
 
-
-
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()) {
         ImGui::SetKeyboardFocusHere();
     }
@@ -629,7 +630,7 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
             snprintf(tmpbuf,sizeof(tmpbuf)
                     , "CH:%d##%d"
-                    , col
+                    , col+1
                     // , getMain()->getController()->getInstrumentName(lIdx).c_str()
                     , col
                     );
@@ -640,12 +641,12 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
         }
         // ImGui::TableHeadersRow();
+
         // ------------- custom draw header
-        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers, 20.f);
         int channel = 0;
         for (int col = 0; col <= lChannelCount; col++) {
             // Maybe we need the top left too
-
 
             channel = col -1 ;
             if (!ImGui::TableSetColumnIndex(col)) continue;
@@ -662,16 +663,31 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
             }
 
 
-            if (channel ==  state.cursorCol)
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_DeepSea));
-
             ImGui::TableHeader(lColCaption.c_str());
+
+
+            // Pulse selected
+            if (channel == state.cursorCol) {
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                ImVec2 posMin = ImGui::GetItemRectMin();
+                ImVec2 posMax = ImGui::GetItemRectMax();
+                float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+                // ImU32 pulseCol = ImGui::GetColorU32(ImVec4(1, 1, 0, 0.4f + pulse * 0.4f)); // Yellowish pulse
+                ImU32 pulseCol = ImGui::GetColorU32(ImVec4(0.4, 0.4, 0.9, 0.4f + pulse * 0.4f));
+                dl->AddRect(posMin, posMax, pulseCol, 0.0f, 0, 2.5f);
+            }
+
 
             // ImGui::PopStyleColor();
 
-            // --------------- Header Popup
+            // --------------- Header Popup // CLICK
             if (channel >= 0)
             {
+                if (ImGui::IsItemClicked()) {
+                    state.cursorCol = channel;
+                    selectPatternCol(state);
+                }
+
                 if (ImGui::BeginPopupContextItem())
                 {
                     ImGui::TextColored(ImColor4F(cl_Crimson), "Channel %d", channel + 1);
@@ -681,24 +697,6 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
                     } else {
                         ImGui::TextColored(ImColor4F(cl_Yellow), "Two Operator channel");
                     }
-
-                    // instrument NOT!
-                    // ImGui::Text("Instrument:");
-                    // ImGui::SetNextItemWidth(140.0f); // Often needed as menus are narrow by default
-                    // int newInst = Widget_InstrumentCombo(mCurrentSong.channelInstrument[channel], getMain()->getController()->getSoundBank() );
-                    // if ( newInst >= 0)
-                    // {
-                    //     mCurrentSong.channelInstrument[channel] = newInst;
-                    // }
-                    // ImGui::SameLine();
-                    // if (ImGui::SmallButton("U")) {
-                    //     // add function to update all Step!
-                    //     Log("[warning] update steps with new instrument not implemented");
-                    // }
-
-                    // if (ImGui::IsItemHovered()) ImGui::SetTooltip("Update all Steps with this instrument");
-
-
 
                     ImGui::Separator();
 
@@ -747,7 +745,10 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
 
                 // ~~~~~~~~~~~ scrolling madness ~~~~~~~~~~~~~~~~~~~
                 // NOTE: Version ... not soo bad but bad
-                if ( lDoScroll && lScrolltoRow > clipper.DisplayEnd - 3 )
+                if ( lDoScroll
+                    && row == lScrolltoRow
+                     // && lScrolltoRow > clipper.DisplayEnd - 3
+                    )
                 {
 
                     ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterY );
@@ -771,8 +772,36 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
                     else
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm(cl_Black));
 
-                    ImGui::TextDisabled("%03d", row);
+                    // ImGui::TextDisabled("%03d", row);
+                    // if (ImGui::IsItemClicked()) {
+                    //     state.cursorRow = row;
+                    //     selectPatternRow(state);
+                    // }
+
+                    char buf[4];
+                    snprintf(buf, sizeof(buf), "%03d", row);
+                    // Get cell dimensions
+                    ImVec2 pos = ImGui::GetCursorScreenPos();
+                    ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight());
+                    if (ImGui::InvisibleButton("##cell", size)) {
+                        state.cursorRow = row;
+                        selectPatternRow(state);
+                    }
+                    ImVec2 textSize = ImGui::CalcTextSize(buf);
+                    ImVec2 textPos = ImVec2(pos.x + (size.x - textSize.x) * 0.5f, pos.y + (size.y - textSize.y) * 0.5f);
+                    ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(ImGuiCol_TextDisabled), buf);
+
+                    // std::string tmpStr = std::format( "{:03d}", row);
+                    // // ImGui::Button(tmpStr.c_str(), ImVec2(0,cellSize.y));
+                    // // if (ImFlux::FaderButton(tmpStr.c_str(), ImVec2(30,cellSize.y - 2))) {
+                    // if (ImGui::InvisibleButton(tmpStr.c_str(), ImVec2(0,cellSize.y))) {
+                    //     state.cursorRow = row;
+                    //     selectPatternRow(state);
+                    // }
+
                 }
+
+
 
                 // Columns 1-12: Channel Steps
                 for (int col = 0; col < opl3::SOFTWARE_CHANNEL_COUNT; col++) {
@@ -1051,11 +1080,30 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
 void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState& state) {
 
     static bool sShowNewPatternPopup = false;
-    if (ImGui::SmallButton("[+]"))
+
+
+    // + button >>>>>>>>>>
+
+    // if (ImGui::SmallButton("[+]"))
+    // if (ImFlux::FaderButton(ICON_FA_PLUS, ImVec2(24.f, 24.f)))
+
+    // ImGui::PushFont(mIconFont);
+    ImFlux::ButtonParams bparams = ImFlux::DEFAULT_BUTTON;
+    bparams.color = Color4FImU32(cl_Slate);
+    bparams.rounding = 4.f;
+    bparams.size = ImVec2(24,24);
+    bparams.mouseOverEffect = ImFlux::BUTTON_MO_GLOW;
+    // if (ImFlux::ColoredButton(ICON_FA_PLUS,Color4FImU32(cl_Brown), ImVec2(124.f, 124.f)))
+    if (ImFlux::ButtonFancy(ICON_FA_PLUS, bparams))
     {
         sShowNewPatternPopup = true;
         ImGui::OpenPopup("New Pattern Configuration");
     }
+    // ImGui::PopFont();
+
+    //<<<< fancy button :P
+
+
     if (DrawNewPatternModal(mCurrentSong, mNewPatternSettings)) {
         sShowNewPatternPopup = "false";
     }
@@ -1075,7 +1123,7 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
         }
         //-----------
 
-        if (ImGui::BeginTabBar("PatternTabs", ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_Reorderable)) {
+        if (ImGui::BeginTabBar("PatternTabs", ImGuiTabBarFlags_AutoSelectNewTabs /*| ImGuiTabBarFlags_Reorderable*/)) {
             for (int lPatternIndex = 0; lPatternIndex < (int)song.patterns.size(); lPatternIndex++) {
                 Pattern& lPat = song.patterns[lPatternIndex];
 

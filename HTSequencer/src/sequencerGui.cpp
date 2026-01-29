@@ -420,6 +420,7 @@ void SequencerGui::ShowMenuBar()
             ImGui::MenuItem("Instruments", NULL, &mSettings.ShowSoundBankList);
             ImGui::MenuItem("Instrument Editor", NULL, &mSettings.ShowFMEditor);
             ImGui::MenuItem("Digital Sound Processing", NULL, &mSettings.ShowDSP);
+            ImGui::MenuItem("Play List Window", NULL, &mSettings.ShowPlayList);
             ImGui::Separator();
             ImGui::MenuItem("Piano", NULL, &mSettings.ShowPiano);
             ImGui::MenuItem("Scale Player", NULL, &mSettings.ShowScalePlayer);
@@ -495,6 +496,18 @@ void SequencerGui::DrawGui()
     ShowDSPWindow();
     ShowSoundBankWindow();
     if (mSettings.ShowFileBrowser) ShowFileManager();
+
+
+    if (mSettings.ShowPlayList) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+        DrawFancyOrderList(mCurrentSong, true);
+        ImGui::PopStyleVar();
+    }
+
+
+    // TEST:
+    ImFlux::ShowButtonFancyGallery();
+
 
     //... LAST FOR FOCUS ....
     mPatternEditorState.visible = false;

@@ -261,6 +261,7 @@ public:
     void stopSong(bool hardStop = false) { mSeqState.playing = false; silenceAll(hardStop);}
     void continueSong() { mSeqState.playing = true;}
     bool isPlaying() { return mSeqState.playing;}
+    bool isPlayingSong() { return mSeqState.playing && mSeqState.playRange.active == false; }
     void setLoop(bool value) { mSeqState.loop = value; }
     bool getLoop() { return mSeqState.loop;}
 
