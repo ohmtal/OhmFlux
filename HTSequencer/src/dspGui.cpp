@@ -55,14 +55,18 @@ void SequencerGui::RenderSoundCardEmuUI() {
 
     static bool isEnabled = lEmu->isEnabled();
 
-    if (ImGui::Checkbox("##Active", &isEnabled))
-      lEmu->setEnabled(isEnabled);
+    // if (ImGui::Checkbox("##Active", &isEnabled))
+    //   lEmu->setEnabled(isEnabled);
+    //
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImVec4(0.2f, 0.7f, 0.5f, 1.0f), "Sound rendering");
 
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.2f, 0.7f, 0.5f, 1.0f), "Sound rendering");
+    if (ImFlux::LEDCheckBox("SOUND RENDERING", &isEnabled, ImVec4(0.2f, 0.7f, 0.5f, 1.0f)))
+        lEmu->setEnabled(isEnabled);
+
 
     if (isEnabled) {
-        if (ImGui::BeginChild("BC_Box", ImVec2(0, 30), ImGuiChildFlags_Borders)) {
+        if (ImGui::BeginChild("BC_Box", ImVec2(0, 35), ImGuiChildFlags_Borders)) {
 
             DSP::RenderMode currentMode = lEmu->getMode();
 
@@ -73,21 +77,11 @@ void SequencerGui::RenderSoundCardEmuUI() {
             };
 
             // The preview label shown when combo is closed
-            const char* previewValue = modeNames[(int)currentMode];
 
-            if (ImGui::BeginCombo("##Render Mode", previewValue)) {
-                for (int lRenderModeInt = 0; lRenderModeInt <= (int)DSP::RenderMode::CLONE_CARD; lRenderModeInt++) {
-                    bool isSelected = ((int)currentMode == lRenderModeInt);
-                    if (ImGui::Selectable(modeNames[lRenderModeInt], isSelected)) {
-                        lEmu->setSettings({ (DSP::RenderMode)lRenderModeInt });
-                    }
+            int lRenderModeInt  = (int)currentMode;
 
-                    // Set the initial focus when opening the combo (2026 standard)
-                    if (isSelected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
+            if (ImFlux::ValueStepper("##Preset", &lRenderModeInt, modeNames, IM_ARRAYSIZE(modeNames))) {
+                lEmu->setSettings({ (DSP::RenderMode)lRenderModeInt });
             }
         }
     ImGui::EndChild();
@@ -109,11 +103,15 @@ void SequencerGui::RenderBitCrusherUI() {
 
     static bool isEnabled = getMain()->getController()->getDSPBitCrusher()->isEnabled();
 
-    if (ImGui::Checkbox("##Active", &isEnabled))
+    // if (ImGui::Checkbox("##Active", &isEnabled))
+    //     getMain()->getController()->getDSPBitCrusher()->setEnabled(isEnabled);
+    //
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImVec4(0.8f, 0.4f, 0.5f, 1.0f), "BITCRUSHER");
+
+    if (ImFlux::LEDCheckBox("BITCRUSHER", &isEnabled, ImVec4(0.8f, 0.4f, 0.5f, 1.0f)))
         getMain()->getController()->getDSPBitCrusher()->setEnabled(isEnabled);
 
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.8f, 0.4f, 0.5f, 1.0f), "BITCRUSHER");
 
     // 3. Create a Child window for the "Box" look.
     // Width 0 = use parent width. Height 140 is enough for your controls.
@@ -142,11 +140,18 @@ void SequencerGui::RenderBitCrusherUI() {
             }
 
             ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
-            if (ImGui::SmallButton("Reset")) {
+
+            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
                 selectedPreset = 0;
                 changed = true;
             }
+
+            // if (ImGui::SmallButton("Reset")) {
+            //     currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
+            //     selectedPreset = 0;
+            //     changed = true;
+            // }
 
             ImGui::Separator();
 
@@ -179,10 +184,14 @@ void SequencerGui::RenderChorusUI() {
     ImGui::BeginGroup();
 
     static bool isEnabled = getMain()->getController()->getDSPChorus()->isEnabled();
-    if (ImGui::Checkbox("##Active", &isEnabled))
+    // if (ImGui::Checkbox("##Active", &isEnabled))
+    //     getMain()->getController()->getDSPChorus()->setEnabled(isEnabled);
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImVec4(0.6f, 0.4f, 1.0f, 1.0f), "CHORUS / ENSEMBLE");
+
+    if (ImFlux::LEDCheckBox("CHORUS / ENSEMBLE", &isEnabled, ImVec4(0.6f, 0.4f, 1.0f, 1.0f)))
         getMain()->getController()->getDSPChorus()->setEnabled(isEnabled);
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.6f, 0.4f, 1.0f, 1.0f), "CHORUS / ENSEMBLE");
+
 
     if (isEnabled)
     {
@@ -206,23 +215,36 @@ void SequencerGui::RenderChorusUI() {
                 changed = true;
             }
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-            if (ImGui::SmallButton("Reset")) {
+            // if (ImGui::SmallButton("Reset")) {
+            //     currentSettings = DSP::LUSH80s_CHORUS;
+            //     selectedPreset = 0;
+            //     changed = true;
+            // }
+
+            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 currentSettings = DSP::LUSH80s_CHORUS;
                 selectedPreset = 0;
                 changed = true;
             }
 
+
             ImGui::Separator();
 
-            // Parameter Sliders based on your new struct
-            changed |= ImGui::SliderFloat("Rate", &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
-            changed |= ImGui::SliderFloat("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
-            changed |= ImGui::SliderFloat("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
+            // Parameter Sliders
+            changed |= ImFlux::FaderHWithText("Rate",  &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
+            changed |= ImFlux::FaderHWithText("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
+            changed |= ImFlux::FaderHWithText("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
+            changed |= ImFlux::FaderHWithText("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
+            changed |= ImFlux::FaderHWithText("Mix",   &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
 
-            // New Stereo Phase Slider
-            changed |= ImGui::SliderFloat("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
-
-            changed |= ImGui::SliderFloat("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
+            // changed |= ImGui::SliderFloat("Rate", &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
+            // changed |= ImGui::SliderFloat("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
+            // changed |= ImGui::SliderFloat("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
+            //
+            // // New Stereo Phase Slider
+            // changed |= ImGui::SliderFloat("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
+            //
+            // changed |= ImGui::SliderFloat("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
 
             // Engine Update logic
             if (changed) {
@@ -249,10 +271,14 @@ void SequencerGui::RenderReverbUI() {
     ImGui::BeginGroup();
 
     static bool isEnabled = getMain()->getController()->getDSPReverb()->isEnabled();
-    if (ImGui::Checkbox("##Active", &isEnabled))
+    // if (ImGui::Checkbox("##Active", &isEnabled))
+    //     getMain()->getController()->getDSPReverb()->setEnabled(isEnabled);
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.5f, 1.0f), "REVERB / SPACE");
+
+    if (ImFlux::LEDCheckBox("REVERB / SPACE", &isEnabled, ImVec4(0.2f, 0.9f, 0.5f, 1.0f)))
         getMain()->getController()->getDSPReverb()->setEnabled(isEnabled);
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.5f, 1.0f), "REVERB / SPACE");
+
 
     // Height set to 180px to fit 4 parameters and preset selection
     if (isEnabled)
@@ -276,11 +302,17 @@ void SequencerGui::RenderReverbUI() {
             }
 
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-            if (ImGui::SmallButton("Reset")) {
+            // if (ImGui::SmallButton("Reset")) {
+            //     currentSettings = DSP::ROOM_REVERB;
+            //     selectedPreset = 2;
+            //     changed = true;
+            // }
+            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 currentSettings = DSP::ROOM_REVERB;
                 selectedPreset = 2;
                 changed = true;
             }
+
 
             ImGui::Separator();
 
@@ -322,10 +354,13 @@ void SequencerGui::RenderWarmthUI() {
 
     static bool isEnabled = getMain()->getController()->getDSPWarmth()->isEnabled();
 
-    if (ImGui::Checkbox("##Active", &isEnabled))
+    // if (ImGui::Checkbox("##Active", &isEnabled))
+    //     getMain()->getController()->getDSPWarmth()->setEnabled(isEnabled);
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.4f, 1.0f), "ANALOG WARMTH / SATURATION");
+
+    if (ImFlux::LEDCheckBox("ANALOG WARMTH / SATURATION", &isEnabled, ImVec4(1.0f, 0.6f, 0.4f, 1.0f)))
         getMain()->getController()->getDSPWarmth()->setEnabled(isEnabled);
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.4f, 1.0f), "ANALOG WARMTH / SATURATION");
 
     if (isEnabled)
     {
@@ -348,9 +383,10 @@ void SequencerGui::RenderWarmthUI() {
             }
 
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-            if (ImGui::SmallButton("Reset")) {
-                currentSettings = DSP::TUBEAMP_WARMTH; // Default per 2026 spec
-                selectedPreset = 2; // Tube Amp index
+
+            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                currentSettings = DSP::GENTLE_WARMTH;
+                selectedPreset = 0;
                 changed = true;
             }
 
@@ -395,13 +431,55 @@ void SequencerGui::RenderLimiterUI() {
     ImGui::PushID("Limiter_Effect_Row");
     ImGui::BeginGroup();
 
-    static bool isEnabled = getMain()->getController()->getDSPLimiter()->isEnabled();
+    auto* lim = getMain()->getController()->getDSPLimiter();
+    static bool isEnabled = lim->isEnabled();
 
-    if (ImGui::Checkbox("##Active", &isEnabled))
+    if (ImFlux::LEDCheckBox("LIMITER", &isEnabled, ImVec4(1.0f, 0.4f, 0.4f, 1.0f)))
         getMain()->getController()->getDSPLimiter()->setEnabled(isEnabled);
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "LIMITER");
 
+    if (lim->isEnabled()) {
+        const char* presetNames[] = { "CUSTOM", "DEFAULT", "EIGHTY", "FIFTY", "LOWVOL", "EXTREM" };
+        static int selectedPresetIdx = 1; // Default to "Flat"
+        bool changed = false;
+        // static DSP::LimiterSettings& currentSettings = lim->getSettings();
+
+        if (ImGui::BeginChild("EQ_Box", ImVec2(0, 35), ImGuiChildFlags_Borders)) {
+
+            ImGui::SetNextItemWidth(150);
+
+            if (ImFlux::ValueStepper("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                switch (selectedPresetIdx) {
+                    case 1: lim->setSettings(DSP::LIMITER_DEFAULT);       break;
+                    case 2: lim->setSettings(DSP::LIMITER_EIGHTY); break;
+                    case 3: lim->setSettings(DSP::LIMITER_FIFTY);      break;
+                    case 4: lim->setSettings(DSP::LIMITER_LOWVOL);      break;
+                    case 5: lim->setSettings(DSP::LIMITER_EXTREM);    break;
+                    default: break; // "Custom" - do nothing, let sliders move
+                }
+            }
+
+            // Quick Reset Button (Now using the FLAT_EQ preset)
+            ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+
+            // if (ImGui::SmallButton("Reset")) {
+            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                lim->setSettings(DSP::LIMITER_DEFAULT);
+                selectedPresetIdx = 1;
+            }
+            // ImGui::Separator();
+            // changed |= ImFlux::FaderHWithText("Threshold", &currentSettings.Threshold, 0.01f, 1.f, "%.3f");
+            // changed |= ImFlux::FaderHWithText("Depth", &currentSettings.Attack, 0.01f, 1.f, "%.4f");
+            // changed |= ImFlux::FaderHWithText("Release", &currentSettings.Release, 0.0000005f, 0.0001f, "%.8f");
+            //
+            //
+            // if (changed) {
+            //     selectedPresetIdx = 0;
+            //     lim->setSettings(currentSettings);
+            // }
+
+        } //box
+        ImGui::EndChild();
+    } //enabled
 
     ImGui::EndGroup();
     ImGui::PopID();
@@ -413,18 +491,19 @@ void SequencerGui::RenderEquilizer9BandUI() {
     ImGui::BeginGroup();
 
     auto* eq = getMain()->getController()->getDSPEquilzer9Band();
-    bool isEnabled = eq->isEnabled();
 
-    if (ImGui::Checkbox("##Active", &isEnabled))
+    bool isEnabled = eq->isEnabled();
+    // if (ImGui::Checkbox("##Active", &isEnabled))
+    //     eq->setEnabled(isEnabled);
+    //
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImVec4(0.2f, 0.7f, 1.0f, 1.0f), "9-BAND EQUALIZER");
+    if (ImFlux::LEDCheckBox("9-BAND EQUALIZER", &isEnabled, ImVec4(0.2f, 0.7f, 1.0f, 1.0f)))
         eq->setEnabled(isEnabled);
 
 
 
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.2f, 0.7f, 1.0f, 1.0f), "9-BAND EQUALIZER");
-
-
-    if (isEnabled) {
+    if (eq->isEnabled()) {
         const char* presetNames[] = { "Custom", "Flat", "Bass Boost", "Loudness", "Radio", "Clarity" };
         static int selectedPresetIdx = 1; // Default to "Flat"
 
@@ -433,8 +512,10 @@ void SequencerGui::RenderEquilizer9BandUI() {
 
 
             ImGui::SetNextItemWidth(150);
-            if (ImGui::Combo("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-                switch (selectedPresetIdx) {
+
+            // if (ImGui::Combo("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+            if (ImFlux::ValueStepper("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                    switch (selectedPresetIdx) {
                     case 1: eq->setSettings(DSP::FLAT_EQ);       break;
                     case 2: eq->setSettings(DSP::BASS_BOOST_EQ); break;
                     case 3: eq->setSettings(DSP::SMILE_EQ);      break;
@@ -446,7 +527,9 @@ void SequencerGui::RenderEquilizer9BandUI() {
 
             // Quick Reset Button (Now using the FLAT_EQ preset)
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-            if (ImGui::SmallButton("Reset")) {
+
+            // if (ImGui::SmallButton("Reset")) {
+            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 eq->setSettings(DSP::FLAT_EQ);
                 selectedPresetIdx = 1; // Update combo selection to "Flat"
             }
@@ -458,9 +541,14 @@ void SequencerGui::RenderEquilizer9BandUI() {
             const float maxGain = 12.0f;
 
             // Layout constants
-            float sliderWidth = 25.f; //35.0f;
-            float sliderHeight = 100.f; //150.0f;
+            // float sliderWidth = 25.f; //35.0f;
+            // float sliderHeight = 100.f; //150.0f;
+            // ImVec2 padding = ImVec2(10, 50);
+            float sliderWidth = 20.f; //35.0f;
+            float sliderHeight = 80.f; //150.0f;
+            float sliderSpaceing = 12.f ; //12.f;
             ImVec2 padding = ImVec2(10, 50);
+
 
             ImGui::SetCursorPos(padding);
 
@@ -472,7 +560,10 @@ void SequencerGui::RenderEquilizer9BandUI() {
 
                 // Draw the vertical slider
                 ImGui::BeginGroup();
-                if (ImGui::VSliderFloat("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain, "")) {
+
+
+                // if (ImGui::VSliderFloat("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain, "")) {
+                if (ImFlux::FaderVertical("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain)) {
                     eq->setGain(i, currentGain);
                     selectedPresetIdx = 0;
                 }
@@ -483,7 +574,7 @@ void SequencerGui::RenderEquilizer9BandUI() {
                 ImGui::TextUnformatted(labels[i]);
                 ImGui::EndGroup();
 
-                if (i < 8) ImGui::SameLine(0, 12); // Spacing between sliders
+                if (i < 8) ImGui::SameLine(0, sliderSpaceing); // Spacing between sliders
 
                 ImGui::PopID();
             }
@@ -504,11 +595,16 @@ void SequencerGui::RenderSpectrumAnalyzer() {
     ImGui::BeginGroup();
 
     static bool isEnabled = mSpectrumAnalyzer->isEnabled();
-    if (ImGui::Checkbox("##Active", &isEnabled))
+    // if (ImGui::Checkbox("##Active", &isEnabled))
+    //     mSpectrumAnalyzer->setEnabled(isEnabled);
+    //
+    // ImGui::SameLine();
+    // ImGui::TextColored(ImVec4(1.0f, 1.4f, 0.4f, 1.0f), "SPECTRUM ANALYSER");
+
+    if (ImFlux::LEDCheckBox("SPECTRUM ANALYSER", &isEnabled, ImVec4(1.0f, 1.4f, 0.4f, 1.0f)))
         mSpectrumAnalyzer->setEnabled(isEnabled);
 
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(1.0f, 1.4f, 0.4f, 1.0f), "SPECTRUM ANALYSER");
+
 
     float fullWidth = ImGui::GetContentRegionAvail().x;
 

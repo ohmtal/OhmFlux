@@ -38,7 +38,7 @@ namespace DSP {
     public:
         Warmth(bool switchOn = false) :
             Effect(switchOn),
-            mSettings(TUBEAMP_WARMTH)
+            mSettings(GENTLE_WARMTH)
         {
             std::memset(mPolesL, 0, sizeof(mPolesL));
             std::memset(mPolesR, 0, sizeof(mPolesR));

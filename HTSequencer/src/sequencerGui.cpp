@@ -40,6 +40,71 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 }
 
 //------------------------------------------------------------------------------
+bool SequencerGui::Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank) {
+    if (bank.empty()) return false;
+
+    bool changed = false;
+    ImGui::PushID("InstrStepper");
+
+    float h = ImGui::GetFrameHeight();
+    ImVec2 btn_sz(h, h);
+
+    if (ImFlux::StepperButton("##left", true, btn_sz)) {
+        currentIdx = (currentIdx > 0) ? currentIdx - 1 : (uint16_t)bank.size() - 1;
+        changed = true;
+    }
+
+    ImGui::SameLine();
+
+    // 2. CENTER LCD BOX
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    ImVec2 size(160, ImGui::GetFrameHeight());
+
+    // Hitbox for clicks
+    if (ImGui::InvisibleButton("##display", size)) {
+        currentIdx = (currentIdx + 1) % (int)bank.size();
+        changed = true;
+    }
+
+    // RIGHT CLICK: Full List Popup
+    if (ImGui::BeginPopupContextItem("InstrumentListPopup", ImGuiPopupFlags_MouseButtonRight)) {
+        for (int i = 0; i < (int)bank.size(); i++) {
+            if (ImGui::Selectable(std::format("{}##widght{}",bank[i].name, i).c_str(), currentIdx == i)) {
+                currentIdx = i;
+                changed = true;
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::EndPopup();
+    }
+
+    // 3. DRAWING
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImU32 bg_col = ImGui::IsItemActive() ? IM_COL32(40, 40, 40, 255) : IM_COL32(15, 15, 15, 255);
+
+    // Background
+    dl->AddRectFilled(pos, {pos.x + size.x, pos.y + size.y}, bg_col, 2.0f);
+    dl->AddRect(pos, {pos.x + size.x, pos.y + size.y}, IM_COL32(80, 80, 80, 255), 2.0f);
+
+    // Instrument Name
+    const char* name = (currentIdx >= 0 && currentIdx < (int)bank.size()) ? bank[currentIdx].name.c_str() : "None";
+    ImVec2 t_size = ImGui::CalcTextSize(name);
+    dl->AddText({pos.x + (size.x - t_size.x) * 0.5f, pos.y + (size.y - t_size.y) * 0.5f},
+                IM_COL32(0, 255, 180, 255), name);
+
+    ImGui::SameLine();
+
+    // 4. RIGHT ARROW
+    if (ImFlux::StepperButton("##right", false, btn_sz)) {
+        currentIdx = (currentIdx + 1) % (int)bank.size();
+        changed = true;
+    }
+
+    ImGui::PopID();
+    return changed;
+}
+
+//------------------------------------------------------------------------------
 void SequencerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
         if (g_FileDialog.mSaveMode)
@@ -197,17 +262,14 @@ bool SequencerGui::Initialize()
     controller->getDSPEquilzer9Band()->setEnabled(SettingsManager().get("DSP_EQ9BAND_ON", true));
 
 
-
     controller->getDSPBitCrusher()->setSettings(SettingsManager().get<DSP::BitcrusherSettings>("DSP_BitCrusher", DSP::AMIGA_BITCRUSHER));
     controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
     controller->getDSPReverb()->setSettings(SettingsManager().get<DSP::ReverbSettings>("DSP_Reverb", DSP::HALL_REVERB));
-    controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::TUBEAMP_WARMTH));
+    controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::GENTLE_WARMTH));
     controller->getDSPEquilzer9Band()->setSettings( SettingsManager().get<DSP::Equalizer9BandSettings>("DSP_EQ9BAND", DSP::FLAT_EQ ));
-
-
     controller->getSoundCardEmulation()->setEnabled(SettingsManager().get("DSP_RENDERMODE_ON", false));
     controller->getSoundCardEmulation()->setSettings( SettingsManager().get<DSP::SoundCardEmulationSettings>("DSP_RenderMode", DSP::BLENDED_MODE));
-
+    controller->getDSPLimiter()->setSettings(SettingsManager().get<DSP::LimiterSettings>("DSP_Limiter", DSP::LIMITER_DEFAULT));
 
     getScreenObject()->setWindowMaximized(SettingsManager().get("WINDOW_MAXIMIZED", getMain()->mSettings.WindowMaximized ));
 
@@ -291,6 +353,8 @@ void SequencerGui::Deinitialize()
 
         SettingsManager().set("DSP_RENDERMODE_ON", controller->getSoundCardEmulation()->isEnabled());
         SettingsManager().set("DSP_RenderMode", controller->getSoundCardEmulation()->getSettings());
+
+        SettingsManager().set("DSP_Limiter", controller->getDSPLimiter()->getSettings());
 
 
         //.....

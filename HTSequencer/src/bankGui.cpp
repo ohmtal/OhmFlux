@@ -142,14 +142,22 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
                     if (ImGui::BeginPopupContextItem("##InstListInstrumentPopup")) {
                         ImGui::TextColored(Color4FIm(cl_SkyBlue), "%s", instrumentCaption.c_str());
                         ImGui::Separator();
-                        if (ImGui::MenuItem("Delete Instrument")) {
-                            showMessageNotImplemented("Delete Instrument");
+                        if (ImGui::MenuItem("Rename Instrument")) {
+                            showMessageNotImplemented("Rename Instrument");
                         }
+                        if (ImGui::MenuItem("Save Instrument")) {
+                            showMessageNotImplemented("Insert Instrument");
+                        }
+
                         if (ImGui::MenuItem("Insert Instrument")) {
                             showMessageNotImplemented("Insert Instrument");
                         }
                         if (ImGui::MenuItem("Replace Instrument")) {
+                            //load ....
                             showMessageNotImplemented("Replace Instrument");
+                        }
+                        if (ImGui::MenuItem("Delete Instrument")) {
+                            showMessageNotImplemented("Delete Instrument");
                         }
                         ImGui::EndPopup();
                     }

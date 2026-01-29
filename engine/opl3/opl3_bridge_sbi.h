@@ -100,6 +100,7 @@ namespace opl3_bridge_sbi {
     /**
      * @brief Exports an OplInstrument to a standard SBI file.
      *
+     * NOTE:  Does not save 4OP!!
      * @param filename The destination path (e.g., "piano.sbi").
      * @param inst The instrument structure to save.
      * @return true if successful, false on file error.

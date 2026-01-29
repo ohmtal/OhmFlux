@@ -1403,6 +1403,15 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
         mSeqState.rowIdx = mSeqState.playRange.startPoint[0];
 
     } //playRange
+    else {
+        // we do not have a playRange so we must have a orderList!
+        if (songData.orderList.empty()) {
+            Log("[error] Playlist (orderlist) is empty! play song not cancled");
+            return false;
+        }
+    }
+
+
 
     // Calculate timing
     double hostRate = 44100.0;
@@ -1533,6 +1542,7 @@ bool OPL3Controller::songValid(const opl3::SongData& songData) {
     if (songData.patterns.empty()) {
         return false;
     }
+
 
     // 1. Validate Pattern Indices in OrderList
     for (uint8_t patternIdx : songData.orderList) {

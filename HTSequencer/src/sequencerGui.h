@@ -348,42 +348,11 @@ public:
     uint16_t getPlayingRow();
     uint16_t getPlayingSequenceIndex();
 
+    bool Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank);
 
-    /**
-     * Widget_InstrumentCombo
-     * return -1 if no instrument is selected
-     */
-    int Widget_InstrumentCombo(int currentIdx, const std::vector<opl3::Instrument>& bank) {
-        int result = -1; // Default: no change
-
-        // 1. Determine the text to show in the collapsed box
-        const char* previewText = (currentIdx >= 0 && currentIdx < (int)bank.size())
-        ? bank[currentIdx].name.c_str()
-        : "Select Instrument...";
-
-        // 2. Start the Combo
-        if (ImGui::BeginCombo("##instrunmentCombo", previewText)) {
-            for (int i = 0; i < (int)bank.size(); i++) {
-                const bool isSelected = (currentIdx == i);
-
-                // Use ## suffix to ensure unique IDs even if names are identical
-                std::string itemLabel = bank[i].name + "##" + std::to_string(i);
-
-                if (ImGui::Selectable(itemLabel.c_str(), isSelected)) {
-                    result = i; // Selection occurred!
-                }
-
-                // Set initial focus to the current selection when opening
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-
-        return result;
-    }
-
+    // -----
+    void DrawFancyOrderList(SongData& song, bool standAlone = true, ImVec2 controlSize = {0,0});
+    void DrawOrderListEditor(SongData& song);
 
     //--------------------------------------------------------------------------
 
@@ -413,6 +382,7 @@ namespace DSP {
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarmthSettings, cutoff, drive, wet)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Equalizer9BandSettings, gains)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SoundCardEmulationSettings, renderMode)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LimiterSettings, Threshold, Attack, Release);
 
 
 }

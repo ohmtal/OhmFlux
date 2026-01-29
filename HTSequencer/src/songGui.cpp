@@ -13,12 +13,19 @@
 //  [X] Insertmode
 //    [X] to keyboard gui ==> NEW LED :D and namespace ImFlux!
 //    [X] only when window is visible
-//  [ ] Instrument Colors: Do not render the name !! and center the text again (better a small rect with color)
+
+//  [ ] Instrument Colors: Do not render the name !! and center the text again
+//      (better a small rect with color)
+//      Color should be also shown in Instrument List
+
 //  [ ] CellPopup:
 //      check insert and shift makes no sense there ?!
 //      - delete and shift is wrong call copy&paste i guess
+
 //  [ ] Paste is broken if copied from a longer pattern and paste into
 //      example copy column of 256 row pattern into 63 row pattern
+//      I thougth it's fixed but still paste still sucks sometimes.
+
 //  [ ] Pattern: delete (also update order list)
 //  [ ] Pattern editor follow
 //      [ ] check mCurrentSong is playing (via pointer? )
@@ -38,9 +45,14 @@
 //  [ ] how to editor then the best way / context menu
 
 // [ ] change fms3 format again :P better now than later
+//    the data should be optional check EOF !
 //    [ ] save / load ALL the DSP effects
 //          i dont care the filesize (some bytes)
 //          so i store the settings also if it's off.
+// [ ] Save Instruments format
+//   [ ] Single 4OP Instrument
+//   [ ] Wopl Export
+//
 // [ ] Bank editor
 //   [ ] save
 //   [ ] load
@@ -140,6 +152,10 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     DrawExportStatus();
     DrawStepCellPopup(mPatternEditorState);
 
+    // DrawOrderListEditor(mCurrentSong);
+    DrawFancyOrderList(mCurrentSong); //NOTE: maybe integrate here default is standAlone
+
+
 
     if (standAlone) {
         // ImGui::SetNextWindowSize(ImVec2(1100, 600), ImGuiCond_FirstUseEver);
@@ -148,6 +164,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         if (!ImGui::Begin("Sequencer")) //, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse))
             { ImGui::End(); return; }
     }
+
 
 
 
@@ -229,6 +246,9 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         controller->setLoop( mExportWithEffects );
     }
     ImGui::EndGroup();
+
+
+
 
     ImGui::Separator();
 

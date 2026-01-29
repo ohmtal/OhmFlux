@@ -51,6 +51,8 @@ namespace DSP {
                 mSettings = s;
         }
 
+        LimiterSettings& getSettings() { return mSettings; }
+
 
         virtual void process(float* buffer, int numSamples) override {
             if (!isEnabled()) return;
