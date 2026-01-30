@@ -196,8 +196,8 @@ void SequencerGui::newSong(){
     p.getStepsMutable().resize(64 * opl3::SOFTWARE_CHANNEL_COUNT);
     for(auto& s : p.getStepsMutable()) {
         s.note = 255;
-        s.volume = 63;
-        s.panning = 32;
+        s.volume = NO_CHANGE_VOL_PAN;
+        s.panning = NO_CHANGE_VOL_PAN;
     }
 
     // set default instruments

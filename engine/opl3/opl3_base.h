@@ -26,7 +26,7 @@ namespace opl3 {
     constexpr uint8_t INVALID_NOTE = 192; // for note string to value when invalid
 
     constexpr uint8_t MAX_VOLUME = 63;
-    constexpr uint8_t MAX_PAN    = 64;
+    constexpr uint8_t MAX_PANNING  = 64;
     constexpr uint8_t NO_CHANGE_VOL_PAN = 255;
 
     // for safety
@@ -364,7 +364,7 @@ namespace opl3 {
         uint8_t note       = NONE_NOTE;  // 255=None, 1-127 (MIDI range), 128=Off
         uint16_t instrument = 0;  // up to 64k should be enough
         uint8_t volume     = NO_CHANGE_VOL_PAN; //default no volume change ; // 0-63 (Standard tracker range)
-        uint8_t panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
+        uint8_t panning    = NO_CHANGE_VOL_PAN; // 0 (Left), 32 (Center), 64 (Right)
         uint8_t effectType = 0;  // High byte of effect (e.g., 'A')
         uint8_t effectVal  = 0;  // Low byte of effect (e.g., 0x0F)
 
@@ -375,8 +375,8 @@ namespace opl3 {
         void init() {
             note       = NONE_NOTE;  // 255=None, 1-127 (MIDI range), 128=Off
             instrument = 0;  // up to 64k should be enough
-            volume     = 63; // 0-63 (Standard tracker range)
-            panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
+            volume     = NO_CHANGE_VOL_PAN; // 0-63 (Standard tracker range)
+            panning    = NO_CHANGE_VOL_PAN; // 0 (Left), 32 (Center), 64 (Right)
             effectType = 0;  // High byte of effect (e.g., 'A')
             effectVal  = 0;  // Low byte of effect (e.g., 0x0F)
         }

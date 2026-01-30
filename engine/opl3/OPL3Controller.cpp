@@ -827,10 +827,9 @@ bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
             // dLog("Setting volume on NONE_NOTE step: %d ", step.volume);
             setChannelVolume(channel, getOplVol(step.volume));
         }
-        // FIXME same as for volume !! MAX_PAN
-        // if (step.panning != prevStep.panning) {
-        //     setChannelPanning(channel, step.panning);
-        // }
+        if (step.panning <= MAX_PANNING &&  step.panning != prevStep.panning) {
+            setChannelPanning(channel, step.panning);
+        }
         return true;
     }
 
@@ -856,8 +855,10 @@ bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
         // dLog("Setting volume on NONE_NOTE step: %d ", step.volume);
         setChannelVolume(channel, getOplVol(step.volume));
     }
-    // FIXME same as for volume !! MAX_PAN
-    setChannelPanning(channel, step.panning);
+    // same for panning
+    if (step.panning <= MAX_PANNING &&  step.panning != prevStep.panning) {
+        setChannelPanning(channel, step.panning);
+    }
 
 
     // ---  NOTE OVERRIDE ---
@@ -1031,25 +1032,21 @@ void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
     if (channel >= MAX_HW_CHANNELS) return;
 
 
-    // 1. Calculate the correct register address
     uint16_t bankOffset = (channel <= 8) ? 0x000 : 0x100;
     uint16_t c0Addr = bankOffset + 0xC0 + (channel % 9);
 
-
-    // 2. Read from shadow. Ensure mShadowRegs is large enough (at least 512 bytes)!
     uint8_t currentC0 = readShadow(c0Addr);
 
-    // 3. Clear only the Panning bits (Bits 4 and 5)
+    // Clear only the Panning bits (Bits 4 and 5)
     // 0xCF is 11001111 - this preserves Feedback (1-3) and Connection (0)
     uint8_t c0Val = currentC0 & 0xCF;
 
-    // 4. Apply new Panning bits
+    // Apply new Panning bits
     if (pan < 21)      c0Val |= 0x10; // Left (CHA)
-    else if (pan > 43) c0Val |= 0x20; // Right (CHB)
+    else if ( pan > 43 && pan <= MAX_PANNING )  c0Val |= 0x20; // Right (CHB)
     else               c0Val |= 0x30; // Center (CHA + CHB)
 
 
-    // 5. Write back
     write(c0Addr, c0Val);
 }
 
@@ -1194,7 +1191,6 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
                 currentVol = (currentVol > slideDown) ? currentVol - slideDown : 0;
             }
 
-
             // dLog("Slide...channel:%d row:%d step.volume:%d( oplVolume: %d)", channel , mSeqState.rowIdx, currentVol, getOplVol(currentVol));
 
             // Update the state mirror
@@ -1221,7 +1217,6 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
         }
 
         case EFF_SET_PANNING: {
-
             setChannelPanning(channel, val);
             break;
         }

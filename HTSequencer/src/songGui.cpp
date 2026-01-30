@@ -953,9 +953,9 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
     if (mSettings.EnhancedStepView)
     {
         std::string tmpStr = "";
-        if ( step.volume > 63)
+        if ( step.volume > MAX_VOLUME)
             tmpStr = "    ";
-        else if ( step.volume == 63 )
+        else if ( step.volume == MAX_VOLUME )
             tmpStr = " .. ";
         else
             tmpStr = std::format(" {:02d} ", step.volume);
@@ -1236,8 +1236,8 @@ bool SequencerGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings&
             // Initialize with "None" notes
             for(auto& s : p.getStepsMutable()) {
                 s.note = 255;
-                s.volume = 63;
-                s.panning = 32;
+                s.volume = NO_CHANGE_VOL_PAN;
+                s.panning = NO_CHANGE_VOL_PAN;
             }
 
             uint8_t newPatternIdx = (uint8_t)song.patterns.size();
