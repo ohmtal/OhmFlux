@@ -923,11 +923,16 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
         centerY = (cellSize.y - ImGui::GetFontSize()) * 0.5f;
     }
 
+    drawList->AddText(ImVec2(pos.x + offsetX - 1, pos.y + centerY - 1),
+                      IM_COL32_BLACK, noteStr.c_str());
+
+
     drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
-                        Color4FIm(cl_White), noteStr.c_str());
+                        IM_COL32_WHITE, noteStr.c_str());
 
     offsetX += ImGui::CalcTextSize(noteStr.c_str()).x;
 
+    ImU32 insColor = getInstrumentColor(step.instrument);
     // instrument
     if ( step.note <= LAST_NOTE )
     {
@@ -935,7 +940,7 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
         {
             ImGui::PushFont(mTinyFont);
             drawList->AddText(ImVec2(pos.x + 4.f/*+ offsetX*/, pos.y - 1.f /*+ centerY*/),
-                              getInstrumentColor(step.instrument),
+                              insColor,
                               std::format("{}",insName.substr(0, std::min<size_t>(insName.size(), 20))).c_str()
             );
 
@@ -943,9 +948,15 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
             ImGui::PopFont(/*mTinyFont*/);
         }
 
-        drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY),
-                          Color4FIm(cl_Sand),
+
+        drawList->AddText(ImVec2(pos.x + offsetX - 1, pos.y + centerY - 1),
+                          IM_COL32_BLACK,
                           std::format(" {:02X}", step.instrument).c_str());
+
+        drawList->AddText(ImVec2(pos.x + offsetX, pos.y + centerY ),
+                          insColor,
+                          std::format(" {:02X}", step.instrument).c_str());
+
 
     }
     offsetX += ImGui::CalcTextSize("   ").x;
