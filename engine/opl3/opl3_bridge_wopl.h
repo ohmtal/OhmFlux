@@ -329,5 +329,150 @@ namespace opl3_bridge_wopl {
     }
 
     //--------------------- EXPORT -----------------------------
-    //FIXME !!
+
+    // Helper to write OplInstrument::OpPair::OpParams to Wopl instrument data (5 bytes)
+    inline void WriteOpParamsToWopl(const opl3::Instrument::OpPair::OpParams& op, uint8_t* d, int offset) {
+        // Byte 0: AM(1) Vib(1) EGT(1) KSR(1) Multi(4)
+        d[offset] = 0;
+        if (op.am)    d[offset] |= 0x80;
+        if (op.vib)   d[offset] |= 0x40;
+        if (op.egTyp) d[offset] |= 0x20;
+        if (op.ksr)   d[offset] |= 0x10;
+        d[offset] |= (op.multi & 0x0F);
+
+        // Byte 1: KSL(2) TL(6)
+        d[offset + 1] = ((op.ksl & 0x03) << 6) | (op.tl & 0x3F);
+
+        // Byte 2: Attack(4) Decay(4)
+        d[offset + 2] = ((op.attack & 0x0F) << 4) | (op.decay & 0x0F);
+
+        // Byte 3: Sustain(4) Release(4)
+        d[offset + 3] = ((op.sustain & 0x0F) << 4) | (op.release & 0x0F);
+
+        // Byte 4: Waveform(3)
+        d[offset + 4] = (op.wave & 0x07);
+    }
+
+    inline bool exportBank(const std::string& filename, const std::vector<opl3::Instrument>& bank) {
+        std::ofstream f(filename, std::ios::binary);
+        if (!f) return false;
+
+        // 1. Magic
+        f.write("WOPL3-BANK\0", 11);
+
+        // 2. Version 3 (LE)
+        uint16_t version = 3;
+        f.put(static_cast<uint8_t>(version & 0xFF));
+        f.put(static_cast<uint8_t>((version >> 8) & 0xFF));
+
+        // 3. MBanks and PBanks (BE)
+        uint16_t MBanks = 1;
+        uint16_t PBanks = bank.size() > 128 ? 1 : 0;
+
+        f.put(static_cast<uint8_t>((MBanks >> 8) & 0xFF));
+        f.put(static_cast<uint8_t>(MBanks & 0xFF));
+
+        f.put(static_cast<uint8_t>((PBanks >> 8) & 0xFF));
+        f.put(static_cast<uint8_t>(PBanks & 0xFF));
+
+        // 4. Global bank (1) + Volume scaling (1)
+        f.put(0); // Global bank
+        f.put(0); // Volume scaling (ADLMIDI's model)
+
+        // 5. Melodic Bank Meta-data (34 bytes each)
+        for (uint16_t i = 0; i < MBanks; ++i) {
+            uint8_t meta[34] = {0};
+            std::string name = "Melodic Bank " + std::to_string(i);
+            std::memcpy(meta, name.c_str(), std::min(name.length(), (size_t)31));
+            meta[32] = 0; // LSB
+            meta[33] = 0; // MSB
+            f.write(reinterpret_cast<char*>(meta), 34);
+        }
+
+        // 6. Percussion Bank Meta-data (34 bytes each)
+        for (uint16_t i = 0; i < PBanks; ++i) {
+            uint8_t meta[34] = {0};
+            std::string name = "Percussion Bank " + std::to_string(i);
+            std::memcpy(meta, name.c_str(), std::min(name.length(), (size_t)31));
+            meta[32] = 0;   // LSB
+            meta[33] = 128; // MSB (Bank 128 is usually percussion)
+            f.write(reinterpret_cast<char*>(meta), 34);
+        }
+
+        auto writeInstrument = [&](const opl3::Instrument& inst) {
+            uint8_t d[66] = {0};
+            int needle = 0;
+
+            // 1. Name (32 bytes)
+            std::memcpy(&d[needle], inst.name.c_str(), std::min(inst.name.length(), (size_t)31));
+            needle += 32;
+
+            // 2. Note Offsets (BE)
+            int16_t off1 = inst.noteOffset;
+            int16_t off2 = inst.noteOffset2;
+            d[needle++] = static_cast<uint8_t>((off1 >> 8) & 0xFF);
+            d[needle++] = static_cast<uint8_t>(off1 & 0xFF);
+            d[needle++] = static_cast<uint8_t>((off2 >> 8) & 0xFF);
+            d[needle++] = static_cast<uint8_t>(off2 & 0xFF);
+
+            // 3. Velocity and Detune
+            d[needle++] = static_cast<uint8_t>(inst.velocityOffset);
+            d[needle++] = static_cast<uint8_t>(inst.fineTune);
+
+            // 4. Percussion Key and Flags
+            d[needle++] = inst.fixedNote;
+            uint8_t flags = 0;
+            if (inst.isFourOp)      flags |= 0x01;
+            if (inst.isDoubleVoice) flags |= 0x02;
+            d[needle++] = flags;
+
+            // 5. Feedback / Connection
+            d[needle++] = ((inst.pairs[0].feedback & 0x07) << 1) | (inst.pairs[0].connection & 0x01);
+            d[needle++] = ((inst.pairs[1].feedback & 0x07) << 1) | (inst.pairs[1].connection & 0x01);
+
+            // 6. Operator Data (following importBank mapping)
+            // WOPL Op 1 = inst.pairs[0].ops[1] (Carrier)
+            WriteOpParamsToWopl(inst.pairs[0].ops[1], d, needle); needle += 5;
+            // WOPL Op 2 = inst.pairs[0].ops[0] (Modulator)
+            WriteOpParamsToWopl(inst.pairs[0].ops[0], d, needle); needle += 5;
+            // WOPL Op 3 = inst.pairs[1].ops[1] (Carrier)
+            WriteOpParamsToWopl(inst.pairs[1].ops[1], d, needle); needle += 5;
+            // WOPL Op 4 = inst.pairs[1].ops[0] (Modulator)
+            WriteOpParamsToWopl(inst.pairs[1].ops[0], d, needle); needle += 5;
+
+            // 7. Version 3 Extra Fields
+            d[needle++] = static_cast<uint8_t>((inst.delayOn >> 8) & 0xFF);
+            d[needle++] = static_cast<uint8_t>(inst.delayOn & 0xFF);
+            d[needle++] = static_cast<uint8_t>((inst.delayOff >> 8) & 0xFF);
+            d[needle++] = static_cast<uint8_t>(inst.delayOff & 0xFF);
+
+            f.write(reinterpret_cast<char*>(d), 66);
+        };
+
+        // Write Melodic Instruments
+        for (uint16_t i = 0; i < MBanks * 128; ++i) {
+            if (i < bank.size()) {
+                writeInstrument(bank[i]);
+            } else {
+                opl3::Instrument empty;
+                empty.name = "";
+                writeInstrument(empty);
+            }
+        }
+
+        // Write Percussion Instruments
+        for (uint16_t i = 0; i < PBanks * 128; ++i) {
+            size_t idx = static_cast<size_t>(MBanks) * 128 + i;
+            if (idx < bank.size()) {
+                writeInstrument(bank[idx]);
+            } else {
+                opl3::Instrument empty;
+                empty.name = "";
+                writeInstrument(empty);
+            }
+        }
+
+        f.close();
+        return true;
+    }
 };

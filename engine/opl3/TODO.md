@@ -33,7 +33,7 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
     [X] fms import 
     [X] fms3 load/save
 
-[ ] DSP
+[X] DSP
 
    [X] Add DSP Effects 
     - Warmth
@@ -44,12 +44,12 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
     - 9 Band Equilizer
    
     
-[ ] GUI: 
+[X] GUI: 
 
     [X] Prepare a new sequencer gui 
     [ ] split FluxEditor in 2 new projects SFX and TomsOldFMComposerReloaded
 
-[ ] Create an Instrument Bank and Instrument editor with 2 Banks for OPL3
+[X] Create an Instrument Bank and Instrument editor with 2 Banks for OPL3
 
     [X] Gui for Soundbank
     [X] FMI Importer 
@@ -63,11 +63,11 @@ Modular OPL2/OPL3 Class using ymfm and SDL3
         
 
     
-[ ] Create an Sequencer Gui 
+[X] Create an Sequencer Gui 
     
 
 [ ] Exporter 
-
+    [X] wopl export
     [X] Wav export with DSP Effects :)
 
 [ ] Finally OPL can be removed from OhmFlux and a I put it into TomsOldFMComposerReloaded 
