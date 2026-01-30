@@ -395,6 +395,9 @@ void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
             ImGui::TextDisabled("Selection: R%d:C%d to R%d:C%d",
                                 state.selection.startPoint[0], state.selection.startPoint[1],
                                 state.selection.endPoint[0], state.selection.endPoint[1]);
+            ImGui::TextDisabled("Cursor: R%d:C%d Context R%d:C%d",
+                                state.cursorRow, state.cursorCol,
+                                state.contextRow , state.contextCol );
             ImGui::Separator();
         }
 

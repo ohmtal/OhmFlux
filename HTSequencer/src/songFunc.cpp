@@ -333,23 +333,33 @@ void SequencerGui::pasteStepsFromClipboard(PatternEditorState& state, const Patt
     int maxRows = cb.rows >= state.pattern->getRowCount() ? state.pattern->getRowCount() : cb.rows;
     int maxCols = cb.cols >= state.pattern->getColCount() ? state.pattern->getColCount() : cb.cols;
 
+    //2026-01-30 nailed row/col contectRow/Col change while loop is running, i guess
+    int pointRow = useContextPoint ? state.contextRow  : state.cursorRow ;
+    int pointCol = useContextPoint ? state.contextCol :state.cursorCol ;
+
+
 
     int sourceIdx = 0;
     for (int r = 0; r < maxRows; ++r) {
         for (int c = 0; c < maxCols; ++c) {
 
-            int targetR = useContextPoint ? state.contextRow + r : state.cursorRow + r;
-            int targetC = useContextPoint ? state.contextCol + r :state.cursorCol + c;
+            int targetR = pointRow + r;
+            int targetC = pointCol + c;
 
             // 3. Boundary Check: Ensure we don't write outside the pattern
             // Assuming your pattern has a way to check max rows/cols
             if (targetR < state.pattern->getRowCount() && targetC < SOFTWARE_CHANNEL_COUNT /* channel count */) {
                 state.pattern->getStep(targetR, targetC) = cb.data[sourceIdx];
+                dLog("*Paste %d at R%d C%d", sourceIdx, targetR, targetC);//FIXME remove this
             }
             sourceIdx++;
         }
     }
-    dLog("[info] Clipboard: Pasted area at R%d C%d", state.cursorRow, state.cursorCol);
+    dLog("[info] Clipboard: Pasted area at R%d C%d, max R%d C%d",
+         pointRow
+       , pointCol
+       , maxRows, maxCols
+    );
 }
 //------------------------------------------------------------------------------
 void SequencerGui::copyStepsToClipboard(PatternEditorState& state, PatternClipboard& cb) {
