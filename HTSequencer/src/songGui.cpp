@@ -747,7 +747,7 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
                 // NOTE: Version ... not soo bad but bad
                 if ( lDoScroll
                     && row == lScrolltoRow
-                     // && lScrolltoRow > clipper.DisplayEnd - 3
+                    //&& lScrolltoRow > clipper.DisplayEnd - 3
                     )
                 {
 

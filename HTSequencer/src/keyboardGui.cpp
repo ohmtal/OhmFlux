@@ -466,9 +466,6 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     ImGui::SameLine();
     ImFlux::LEDCheckBox("Insert Mode", &mSettings.InsertMode,mPatternEditorState.visible ? Color4FIm(cl_Lime) : Color4FIm(cl_Blue));
 
-    ImGui::SameLine();
-    ImGui::Text("Hello World?!");
-
 
     //FIXME add navigation buttons for grid ? yes no idk :D
 
