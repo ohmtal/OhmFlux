@@ -931,13 +931,8 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
         if (mSettings.EnhancedStepView)
         {
             ImGui::PushFont(mTinyFont);
-            float hue = (float)step.instrument * 0.03125f;
-            ImVec4 colRGB;
-            ImGui::ColorConvertHSVtoRGB(hue, 1.0f, 1.0f, colRGB.x, colRGB.y, colRGB.z);
-            colRGB.w = 1.0f; // Full opacity
-            ImU32 instrumentColor = ImGui::GetColorU32(colRGB);
             drawList->AddText(ImVec2(pos.x + 4.f/*+ offsetX*/, pos.y - 1.f /*+ centerY*/),
-                              instrumentColor,
+                              getInstrumentColor(step.instrument),
                               std::format("{}",insName.substr(0, std::min<size_t>(insName.size(), 20))).c_str()
             );
 

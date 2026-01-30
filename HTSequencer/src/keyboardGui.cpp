@@ -6,16 +6,16 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+
+
+
 //------------------------------------------------------------------------------
 // FIXME
-// - octave missmatch !!!!!!!!!! C-4 should be 60 !!
 // - move to header ...
 // - channel !!
 // - save / restore : start/end octave
 //------------------------------------------------------------------------------
-// In SequencerGui.h (Private members)
-// Tracks which MIDI note is currently occupying which software channel
-// FIXME ADD TO HEADER !!
+
 static int mCurrentStartOctave = 3;
 int guiChannelToNote[12] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 uint64_t mChannelLastUsed[12] = { 0 };
@@ -395,6 +395,8 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
 //------------------------------------------------------------------------------
 void SequencerGui::RenderPianoUI(bool standAlone)
 {
+
+
     OPL3Controller* controller = getMain()->getController();
     if (!controller) return;
 
@@ -433,25 +435,6 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     ImGui::SameLine();
 
 
-    //FIXME i'am testing here :P >>>>>>>>>>
-    static uint8_t foobit = 0xff;
-    ImFlux::BitEditor("foo", &foobit);
-    ImGui::SameLine();
-    ImGui::Text("FooBit %02X [%d]", foobit, foobit);
-    ImGui::SameLine();
-    ImFlux::LCDDisplay("##FooBit4711", (float)foobit, 3, 0, 16.0f, Color4FIm(cl_Red));
-    ImGui::SameLine();
-    ImFlux::LCDNumber((float)foobit, 3, 0, 12.0f, Color4FIm(cl_Yellow));
-    ImGui::SameLine();
-    ImFlux::PeakMeter( foobit / 255.f);
-    ImGui::SameLine();
-
-    static float barFloat = 0.5f;
-    ImFlux::LEDRingKnob("barKnob", &barFloat, 0.f, 1.f);
-    ImGui::SameLine();
-    ImFlux::LCDDisplay("barK", (float)foobit, 3, 0, 16.0f, Color4FIm(cl_Red));
-    ImGui::SameLine();
-    //FIXME <<<<<<<<<<<<<<
 
 
     // if (controller->isPlaying())
@@ -480,6 +463,12 @@ void SequencerGui::RenderPianoUI(bool standAlone)
             mSettings.InsertMode = !mSettings.InsertMode;
             }
     }
+    ImGui::SameLine();
+    ImFlux::LEDCheckBox("Insert Mode", &mSettings.InsertMode,mPatternEditorState.visible ? Color4FIm(cl_Lime) : Color4FIm(cl_Blue));
+
+    ImGui::SameLine();
+    ImGui::Text("Hello World?!");
+
 
     //FIXME add navigation buttons for grid ? yes no idk :D
 
@@ -632,55 +621,3 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 }
 
 
-// FIXME TEST THIS
-// inline void MiniPianoRoll(int* current_note) {
-//     ImDrawList* dl = ImGui::GetWindowDrawList();
-//     ImVec2 p = ImGui::GetCursorScreenPos();
-//     const float kw = 10.0f; // Key width
-//     const float kh = 40.0f; // Key height
-//
-//     for (int i = 0; i < 24; i++) { // 2 Oktaven
-//         ImGui::PushID(i);
-//         bool is_black = (i % 12 == 1 || i % 12 == 3 || i % 12 == 6 || i % 12 == 8 || i % 12 == 10);
-//         ImVec2 kp = p + ImVec2(i * kw, 0);
-//
-//         if (ImGui::InvisibleButton("##key", {kw, kh})) {
-//             *current_note = i;
-//         }
-//
-//         ImU32 col = is_black ? IM_COL32(20, 20, 20, 255) : IM_COL32(240, 240, 240, 255);
-//         if (ImGui::IsItemActive()) col = IM_COL32(255, 128, 0, 255);
-//
-//         dl->AddRectFilled(kp, kp + ImVec2(kw, kh), col, 1.0f);
-//         dl->AddRect(kp, kp + ImVec2(kw, kh), IM_COL32(0,0,0,50));
-//
-//         ImGui::SetCursorScreenPos(p); // Overlap
-//         ImGui::PopID();
-//     }
-//     ImGui::Dummy({24 * kw, kh});
-// }
-//
-//
-//
-// inline void PanModPad(float* pan, float* mod) {
-//     ImVec2 size(80, 80);
-//     ImVec2 p = ImGui::GetCursorScreenPos();
-//     ImGui::InvisibleButton("pad", size);
-//
-//     if (ImGui::IsItemActive()) {
-//         ImVec2 m = ImGui::GetIO().MousePos;
-//         *pan = std::clamp((m.x - p.x) / size.x, 0.0f, 1.0f);
-//         *mod = std::clamp(1.0f - (m.y - p.y) / size.y, 0.0f, 1.0f);
-//     }
-//
-//     ImDrawList* dl = ImGui::GetWindowDrawList();
-//     dl->AddRectFilled(p, p + size, IM_COL32(20, 20, 20, 255), 4.0f);
-//     dl->AddLine(p + ImVec2(size.x/2, 0), p + ImVec2(size.x/2, size.y), IM_COL32(50, 50, 50, 255));
-//     dl->AddLine(p + ImVec2(0, size.y/2), p + ImVec2(size.x, size.y/2), IM_COL32(50, 50, 50, 255));
-//
-//     // Cursor
-//     ImVec2 cursor = p + ImVec2(*pan * size.x, (1.0f - *mod) * size.y);
-//     dl->AddCircleFilled(cursor, 4.0f, IM_COL32(255, 255, 0, 255));
-// }
-//
-//

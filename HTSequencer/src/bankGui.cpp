@@ -72,44 +72,313 @@ void SequencerGui::ShowSoundBankWindow()
 
 }
 //------------------------------------------------------------------------------
-void SequencerGui::RenderInstrumentListUI(bool standAlone)
+void RenderInsListButtons(OPL3Controller* controller)
 {
     const ImVec2 lButtonSize = { 28.f, 28.f};
+
+    if (ImGui::Button(ICON_FA_ANCHOR "##Reset", lButtonSize )){
+        controller->initDefaultBank();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Reset the default Sound Bank ");
+
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_FOLDER_OPEN "##Import Bank", lButtonSize )){
+        g_FileDialog.setFileName("");
+        g_FileDialog.mSaveMode = false;
+        g_FileDialog.mSaveExt = "";
+        g_FileDialog.mLabel = "Import Soundbank";
+        g_FileDialog.mFilters = {".fms3", ".fms", ".op2", ".wopl"};
+        g_FileDialog.mUserData = "ImportBank";
+        g_FileDialog.mDirty  = true;
+
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Import Bank");
+
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_FLOPPY_DISK "##Export Bank", lButtonSize )){
+        //FIXME
+        showMessageNotImplemented("Export Bank");
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Export Bank");
+
+
+}
+
+//FIXME menu
+// if (ImGui::MenuItem("Rename Instrument")) {
+//     showMessageNotImplemented("Rename Instrument");
+// }
+// if (ImGui::MenuItem("Save Instrument")) {
+//     showMessageNotImplemented("Insert Instrument");
+// }
+//
+// if (ImGui::MenuItem("Insert Instrument")) {
+//     showMessageNotImplemented("Insert Instrument");
+// }
+// if (ImGui::MenuItem("Replace Instrument")) {
+//     //load ....
+//     showMessageNotImplemented("Replace Instrument");
+// }
+// if (ImGui::MenuItem("Delete Instrument")) {
+//     showMessageNotImplemented("Delete Instrument");
+// }
+
+//------------------------------------------------------------------------------
+void SequencerGui::RenderInstrumentListUI(bool standAlone) {
+
+    if (standAlone) {
+        ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSizeConstraints(ImVec2(100.0f, 100.0f), ImVec2(FLT_MAX, FLT_MAX));
+        if (!ImGui::Begin("Sound Bank")) //, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse))
+        { ImGui::End(); return; }
+    }
+
+
+    // default size
+    ImVec2 controlSize = {0,0};
+    // magic pointer movement
+    static int move_from = -1, move_to = -1;
+    int delete_idx = -1, insert_idx = -1;
+    // init pointers
+    OPL3Controller* controller =  getMain()->getController();
+    std::vector<Instrument>& soundBank = controller->getSoundBank();
+
+
+    // --- Compact Header ---
+    ImGui::TextDisabled("Action");
+    ImGui::SameLine();
+    RenderInsListButtons(controller);
+    ImGui::Separator();
+
+    // Start a child region for scrolling if the list gets long
+    ImGui::BeginChild("OrderListScroll", controlSize, false);
+
+    for (int instIdx = 0; instIdx < (int)soundBank.size(); instIdx++) {
+        const bool is_selected = (mCurrentInstrumentId == instIdx);
+        ImGui::PushID(instIdx);
+
+        // 1. Draw Index
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("%02d", instIdx);
+        ImGui::SameLine();
+
+        // 2. Button Dimensions & Interaction
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, ImGui::GetFrameHeight());
+
+
+        float coloredWidth = 30.0f;
+        ImVec2 coloredSize(coloredWidth, size.y);
+
+
+        // InvisibleButton acts as the interaction hit-box for DragDrop and Clicks
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+        bool pressed = ImGui::InvisibleButton("inst_btn", size);
+        if (pressed) mCurrentInstrumentId = instIdx;
+
+        bool is_hovered = ImGui::IsItemHovered();
+        bool is_active = ImGui::IsItemActive();
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        // ----------- rendering
+
+        // 1. Logic for enhanced selection visibility
+        ImU32 col32 = getInstrumentColor(instIdx);
+        ImU32 colMiddle32 =  IM_COL32(20, 20, 20, 255);
+        ImU32 border_col = IM_COL32_WHITE;
+        float border_thickness = 1.0f;
+
+        if (is_selected) {
+            // Make the background much brighter or more saturated
+            // We force Alpha to 255 to make it solid
+            col32 = (col32 & 0x00FFFFFF) | 0xFF000000;
+
+            // Use a thick, high-contrast border (e.g., Bright Yellow or Cyan)
+            border_col = IM_COL32(255, 255, 0, 255); // Neon Yellow
+            border_thickness = 2.0f;
+
+            colMiddle32 = IM_COL32(40, 40, 40, 255);
+
+        } else {
+            // Dim unselected items significantly
+            col32 = (col32 & 0x00FFFFFF) | 0x66000000;
+        }
+
+        // 2. Draw Background
+        // draw_list->AddRectFilled(pos, pos + size, col32, 3.0f);
+
+        // left
+        draw_list->AddRectFilled(pos, pos + coloredSize, col32, 3.0f);
+
+        // Middle part: Starts after left bar, width is (total - 2 * side bars)
+        ImVec2 midPos = ImVec2(pos.x + coloredWidth, pos.y);
+        ImVec2 midSize = ImVec2(size.x - (2.0f * coloredWidth), size.y);
+        draw_list->AddRectFilled(midPos, midPos + midSize, colMiddle32, 0.0f); // No rounding for middle to avoid gaps
+
+        // Right part: Starts at the end minus the side bar width
+        ImVec2 rightPos = ImVec2(pos.x + size.x - coloredWidth, pos.y);
+        draw_list->AddRectFilled(rightPos, rightPos + coloredSize, col32, 3.0f);
+
+
+        // 3. Selection "Glow" / Outline
+        if (is_selected) {
+            // Outer Glow Effect: Draw a slightly larger, transparent rect behind/around
+             // draw_list->AddRect(pos - ImVec2(2, 2), pos + size + ImVec2(2, 2),
+             //                    IM_COL32(255, 255, 0, 100), 3.0f, 0, 4.0f);
+
+
+
+            // Solid Inner Border
+            draw_list->AddRect(pos, pos + size, border_col, 3.0f, 0, border_thickness);
+
+            // OPTIONAL: Add a small white "active" indicator circle on the left
+            draw_list->AddCircleFilled(ImVec2(pos.x - 5, pos.y + size.y * 0.5f), 3.0f, border_col);
+        } else if (is_hovered) {
+            draw_list->AddRect(pos, pos + size, IM_COL32(255, 255, 255, 180), 3.0f);
+        }
+
+        // 4. Text Contrast
+        // For the selected item, use Black text if the background is very bright
+        // (or stay with White+Shadow for consistency)
+
+        const char* instName = soundBank[instIdx].name.c_str();
+        ImVec2 text_size = ImGui::CalcTextSize(instName);
+        ImVec2 text_pos = ImVec2(pos.x + (size.x - text_size.x) * 0.5f, pos.y + (size.y - text_size.y) * 0.5f);
+
+        ImU32 text_col = is_selected ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
+        draw_list->AddText(text_pos + ImVec2(1, 1), IM_COL32(0, 0, 0, 255), instName);
+        draw_list->AddText(text_pos, text_col, instName);
+
+
+
+
+        // 6. Context Menu
+        if (ImGui::BeginPopupContextItem("row_menu")) {
+            if (ImGui::MenuItem("Insert Above")) insert_idx = instIdx;
+            if (ImGui::MenuItem("Remove")) delete_idx = instIdx;
+            ImGui::EndPopup();
+        }
+
+        // 7. Drag and Drop (Attached to the InvisibleButton)
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+            ImGui::SetDragDropPayload("DND_ORDER", &instIdx, sizeof(int));
+        ImGui::Text("Moving %s", instName);
+        ImGui::EndDragDropSource();
+        }
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_ORDER")) {
+            move_from = *(const int*)payload->Data;
+            move_to = instIdx;
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    ImGui::PopStyleVar();
+    ImGui::PopID();
+    }
+
+    // for (int instIdx = 0; instIdx < (int)soundBank.size(); instIdx++) {
+    //     const bool is_selected = (mCurrentInstrumentId == instIdx);
+    //
+    //     ImGui::PushID(instIdx);
+    //
+    //     // 1. Draw Index
+    //     ImGui::AlignTextToFramePadding();
+    //     ImGui::TextDisabled("%02d", instIdx);
+    //     ImGui::SameLine();
+    //
+    //     // 2. Custom Colored Button (The "Fancy" part)
+    //     ImVec2 pos = ImGui::GetCursorScreenPos();
+    //     ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x - 10, ImGui::GetFrameHeight());
+    //
+    //     ImU32 col32 = getInstrumentColor(instIdx);
+    //
+    //     // Invisible button to handle interaction
+    //     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+    //     if (ImGui::InvisibleButton("inst_btn", size)) {
+    //         // Left click action
+    //     }
+    //
+    //     // Background Drawing
+    //     bool is_hovered = ImGui::IsItemHovered();
+    //     bool is_active = ImGui::IsItemActive();
+    //     float alpha = is_active ? 1.0f : (is_hovered ? 0.8f : 0.6f);
+    //
+    //     ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    //     draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), col32, 3.0f);
+    //     if (is_hovered)
+    //         draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32_WHITE, 3.0f);
+    //
+    //     // Center Text in Button
+    //     ImVec2 text_size = ImGui::CalcTextSize(soundBank[instIdx].name.c_str());
+    //     draw_list->AddText(ImVec2(pos.x + (size.x - text_size.x) * 0.5f, pos.y + (size.y - text_size.y) * 0.5f),
+    //                        IM_COL32_BLACK, soundBank[instIdx].name.c_str());
+    //     //shadow
+    //     draw_list->AddText(ImVec2(pos.x + 1.f + (size.x - text_size.x) * 0.5f, pos.y+ 1.f + (size.y - text_size.y) * 0.5f),
+    //                        IM_COL32_WHITE, soundBank[instIdx].name.c_str());
+    //
+    //     // 3. Actions via Context Menu (Right Click)
+    //     if (ImGui::BeginPopupContextItem("row_menu")) {
+    //         if (ImGui::MenuItem("Insert Above")) insert_idx = instIdx;
+    //         if (ImGui::MenuItem("Remove")) delete_idx = instIdx;
+    //         ImGui::Separator();
+    //         ImGui::EndPopup();
+    //     }
+    //
+    //     // 4. Drag and Drop Logic
+    //     if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+    //         ImGui::SetDragDropPayload("DND_ORDER", &instIdx, sizeof(int));
+    //         ImGui::Text("Moving %s", soundBank[instIdx].name.c_str());
+    //         ImGui::EndDragDropSource();
+    //     }
+    //     if (ImGui::BeginDragDropTarget()) {
+    //         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_ORDER")) {
+    //             move_from = *(const int*)payload->Data;
+    //             move_to = instIdx;
+    //         }
+    //         ImGui::EndDragDropTarget();
+    //     }
+    //
+    //     ImGui::PopStyleVar();
+    //     ImGui::PopID();
+    // } //FOR
+
+
+    ImGui::EndChild();
+
+
+
+    // Logic Execution (Deferred)
+    if (delete_idx != -1) soundBank.erase(soundBank.begin() + delete_idx);
+    if (insert_idx != -1) soundBank.insert(soundBank.begin() + insert_idx, soundBank[insert_idx]);
+    if (move_from != -1 && move_to != -1) {
+        auto it_f = soundBank.begin() + move_from;
+        auto it_t = soundBank.begin() + move_to;
+        if (move_from < move_to) std::rotate(it_f, it_f + 1, it_t + 1);
+        else std::rotate(it_t, it_f, it_f + 1);
+        move_from = move_to = -1;
+    }
+
+
+    if (standAlone) ImGui::End();
+
+}
+
+
+
+void SequencerGui::RenderInstrumentListUI_OLD(bool standAlone)
+{
     if (standAlone)
     {
         ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Instruments");
+        ImGui::Begin("Instruments [OLD]");
     }
 
     if (ImGui::BeginChild("INSTRUMENT_Box", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
         std::vector<opl3::Instrument>& bank = getMain()->getController()->getSoundBank();
 
         //Buttons
-        if (ImGui::Button(ICON_FA_ANCHOR "##Reset", lButtonSize )){
-            getMain()->getController()->initDefaultBank();
-        }
-        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Reset the default Sound Bank ");
-
-        ImGui::SameLine();
-        if (ImGui::Button(ICON_FA_FOLDER_OPEN "##Import Bank", lButtonSize )){
-            g_FileDialog.setFileName("");
-            g_FileDialog.mSaveMode = false;
-            g_FileDialog.mSaveExt = "";
-            g_FileDialog.mLabel = "Import Soundbank";
-            g_FileDialog.mFilters = {".fms3", ".fms", ".op2", ".wopl"};
-            g_FileDialog.mUserData = "ImportBank";
-            g_FileDialog.mDirty  = true;
-
-        }
-        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Import Bank");
-
-        ImGui::SameLine();
-        if (ImGui::Button(ICON_FA_FLOPPY_DISK "##Export Bank", lButtonSize )){
-            //FIXME
-            showMessageNotImplemented("Export Bank");
-        }
-        if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Export Bank");
-
+        RenderInsListButtons(getMain()->getController());
         ImGui::Separator();
 
 
@@ -142,23 +411,6 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone)
                     if (ImGui::BeginPopupContextItem("##InstListInstrumentPopup")) {
                         ImGui::TextColored(Color4FIm(cl_SkyBlue), "%s", instrumentCaption.c_str());
                         ImGui::Separator();
-                        if (ImGui::MenuItem("Rename Instrument")) {
-                            showMessageNotImplemented("Rename Instrument");
-                        }
-                        if (ImGui::MenuItem("Save Instrument")) {
-                            showMessageNotImplemented("Insert Instrument");
-                        }
-
-                        if (ImGui::MenuItem("Insert Instrument")) {
-                            showMessageNotImplemented("Insert Instrument");
-                        }
-                        if (ImGui::MenuItem("Replace Instrument")) {
-                            //load ....
-                            showMessageNotImplemented("Replace Instrument");
-                        }
-                        if (ImGui::MenuItem("Delete Instrument")) {
-                            showMessageNotImplemented("Delete Instrument");
-                        }
                         ImGui::EndPopup();
                     }
                 }

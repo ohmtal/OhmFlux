@@ -17,6 +17,10 @@
 #include <src/fonts/IconsFontAwesome6.h>
 
 
+#ifdef FLUX_DEBUG
+#include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
+#endif
+
 //------------------------------------------------------------------------------
 
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
@@ -417,7 +421,7 @@ void SequencerGui::ShowMenuBar()
         if (ImGui::BeginMenu("Window"))
         {
             ImGui::MenuItem("Sequencer", NULL, &mSettings.ShowSongGui);
-            ImGui::MenuItem("Instruments", NULL, &mSettings.ShowSoundBankList);
+            ImGui::MenuItem("Sound Bank", NULL, &mSettings.ShowSoundBankList);
             ImGui::MenuItem("Instrument Editor", NULL, &mSettings.ShowFMEditor);
             ImGui::MenuItem("Digital Sound Processing", NULL, &mSettings.ShowDSP);
             ImGui::MenuItem("Play List Window", NULL, &mSettings.ShowPlayList);
@@ -472,6 +476,13 @@ void SequencerGui::DrawGui()
     DrawMsgBoxPopup();
 
 
+    // TEST: FIXME add to ImguiTest
+#ifdef FLUX_DEBUG
+    ImFlux::ShowCaseWidgets();
+#endif
+
+
+
     if (mSettings.ShowConsole)
         mConsole.Draw("Console", &mSettings.ShowConsole);
 
@@ -503,10 +514,6 @@ void SequencerGui::DrawGui()
         DrawFancyOrderList(mCurrentSong, true);
         ImGui::PopStyleVar();
     }
-
-
-    // TEST:
-    ImFlux::ShowButtonFancyGallery();
 
 
     //... LAST FOR FOCUS ....
