@@ -1421,7 +1421,12 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
 
     // Calculate timing
     double hostRate = 44100.0;
-    double ticks_per_sec = songData.bpm * 0.4; //songData.ticksPerSecond does nothing ?!?!?! TODO ?
+
+    // orig: double ticks_per_sec = songData.bpm * 0.4;
+
+    //TEST sync BPM / 6 magic number from ticksPerRow
+    //FIXEM speed effect this must be a function to calulate
+    double ticks_per_sec = songData.bpm * 0.4 * songData.ticksPerRow * 0.166666666f;
 
     // Calculate samples per tick
     if (ticks_per_sec > 0) {

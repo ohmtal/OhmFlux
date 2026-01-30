@@ -547,7 +547,7 @@ namespace opl3 {
     //--------------------------------------------------------------------------
     struct SongData {
         std::string title = "New OPL Song";
-        float bpm = 125.0f;
+        float bpm = 120.0f;
         uint8_t ticksPerRow = 6;      // Ticks per row
 
         // OPL3 max channels is 18. OPL2 is 9. I use the SOFTWARE_CHANNEL_COUNT = 12 !!!
@@ -574,7 +574,7 @@ namespace opl3 {
         void init() {
             // Reset basic info
             title = "New Song";
-            bpm = 125.0f;
+            bpm = 120.0f;
             ticksPerRow = 6;
 
             channelInstrument.fill(0);
