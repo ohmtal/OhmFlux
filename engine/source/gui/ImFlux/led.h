@@ -204,13 +204,13 @@ namespace ImFlux {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
-        // 1. Generate ID: Handle empty captions to avoid collision with window ID
+        //  Generate ID: Handle empty captions to avoid collision with window ID
         const ImGuiID id = window->GetID(caption.empty() ? "##led_checkbox_hidden" : caption.c_str());
 
         LedParams params = LED_GREEN_GLOW;
         params.colorOn = color;
 
-        // 2. Calculate Dimensions
+        //  Calculate Dimensions
         const ImGuiStyle& style = ImGui::GetStyle();
         float maxRadius = params.radius + (params.animated ? params.aniRadius : 0.0f);
         float ledSize = maxRadius * 2.0f;
@@ -225,35 +225,31 @@ namespace ImFlux {
 
         const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
 
-        // 3. Register Item: This advances the CursorPos for the NEXT widget
+        // Register Item: This advances the CursorPos for the NEXT widget
         ImGui::ItemSize(size, style.FramePadding.y);
         if (!ImGui::ItemAdd(bb, id)) return false;
 
-        // 4. Interaction
+        // Interaction
         bool hovered, held;
         bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
         if (pressed) {
             *on = !(*on);
         }
 
-        // 5. Render LED
-        // We use SetCursorScreenPos ONLY to position the internal DrawLED call
+        // Render LED
         ImVec2 backup_pos = window->DC.CursorPos;
         window->DC.CursorPos = bb.Min;
         DrawLED("##led_internal", *on, params, true);
 
-        // 6. Render Text
+        // Render Text
         if (text_size.x > 0.0f) {
-            // Vertically center text relative to the bounding box
             ImVec2 text_pos = ImVec2(
                 bb.Min.x + ledSize + spacing,
                 bb.Min.y + (size.y - text_size.y) * 0.5f
             );
-            window->DrawList->AddText(text_pos, ImGui::GetColorU32(ImGuiCol_Text), caption.c_str());
+            window->DrawList->AddText(text_pos,ImGui::ColorConvertFloat4ToU32(color), caption.c_str());
         }
 
-        // 7. Restore Cursor: Ensure the layout doesn't break for the next widget
-        // ItemSize already moved the cursor to the "next line", so we restore that
         window->DC.CursorPos = backup_pos;
 
         return pressed;
