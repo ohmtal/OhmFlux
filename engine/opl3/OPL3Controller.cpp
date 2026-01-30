@@ -820,12 +820,14 @@ bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
     };
 
     // --- CASE 1: MODULATION ONLY ---
+    //FIXME MAX_VOLUME should keep Instruments volume in mind !!!!
     if (step.note == NONE_NOTE) {
         // TODO: keep it and revisit it for later optimation
         if (step.volume <= MAX_VOLUME &&  step.volume != prevStep.volume) {
             // dLog("Setting volume on NONE_NOTE step: %d ", step.volume);
             setChannelVolume(channel, getOplVol(step.volume));
         }
+        // FIXME same as for volume !! MAX_PAN
         // if (step.panning != prevStep.panning) {
         //     setChannelPanning(channel, step.panning);
         // }
@@ -849,8 +851,12 @@ bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
     }
     const auto& currentIns = mSoundBank[step.instrument];
 
-
-    setChannelVolume(channel, getOplVol(step.volume));
+    // only change volume is set !!
+    if (step.volume <= MAX_VOLUME &&  step.volume != prevStep.volume) {
+        // dLog("Setting volume on NONE_NOTE step: %d ", step.volume);
+        setChannelVolume(channel, getOplVol(step.volume));
+    }
+    // FIXME same as for volume !! MAX_PAN
     setChannelPanning(channel, step.panning);
 
 

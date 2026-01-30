@@ -26,6 +26,8 @@ namespace opl3 {
     constexpr uint8_t INVALID_NOTE = 192; // for note string to value when invalid
 
     constexpr uint8_t MAX_VOLUME = 63;
+    constexpr uint8_t MAX_PAN    = 64;
+    constexpr uint8_t NO_CHANGE_VOL_PAN = 255;
 
     // for safety
     constexpr uint16_t MAX_INSTRUMENTS = 1024;
@@ -361,7 +363,7 @@ namespace opl3 {
     struct SongStep {
         uint8_t note       = NONE_NOTE;  // 255=None, 1-127 (MIDI range), 128=Off
         uint16_t instrument = 0;  // up to 64k should be enough
-        uint8_t volume     = 63; // 0-63 (Standard tracker range)
+        uint8_t volume     = NO_CHANGE_VOL_PAN; //default no volume change ; // 0-63 (Standard tracker range)
         uint8_t panning    = 32; // 0 (Left), 32 (Center), 64 (Right)
         uint8_t effectType = 0;  // High byte of effect (e.g., 'A')
         uint8_t effectVal  = 0;  // Low byte of effect (e.g., 0x0F)
@@ -422,7 +424,7 @@ namespace opl3 {
              for (auto& step : mSteps) {
                  step.note = NONE_NOTE;           // None
                  step.instrument = 0;     // Default
-                 step.volume     = MAX_VOLUME + 1; // Max (Tracker Std)
+                 step.volume     = NO_CHANGE_VOL_PAN; // Max (Tracker Std)
                  step.panning    = 32;       // Center
                  step.effectType = 0;
                  step.effectVal  = 0;

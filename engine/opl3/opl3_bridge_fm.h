@@ -294,7 +294,7 @@ namespace opl3_bridge_fm {
             {
                 SongStep& step = scalePat.getStep(row, ch);    //mSteps[row * 18 + ch];
                 step.instrument = ch; //match the channel we
-                step.volume = 63;
+                step.volume = NO_CHANGE_VOL_PAN; // default NO volume set (was MAX_VOLUME)
                 step.note = NONE_NOTE;
 
                 // tricky converting DosScale id's to current
