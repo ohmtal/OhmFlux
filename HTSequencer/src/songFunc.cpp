@@ -60,6 +60,7 @@ bool SequencerGui::clearSelectedSteps(PatternEditorState& state) {
 }
 
 
+
 //------------------------------------------------------------------------------
 void SequencerGui::InsertRow(opl3::Pattern& pat, int rowIndex){
     auto& steps = pat.getStepsMutable();
@@ -382,4 +383,27 @@ void SequencerGui::copyStepsToClipboard(PatternEditorState& state, PatternClipbo
     dLog("[info] Clipboard:Copied %d x %d area", cb.rows, cb.cols);
 }
 //------------------------------------------------------------------------------
+/**
+ * SequencerGui::deletePattern(opl3::SongData& song, int patternIndex)
+ * you can check delete progress with FluxSchedule.isPending(mDeletePatternScheduleId)
+ */
+
+bool SequencerGui::deletePatternIsPending() {
+    return FluxSchedule.isPending(mDeletePatternScheduleId);
+}
+
+bool SequencerGui::deletePattern(opl3::SongData& song, int patternIndex) {
+    if (deletePatternIsPending()) return false;
+
+    mDeletePatternScheduleId = FluxSchedule.add(0.0f, nullptr, [&song, patternIndex]() {
+        std::erase(song.orderList, patternIndex);
+        for (auto& item : song.orderList) {
+            if (item > patternIndex) {
+                item--;
+            }
+        }
+        song.deletePattern(patternIndex);
+    });
+    return true;
+}
 

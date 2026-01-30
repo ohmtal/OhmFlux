@@ -23,6 +23,22 @@ uint64_t mGlobalCounter = 0;
 uint8_t getCurrentStartOctave() { return mCurrentStartOctave;}
 int mScancodeToChannel[SDL_SCANCODE_COUNT]; //FIXME INIT with -1 !!!
 
+const char* channelNames[] = {
+    "Channel  1 (OP4)",
+    "Channel  2 (OP4)",
+    "Channel  3 (OP4)",
+    "Channel  4 (OP4)",
+    "Channel  5 (OP4)",
+    "Channel  6 (OP4)",
+    "Channel  7",
+    "Channel  8",
+    "Channel  9",
+    "Channel 10",
+    "Channel 11",
+    "Channel 12",
+};
+
+
 int /*SequencerGui::*/getPianoMapOffset(SDL_Scancode scancode) {
     switch (scancode) {
 
@@ -62,11 +78,24 @@ int /*SequencerGui::*/getPianoMapOffset(SDL_Scancode scancode) {
 //------------------------------------------------------------------------------
 uint8_t SequencerGui::getCurrentChannel(){
 
+
     if ( getCurrentPattern() )
         return mPatternEditorState.cursorCol;
 
     // maybe a other ?!
     return 0;
+}
+//------------------------------------------------------------------------------
+bool SequencerGui::setCurrentChannel(uint8_t channel){
+    if (channel >= SOFTWARE_CHANNEL_COUNT)
+        return false;
+
+    if ( !getCurrentPattern() )
+        return false;
+
+    mPatternEditorState.cursorCol = channel;
+
+    return true;
 }
 //------------------------------------------------------------------------------
 bool SequencerGui::stopPlayedNotes( )
@@ -87,7 +116,7 @@ bool SequencerGui::stopNote(uint8_t softwareChannel)
 
     guiChannelToNote[softwareChannel] = -1;
 
-    PatternEditorState& state = mPatternEditorState;
+    // PatternEditorState& state = mPatternEditorState;
 
     // only when playing!
     if ( mSettings.InsertMode  && isPlaying() ) {
@@ -408,8 +437,6 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     }
 
 
-
-
     // --- Octave Range  ---
     static int visibleOctaves = 5; // How many octaves to show
     // ImGui::AlignTextToFramePadding();
@@ -451,18 +478,6 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 
     ImFlux::SeparatorVertical(1.f);
 
-    if (mPatternEditorState.visible)
-    {
-        if (ImFlux::DrawLED("Notes will be insert to Pattern. you can also press [F8] to toggle."
-            , mSettings.InsertMode, ImFlux::LED_GREEN_GLOW  )) {
-            mSettings.InsertMode = !mSettings.InsertMode;
-            }
-    } else {
-        if (ImFlux::DrawLED("Insert Mode is on, but Pattern are not visible"
-            , mSettings.InsertMode, ImFlux::LED_BLUE_GLOW  )) {
-            mSettings.InsertMode = !mSettings.InsertMode;
-            }
-    }
     ImGui::SameLine();
     ImFlux::LEDCheckBox("Insert Mode", &mSettings.InsertMode,mPatternEditorState.visible ? Color4FIm(cl_Lime) : Color4FIm(cl_Blue));
 
@@ -473,7 +488,14 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     ImGui::SetNextItemWidth(150.f);
     Widget_InstrumentCombo(mCurrentInstrumentId, getMain()->getController()->getSoundBank());
 
+    ImGui::SameLine();
+    int channelIdx = getCurrentChannel();
+    if (ImFlux::ValueStepper("##Channel", &channelIdx, channelNames, IM_ARRAYSIZE(channelNames))) {
+        setCurrentChannel(channelIdx);
+    }
 
+    ImGui::SameLine();
+    ImFlux::LCDDisplay("pattern row", (float)mPatternEditorState.cursorRow, 3,0,16.f);
 
 
 

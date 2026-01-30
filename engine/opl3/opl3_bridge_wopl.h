@@ -59,7 +59,6 @@ namespace opl3_bridge_wopl {
         op.wave = (d[offset + 4] & 0x07);
     }
 
-
     //--------------------- IMPORT -----------------------------
 
     inline bool importBank(const std::string& filename, std::vector<opl3::Instrument>& bank) {
@@ -158,9 +157,7 @@ namespace opl3_bridge_wopl {
                 if (inst.name.empty()) {
                      inst.name = GM_PATCH_NAMES[idx_inst];
                 }
-
                 needle += 32;
-
                 // 2. Note Offsets (Bytes 32-35)
                 // Master offset
                 inst.noteOffset = (static_cast<int16_t>(d[needle]) << 8) | d[needle + 1];
@@ -224,7 +221,6 @@ namespace opl3_bridge_wopl {
                 bank.push_back(inst);
             }
         }
-
         // Basicly the same as before but i dont have the names :/
         for (uint16_t idx_bank = 0; idx_bank < PBanks; idx_bank++)
         {
@@ -238,14 +234,6 @@ namespace opl3_bridge_wopl {
                     return false;
                 }
 
-
-                // DEBUG:
-                // for (size_t i = 0; i < bytes_to_read; ++i) {
-                //     // Cast to unsigned char to avoid sign extension
-                //     printf("%02x ", static_cast<unsigned char>(d[i]));
-                // }
-                // printf("\n");
-
                 // check instrument is empty ....
                 // checking the first 39 bytes
                 bool is_empty = std::all_of(d, d + 39, [](char c) {
@@ -255,16 +243,12 @@ namespace opl3_bridge_wopl {
                     continue;
 
 
-
-
-
                 opl3::Instrument inst;
                 needle = 0;
 
                 // 1. Name (Bytes 0-31)
                 inst.name = std::string(reinterpret_cast<const char*>(&d[needle]),
                                         strnlen(reinterpret_cast<const char*>(&d[needle]), 32));
-
 
 
                 if (inst.name.empty()) {
@@ -345,5 +329,5 @@ namespace opl3_bridge_wopl {
     }
 
     //--------------------- EXPORT -----------------------------
-
+    //FIXME !!
 };

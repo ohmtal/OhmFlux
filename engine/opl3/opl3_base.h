@@ -568,8 +568,9 @@ namespace opl3 {
         //unused!!
         int16_t getOctaveByChannel( uint8_t channel ) { return channelOctave.at(channel); }
 
-
         int8_t  getStepByChannel( uint8_t channel ) { return channelStep.at(channel); }
+
+
 
         void init() {
             // Reset basic info
@@ -586,6 +587,15 @@ namespace opl3 {
             instruments.clear();
             patterns.clear();
             orderList.clear();
+        }
+
+
+        bool deletePattern(int index) {
+            if (index >= 0 && index < (int)patterns.size()) {
+                patterns.erase(patterns.begin() + index);
+                return true;
+            }
+            return false;
         }
 
         // Utility: Calculate total song length in rows

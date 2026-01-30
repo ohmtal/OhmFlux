@@ -76,7 +76,7 @@ void RenderInsListButtons(OPL3Controller* controller)
 {
     const ImVec2 lButtonSize = { 28.f, 28.f};
 
-    if (ImGui::Button(ICON_FA_ANCHOR "##Reset", lButtonSize )){
+    if (ImGui::Button(ICON_FA_ROTATE_LEFT "##Reset", lButtonSize )){
         controller->initDefaultBank();
     }
     if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Reset the default Sound Bank ");

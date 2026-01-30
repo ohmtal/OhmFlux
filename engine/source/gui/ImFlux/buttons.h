@@ -23,16 +23,24 @@ namespace ImFlux {
 
     struct ButtonParams {
         ImU32 color = IM_COL32(64, 64, 64, 255);
-        ImVec2 size = { 24.f, 24.f };
+        ImVec2 size = { 60.f, 24.f };
         bool   bevel = true;
         bool   gloss = true;
         bool   shadowText = true;
         float  rounding = -1.0f; // -1 use global style
         float  animationSpeed = 1.0f; //NOTE: unused
         ButtonMouseOverEffects mouseOverEffect = BUTTON_MO_HIGHLIGHT;
+        // love this lazy way : example ImFlux::RED_BUTTON.WithSize(ImVec2(tmpWidth, 24.f )).WithRounding(12.f))
+        ButtonParams WithSize(ImVec2 s) const { ButtonParams p = *this; p.size = s; return p; }
+        ButtonParams WithRounding(float r) const { ButtonParams p = *this; p.rounding = r; return p; }
     };
 
     constexpr ButtonParams DEFAULT_BUTTON;
+    constexpr ButtonParams RED_BUTTON { .color = IM_COL32(180,0,0,255)};
+    constexpr ButtonParams GREEN_BUTTON { .color = IM_COL32(0,180,0,255)};
+    constexpr ButtonParams BLUE_BUTTON { .color = IM_COL32(0,0,180,255)};
+    constexpr ButtonParams SLATE_BUTTON { .color = IM_COL32(46, 61, 79, 255) };
+
 
 
     inline bool ButtonFancy(std::string label, ButtonParams params = DEFAULT_BUTTON)
@@ -143,10 +151,11 @@ namespace ImFlux {
             );
         }
 
-        ImVec2 textSize = ImGui::CalcTextSize(label.c_str());
+        std::string lLabelStr = GetLabelText(label.c_str());
+        ImVec2 textSize = ImGui::CalcTextSize(lLabelStr.c_str());
         ImVec2 textPos = rbb.Min + (params.size - textSize) * 0.5f;
-        if (params.shadowText) dl->AddText(textPos + ImVec2(1.f, 1.f), IM_COL32_BLACK, label.c_str());
-        dl->AddText(textPos, IM_COL32_WHITE, label.c_str());
+        if (params.shadowText) dl->AddText(textPos + ImVec2(1.f, 1.f), IM_COL32_BLACK, lLabelStr.c_str());
+        dl->AddText(textPos, IM_COL32_WHITE, lLabelStr.c_str());
 
         return pressed;
     }

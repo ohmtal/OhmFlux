@@ -70,7 +70,7 @@ namespace ImFlux {
 
     // ------------- LCDDisplay
     // Like LCDNumber but with delayed (more oldschool)
-    inline void LCDDisplay(const char* label, float value, int digits, int precision, float height, ImU32 color) {
+    inline void LCDDisplay(const char* label, float value, int digits, int precision, float height, ImU32 color = IM_COL32(0,200,0,255)) {
         ImGui::PushID(label);
         ImVec2 pos = ImGui::GetCursorScreenPos();
         float digit_w = height * 0.5f;
@@ -112,7 +112,7 @@ namespace ImFlux {
 
     //------------------------------------------------------------------------------
     // ------------- LCD simpler direct Version:
-    inline void DrawLCDDigit(ImDrawList* draw_list, ImVec2 pos, int digit, float height, ImU32 color_on, ImU32 color_off) {
+    inline void DrawLCDDigit(ImDrawList* draw_list, ImVec2 pos, int digit, float height, ImU32 color_on = IM_COL32(0,200,0,255), ImU32 color_off = IM_COL32(30,30,30,255)) {
         float width = height * 0.5f;
         float thickness = height * 0.1f;
         float pad = thickness * 0.5f;

@@ -285,7 +285,8 @@ bool SequencerGui::Initialize()
     // NOTE: Example from: https://github.com/caiocinel/imgui-fontawesome-example/tree/master
     ImGuiIO& io = ImGui::GetIO();
     // --- 1. DEFAULT FONT (Proggy + Small Icons merged) ---
-    io.Fonts->AddFontDefault();
+    mDefaultFont =  io.Fonts->AddFontDefault();
+
     ImFontConfig merge_config;
     merge_config.MergeMode = true;
 

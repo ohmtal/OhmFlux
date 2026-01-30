@@ -64,11 +64,13 @@ public:
 
     };
 
+
 private:
 
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
 
+    ImFont* mDefaultFont = nullptr;
     ImFont* mIconFont = nullptr; //<< font
     ImFont* mTinyFont = nullptr;
 
@@ -226,7 +228,12 @@ private:
     bool stopNote(uint8_t softwareChannel );
     bool stopPlayedNotes( );
     uint8_t getCurrentChannel();   // get the current channel (mPatternEditorState.cursorCol)
+    bool setCurrentChannel(uint8_t channel);
 
+
+    int mDeletePatternScheduleId = -1;
+    bool deletePattern (  opl3::SongData& song, int patternIndex);
+    bool deletePatternIsPending();
 
 
     //-------

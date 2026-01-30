@@ -41,12 +41,14 @@ namespace ImFlux {
     };
 
 
+    constexpr LedParams LED_WHITE               = { 8.f, false, false, ImColor(255,255,255)};
 
     constexpr LedParams LED_GREEN               = { 8.f, false, false, ImColor(0, 255, 0)};
     constexpr LedParams LED_GREEN_GLOW          = { 8.f, false, true, ImColor(0, 255, 0), 4.f, 2.f};
     constexpr LedParams LED_GREEN_ANIMATED_GLOW = { 8.f, true, true, ImColor(0, 255, 0), 4.f, 2.f};
 
     constexpr LedParams LED_BLUE_GLOW          = { 8.f, false, true, ImColor(128, 128, 255), 4.f, 2.f}; //not really blue
+    constexpr LedParams LED_BLUE_ANIMATED_GLOW = { 8.f, true, true, ImColor(128, 128, 255), 4.f, 2.f}; //not really blue
 
     constexpr LedParams LED_RED                 = { 8.f, false, false, ImColor(255,0, 0)};
     constexpr LedParams LED_RED_ANIMATED_GLOW   = { 8.f, true, true, ImColor(255,0, 0)};

@@ -76,8 +76,11 @@ namespace ImFlux {
                     ImGui::GetColorU32(ImGuiCol_Text), 2.0f);
 
 
-        if (is_hovered)
-            ImGui::SetTooltip("%s: %.2f", label, *v);
+        if (is_hovered) {
+            std::string lLabel = GetLabelText(label);
+            ImGui::SetTooltip("%s: %.2f", lLabel.c_str(), *v);
+        }
+
 
         ImGui::PopID();
         return value_changed;
@@ -137,7 +140,7 @@ namespace ImFlux {
 
 
     // --------------- MiniKnobInt
-    inline bool MiniKnobInt(const char* label, int* v, int v_min, int v_max, float radius = 12.f) {
+    inline bool MiniKnobInt(const char* label, int* v, int v_min, int v_max, float radius = 12.f, int step = 1, int defaultValue = -4711) {
         ImGui::PushID(label);
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImVec2 size = ImVec2(radius * 2, radius * 2);
@@ -146,12 +149,14 @@ namespace ImFlux {
         bool value_changed = false;
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
+        bool is_clicked = ImGui::IsItemClicked();
+
 
         // 1. SCROLL WHEEL support (fastest way to change values)
         if (is_hovered && ImGui::GetIO().MouseWheel != 0) {
-            int new_v = std::clamp(*v + (int)ImGui::GetIO().MouseWheel, v_min, v_max);
+            int new_v = std::clamp(*v + (int)ImGui::GetIO().MouseWheel * step, v_min, v_max);
             if (new_v != *v) {
-                *v = new_v;
+                *v = new_v ;
                 value_changed = true;
             }
         }
@@ -166,10 +171,10 @@ namespace ImFlux {
                 accumulator -= delta;
 
                 if (std::abs(accumulator) >= 5.0f) {
-                    int steps = (int)(accumulator / 5.0f);
+                    int steps = (int)(accumulator / 5.0f) * step;
                     int new_v = std::clamp(*v + steps, v_min, v_max);
                     if (new_v != *v) {
-                        *v = new_v;
+                        *v = new_v ;
                         value_changed = true;
                     }
                     accumulator -= (float)steps * 5.0f; // keep the remainder
@@ -189,18 +194,30 @@ namespace ImFlux {
         float angle = (fraction * 1.5f * 3.14159f) + (0.75f * 3.14159f);
 
         ImVec2 center = ImVec2(pos.x + radius, pos.y + radius);
-        // dl->AddCircleFilled(center, 10.0f, col);
-        // dl->AddLine(center,
-        //             ImVec2(center.x + cosf(angle) * 8, center.y + sinf(angle) * 8),
-        //             ImGui::GetColorU32(ImGuiCol_Text), 2.0f);
         dl->AddCircleFilled(center, (float)radius, col);
+
+        dl->PathArcTo(center, (float)(radius - 1.f), 0.75f * 3.14159f, angle, 10);
+        dl->PathStroke(ImGui::GetColorU32(ImGuiCol_PlotLines), 0, 2.0f);
+
         dl->AddLine(center,
                     ImVec2(center.x + cosf(angle) * (radius - 1.f), center.y + sinf(angle) * (radius - 1.f)),
                     ImGui::GetColorU32(ImGuiCol_Text), 2.0f);
 
 
-        if (is_hovered)
-            ImGui::SetTooltip("%s: %d", label, *v);
+
+
+        if (is_hovered) {
+            std::string lLabel = GetLabelText(label);
+            ImGui::SetTooltip("%s: %d", lLabel.c_str(), *v);
+        }
+
+        if (is_clicked && defaultValue != -4711) {
+            *v = defaultValue;
+            value_changed = true;
+        }
+
+
+
 
         ImGui::PopID();
         return value_changed;
