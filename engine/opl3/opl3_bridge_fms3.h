@@ -21,6 +21,11 @@ namespace opl3_bridge_fms3 {
     constexpr size_t ID_SIZE = sizeof(FILE_IDENTIFIER) - 1;
     constexpr uint16_t FILE_VERSION = 1;
 
+    const char FILE_IDENTIFIER_BANK[] = "Huehn Thomas FM OPL3 SoundBank"; //<< this should be uniqe !!
+    constexpr size_t ID_SIZE_BANK = sizeof(FILE_IDENTIFIER_BANK) - 1;
+    constexpr uint16_t FILE_VERSION_BANK = 1;
+
+
     constexpr uint8_t DUMMYBYTE = 0; // a dummy for reserve bytes
 
     std::string errors = "";
@@ -247,7 +252,9 @@ namespace opl3_bridge_fms3 {
     }
 
     //--------------------------------------------------------------------------
-    // Main serialization function
+    //                   Song load / save
+    //--------------------------------------------------------------------------
+    // --------------- saveSong
     bool saveSong(const std::string& filePath, const opl3::SongData& song) {
         errors = "";
 
@@ -332,7 +339,7 @@ namespace opl3_bridge_fms3 {
     } // saveSong
 
     //--------------------------------------------------------------------------
-    // Main deserialization function
+    // ------------- loadSong
     bool loadSong(const std::string& filePath, opl3::SongData& song) {
         errors = "";
         std::ifstream ifs(filePath, std::ios::binary);
@@ -408,6 +415,156 @@ namespace opl3_bridge_fms3 {
             // Final Identifier Read (verification)
             ifs.read(identifierBuffer, ID_SIZE);
             if (std::memcmp(identifierBuffer, FILE_IDENTIFIER, ID_SIZE) != 0) {
+                addError("Trailing FILE_IDENTIFIER is missing or corrupted.");
+                return false;
+            }
+
+            //find out there is data left so i guess it's a coruppted file
+            ifs.exceptions(std::ifstream::badbit);
+            ifs.clear();
+            ifs.get();
+            if (!ifs.eof()) {
+                addError("File too long (unexpected trailing data)!");
+                return false;
+            }
+
+            return true;
+
+        } catch (const std::ios_base::failure& e) {
+            // If we catch this, it's because a read_binary or read_vector failed
+            if (ifs.eof()) {
+                addError("Unexpected End of File: The file is truncated.");
+            } else {
+                addError(std::format("I/O failure: {}", e.what()));
+            }
+            return false;
+        } catch (const std::bad_alloc&) {
+            addError("File requested too much memory (possible corruption).");
+            return false;
+        } catch (const std::exception& e) {
+            addError(std::format("General error: {}", e.what()));
+            return false;
+        }
+
+        // i should never get here ...
+        return false;
+    } //<< loadSong
+
+    //--------------------------------------------------------------------------
+    //                   SoundBank load / save
+    //              wopl is good but does not have panning!!
+    //--------------------------------------------------------------------------
+    // --------------- saveBank
+    bool saveBank(const std::string& filePath, const std::vector<opl3::Instrument>& bank) {
+        errors = "";
+
+        if (bank.size() == 0) {
+            addError("Save Bank but we have not Instruments in Bank!!!!");
+            return false;
+        }
+
+        if (bank.size() > opl3::MAX_INSTRUMENTS)
+        {
+            addError(std::format("Instrument count exceed the maximum: read:{} max:{}",
+                                 bank.size(),opl3::MAX_INSTRUMENTS ));
+            return false;
+        }
+
+        std::ofstream ofs(filePath, std::ios::binary);
+        ofs.exceptions(std::ofstream::badbit | std::ofstream::failbit);
+
+        try {
+            if (!ofs.is_open()) {
+                addError(std::format("Can't open File {} for write.", filePath));
+                return false;
+            }
+
+            // Write identifier and version
+            ofs.write(FILE_IDENTIFIER_BANK, ID_SIZE_BANK);
+            write_binary(ofs, FILE_VERSION_BANK);
+
+            // write 64 Byte dummy for future use
+            for (uint8_t dummy = 0 ; dummy < 64; dummy++)
+                write_binary(ofs, DUMMYBYTE);
+
+
+            // Write instruments
+            uint32_t numInstruments = static_cast<uint32_t>(bank.size());
+            write_binary(ofs, numInstruments);
+            for (const auto& inst : bank) {
+                write_opl_instrument(ofs, inst);
+            }
+
+            // we also write the Ident on the END to verify end is reached
+            ofs.write(FILE_IDENTIFIER_BANK, ID_SIZE_BANK);
+
+            ofs.close();
+            return true;
+        } catch (const std::ios_base::failure& e) {
+            // Detailed system error (e.g., "No space left on device")
+            addError(std::format("Disk I/O Error: {}", e.what()));
+            return false;
+        } catch (const std::exception& e) {
+            addError(std::format("General write exception: {}", e.what()));
+            return false;
+        }
+
+        return false;
+    } // saveBank
+
+    //--------------------------------------------------------------------------
+    // ------------- loadBank
+    bool loadBank(const std::string& filePath, std::vector<opl3::Instrument>& bank) {
+        errors = "";
+        std::ifstream ifs(filePath, std::ios::binary);
+        ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+
+        try {
+            if (!ifs.is_open()) {
+                addError(std::format("Can't open File {} for read.", filePath));
+                return false;
+            }
+
+            // Read and verify identifier
+            char identifierBuffer[ID_SIZE_BANK];
+            ifs.read(identifierBuffer, ID_SIZE_BANK);
+            if (std::memcmp(identifierBuffer, FILE_IDENTIFIER_BANK, ID_SIZE_BANK) != 0) {
+                addError("File Identifier mismatch");
+                return false;
+            }
+
+            // Read and verify version
+            uint16_t version;
+            read_binary(ifs, version);
+            if (version != FILE_VERSION_BANK) {
+                addError(std::format("File Version missmatch read:{} expect:{}", version, FILE_VERSION_BANK));
+                return false;
+            }
+
+            // skip 64 Byte dummy
+            ifs.seekg(64,  std::ios::cur);
+
+            // Read instruments
+            uint32_t numInstruments;
+            read_binary(ifs, numInstruments);
+            if ( numInstruments > opl3::MAX_INSTRUMENTS )
+            {
+                addError(std::format("Instrument count exceed the maximum: read:{} max:{}", numInstruments,opl3::MAX_INSTRUMENTS ));
+                return false;
+            }
+            // song.instruments.resize(numInstruments);
+            // for (uint32_t i = 0; i < numInstruments; ++i) {
+            //     read_opl_instrument(ifs, song.instruments[i]);
+            // }
+
+            bank.resize(numInstruments);
+            for (uint32_t i = 0; i < numInstruments; ++i) {
+                read_opl_instrument(ifs, bank[i]);
+            }
+
+            // Final Identifier Read (verification)
+            ifs.read(identifierBuffer, ID_SIZE_BANK);
+            if (std::memcmp(identifierBuffer, FILE_IDENTIFIER_BANK, ID_SIZE_BANK) != 0) {
                 addError("Trailing FILE_IDENTIFIER is missing or corrupted.");
                 return false;
             }

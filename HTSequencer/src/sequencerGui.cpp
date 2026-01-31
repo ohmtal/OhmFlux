@@ -118,11 +118,29 @@ void SequencerGui::ShowFileManager(){
                 if ( g_FileDialog.selectedExt == ".fms3" ) {
                     mCurrentSong.instruments = getMain()->getController()->getSoundBank();
                     if (opl3_bridge_fms3::saveSong(g_FileDialog.selectedFile, mCurrentSong)) {
-                        Log("Song saved to g_FileDialog.selectedFile.");
+                        Log("Song saved to %s.", g_FileDialog.selectedFile.c_str());
                     } else {
                         Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
                     }
                 }
+                else
+                if ( g_FileDialog.selectedExt == ".fmb3" ) {
+                    if (opl3_bridge_fms3::saveBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank())) {
+                        Log("Soundbank saved to %s.", g_FileDialog.selectedFile.c_str());
+                    } else {
+                        Log("[error] failed to save SoundBank:%s",g_FileDialog.selectedFile.c_str());
+                    }
+                }
+                else
+                if ( g_FileDialog.selectedExt == ".wopl" ) {
+                    mCurrentSong.instruments = getMain()->getController()->getSoundBank();
+                    if (opl3_bridge_wopl::exportBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank() )) {
+                        Log("Bank saved to %s.", g_FileDialog.selectedFile.c_str());
+                    } else {
+                        Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                    }
+                }
+                else
                 if (g_FileDialog.mSaveExt == ".wav")
                 {
                     if (g_FileDialog.selectedExt == "")
@@ -221,6 +239,18 @@ void SequencerGui::ShowFileManager(){
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
                 }
             }
+            if ( g_FileDialog.selectedExt == ".fmb3" ) {
+                getMain()->getController()->stopSong();
+                getMain()->getController()->silenceAll(false);
+
+                if (opl3_bridge_fms3::loadBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank())) {
+                    Log("Loaded SoundBank:  %s", g_FileDialog.selectedFile.c_str());
+
+                } else {
+                    Log("[error] failed to load SoundBank:%s",g_FileDialog.selectedFile.c_str());
+                }
+            }
+
 
 
         }
@@ -315,7 +345,7 @@ bool SequencerGui::Initialize()
     }
 
     // FileManager
-    g_FileDialog.init( getGamePath(), {".fms3", ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
+    g_FileDialog.init( getGamePath(), {".fms3", ".fmb3", ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
@@ -852,6 +882,15 @@ void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
             Log("Soundbank %s loaded! %zu instruments",filename.c_str(), getMain()->getController()->getSoundBank().size() );
     }
     else
+        if (cmd == "exwopl")
+        {
+            std::string filename = "assets/wopl/test.wopl";
+            if (!opl3_bridge_wopl::exportBank(filename, getMain()->getController()->getSoundBank()) )
+                Log("[error] Failed to save %s",filename.c_str() );
+            else
+                Log("Soundbank %s exported",filename.c_str() );
+        }
+        else
     if (cmd == "savesong")
     {
         if (mCurrentSong.patterns.size() == 0)

@@ -29,6 +29,7 @@ namespace ImFlux {
         bool   shadowText = true;
         float  rounding = -1.0f; // -1 use global style
         float  animationSpeed = 1.0f; //NOTE: unused
+        ImU32  textColor = IM_COL32(240,240,240, 255);
         ButtonMouseOverEffects mouseOverEffect = BUTTON_MO_HIGHLIGHT;
         // love this lazy way : example ImFlux::RED_BUTTON.WithSize(ImVec2(tmpWidth, 24.f )).WithRounding(12.f))
         ButtonParams WithSize(ImVec2 s) const { ButtonParams p = *this; p.size = s; return p; }
@@ -151,11 +152,21 @@ namespace ImFlux {
             );
         }
 
+
+        ImU32 lTextColor = params.textColor;
+        ImU32 lShadowColor = IM_COL32_BLACK;
+        if (ImGui::GetItemFlags() & ImGuiItemFlags_Disabled) {
+            lTextColor = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            // Usually, we dim or remove the shadow when disabled
+            lShadowColor = (lShadowColor & IM_COL32_A_MASK) >> 1;
+        }
+
+
         std::string lLabelStr = GetLabelText(label.c_str());
         ImVec2 textSize = ImGui::CalcTextSize(lLabelStr.c_str());
         ImVec2 textPos = rbb.Min + (params.size - textSize) * 0.5f;
-        if (params.shadowText) dl->AddText(textPos + ImVec2(1.f, 1.f), IM_COL32_BLACK, lLabelStr.c_str());
-        dl->AddText(textPos, IM_COL32_WHITE, lLabelStr.c_str());
+        if (params.shadowText) dl->AddText(textPos + ImVec2(1.f, 1.f), lShadowColor, lLabelStr.c_str());
+        dl->AddText(textPos, lTextColor, lLabelStr.c_str());
 
         return pressed;
     }

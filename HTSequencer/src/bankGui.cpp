@@ -74,15 +74,15 @@ void SequencerGui::ShowSoundBankWindow()
 //------------------------------------------------------------------------------
 void RenderInsListButtons(OPL3Controller* controller)
 {
-    const ImVec2 lButtonSize = { 28.f, 28.f};
+    ImFlux::ButtonParams bp = ImFlux::SLATE_BUTTON.WithSize(ImVec2(32.f,32.f));
 
-    if (ImGui::Button(ICON_FA_ROTATE_LEFT "##Reset", lButtonSize )){
+    if (ImFlux::ButtonFancy(ICON_FA_ROTATE_LEFT "##Reset", bp )){
         controller->initDefaultBank();
     }
     if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Reset the default Sound Bank ");
 
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FOLDER_OPEN "##Import Bank", lButtonSize )){
+    if (ImFlux::ButtonFancy(ICON_FA_FOLDER_OPEN "##Import Bank", bp)){
         g_FileDialog.setFileName("");
         g_FileDialog.mSaveMode = false;
         g_FileDialog.mSaveExt = "";
@@ -95,11 +95,41 @@ void RenderInsListButtons(OPL3Controller* controller)
     if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Import Bank");
 
     ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FLOPPY_DISK "##Export Bank", lButtonSize )){
-        //FIXME
-        showMessageNotImplemented("Export Bank");
+    if (ImFlux::ButtonFancy(ICON_FA_FLOPPY_DISK "##SaveExportBank", bp)) {
+        ImGui::OpenPopup("Popup_SaveBankMenu");
     }
-    if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Export Bank");
+    if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Save (fmb3) or Export (wopl) Bank ");
+
+    if (ImGui::BeginPopup("Popup_SaveBankMenu")) {
+
+        ImGui::TextDisabled("Save or Export Soundbank");
+        ImGui::Separator();
+
+        // 1. Save Soundbank (fmb3)
+        if (ImGui::MenuItem("Save Soundbank (.fmb3)")) {
+            g_FileDialog.setFileName("");
+            g_FileDialog.mSaveMode = true;
+            g_FileDialog.mSaveExt = ".fmb3";
+            g_FileDialog.mLabel = "Save Soundbank";
+            g_FileDialog.mFilters = {".fmb3"};
+            g_FileDialog.mUserData = "SaveBankInternal";
+            g_FileDialog.mDirty = true;
+        }
+
+        // 2. Export SoundBank (wopl)
+        if (ImGui::MenuItem("Export Soundbank (.wopl)")) {
+            g_FileDialog.setFileName("");
+            g_FileDialog.mSaveMode = true;
+            g_FileDialog.mSaveExt = ".wopl";
+            g_FileDialog.mLabel = "Export Soundbank";
+            g_FileDialog.mFilters = {".wopl"};
+            g_FileDialog.mUserData = "ExportBankWOPL";
+            g_FileDialog.mDirty = true;
+        }
+
+        ImGui::EndPopup();
+    }
+
 
 
 }
@@ -145,8 +175,6 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone) {
 
 
     // --- Compact Header ---
-    ImGui::TextDisabled("Action");
-    ImGui::SameLine();
     RenderInsListButtons(controller);
     ImGui::Separator();
 

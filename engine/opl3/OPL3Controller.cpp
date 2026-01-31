@@ -1338,7 +1338,11 @@ void OPL3Controller::consoleSongOutput(bool useNumbers, bool showHWChannels)
 bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
 
     if (!songValid(songData))
+    {
+        Log("[error] playSong: songData invalid!");
         return false;
+    }
+
 
 
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
@@ -1546,6 +1550,7 @@ void OPL3Controller::toggleDeepEffects(bool deepTremolo, bool deepVibrato) {
 //------------------------------------------------------------------------------
 bool OPL3Controller::songValid(const opl3::SongData& songData) {
     if (songData.patterns.empty()) {
+        Log("[error] songValid: not pattern available");
         return false;
     }
 
@@ -1553,6 +1558,7 @@ bool OPL3Controller::songValid(const opl3::SongData& songData) {
     // 1. Validate Pattern Indices in OrderList
     for (uint8_t patternIdx : songData.orderList) {
         if (patternIdx >= songData.patterns.size()) {
+            Log("[error] songValid: playlist (orders) are empty.");
             return false;
         }
     }
@@ -1562,6 +1568,7 @@ bool OPL3Controller::songValid(const opl3::SongData& songData) {
     for (const auto& pattern : songData.patterns) {
         for (const auto& step : pattern) {
             if (step.note != NONE_NOTE && step.instrument >= mSoundBank.size()) {
+                Log("[error] songValid: instrument index out of bounds! Load more instruments!");
                 return false;
             }
         }

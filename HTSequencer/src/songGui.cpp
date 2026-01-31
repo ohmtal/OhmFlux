@@ -187,7 +187,10 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     ImGui::PushFont(mIconFont);
 
     ImGui::BeginGroup();
-    if (controller->isPlaying())
+
+    bool lIsPlaying =  controller->isPlaying();
+
+    if (lIsPlaying)
     {
         if (ImFlux::ButtonFancy(ICON_FA_STOP "##Stop", bparams))
             stopSong();
@@ -197,13 +200,15 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         if (ImFlux::ButtonFancy(ICON_FA_PLAY "##Play", bparams))
             playSong();
         ImFlux::Hint("Play");
-        ImGui::SameLine();
-
-        if (ImFlux::ButtonFancy(ICON_FA_FORWARD "##PlaySelected", bparams))
-            playSelected(mPatternEditorState);
-
-        ImFlux::Hint("Play selected");
     }
+    ImGui::SameLine();
+    if (lIsPlaying) ImGui::BeginDisabled();
+    if (ImFlux::ButtonFancy(ICON_FA_FORWARD "##PlaySelected", bparams))
+        playSelected(mPatternEditorState);
+
+    ImFlux::Hint("Play selected");
+    if (lIsPlaying) ImGui::EndDisabled();
+
 
     ImGui::PopFont();
 
