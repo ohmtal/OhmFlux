@@ -9,51 +9,55 @@
 
 //------------------------------------------------------------------------------
 // TODO:
-// [ ] current:
-//  [ ] Pattern: delete (also update order list)
-//  [ ] Pattern editor follow
-//      [ ] check mCurrentSong is playing (via pointer? )
-//      [ ] not when exporting !
-//  [X] * reset bank icon
-//  [~] * rename instrument => instrument editor
-//  [ ] * export bank .. Which format(s) ....wopl+own i guess
-//  [ ]
-//  [ ]
-//  [ ]
-//
-// [X] Limiter settings (maybe only Threshold )
-//  [X] only select defaults
-//
 // [ ] OPL Effects
 //  [ ] how to editor then the best way / context menu
-
-// [~] change fms3 format again :P better now than later
-//    the data should be optional check EOF !
-//    [ ] save / load ALL the DSP effects
-//          i dont care the filesize (some bytes)
-//          so i store the settings also if it's off.
-// [ ] Save Instruments format
-//   [ ] Single 4OP Instrument
-//   [ ] Wopl Export
+//  [ ] add speed modifier
 //
 // [ ] Bank editor
-//   [ ] save
-//   [ ] load
-//   [ ] add
-//   [ ] replace
-//   [ ] move
+//   [X] save
+//   [X] load
+//   [ ] new
+//   [ ] add ==> from file and selection if a bank
+//   [X] delete
+//   [X] move
+
+// [ ] Editing
+//  [ ] paste to a new pattern
+//  [ ] save clipboard as preset (maybe 10 presets or so )
+//      ==> need a clipboard  to json so i also can save selection as file or in settings
 
 // [ ] live playing << MUST have ~~ works a bit ;)
 //   [ ] row cursor must react to the playing or not ?! << in FluxEditor it stucks when it followed in edit mode
-//   [ ] FIXME first: add a custom stop note (so a STOP_NOTE is added to the pattern )
+//   [~] first: add a custom stop note (so a STOP_NOTE is added to the pattern ) => use space !
 //       ONLY IN LIVE PLAYING
 //   [ ] play pattern starts when first note is pressed
 //
 // [ ] Undo
 //
-// [ ] Make it nice with buttons (icons)
+// [ ] Make it nice with buttons (icons) ==> in progress
+//
+// [ ] create a icon
+// [ ] test if windows compile works ;) - hey it runs on windows, too :P
+
+// ------------------
+//  [X] Pattern: delete (also update order list)
+//  [~] Pattern editor follow
+//      [~] check mCurrentSong is playing (via pointer? )
+//      [~] not when exporting ! ==> why looks funny :P
+//  [X] * reset bank icon
+//  [~] * rename instrument => instrument editor
+//  [X] * export bank .. Which format(s) ....wopl+own i guess => yes fmb3 and wopl
+//
+// [X] Limiter settings (maybe only Threshold )
+//  [X] only select defaults
 //
 
+// [~] change fms3 format again :P better now than later
+//    the data should be optional check EOF !
+//    [~] save / load ALL the DSP effects
+//          i dont care the filesize (some bytes)
+//          so i store the settings also if it's off.
+//
 // [~] Channel Menu => set instrument (or do i use selection ?!) need a menu for seletion too
 //
 // [X] OrderList Editor
@@ -107,6 +111,7 @@
 // [X] ctrl+down transpose down
 // [X] ctrl+pageup transpose octave up
 // [X] ctrl+pagedown octave transpose down
+
 constexpr float CellHeight = 22.f;
 ImVec2 cellSize = {50, CellHeight};
 
@@ -316,7 +321,8 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
     // ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse
     if (ImGui::BeginChild("PATTERN_Box",
-        ImVec2(0, -ImGui::GetTextLineHeightWithSpacing()), //ImVec2(0, 0),
+        // NOTE: can be used when i add a info line on bottom ImVec2(0, -ImGui::GetTextLineHeightWithSpacing()),
+        ImVec2(0, 0),
         ImGuiChildFlags_Borders,
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
 
@@ -352,24 +358,24 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
 
     // if (isPlaying())
-    {
-        std::string lChannelToNoteStates = "";
-        for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
-            lChannelToNoteStates += std::format(" {:03}", getMain()->getController()->mChannelToNote[i]);
-        // ImGui::SameLine();
-
-        if (lSeqState.orderIdx < mCurrentSong.orderList.size())
-        {
-            ImGui::TextColored(ImColor4F(cl_AcidGreen),
-                               "SEQ: order:%d pat:%d row:%d ChannelNoteStates:%s"
-                               ,lSeqState.orderIdx
-                               ,mCurrentSong.orderList[lSeqState.orderIdx]
-                               ,lSeqState.rowIdx
-                               ,lChannelToNoteStates.c_str()
-            );
-        }
-
-    }
+    // {
+    //     std::string lChannelToNoteStates = "";
+    //     for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
+    //         lChannelToNoteStates += std::format(" {:03}", getMain()->getController()->mChannelToNote[i]);
+    //     // ImGui::SameLine();
+    //
+    //     if (lSeqState.orderIdx < mCurrentSong.orderList.size())
+    //     {
+    //         ImGui::TextColored(ImColor4F(cl_AcidGreen),
+    //                            "SEQ: order:%d pat:%d row:%d ChannelNoteStates:%s"
+    //                            ,lSeqState.orderIdx
+    //                            ,mCurrentSong.orderList[lSeqState.orderIdx]
+    //                            ,lSeqState.rowIdx
+    //                            ,lChannelToNoteStates.c_str()
+    //         );
+    //     }
+    //
+    // }
 
 
 
