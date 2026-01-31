@@ -6,6 +6,7 @@
 #include <string>
 #include <cctype>
 #include <src/fonts/IconsFontAwesome6.h>
+#include <OPL3Instruments.h>
 
 //------------------------------------------------------------------------------
 void SequencerGui::ShowSoundBankWindow()
@@ -79,7 +80,17 @@ void RenderInsListButtons(OPL3Controller* controller)
     if (ImFlux::ButtonFancy(ICON_FA_ROTATE_LEFT "##Reset", bp )){
         controller->initDefaultBank();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetItemTooltip("Reset the default Sound Bank ");
+    ImFlux::Hint("Reset the default Sound Bank ");
+
+    ImGui::SameLine();
+    if (ImFlux::ButtonFancy(ICON_FA_PLUS "##AppendNewIns", bp )){
+        //FIXME menu to select a default !!!!!
+        opl3::Instrument newIns = OPL3InstrumentPresets::GetMelodicDefault(0);
+        newIns.name = "New Instrument";
+        controller->getSoundBank().push_back(newIns);
+    }
+    ImFlux::Hint("Append a new Instrument.");
+
 
     ImGui::SameLine();
     if (ImFlux::ButtonFancy(ICON_FA_FOLDER_OPEN "##Import Bank", bp)){

@@ -692,6 +692,8 @@ namespace fluxStr {
     // ----- filename tools but string only -----
     //--------------------------------------------------------------------------
     inline std::string_view extractFilename(std::string_view path) {
+        if (path.empty())
+            return "";
         size_t lastSlash = path.find_last_of("/\\");
         if (lastSlash == std::string_view::npos) {
             return path;

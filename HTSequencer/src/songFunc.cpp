@@ -7,6 +7,17 @@
 #include <cctype>
 
 //------------------------------------------------------------------------------
+void SequencerGui::setLoop(bool loop) {
+    mLoopSong = loop;
+    getMain()->getController()->setLoop(mLoopSong);
+}
+
+void SequencerGui::toogleLoop() {
+    mLoopSong = !mLoopSong;
+    setLoop(mLoopSong);
+}
+
+
 
 bool SequencerGui::isPlaying() {
     return getMain()->getController()->getSequencerState().playing;
@@ -30,7 +41,7 @@ bool SequencerGui::playSelected(PatternEditorState& state, bool forcePatternPlay
 
     lPlayRange.init();
     lPlayRange.active = true;
-    if (!forcePatternPlay &&  state.selection.active &&  state.selection.getCount() > 0 )
+    if (!forcePatternPlay &&  state.selection.active &&  state.selection.getCount() > 1 ) //skip 1 selected cell
     {
         state.selection.sort(); //make sure its in the right position
         lPlayRange.startPoint[0] = state.selection.startPoint[0];
@@ -160,7 +171,13 @@ void SequencerGui::callSaveSong() {
     if (!getMain()->getController()->songValid(mCurrentSong))
         return;
 
-    std::string fileName = fluxStr::sanitizeFilenameWithUnderScores(mCurrentSong.title) + ".fms3";
+    std::string fileName = "";
+    if ( mCurrentSongFileName.empty() ) {
+        fileName = fluxStr::sanitizeFilenameWithUnderScores(mCurrentSong.title) + ".fms3";
+    } else {
+        fileName = mCurrentSongFileName;
+    }
+
 
     g_FileDialog.setFileName(fileName);
     g_FileDialog.mSaveMode = true;
@@ -189,6 +206,8 @@ void SequencerGui::callExportSong(){
 void SequencerGui::newSong(){
     stopSong();
     mCurrentSong.init();
+
+    mCurrentSongFileName = "";
 
     // add a 128 row pattern
     // TODO: put this in a function? see also DrawNewPatternModal

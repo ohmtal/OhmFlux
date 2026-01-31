@@ -147,7 +147,7 @@ namespace ImFlux {
     }
 
     // -------- LCDNumber
-    inline void LCDNumber(float value, int num_digits, int decimal_precision, float height, ImU32 color_on) {
+    inline void LCDNumber(float value, int num_digits, int decimal_precision, float height, ImU32 color_on = IM_COL32(0,200,0,255)) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return;
 

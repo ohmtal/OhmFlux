@@ -62,7 +62,7 @@ namespace OPL3InstrumentPresets {
     //
 
     //------------------------------------------------------------------------------
-    std::array< uint8_t, 24 > GetDefaultInstrument()
+    inline std::array< uint8_t, 24 > GetDefaultInstrument()
     {
         return
         {
@@ -82,7 +82,7 @@ namespace OPL3InstrumentPresets {
     }
 
     //------------------------------------------------------------------------------
-    std::array< uint8_t, 24 > GetDefaultLeadSynth()
+    inline std::array< uint8_t, 24 > GetDefaultLeadSynth()
     {
         return {
             0x01, 0x01, // 0-1: Multiplier
@@ -100,7 +100,7 @@ namespace OPL3InstrumentPresets {
         };
     }
     //------------------------------------------------------------------------------
-    std::array< uint8_t, 24 > GetDefaultOrgan()
+    inline std::array< uint8_t, 24 > GetDefaultOrgan()
     {
         return {
             0x01, 0x02, // 0-1: Multiplier (Mod=1 [Base], Car=2 [Octave/Harmonic])
@@ -118,7 +118,7 @@ namespace OPL3InstrumentPresets {
         };
     }
     //------------------------------------------------------------------------------
-    std::array< uint8_t, 24 > GetDefaultCowbell()
+    inline std::array< uint8_t, 24 > GetDefaultCowbell()
     {
         return {
             0x01, 0x04, // 0-1: Multiplier (Mod=1, Car=4: Creates a high, resonant 'clink')
@@ -136,7 +136,7 @@ namespace OPL3InstrumentPresets {
         };
     }
 
-    opl3::Instrument  GetMelodicDefault(uint8_t index) {
+    inline opl3::Instrument  GetMelodicDefault(uint8_t index) {
 
 
         std::array< uint8_t, 24 > data = GetDefaultInstrument(); // Start with your basic Sine template

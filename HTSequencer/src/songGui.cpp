@@ -9,15 +9,15 @@
 
 //------------------------------------------------------------------------------
 // TODO:
-// [ ] OPL Effects
-//  [ ] how to editor then the best way / context menu
-//  [ ] add speed modifier
-//
+
 // [ ] Bank editor
 //   [X] save
 //   [X] load
-//   [ ] new
+//   [X] new (append)
 //   [ ] add ==> from file and selection if a bank
+//     [ ] convert some of my instrumens => xxd -i file and add them to OPL3Instruments
+//     [ ] array of default bank names
+//     [ ] add menu to select a default instrument to append
 //   [X] delete
 //   [X] move
 
@@ -26,13 +26,19 @@
 //  [ ] save clipboard as preset (maybe 10 presets or so )
 //      ==> need a clipboard  to json so i also can save selection as file or in settings
 
+// [ ] OPL Effects
+//  [ ] add speed modifier (need to handle the speed with is set on playSong - state bpm ... )
+//
+//  [ ] how to editor then the best way => Popup with control's
+//
+
+
 // [ ] live playing << MUST have ~~ works a bit ;)
 //   [ ] row cursor must react to the playing or not ?! << in FluxEditor it stucks when it followed in edit mode
 //   [~] first: add a custom stop note (so a STOP_NOTE is added to the pattern ) => use space !
 //       ONLY IN LIVE PLAYING
 //   [ ] play pattern starts when first note is pressed
 //
-// [ ] filename handling / overwrite dialog and such [useless] stuff
 // [ ] make filebrowser fancy
 // [ ] modify console (buttons and search on top consume  too much space)
 //
@@ -46,6 +52,15 @@
 //
 
 // ------------------
+// [X] filename handling / overwrite dialog and such [useless] stuff
+//  [X] New pattern slider : cant select the right size
+//  [X] Piano: black keys does not stop
+//  [X] Pattern Tabs selected hard to see
+//  [X] play selected:
+//     [X] Button Icon
+//     [X] should ignore a single cell select
+//     [X] F2 as key
+
 //  [X] Pattern: delete (also update order list)
 //  [~] Pattern editor follow
 //      [~] check mCurrentSong is playing (via pointer? )
@@ -205,27 +220,26 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     {
         if (ImFlux::ButtonFancy(ICON_FA_STOP "##Stop", bparams))
             stopSong();
-        ImFlux::Hint("Stop");
+        ImFlux::Hint("Stop (ESC)");
 
     } else {
         if (ImFlux::ButtonFancy(ICON_FA_PLAY "##Play", bparams))
             playSong();
-        ImFlux::Hint("Play");
+        ImFlux::Hint("Play (F1)");
     }
     ImGui::SameLine();
     if (lIsPlaying) ImGui::BeginDisabled();
-    if (ImFlux::ButtonFancy(ICON_FA_FORWARD "##PlaySelected", bparams))
+    if (ImFlux::ButtonFancy(ICON_FA_CIRCLE_PLAY "##PlaySelected", bparams))
         playSelected(mPatternEditorState);
 
-    ImFlux::Hint("Play selected");
+    ImFlux::Hint("Play selected (F2)");
     if (lIsPlaying) ImGui::EndDisabled();
 
 
     ImGui::PopFont();
 
-    if (ImFlux::DrawLED("Loop Song", mLoopSong,ImFlux::LED_BLUE_ANIMATED_GLOW)) {
-        mLoopSong = !mLoopSong;
-        controller->setLoop( mLoopSong );
+    if (ImFlux::DrawLED("Loop Song (Ctrl+L)", mLoopSong,ImFlux::LED_BLUE_ANIMATED_GLOW)) {
+        toogleLoop();
     }
 
     // if (ImFlux::LEDCheckBox("Loop", &mLoopSong, ImVec4(0.9f,0.9f,0.9f,1.f)))
@@ -265,19 +279,30 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     ImFlux::SeparatorVertical(0.f);
     ImGui::BeginGroup();
 
-    ImFlux::LCDText(mCurrentSong.title + " - FIXME Filename", 20, 14.f, IM_COL32(0,240,240, 255) );
+    std::string lSongFileName = "";
 
-    ImGui::TextColored(ImVec4(0.f, 0.5f, 0.5f, 1.0f), "FIXME Filename");ImGui::SameLine();
+    if (!mCurrentSongFileName.empty()) {
+        lSongFileName = std::string( fluxStr::extractFilename(g_FileDialog.selectedFile));
+        ImFlux::LCDText(mCurrentSong.title + " - " + lSongFileName, 20, 14.f, IM_COL32(0,240,240, 255) );
+    } else {
+        ImFlux::LCDText(mCurrentSong.title, 20, 14.f, IM_COL32(0,240,240, 255) );
+    }
+
+
+    ImFlux::TextColoredEllipsis(ImVec4(0.f, 0.5f, 0.5f, 1.0f), lSongFileName.c_str(), 180.f);
+    ImFlux::Hint(std::format("Song Filename {}", mCurrentSongFileName));
+    ImGui::SameLine();
 
     ImGui::Dummy(ImVec2(0.f, 2.f));
 
     ImGui::AlignTextToFramePadding();
     // ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Title");ImGui::SameLine();
-    ImGui::TextDisabled("Title");ImGui::SameLine();
-    ImGui::SetNextItemWidth(120);
+    // ImGui::TextDisabled("Title:");
+    ImGui::SetNextItemWidth(180);
     if (ImGui::InputText("##Song Title", nameBuf, sizeof(nameBuf))) {
         mCurrentSong.title = nameBuf;
     }
+    ImFlux::Hint("Song Title");
 
 
     ImGui::EndGroup();
@@ -288,7 +313,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     if (ImFlux::MiniKnobInt("BPM##BPM", &lBpm, 15, 360, 12.f, 15, 120))
         mCurrentSong.bpm = lBpm;
     ImGui::SameLine();
-    ImFlux::LCDDisplay("BPM", (float)lBpm, 3,0,8.f);
+    ImFlux::LCDDisplay("BPM", (float)lBpm, 3,0,12.f);
 
     // ImFlux::SeparatorVertical(0.f);
     ImFlux::GroupSeparator(42.f);
@@ -297,7 +322,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     if (ImFlux::MiniKnobInt("Ticks per Row##ticksPerRow", &lticks, 1, 32, 12.f, 1, 6))
         mCurrentSong.ticksPerRow = static_cast<uint8_t>(std::clamp(lticks, 1, 32));
     ImGui::SameLine();
-    ImFlux::LCDDisplay("Ticks per Row", (float)lticks, 1,0,8.f);
+    ImFlux::LCDDisplay("Ticks per Row", (float)lticks, 1,0,12.f);
 
     ImGui::EndGroup();
     ImFlux::SeparatorVertical(0.f);
@@ -422,14 +447,17 @@ void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
 
 
         if (isPlaying()) {
-            if (ImGui::MenuItem(ICON_FA_STOP " Stop")) {
+            if (ImGui::MenuItem(ICON_FA_STOP " Stop", "ESC")) {
                 stopSong();
             }
         } else  {
-            if (ImGui::MenuItem(ICON_FA_PLAY " Play selected")) {
+            if (ImGui::MenuItem(ICON_FA_CIRCLE_PLAY " Play selected", "F2")) {
                 playSelected(state);
             }
         }
+        // if (ImGui::MenuItem(ICON_FA_CIRCLE_DOT " Toogle Loop", "Ctrl+L")) {
+        //     toogleLoop();
+        // }
         ImGui::Separator();
         if (ImGui::BeginMenu(ICON_FA_ARROWS_UP_DOWN " Transpose")) {
             if (ImGui::MenuItem(ICON_FA_SORT_UP   " Octave Up", "Ctrl+PageUp")) { transposeSelection(state, 12); }
@@ -597,6 +625,10 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
         //-------- other actions
         else
         if (ImGui::IsKeyPressed(ImGuiKey_F1))  {if (isPlaying()) stopSong(); else playSong();}
+        else
+        if (ImGui::IsKeyPressed(ImGuiKey_F2))  {if (isPlaying()) stopSong(); else playSelected(mPatternEditorState);}
+        else
+        if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_L))  {toogleLoop();}
 
     }
 }
@@ -1158,8 +1190,18 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
 
                 // 1. Convert color and Push Styles BEFORE BeginTabItem
                 ImVec4 tabColor = ImGui::ColorConvertU32ToFloat4(lPat.mColor);
+                // ImVec4 tabColor = ImColor4F(cl_Slate);
+
                 ImVec4 inactiveColor = tabColor;
-                inactiveColor.w *= 0.6f;
+                // inactiveColor.x *= 0.8f; // Darken Red
+                // inactiveColor.y *= 0.8f; // Darken Green
+                // inactiveColor.z *= 0.8f; // Darken Blue
+                inactiveColor.w  = 0.9f;  // Lower Alpha (was 0.6f)
+
+
+                // a little line at the top/bottom of the active tab
+                // ImGui::PushStyleColor(ImGuiCol_TabSelectedOverline, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
 
                 ImGui::PushStyleColor(ImGuiCol_Tab, inactiveColor);
                 ImGui::PushStyleColor(ImGuiCol_TabActive, tabColor);
@@ -1169,7 +1211,32 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
                 snprintf(label, sizeof(label), "%s###Tab%d",lPat.mName.c_str(), lPatternIndex);
 
                 // 2. Begin the Tab
+
+                ImVec4 textColor;
+                float luminance = (0.299f * tabColor.x + 0.587f * tabColor.y + 0.114f * tabColor.z);
+                if (state.currentPatternIdx == lPatternIndex)
+                {
+                    textColor = (luminance > 0.5f) ? ImVec4(0,0,0,1) : ImVec4(1,1,1,1);
+                } else {
+                    textColor = (luminance > 0.5f) ? ImVec4(0.25f,0.25f,0.25f,1.f) : ImVec4(0.75f,0.75f,0.75f,1.f);
+                }
+
+                ImGui::PushStyleColor(ImGuiCol_Text, textColor);
                 bool tabOpen = ImGui::BeginTabItem(label);
+                ImGui::PopStyleColor();
+
+                // if (ImGui::IsItemVisible())
+                if (ImGui::IsItemVisible() && state.currentPatternIdx == lPatternIndex)
+                {
+                    ImU32 outlineColor = IM_COL32_WHITE; // ImGui::GetColorU32(ImGuiCol_Text); // Usually white or light grey
+                    // if (ImGui::IsItemActive() || ImGui::IsItemFocused())  // Check if truly active
+                    {
+                        ImVec2 p_min = ImGui::GetItemRectMin();
+                        ImVec2 p_max = ImGui::GetItemRectMax();
+                        ImGui::GetWindowDrawList()->AddRect(p_min, p_max, outlineColor, ImGui::GetStyle().TabRounding, 0, 2.0f);
+                    }
+                }
+
 
                 // Context menu logic (associated with the last item, the tab)
                 char popupId[32];
@@ -1258,21 +1325,46 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
 bool SequencerGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings& settings) {
     bool result = false;
 
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.f,8.f));
+    ImFlux::ButtonParams lbp = ImFlux::SLATE_BUTTON.WithSize(ImVec2(24.f,24.f)).WithRounding(2.f);
+
 
     if (ImGui::BeginPopupModal("New Pattern Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::InputText("Pattern Name", settings.name, 64);
-        ImGui::ColorEdit4("Pattern Color", (float*)&settings.color);
 
-        ImGui::SliderInt("Rows", &settings.rowCount, 1, 1024);
-        ImGui::SameLine();
-        if(ImGui::Button("256")) settings.rowCount = 256;
 
-        if (ImGui::Button("OK", ImVec2(120, 0))) {
+        ImGui::TextColored(ImVec4(0.2f,0.8f,0.2f,1.f), "Pattern Name:");
+        ImGui::InputText("##Pattern Name", settings.name, 64);
+
+        ImGui::Separator();
+
+        ImGui::SetNextItemWidth(120.f);
+        ImGui::ColorPicker3("Pattern Color", (float*)&settings.color,  ImGuiColorEditFlags_NoInputs);
+
+        ImGui::Separator();
+        ImFlux::MiniKnobInt("Rows##newpattrows",  &settings.rowCount, 8, 512, 24.f, 8, 64);ImGui::SameLine();
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 12.0f);
+        if (ImGui::BeginChild("##newPatBox", ImVec2(0.f, 30.f)))
+        {
+            // ImGui::TextDisabled( "Rows"); ImGui::SameLine();
+            ImGui::SameLine();ImFlux::LCDNumber((float)settings.rowCount, 3, 0, 16.f);
+            ImFlux::SeparatorVertical(0.f);
+            if(ImFlux::ButtonFancy("64", lbp)) settings.rowCount = 64;
+            ImGui::SameLine();
+            if(ImFlux::ButtonFancy("256", lbp)) settings.rowCount = 256;
+
+            ImGui::EndChild();
+        }
+
+
+        ImGui::Separator();
+
+        lbp.size = ImVec2(120.f,24.f);
+        if (ImFlux::ButtonFancy("OK", lbp)) {
             Pattern p;
             p.mName = settings.name;
             p.mColor = ImGui::ColorConvertFloat4ToU32(settings.color);
 
-            // Allocation: Rows * 12 channels
+            // Allocation: Rows * 12 s
             p.getStepsMutable().resize(settings.rowCount * opl3::SOFTWARE_CHANNEL_COUNT);
 
             // Initialize with "None" notes
@@ -1289,13 +1381,14 @@ bool SequencerGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings&
             result = true;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+        if (ImFlux::ButtonFancy("Cancel", lbp)) {
             ImGui::CloseCurrentPopup();
             result = true;
         }
 
         ImGui::EndPopup();
     }
+    ImGui::PopStyleVar();
     return result;
 }
 //------------------------------------------------------------------------------

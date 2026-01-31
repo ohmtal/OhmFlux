@@ -22,6 +22,36 @@ namespace ImFlux {
     //------------------------------------------------------------------------------
     //MISC:
     //------------------------------------------------------------------------------
+    // TextColoredEllipsis a text with a limited width
+    inline void TextColoredEllipsis(ImVec4 color, std::string text, float maxWidth) {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) return;
+
+        const char* text_begin = text.c_str();
+        const char* text_end = text_begin + text.size();
+
+        ImVec2 pos = window->DC.CursorPos;
+        ImRect bb(pos, ImVec2(pos.x + maxWidth, pos.y + ImGui::GetTextLineHeight()));
+
+        ImGui::ItemSize(bb);
+        if (!ImGui::ItemAdd(bb, 0)) return;
+
+        ImGui::PushStyleColor(ImGuiCol_Text, color);
+        // RenderTextEllipsis(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec2& pos_max, float ellipsis_max_x, const char* text, const char* text_end, const ImVec2* text_size_if_known);
+        ImGui::RenderTextEllipsis(
+            ImGui::GetWindowDrawList(),
+            bb.Min,             // pos_min
+            bb.Max,             // pos_max
+            bb.Max.x,           // ellipsis_max_x
+            text_begin,         // text
+            text_end,           // text_end
+            NULL                // text_size_if_known
+        );
+        ImGui::PopStyleColor();
+    }
+
+
+
     // ------------ BitEditor
     inline void BitEditor(const char* label, uint8_t* bits, ImU32  color_on = IM_COL32(255, 0, 0, 255)) {
         ImGui::TextDisabled("%s", label); ImGui::SameLine();
@@ -58,6 +88,8 @@ namespace ImFlux {
 
         ImGui::Dummy(size);
     }
+
+
 
 
 

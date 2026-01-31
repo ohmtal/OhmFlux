@@ -601,7 +601,7 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 
                 if (ImGui::IsItemActivated()) {
                     SongStep step{midiNote, mCurrentInstrumentId};
-                    getMain()->getController()->playNote(channel, step);
+                    this->playNote(channel, step);
                     // if (chords::selectedTypeIdx == 0 || controller->isPlaying()) {
                     //     // Single Note
                     //     SongStep step{midiNote, mCurrentInstrumentId};

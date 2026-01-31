@@ -94,6 +94,7 @@ private:
 
 
     // -------- song -------
+    std::string mCurrentSongFileName = "";
     opl3::SongData mCurrentSong;
     opl3::SongData mTempSong;
     bool mLoopSong = false;
@@ -354,6 +355,10 @@ public:
     void DrawStepCellPopup(PatternEditorState& state);
     void DrawPatternEditor(PatternEditorState& state);
     void ActionPatternEditor(PatternEditorState& state); //FIXME TO PRIVATE
+
+
+    void setLoop(bool loop);
+    void toogleLoop();
 
     bool isPlaying();
     uint16_t getPlayingRow();

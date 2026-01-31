@@ -119,9 +119,12 @@ void SequencerGui::ShowFileManager(){
                     mCurrentSong.instruments = getMain()->getController()->getSoundBank();
                     if (opl3_bridge_fms3::saveSong(g_FileDialog.selectedFile, mCurrentSong)) {
                         Log("Song saved to %s.", g_FileDialog.selectedFile.c_str());
+                        mCurrentSongFileName = g_FileDialog.selectedFile;
+
                     } else {
                         Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
                     }
+
                 }
                 else
                 if ( g_FileDialog.selectedExt == ".fmb3" ) {
@@ -215,6 +218,7 @@ void SequencerGui::ShowFileManager(){
                 if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, *lTargetSong)) {
                     getMain()->getController()->getSoundBank() = lTargetSong->instruments;
                     Log("Loaded legacy fms Song:  %s", g_FileDialog.selectedFile.c_str());
+                    mCurrentSongFileName = ""; // we can't export old format so reset filename
 
                 } else {
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
@@ -226,7 +230,8 @@ void SequencerGui::ShowFileManager(){
                 getMain()->getController()->silenceAll(false);
 
                 SongData* lTargetSong = &mCurrentSong;
-                if (g_FileDialog.mUserData == "ImportBank")
+                bool lIsImportBank = g_FileDialog.mUserData == "ImportBank";
+                if (lIsImportBank)
                 {
                     lTargetSong = &mTempSong;
                 }
@@ -234,6 +239,11 @@ void SequencerGui::ShowFileManager(){
                 if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, *lTargetSong)) {
                     getMain()->getController()->getSoundBank() = lTargetSong->instruments;
                     Log("Loaded Song:  %s", g_FileDialog.selectedFile.c_str());
+                    if (!lIsImportBank) {
+                        mCurrentSongFileName = g_FileDialog.selectedFile;
+                        // focus Sequencer
+                        ImGui::SetWindowFocus("Sequencer");
+                    }
 
                 } else {
                     Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
