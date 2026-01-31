@@ -32,12 +32,18 @@
 //       ONLY IN LIVE PLAYING
 //   [ ] play pattern starts when first note is pressed
 //
+// [ ] filename handling / overwrite dialog and such [useless] stuff
+// [ ] make filebrowser fancy
+// [ ] modify console (buttons and search on top consume  too much space)
+//
 // [ ] Undo
 //
 // [ ] Make it nice with buttons (icons) ==> in progress
 //
+
 // [ ] create a icon
 // [ ] test if windows compile works ;) - hey it runs on windows, too :P
+//
 
 // ------------------
 //  [X] Pattern: delete (also update order list)
