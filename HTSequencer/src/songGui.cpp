@@ -21,6 +21,11 @@
 //   [X] delete
 //   [X] move
 
+//  [ ] keyboard shortcuts ... cleanup !!!
+//      * some are in keyboardGui,
+//      * some in songGui
+//      * and ESC is handles in sequencerGui
+
 // [ ] Editing
 //  [ ] paste to a new pattern
 //  [ ] save clipboard as preset (maybe 10 presets or so )

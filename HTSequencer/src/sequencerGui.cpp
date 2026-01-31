@@ -582,6 +582,10 @@ void SequencerGui::onKeyEvent(SDL_KeyboardEvent event)
     if (event.key == SDLK_ESCAPE) {
         if (isPlaying())
             stopSong();
+        else {
+            if (mPatternEditorState.visible )
+                mPatternEditorState.selection.init();
+        }
 
         return ;
     }
