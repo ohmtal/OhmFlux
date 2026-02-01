@@ -35,19 +35,26 @@ namespace DSP {
             is.read(reinterpret_cast<char*>(this), sizeof(BitcrusherSettings));
             return  is.good();
         }
+
+         auto operator<=>(const BitcrusherSettings&) const = default; //C++20 lazy way
     };
 
-    // OFF
-    constexpr BitcrusherSettings OFF_BITCRUSHER = { 16.0f, 44100.0f, 0.0f };
 
     // Classic "Lo-Fi" presets
     constexpr BitcrusherSettings AMIGA_BITCRUSHER  = {  8.0f, 22050.0f, 1.0f };
     constexpr BitcrusherSettings NES_BITCRUSHER    = {  4.0f, 11025.0f, 1.0f };
     constexpr BitcrusherSettings PHONE_BITCRUSHER  = { 12.0f, 4000.0f, 1.0f };
-
     constexpr BitcrusherSettings EXTREME_BITCRUSHER  = { 2.0f, 4000.0f, 1.0f };
 
+    constexpr BitcrusherSettings CUSTOM_BITCRUSHER  = {  8.0f, 22050.0f, 0.0f }; //DUMMY!
 
+    static const std::array<DSP::BitcrusherSettings, 5> BITCRUSHER_PRESETS = {
+        DSP::CUSTOM_BITCRUSHER,
+        DSP::AMIGA_BITCRUSHER,
+        DSP::NES_BITCRUSHER,
+        DSP::PHONE_BITCRUSHER,
+        DSP::EXTREME_BITCRUSHER
+    };
 
 
     class Bitcrusher : public Effect {

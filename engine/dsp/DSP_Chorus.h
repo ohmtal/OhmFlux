@@ -33,6 +33,7 @@ namespace DSP {
             is.read(reinterpret_cast<char*>(this), sizeof(ChorusSettings));
             return  is.good();
         }
+        auto operator<=>(const ChorusSettings&) const = default; //C++20 lazy way
 
     };
 

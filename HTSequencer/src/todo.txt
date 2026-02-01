@@ -2,12 +2,21 @@ TODO Version 1 (i do not use 0 this time):
 
 
 [ ] dspGUI / DSP for all Effects .... bss << update gui controls ,,, then
+  [ ] BitCrusher
+  [ ] Chorus
+  [ ] Equilizer9Band
+  [X] Limiter
+  [ ] Reverb
+  [ ] SoundCardEmulation
+  [ ] Warmth
+
+
   [ ] Limiter:  reverse does not longer work .. i guess because of CUSTOM !!
   [ ] for gui stepper we need :
     like i did in Limiter
-        bool operator==(const LimiterSettings& other) const {
-            return Threshold == other.Threshold && Attack == other.Attack && Release == other.Release;
-        }
+
+     auto operator<=>(const LimiterSettings&) const = default; //C++20 lazy way
+
 
    ==> THIS ... TODO !!
   static const std::array<DSP::LimiterSettings, 6> LIMITER_PRESETS = {

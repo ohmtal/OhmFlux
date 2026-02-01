@@ -38,6 +38,8 @@ namespace DSP {
             return  is.good();
         }
 
+        auto operator<=>(const Equalizer9BandSettings&) const = default; //C++20 lazy way
+
     };
 
     // Preset: Flat (No change)

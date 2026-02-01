@@ -36,6 +36,8 @@ struct ReverbSettings {
         return  is.good();
     }
 
+    auto operator<=>(const ReverbSettings&) const = default; //C++20 lazy way
+
 };
 
 

@@ -38,9 +38,11 @@ namespace DSP {
             return  is.good();
         }
 
-        bool operator==(const LimiterSettings& other) const {
-            return Threshold == other.Threshold && Attack == other.Attack && Release == other.Release;
-        }
+        auto operator<=>(const LimiterSettings&) const = default; //C++20 lazy way
+
+        // bool operator==(const LimiterSettings& other) const {
+        //     return Threshold == other.Threshold && Attack == other.Attack && Release == other.Release;
+        // }
 
     };
 

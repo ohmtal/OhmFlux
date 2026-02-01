@@ -45,6 +45,9 @@ namespace DSP {
 
             return is.good();
         }
+
+
+        auto operator<=>(const SoundCardEmulationSettings&) const = default; //C++20 lazy way
     };
 
 

@@ -21,6 +21,8 @@ namespace ImFlux {
         ImVec2 size = ImVec2(radius * 2, radius * 2);
         ImGui::InvisibleButton("##knob", size);
 
+        if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
+
         bool value_changed = false;
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
@@ -88,9 +90,13 @@ namespace ImFlux {
 
     // --------------- LEDRingKnob
     inline bool LEDRingKnob(const char* label, float* v, float v_min, float v_max, float radius = 18.f, float speed = 0.01f) {
+        ImGui::PushID(label);
+
         ImVec2 p = ImGui::GetCursorScreenPos();
         ImDrawList* dl = ImGui::GetWindowDrawList();
         ImGui::InvisibleButton(label, {radius*2, radius*2});
+
+        if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
 
         bool value_changed = false;
         bool is_active = ImGui::IsItemActive();
@@ -135,6 +141,9 @@ namespace ImFlux {
 
         Hint(std::format("{:s} {:4.2f}", label, *v));
 
+        ImGui::PopID(/*label*/);
+
+
         return value_changed;
     }
 
@@ -146,13 +155,15 @@ namespace ImFlux {
         ImVec2 size = ImVec2(radius * 2, radius * 2);
         ImGui::InvisibleButton("##knob", size);
 
+        if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
+
+
         bool value_changed = false;
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
         bool is_clicked = ImGui::IsItemClicked();
 
-
-        // 1. SCROLL WHEEL support (fastest way to change values)
+        // SCROLL WHEEL support (fastest way to change values)
         if (is_hovered && ImGui::GetIO().MouseWheel != 0) {
             int new_v = std::clamp(*v + (int)ImGui::GetIO().MouseWheel * step, v_min, v_max);
             if (new_v != *v) {
@@ -161,7 +172,7 @@ namespace ImFlux {
             }
         }
 
-        // 2. DRAG support (with higher sensitivity)
+        // DRAG support (with higher sensitivity)
         if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             float delta = ImGui::GetIO().MouseDelta.y;
             if (std::abs(delta) > 0.0f) {
@@ -204,8 +215,6 @@ namespace ImFlux {
                     ImGui::GetColorU32(ImGuiCol_Text), 2.0f);
 
 
-
-
         if (is_hovered) {
             std::string lLabel = GetLabelText(label);
             ImGui::SetTooltip("%s: %d", lLabel.c_str(), *v);
@@ -216,10 +225,35 @@ namespace ImFlux {
             value_changed = true;
         }
 
-
-
-
         ImGui::PopID();
+        return value_changed;
+    }
+
+
+    // ~~~~~~~~~~~~~~~  Hackfest MiniKnobIntWithText
+    inline bool MiniKnobIntWithText(const char* label, int* v, int v_min, int v_max, const char* format = "%d",  float radius = 12.f, int step = 1, int defaultValue = -4711) {
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        dl->AddText(ImVec2(pos.x, pos.y), IM_COL32(200,200,200,200), label);
+        float lY = 12.f;
+        // ImVec2 size = ImGui::CalcTextSize("Your text here");
+        ImGui::Dummy(ImVec2(radius*2.f, lY)); //FIXME get font height
+
+        bool value_changed = MiniKnobInt(label, v,  v_min, v_max, radius, step, defaultValue);
+
+        if (format == NULL)
+            format = "%d";
+
+
+        Log("");
+
+        char buff[32];
+        snprintf(buff, sizeof(buff), format, *v);
+        lY += pos.y+radius * 2 +  4.f;
+        dl->AddText(ImVec2(pos.x, lY), IM_COL32(128,128,128,255), buff);
+        ImGui::Dummy(ImVec2(radius*2.f, 8.f)); //FIXME get font height
+
         return value_changed;
     }
 
@@ -232,6 +266,10 @@ namespace ImFlux {
 
         // 1. Interaction
         ImGui::InvisibleButton("##fader", size);
+
+        if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
+
+
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
 
@@ -274,6 +312,12 @@ namespace ImFlux {
 
         // 1. Interaction Hitbox
         ImGui::InvisibleButton("##fader", size);
+
+        if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
+
+        // ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255,0,0,255));
+
+
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
         bool changed = false;
@@ -332,10 +376,17 @@ namespace ImFlux {
         ImDrawList* dl = ImGui::GetWindowDrawList();
         ImGuiIO& io = ImGui::GetIO();
 
-        // 1. Interaction (Horizontal logic)
+        // Interaction (Horizontal logic)
         ImGui::InvisibleButton("##fader", size);
+
+        if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
+
+        // bounds check: ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255,0,0,255));
+
+
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
+
 
         if (is_active && io.MouseDown[0]) {
             float mouse_x = io.MousePos.x - pos.x;
@@ -343,17 +394,29 @@ namespace ImFlux {
             *v = v_min + fraction * (v_max - v_min);
         }
 
-        // 2. Drawing the "Track" (Horizontal slot)
+        // Drawing the "Track" (Horizontal slot)
         float mid_y = pos.y + size.y * 0.5f;
         dl->AddRectFilled({pos.x, mid_y - 2}, {pos.x + size.x, mid_y + 2}, IM_COL32(20, 20, 20, 255), 2.0f);
 
-        // 3. Drawing Tick Marks (Every 25%)
+        // Drawing Tick Marks (Every 25%)
         for (int i = 0; i <= 4; i++) {
             float tx = pos.x + (size.x * i * 0.25f);
             dl->AddLine({tx, mid_y - 8}, {tx, mid_y - 4}, IM_COL32(80, 80, 80, 255));
         }
 
-        // 4. Drawing the "Cap" (Vertical handle moving horizontally)
+        // adding label
+        std::string lbStr = std::string(label);
+        if (!lbStr.empty())
+        {
+            Hint(label);
+            // TEST: only on short text max 8!
+            // if (lbStr.length() < 9)
+            dl->AddText(ImVec2(pos.x, pos.y+8.f), IM_COL32(128,128,128,128), label);
+        }
+
+
+
+        // Drawing the "Cap" (Vertical handle moving horizontally)
         float cap_w = 20.0f; // Width of the handle
         float fraction = (*v - v_min) / (v_max - v_min);
         float cap_x = pos.x + fraction * (size.x - cap_w);
@@ -364,15 +427,15 @@ namespace ImFlux {
         dl->AddRectFilled({cap_x, pos.y}, {cap_x + cap_w, pos.y + size.y}, cap_col, 2.0f);
         dl->AddLine({cap_x + cap_w * 0.5f, pos.y + 2}, {cap_x + cap_w * 0.5f, pos.y + size.y - 2}, IM_COL32(0, 0, 0, 200), 2.0f);
 
-        Hint(label);
 
         ImGui::PopID();
         return is_active;
     }
     // -------------- FaderHWithText
-    inline bool FaderHWithText(const char* label, float* v, float v_min, float v_max, const char* format) {
+    inline bool FaderHWithText(const char* label, float* v, float v_min, float v_max, const char* format,
+                               ImVec2 size = ImVec2(150, 18)) {
         ImGui::BeginGroup();
-        bool active = FaderHorizontal(label, ImVec2(120, 18), v, v_min, v_max);
+        bool active = FaderHorizontal(label, size, v, v_min, v_max);
         ImGui::SameLine();
         ImGui::TextDisabled(format, *v); // Displays "Hz", "s", or "Wet" next to the fader
         ImGui::EndGroup();

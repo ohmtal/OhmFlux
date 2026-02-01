@@ -120,45 +120,41 @@ void SequencerGui::RenderBitCrusherUI() {
         if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
 
             DSP::BitcrusherSettings currentSettings = getMain()->getController()->getDSPBitCrusher()->getSettings();
-            static int selectedPreset = -1;
             bool changed = false;
 
+            int currentIdx = 0; // Standard: "Custom"
+
+            for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
 
 
             // Preset Selection
             // ImGui::SameLine();
-            const char* presets[] = { "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme" };
+            const char* presetNames[] = { "Custom", "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme" };
             ImGui::SetNextItemWidth(150);
-            if (ImGui::Combo("##Presets", &selectedPreset, presets, IM_ARRAYSIZE(presets))) {
-                switch (selectedPreset) {
-                    case 0: currentSettings = DSP::AMIGA_BITCRUSHER;   break;
-                    case 1: currentSettings = DSP::NES_BITCRUSHER;     break;
-                    case 2: currentSettings = DSP::PHONE_BITCRUSHER;   break;
-                    case 3: currentSettings = DSP::EXTREME_BITCRUSHER; break;
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
+                    currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
+                    changed = true;
                 }
-                changed = true;
             }
-
             ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
 
             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
-                selectedPreset = 0;
                 changed = true;
             }
-
-            // if (ImGui::SmallButton("Reset")) {
-            //     currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
-            //     selectedPreset = 0;
-            //     changed = true;
-            // }
-
             ImGui::Separator();
 
             // Control Sliders
-            changed |= ImGui::SliderFloat("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
-            changed |= ImGui::SliderFloat("Rate", &currentSettings.sampleRate, 1000.0f, 44100.0f, "%.0f Hz");
-            changed |= ImGui::SliderFloat("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
+            changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
+            changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, 44100.0f, "%.0f Hz");
+            changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
 
             // Engine Update
             if (changed) {
@@ -198,7 +194,7 @@ void SequencerGui::RenderChorusUI() {
         if (ImGui::BeginChild("Chorus_Box", ImVec2(0, 160), ImGuiChildFlags_Borders)) {
 
             DSP::ChorusSettings currentSettings = getMain()->getController()->getDSPChorus()->getSettings();
-            static int selectedPreset = -1;
+            static  int selectedPreset = -1; //FIXME
             bool changed = false;
 
             const char* presets[] = { "Lush 80s", "Deep Ensemble", "Fast Leslie", "Juno-60 Style", "Vibrato", "Flanger" };
@@ -236,15 +232,6 @@ void SequencerGui::RenderChorusUI() {
             changed |= ImFlux::FaderHWithText("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
             changed |= ImFlux::FaderHWithText("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
             changed |= ImFlux::FaderHWithText("Mix",   &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
-
-            // changed |= ImGui::SliderFloat("Rate", &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
-            // changed |= ImGui::SliderFloat("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
-            // changed |= ImGui::SliderFloat("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
-            //
-            // // New Stereo Phase Slider
-            // changed |= ImGui::SliderFloat("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
-            //
-            // changed |= ImGui::SliderFloat("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
 
             // Engine Update logic
             if (changed) {
@@ -316,16 +303,25 @@ void SequencerGui::RenderReverbUI() {
 
             ImGui::Separator();
 
+            // ImFlux::FaderHWithText
+
             // Decay Slider (Float 0.0 to 1.0)
-            changed |= ImGui::SliderFloat("Decay", &currentSettings.decay, 0.1f, 0.98f, "%.2f");
+            changed |= ImFlux::FaderHWithText("Decay", &currentSettings.decay, 0.1f, 0.98f, "%.2f");
 
             // Size L/R Sliders (Int range based on provided presets)
             // Max range set to 35,000 samples to accommodate the CAVE_REVERB preset
-            changed |= ImGui::SliderInt("Size L", &currentSettings.sizeL, 500, 35000, "%d smp");
-            changed |= ImGui::SliderInt("Size R", &currentSettings.sizeR, 500, 35000, "%d smp");
+
+            float sizeL = (float) currentSettings.sizeL;
+            float sizeR = (float) currentSettings.sizeR;
+
+            changed |= ImFlux::FaderHWithText("Size L", &sizeL, 500, 35000, "%5.0f smp");
+            changed |= ImFlux::FaderHWithText("Size R", &sizeR, 500, 35000, "%5.0f smp");
+
+            currentSettings.sizeL = (int) sizeL;
+            currentSettings.sizeR = (int) sizeR;
 
             // Wet/Dry Mix Slider
-            changed |= ImGui::SliderFloat("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
+            changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
 
             // Engine Update logic
             if (changed) {
@@ -395,13 +391,13 @@ void SequencerGui::RenderWarmthUI() {
 
             // Parameter Sliders
             // Cutoff (Filter): Lower is "muddier/warmer"
-            changed |= ImGui::SliderFloat("Cutoff", &currentSettings.cutoff, 0.0f, 1.0f, "%.2f (Filter)");
+            changed |= ImFlux::FaderHWithText("Cutoff", &currentSettings.cutoff, 0.0f, 1.0f, "%.2f (Filter)");
 
             // Drive (Saturation): Range 1.0 to 2.0 per struct definition
-            changed |= ImGui::SliderFloat("Drive", &currentSettings.drive, 1.0f, 2.0f, "%.2f (Gain)");
+            changed |= ImFlux::FaderHWithText("Drive", &currentSettings.drive, 1.0f, 2.0f, "%.2f (Gain)");
 
             // Wet/Dry Mix
-            changed |= ImGui::SliderFloat("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
+            changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
 
             // Engine Update logic
             if (changed) {

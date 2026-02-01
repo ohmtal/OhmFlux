@@ -52,6 +52,7 @@ namespace DSP {
             return  is.good();
         }
 
+        auto operator<=>(const EQBand&) const = default; //C++20 lazy way
 
     };
 

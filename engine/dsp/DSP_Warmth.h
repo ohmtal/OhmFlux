@@ -37,6 +37,7 @@ namespace DSP {
             is.read(reinterpret_cast<char*>(this), sizeof(WarmthSettings));
             return  is.good();
         }
+        auto operator<=>(const WarmthSettings&) const = default; //C++20 lazy way
 
     };
 
