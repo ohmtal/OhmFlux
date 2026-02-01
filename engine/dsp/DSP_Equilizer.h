@@ -35,6 +35,24 @@ namespace DSP {
         float frequency; // e.g., 100.0f for Bass, 3000.0f for Presence
         float gainDb;    // e.g., +6.0f for boost, -6.0f for cut
         float Q;         // 0.707 is standard; higher is narrower
+
+        static const uint8_t CURRENT_VERSION = 1;
+        void getBinary(std::ostream& os) const {
+            uint8_t ver = CURRENT_VERSION;
+            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+            os.write(reinterpret_cast<const char*>(this), sizeof(EQBand));
+        }
+
+        bool  setBinary(std::istream& is) {
+            uint8_t fileVersion = 0;
+            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+            if (fileVersion != CURRENT_VERSION) //Something is wrong !
+                return false;
+            is.read(reinterpret_cast<char*>(this), sizeof(EQBand));
+            return  is.good();
+        }
+
+
     };
 
     // Coefficients for the Biquad filter formula
@@ -78,6 +96,19 @@ namespace DSP {
             mSettings.gainDb = gain;
             calculateCoefficients();
         }
+
+        DSP::EffectType getType() const override { return DSP::EffectType::Equalizer; }
+
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.getBinary(os);       // Save Settings
+        }
+
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.setBinary(is);      // Load Settings
+        }
+
 
         virtual void process(float* buffer, int numSamples) override {
             if (!isEnabled()) return;

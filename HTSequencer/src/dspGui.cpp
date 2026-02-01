@@ -53,7 +53,7 @@ void SequencerGui::RenderSoundCardEmuUI() {
     // 2. Start a Group to treat this whole section as a single unit
     ImGui::BeginGroup();
 
-    static bool isEnabled = lEmu->isEnabled();
+    bool isEnabled = lEmu->isEnabled();
 
     // if (ImGui::Checkbox("##Active", &isEnabled))
     //   lEmu->setEnabled(isEnabled);
@@ -101,7 +101,7 @@ void SequencerGui::RenderBitCrusherUI() {
     // 2. Start a Group to treat this whole section as a single unit
     ImGui::BeginGroup();
 
-    static bool isEnabled = getMain()->getController()->getDSPBitCrusher()->isEnabled();
+    bool isEnabled = getMain()->getController()->getDSPBitCrusher()->isEnabled();
 
     // if (ImGui::Checkbox("##Active", &isEnabled))
     //     getMain()->getController()->getDSPBitCrusher()->setEnabled(isEnabled);
@@ -119,7 +119,7 @@ void SequencerGui::RenderBitCrusherUI() {
     {
         if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
 
-            static DSP::BitcrusherSettings currentSettings = getMain()->getController()->getDSPBitCrusher()->getSettings();
+            DSP::BitcrusherSettings currentSettings = getMain()->getController()->getDSPBitCrusher()->getSettings();
             static int selectedPreset = -1;
             bool changed = false;
 
@@ -183,7 +183,7 @@ void SequencerGui::RenderChorusUI() {
     ImGui::PushID("Chorus_Effect_Row");
     ImGui::BeginGroup();
 
-    static bool isEnabled = getMain()->getController()->getDSPChorus()->isEnabled();
+    bool isEnabled = getMain()->getController()->getDSPChorus()->isEnabled();
     // if (ImGui::Checkbox("##Active", &isEnabled))
     //     getMain()->getController()->getDSPChorus()->setEnabled(isEnabled);
     // ImGui::SameLine();
@@ -197,7 +197,7 @@ void SequencerGui::RenderChorusUI() {
     {
         if (ImGui::BeginChild("Chorus_Box", ImVec2(0, 160), ImGuiChildFlags_Borders)) {
 
-            static DSP::ChorusSettings currentSettings = getMain()->getController()->getDSPChorus()->getSettings();
+            DSP::ChorusSettings currentSettings = getMain()->getController()->getDSPChorus()->getSettings();
             static int selectedPreset = -1;
             bool changed = false;
 
@@ -270,7 +270,7 @@ void SequencerGui::RenderReverbUI() {
     ImGui::PushID("Reverb_Effect_Row");
     ImGui::BeginGroup();
 
-    static bool isEnabled = getMain()->getController()->getDSPReverb()->isEnabled();
+    bool isEnabled = getMain()->getController()->getDSPReverb()->isEnabled();
     // if (ImGui::Checkbox("##Active", &isEnabled))
     //     getMain()->getController()->getDSPReverb()->setEnabled(isEnabled);
     // ImGui::SameLine();
@@ -285,7 +285,7 @@ void SequencerGui::RenderReverbUI() {
     {
         if (ImGui::BeginChild("Reverb_Box", ImVec2(0, 140), ImGuiChildFlags_Borders)) {
 
-            static DSP::ReverbSettings currentSettings = getMain()->getController()->getDSPReverb()->getSettings();
+            DSP::ReverbSettings currentSettings = getMain()->getController()->getDSPReverb()->getSettings();
             static int selectedPreset = -1;
             bool changed = false;
 
@@ -352,7 +352,7 @@ void SequencerGui::RenderWarmthUI() {
     ImGui::PushID("Warmth_Effect_Row");
     ImGui::BeginGroup();
 
-    static bool isEnabled = getMain()->getController()->getDSPWarmth()->isEnabled();
+    bool isEnabled = getMain()->getController()->getDSPWarmth()->isEnabled();
 
     // if (ImGui::Checkbox("##Active", &isEnabled))
     //     getMain()->getController()->getDSPWarmth()->setEnabled(isEnabled);
@@ -366,7 +366,7 @@ void SequencerGui::RenderWarmthUI() {
     {
         if (ImGui::BeginChild("Warmth_Box", ImVec2(0, 115), ImGuiChildFlags_Borders)) {
 
-            static DSP::WarmthSettings currentSettings = getMain()->getController()->getDSPWarmth()->getSettings();
+            DSP::WarmthSettings currentSettings = getMain()->getController()->getDSPWarmth()->getSettings();
             static int selectedPreset = -1;
             bool changed = false;
 
@@ -432,29 +432,33 @@ void SequencerGui::RenderLimiterUI() {
     ImGui::BeginGroup();
 
     auto* lim = getMain()->getController()->getDSPLimiter();
-    static bool isEnabled = lim->isEnabled();
+    bool isEnabled = lim->isEnabled();
 
     if (ImFlux::LEDCheckBox("LIMITER", &isEnabled, ImVec4(1.0f, 0.4f, 0.4f, 1.0f)))
         getMain()->getController()->getDSPLimiter()->setEnabled(isEnabled);
 
     if (lim->isEnabled()) {
         const char* presetNames[] = { "CUSTOM", "DEFAULT", "EIGHTY", "FIFTY", "LOWVOL", "EXTREM" };
-        static int selectedPresetIdx = 1; // Default to "Flat"
         bool changed = false;
-        // static DSP::LimiterSettings& currentSettings = lim->getSettings();
+        DSP::LimiterSettings& currentSettings = lim->getSettings();
+
+        int currentIdx = 0; // Standard: "Custom"
+
+        for (int i = 1; i < DSP::LIMITER_PRESETS.size(); ++i) {
+            if (currentSettings == DSP::LIMITER_PRESETS[i]) {
+                currentIdx = i;
+                break;
+            }
+        }
+        int displayIdx = currentIdx;  //<< keep currentIdx clean
 
         if (ImGui::BeginChild("EQ_Box", ImVec2(0, 35), ImGuiChildFlags_Borders)) {
 
             ImGui::SetNextItemWidth(150);
 
-            if (ImFlux::ValueStepper("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-                switch (selectedPresetIdx) {
-                    case 1: lim->setSettings(DSP::LIMITER_DEFAULT);       break;
-                    case 2: lim->setSettings(DSP::LIMITER_EIGHTY); break;
-                    case 3: lim->setSettings(DSP::LIMITER_FIFTY);      break;
-                    case 4: lim->setSettings(DSP::LIMITER_LOWVOL);      break;
-                    case 5: lim->setSettings(DSP::LIMITER_EXTREM);    break;
-                    default: break; // "Custom" - do nothing, let sliders move
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
+                            lim->setSettings(DSP::LIMITER_PRESETS[displayIdx]);
                 }
             }
 
@@ -464,7 +468,6 @@ void SequencerGui::RenderLimiterUI() {
             // if (ImGui::SmallButton("Reset")) {
             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 lim->setSettings(DSP::LIMITER_DEFAULT);
-                selectedPresetIdx = 1;
             }
             // ImGui::Separator();
             // changed |= ImFlux::FaderHWithText("Threshold", &currentSettings.Threshold, 0.01f, 1.f, "%.3f");
@@ -594,7 +597,7 @@ void SequencerGui::RenderSpectrumAnalyzer() {
     ImGui::PushID("SpectrumAnalyzer_Effect_Row");
     ImGui::BeginGroup();
 
-    static bool isEnabled = mSpectrumAnalyzer->isEnabled();
+    bool isEnabled = mSpectrumAnalyzer->isEnabled();
     // if (ImGui::Checkbox("##Active", &isEnabled))
     //     mSpectrumAnalyzer->setEnabled(isEnabled);
     //

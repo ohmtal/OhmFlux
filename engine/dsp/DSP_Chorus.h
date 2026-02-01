@@ -17,6 +17,23 @@ namespace DSP {
         float delayBase; // Offset (0.01 - 0.03)
         float wet;       // Mix (0.0 - 0.5)
         float phaseOffset; // NEW: 0.0 to 1.0 (Phase shift between ears)
+
+        static const uint8_t CURRENT_VERSION = 1;
+        void getBinary(std::ostream& os) const {
+            uint8_t ver = CURRENT_VERSION;
+            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+            os.write(reinterpret_cast<const char*>(this), sizeof(ChorusSettings));
+        }
+
+        bool  setBinary(std::istream& is) {
+            uint8_t fileVersion = 0;
+            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+            if (fileVersion != CURRENT_VERSION) //Something is wrong !
+                return false;
+            is.read(reinterpret_cast<char*>(this), sizeof(ChorusSettings));
+            return  is.good();
+        }
+
     };
 
 
@@ -71,6 +88,16 @@ namespace DSP {
             mSettings = s;
         }
 
+        DSP::EffectType getType() const override { return DSP::EffectType::Chorus; }
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.getBinary(os);       // Save Settings
+        }
+
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.setBinary(is);      // Load Settings
+        }
 
         virtual void process(float* buffer, int numSamples) override {
             if (!isEnabled()) return;

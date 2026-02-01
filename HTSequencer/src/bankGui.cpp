@@ -198,7 +198,8 @@ void SequencerGui::RenderInstrumentListUI(bool standAlone) {
 
         // 1. Draw Index
         ImGui::AlignTextToFramePadding();
-        ImGui::TextDisabled("%02d", instIdx);
+        // ImGui::TextDisabled("%02d", instIdx);
+        ImGui::TextDisabled("%02X", instIdx);
         ImGui::SameLine();
 
         // 2. Button Dimensions & Interaction

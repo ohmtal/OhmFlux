@@ -21,6 +21,23 @@ namespace DSP {
 
     struct Equalizer9BandSettings {
         std::array<float, 9> gains; // Gain for each band in dB
+
+        static const uint8_t CURRENT_VERSION = 1;
+        void getBinary(std::ostream& os) const {
+            uint8_t ver = CURRENT_VERSION;
+            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+            os.write(reinterpret_cast<const char*>(this), sizeof(Equalizer9BandSettings));
+        }
+
+        bool  setBinary(std::istream& is) {
+            uint8_t fileVersion = 0;
+            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+            if (fileVersion != CURRENT_VERSION) //Something is wrong !
+                return false;
+            is.read(reinterpret_cast<char*>(this), sizeof(Equalizer9BandSettings));
+            return  is.good();
+        }
+
     };
 
     // Preset: Flat (No change)
@@ -83,6 +100,7 @@ namespace DSP {
             updateAllBands();
         }
 
+        DSP::EffectType getType() const override { return DSP::EffectType::Equalizer9Band; }
 
         float getSampleRate() const { return mSampleRate; }
 
@@ -113,6 +131,17 @@ namespace DSP {
             if (band >= 0 && band < 9) return mSettings.gains[band];
             return 0.0f;
         }
+
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.getBinary(os);       // Save Settings
+        }
+
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.setBinary(is);      // Load Settings
+        }
+
 
         virtual void process(float* buffer, int numSamples) override {
             if (!isEnabled()) return;

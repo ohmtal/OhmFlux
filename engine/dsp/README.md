@@ -6,5 +6,6 @@
 - Reverb
 - Limiter
 - 9 Band Equilizer
+- (old) Soundcard emulation 
 - Normalizer for export to Wav 
 

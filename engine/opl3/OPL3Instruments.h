@@ -10,57 +10,6 @@
 
 namespace OPL3InstrumentPresets {
 
-    // OplInstrument GetDefaultInstrument() {
-    //     OplInstrument ins;
-    //     ins.name = "Default FM Sine";
-    //     ins.isFourOp = false; // Start with standard 2-Op OPL2 style
-    //     ins.fineTune = 0;
-    //     ins.fixedNote = 0;
-    //
-    //     // Pointer to the first pair (Modulator and Carrier)
-    //     auto& pair = ins.pairs[0];
-    //
-    //     // Shared Channel Params (Register $C0)
-    //     pair.feedback = 0;      // No self-modulation
-    //     pair.connection = 0;    // 0 = FM mode (Modulator modulates Carrier)
-    //     pair.panning = 3;       // 3 = Center (OPL3 Stereo)
-    //
-    //     // Indices for clarity: 0 is Modulator, 1 is Carrier
-    //     auto& mod = pair.ops[0];
-    //     auto& car = pair.ops[1];
-    //
-    //     // Modulator Settings (The "Timbre")
-    //     mod.multi   = 0x01;
-    //     mod.tl      = 0x10; // Medium output (the "brightness" of the FM)
-    //     mod.attack  = 0x0F; // Instant start
-    //     mod.decay   = 0x00;
-    //     mod.sustain = 0x07;
-    //     mod.release = 0x07;
-    //     mod.wave    = 0x00; // Pure Sine
-    //     mod.ksl     = 0x00;
-    //     mod.ksr     = 0x00; // Envelope Scaling
-    //     mod.egTyp   = 0x00; // 0 = Percussive, 1 = Sustaining
-    //     mod.vib     = 0x00;
-    //     mod.am      = 0x00;
-    //
-    //     // Carrier Settings (The "Volume")
-    //     car.multi   = 0x01;
-    //     car.tl      = 0x00; // 0 is MAXIMUM volume in OPL hardware
-    //     car.attack  = 0x0F;
-    //     car.decay   = 0x00;
-    //     car.sustain = 0x07;
-    //     car.release = 0x07;
-    //     car.wave    = 0x00;
-    //     car.ksl     = 0x00;
-    //     car.ksr     = 0x00;
-    //     car.egTyp   = 0x00;
-    //     car.vib     = 0x00;
-    //     car.am      = 0x00;
-    //
-    //     return ins;
-    // }
-    //
-
     //------------------------------------------------------------------------------
     inline std::array< uint8_t, 24 > GetDefaultInstrument()
     {
@@ -136,32 +85,114 @@ namespace OPL3InstrumentPresets {
         };
     }
 
+    //------------------------------------------------------------------------------
+    inline std::array< uint8_t, 24 > GetTomsStrings() // MÖNCH.FMI
+    {
+        return {
+            0x01, 0x00, 0x20, 0x00, 0x0f, 0x01, 0x00, 0x00, 0x07, 0x0f, 0x07, 0x07,
+            0x00, 0x03, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x07, 0x00, 0x00, 0x00
+        };
+    }
+    //------------------------------------------------------------------------------
+    inline std::array< uint8_t, 24 > GetTomsGuitar() // SYSN1.FMI
+    {
+        return {
+            0x00, 0x00, 0x0a, 0x00, 0x0f, 0x0f, 0x02, 0x00, 0x0f, 0x0f, 0x0f, 0x0f,
+            0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+    }
+    //------------------------------------------------------------------------------
+    inline std::array< uint8_t, 24 > GetTomsGuitar2() // GUITAR01_FMI
+    {
+        return {
+            0x01, 0x00, 0x20, 0x00, 0x01, 0x0f, 0x05, 0x00, 0x0f, 0x0f, 0x00, 0x0f,
+            0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+    }
+    //------------------------------------------------------------------------------
+    inline std::array< uint8_t, 24 > GetTomsHiHat() // HIHAT_FMI
+    {
+        return {
+            0x0f, 0x01, 0x00, 0x00, 0x0F, 0x09, 0x0f, 0x08, 0x00, 0x04, 0x00, 0x0b,
+            0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+    }
+
+    //------------------------------------------------------------------------------
+    inline std::array< uint8_t, 24 > GetTomsBassDrum() // BASDRUM2_FMI
+    {
+        return {
+            0x00, 0x00, 0x0f, 0x00, 0x0f, 0x0f, 0x08, 0x04, 0x06, 0x0f, 0x08, 0x0f,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+    }
+    //------------------------------------------------------------------------------
+    inline std::array< uint8_t, 24 > GetTomsBell() // BELL_FMI
+    {
+        return {
+            0x01, 0x00, 0x0a, 0x00, 0x0f, 0x0f, 0x05, 0x05, 0x05, 0x05, 0x0b, 0x0b,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+        };
+    }
+
+
+    //------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+   inline const int Count  = 12;
+
+   inline const char* names[Count] = {
+         "Basic Piano",
+         "Bass",
+         "Strings",
+         "Lead Synth",
+         "Organ",
+         "Cow Bell",
+
+         "Tom's Strings",
+         "Tom's Guitar",
+         "Tom's Guitar II",
+         "Tom's HiHat",
+         "Tom's Bass Drum",
+         "Tom's Bell",
+
+    };
+
     inline opl3::Instrument  GetMelodicDefault(uint8_t index) {
 
 
         std::array< uint8_t, 24 > data = GetDefaultInstrument(); // Start with your basic Sine template
         std::string insName = "Melodic default Instrument " + std::to_string(index);
 
-        switch (index % 6) {
+        int idx = index % Count;
+
+        insName = names[idx];
+
+        switch (idx) {
             case 0: // Basic Piano
                 data[4] = 0xF; data[5] = 0xF; // Fast Attack
                 data[6] = 0x4; data[7] = 0x4; // Moderate Decay
                 data[8] = 0x2; data[9] = 0x2; // Low Sustain
-                insName = "Basic Piano";
+
                 break;
             case 1: // FM Bass
                 data[20] = 0x5;               // High Feedback (Index 20)
                 data[2] = 0x15;               // Higher Modulator Output for grit
-                insName = "Bass";
                 break;
             case 2: // Strings
                 data[4] = 0x3; data[5] = 0x2; // Slow Attack
                 data[10] = 0x5; data[11] = 0x5; // Slower Release
-                insName = "strings";
+                // insName = "strings";
                 break;
-            case 3: data = GetDefaultLeadSynth();insName = "Lead Synth"; break;
-            case 4: data = GetDefaultOrgan();insName = "Organ"; break;
-            case 5: data = GetDefaultCowbell();insName = "Cow Bell"; break;
+            case  3: data = GetDefaultLeadSynth();/*insName = "Lead Synth";*/ break;
+            case  4: data = GetDefaultOrgan();/*insName = "Organ";*/ break;
+            case  5: data = GetDefaultCowbell();/*insName = "Cow Bell"; */ break;
+            case  6: data = GetTomsStrings(); /*insName = "Tom's Strings";*/ break;
+            case  7: data = GetTomsGuitar(); break;
+            case  8: data = GetTomsGuitar2(); break;
+            case  9: data = GetTomsHiHat(); break;
+            case 10: data = GetTomsBassDrum(); break;
+            case 11: data = GetTomsBell(); break;
         }
 
         return  opl3_bridge_fm::toInstrument(insName, data);

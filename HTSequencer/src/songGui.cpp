@@ -8,135 +8,6 @@
 #include <src/fonts/IconsFontAwesome6.h>
 
 //------------------------------------------------------------------------------
-// TODO:
-
-// [ ] Bank editor
-//   [X] save
-//   [X] load
-//   [X] new (append)
-//   [ ] add ==> from file and selection if a bank
-//     [ ] convert some of my instrumens => xxd -i file and add them to OPL3Instruments
-//     [ ] array of default bank names
-//     [ ] add menu to select a default instrument to append
-//   [X] delete
-//   [X] move
-
-//  [ ] keyboard shortcuts ... cleanup !!!
-//      * some are in keyboardGui,
-//      * some in songGui
-//      * and ESC is handles in sequencerGui
-
-// [ ] Editing
-//  [ ] paste to a new pattern
-//  [ ] save clipboard as preset (maybe 10 presets or so )
-//      ==> need a clipboard  to json so i also can save selection as file or in settings
-
-// [ ] OPL Effects
-//  [ ] add speed modifier (need to handle the speed with is set on playSong - state bpm ... )
-//
-//  [ ] how to editor then the best way => Popup with control's
-//
-
-
-// [ ] live playing << MUST have ~~ works a bit ;)
-//   [ ] row cursor must react to the playing or not ?! << in FluxEditor it stucks when it followed in edit mode
-//   [~] first: add a custom stop note (so a STOP_NOTE is added to the pattern ) => use space !
-//       ONLY IN LIVE PLAYING
-//   [ ] play pattern starts when first note is pressed
-//
-// [ ] make filebrowser fancy
-// [ ] modify console (buttons and search on top consume  too much space)
-//
-// [ ] Undo
-//
-// [ ] Make it nice with buttons (icons) ==> in progress
-//
-
-// [ ] create a icon
-// [ ] test if windows compile works ;) - hey it runs on windows, too :P
-//
-
-// ------------------
-// [X] filename handling / overwrite dialog and such [useless] stuff
-//  [X] New pattern slider : cant select the right size
-//  [X] Piano: black keys does not stop
-//  [X] Pattern Tabs selected hard to see
-//  [X] play selected:
-//     [X] Button Icon
-//     [X] should ignore a single cell select
-//     [X] F2 as key
-
-//  [X] Pattern: delete (also update order list)
-//  [~] Pattern editor follow
-//      [~] check mCurrentSong is playing (via pointer? )
-//      [~] not when exporting ! ==> why looks funny :P
-//  [X] * reset bank icon
-//  [~] * rename instrument => instrument editor
-//  [X] * export bank .. Which format(s) ....wopl+own i guess => yes fmb3 and wopl
-//
-// [X] Limiter settings (maybe only Threshold )
-//  [X] only select defaults
-//
-
-// [~] change fms3 format again :P better now than later
-//    the data should be optional check EOF !
-//    [~] save / load ALL the DSP effects
-//          i dont care the filesize (some bytes)
-//          so i store the settings also if it's off.
-//
-// [~] Channel Menu => set instrument (or do i use selection ?!) need a menu for seletion too
-//
-// [X] OrderList Editor
-//
-
-//  [X] Volume and panning should be not overwritten all the time ... not sure how (effects)
-
-//  [X] Insertmode
-//    [X] to keyboard gui ==> NEW LED :D and namespace ImFlux!
-//    [X] only when window is visible
-
-//  [X] Instrument Colors: Do not render the name !! and center the text again
-//      (better a small rect with color)
-//      Color should be also shown in Instrument List
-
-//  [X] CellPopup:
-//      check insert and shift makes no sense there ?!
-//      - delete and shift is wrong call copy&paste i guess
-
-//  [X] Paste is broken if copied from a longer pattern and paste into
-//      example copy column of 256 row pattern into 63 row pattern
-//      I thougth it's fixed but still paste still sucks sometimes.
-
-
-// [X] current 2026-01-27
-//  [X] new pattern added as 02 but is 01!
-//  [X] reverse selected  does paste reverse ? => sort was broken
-//  [X] play pattern  plays single (selected)
-//  [X] right mouse always use selected cell ==> fixed for paste (useContextPoint)
-//  [X] Added Icons Font mIconFont ++ ICON_FA_...
-//  [X] colored step cell rendering
-//  [X] need change instrument !! for channel or better selection
-//
-// [X] Add Soundrender to DSP window and also to effects (not in Controller directly)
-// [X] table drives me crazy lol >> look at IMGui demo of AssetBrowser  => it's ok for me now
-// [X] Pattern with mColCount instead of fixed for copy paste / template
-// [X] instrument select combo => Widget_InstrumentCombo
-// [X] New Song add a default Pattern
-// [X] OPL3Controller => play pattern WITH active channel only  -> ticktrigger i guess
-// [~] reset pattern - i need this for sure :) => ctrl+a :P
-// [~] set default instrument / step for each channel / also an octave ?! << bullshit
-// [X] select a rect with mouse or shift cursor : shift up/down = row select and ctrl shift cell select
-// [X] del should reset the selected (one cell or rect cells)
-// [X] ctrl+x
-// [X] ctrl+a
-// [X] ctrl+c copy mPatternClipBoard
-// [X] ctrl+v paste
-// [X] ctrl + del delete rows using selection
-// [X] ctrl + ins insert using selection
-// [X] ctrl+up transpose up
-// [X] ctrl+down transpose down
-// [X] ctrl+pageup transpose octave up
-// [X] ctrl+pagedown octave transpose down
 
 constexpr float CellHeight = 22.f;
 ImVec2 cellSize = {50, CellHeight};
@@ -193,7 +64,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
     const OPL3Controller::SequencerState& lSeqState = getMain()->getController()->getSequencerState();
 
-
+//
     DrawExportStatus();
     DrawStepCellPopup(mPatternEditorState);
 
@@ -215,6 +86,9 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
 
     //--------------- BUTTONS !! ------------------------
+    ImGui::BeginGroup( /*LEFT_TOP_CONTENT*/ );
+
+
     ImGui::PushFont(mIconFont);
 
     ImGui::BeginGroup();
@@ -288,9 +162,13 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
     if (!mCurrentSongFileName.empty()) {
         lSongFileName = std::string( fluxStr::extractFilename(g_FileDialog.selectedFile));
-        ImFlux::LCDText(mCurrentSong.title + " - " + lSongFileName, 20, 14.f, IM_COL32(0,240,240, 255) );
+    }
+
+    if (isPlaying())
+    {
+        ImFlux::LCDText(std::format("{:16} {:03}",getCurrentPattern()->mName, lSeqState.rowIdx) , 20, 14.f, IM_COL32(240,240,0, 255), true );
     } else {
-        ImFlux::LCDText(mCurrentSong.title, 20, 14.f, IM_COL32(0,240,240, 255) );
+       ImFlux::LCDText(mCurrentSong.title + " - " + lSongFileName, 20, 14.f, IM_COL32(0,240,240, 255) );
     }
 
 
@@ -312,24 +190,25 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
     ImGui::EndGroup();
     ImFlux::SeparatorVertical(0.f);
-    ImGui::BeginGroup();
+    ImGui::BeginGroup( /* KNOBS */);
 
     int lBpm = mCurrentSong.bpm;
     if (ImFlux::MiniKnobInt("BPM##BPM", &lBpm, 15, 360, 12.f, 15, 120))
         mCurrentSong.bpm = lBpm;
-    ImGui::SameLine();
-    ImFlux::LCDDisplay("BPM", (float)lBpm, 3,0,12.f);
+    ImGui::SameLine(0.f,3.f);
+    ImFlux::LCDDisplay("BPM", (float)lBpm, 3,0,12.f, IM_COL32(240,240,0,255)); //green
 
     // ImFlux::SeparatorVertical(0.f);
-    ImFlux::GroupSeparator(42.f);
+    ImFlux::GroupSeparator(60.f);
 
     int lticks = mCurrentSong.ticksPerRow;
     if (ImFlux::MiniKnobInt("Ticks per Row##ticksPerRow", &lticks, 1, 32, 12.f, 1, 6))
         mCurrentSong.ticksPerRow = static_cast<uint8_t>(std::clamp(lticks, 1, 32));
-    ImGui::SameLine();
-    ImFlux::LCDDisplay("Ticks per Row", (float)lticks, 1,0,12.f);
+    ImGui::SameLine(0.f,8.f);
+    ImFlux::LCDDisplay("Ticks per Row", (float)lticks, 1,0,12.f, IM_COL32(0,240,240,255)); //cyan
 
-    ImGui::EndGroup();
+    ImGui::EndGroup(/* KNOBS */);
+
     ImFlux::SeparatorVertical(0.f);
     ImGui::BeginGroup();
 
@@ -338,14 +217,29 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
 
     ImGui::EndGroup();
 
-    ImGui::SameLine();
-    if (ImGui::BeginChild("##DrawMiniOrderList_BOX",ImVec2(0,58.f), ImGuiChildFlags_Borders)) {
+    ImGui::EndGroup( /*LEFT_TOP_CONTENT*/ );
+
+    // ~~~~ put OrderList on next line if there is not much space (less then about  5 orders)~~~~~~
+
+    // dLog("RegionAvail: %4.2f , last size: %4.2f",  ImGui::GetContentRegionAvail().x, ImGui::GetItemRectSize().x);
+
+    // ImGui::GetItemRectSize().x => size of Group LEFT_TOP_CONTENT
+    // 80 is enough ?
+    // ImGui::GetContentRegionAvail().x => size available
+
+    float lMiniBoxHeight = 58.f;
+
+    if (ImGui::GetItemRectSize().x + 80.f < ImGui::GetContentRegionAvail().x) {
+        ImGui::SameLine();
+    } else {
+        lMiniBoxHeight = 32.f;
+    }
+    if (ImGui::BeginChild("##DrawMiniOrderList_BOX",ImVec2(0,lMiniBoxHeight), ImGuiChildFlags_Borders)) {
             DrawMiniOrderList(mCurrentSong,
                               controller->isPlayingSong() ? lSeqState.orderIdx : -1
                               ,  20.f, ImVec2(0,0));
-
-        ImGui::EndChild();
     }
+    ImGui::EndChild();
 
     ImGui::Separator();
 
@@ -1247,7 +1141,23 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
                 char popupId[32];
                 snprintf(popupId, sizeof(popupId), "TabCtx%d", lPatternIndex);
                 if (ImGui::BeginPopupContextItem(popupId)) {
+
+                    const int tmpWidth = 180;
+                    ImFlux::ButtonParams lbp = ImFlux::SLATE_BUTTON.WithSize(ImVec2(tmpWidth,24.f)).WithRounding(2.f);
+                    ImFlux::ButtonParams lcloseBp = lbp;
+                    lcloseBp.size = ImVec2(20.f, 20.f);
+                    lcloseBp.mouseOverEffect = ImFlux::ButtonMouseOverEffects::BUTTON_MO_GLOW_PULSE;
+
+
+
                     ImGui::TextColored(ImColor4F(cl_Emerald), "Pattern settings");
+
+                    ImGui::SameLine(ImGui::GetWindowWidth() - lcloseBp.size.x - 8.f); // Right-align reset button
+                    if (ImFlux::ButtonFancy(ICON_FA_XMARK, lcloseBp)) {
+                        ImGui::CloseCurrentPopup();
+                    }
+
+
                     char patName[64];
                     strncpy(patName, lPat.mName.c_str(), sizeof(patName));
                     ImGui::TextDisabled("Pattern Name");
@@ -1255,57 +1165,59 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
                     {
                         lPat.mName = patName;
                     }
+
                     ImVec4 tempCol = ImGui::ColorConvertU32ToFloat4(lPat.mColor);
                     ImGui::TextDisabled("Pattern Color");
                     if (ImGui::ColorEdit4("##Pattern Color", (float*)&tempCol)) {
                         lPat.mColor = ImGui::ColorConvertFloat4ToU32(tempCol);
                     }
 
-                    //FIXME USE ICONS !
-                    const int tmpWidth = 180;
+
                     ImGui::Spacing();
                     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - tmpWidth) * 0.5f);
                     if (isPlaying())
                     {
-                        if (ImGui::Button("Stop", ImVec2(tmpWidth, 0))) {
+                        if (ImFlux::ButtonFancy("Stop", lbp)) {
                             stopSong();
                         }
                     } else {
-                        if (ImGui::Button("Play Pattern", ImVec2(tmpWidth, 0))) {
+                        if (ImFlux::ButtonFancy("Play Pattern", lbp)) {
                             playSelected(state, true);
                         }
                     }
                     ImGui::Spacing();
                     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - tmpWidth) * 0.5f);
                     //FIXME temp ?!
-                    if (ImGui::Button("Append to Orders", ImVec2(tmpWidth, 0))) {
+                    if (ImFlux::ButtonFancy("Append to Orders", lbp)) {
                         mCurrentSong.orderList.push_back(lPatternIndex);
                     }
 
                     ImGui::Spacing();
                     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 180) * 0.5f);
-                    if (ImGui::Button("Clone", ImVec2(tmpWidth, 0))) {
+                    if (ImFlux::ButtonFancy("Clone", lbp)) {
                         Pattern clonePat = lPat;
                         clonePat.mName += " (Copy)";
                         song.patterns.push_back(std::move(clonePat));
                     }
+
+                    ImGui::Separator();
+
                     ImGui::Spacing();
                     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 180) * 0.5f);
-
 
                     bool isPending = deletePatternIsPending();
                     if (isPending) ImGui::BeginDisabled();
                     // if (ImGui::Button("Delete", ImVec2(tmpWidth, 0))) {
-                    if (ImFlux::ButtonFancy("Delete", ImFlux::RED_BUTTON.WithSize(ImVec2(tmpWidth, 24.f )).WithRounding(12.f))) {
+                    if (ImFlux::ButtonFancy("Delete", ImFlux::RED_BUTTON.WithSize(ImVec2(tmpWidth, 24.f )).WithRounding(2.f))) {
                         deletePattern(song, lPatternIndex);
                     }
                     if (isPending) ImGui::EndDisabled();
 
-                    ImGui::Spacing();
-                    ImGui::Separator();
 
-                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 60) * 0.5f);
-                    if (ImGui::Button("Close", ImVec2(60, 0))) { ImGui::CloseCurrentPopup(); }
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - 180) * 0.5f);
+                    if (ImFlux::ButtonFancy("OK", lbp)) { ImGui::CloseCurrentPopup(); }
 
 
                     ImGui::EndPopup();

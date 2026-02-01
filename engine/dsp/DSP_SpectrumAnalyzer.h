@@ -32,6 +32,8 @@ namespace DSP {
             mDisplayMagnitudes.resize(FFT_SIZE / 2, 0.0f);
         }
 
+        DSP::EffectType getType() const override { return DSP::EffectType::SpectrumAnalyzer; }
+
         // The audio callback calls this
         virtual void process(float* buffer, int numSamples) override {
             if (!mEnabled) return;

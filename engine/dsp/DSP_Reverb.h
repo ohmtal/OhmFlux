@@ -19,6 +19,23 @@ struct ReverbSettings {
     int sizeL;
     int sizeR;
     float wet;
+
+    static const uint8_t CURRENT_VERSION = 1;
+    void getBinary(std::ostream& os) const {
+        uint8_t ver = CURRENT_VERSION;
+        os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+        os.write(reinterpret_cast<const char*>(this), sizeof(ReverbSettings));
+    }
+
+    bool  setBinary(std::istream& is) {
+        uint8_t fileVersion = 0;
+        is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+        if (fileVersion != CURRENT_VERSION) //Something is wrong !
+            return false;
+        is.read(reinterpret_cast<char*>(this), sizeof(ReverbSettings));
+        return  is.good();
+    }
+
 };
 
 
@@ -50,6 +67,8 @@ public:
         mSettings = ROOM_REVERB;
     }
 
+    DSP::EffectType getType() const override { return DSP::EffectType::Reverb; }
+
     const ReverbSettings& getSettings() { return mSettings; }
 
     void setSettings(const ReverbSettings& s) {
@@ -61,6 +80,17 @@ public:
         mPosL = 0;
         mPosR = 0;
     }
+
+    void save(std::ostream& os) const override {
+        Effect::save(os);              // Save mEnabled
+        mSettings.getBinary(os);       // Save Settings
+    }
+
+    bool load(std::istream& is) override {
+        if (!Effect::load(is)) return false; // Load mEnabled
+        return mSettings.setBinary(is);      // Load Settings
+    }
+
 
     virtual void process(float* buffer, int numSamples) override {
         if (!isEnabled()) return;

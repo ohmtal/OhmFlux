@@ -21,6 +21,27 @@ namespace DSP {
         float Threshold ;  // Limit just before 1.f
         float Attack;      // How fast it turns down
         float Release;     // How slow it turns back up
+
+        static const uint8_t CURRENT_VERSION = 1;
+        void getBinary(std::ostream& os) const {
+            uint8_t ver = CURRENT_VERSION;
+            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+            os.write(reinterpret_cast<const char*>(this), sizeof(LimiterSettings));
+        }
+
+        bool  setBinary(std::istream& is) {
+            uint8_t fileVersion = 0;
+            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+            if (fileVersion != CURRENT_VERSION) //Something is wrong !
+                return false;
+            is.read(reinterpret_cast<char*>(this), sizeof(LimiterSettings));
+            return  is.good();
+        }
+
+        bool operator==(const LimiterSettings& other) const {
+            return Threshold == other.Threshold && Attack == other.Attack && Release == other.Release;
+        }
+
     };
 
 
@@ -29,6 +50,18 @@ namespace DSP {
     constexpr LimiterSettings LIMITER_FIFTY   = { 0.50f,  0.05f,  0.0000005f };
     constexpr LimiterSettings LIMITER_LOWVOL  = { 0.25f,  0.05f,  0.0000005f };
     constexpr LimiterSettings LIMITER_EXTREM  = { 0.05f,  0.50f,  0.0000005f };
+
+    constexpr LimiterSettings LIMITER_CUSTOM  = LIMITER_DEFAULT; //<< DUMMY
+
+    static const std::array<DSP::LimiterSettings, 6> LIMITER_PRESETS = {
+        DSP::LIMITER_CUSTOM,  // Index 0:
+        DSP::LIMITER_DEFAULT, // Index 1
+        DSP::LIMITER_EIGHTY,  // Index 2
+        DSP::LIMITER_FIFTY,   // Index 3
+        DSP::LIMITER_LOWVOL,  // Index 4
+        DSP::LIMITER_EXTREM   // Index 5
+    };
+
 
     class Limiter : public Effect {
     private:
@@ -44,14 +77,26 @@ namespace DSP {
         Limiter(bool switchOn = false) :
             Effect(switchOn),
             mSettings(LIMITER_DEFAULT)
-            {
-            }
+            {}
+
+        DSP::EffectType getType() const override { return DSP::EffectType::Limiter; }
 
         void setSettings(const LimiterSettings& s) {
                 mSettings = s;
         }
 
         LimiterSettings& getSettings() { return mSettings; }
+
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.getBinary(os);       // Save Settings
+        }
+
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            dLog("Limiter Loaded enabled: %d", mEnabled);
+            return mSettings.setBinary(is);      // Load Settings
+        }
 
 
         virtual void process(float* buffer, int numSamples) override {

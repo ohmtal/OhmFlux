@@ -438,18 +438,19 @@ void SequencerGui::RenderPianoUI(bool standAlone)
 
 
     // --- Octave Range  ---
-    static int visibleOctaves = 5; // How many octaves to show
-    // ImGui::AlignTextToFramePadding();
-    // ImGui::TextColored(ImColor4F(cl_Yellow), "Octaves");
-    // ImGui::SameLine();
-    // ImGui::SetNextItemWidth(60);
-    // if (ImGui::InputInt("##Start##startOct", (int*)&mCurrentStartOctave))
-    //     mCurrentStartOctave = std::clamp((int)mCurrentStartOctave, 0, 7);
-    // if (ImGui::IsItemHovered()) {
-    //     ImGui::SetTooltip("Start Octave %d", mCurrentStartOctave);
-    // }
+    static int visibleOctaves = 5;
+
+    static float lHeaderWidth = 0.f;
+    static float lPianoWidth = 0.f;
+
+    float lWindowWidth = ImGui::GetContentRegionAvail().x;
 
 
+    // from dry run
+    if (lWindowWidth > lHeaderWidth) ImGui::SetCursorPosX((lWindowWidth - lHeaderWidth) * 0.5f);
+
+
+    ImGui::BeginGroup(); // top controls
     ImFlux::LCDNumber((float)mCurrentStartOctave, 1, 0, 12.0f, Color4FIm(cl_Yellow));
     ImGui::SameLine();
     ImFlux::MiniKnobInt("Octaves", &mCurrentStartOctave, 0,7, 12.f );
@@ -462,27 +463,10 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     ImGui::SameLine();
 
 
-
-
-    // if (controller->isPlaying())
-    //     ImGui::BeginDisabled();
-    // ImGui::SameLine();
-    // ImGui::TextColored(ImColor4F(cl_Green),"Play Mode:");
-    // ImGui::SameLine();
-    // ImGui::SetNextItemWidth(200);
-    // ImGui::Combo("##Play Mode", &chords::selectedTypeIdx, chords::typeNames, IM_ARRAYSIZE(chords::typeNames));
-    // if (controller->isPlaying())
-    //     ImGui::EndDisabled();
-
-
-
     ImFlux::SeparatorVertical(1.f);
 
     ImGui::SameLine();
     ImFlux::LEDCheckBox("Insert Mode", &mSettings.InsertMode,mPatternEditorState.visible ? Color4FIm(cl_Lime) : Color4FIm(cl_Blue));
-
-
-    //FIXME add navigation buttons for grid ? yes no idk :D
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(150.f);
@@ -497,9 +481,17 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     ImGui::SameLine();
     ImFlux::LCDDisplay("pattern row", (float)mPatternEditorState.cursorRow, 3,0,16.f);
 
+    ImGui::EndGroup(); // top controls
+
+    lHeaderWidth = ImGui::GetItemRectSize().x;
+
 
 
     //-----------
+
+    if (lWindowWidth > lPianoWidth) ImGui::SetCursorPosX((lWindowWidth - lPianoWidth) * 0.5f);
+
+    ImGui::BeginGroup(); //Piano
 
     int endOctave = std::min(7, (int)mCurrentStartOctave + visibleOctaves - 1);
 
@@ -633,6 +625,10 @@ void SequencerGui::RenderPianoUI(bool standAlone)
     ImVec2 finalPos = ImVec2(startPos.x + (whiteKeyCount * whiteWidth), startPos.y + whiteHeight);
     ImGui::SetCursorScreenPos(finalPos);
     ImGui::Dummy(ImVec2(0, 10));
+
+    ImGui::EndGroup(); //Piano
+
+    lPianoWidth = ImGui::GetItemRectSize().x;
 
 
     if (standAlone) ImGui::End();

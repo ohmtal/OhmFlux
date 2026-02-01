@@ -48,9 +48,20 @@ void SequencerGui::DrawMiniOrderList(SongData& song, int currentIndex, float but
         dl->AddRectFilled(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y), pat.mColor, 2.0f);
 
         if (isCurrent) {
-            // "Playing" Visual Effect: Pulsing white border
+            // "Playing" Visual Effect: Pulsing border
+            // float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+            // ImU32 pulseCol = ImGui::GetColorU32(ImVec4(1, 1, 1, 0.5f + pulse * 0.5f));
+
+            ImVec4 baseCol = ImGui::ColorConvertU32ToFloat4(ImFlux::GetContrastColorU32(pat.mColor));
             float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
-            ImU32 pulseCol = ImGui::GetColorU32(ImVec4(1, 1, 1, 0.5f + pulse * 0.5f));
+            ImVec4 finalCol;
+            finalCol.x = ImLerp(baseCol.x, 1.0f, pulse * 0.6f); // 0.6f begrenzt die Helligkeit
+            finalCol.y = ImLerp(baseCol.y, 1.0f, pulse * 0.6f);
+            finalCol.z = ImLerp(baseCol.z, 1.0f, pulse * 0.6f);
+            finalCol.w = 1.0f;
+            ImU32 pulseCol = ImGui::GetColorU32(finalCol);
+
+
             dl->AddRect(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y), pulseCol, 3.0f, 0, 2.0f);
         } else if (ImGui::IsItemHovered() && !isPlaying) {
             dl->AddRect(pos, ImVec2(pos.x + btnSize.x, pos.y + btnSize.y), IM_COL32_WHITE, 1.0f);
@@ -59,8 +70,10 @@ void SequencerGui::DrawMiniOrderList(SongData& song, int currentIndex, float but
         // Display Pattern Index (patIdx) instead of Order Index (n)
         char buf[4]; snprintf(buf, 4, "%02d", patIdx);
         ImVec2 ts = ImGui::CalcTextSize(buf);
+
+
         dl->AddText(ImVec2(pos.x + (btnSize.x - ts.x) * 0.5f, pos.y + (btnSize.y - ts.y) * 0.5f),
-                    IM_COL32_WHITE, buf);
+                    ImFlux::GetContrastColorU32(pat.mColor), buf);
 
         // 4. Full Context Menu (Insert / Change / Remove)
         if (ImGui::BeginPopupContextItem("mini_row_menu")) {
@@ -123,25 +136,34 @@ void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 co
         { ImGui::End(); return; }
     }
 
-
-
     static int move_from = -1, move_to = -1;
     int delete_idx = -1, insert_idx = -1;
+
+
 
 
 
     // --- Compact Header ---
     ImGui::TextDisabled("ORDERS");
     ImGui::SameLine();
-    if (ImGui::SmallButton("+ Append")) song.orderList.push_back(0);
+
+    ImFlux::ButtonParams lbp = ImFlux::SLATE_BUTTON.WithSize(ImVec2(50.f,18.f)).WithRounding(2.f);
+    ImGui::BeginDisabled(isPlaying());
+    if (ImFlux::ButtonFancy("append",lbp)) song.orderList.push_back(mPatternEditorState.currentPatternIdx);
+    ImGui::EndDisabled(/*isPlaying()*/);
+
     ImGui::Separator();
 
     // Start a child region for scrolling if the list gets long
     ImGui::BeginChild("OrderListScroll", controlSize, false);
 
+    bool  isCurrent = false;
+
     for (int n = 0; n < (int)song.orderList.size(); n++) {
         uint8_t& patIdx = song.orderList[n];
         Pattern& pat = song.patterns[patIdx];
+
+        isCurrent = isPlaying() && n == getMain()->getController()->getSequencerState().orderIdx ;
 
         ImGui::PushID(n);
 
@@ -160,9 +182,11 @@ void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 co
 
         // Invisible button to handle interaction
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+
+        ImGui::BeginDisabled(isPlaying());
         if (ImGui::InvisibleButton("pat_btn", size)) {
-            // Left click action: maybe select pattern for editing?
         }
+        ImGui::EndDisabled(/*isPlaying()*/);
 
         // Background Drawing
         bool is_hovered = ImGui::IsItemHovered();
@@ -171,13 +195,38 @@ void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 co
 
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), col32, 3.0f);
-        if (is_hovered)
-            draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32_WHITE, 3.0f);
 
+
+        if (isCurrent) {
+            // // "Playing" Visual Effect: Pulsing  border
+            // float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+            // //ImU32 pulseCol = ImGui::GetColorU32(ImVec4(1, 1, 1, 0.5f + pulse * 0.5f));
+            // ImU32 pulseCol = ImGui::GetColorU32(ImFlux::ModifierColor(ImFlux::GetContrastColor(col32), pulse));
+            //
+            // draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), pulseCol, 5.0f);
+            ImVec4 baseCol = ImGui::ColorConvertU32ToFloat4(ImFlux::GetContrastColorU32(col32));
+            float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+            ImVec4 finalCol;
+            finalCol.x = ImLerp(baseCol.x, 1.0f, pulse * 0.6f); // 0.6f begrenzt die Helligkeit
+            finalCol.y = ImLerp(baseCol.y, 1.0f, pulse * 0.6f);
+            finalCol.z = ImLerp(baseCol.z, 1.0f, pulse * 0.6f);
+            finalCol.w = 1.0f;
+
+            ImU32 pulseCol = ImGui::GetColorU32(finalCol);
+            draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), pulseCol, 3.0f, 0, 3.f);
+
+        } else if (is_hovered && !isPlaying()) {
+            draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), ImFlux::GetContrastColorU32(col32), 3.0f);
+        }
+
+
+        // if (is_hovered)
+        //     draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32_WHITE, 3.0f);
+        //
         // Center Text in Button
         ImVec2 text_size = ImGui::CalcTextSize(pat.mName.c_str());
         draw_list->AddText(ImVec2(pos.x + (size.x - text_size.x) * 0.5f, pos.y + (size.y - text_size.y) * 0.5f),
-                           IM_COL32_WHITE, pat.mName.c_str());
+                           ImFlux::GetContrastColorU32(pat.mColor), pat.mName.c_str());
 
         // 3. Actions via Context Menu (Right Click)
         if (ImGui::BeginPopupContextItem("row_menu")) {
@@ -229,103 +278,6 @@ void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 co
     if (standAlone) ImGui::End();
 
 }
-// void SequencerGui::DrawFancyOrderList(SongData& song) {
-//     static int move_from = -1, move_to = -1;
-//     int delete_idx = -1, insert_idx = -1;
-//
-//     // --- Compact Header ---
-//     ImGui::TextDisabled("ORDERS");
-//     ImGui::SameLine();
-//     if (ImGui::SmallButton("+ Append")) song.orderList.push_back(0);
-//     ImGui::Separator();
-//
-//     // Start a child region for scrolling if the list gets long
-//     ImGui::BeginChild("OrderListScroll", ImVec2(0, 300), false);
-//
-//     for (int n = 0; n < (int)song.orderList.size(); n++) {
-//         uint8_t& patIdx = song.orderList[n];
-//         Pattern& pat = song.patterns[patIdx];
-//
-//         ImGui::PushID(n);
-//
-//         // 1. Draw Index
-//         ImGui::AlignTextToFramePadding();
-//         ImGui::TextDisabled("%02d", n);
-//         ImGui::SameLine();
-//
-//         // 2. Custom Colored Button (The "Fancy" part)
-//         ImVec2 pos = ImGui::GetCursorScreenPos();
-//         ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x - 10, ImGui::GetFrameHeight());
-//
-//         // Convert ABGR to ImGui's expected U32 (usually RGBA/RGBA depending on platform)
-//         // If colors look wrong, you might need: ((pat.mColor << 8) | (pat.mColor >> 24))
-//         ImU32 col32 = pat.mColor;
-//
-//         // Invisible button to handle interaction
-//         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-//         if (ImGui::InvisibleButton("pat_btn", size)) {
-//             // Left click action: maybe select pattern for editing?
-//         }
-//
-//         // Background Drawing
-//         bool is_hovered = ImGui::IsItemHovered();
-//         bool is_active = ImGui::IsItemActive();
-//         float alpha = is_active ? 1.0f : (is_hovered ? 0.8f : 0.6f);
-//
-//         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-//         draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), col32, 3.0f);
-//         if (is_hovered)
-//             draw_list->AddRect(pos, ImVec2(pos.x + size.x, pos.y + size.y), IM_COL32_WHITE, 3.0f);
-//
-//         // Center Text in Button
-//         ImVec2 text_size = ImGui::CalcTextSize(pat.mName.c_str());
-//         draw_list->AddText(ImVec2(pos.x + (size.x - text_size.x) * 0.5f, pos.y + (size.y - text_size.y) * 0.5f),
-//                            IM_COL32_WHITE, pat.mName.c_str());
-//
-//         // 3. Actions via Context Menu (Right Click)
-//         if (ImGui::BeginPopupContextItem("row_menu")) {
-//             if (ImGui::MenuItem("Insert Above")) insert_idx = n;
-//             if (ImGui::MenuItem("Remove")) delete_idx = n;
-//             ImGui::Separator();
-//             if (ImGui::BeginMenu("Change Pattern")) {
-//                 for (int p = 0; p < (int)song.patterns.size(); p++) {
-//                     if (ImGui::Selectable(song.patterns[p].mName.c_str(), patIdx == p)) patIdx = p;
-//                 }
-//                 ImGui::EndMenu();
-//             }
-//             ImGui::EndPopup();
-//         }
-//
-//         // 4. Drag and Drop Logic
-//         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-//             ImGui::SetDragDropPayload("DND_ORDER", &n, sizeof(int));
-//             ImGui::Text("Moving %s", pat.mName.c_str());
-//             ImGui::EndDragDropSource();
-//         }
-//         if (ImGui::BeginDragDropTarget()) {
-//             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_ORDER")) {
-//                 move_from = *(const int*)payload->Data;
-//                 move_to = n;
-//             }
-//             ImGui::EndDragDropTarget();
-//         }
-//
-//         ImGui::PopStyleVar();
-//         ImGui::PopID();
-//     }
-//     ImGui::EndChild();
-//
-//     // Logic Execution (Deferred)
-//     if (delete_idx != -1) song.orderList.erase(song.orderList.begin() + delete_idx);
-//     if (insert_idx != -1) song.orderList.insert(song.orderList.begin() + insert_idx, song.orderList[insert_idx]);
-//     if (move_from != -1 && move_to != -1) {
-//         auto it_f = song.orderList.begin() + move_from;
-//         auto it_t = song.orderList.begin() + move_to;
-//         if (move_from < move_to) std::rotate(it_f, it_f + 1, it_t + 1);
-//         else std::rotate(it_t, it_f, it_f + 1);
-//         move_from = move_to = -1;
-//     }
-// }
 //------------------------------------------------------------------------------
 void SequencerGui::DrawOrderListEditor(SongData& song) {
     // Action trackers to prevent modifying vector during iteration

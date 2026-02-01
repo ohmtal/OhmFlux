@@ -19,6 +19,22 @@ namespace DSP {
         float bits;        // 1.0 to 16.0 (e.g., 8.0 for 8-bit sound)
         float sampleRate;  // 1000.0 to 44100.0 (e.g., 8000.0 for lo-fi)
         float wet;         // 0.0 to 1.0
+
+        static const uint8_t CURRENT_VERSION = 1;
+        void getBinary(std::ostream& os) const {
+            uint8_t ver = CURRENT_VERSION;
+            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+            os.write(reinterpret_cast<const char*>(this), sizeof(BitcrusherSettings));
+        }
+
+        bool  setBinary(std::istream& is) {
+            uint8_t fileVersion = 0;
+            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+            if (fileVersion != CURRENT_VERSION) //Something is wrong !
+                return false;
+            is.read(reinterpret_cast<char*>(this), sizeof(BitcrusherSettings));
+            return  is.good();
+        }
     };
 
     // OFF
@@ -54,6 +70,19 @@ namespace DSP {
             mSettings = s;
             mSampleCount = 999999.0f;
         }
+
+        DSP::EffectType getType() const override { return DSP::EffectType::Bitcrusher; }
+
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.getBinary(os);       // Save Settings
+        }
+
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.setBinary(is);      // Load Settings
+        }
+
 
         virtual void process(float* buffer, int numSamples) override
         {

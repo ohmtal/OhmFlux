@@ -15,13 +15,36 @@
 namespace DSP {
 
 
-    enum class RenderMode {
+    enum class RenderMode : uint32_t { // Explicitly set size to 4 bytes
         BLENDED, MODERN_LPF, SBPRO, SB_ORIGINAL, ADLIB_GOLD, CLONE_CARD
     };
 
-
     struct SoundCardEmulationSettings {
-        RenderMode renderMode; // default RenderMode::BLENDED;
+        RenderMode renderMode = RenderMode::BLENDED; // Default initialization
+
+        static const uint8_t CURRENT_VERSION = 1;
+
+        void getBinary(std::ostream& os) const {
+            uint8_t ver = CURRENT_VERSION;
+            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+            os.write(reinterpret_cast<const char*>(this), sizeof(SoundCardEmulationSettings));
+        }
+
+        bool setBinary(std::istream& is) {
+            uint8_t fileVersion = 0;
+            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+            if (fileVersion != CURRENT_VERSION)
+                return false;
+
+            is.read(reinterpret_cast<char*>(this), sizeof(SoundCardEmulationSettings));
+
+            // Safety check: Ensure the loaded enum value is valid
+            if (renderMode > RenderMode::CLONE_CARD) {
+                renderMode = RenderMode::BLENDED;
+            }
+
+            return is.good();
+        }
     };
 
 
@@ -52,6 +75,7 @@ public:
     SoundCardEmulation(bool switchOn = true) : DSP::Effect(switchOn) {
         mSettings.renderMode = RenderMode::BLENDED;
     }
+    DSP::EffectType getType() const override { return DSP::EffectType::SoundCardEmulation; }
 
     const SoundCardEmulationSettings& getSettings() { return mSettings; }
 
@@ -91,6 +115,17 @@ private:
         mPrevInputR = 0.0f;
     }
 public:
+
+    void save(std::ostream& os) const override {
+        Effect::save(os);              // Save mEnabled
+        mSettings.getBinary(os);       // Save Settings
+    }
+
+    bool load(std::istream& is) override {
+        if (!Effect::load(is)) return false; // Load mEnabled
+        return mSettings.setBinary(is);      // Load Settings
+    }
+
     void process(float* buffer, int numSamples) override {
         if (!mEnabled) return;
 

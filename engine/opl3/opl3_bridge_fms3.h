@@ -13,6 +13,8 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include <DSP.h>
+
 
 namespace opl3_bridge_fms3 {
 
@@ -25,6 +27,7 @@ namespace opl3_bridge_fms3 {
     constexpr size_t ID_SIZE_BANK = sizeof(FILE_IDENTIFIER_BANK) - 1;
     constexpr uint16_t FILE_VERSION_BANK = 1;
 
+    constexpr uint32_t DSP_MAGIC = 0x4658534E; // "FXSN"
 
     constexpr uint8_t DUMMYBYTE = 0; // a dummy for reserve bytes
 
@@ -255,7 +258,10 @@ namespace opl3_bridge_fms3 {
     //                   Song load / save
     //--------------------------------------------------------------------------
     // --------------- saveSong
-    bool saveSong(const std::string& filePath, const opl3::SongData& song) {
+    bool saveSong(const std::string& filePath, const opl3::SongData& song,
+            const std::vector<std::unique_ptr<DSP::Effect>>& dspEffects,
+            bool withDspSettings = true
+    ) {
         errors = "";
 
         if (song.instruments.size() > opl3::MAX_INSTRUMENTS)
@@ -323,6 +329,22 @@ namespace opl3_bridge_fms3 {
             // we also write the Ident on the END to verify end is reached
             ofs.write(FILE_IDENTIFIER, ID_SIZE);
 
+            //DSP >>>>>>>>>>>>>>>>>>>>>
+            if (withDspSettings)
+            {
+                write_binary(ofs, DSP_MAGIC);
+                uint32_t count = static_cast<uint32_t>(dspEffects.size());
+                write_binary(ofs, count);
+                // 3. Jeden Effekt speichern (Typ-ID + Daten)
+                for (const auto& fx : dspEffects) {
+                    DSP::EffectType type = fx->getType();
+                    write_binary(ofs, type);
+                    fx->save(ofs);
+                }
+
+            }
+            //<<<<<<<<<<<<<<<<<<< DSP
+
 
             ofs.close();
             return true;
@@ -340,7 +362,10 @@ namespace opl3_bridge_fms3 {
 
     //--------------------------------------------------------------------------
     // ------------- loadSong
-    bool loadSong(const std::string& filePath, opl3::SongData& song) {
+    bool loadSong(const std::string& filePath, opl3::SongData& song,
+                std::vector<std::unique_ptr<DSP::Effect>>& dspEffects,
+                bool withDspSettings = true
+        ) {
         errors = "";
         std::ifstream ifs(filePath, std::ios::binary);
         ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
@@ -418,6 +443,65 @@ namespace opl3_bridge_fms3 {
                 addError("Trailing FILE_IDENTIFIER is missing or corrupted.");
                 return false;
             }
+
+            //DSP >>>>>>>>>>>>>>>>>>>>>
+            // check if we have data:
+            ifs.clear();
+            std::streampos currentPos = ifs.tellg();
+            ifs.seekg(0, std::ios::end);
+            std::streampos endPos = ifs.tellg();
+            ifs.seekg(currentPos);
+
+            if (endPos - currentPos >= (std::streamoff)sizeof(uint32_t))
+            {
+
+
+                if (!withDspSettings) {
+                    return true; // file FILE_IDENTIFIER was ok and we don't want the rest
+                }
+
+                uint32_t magic = 0;
+                // Note: We use ifs.peek() or check read() to see if there is any data left
+                if (ifs.read(reinterpret_cast<char*>(&magic), sizeof(magic))) {
+                    if (magic == DSP_MAGIC) {
+                        uint32_t count = 0;
+                        if (!ifs.read(reinterpret_cast<char*>(&count), sizeof(count))) return false;
+
+                        for (uint32_t i = 0; i < count; ++i) {
+                            DSP::EffectType type;
+                            if (!ifs.read(reinterpret_cast<char*>(&type), sizeof(type))) return false;
+
+                            bool found = false;
+                            for (auto& fx : dspEffects) {
+                                if (fx->getType() == type) {
+                                    // dLog("[info] loading DSP : %d", (uint32_t)type);
+                                    if (!fx->load(ifs)) {
+                                        addError(std::format("Failed to load settings for effect type: {}", (uint32_t)type));
+                                        return false;
+                                    }
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                // CRITICAL: We don't know the size of the unknown effect's data,
+                                // so we cannot skip it safely.
+                                addError(std::format("Effect type {} not supported by this version.", (uint32_t)type));
+                                return false;
+                            }
+                        }
+                    } else {
+                        // We found something, but it's not FXSN.
+                        // This is only an error if you expect NO other data after the song.
+                        addError("Unknown data block at end of file.");
+                        return false;
+                    }
+                }
+
+            }
+
+            //<<<<<<<<<<<<<<<<<<< DSP
+
 
             //find out there is data left so i guess it's a coruppted file
             ifs.exceptions(std::ifstream::badbit);
@@ -598,7 +682,7 @@ namespace opl3_bridge_fms3 {
 
         // i should never get here ...
         return false;
-    } //<< loadSong
+    } //<< bank
 
 
 } // namespace opl3_bridge_htseq

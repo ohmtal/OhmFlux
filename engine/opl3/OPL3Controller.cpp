@@ -1053,7 +1053,7 @@ void OPL3Controller::setChannelPanning(uint8_t channel, uint8_t pan) {
 //------------------------------------------------------------------------------
 void OPL3Controller::initDefaultBank(){
     mSoundBank.clear();
-    for (int i = 0; i < 6; i++ )
+    for (int i = 0; i < OPL3InstrumentPresets::Count; i++ )
         mSoundBank.push_back(OPL3InstrumentPresets::GetMelodicDefault(i));
 
 }
