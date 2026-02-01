@@ -82,8 +82,6 @@ public:
     void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
         if ( !mSFXGenerator )
             return;
-        // Use 'static' or 'new' for context because the dialog is ASYNC
-        // (In a real 2026 app, you might store this context in your class to avoid leaks)
         auto* ctx = new FileDialogContext{ mSFXGenerator, action };
 
         const char* ext = (action == fa_export) ? "wav" : "sfx";

@@ -125,75 +125,11 @@ void FluxMesh::draw(U32 count, bool useIndices, GLenum mode) {
 
     glBindVertexArray(mVAO);
 
-    // 2025 Standard: Transparency handling inside the draw call
-    // Since this is a 2D mesh, we usually don't want it to block other sprites
-    // glDepthMask(GL_FALSE);
-
     if (useIndices) {
         glDrawElements(mode, elementsToDraw, GL_UNSIGNED_INT, (void*)0);
     } else {
         glDrawArrays(mode, 0, elementsToDraw);
     }
 
-    // glDepthMask(GL_TRUE); // Always reset state for the next clear/call
     glBindVertexArray(0);
 }
-
-// void FluxMesh::draw(U32 count, bool useIndices, GLenum mode)
-// {
-//     U32 elementsToDraw = (count > 0) ? count : mIndexCount;
-//
-//     if (mVAO != 0 && elementsToDraw > 0) {
-//         glBindVertexArray(mVAO);
-//
-//         if (useIndices) {
-//             // Default path: Sprites/Quads using EBO
-//             glDrawElements(mode, elementsToDraw, GL_UNSIGNED_INT, (void*)0);
-//         } else {
-//             // Manual path: Lines/Circles using glDrawArrays
-//             glDrawArrays(mode, 0, elementsToDraw);
-//         }
-//
-//         glBindVertexArray(0);
-//     }
-// }
-
-
-//-------------------------------------------------------------------------------
-// update for batch rendering aproch
-// void FluxMesh::createEmpty()
-// {
-//     glGenVertexArrays(1, &mVAO);
-//     glGenBuffers(1, &mVBO);
-//     // No EBO needed for glDrawArrays (Lines/Circles)
-//
-//     glBindVertexArray(mVAO);
-//     glBindBuffer(GL_ARRAY_BUFFER, mVBO);
-//
-//     // batched attempt  glBufferData(GL_ARRAY_BUFFER, maxVertices * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
-//
-//
-//     // Set up the same attributes as createStatic
-//     glEnableVertexAttribArray(0);
-//     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-//     glEnableVertexAttribArray(1);
-//     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(F32)));
-//
-//     glBindVertexArray(0);
-// }
-
-// void FluxMesh::updateDynamic(Vertex* vertices, U32 vCount, GLenum usage) {
-//     if (mVAO == 0) return;
-//     glBindBuffer(GL_ARRAY_BUFFER, mVBO);
-//     // Use glBufferSubData or glBufferData to update the GPU memory
-//     glBufferData(GL_ARRAY_BUFFER, vCount * sizeof(Vertex), vertices, usage);
-// }
-// //-------------------------------------------------------------------------------
-// void FluxMesh::draw()
-// {
-//     if (mVAO != 0) {
-//         glBindVertexArray(mVAO);
-//         glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, 0);
-//         glBindVertexArray(0);
-//     }
-// }
