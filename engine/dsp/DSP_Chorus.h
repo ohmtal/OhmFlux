@@ -39,7 +39,7 @@ namespace DSP {
 
 
     // OFF
-    constexpr ChorusSettings OFF_CHORUS           = { 0.0f,  0.0f,   0.0f,   0.0f,  0.0f };
+    constexpr ChorusSettings CUSTOM_CHORUS           = { 0.0f,  0.0f,   0.0f,   0.0f,  0.0f };
 
     // Lush 80s: Standard wide stereo chorus
     constexpr ChorusSettings LUSH80s_CHORUS       = { 0.4f,  0.003f, 0.025f, 0.4f,  0.25f };
@@ -58,6 +58,17 @@ namespace DSP {
 
     // Flanger: Very short delay creates the "jet plane" comb filter effect
     constexpr ChorusSettings FLANGER_CHORUS       = { 0.2f,  0.001f, 0.003f, 0.5f,  0.10f };
+
+
+    static const std::array<DSP::ChorusSettings, 7> CHROUS_PRESETS = {
+        CUSTOM_CHORUS,
+        LUSH80s_CHORUS,
+        DEEPENSEMPLE_CHORUS,
+        FASTLESLIE_CHORUS,
+        JUNO60_CHORUS,
+        VIBRATO_CHORUS,
+        FLANGER_CHORUS
+    };
 
 
 

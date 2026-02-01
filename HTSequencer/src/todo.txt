@@ -1,52 +1,10 @@
 TODO Version 1 (i do not use 0 this time):
 
 
-[ ] dspGUI / DSP for all Effects .... bss << update gui controls ,,, then
-  [ ] BitCrusher
-  [ ] Chorus
-  [ ] Equilizer9Band
-  [X] Limiter
-  [ ] Reverb
-  [ ] SoundCardEmulation
-  [ ] Warmth
+[ ] OPL Effects
+ [ ] add speed modifier (need to handle the speed with is set on playSong - state bpm ... )
+ [ ] how to editor then the best way => Popup with control's
 
-
-  [ ] Limiter:  reverse does not longer work .. i guess because of CUSTOM !!
-  [ ] for gui stepper we need :
-    like i did in Limiter
-
-     auto operator<=>(const LimiterSettings&) const = default; //C++20 lazy way
-
-
-   ==> THIS ... TODO !!
-  static const std::array<DSP::LimiterSettings, 6> LIMITER_PRESETS = {
-      DSP::LIMITER_CUSTOM,  // Index 0: << add dummy!
-      DSP::LIMITER_DEFAULT, // Index 1
-      DSP::LIMITER_EIGHTY,  // Index 2
-      DSP::LIMITER_FIFTY,   // Index 3
-      DSP::LIMITER_LOWVOL,  // Index 4
-      DSP::LIMITER_EXTREM   // Index 5
-  };
-
-  [ ] and something like that:
-
-        int currentIdx = 0; // Standard: "Custom"
-
-        for (int i = 1; i < DSP::LIMITER_PRESETS.size(); ++i) {
-            if (currentSettings == DSP::LIMITER_PRESETS[i]) {
-                currentIdx = i;
-                break;
-            }
-        }
-        int displayIdx = currentIdx;  //<< keep currentIdx clean
-
-        ....
-            if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-                if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
-                            lim->setSettings(DSP::LIMITER_PRESETS[displayIdx]);
-                }
-            }
-        .....
 
 
 [ ] Bank editor
@@ -69,11 +27,6 @@ TODO Version 1 (i do not use 0 this time):
  [ ] paste to a new pattern
  [ ] save clipboard as preset (maybe 10 presets or so )
      ==> need a clipboard  to json so i also can save selection as file or in settings
-
-[ ] OPL Effects
- [ ] add speed modifier (need to handle the speed with is set on playSong - state bpm ... )
-
- [ ] how to editor then the best way => Popup with control's
 
 
 [ ] live playing << MUST have ~~ works a bit ;)
@@ -98,9 +51,56 @@ TODO Version 1 (i do not use 0 this time):
 
 [ ] create a icon
 [ ] test if windows compile works ;) - hey it runs on windows, too :P
-
+[ ] Make a Release 1.xx
 
 ------------------
+[X] dspGUI / DSP for all Effects .... bss << update gui controls ,,, then
+  [X] BitCrusher
+  [X] Chorus
+  [X] Equilizer9Band
+  [X] Limiter
+  [X] Reverb
+  [~] SoundCardEmulation
+  [X] Warmth
+
+
+  [X] Limiter:  reverse does not longer work .. i guess because of CUSTOM !!
+  [X] for gui stepper we need :
+    like i did in Limiter
+
+     auto operator<=>(const LimiterSettings&) const = default; //C++20 lazy way
+
+
+   ==> THIS ... TODO !!
+  static const std::array<DSP::LimiterSettings, 6> LIMITER_PRESETS = {
+      DSP::LIMITER_CUSTOM,  // Index 0: << add dummy!
+      DSP::LIMITER_DEFAULT, // Index 1
+      DSP::LIMITER_EIGHTY,  // Index 2
+      DSP::LIMITER_FIFTY,   // Index 3
+      DSP::LIMITER_LOWVOL,  // Index 4
+      DSP::LIMITER_EXTREM   // Index 5
+  };
+
+  [X] and something like that:
+
+        int currentIdx = 0; // Standard: "Custom"
+
+        for (int i = 1; i < DSP::LIMITER_PRESETS.size(); ++i) {
+            if (currentSettings == DSP::LIMITER_PRESETS[i]) {
+                currentIdx = i;
+                break;
+            }
+        }
+        int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+        ....
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
+                            lim->setSettings(DSP::LIMITER_PRESETS[displayIdx]);
+                }
+            }
+        .....
+
 [X] filename handling / overwrite dialog and such [useless] stuff
  [X] New pattern slider : cant select the right size
  [X] Piano: black keys does not stop

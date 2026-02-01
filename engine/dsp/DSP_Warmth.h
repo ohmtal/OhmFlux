@@ -46,6 +46,18 @@ namespace DSP {
     constexpr WarmthSettings TUBEAMP_WARMTH        = { 0.50f, 1.6f, 1.0f };
     constexpr WarmthSettings EXTREME_WARMTH        = { 0.10f, 2.0f, 1.0f };
 
+    constexpr WarmthSettings CUSTOM__WARMTH =  GENTLE_WARMTH; //<<dummy
+
+
+    static const std::array<DSP::WarmthSettings, 5> WARMTH_PRESETS = {
+        CUSTOM__WARMTH,
+        GENTLE_WARMTH,
+        ANALOGDESK_WARMTH,
+        TUBEAMP_WARMTH,
+        EXTREME_WARMTH
+    };
+
+
 
     class Warmth : public Effect {
     private:

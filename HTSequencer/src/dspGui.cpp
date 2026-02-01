@@ -46,20 +46,10 @@ void SequencerGui::ShowDSPWindow(){
 void SequencerGui::RenderSoundCardEmuUI() {
     auto* lEmu = getMain()->getController()->getSoundCardEmulation();
 
-
-    // 1. Use PushID to prevent name collisions with other effects (e.g., if multiple have a "Wet" slider)
     ImGui::PushID("RenderSoundCardEmu_Effect_Row");
-
-    // 2. Start a Group to treat this whole section as a single unit
     ImGui::BeginGroup();
 
     bool isEnabled = lEmu->isEnabled();
-
-    // if (ImGui::Checkbox("##Active", &isEnabled))
-    //   lEmu->setEnabled(isEnabled);
-    //
-    // ImGui::SameLine();
-    // ImGui::TextColored(ImVec4(0.2f, 0.7f, 0.5f, 1.0f), "Sound rendering");
 
     if (ImFlux::LEDCheckBox("SOUND RENDERING", &isEnabled, ImVec4(0.2f, 0.7f, 0.5f, 1.0f)))
         lEmu->setEnabled(isEnabled);
@@ -75,8 +65,6 @@ void SequencerGui::RenderSoundCardEmuUI() {
                 "Blended (Smooth)", "Modern LPF (Warm)",
                 "Sound Blaster Pro", "Sound Blaster", "AdLib Gold", "Sound Blaster Clone"
             };
-
-            // The preview label shown when combo is closed
 
             int lRenderModeInt  = (int)currentMode;
 
@@ -194,32 +182,31 @@ void SequencerGui::RenderChorusUI() {
         if (ImGui::BeginChild("Chorus_Box", ImVec2(0, 160), ImGuiChildFlags_Borders)) {
 
             DSP::ChorusSettings currentSettings = getMain()->getController()->getDSPChorus()->getSettings();
-            static  int selectedPreset = -1; //FIXME
             bool changed = false;
 
-            const char* presets[] = { "Lush 80s", "Deep Ensemble", "Fast Leslie", "Juno-60 Style", "Vibrato", "Flanger" };
-            ImGui::SetNextItemWidth(150);
-            if (ImGui::Combo("##Presets", &selectedPreset, presets, IM_ARRAYSIZE(presets))) {
-                switch (selectedPreset) {
-                    case 0: currentSettings = DSP::LUSH80s_CHORUS;      break;
-                    case 1: currentSettings = DSP::DEEPENSEMPLE_CHORUS; break;
-                    case 2: currentSettings = DSP::FASTLESLIE_CHORUS;   break;
-                    case 3: currentSettings = DSP::JUNO60_CHORUS;       break;
-                    case 4: currentSettings = DSP::VIBRATO_CHORUS;      break;
-                    case 5: currentSettings = DSP::FLANGER_CHORUS;      break;
+            const char* presets[] = {"Custom", "Lush 80s", "Deep Ensemble", "Fast Leslie", "Juno-60 Style", "Vibrato", "Flanger" };
+
+            int currentIdx = 0; // Standard: "Custom"
+
+            for (int i = 1; i < DSP::CHROUS_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::CHROUS_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
                 }
-                changed = true;
+            }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+            ImGui::SetNextItemWidth(150);
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, presets, IM_ARRAYSIZE(presets))) {
+                if (displayIdx > 0 && displayIdx < DSP::CHROUS_PRESETS.size()) {
+                    currentSettings =  DSP::CHROUS_PRESETS[displayIdx];
+                    changed = true;
+                }
             }
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-            // if (ImGui::SmallButton("Reset")) {
-            //     currentSettings = DSP::LUSH80s_CHORUS;
-            //     selectedPreset = 0;
-            //     changed = true;
-            // }
 
             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 currentSettings = DSP::LUSH80s_CHORUS;
-                selectedPreset = 0;
                 changed = true;
             }
 
@@ -235,9 +222,6 @@ void SequencerGui::RenderChorusUI() {
 
             // Engine Update logic
             if (changed) {
-                // If the user manually tweaks a slider, clear the preset label
-                if (ImGui::IsItemActive()) selectedPreset = -1;
-
                 if (isEnabled) {
                     getMain()->getController()->getDSPChorus()->setSettings(currentSettings);
                 }
@@ -273,19 +257,26 @@ void SequencerGui::RenderReverbUI() {
         if (ImGui::BeginChild("Reverb_Box", ImVec2(0, 140), ImGuiChildFlags_Borders)) {
 
             DSP::ReverbSettings currentSettings = getMain()->getController()->getDSPReverb()->getSettings();
-            static int selectedPreset = -1;
             bool changed = false;
 
-            const char* presets[] = { "Concert Hall", "Massive Cave", "Small Room", "Haunted Corridor" };
-            ImGui::SetNextItemWidth(150);
-            if (ImGui::Combo("##Presets", &selectedPreset, presets, IM_ARRAYSIZE(presets))) {
-                switch (selectedPreset) {
-                    case 0: currentSettings = DSP::HALL_REVERB;    break;
-                    case 1: currentSettings = DSP::CAVE_REVERB;    break;
-                    case 2: currentSettings = DSP::ROOM_REVERB;    break;
-                    case 3: currentSettings = DSP::HAUNTED_REVERB; break;
+            const char* presets[] = { "Custom", "Concert Hall", "Massive Cave", "Small Room", "Haunted Corridor" };
+
+            int currentIdx = 0; // Standard: "Custom"
+
+            for (int i = 1; i < DSP::REVERB_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::REVERB_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
                 }
-                changed = true;
+            }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+            ImGui::SetNextItemWidth(150);
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, presets, IM_ARRAYSIZE(presets))) {
+                if (displayIdx > 0 && displayIdx < DSP::REVERB_PRESETS.size()) {
+                    currentSettings =  DSP::REVERB_PRESETS[displayIdx];
+                    changed = true;
+                }
             }
 
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
@@ -296,7 +287,6 @@ void SequencerGui::RenderReverbUI() {
             // }
             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 currentSettings = DSP::ROOM_REVERB;
-                selectedPreset = 2;
                 changed = true;
             }
 
@@ -325,9 +315,6 @@ void SequencerGui::RenderReverbUI() {
 
             // Engine Update logic
             if (changed) {
-                // Clear preset label if user manually moves sliders
-                if (ImGui::IsItemActive()) selectedPreset = -1;
-
                 if (isEnabled) {
                     getMain()->getController()->getDSPReverb()->setSettings(currentSettings);
                 }
@@ -363,26 +350,44 @@ void SequencerGui::RenderWarmthUI() {
         if (ImGui::BeginChild("Warmth_Box", ImVec2(0, 115), ImGuiChildFlags_Borders)) {
 
             DSP::WarmthSettings currentSettings = getMain()->getController()->getDSPWarmth()->getSettings();
-            static int selectedPreset = -1;
             bool changed = false;
 
-            const char* presets[] = { "Gentle Warmth", "Analog Desk", "Tube Amp", "Extreme" };
-            ImGui::SetNextItemWidth(150);
-            if (ImGui::Combo("##Presets", &selectedPreset, presets, IM_ARRAYSIZE(presets))) {
-                switch (selectedPreset) {
-                    case 0: currentSettings = DSP::GENTLE_WARMTH;     break;
-                    case 1: currentSettings = DSP::ANALOGDESK_WARMTH; break;
-                    case 2: currentSettings = DSP::TUBEAMP_WARMTH;    break;
-                    case 3: currentSettings = DSP::EXTREME_WARMTH;    break;
+            const char* presets[] = { "Custom", "Gentle Warmth", "Analog Desk", "Tube Amp", "Extreme" };
+
+            int currentIdx = 0; // Standard: "Custom"
+
+            for (int i = 1; i < DSP::WARMTH_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::WARMTH_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
                 }
-                changed = true;
             }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+            ImGui::SetNextItemWidth(150);
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, presets, IM_ARRAYSIZE(presets))) {
+                if (displayIdx > 0 && displayIdx < DSP::WARMTH_PRESETS.size()) {
+                    currentSettings =  DSP::WARMTH_PRESETS[displayIdx];
+                    changed = true;
+                }
+            }
+
+
+            // ImGui::SetNextItemWidth(150);
+            // if (ImGui::Combo("##Presets", &selectedPreset, presets, IM_ARRAYSIZE(presets))) {
+            //     switch (selectedPreset) {
+            //         case 0: currentSettings = DSP::GENTLE_WARMTH;     break;
+            //         case 1: currentSettings = DSP::ANALOGDESK_WARMTH; break;
+            //         case 2: currentSettings = DSP::TUBEAMP_WARMTH;    break;
+            //         case 3: currentSettings = DSP::EXTREME_WARMTH;    break;
+            //     }
+            //     changed = true;
+            // }
 
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
 
             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 currentSettings = DSP::GENTLE_WARMTH;
-                selectedPreset = 0;
                 changed = true;
             }
 
@@ -401,9 +406,6 @@ void SequencerGui::RenderWarmthUI() {
 
             // Engine Update logic
             if (changed) {
-                // Desync preset if manual adjustment occurs
-                if (ImGui::IsItemActive()) selectedPreset = -1;
-
                 if (isEnabled) {
                     getMain()->getController()->getDSPWarmth()->setSettings(currentSettings);
                 }
@@ -504,25 +506,44 @@ void SequencerGui::RenderEquilizer9BandUI() {
 
     if (eq->isEnabled()) {
         const char* presetNames[] = { "Custom", "Flat", "Bass Boost", "Loudness", "Radio", "Clarity" };
-        static int selectedPresetIdx = 1; // Default to "Flat"
 
 
         if (ImGui::BeginChild("EQ_Box", ImVec2(0, 180), ImGuiChildFlags_Borders)) {
 
+            int currentIdx = 0; // Standard: "Custom"
 
-            ImGui::SetNextItemWidth(150);
+            DSP::Equalizer9BandSettings currentSettings = eq->getSettings();
 
-            // if (ImGui::Combo("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-            if (ImFlux::ValueStepper("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-                    switch (selectedPresetIdx) {
-                    case 1: eq->setSettings(DSP::FLAT_EQ);       break;
-                    case 2: eq->setSettings(DSP::BASS_BOOST_EQ); break;
-                    case 3: eq->setSettings(DSP::SMILE_EQ);      break;
-                    case 4: eq->setSettings(DSP::RADIO_EQ);      break;
-                    case 5: eq->setSettings(DSP::CLARITY_EQ);    break;
-                    default: break; // "Custom" - do nothing, let sliders move
+            for (int i = 1; i < DSP::EQ9BAND_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::EQ9BAND_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
                 }
             }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+            ImGui::SetNextItemWidth(150);
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                if (displayIdx > 0 && displayIdx < DSP::EQ9BAND_PRESETS.size()) {
+                    currentSettings =  DSP::EQ9BAND_PRESETS[displayIdx];
+                    eq->setSettings(currentSettings);
+                }
+            }
+
+
+        // ImGui::SetNextItemWidth(150);
+        //
+        //     // if (ImGui::Combo("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+        //     if (ImFlux::ValueStepper("##Preset", &selectedPresetIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+        //             switch (selectedPresetIdx) {
+        //             case 1: eq->setSettings(DSP::FLAT_EQ);       break;
+        //             case 2: eq->setSettings(DSP::BASS_BOOST_EQ); break;
+        //             case 3: eq->setSettings(DSP::SMILE_EQ);      break;
+        //             case 4: eq->setSettings(DSP::RADIO_EQ);      break;
+        //             case 5: eq->setSettings(DSP::CLARITY_EQ);    break;
+        //             default: break; // "Custom" - do nothing, let sliders move
+        //         }
+        //     }
 
             // Quick Reset Button (Now using the FLAT_EQ preset)
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
@@ -530,7 +551,6 @@ void SequencerGui::RenderEquilizer9BandUI() {
             // if (ImGui::SmallButton("Reset")) {
             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                 eq->setSettings(DSP::FLAT_EQ);
-                selectedPresetIdx = 1; // Update combo selection to "Flat"
             }
             ImGui::Separator();
 
@@ -564,7 +584,6 @@ void SequencerGui::RenderEquilizer9BandUI() {
                 // if (ImGui::VSliderFloat("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain, "")) {
                 if (ImFlux::FaderVertical("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain)) {
                     eq->setGain(i, currentGain);
-                    selectedPresetIdx = 0;
                 }
 
                 // Frequency label centered under slider

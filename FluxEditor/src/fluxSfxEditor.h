@@ -34,6 +34,9 @@ private:
     struct FileDialogContext {
         SFXGenerator* generator;
         SFXGEN_FILE_ACTION_TYPE action;
+        SDL_DialogFileFilter filters[2];
+        char* basePath;
+        char* filterStrings[3];
     };
 
 public:
@@ -79,19 +82,43 @@ public:
         return ;
     }
     #else //Desktop
+
     void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
-        if ( !mSFXGenerator )
-            return;
-        auto* ctx = new FileDialogContext{ mSFXGenerator, action };
+        if (!mSFXGenerator) return;
+
+
+        auto* ctx = new FileDialogContext();
+        ctx->generator = mSFXGenerator;
+        ctx->action = action;
+        ctx->basePath = const_cast<char*>(SDL_GetBasePath());
 
         const char* ext = (action == fa_export) ? "wav" : "sfx";
-        const SDL_DialogFileFilter filters[] = { { ext , ext }, { "*", "*" } };
+        ctx->filters[0] = { ext, ext };
+        ctx->filters[1] = { "All files", "*" };
+
+
+        const char* defaultName = (action == fa_export) ? "untitled.wav" : "settings.sfx";
+        char* fullPath = nullptr;
+
+        const char* base = SDL_GetCurrentDirectory();
+        if (base) {
+            SDL_asprintf(&fullPath, "%s/%s", base, defaultName);
+        }
+        ctx->basePath = fullPath;
+
+        const char* extStr = (action == fa_export) ? "wav" : "sfx";
+        ctx->filterStrings[0] = SDL_strdup(extStr);        // Extension Name
+        ctx->filterStrings[1] = SDL_strdup(extStr);        // Pattern
+        ctx->filterStrings[2] = SDL_strdup("All files");   // Label
+
+        ctx->filters[0] = { ctx->filterStrings[0], ctx->filterStrings[1] };
+        ctx->filters[1] = { ctx->filterStrings[2], "*" };
+
 
         auto callback = [](void* userdata, const char* const* filelist, int filter) {
             auto* c = static_cast<FileDialogContext*>(userdata);
-            if (filelist && *filelist)
-            {
-                std::string filename = *filelist;
+            if (filelist && filelist[0]) {
+                 std::string filename = *filelist;
                 const char* extension = (c->action == fa_export) ? ".wav" : ".sfx";
                 std::string lowerFilename = filename;
                 std::transform(lowerFilename.begin(), lowerFilename.end(), lowerFilename.begin(), ::tolower);
@@ -117,15 +144,68 @@ public:
                         Log("ERROR: Failed to export wav to [%s]", filename.c_str());
                 }
             }
-            delete c; // Clean up the async context
+            SDL_free(c->basePath);
+            SDL_free(c->filterStrings[0]);
+            SDL_free(c->filterStrings[1]);
+            SDL_free(c->filterStrings[2]);
+            delete c;
         };
 
-          if (action == fa_save || action == fa_export) {
-            SDL_ShowSaveFileDialog(callback, ctx, SDL_GL_GetCurrentWindow(), filters, 2, SDL_GetBasePath());
+        SDL_Window* window = SDL_GL_GetCurrentWindow();
+        if (action == fa_save || action == fa_export) {
+            SDL_ShowSaveFileDialog(callback, ctx, window, ctx->filters, 2, ctx->basePath);
         } else {
-            SDL_ShowOpenFileDialog(callback, ctx, SDL_GL_GetCurrentWindow(), filters, 2, SDL_GetBasePath(), false);
+            SDL_ShowOpenFileDialog(callback, ctx, window, ctx->filters, 2, ctx->basePath, false);
         }
+
     }
+    // void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
+    //     if ( !mSFXGenerator )
+    //         return;
+    //     auto* ctx = new FileDialogContext{ mSFXGenerator, action };
+    //
+    //     const char* ext = (action == fa_export) ? "wav" : "sfx";
+    //     const SDL_DialogFileFilter filters[] = { { ext , ext }, { "*", "*" } };
+    //
+    //     auto callback = [](void* userdata, const char* const* filelist, int filter) {
+    //         auto* c = static_cast<FileDialogContext*>(userdata);
+    //         if (filelist && *filelist)
+    //         {
+    //             std::string filename = *filelist;
+    //             const char* extension = (c->action == fa_export) ? ".wav" : ".sfx";
+    //             std::string lowerFilename = filename;
+    //             std::transform(lowerFilename.begin(), lowerFilename.end(), lowerFilename.begin(), ::tolower);
+    //             if (!lowerFilename.ends_with(extension)) {
+    //                 filename += extension;
+    //             }
+    //
+    //             if (c->action == fa_load) {
+    //                 Log("Action: Load SFXR to [%s]", filename.c_str());
+    //                 if (!c->generator->LoadSettings(filename.c_str()))
+    //                     Log("ERROR: Failed to load SFXR [%s]", filename.c_str());
+    //             }
+    //             else
+    //             if (c->action == fa_save)  {
+    //                 Log("Action: Save SFXR to [%s]", filename.c_str());
+    //                 if (!c->generator->SaveSettings(filename.c_str()))
+    //                     Log("ERROR: Failed to save SFXR to [%s]", filename.c_str());
+    //             }
+    //             else
+    //             if (c->action == fa_export) {
+    //                 Log("Action: Export wav to [%s]", filename.c_str());
+    //                 if (!c->generator->ExportWAV(filename.c_str()))
+    //                     Log("ERROR: Failed to export wav to [%s]", filename.c_str());
+    //             }
+    //         }
+    //         delete c; // Clean up the async context
+    //     };
+    //
+    //       if (action == fa_save || action == fa_export) {
+    //         SDL_ShowSaveFileDialog(callback, ctx, SDL_GL_GetCurrentWindow(), filters, 2, SDL_GetBasePath());
+    //     } else {
+    //         SDL_ShowOpenFileDialog(callback, ctx, SDL_GL_GetCurrentWindow(), filters, 2, SDL_GetBasePath(), false);
+    //     }
+    // }
 #endif // Desktop
     //--------------------------------------------------------------------------
     void DrawSFXEditor()

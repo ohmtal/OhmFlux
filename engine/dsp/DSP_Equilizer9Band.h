@@ -53,6 +53,18 @@ namespace DSP {
     // Preset: Air / Clarity (Subtle low cut, boost in the presence and high frequencies)
     constexpr Equalizer9BandSettings CLARITY_EQ = {-2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.5f, 3.0f, 4.5f, 6.0f };
 
+    constexpr Equalizer9BandSettings CUSTOM_EQ = FLAT_EQ; //DUMMY
+
+
+    static const std::array<DSP::Equalizer9BandSettings, 6> EQ9BAND_PRESETS = {
+        CUSTOM_EQ,
+        FLAT_EQ,
+        BASS_BOOST_EQ,
+        SMILE_EQ,
+        RADIO_EQ,
+        CLARITY_EQ
+    };
+
 
 
     struct FilterState {

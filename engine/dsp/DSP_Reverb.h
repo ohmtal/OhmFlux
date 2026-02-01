@@ -42,13 +42,22 @@ struct ReverbSettings {
 
 
 //-----
-constexpr ReverbSettings OFF_REVERB        = { 0.00f,    0,     0,   0.00f }; // No effect
+constexpr ReverbSettings CUSTOM_REVERB        = { 0.00f,    0,     0,   0.00f }; // No effect << dummy
 //-----
 constexpr ReverbSettings HALL_REVERB      = { 0.82f, 17640, 17201,  0.45f }; // Large, lush reflections Concert Hall
 constexpr ReverbSettings CAVE_REVERB      = { 0.90f, 30000, 29800,  0.60f }; // Massive, long decay
 constexpr ReverbSettings ROOM_REVERB      = { 0.40f,  4000,  3950,  0.25f }; // Short, tight reflections
 constexpr ReverbSettings HAUNTED_REVERB   = { 0.88f, 22050, 21500,  0.60f }; // Haunted Corridor
 
+
+static const std::array<DSP::ReverbSettings, 5> REVERB_PRESETS = {
+    CUSTOM_REVERB,
+    HALL_REVERB,
+    CAVE_REVERB,
+    ROOM_REVERB,
+    HAUNTED_REVERB
+
+};
 
 class Reverb : public DSP::Effect {
 private:
