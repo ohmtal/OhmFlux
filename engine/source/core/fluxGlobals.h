@@ -25,6 +25,7 @@
 #include <vector>
 #include <string_view>
 #include <optional>
+#include <array>
 
 #define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
 
@@ -487,15 +488,22 @@ struct FluxSettings
 
 } ;
 //-----------------------------------------------------------------------------
-inline std::string getUserFolder(SDL_Folder folder){
+inline std::array<std::string, SDL_FOLDER_COUNT> globFolderCache;
+
+inline std::string getUserFolder(SDL_Folder folder) {
+    // Return cached value if already fetched
+    if (!globFolderCache[folder].empty()) {
+        return globFolderCache[folder];
+    }
+    // SDL_GetUserFolder returns a pointer to internal memory; DO NOT free it
     const char* rawPath = SDL_GetUserFolder(folder);
     if (rawPath) {
-        std::string result(rawPath);
-        SDL_free(const_cast<char*>(rawPath));
-        return result;
+        globFolderCache[folder] = rawPath;
+        return globFolderCache[folder];
     }
     return "";
 }
+
 
 inline std::string getHomePath()      { return getUserFolder( SDL_FOLDER_HOME ) ; }
 inline std::string getDesktopPath()   { return getUserFolder( SDL_FOLDER_DESKTOP ) ; }
@@ -508,13 +516,13 @@ inline std::string getVideosPath()    { return getUserFolder( SDL_FOLDER_VIDEOS 
 inline const std::string getGamePath() {
     static std::string cachedPath = "";
     if (!cachedPath.empty()) return cachedPath;
-    char* rawPath = (char*)SDL_GetBasePath();
+
+     const char* rawPath = SDL_GetBasePath();
     if (rawPath) {
         cachedPath = rawPath;
-        SDL_free(rawPath);
-        return cachedPath;
+        SDL_free(const_cast<char*>(rawPath));
     }
-    return "";
+    return cachedPath;
 }
 
 // example: dumpPathes(&game->mSettings);
