@@ -36,7 +36,8 @@ TODO Version 1 (i do not use 0 this time):
   [ ] play pattern starts when first note is pressed
 
 [ ] FileBrowser
- [ ] try a better file browser this sucks and is for testing only => ImFileDialog (MIT)
+ [ ] try a better file browser this sucks and is for testing only
+        => ImFileDialog (MIT) <<< NOT i tried to modify it to get it work but no look so far (C++20)
  [ ] it display the full filename and does not change directory
  [ ] if no extension is given is save nothing ?
  [ ] it just crashed when trying to change the filename ^^

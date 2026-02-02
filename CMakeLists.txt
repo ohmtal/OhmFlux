@@ -460,8 +460,9 @@ if(BUILD_HT_SEQ)
         "${HTSEQ_DIR}/src/keyboardGui.cpp"
         "${HTSEQ_DIR}/src/fancyOverlays.cpp"
         "${HTSEQ_DIR}/src/ordersGui.cpp"
+        # not! "${HTSEQ_DIR}/src/ImFileDialog/ImFileDialog.cpp"
     )
-    configure_demo_target(HT-Sequencer ${HTSEQ_DIR} "$HTSEQ_DIR}/assets@assets" "${GAME_SOURCES}")
+    configure_demo_target(HT-Sequencer ${HTSEQ_DIR} "${HTSEQ_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 

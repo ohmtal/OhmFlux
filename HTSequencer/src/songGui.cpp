@@ -605,40 +605,87 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
             if (!ImGui::TableSetColumnIndex(col)) continue;
 
             static std::string lColCaption;
-            lColCaption = ImGui::TableGetColumnName(col);
+            lColCaption = std::format("##{}", ImGui::TableGetColumnName(col));
             // TODO header states
             // ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Lime));
             // ImGui::PushStyleColor(ImGuiCol_Text, ImColor4F(cl_Gray));
 
-            if (col==0)
-            {
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, state.pattern->mColor);
-            }
-
+            // if (col==0)
+            // {
+            //     ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, state.pattern->mColor);
+            // }
 
             ImGui::TableHeader(lColCaption.c_str());
 
 
-            // Pulse selected
-            if (channel == state.cursorCol) {
+
+
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            ImVec2 posMin = ImGui::GetItemRectMin();
+            ImVec2 posMax = ImGui::GetItemRectMax();
+
+            // --------------- Header Popup AND CustomDraw :D
+            if (channel >= 0)
+            {
                 ImDrawList* dl = ImGui::GetWindowDrawList();
                 ImVec2 posMin = ImGui::GetItemRectMin();
                 ImVec2 posMax = ImGui::GetItemRectMax();
-                float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
-                // ImU32 pulseCol = ImGui::GetColorU32(ImVec4(1, 1, 0, 0.4f + pulse * 0.4f)); // Yellowish pulse
-                ImU32 pulseCol = ImGui::GetColorU32(ImVec4(0.4, 0.4, 0.9, 0.4f + pulse * 0.4f));
-                dl->AddRect(posMin, posMax, pulseCol, 0.0f, 0, 2.5f);
-            }
+
+                int lStep = mCurrentSong.channelStep[channel];
+                //----
+                ImVec2 lNeedle = posMin;
+                lNeedle.x += 3.f;
+                ImU32 lOPColor = channel < 6 ? IM_COL32(200,200,0,255) : IM_COL32(0,200,200,255);
+                if (channel == state.cursorCol) {
+                    dl->AddRectFilledMultiColor(
+                        posMin, posMax ,
+                        IM_COL32(255, 255, 255,100), IM_COL32(255, 255, 255, 100),
+                        IM_COL32(255, 255, 255, 0),  IM_COL32(255, 255, 255, 0)
+                        // IM_COL32(255, 255, 255, 50), IM_COL32(255, 255, 255, 50),
+                        // IM_COL32(255, 255, 255, 0),  IM_COL32(255, 255, 255, 0)
+                    );
 
 
-            // ImGui::PopStyleColor();
+                    dl->AddRect(lNeedle, ImVec2(posMin.x+2.f,posMax.y), lOPColor, 0.0f, 0, 2.5f);
+                } else {
+                    dl->AddRect(lNeedle, ImVec2(posMin.x+2.f,posMax.y), lOPColor, 0.0f, 0, 2.5f);
+                }
+                //FIXME calc =>position + len
+                lNeedle.x += 10.f; lNeedle.y += 3.f;
+                dl->AddText(lNeedle, IM_COL32(200,200,200,255) ,std::format("{:02}",channel + 1).c_str());
+                lNeedle.x += 24.f;
+                dl->AddText(lNeedle, IM_COL32(200,100,100,255) ,std::format("{}",lStep).c_str());
 
-            // --------------- Header Popup // CLICK
-            if (channel >= 0)
-            {
+                // hard so see:
+                // if (channel == state.cursorCol) {
+                //     float pulse = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
+                //     // ImU32 pulseCol = ImGui::GetColorU32(ImVec4(1, 1, 0, 0.4f + pulse * 0.4f)); // Yellowish pulse
+                //     ImU32 pulseCol = ImGui::GetColorU32(ImVec4(0.4, 0.4, 0.9, 0.4f + pulse * 0.4f));
+                //     dl->AddRect(posMin, posMax, pulseCol, 0.0f, 0, 2.5f);
+                // }
+
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 4));
+
+                std::string lHintText = std::format("Channel {:02}\n{}\nAuto Step:{}"
+                    , channel+1
+                    , (channel < 6) ? "Four Operator channel" : "Two Operator channel"
+                    , lStep
+                    );
+
+                ImFlux::Hint(lHintText);
+
+
+
+                // Click Select
                 if (ImGui::IsItemClicked()) {
                     state.cursorCol = channel;
-                    selectPatternCol(state);
+
+                    // i know it could be something else selected but hey then use double click
+                    if (state.selection.getCount() >= state.pattern->getRowCount()) {
+                        state.selection.init();
+                    } else {
+                        selectPatternCol(state);
+                    }
                 }
 
                 if (ImGui::BeginPopupContextItem())
@@ -646,19 +693,19 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
                     ImGui::TextColored(ImColor4F(cl_Crimson), "Channel %d", channel + 1);
                     ImGui::Separator();
                     if (channel < 6) {
-                        ImGui::TextColored(ImColor4F(cl_Blue), "Four Operator channel");
+                        ImGui::TextColored(ImColor4F(cl_Yellow), "Four Operator channel");
                     } else {
-                        ImGui::TextColored(ImColor4F(cl_Yellow), "Two Operator channel");
+                        ImGui::TextColored(ImColor4F(cl_Cyan), "Two Operator channel");
                     }
 
                     ImGui::Separator();
 
                     // Step ..
-                    int lStep = mCurrentSong.channelStep[channel];
+
                     ImGui::Text("Step:");
                     ImGui::SetNextItemWidth(100.0f); // Often needed as menus are narrow by default
                     if (ImGui::InputInt("##step", &lStep)) {
-                        lStep = std::clamp(lStep, 0, 127);
+                        lStep = std::clamp(lStep, 0, 16);
                         mCurrentSong.channelStep[channel] = lStep;
                     }
                     //<<< Step
@@ -671,7 +718,41 @@ void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
                     ImGui::EndPopup();
                 }
                 // --------------- Header Popup
+
+                ImGui::PopStyleVar(/*ImGuiStyleVar_ItemSpacing, ImVec2(8, 4)*/);
+
             } // channel >= 0
+            else {
+                //display pattern number :
+                uint32_t baseColor = state.pattern->mColor;
+                uint32_t colTop = (baseColor & 0x00FFFFFF) | (250 << 24);
+                uint32_t colBot = (baseColor & 0x00FFFFFF) | (50 << 24);
+
+                dl->AddRectFilledMultiColor(
+                    posMin, posMax,
+                    colTop, colTop,
+                    colBot, colBot
+                );
+
+                std::string text = std::format("{:02}", state.currentPatternIdx);
+                ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
+                ImVec2 centerPos;
+                centerPos.x = posMin.x + (posMax.x - posMin.x) * 0.5f - textSize.x * 0.5f;
+                centerPos.y = posMin.y + (posMax.y - posMin.y) * 0.5f - textSize.y * 0.5f;
+                dl->AddText(centerPos,
+                            ImGui::ColorConvertFloat4ToU32(ImFlux::GetContrastColor(state.pattern->mColor)),
+                            text.c_str());
+
+                if (ImGui::IsItemClicked()) {
+                    if (state.selection.getCount() >= state.pattern->getSteps().size()) {
+                        state.selection.init();
+                    } else {
+                        selectPatternAll(state);
+                    }
+
+                }
+
+            }
         } // Header stuff
 
         //--------------------- TABLE CONTENT ------------------------------
