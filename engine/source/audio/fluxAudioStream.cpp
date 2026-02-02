@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #undef STB_VORBIS_HEADER_ONLY
-#include "stb/stb_vorbis.c"
+#include <stb_vorbis.c>
 //-----------------------------------------------------------------------------
 FluxAudioStream::FluxAudioStream( const char* lFilename)
 {

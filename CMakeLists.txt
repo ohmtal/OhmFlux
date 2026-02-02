@@ -43,15 +43,15 @@ target_compile_options(flux_speed_profile INTERFACE
 
 # --- Path Definitions ---
 set(ENGINE_DIR "${CMAKE_CURRENT_LIST_DIR}/engine/source")
-set(STB_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/stb")
-set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/engine/box2d")
-set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/engine/ymfm/src")
-set(OPL_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/opl")
-set(OPL3_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/opl3")
+set(OPL3_DIR   "${CMAKE_CURRENT_LIST_DIR}/engine/opl3")
 set(DSP_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/dsp")
 set(SFX_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/sfx")
-set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/engine/imgui")
-set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/engine/json/single_include")
+
+set(STB_DIR    "${CMAKE_CURRENT_LIST_DIR}/lib/stb")
+set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/lib/box2d")
+set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/ymfm/src")
+set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/lib/imgui")
+set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/json/single_include")
 # =============================================================================
 # PROJECTS SECTION >>>>
 # =============================================================================
@@ -60,7 +60,6 @@ set(TTT_DIR     "${CMAKE_CURRENT_LIST_DIR}/TickTacToe")
 set(TESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}/TestBed")
 set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
-set(IMGGUITEST_DIR "${CMAKE_CURRENT_LIST_DIR}/ImguiTest")
 set(EDITOR_DIR "${CMAKE_CURRENT_LIST_DIR}/FluxEditor")
 set(FLUXTRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmFluxTracker")
 
@@ -137,7 +136,7 @@ if(WITH_BOX2D)
     set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
     set(BOX2D_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     # add_subdirectory(engine/box2d)
-    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/engine/box2d" "${CMAKE_CURRENT_BINARY_DIR}/engine/box2d")
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/box2d" "${CMAKE_CURRENT_BINARY_DIR}/lib/box2d")
     list(APPEND FLUX_LIBS box2d)
 endif()
 # <<<
@@ -423,16 +422,6 @@ if(BUILD_AMANA)
     configure_demo_target(AmanaGame ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
-
-# --- ImguiTest ---
-option(BUILD_IMGGUITEST "Build ImguiTest application" OFF)
-if(BUILD_IMGGUITEST)
-    set(GAME_SOURCES
-        "${IMGGUITEST_DIR}/src/main.cpp"
-        "${IMGGUITEST_DIR}/src/FluxGuiTest.cpp"
-    )
-    configure_demo_target(ImguiTest ${IMGGUITEST_DIR} "${IMGGUITEST_DIR}/assets@assets" "${GAME_SOURCES}")
-endif()
 
 
 # --- Editor ---
