@@ -42,21 +42,21 @@ static int SDLCALL ExportThreadFunc(void* data) {
 }
 
 
-class SequencerGui: public FluxBaseObject
+class OhmfluxTrackerGui: public FluxBaseObject
 {
 public:
     // dont forget to add a parameter 
     // a.) mDefaultEditorSettings
     // b.) on the bottom to the json macro!!! 
-    struct SeqSettings {
+    struct TrackerSettings {
         bool EditorGuiInitialized;
         bool ShowFileBrowser;
         bool ShowConsole;
         bool ShowDSP;
         bool ShowSoundBankList;
-        bool ShowFMEditor;
+        bool ShowInsEditor;
         bool ShowScalePlayer;
-        bool ShowSongGui;
+        bool ShowPatternGui;
         bool ShowPiano;
         bool InsertMode;  // when playing a note is insert
         bool EnhancedStepView; // if false only the note is displayed
@@ -76,17 +76,17 @@ private:
 
     DSP::SpectrumAnalyzer* mSpectrumAnalyzer;
 
-    SeqSettings mSettings;
-    SeqSettings mDefaultSettings = {
+    TrackerSettings mSettings;
+    TrackerSettings mDefaultSettings = {
           .EditorGuiInitialized = false
         , .ShowFileBrowser = true
         , .ShowConsole     = true
         , .ShowDSP         = true
         , .ShowSoundBankList = true
-        , .ShowFMEditor = true
-        , .ShowScalePlayer = true
-        , .ShowSongGui = true
-        , .ShowPiano = false
+        , .ShowInsEditor = true
+        , .ShowScalePlayer = false
+        , .ShowPatternGui = true
+        , .ShowPiano = true
         , .InsertMode = false
         , .EnhancedStepView = false
         , .ShowPlayList = false
@@ -310,7 +310,7 @@ private:
     void deleteAndShiftDataUp(PatternEditorState& state);
 
 
-    void RenderSequencerUI(bool standAlone = true);
+    void RenderPatternUI(bool standAlone = true);
 
     // ----- keyboards / scale player  -----
     void RenderScalePlayerUI(bool standAlone = false);
@@ -328,8 +328,8 @@ private:
 
 public:
 
-    SequencerGui() {}
-    ~SequencerGui() {}
+    OhmfluxTrackerGui() {}
+    ~OhmfluxTrackerGui() {}
 
     ImConsole mConsole;
     bool Initialize() override;
@@ -394,15 +394,15 @@ public:
 }; //class
 
 // macro for JSON support
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SequencerGui::SeqSettings,
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(OhmfluxTrackerGui::TrackerSettings,
     EditorGuiInitialized
     ,ShowFileBrowser
     ,ShowConsole
     ,ShowDSP
     ,ShowSoundBankList
-    ,ShowFMEditor
+    ,ShowInsEditor
     ,ShowScalePlayer
-    ,ShowSongGui
+    ,ShowPatternGui
     ,ShowPiano
     ,InsertMode
     ,EnhancedStepView

@@ -216,7 +216,7 @@ bool OPL3Controller::shutDownController()
 //------------------------------------------------------------------------------
 bool OPL3Controller::checkAnyVoiceActive(float* buffer, int total_frames) {
     // 1. If sequencer is playing, we are ALWAYS active.
-    if (mSeqState.playing) return true;
+    if (mTrackerState.playing) return true;
 
     // 2. Wake-up override (from playNoteByFNumHW)
     if (isAnyVoiceActive()) {
@@ -269,13 +269,13 @@ void OPL3Controller::fillBuffer(float* buffer, int total_frames)
     const float inv32768 = 1.0f / 32768.0f;
     int buffer_offset = 0;
 
-    if (!isAnyVoiceActive() && !mSeqState.playing) {
+    if (!isAnyVoiceActive() && !mTrackerState.playing) {
         std::memset(buffer, 0, total_frames * sizeof(float) * 2);
         return;
     }
 
     // If not playing a song, but manual notes are active
-    if (!mSeqState.playing) {
+    if (!mTrackerState.playing) {
         this->generate(buffer, total_frames);
         this->checkAnyVoiceActive(buffer, total_frames);
         return;
@@ -286,7 +286,7 @@ void OPL3Controller::fillBuffer(float* buffer, int total_frames)
 
     while (frames_left > 0) {
         // 1. Calculate how many samples until the next sequencer tick
-        double samples_until_tick = mSeqState.samples_per_tick - mSeqState.sample_accumulator;
+        double samples_until_tick = mTrackerState.samples_per_tick - mTrackerState.sample_accumulator;
         int chunk = std::min(frames_left, (int)std::max(1.0, samples_until_tick));
 
         // 2. Generate and Resample this chunk
@@ -308,10 +308,10 @@ void OPL3Controller::fillBuffer(float* buffer, int total_frames)
         }
 
         // 3. Update Sequencer state
-        mSeqState.sample_accumulator += chunk;
-        if (mSeqState.sample_accumulator >= mSeqState.samples_per_tick) {
+        mTrackerState.sample_accumulator += chunk;
+        if (mTrackerState.sample_accumulator >= mTrackerState.samples_per_tick) {
             this->tickSequencer();
-            mSeqState.sample_accumulator -= mSeqState.samples_per_tick;
+            mTrackerState.sample_accumulator -= mTrackerState.samples_per_tick;
         }
 
         buffer_offset += chunk;
@@ -320,59 +320,59 @@ void OPL3Controller::fillBuffer(float* buffer, int total_frames)
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::tickSequencer() {
-    if (!mSeqState.playing || !mSeqState.current_song) return;
+    if (!mTrackerState.playing || !mTrackerState.current_song) return;
 
-    const SongData& song = *mSeqState.current_song;
+    const SongData& song = *mTrackerState.current_song;
 
     // 1. Safety check: Is the order index valid?
-    if (mSeqState.orderIdx >= song.orderList.size()) {
+    if (mTrackerState.orderIdx >= song.orderList.size()) {
         Log("[error] sequence index exceeded sequence list!");
-        mSeqState.playing = false; // Stop playback if we've run out of orders
+        mTrackerState.playing = false; // Stop playback if we've run out of orders
         return;
     }
 
 
 
    //NOTE PlayRange!!
-   bool doPlayRange = mSeqState.playRange.active;
-   uint32_t patternIdx = doPlayRange ? mSeqState.playRange.patternIdx : song.orderList[mSeqState.orderIdx];
+   bool doPlayRange = mTrackerState.playRange.active;
+   uint32_t patternIdx = doPlayRange ? mTrackerState.playRange.patternIdx : song.orderList[mTrackerState.orderIdx];
 
     if (patternIdx >= song.patterns.size()) {
-        LogFMT("[error] Invalid pattern index {} at order {}", patternIdx, mSeqState.orderIdx);
-        mSeqState.playing = false;
+        LogFMT("[error] Invalid pattern index {} at order {}", patternIdx, mTrackerState.orderIdx);
+        mTrackerState.playing = false;
         return;
     }
 
     const Pattern& pat = song.patterns[patternIdx];
 
-    if (mSeqState.rowIdx >= pat.getRowCount()) {
-        mSeqState.rowIdx = 0;
+    if (mTrackerState.rowIdx >= pat.getRowCount()) {
+        mTrackerState.rowIdx = 0;
         return;
     }
 
 
-    uint8_t lStartChan = doPlayRange ? mSeqState.playRange.startPoint[1] : 0;
-    uint8_t lEndChan   = ( doPlayRange && mSeqState.playRange.stopPoint[1] >= 0 )? mSeqState.playRange.stopPoint[1]  : SOFTWARE_CHANNEL_COUNT - 1;
+    uint8_t lStartChan = doPlayRange ? mTrackerState.playRange.startPoint[1] : 0;
+    uint8_t lEndChan   = ( doPlayRange && mTrackerState.playRange.stopPoint[1] >= 0 )? mTrackerState.playRange.stopPoint[1]  : SOFTWARE_CHANNEL_COUNT - 1;
 
     for (uint8_t softChan = lStartChan; softChan <= lEndChan; ++softChan) {
-        const SongStep& step = pat.getStep(mSeqState.rowIdx, softChan);
+        const SongStep& step = pat.getStep(mTrackerState.rowIdx, softChan);
 
-        if (mSeqState.current_tick == 0) {
+        if (mTrackerState.current_tick == 0) {
             // --- Tick 0: New Row Trigger ---
 
             // Logic: Trigger if there is a note, OR if the step contains
             // data (volume/pan) that differs from the current channel state.
             bool noteTrigger = (step.note <= LAST_NOTE || step.note == STOP_NOTE);
-            bool volumeChange = (step.volume != mSeqState.last_steps[softChan].volume);
-            bool panningChange = (step.panning != mSeqState.last_steps[softChan].panning);
+            bool volumeChange = (step.volume != mTrackerState.last_steps[softChan].volume);
+            bool panningChange = (step.panning != mTrackerState.last_steps[softChan].panning);
 
             if (noteTrigger || volumeChange || panningChange) {
                 // playNote handles Note 0 (modulation only) vs Note 1-255 (trigger/stop)
                 this->playNote(softChan, step);
 
             } else if (step.note == NONE_NOTE ) {
-                mSeqState.last_steps[getHardWareChannel(softChan)]=step;
-                mSeqState.ui_dirty = true;
+                mTrackerState.last_steps[getHardWareChannel(softChan)]=step;
+                mTrackerState.ui_dirty = true;
             }
 
             // Process non-continuous effects that start on Tick 0 (like Position Jump)
@@ -389,40 +389,40 @@ void OPL3Controller::tickSequencer() {
 
 
     // --- Timing Advancement ---
-    mSeqState.current_tick++;
+    mTrackerState.current_tick++;
 
-    uint16_t lStartRow = doPlayRange ? mSeqState.playRange.startPoint[0] : 0;
-    uint16_t lEndRow   = ( doPlayRange && mSeqState.playRange.stopPoint[0] >= 0 ) ? mSeqState.playRange.stopPoint[0] + 1 : pat.getRowCount();
+    uint16_t lStartRow = doPlayRange ? mTrackerState.playRange.startPoint[0] : 0;
+    uint16_t lEndRow   = ( doPlayRange && mTrackerState.playRange.stopPoint[0] >= 0 ) ? mTrackerState.playRange.stopPoint[0] + 1 : pat.getRowCount();
 
-    if (mSeqState.current_tick >= mSeqState.ticks_per_row) {
-        mSeqState.current_tick = 0;
-        mSeqState.rowIdx++;
+    if (mTrackerState.current_tick >= mTrackerState.ticks_per_row) {
+        mTrackerState.current_tick = 0;
+        mTrackerState.rowIdx++;
 
-        if ( mSeqState.rowIdx >= lEndRow ) {
-            mSeqState.rowIdx = lStartRow;
+        if ( mTrackerState.rowIdx >= lEndRow ) {
+            mTrackerState.rowIdx = lStartRow;
 
             //NOTE tricky rewwrite with PlayRange
-            mSeqState.orderIdx++;  // also with PlayRange let it tick
+            mTrackerState.orderIdx++;  // also with PlayRange let it tick
 
             // we readed the end .....
-            if (doPlayRange || mSeqState.orderIdx >= song.orderList.size() )
+            if (doPlayRange || mTrackerState.orderIdx >= song.orderList.size() )
             {
-                if ( mSeqState.loop ) {
+                if ( mTrackerState.loop ) {
                     // nothing todo on playRange
-                    mSeqState.orderIdx = 0; //restart on loop
+                    mTrackerState.orderIdx = 0; //restart on loop
                 } else {
                     // Stop!
                     // dont i have a function for that ?!
-                    mSeqState.playing = false;
-                    mSeqState.orderIdx = 0;
+                    mTrackerState.playing = false;
+                    mTrackerState.orderIdx = 0;
                     this->silenceAll(true);
                     for (int i = 0; i < MAX_HW_CHANNELS; ++i) {
-                        mSeqState.last_steps[i] = {};
+                        mTrackerState.last_steps[i] = {};
                     }
-                    mSeqState.ui_dirty = true;
+                    mTrackerState.ui_dirty = true;
 
                     // i reset playRange also !!
-                    mSeqState.playRange.init();
+                    mTrackerState.playRange.init();
                 } // stopped
             } // end reached
 
@@ -481,7 +481,7 @@ uint16_t OPL3Controller::get_carrier_offset(uint8_t channel) {
 
 //------------------------------------------------------------------------------
 void OPL3Controller::setPlaying(bool value, bool hardStop) {
-    mSeqState.playing = value;
+    mTrackerState.playing = value;
     if (!value) // We are Pausing or Stopping
     {
         this->silenceAll(hardStop);
@@ -518,7 +518,7 @@ void OPL3Controller::silenceAll(bool hardStop) {
 }
 //------------------------------------------------------------------------------
 void OPL3Controller::togglePause() {
-    if (mSeqState.playing){
+    if (mTrackerState.playing){
         setPlaying(false,false);
     } else {
         setPlaying(true, false);
@@ -538,12 +538,12 @@ void OPL3Controller::reset() {
 
     // 2. Reset Sequencer Position
     // We replace 'song_needle' with the new hierarchical indices
-    mSeqState.orderIdx = 0;
-    mSeqState.rowIdx = 0;
-    mSeqState.sample_accumulator = 0.0;
+    mTrackerState.orderIdx = 0;
+    mTrackerState.rowIdx = 0;
+    mTrackerState.sample_accumulator = 0.0;
 
-    memset(mSeqState.last_steps, 0, sizeof(mSeqState.last_steps));
-    mSeqState.ui_dirty = false;
+    memset(mTrackerState.last_steps, 0, sizeof(mTrackerState.last_steps));
+    mTrackerState.ui_dirty = false;
 
     // // 2. Enable OPL3 extensions (Bank 1 access)
     // // write(0x105, 0x01); // OPL3 Mode enabled ?!
@@ -809,9 +809,9 @@ bool OPL3Controller::playNoteHW(uint8_t channel, SongStep step) {
 
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
-    SongStep prevStep = mSeqState.last_steps[channel];
-    mSeqState.last_steps[channel] = step;
-    mSeqState.ui_dirty = true;
+    SongStep prevStep = mTrackerState.last_steps[channel];
+    mTrackerState.last_steps[channel] = step;
+    mTrackerState.ui_dirty = true;
 
     // Helper for hardware volume conversion (0-63 -> 63-0)
     auto getOplVol = [](uint8_t v) {
@@ -1183,7 +1183,7 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
             uint8_t slideDown = (val & 0x0F);
 
             // Get current volume from the step-mirror
-            uint8_t currentVol = mSeqState.last_steps[channel].volume;
+            uint8_t currentVol = mTrackerState.last_steps[channel].volume;
 
             if (slideUp > 0) {
                 currentVol = (uint8_t)std::min(63, (int)currentVol + slideUp);
@@ -1194,8 +1194,8 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
             // dLog("Slide...channel:%d row:%d step.volume:%d( oplVolume: %d)", channel , mSeqState.rowIdx, currentVol, getOplVol(currentVol));
 
             // Update the state mirror
-            mSeqState.last_steps[channel].volume = currentVol;
-            mSeqState.ui_dirty = true;
+            mTrackerState.last_steps[channel].volume = currentVol;
+            mTrackerState.ui_dirty = true;
 
             // Apply to hardware
             setChannelVolume(channel, getOplVol(currentVol));
@@ -1209,8 +1209,8 @@ void OPL3Controller::processStepEffects(uint8_t channel, const SongStep& step) {
 
         case EFF_SET_VOLUME: {
             uint8_t newVol = std::min((uint8_t)63, val);
-            mSeqState.last_steps[channel].volume = newVol;
-            mSeqState.ui_dirty = true;
+            mTrackerState.last_steps[channel].volume = newVol;
+            mTrackerState.ui_dirty = true;
 
             setChannelVolume(channel, getOplVol(newVol));
             break;
@@ -1253,21 +1253,21 @@ void OPL3Controller::modifyChannelPitch(uint8_t channel, int8_t amount) {
 //------------------------------------------------------------------------------
 void OPL3Controller::consoleSongOutput(bool useNumbers, bool showHWChannels)
 {
-    if (!mSeqState.playing)
+    if (!mTrackerState.playing)
         return;
 
     char buffer[1024]; // Increased size: 18 channels * ~15 chars each + padding
     char *ptr = buffer;
 
 
-    if (mSeqState.ui_dirty) {
+    if (mTrackerState.ui_dirty) {
         // sprintf returns the number of characters written.
         // Use that to advance the pointer.
-        ptr += sprintf(ptr, "[%02d:%03d] ", mSeqState.orderIdx, mSeqState.rowIdx);
+        ptr += sprintf(ptr, "[%02d:%03d] ", mTrackerState.orderIdx, mTrackerState.rowIdx);
 
         if (showHWChannels) {
             for (int ch = 0; ch < MAX_HW_CHANNELS; ch++) {
-                const SongStep& step = mSeqState.last_steps[ch];
+                const SongStep& step = mTrackerState.last_steps[ch];
 
                 // 1. Note Column
                 if (step.note == STOP_NOTE) {
@@ -1298,7 +1298,7 @@ void OPL3Controller::consoleSongOutput(bool useNumbers, bool showHWChannels)
         } else {
             for (int softwareChannel = 0; softwareChannel < SOFTWARE_CHANNEL_COUNT; softwareChannel++) {
 
-                const SongStep& step = mSeqState.last_steps[getHardWareChannel(softwareChannel)];
+                const SongStep& step = mTrackerState.last_steps[getHardWareChannel(softwareChannel)];
 
                 // 1. Note Column
                 if (step.note == STOP_NOTE) {
@@ -1331,7 +1331,7 @@ void OPL3Controller::consoleSongOutput(bool useNumbers, bool showHWChannels)
 
 
         Log("%s", buffer);
-        mSeqState.ui_dirty = false;
+        mTrackerState.ui_dirty = false;
     }
 }
 //------------------------------------------------------------------------------
@@ -1348,64 +1348,64 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
     std::lock_guard<std::recursive_mutex> lock(mDataMutex);
 
     // Assign Song Data
-    mSeqState.current_song = &songData;
+    mTrackerState.current_song = &songData;
 
     // Reset Sequencer Positions
-    mSeqState.orderIdx = 0;
-    mSeqState.rowIdx = 0;
-    mSeqState.current_tick = 0;
-    mSeqState.sample_accumulator = 0.f;
-    mSeqState.loop = loop;
-    mSeqState.ticks_per_row = songData.ticksPerRow;
+    mTrackerState.orderIdx = 0;
+    mTrackerState.rowIdx = 0;
+    mTrackerState.current_tick = 0;
+    mTrackerState.sample_accumulator = 0.f;
+    mTrackerState.loop = loop;
+    mTrackerState.ticks_per_row = songData.ticksPerRow;
 
-    if ( mSeqState.playRange.active )
+    if ( mTrackerState.playRange.active )
     {
         // check pattern
-        if ( mSeqState.playRange.patternIdx >= songData.patterns.size())
+        if ( mTrackerState.playRange.patternIdx >= songData.patterns.size())
         {
-            Log("[error] playRange Pattern index out of bounds! %d", mSeqState.playRange.patternIdx);
+            Log("[error] playRange Pattern index out of bounds! %d", mTrackerState.playRange.patternIdx);
             return false;
         }
-        Pattern* tmpPat = &songData.patterns[mSeqState.playRange.patternIdx];
+        Pattern* tmpPat = &songData.patterns[mTrackerState.playRange.patternIdx];
 
         //check startRow
         if (
-            mSeqState.playRange.startPoint[0] > tmpPat->getRowCount() ||
-            mSeqState.playRange.startPoint[1] > tmpPat->getColCount()
+            mTrackerState.playRange.startPoint[0] > tmpPat->getRowCount() ||
+            mTrackerState.playRange.startPoint[1] > tmpPat->getColCount()
         )
         {
             Log("[error] playRange StartPoint out of bounds! row:%d, col:%d"
-                , mSeqState.playRange.startPoint[0], mSeqState.playRange.startPoint[1]);
-            mSeqState.playRange.active = false;
+                , mTrackerState.playRange.startPoint[0], mTrackerState.playRange.startPoint[1]);
+            mTrackerState.playRange.active = false;
             return false;
         }
         //check stopRow
         if (
-            (mSeqState.playRange.stopPoint[0] >= 0 && mSeqState.playRange.stopPoint[1] >= 0 )
+            (mTrackerState.playRange.stopPoint[0] >= 0 && mTrackerState.playRange.stopPoint[1] >= 0 )
             &&
             (
-            mSeqState.playRange.stopPoint[0] > tmpPat->getRowCount() ||
-            mSeqState.playRange.stopPoint[1] > tmpPat->getColCount() ||
-            mSeqState.playRange.stopPoint[0] < mSeqState.playRange.startPoint[0] ||
-            mSeqState.playRange.stopPoint[1] < mSeqState.playRange.startPoint[1]
+            mTrackerState.playRange.stopPoint[0] > tmpPat->getRowCount() ||
+            mTrackerState.playRange.stopPoint[1] > tmpPat->getColCount() ||
+            mTrackerState.playRange.stopPoint[0] < mTrackerState.playRange.startPoint[0] ||
+            mTrackerState.playRange.stopPoint[1] < mTrackerState.playRange.startPoint[1]
             )
         )
         {
             Log("[error] playRange StopPoint out of bounds! row:%d, col:%d",
-                mSeqState.playRange.stopPoint[0], mSeqState.playRange.stopPoint[1]);
-            mSeqState.playRange.active = false;
+                mTrackerState.playRange.stopPoint[0], mTrackerState.playRange.stopPoint[1]);
+            mTrackerState.playRange.active = false;
             return false;
 
         }
 
         dLog("[info] OPL3Controller PlayRange: %d, %d - %d, %d",
-             mSeqState.playRange.startPoint[0], mSeqState.playRange.startPoint[1],
-             mSeqState.playRange.stopPoint[0], mSeqState.playRange.stopPoint[1]
+             mTrackerState.playRange.startPoint[0], mTrackerState.playRange.startPoint[1],
+             mTrackerState.playRange.stopPoint[0], mTrackerState.playRange.stopPoint[1]
         );
 
 
         //should be ok we set at least the start Row
-        mSeqState.rowIdx = mSeqState.playRange.startPoint[0];
+        mTrackerState.rowIdx = mTrackerState.playRange.startPoint[0];
 
     } //playRange
     else {
@@ -1430,16 +1430,16 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
     // Calculate samples per tick
     if (ticks_per_sec > 0) {
         // At 125 BPM: 44100 / 50 = 882 samples per tick
-        mSeqState.samples_per_tick = hostRate / ticks_per_sec;
+        mTrackerState.samples_per_tick = hostRate / ticks_per_sec;
     } else {
-        mSeqState.samples_per_tick = hostRate;
+        mTrackerState.samples_per_tick = hostRate;
     }
 
 
 
     // Start Playback
-    mSeqState.playing = true;
-    mSeqState.ui_dirty = true;
+    mTrackerState.playing = true;
+    mTrackerState.ui_dirty = true;
 
     return true;
 }
@@ -1585,7 +1585,7 @@ bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename
 
     // 1. Calculate dimensions
     uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerRow;
-    uint32_t totalFrames = static_cast<uint32_t>(total_ticks * mSeqState.samples_per_tick);
+    uint32_t totalFrames = static_cast<uint32_t>(total_ticks * mTrackerState.samples_per_tick);
     int sampleRate = 44100;
     int chunkSize = 4096;
 
@@ -1594,7 +1594,7 @@ bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename
     std::vector<float> f32ExportBuffer(totalFrames * 2);
     int framesProcessed = 0;
 
-    mSeqState.sample_accumulator = 0;
+    mTrackerState.sample_accumulator = 0;
     m_pos = 0;
 
     // 3. Generation Loop

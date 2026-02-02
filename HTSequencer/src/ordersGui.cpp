@@ -12,7 +12,7 @@
  *  Like DrawFancyOrderList but vertical, no append button or header caption,
  *  small colored pattern with index only name via tooltip
  */
-void SequencerGui::DrawMiniOrderList(SongData& song, int currentIndex, float buttonSize, ImVec2 controlSize) {
+void OhmfluxTrackerGui::DrawMiniOrderList(SongData& song, int currentIndex, float buttonSize, ImVec2 controlSize) {
     static int move_from = -1, move_to = -1;
     int delete_idx = -1, insert_idx = -1;
 
@@ -126,7 +126,7 @@ void SequencerGui::DrawMiniOrderList(SongData& song, int currentIndex, float but
 //------------------------------------------------------------------------------
 // DrawFancyOrderList
 //------------------------------------------------------------------------------
-void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 controlSize) {
+void OhmfluxTrackerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 controlSize) {
 
     if (standAlone) {
         ImGui::SetNextWindowSize(ImVec2(250, 200), ImGuiCond_FirstUseEver);
@@ -163,7 +163,7 @@ void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 co
         uint8_t& patIdx = song.orderList[n];
         Pattern& pat = song.patterns[patIdx];
 
-        isCurrent = isPlaying() && n == getMain()->getController()->getSequencerState().orderIdx ;
+        isCurrent = isPlaying() && n == getMain()->getController()->getTrackerState().orderIdx ;
 
         ImGui::PushID(n);
 
@@ -279,7 +279,7 @@ void SequencerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 co
 
 }
 //------------------------------------------------------------------------------
-void SequencerGui::DrawOrderListEditor(SongData& song) {
+void OhmfluxTrackerGui::DrawOrderListEditor(SongData& song) {
     // Action trackers to prevent modifying vector during iteration
     int delete_idx = -1;
     int insert_idx = -1;

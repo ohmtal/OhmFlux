@@ -13,7 +13,7 @@ constexpr float CellHeight = 22.f;
 ImVec2 cellSize = {50, CellHeight};
 
 //------------------------------------------------------------------------------
-void SequencerGui::DrawExportStatus() {
+void OhmfluxTrackerGui::DrawExportStatus() {
     // Check if the thread task exists
     if (mCurrentExport == nullptr) return;
 
@@ -47,7 +47,7 @@ void SequencerGui::DrawExportStatus() {
     }
 }
 //------------------------------------------------------------------------------
-void SequencerGui::RenderSequencerUI(bool standAlone)
+void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
 {
 
     ImFlux::ButtonParams bparams = ImFlux::DEFAULT_BUTTON;
@@ -62,7 +62,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     if (!controller)
         return;
 
-    const OPL3Controller::SequencerState& lSeqState = getMain()->getController()->getSequencerState();
+    const OPL3Controller::TrackerState& lSeqState = getMain()->getController()->getTrackerState();
 
 //
     DrawExportStatus();
@@ -73,7 +73,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         // ImGui::SetNextWindowSize(ImVec2(1100, 600), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 300.0f), ImVec2(FLT_MAX, FLT_MAX));
         //NOTE added flags (table madness ) ==
-        if (!ImGui::Begin("Sequencer")) //, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse))
+        if (!ImGui::Begin("Pattern Editor")) //, nullptr, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollWithMouse))
             { ImGui::End(); return; }
     }
 
@@ -263,11 +263,11 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
         if (mPatternEditorState.currentPatternIdx >= 0) {
 
             if (isPlaying()) {
-                if ( getMain()->getController()->getSequencerStateMutable()->playRange.active)
+                if ( getMain()->getController()->getTrackerStateMutable()->playRange.active)
                 {
-                    mPatternEditorState.currentPatternIdx = getMain()->getController()->getSequencerStateMutable()->playRange.patternIdx;
+                    mPatternEditorState.currentPatternIdx = getMain()->getController()->getTrackerStateMutable()->playRange.patternIdx;
                 } else {
-                    int orderIdx = getMain()->getController()->getSequencerState().orderIdx;
+                    int orderIdx = getMain()->getController()->getTrackerState().orderIdx;
                     mPatternEditorState.currentPatternIdx = mCurrentSong.orderList[orderIdx];
                 }
             }
@@ -313,7 +313,7 @@ void SequencerGui::RenderSequencerUI(bool standAlone)
     if (standAlone) ImGui::End();
 }
 // //------------------------------------------------------------------------------
-void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
+void OhmfluxTrackerGui::DrawStepCellPopup(PatternEditorState& state) {
     if (state.showContextRequest) {
         ImGui::OpenPopup("PatternCellContext");
         state.showContextRequest = false; // Reset the flag immediately
@@ -438,7 +438,7 @@ void SequencerGui::DrawStepCellPopup(PatternEditorState& state) {
     }
 }
 //------------------------------------------------------------------------------
-void SequencerGui::ActionPatternEditor(PatternEditorState& state)
+void OhmfluxTrackerGui::ActionPatternEditor(PatternEditorState& state)
 {
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) {
         // 1. Capture modifier state
@@ -533,7 +533,7 @@ void SequencerGui::ActionPatternEditor(PatternEditorState& state)
 }
 
 //------------------------------------------------------------------------------
-void SequencerGui::DrawPatternEditor( PatternEditorState& state) {
+void OhmfluxTrackerGui::DrawPatternEditor( PatternEditorState& state) {
     if (!state.pattern)
         return;
 
@@ -908,7 +908,7 @@ std::string GetStepText(SongStep& step, bool enhanced)
 }
 
 //------------------------------------------------------------------------------
-void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, int col, PatternEditorState& state) {
+void OhmfluxTrackerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, int col, PatternEditorState& state) {
 
     ImGui::PushID(row * 1000 + col);
 
@@ -1118,7 +1118,7 @@ void SequencerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, 
     ImGui::PopID();
 }
 //------------------------------------------------------------------------------
-void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState& state) {
+void OhmfluxTrackerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState& state) {
 
     static bool sShowNewPatternPopup = false;
 
@@ -1320,7 +1320,7 @@ void SequencerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState&
 
 }
 //------------------------------------------------------------------------------
-bool SequencerGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings& settings) {
+bool OhmfluxTrackerGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings& settings) {
     bool result = false;
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.f,8.f));

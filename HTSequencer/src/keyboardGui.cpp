@@ -76,7 +76,7 @@ int /*SequencerGui::*/getPianoMapOffset(SDL_Scancode scancode) {
     }
 }
 //------------------------------------------------------------------------------
-uint8_t SequencerGui::getCurrentChannel(){
+uint8_t OhmfluxTrackerGui::getCurrentChannel(){
 
 
     if ( getCurrentPattern() )
@@ -86,7 +86,7 @@ uint8_t SequencerGui::getCurrentChannel(){
     return 0;
 }
 //------------------------------------------------------------------------------
-bool SequencerGui::setCurrentChannel(uint8_t channel){
+bool OhmfluxTrackerGui::setCurrentChannel(uint8_t channel){
     if (channel >= SOFTWARE_CHANNEL_COUNT)
         return false;
 
@@ -98,7 +98,7 @@ bool SequencerGui::setCurrentChannel(uint8_t channel){
     return true;
 }
 //------------------------------------------------------------------------------
-bool SequencerGui::stopPlayedNotes( )
+bool OhmfluxTrackerGui::stopPlayedNotes( )
 {
     for (uint8_t i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
     {
@@ -109,7 +109,7 @@ bool SequencerGui::stopPlayedNotes( )
 }
 
 
-bool SequencerGui::stopNote(uint8_t softwareChannel)
+bool OhmfluxTrackerGui::stopNote(uint8_t softwareChannel)
 {
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
         return false;
@@ -137,7 +137,7 @@ bool SequencerGui::stopNote(uint8_t softwareChannel)
 //------------------------------------------------------------------------------
 int moveSchedId = -1;
 
-bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
+bool OhmfluxTrackerGui::playNote(uint8_t softwareChannel,  SongStep step)
 {
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
         return false;
@@ -204,7 +204,7 @@ bool SequencerGui::playNote(uint8_t softwareChannel,  SongStep step)
 //------------------------------------------------------------------------------
 
 
-void SequencerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
+void OhmfluxTrackerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
     // Ignore OS key repeats to prevent re-triggering FM envelopes
     if (event.repeat) return;
 
@@ -334,7 +334,7 @@ namespace chords {
 
 
 //------------------------------------------------------------------------------
-void SequencerGui::RenderScalePlayerUI(bool standAlone) {
+void OhmfluxTrackerGui::RenderScalePlayerUI(bool standAlone) {
     if (standAlone) {
         ImGui::SetNextWindowSize(ImVec2(520, 450), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("Scale Player")) { ImGui::End(); return; }
@@ -422,7 +422,7 @@ void SequencerGui::RenderScalePlayerUI(bool standAlone) {
     if (standAlone) ImGui::End();
 }
 //------------------------------------------------------------------------------
-void SequencerGui::RenderPianoUI(bool standAlone)
+void OhmfluxTrackerGui::RenderPianoUI(bool standAlone)
 {
 
 

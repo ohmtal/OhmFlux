@@ -14,7 +14,7 @@ class SequencerMain : public FluxMain
     typedef FluxMain Parent;
 private:
 
-    SequencerGui* mSeqGui = nullptr;
+    OhmfluxTrackerGui* mSeqGui = nullptr;
 
     OPL3Controller* mController = nullptr;
 
@@ -23,7 +23,7 @@ public:
     ~SequencerMain() {}
 
 
-    SequencerGui* getGui() { return mSeqGui; };
+    OhmfluxTrackerGui* getGui() { return mSeqGui; };
     OPL3Controller* getController() { return mController; };
 
     bool Initialize() override
@@ -37,7 +37,7 @@ public:
             return false;
         }
 
-        mSeqGui = new SequencerGui();
+        mSeqGui = new OhmfluxTrackerGui();
         if (!mSeqGui->Initialize())
             return false;
 

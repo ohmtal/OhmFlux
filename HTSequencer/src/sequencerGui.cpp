@@ -44,7 +44,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 }
 
 //------------------------------------------------------------------------------
-bool SequencerGui::Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank) {
+bool OhmfluxTrackerGui::Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank) {
     if (bank.empty()) return false;
 
     bool changed = false;
@@ -109,7 +109,7 @@ bool SequencerGui::Widget_InstrumentCombo(uint16_t& currentIdx, const std::vecto
 }
 
 //------------------------------------------------------------------------------
-void SequencerGui::ShowFileManager(){
+void OhmfluxTrackerGui::ShowFileManager(){
     if (g_FileDialog.Draw()) {
         if (g_FileDialog.mSaveMode)
         {
@@ -245,7 +245,7 @@ void SequencerGui::ShowFileManager(){
                     if (!lIsImportBank) {
                         mCurrentSongFileName = g_FileDialog.selectedFile;
                         // focus Sequencer
-                        ImGui::SetWindowFocus("Sequencer");
+                        ImGui::SetWindowFocus("Pattern Editor");
                     }
 
                 } else {
@@ -272,13 +272,13 @@ void SequencerGui::ShowFileManager(){
     }
 }
 //------------------------------------------------------------------------------
-void SequencerGui::Update(const double& dt)
+void OhmfluxTrackerGui::Update(const double& dt)
 {
     if (mCurrentExport != nullptr) return; // not while we exporting!
     getMain()->getController()->consoleSongOutput(false);
 }
 //------------------------------------------------------------------------------
-bool SequencerGui::Initialize()
+bool OhmfluxTrackerGui::Initialize()
 {
     std::string lSettingsFile =
         getMain()->mSettings.getPrefsPath()
@@ -372,7 +372,7 @@ bool SequencerGui::Initialize()
     return true;
 }
 //------------------------------------------------------------------------------
-void SequencerGui::Deinitialize()
+void OhmfluxTrackerGui::Deinitialize()
 {
 
     SDL_SetLogOutputFunction(nullptr, nullptr);
@@ -416,7 +416,7 @@ void SequencerGui::Deinitialize()
 
 }
 //------------------------------------------------------------------------------
-void SequencerGui::onEvent(SDL_Event event)
+void OhmfluxTrackerGui::onEvent(SDL_Event event)
 {
     mGuiGlue->onEvent(event);
 
@@ -429,7 +429,7 @@ void SequencerGui::onEvent(SDL_Event event)
 
 }
 //------------------------------------------------------------------------------
-void SequencerGui::DrawMsgBoxPopup() {
+void OhmfluxTrackerGui::DrawMsgBoxPopup() {
 
     if (POPUP_MSGBOX_ACTIVE) {
         ImGui::OpenPopup(POPUP_MSGBOX_CAPTION.c_str());
@@ -452,7 +452,7 @@ void SequencerGui::DrawMsgBoxPopup() {
     }
 }
 //------------------------------------------------------------------------------
-void SequencerGui::ShowMenuBar()
+void OhmfluxTrackerGui::ShowMenuBar()
 {
 
     if (ImGui::BeginMainMenuBar())
@@ -465,11 +465,11 @@ void SequencerGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::MenuItem("Sequencer", NULL, &mSettings.ShowSongGui);
+            ImGui::MenuItem("Pattern Editor", NULL, &mSettings.ShowPatternGui);
             ImGui::MenuItem("Sound Bank", NULL, &mSettings.ShowSoundBankList);
-            ImGui::MenuItem("Instrument Editor", NULL, &mSettings.ShowFMEditor);
+            ImGui::MenuItem("Instrument Editor", NULL, &mSettings.ShowInsEditor);
             ImGui::MenuItem("Digital Sound Processing", NULL, &mSettings.ShowDSP);
-            ImGui::MenuItem("Play List Window", NULL, &mSettings.ShowPlayList);
+            ImGui::MenuItem("Playlist [orders]", NULL, &mSettings.ShowPlayList);
             ImGui::Separator();
             ImGui::MenuItem("Piano", NULL, &mSettings.ShowPiano);
             ImGui::MenuItem("Scale Player", NULL, &mSettings.ShowScalePlayer);
@@ -512,7 +512,7 @@ void SequencerGui::ShowMenuBar()
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void SequencerGui::DrawGui()
+void OhmfluxTrackerGui::DrawGui()
 {
 
     mGuiGlue->DrawBegin();
@@ -538,7 +538,7 @@ void SequencerGui::DrawGui()
         RenderInstrumentListUI(true);
         ImGui::PopStyleVar(2);
     }
-    if (mSettings.ShowFMEditor) {
+    if (mSettings.ShowInsEditor) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 12.0f);
         RenderInstrumentEditorUI(true);
@@ -563,9 +563,9 @@ void SequencerGui::DrawGui()
 
     //... LAST FOR FOCUS ....
     mPatternEditorState.visible = false;
-    if (mSettings.ShowSongGui) {
+    if (mSettings.ShowPatternGui) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
-        RenderSequencerUI(true);
+        RenderPatternUI(true);
         ImGui::PopStyleVar();
 
     }
@@ -578,7 +578,7 @@ void SequencerGui::DrawGui()
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void SequencerGui::onKeyEvent(SDL_KeyboardEvent event)
+void OhmfluxTrackerGui::onKeyEvent(SDL_KeyboardEvent event)
 {
     // if ( mEditorSettings.mShowFMComposer )
     //     mFMComposer->onKeyEvent(event);
@@ -600,7 +600,7 @@ void SequencerGui::onKeyEvent(SDL_KeyboardEvent event)
 }
 
 //------------------------------------------------------------------------------
-void SequencerGui::InitDockSpace()
+void OhmfluxTrackerGui::InitDockSpace()
 {
     if (mSettings.EditorGuiInitialized)
         return; 
@@ -636,7 +636,7 @@ void SequencerGui::InitDockSpace()
     // ImGui::DockBuilderFinish(dockspace_id);
 }
 //------------------------------------------------------------------------------
-void SequencerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
+void OhmfluxTrackerGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 {
 
 

@@ -56,7 +56,7 @@ public:
         }
     };
 
-    struct SequencerState {
+    struct TrackerState {
         bool playing = false;
         bool loop = false;
 
@@ -195,8 +195,8 @@ public:
     }
 
 
-    const SequencerState& getSequencerState() const { return mSeqState; }
-    SequencerState* getSequencerStateMutable() { return &mSeqState; }
+    const TrackerState& getTrackerState() const { return mTrackerState; }
+    TrackerState* getTrackerStateMutable() { return &mTrackerState; }
 
     std::vector<std::unique_ptr<DSP::Effect>>& getDspEffects() {
         return mDspEffects;
@@ -258,12 +258,12 @@ public:
 
     bool playSong(SongData& songData, bool loop = false);
     bool songValid(const opl3::SongData& songData);
-    void stopSong(bool hardStop = false) { mSeqState.playing = false; silenceAll(hardStop);}
-    void continueSong() { mSeqState.playing = true;}
-    bool isPlaying() { return mSeqState.playing;}
-    bool isPlayingSong() { return mSeqState.playing && mSeqState.playRange.active == false; }
-    void setLoop(bool value) { mSeqState.loop = value; }
-    bool getLoop() { return mSeqState.loop;}
+    void stopSong(bool hardStop = false) { mTrackerState.playing = false; silenceAll(hardStop);}
+    void continueSong() { mTrackerState.playing = true;}
+    bool isPlaying() { return mTrackerState.playing;}
+    bool isPlayingSong() { return mTrackerState.playing && mTrackerState.playRange.active == false; }
+    void setLoop(bool value) { mTrackerState.loop = value; }
+    bool getLoop() { return mTrackerState.loop;}
 
 
 
@@ -355,7 +355,7 @@ public:
 
 
 protected:
-    SequencerState mSeqState;
+    TrackerState mTrackerState;
 
 
 
