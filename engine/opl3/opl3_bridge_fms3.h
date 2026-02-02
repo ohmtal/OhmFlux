@@ -278,10 +278,12 @@ namespace opl3_bridge_fms3 {
         }
 
 
-        std::ofstream ofs(filePath, std::ios::binary);
+        std::ofstream ofs; // (filePath, std::ios::binary);
         ofs.exceptions(std::ofstream::badbit | std::ofstream::failbit);
 
         try {
+            ofs.open(filePath, std::ios::binary);
+
             if (!ofs.is_open()) {
                 addError(std::format("Can't open File {} for write.", filePath));
                 return false;
@@ -367,10 +369,11 @@ namespace opl3_bridge_fms3 {
                 bool withDspSettings = true
         ) {
         errors = "";
-        std::ifstream ifs(filePath, std::ios::binary);
+        std::ifstream ifs; //(filePath, std::ios::binary);
         ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
 
         try {
+            ifs.open(filePath, std::ios::binary);
             if (!ifs.is_open()) {
                 addError(std::format("Can't open File {} for read.", filePath));
                 return false;
@@ -554,10 +557,11 @@ namespace opl3_bridge_fms3 {
             return false;
         }
 
-        std::ofstream ofs(filePath, std::ios::binary);
+        std::ofstream ofs; //(filePath, std::ios::binary);
         ofs.exceptions(std::ofstream::badbit | std::ofstream::failbit);
 
         try {
+            ofs.open(filePath, std::ios::binary);
             if (!ofs.is_open()) {
                 addError(std::format("Can't open File {} for write.", filePath));
                 return false;
@@ -600,10 +604,11 @@ namespace opl3_bridge_fms3 {
     // ------------- loadBank
     bool loadBank(const std::string& filePath, std::vector<opl3::Instrument>& bank) {
         errors = "";
-        std::ifstream ifs(filePath, std::ios::binary);
+        std::ifstream ifs; //(filePath, std::ios::binary);
         ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
 
         try {
+            ifs.open(filePath, std::ios::binary);
             if (!ifs.is_open()) {
                 addError(std::format("Can't open File {} for read.", filePath));
                 return false;
