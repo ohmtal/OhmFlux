@@ -27,6 +27,7 @@ A lightweight, high-performance,  modern C++ game engine With ongoing optimizati
 - **TicTacToeDemo**: A classic logic game implementation demonstrating the engine's UI and grid capabilities.
 - **TestBed**: A sandbox environment for testing new engine features and particle presets.
 
+---
 
 ## 📎 Libraries used in this project: 
 - OpenGL
