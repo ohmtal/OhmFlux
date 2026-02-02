@@ -62,7 +62,7 @@ set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
 set(IMGGUITEST_DIR "${CMAKE_CURRENT_LIST_DIR}/ImguiTest")
 set(EDITOR_DIR "${CMAKE_CURRENT_LIST_DIR}/FluxEditor")
-set(HTSEQ_DIR "${CMAKE_CURRENT_LIST_DIR}/HTSequencer")
+set(FLUXTRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmFluxTracker")
 
 # =============================================================================
 # <<<< PROJECTS SECTION
@@ -447,22 +447,22 @@ if(BUILD_EDITOR)
 endif()
 
 
-# --- HT-Sequencer ---
-option(BUILD_HT_SEQ "Build HT-Sequencer" ON)
-if(BUILD_HT_SEQ)
-    set(GAME_SOURCES
-        "${HTSEQ_DIR}/src/main.cpp"
-        "${HTSEQ_DIR}/src/sequencerGui.cpp"
-        "${HTSEQ_DIR}/src/dspGui.cpp"
-        "${HTSEQ_DIR}/src/bankGui.cpp"
-        "${HTSEQ_DIR}/src/songGui.cpp"
-        "${HTSEQ_DIR}/src/songFunc.cpp"
-        "${HTSEQ_DIR}/src/keyboardGui.cpp"
-        "${HTSEQ_DIR}/src/fancyOverlays.cpp"
-        "${HTSEQ_DIR}/src/ordersGui.cpp"
-        # not! "${HTSEQ_DIR}/src/ImFileDialog/ImFileDialog.cpp"
+# --- OhmFlux Tracker ---
+option(BUILD_FLUXTRACKER "Build OhmFlux Tracker" ON)
+if(BUILD_FLUXTRACKER)
+    set(TRACKER_SOURCES
+        "${FLUXTRACKER_DIR}/src/main.cpp"
+        "${FLUXTRACKER_DIR}/src/trackerGui.cpp"
+        "${FLUXTRACKER_DIR}/src/dspGui.cpp"
+        "${FLUXTRACKER_DIR}/src/bankGui.cpp"
+        "${FLUXTRACKER_DIR}/src/songGui.cpp"
+        "${FLUXTRACKER_DIR}/src/songFunc.cpp"
+        "${FLUXTRACKER_DIR}/src/keyboardGui.cpp"
+        "${FLUXTRACKER_DIR}/src/fancyOverlays.cpp"
+        "${FLUXTRACKER_DIR}/src/ordersGui.cpp"
+        # not! "${FLUXTRACKER_DIR}/src/ImFileDialog/ImFileDialog.cpp"
     )
-    configure_demo_target(HT-Sequencer ${HTSEQ_DIR} "${HTSEQ_DIR}/assets@assets" "${GAME_SOURCES}")
+    configure_demo_target(OhmFluxTracker ${FLUXTRACKER_DIR} "${FLUXTRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
 endif()
 
 

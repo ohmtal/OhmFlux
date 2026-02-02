@@ -1,5 +1,5 @@
-#include "sequencerGui.h"
-#include "sequencerMain.h"
+#include "ohmfluxTrackerGui.h"
+#include "ohmfluxTrackerMain.h"
 #include <imgui_internal.h>
 
 
@@ -39,7 +39,7 @@ const char* channelNames[] = {
 };
 
 
-int /*SequencerGui::*/getPianoMapOffset(SDL_Scancode scancode) {
+int getPianoMapOffset(SDL_Scancode scancode) {
     switch (scancode) {
 
         // --- Lower Octave (Physical Bottom Row) ---

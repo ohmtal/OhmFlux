@@ -5,25 +5,25 @@
 
 #include <fluxMain.h>
 #include <OPL3Controller.h>
-#include "sequencerGui.h"
+#include "ohmfluxTrackerGui.h"
 
 
 
-class SequencerMain : public FluxMain
+class OhmFluxTrackerMain : public FluxMain
 {
     typedef FluxMain Parent;
 private:
 
-    OhmfluxTrackerGui* mSeqGui = nullptr;
+    OhmfluxTrackerGui* mTrackerGui = nullptr;
 
     OPL3Controller* mController = nullptr;
 
 public:
-    SequencerMain() {}
-    ~SequencerMain() {}
+    OhmFluxTrackerMain() {}
+    ~OhmFluxTrackerMain() {}
 
 
-    OhmfluxTrackerGui* getGui() { return mSeqGui; };
+    OhmfluxTrackerGui* getGui() { return mTrackerGui; };
     OPL3Controller* getController() { return mController; };
 
     bool Initialize() override
@@ -37,8 +37,8 @@ public:
             return false;
         }
 
-        mSeqGui = new OhmfluxTrackerGui();
-        if (!mSeqGui->Initialize())
+        mTrackerGui = new OhmfluxTrackerGui();
+        if (!mTrackerGui->Initialize())
             return false;
 
         // FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED =  SDL_RegisterEvents(1);
@@ -65,8 +65,8 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        mSeqGui->Deinitialize();
-        SAFE_DELETE(mSeqGui);
+        mTrackerGui->Deinitialize();
+        SAFE_DELETE(mTrackerGui);
 
         mController->shutDownController();
         SAFE_DELETE(mController);
@@ -81,7 +81,7 @@ public:
         if (event.key == SDLK_F4 && isAlt  && isKeyUp)
             TerminateApplication();
         else
-            mSeqGui->onKeyEvent(event);
+            mTrackerGui->onKeyEvent(event);
 
 
     }
@@ -90,20 +90,20 @@ public:
     //--------------------------------------------------------------------------------------
     void onEvent(SDL_Event event) override
     {
-        mSeqGui->onEvent(event);
+        mTrackerGui->onEvent(event);
     }
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
         Parent::Update(dt);
-        if (mSeqGui)
-            mSeqGui->Update(dt);
+        if (mTrackerGui)
+            mTrackerGui->Update(dt);
     }
     //--------------------------------------------------------------------------------------
     // imGui must be put in here !!
     void onDrawTopMost() override
     {
-        mSeqGui->DrawGui();
+        mTrackerGui->DrawGui();
     }
     //--------------------------------------------------------------------------------------
 
@@ -111,6 +111,6 @@ public:
 
 }; //class
 
-extern SequencerMain* g_SeqMain;
-SequencerMain* getMain();
+extern OhmFluxTrackerMain* g_TrackerMain;
+OhmFluxTrackerMain* getMain();
 

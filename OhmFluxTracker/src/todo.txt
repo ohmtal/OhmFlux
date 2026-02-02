@@ -21,7 +21,7 @@ TODO Version 1 (i do not use 0 this time):
  [ ] keyboard shortcuts ... cleanup !!!
      * some are in keyboardGui,
      * some in songGui
-     * and ESC is handles in sequencerGui
+     * and ESC is handles in ohmFluxTrackerGui
 
 [ ] Editing
  [ ] paste to a new pattern

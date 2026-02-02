@@ -12,7 +12,7 @@
 #include <gui/ImConsole.h>
 #include <gui/ImFlux.h>
 #include <DSP.h>
-#include "sequencerGlobals.h"
+#include "ohmfluxTrackerGlobals.h"
 #include <opl3_base.h>
 #include <OPL3Tests.h>
 
@@ -288,7 +288,7 @@ private:
 
 
 
-    // ------- songGui / Sequencer ---------
+    // ------- songGui / Tracker ---------
     bool mLiveInsert = false; // TODO IMPORTANT! (see also songGui todo's )
 
     void callSaveSong();
@@ -362,7 +362,7 @@ public:
 
     bool isPlaying();
     uint16_t getPlayingRow();
-    uint16_t getPlayingSequenceIndex();
+    uint16_t getPlayingOrderIndex();
 
     bool Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank);
 

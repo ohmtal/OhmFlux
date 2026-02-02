@@ -1,5 +1,5 @@
-#include "sequencerGui.h"
-#include "sequencerMain.h"
+#include "ohmfluxTrackerGui.h"
+#include "ohmfluxTrackerMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -25,7 +25,7 @@ bool OhmfluxTrackerGui::isPlaying() {
 uint16_t OhmfluxTrackerGui::getPlayingRow() {
     return getMain()->getController()->getTrackerState().rowIdx;
 }
-uint16_t OhmfluxTrackerGui::getPlayingSequenceIndex() {
+uint16_t OhmfluxTrackerGui::getPlayingOrderIndex() {
     return getMain()->getController()->getTrackerState().orderIdx;
 }
 
@@ -37,7 +37,7 @@ bool OhmfluxTrackerGui::playSong() {
 //------------------------------------------------------------------------------
 bool OhmfluxTrackerGui::playSelected(PatternEditorState& state, bool forcePatternPlay)
 {
-    OPL3Controller::PlaySequencePatternRange& lPlayRange = getMain()->getController()->getTrackerStateMutable()->playRange;
+    OPL3Controller::PlayPatternRange& lPlayRange = getMain()->getController()->getTrackerStateMutable()->playRange;
 
     lPlayRange.init();
     lPlayRange.active = true;
@@ -99,41 +99,6 @@ opl3::Pattern* OhmfluxTrackerGui::getCurrentPattern()
     // Return the memory address of the pattern in the vector
     return &song.patterns[state.currentPatternIdx];
 }
-//------------------------------------------------------------------------------
-//FIXME songdata or pattern ... not sure ....
-//    - Pattern is less overhead
-//    - SongData can also be saved!
-//    - pattern can be created with the right size
-//    i think pattern won :P //FIXME TODO !!!
-// opl3::SongData SequencerGui::CreateTempSelection(const opl3::Pattern& activePattern, const PatternEditorState& state) {
-//     SongData temp;
-//     int minR = std::min(state.selectStartRow, state.selectEndRow);
-//     int maxR = std::max(state.selectStartRow, state.selectEndRow);
-//
-//     Pattern subPattern;
-//     subPattern.mName = "SelectionClip";
-//
-//     // Resize to accommodate the selected rows
-//     auto& steps = subPattern.getStepsMutable();
-//     int rowCount = (maxR - minR) + 1;
-//     steps.resize(rowCount * SOFTWARE_CHANNEL_COUNT);
-//
-//     for (int r = minR; r <= maxR; r++) {
-//         for (int c = 0; c < SOFTWARE_CHANNEL_COUNT; c++) {
-//             if (state.isSelected(r, c)) {
-//                 steps[(r - minR) * SOFTWARE_CHANNEL_COUNT + c] = activePattern.getStep(r, c);
-//             } else {
-//                 // Fill unselected channels in the range with empty notes
-//                 steps[(r - minR) * SOFTWARE_CHANNEL_COUNT + c].note = 255;
-//             }
-//         }
-//     }
-//
-//     temp.patterns.push_back(subPattern);
-//     temp.orderList.push_back(0);
-//     return temp;
-// }
-//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 bool OhmfluxTrackerGui::exportSongToWav(std::string filename)
 {
@@ -402,10 +367,6 @@ void OhmfluxTrackerGui::copyStepsToClipboard(PatternEditorState& state, PatternC
     dLog("[info] Clipboard:Copied %d x %d area", cb.rows, cb.cols);
 }
 //------------------------------------------------------------------------------
-/**
- * SequencerGui::deletePattern(opl3::SongData& song, int patternIndex)
- * you can check delete progress with FluxSchedule.isPending(mDeletePatternScheduleId)
- */
 
 bool OhmfluxTrackerGui::deletePatternIsPending() {
     return FluxSchedule.isPending(mDeletePatternScheduleId);

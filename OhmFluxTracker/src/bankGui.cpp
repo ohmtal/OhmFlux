@@ -1,5 +1,5 @@
-#include "sequencerGui.h"
-#include "sequencerMain.h"
+#include "ohmfluxTrackerGui.h"
+#include "ohmfluxTrackerMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -998,20 +998,11 @@ void OhmfluxTrackerGui::RenderInstrumentEditorUI(bool standAlone) {
                     pair.panning = (uint8_t)panIdx;
                 }
 
-                // make no sense :P
-                // SongStep lastStep = getMain()->getController()->getSequencerState().last_steps[0];
-                // static uint8_t lPanning = 32; // Center default
-                // if (getMain()->getController()->getSequencerState().ui_dirty)
-                // {
-                //     lPanning = lastStep.panning;
-                // }
-                // DrawPanningMeter(ImVec2(ImGui::GetContentRegionAvail().x, 20), lPanning);
-
                 ImGui::EndTable();
             }
 
 
-            // --- SECTION 3: CARRIER ---
+            // --- SECTION CARRIER ---
             ImGui::TableSetColumnIndex(2);
             ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "CARRIER (Op %d)", opIdCar);
             ImGui::Separator();

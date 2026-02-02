@@ -1,5 +1,5 @@
-#include "sequencerGui.h"
-#include "sequencerMain.h"
+#include "ohmfluxTrackerGui.h"
+#include "ohmfluxTrackerMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>

@@ -1,5 +1,5 @@
-#include "sequencerGui.h"
-#include "sequencerMain.h"
+#include "ohmfluxTrackerGui.h"
+#include "ohmfluxTrackerMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -62,7 +62,7 @@ void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
     if (!controller)
         return;
 
-    const OPL3Controller::TrackerState& lSeqState = getMain()->getController()->getTrackerState();
+    const OPL3Controller::TrackerState& lTrackerState = getMain()->getController()->getTrackerState();
 
 //
     DrawExportStatus();
@@ -80,10 +80,6 @@ void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
 
     char nameBuf[256];
     strncpy(nameBuf, mCurrentSong.title.c_str(), sizeof(nameBuf));
-
-    // ImGui::TextColored(ImVec4(0.0f, 0.8f, 1.0f, 1.0f), "Sequencer");
-
-
 
     //--------------- BUTTONS !! ------------------------
     ImGui::BeginGroup( /*LEFT_TOP_CONTENT*/ );
@@ -166,7 +162,7 @@ void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
 
     if (isPlaying())
     {
-        ImFlux::LCDText(std::format("{:16} {:03}",getCurrentPattern()->mName, lSeqState.rowIdx) , 20, 14.f, IM_COL32(240,240,0, 255), true );
+        ImFlux::LCDText(std::format("{:16} {:03}",getCurrentPattern()->mName, lTrackerState.rowIdx) , 20, 14.f, IM_COL32(240,240,0, 255), true );
     } else {
        ImFlux::LCDText(mCurrentSong.title + " - " + lSongFileName, 20, 14.f, IM_COL32(0,240,240, 255) );
     }
@@ -236,7 +232,7 @@ void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
     }
     if (ImGui::BeginChild("##DrawMiniOrderList_BOX",ImVec2(0,lMiniBoxHeight), ImGuiChildFlags_Borders)) {
             DrawMiniOrderList(mCurrentSong,
-                              controller->isPlayingSong() ? lSeqState.orderIdx : -1
+                              controller->isPlayingSong() ? lTrackerState.orderIdx : -1
                               ,  20.f, ImVec2(0,0));
     }
     ImGui::EndChild();
@@ -279,36 +275,8 @@ void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
 
         }
 
-
-
     } //PATTERN_Box
     ImGui::EndChild();
-
-
-
-
-    // if (isPlaying())
-    // {
-    //     std::string lChannelToNoteStates = "";
-    //     for (int i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
-    //         lChannelToNoteStates += std::format(" {:03}", getMain()->getController()->mChannelToNote[i]);
-    //     // ImGui::SameLine();
-    //
-    //     if (lSeqState.orderIdx < mCurrentSong.orderList.size())
-    //     {
-    //         ImGui::TextColored(ImColor4F(cl_AcidGreen),
-    //                            "SEQ: order:%d pat:%d row:%d ChannelNoteStates:%s"
-    //                            ,lSeqState.orderIdx
-    //                            ,mCurrentSong.orderList[lSeqState.orderIdx]
-    //                            ,lSeqState.rowIdx
-    //                            ,lChannelToNoteStates.c_str()
-    //         );
-    //     }
-    //
-    // }
-
-
-
 
     if (standAlone) ImGui::End();
 }

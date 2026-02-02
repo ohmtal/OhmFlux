@@ -1,5 +1,5 @@
-#include "sequencerGui.h"
-#include "sequencerMain.h"
+#include "ohmfluxTrackerGui.h"
+#include "ohmfluxTrackerMain.h"
 #include "fonts/fa.h"
 #include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
@@ -244,7 +244,7 @@ void OhmfluxTrackerGui::ShowFileManager(){
                     Log("Loaded Song:  %s", g_FileDialog.selectedFile.c_str());
                     if (!lIsImportBank) {
                         mCurrentSongFileName = g_FileDialog.selectedFile;
-                        // focus Sequencer
+                        // focus Pattern Editor
                         ImGui::SetWindowFocus("Pattern Editor");
                     }
 
@@ -909,38 +909,6 @@ void OhmfluxTrackerGui::OnConsoleCommand(ImConsole* console, const char* cmdline
                 Log("Soundbank %s exported",filename.c_str() );
         }
         else
-    // if (cmd == "savesong")
-    // {
-    //     if (mCurrentSong.patterns.size() == 0)
-    //     {
-    //         int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
-    //         if ( instrument < 0 )
-    //             instrument = mCurrentInstrumentId;
-    //         Log ("Using Instrument %d",instrument);
-    //         mCurrentSong = mOpl3Tests->createEffectTestSong(instrument);
-    //     }
-    //
-    //     // sync instruments from soundBank!
-    //     mCurrentSong.instruments = getMain()->getController()->getSoundBank();
-    //
-    //     LogFMT("\tPattern: {}\n\tInstruments: {}\n\tSequences: {}\n",
-    //            mCurrentSong.patterns.size(), mCurrentSong.instruments.size(),
-    //            mCurrentSong.orderList.size()
-    //     );
-    //
-    //
-    //     // Save the song data
-    //     std::string testFilePath = "./test_song.htseq";
-    //     bool saveSuccess = opl3_bridge_fms3::saveSong(testFilePath, mCurrentSong);
-    //     if (!saveSuccess) {
-    //         LogFMT("[error] Failed to save song data to {}", testFilePath);
-    //         Log("%s",opl3_bridge_fms3::errors.c_str());
-    //     }  else {
-    //         LogFMT("Song successfully saved to {}", testFilePath);
-    //     }
-    //
-    // }
-    // else
     if (cmd == "clearsong")
     {
         getMain()->getController()->stopSong(true);

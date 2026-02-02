@@ -39,8 +39,8 @@ using namespace opl3;
 class OPL3Controller
 {
 public:
-    // --------- SequencerState --------------
-    struct PlaySequencePatternRange {
+    // --------- TrackerState --------------
+    struct PlayPatternRange {
         bool active = false;
         uint16_t patternIdx = 0;
         // row , col !!
@@ -60,7 +60,7 @@ public:
         bool playing = false;
         bool loop = false;
 
-        PlaySequencePatternRange playRange;
+        PlayPatternRange playRange;
 
         // Position Tracking
         uint16_t orderIdx = 0;   // Current index in song.orderList
