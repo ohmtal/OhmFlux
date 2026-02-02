@@ -3,6 +3,9 @@
 #include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
+#include "fluxEditorGlobals.h"
+
+#include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
 
 //------------------------------------------------------------------------------
 bool EditorGui::Initialize()
@@ -32,14 +35,6 @@ bool EditorGui::Initialize()
     if (!mSfxEditor->Initialize())
         return false;
 
-    mFMEditor = new FluxFMEditor();
-    if (!mFMEditor->Initialize())
-        return false;
-
-    mFMComposer = new FluxComposer( mFMEditor->getController());
-    if (!mFMComposer->Initialize())
-        return false;
-
     // not centered ?!?!?! i guess center is not in place yet ?
     mBackground = new FluxRenderObject(getGame()->loadTexture("assets/fluxeditorback.png"));
     if (mBackground) {
@@ -57,8 +52,6 @@ bool EditorGui::Initialize()
 void EditorGui::Deinitialize()
 {
 
-    SAFE_DELETE(mFMComposer); //Composer before FMEditor !!!
-    SAFE_DELETE(mFMEditor);
     SAFE_DELETE(mSfxEditor);
     SAFE_DELETE(mGuiGlue);
 
@@ -75,10 +68,6 @@ void EditorGui::onEvent(SDL_Event event)
 
     if (mSfxEditor)
         mSfxEditor->onEvent(event);
-    if (mFMComposer)
-        mFMComposer->onEvent(event);
-    if (mFMEditor)
-        mFMEditor->onEvent(event);
 
 }
 //------------------------------------------------------------------------------
@@ -118,12 +107,12 @@ void EditorGui::ShowMenuBar()
         if (ImGui::BeginMenu("Window"))
         {
             ImGui::MenuItem("IMGui Demo", NULL, &mEditorSettings.mShowDemo);
+            ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mEditorSettings.mShowImFluxWidgets);
             ImGui::Separator();
             ImGui::MenuItem("Sound Effects Generator", NULL, &mEditorSettings.mShowSFXEditor);
             ImGui::Separator();
-            ImGui::MenuItem("FM Composer", NULL, &mEditorSettings.mShowFMComposer);
-            ImGui::MenuItem("FM Instrument Editor", NULL, &mEditorSettings.mShowFMInstrumentEditor);
-            // ImGui::MenuItem("FM Full Scale", NULL, &mEditorSettings.mShowCompleteScale);
+
+
 
 
             ImGui::EndMenu();
@@ -166,34 +155,22 @@ void EditorGui::DrawGui()
 
     if ( mEditorSettings.mShowDemo )
     {
-        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         ImGui::ShowDemoWindow();
     }
 
 
-    if ( mEditorSettings.mShowFMComposer ) {
-        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-        mFMComposer->DrawComposer();
-    }
-
-    if ( mEditorSettings.mShowFMInstrumentEditor ) {
-        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-        mFMEditor->DrawInstrumentEditor();
-    }
-
-    // if ( mParameter.mShowPianoScale ) {
-    //     // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
-    //     mFMEditor->DrawPianoScale();
-    // }
-
-    // if ( mEditorSettings.mShowCompleteScale ) {
-    //     mFMEditor->DrawScalePlayer();
-    // }
 
     if (mEditorSettings.mShowSFXEditor) {
-        // ImGui::SetNextWindowDockID(mGuiGlue->getDockSpaceId(), ImGuiCond_FirstUseEver);
         mSfxEditor->Draw();
     }
+
+    if (mEditorSettings.mShowImFluxWidgets) {
+        ImFlux::ShowCaseWidgets();
+    }
+
+
+
+
 
 
     DrawMsgBoxPopup();
@@ -206,43 +183,9 @@ void EditorGui::DrawGui()
 
         if (g_FileDialog.mSaveMode)
         {
-            if (!g_FileDialog.mCancelPressed)
-            {
-                if (g_FileDialog.mSaveExt == ".fms")
-                {
-                    if (g_FileDialog.selectedExt == "")
-                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                    mFMComposer->saveSong(g_FileDialog.selectedFile);
-                }
-                else
-                if (g_FileDialog.mSaveExt == ".fmi")
-                {
-                    if (g_FileDialog.selectedExt == "")
-                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                    mFMEditor->saveInstrument(g_FileDialog.selectedFile);
-                }
-                else
-                if (g_FileDialog.mSaveExt == ".fms.wav")
-                {
-                    if (g_FileDialog.selectedExt == "")
-                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
-                    mFMComposer->exportSongToWav(g_FileDialog.selectedFile);
-                }
-
-            }
-
-
-            //FIXME sfx
-            //reset
             g_FileDialog.reset();
         } else {
-            if ( g_FileDialog.selectedExt == ".fmi" )
-                mFMEditor->loadInstrument(g_FileDialog.selectedFile);
-            else
-            if ( g_FileDialog.selectedExt == ".fms" )
-                mFMComposer->loadSong(g_FileDialog.selectedFile);
 
-            //FIXME also load sfx here !!
         }
     }
 
@@ -256,8 +199,6 @@ void EditorGui::DrawGui()
 //------------------------------------------------------------------------------
 void EditorGui::onKeyEvent(SDL_KeyboardEvent event)
 {
-    if ( mEditorSettings.mShowFMComposer )
-        mFMComposer->onKeyEvent(event);
 }
 //------------------------------------------------------------------------------
 void EditorGui::InitDockSpace()
@@ -287,10 +228,10 @@ void EditorGui::InitDockSpace()
     dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.172f, nullptr, &dock_id_central);
 
     // Dock the Windows to these IDs
-    ImGui::DockBuilderDockWindow("FM Instrument Editor", dock_id_left);
+    // ImGui::DockBuilderDockWindow("FM Instrument Editor", dock_id_left);
     ImGui::DockBuilderDockWindow("File Browser", dock_id_right);
     ImGui::DockBuilderDockWindow("Sound Effects Generator", dock_id_central);
-    ImGui::DockBuilderDockWindow("FM Song Composer", dock_id_central);
+    // ImGui::DockBuilderDockWindow("FM Song Composer", dock_id_central);
 
 
     ImGui::DockBuilderFinish(dockspace_id);

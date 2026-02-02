@@ -25,24 +25,6 @@ public:
         if (!mEditorGui->Initialize())
             return false;
 
-        FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED =  SDL_RegisterEvents(1);
-        if (FLUX_EVENT_COMPOSER_OPL_CHANNEL_CHANGED == (Uint32)-1) {
-            Log("ERROR: Failed to register SDL/FLUX Event: FLUX_EVENT_OPL_CHANNEL_CHANGED !!!!");
-        }
-
-        FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED =  SDL_RegisterEvents(1);
-        if (FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED == (Uint32)-1) {
-            Log("ERROR: Failed to register SDL/FLUX Event: FLUX_EVENT_INSTRUMENT_OPL_CHANNEL_CHANGED !!!!");
-        }
-
-        FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED = SDL_RegisterEvents(1);
-        if (FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED == (Uint32)-1) {
-            Log("ERROR: Failed to register SDL/FLUX Event: FLUX_EVENT_INSTRUMENT_OPL_INSTRUMENT_NAME_CHANGED !!!!");
-        }
-
-
-
-
         return true;
     }
     //--------------------------------------------------------------------------------------

@@ -17,9 +17,6 @@
 #include <gui/fluxGuiGlue.h>
 
 #include "fluxSfxEditor.h"
-#include "fluxFMEditor.h"
-#include "fluxEditorGlobals.h"
-#include "fluxComposer.h"
 
 
 
@@ -32,10 +29,8 @@ public:
     struct EditorSettings {
         bool mShowDemo;
         bool mShowSFXEditor;
-        bool mShowFMInstrumentEditor;
-        bool mShowFMComposer;
-        bool mShowCompleteScale;
         bool mEditorGuiInitialized;
+        bool mShowImFluxWidgets;
     };
 
 
@@ -43,18 +38,14 @@ private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
     FluxSfxEditor* mSfxEditor = nullptr;
-    FluxFMEditor* mFMEditor = nullptr;
-    FluxComposer* mFMComposer = nullptr;
 
 
     EditorSettings mEditorSettings;
     EditorSettings mDefaultEditorSettings = {
         .mShowDemo = false,
         .mShowSFXEditor = true,
-        .mShowFMInstrumentEditor = true,
-        .mShowFMComposer = true,
-        .mShowCompleteScale = false,
-        .mEditorGuiInitialized = false
+        .mEditorGuiInitialized = false,
+        .mShowImFluxWidgets = false
     };
 
 public:
@@ -75,8 +66,6 @@ public:
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EditorGui::EditorSettings,
     mShowDemo,
     mShowSFXEditor,
-    mShowFMInstrumentEditor,
-    mShowFMComposer,
-    mShowCompleteScale,
-    mEditorGuiInitialized
+    mEditorGuiInitialized,
+    mShowImFluxWidgets
 )

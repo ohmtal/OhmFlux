@@ -107,9 +107,6 @@ set(ENGINE_SOURCES
     ${YMFM_DIR}/ymfm_pcm.cpp
     ${YMFM_DIR}/ymfm_ssg.cpp
 
-    #  --- opl ---
-    ${OPL_DIR}/OplController.cpp
-
     #  --- opl3 ---
     ${OPL3_DIR}/OPL3Controller.cpp
 
@@ -134,12 +131,15 @@ set(ENGINE_SOURCES
 set(FLUX_LIBS "")
 
 # -- box2D
-set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
-set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
-set(BOX2D_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-# add_subdirectory(engine/box2d)
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/engine/box2d" "${CMAKE_CURRENT_BINARY_DIR}/engine/box2d")
-
+option(WITH_BOX2D "with BOX2D Library" ON)
+if(WITH_BOX2D)
+    set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+    set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
+    set(BOX2D_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+    # add_subdirectory(engine/box2d)
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/engine/box2d" "${CMAKE_CURRENT_BINARY_DIR}/engine/box2d")
+    list(APPEND FLUX_LIBS box2d)
+endif()
 # <<<
 
 
@@ -232,7 +232,6 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${STB_DIR}>
     $<BUILD_INTERFACE:${BOX2D_DIR}/include>
     $<BUILD_INTERFACE:${YMFM_DIR}>
-    $<BUILD_INTERFACE:${OPL_DIR}>
     $<BUILD_INTERFACE:${OPL3_DIR}>
     $<BUILD_INTERFACE:${DSP_DIR}>
     $<BUILD_INTERFACE:${SFX_DIR}>
@@ -246,7 +245,7 @@ if(WIN32 AND NOT MSVC AND NOT EMSCRIPTEN AND NOT ANDROID)
     target_compile_definitions(ohmFlux_engine PUBLIC GLEW_STATIC)
 endif()
 
-target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile box2d)
+target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile)
 
 # ------------------- Compiler Flags -------------------
 # Add debug flag
@@ -352,7 +351,7 @@ endmacro()
 option(DISABLE_DEMOS "Disable all Demos" OFF)
 
 
-# --- 1. FishTank ---
+# --- FishTank ---
 option(BUILD_FISHTANK "Build FishTank demo" ON)
 if(BUILD_FISHTANK)
     set(GAME_SOURCES "${DEMO_DIR}/src/main.cpp")
@@ -366,14 +365,14 @@ if(BUILD_TICTACTOE)
     configure_demo_target(TicTacToeDemo ${TTT_DIR} "${TTT_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
-# --- 3. TestBed ---
+# --- TestBed ---
 option(BUILD_TESTBED "Build TestBed application" ON)
 if(BUILD_TESTBED)
     set(GAME_SOURCES "${TESTBED_DIR}/src/main.cpp")
     configure_demo_target(TestBed ${TESTBED_DIR} "${TESTBED_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
-# --- 4. LuaTest ---
+# --- LuaTest ---
 # Work in Progess
 option(BUILD_LUATEST "Build LuaTest application" OFF)
 
@@ -413,7 +412,7 @@ if(BUILD_LUATEST)
     target_compile_definitions(LuaTest PRIVATE SOL_ALL_SAFETIES_ON=1)
 endif()
 
-# --- 5. Amana ---
+# --- Amana ---
 option(BUILD_AMANA "Build Amana Game" ON)
 if(BUILD_AMANA)
     set(GAME_SOURCES
@@ -425,8 +424,8 @@ if(BUILD_AMANA)
 endif()
 
 
-# --- 6. ImguiTest ---
-option(BUILD_IMGGUITEST "Build ImguiTest application" ON)
+# --- ImguiTest ---
+option(BUILD_IMGGUITEST "Build ImguiTest application" OFF)
 if(BUILD_IMGGUITEST)
     set(GAME_SOURCES
         "${IMGGUITEST_DIR}/src/main.cpp"
@@ -437,7 +436,7 @@ endif()
 
 
 # --- Editor ---
-option(BUILD_EDITOR "Build Editor application" ON)
+option(BUILD_EDITOR "Build Editor application" OFF)
 if(BUILD_EDITOR)
     set(GAME_SOURCES
         "${EDITOR_DIR}/src/main.cpp"

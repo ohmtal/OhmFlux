@@ -7,7 +7,7 @@
 
 #include "ymfm.h"
 #include "ymfm_opl.h"
-#include "OplInterface.h"
+#include "ymfmGlue.h"
 
 #include "opl3_base.h"
 #include "ymfmGlue.h"
@@ -89,7 +89,7 @@ private:
     // ---------- OPL/YMFM ----------------
     using OplChip = ymfm::ymf262; //OPL3
     OplChip* mChip; //OPL
-    OplInterface mInterface;
+    YMFMInterface mInterface;
     OplChip::output_data mOutput;
 
 

@@ -17,9 +17,6 @@
 #include <src/fonts/IconsFontAwesome6.h>
 
 
-#ifdef FLUX_DEBUG
-#include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -519,14 +516,6 @@ void OTGui::DrawGui()
     ShowMenuBar();
 
     DrawMsgBoxPopup();
-
-
-    // TEST: FIXME add to ImguiTest
-#ifdef FLUX_DEBUG
-    ImFlux::ShowCaseWidgets();
-#endif
-
-
 
     if (mSettings.ShowConsole)
         mConsole.Draw("Console", &mSettings.ShowConsole);
