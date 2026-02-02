@@ -1,0 +1,975 @@
+#include "otGui.h"
+#include "otMain.h"
+#include "fonts/fa.h"
+#include <gui/ImFileDialog.h>
+#include <imgui_internal.h>
+#include <utils/fluxSettingsManager.h>
+#include <opl3_bridge_op2.h>
+#include <opl3_bridge_wopl.h>
+#include <opl3_bridge_fm.h>
+#include <opl3_bridge_sbi.h>
+#include "opl3_bridge_fms3.h"
+//
+#include <algorithm>
+#include <string>
+#include <cctype>
+#include <sstream>
+#include <src/fonts/IconsFontAwesome6.h>
+
+
+#ifdef FLUX_DEBUG
+#include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
+#endif
+
+//------------------------------------------------------------------------------
+
+void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
+{
+    char lBuffer[1024];
+    if (priority == SDL_LOG_PRIORITY_ERROR)
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "[ERROR] %s", message);
+    }
+    else if (priority == SDL_LOG_PRIORITY_WARN)
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "[WARN] %s", message);
+    }
+    else
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "%s", message);
+    }
+
+    // bad if we are gone !!
+    getMain()->getGui()->mConsole.AddLog("%s", message);
+}
+
+//------------------------------------------------------------------------------
+bool OTGui::Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank) {
+    if (bank.empty()) return false;
+
+    bool changed = false;
+    ImGui::PushID("InstrStepper");
+
+    float h = ImGui::GetFrameHeight();
+    ImVec2 btn_sz(h, h);
+
+    if (ImFlux::StepperButton("##left", true, btn_sz)) {
+        currentIdx = (currentIdx > 0) ? currentIdx - 1 : (uint16_t)bank.size() - 1;
+        changed = true;
+    }
+
+    ImGui::SameLine();
+
+    // 2. CENTER LCD BOX
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    ImVec2 size(160, ImGui::GetFrameHeight());
+
+    // Hitbox for clicks
+    if (ImGui::InvisibleButton("##display", size)) {
+        currentIdx = (currentIdx + 1) % (int)bank.size();
+        changed = true;
+    }
+
+    // RIGHT CLICK: Full List Popup
+    if (ImGui::BeginPopupContextItem("InstrumentListPopup", ImGuiPopupFlags_MouseButtonRight)) {
+        for (int i = 0; i < (int)bank.size(); i++) {
+            if (ImGui::Selectable(std::format("{}##widght{}",bank[i].name, i).c_str(), currentIdx == i)) {
+                currentIdx = i;
+                changed = true;
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::EndPopup();
+    }
+
+    // 3. DRAWING
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImU32 bg_col = ImGui::IsItemActive() ? IM_COL32(40, 40, 40, 255) : IM_COL32(15, 15, 15, 255);
+
+    // Background
+    dl->AddRectFilled(pos, {pos.x + size.x, pos.y + size.y}, bg_col, 2.0f);
+    dl->AddRect(pos, {pos.x + size.x, pos.y + size.y}, IM_COL32(80, 80, 80, 255), 2.0f);
+
+    // Instrument Name
+    const char* name = (currentIdx >= 0 && currentIdx < (int)bank.size()) ? bank[currentIdx].name.c_str() : "None";
+    ImVec2 t_size = ImGui::CalcTextSize(name);
+    dl->AddText({pos.x + (size.x - t_size.x) * 0.5f, pos.y + (size.y - t_size.y) * 0.5f},
+                IM_COL32(0, 255, 180, 255), name);
+
+    ImGui::SameLine();
+
+    // 4. RIGHT ARROW
+    if (ImFlux::StepperButton("##right", false, btn_sz)) {
+        currentIdx = (currentIdx + 1) % (int)bank.size();
+        changed = true;
+    }
+
+    ImGui::PopID();
+    return changed;
+}
+
+//------------------------------------------------------------------------------
+void OTGui::ShowFileManager(){
+    if (g_FileDialog.Draw()) {
+        if (g_FileDialog.mSaveMode)
+        {
+            if (!g_FileDialog.mCancelPressed)
+            {
+                if ( g_FileDialog.selectedExt == ".fms3" ) {
+                    mCurrentSong.instruments = getMain()->getController()->getSoundBank();
+                    if (opl3_bridge_fms3::saveSong(g_FileDialog.selectedFile, mCurrentSong, getMain()->getController()->getDspEffects())) {
+                        Log("Song saved to %s.", g_FileDialog.selectedFile.c_str());
+                        mCurrentSongFileName = g_FileDialog.selectedFile;
+
+                    } else {
+                        Log("[error] failed to save:%s",g_FileDialog.selectedFile.c_str());
+                        Log("%s",opl3_bridge_fms3::errors.c_str());
+                    }
+
+                }
+                else
+                if ( g_FileDialog.selectedExt == ".fmb3" ) {
+                    if (opl3_bridge_fms3::saveBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank())) {
+                        Log("Soundbank saved to %s.", g_FileDialog.selectedFile.c_str());
+                    } else {
+                        Log("[error] failed to save SoundBank:%s",g_FileDialog.selectedFile.c_str());
+                    }
+                }
+                else
+                if ( g_FileDialog.selectedExt == ".wopl" ) {
+                    mCurrentSong.instruments = getMain()->getController()->getSoundBank();
+                    if (opl3_bridge_wopl::exportBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank() )) {
+                        Log("Bank saved to %s.", g_FileDialog.selectedFile.c_str());
+                    } else {
+                        Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                    }
+                }
+                else
+                if (g_FileDialog.mSaveExt == ".wav")
+                {
+                    if (g_FileDialog.selectedExt == "")
+                        g_FileDialog.selectedFile.append(g_FileDialog.mSaveExt);
+                    this->exportSongToWav(g_FileDialog.selectedFile);
+                }
+            }
+
+        } else {
+            // ------------------ OPEN:  --------------------
+
+            if ( g_FileDialog.selectedExt == ".op2" )
+            {
+                if (!opl3_bridge_op2::importBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank()) )
+                    Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
+                else
+                    Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size() );
+
+
+            }
+            else
+            if ( g_FileDialog.selectedExt == ".wopl" )
+            {
+                if (!opl3_bridge_wopl::importBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank()) )
+                    Log("[error] Failed to load %s",g_FileDialog.selectedFile.c_str() );
+                else
+                    Log("Soundbank %s loaded! %zu instruments",g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size() );
+            }
+            else
+            if ( g_FileDialog.selectedExt == ".sbi" )
+            {
+                Instrument newIns;
+                if (opl3_bridge_sbi::loadInstrument(g_FileDialog.selectedFile, newIns))
+                {
+                    getMain()->getController()->getSoundBank().push_back(newIns);
+                    Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size()-1);
+                }  else {
+                    Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                }
+            }
+            else
+            if ( g_FileDialog.selectedExt == ".fmi" ){
+                std::array<uint8_t, 24> instrumentData;
+                if (opl3_bridge_fm::loadInstrumentData(g_FileDialog.selectedFile,instrumentData)) {
+                    Instrument newIns=opl3_bridge_fm::toInstrument(
+                        std::string( fluxStr::extractFilename(g_FileDialog.selectedFile) ),
+                        instrumentData
+                    );
+                    getMain()->getController()->getSoundBank().push_back(newIns);
+                    Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size()-1);
+
+                } else {
+                    Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                }
+
+            }
+            else
+            if ( g_FileDialog.selectedExt == ".wav"  || g_FileDialog.selectedExt == ".ogg") {
+                    showMessageBox("FIXME wav/ogg", "Wav/Ogg Player not implemented so far.");
+            }
+            else
+            if ( g_FileDialog.selectedExt == ".fms" ) {
+                getMain()->getController()->stopSong();
+                getMain()->getController()->silenceAll(false);
+
+                SongData* lTargetSong = &mCurrentSong;
+                if (g_FileDialog.mUserData == "ImportBank")
+                {
+                    lTargetSong = &mTempSong;
+                }
+
+                if (opl3_bridge_fm::loadSongFMS(g_FileDialog.selectedFile, *lTargetSong)) {
+                    getMain()->getController()->getSoundBank() = lTargetSong->instruments;
+                    Log("Loaded legacy fms Song:  %s", g_FileDialog.selectedFile.c_str());
+                    mCurrentSongFileName = ""; // we can't export old format so reset filename
+
+                } else {
+                    Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                }
+            }
+            else
+            if ( g_FileDialog.selectedExt == ".fms3" ) {
+                getMain()->getController()->stopSong();
+                getMain()->getController()->silenceAll(false);
+
+                SongData* lTargetSong = &mCurrentSong;
+                bool lIsImportBank = g_FileDialog.mUserData == "ImportBank";
+                bool lLoadEffects = true; //FIXME GUI !!!
+                if (lIsImportBank)
+                {
+                    lTargetSong = &mTempSong;
+                    lLoadEffects = false;
+                }
+
+                if (opl3_bridge_fms3::loadSong(g_FileDialog.selectedFile, *lTargetSong, getMain()->getController()->getDspEffects(), lLoadEffects)) {
+                    getMain()->getController()->getSoundBank() = lTargetSong->instruments;
+                    Log("Loaded Song:  %s", g_FileDialog.selectedFile.c_str());
+                    if (!lIsImportBank) {
+                        mCurrentSongFileName = g_FileDialog.selectedFile;
+                        // focus Pattern Editor
+                        ImGui::SetWindowFocus("Pattern Editor");
+                    }
+
+                } else {
+                    Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+                    Log("%s",opl3_bridge_fms3::errors.c_str());
+                }
+            }
+            if ( g_FileDialog.selectedExt == ".fmb3" ) {
+                getMain()->getController()->stopSong();
+                getMain()->getController()->silenceAll(false);
+
+                if (opl3_bridge_fms3::loadBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank())) {
+                    Log("Loaded SoundBank:  %s", g_FileDialog.selectedFile.c_str());
+
+                } else {
+                    Log("[error] failed to load SoundBank:%s",g_FileDialog.selectedFile.c_str());
+                }
+            }
+
+
+
+        }
+        g_FileDialog.reset();
+    }
+}
+//------------------------------------------------------------------------------
+void OTGui::Update(const double& dt)
+{
+    if (mCurrentExport != nullptr) return; // not while we exporting!
+    getMain()->getController()->consoleSongOutput(false);
+}
+//------------------------------------------------------------------------------
+bool OTGui::Initialize()
+{
+    std::string lSettingsFile =
+        getMain()->mSettings.getPrefsPath()
+        .append(getMain()->mSettings.getSafeCaption())
+        .append("_prefs.json");
+    if (SettingsManager().Initialize(lSettingsFile))
+    {
+
+    } else {
+        LogFMT("Error: Can not open setting file: {}", lSettingsFile);
+    }
+
+    mSettings = SettingsManager().get("EditorGui::mEditorSettings", mDefaultSettings);
+
+
+    auto* controller = getMain()->getController();
+
+    auto specAna = std::make_unique<DSP::SpectrumAnalyzer>(false);
+    mSpectrumAnalyzer = specAna.get();
+    controller->getDspEffects().push_back(std::move(specAna));
+
+
+    mSpectrumAnalyzer->setEnabled(SettingsManager().get("DSP_SpectrumAnalyzer_ON", false));
+    controller->getDSPBitCrusher()->setEnabled(SettingsManager().get("DSP_BitCrusher_ON", false));
+    controller->getDSPChorus()->setEnabled(SettingsManager().get("DSP_Chorus_ON", false));
+    controller->getDSPReverb()->setEnabled(SettingsManager().get("DSP_Reverb_ON", false));
+    controller->getDSPWarmth()->setEnabled(SettingsManager().get("DSP_Warmth_ON", false));
+    controller->getDSPLimiter()->setEnabled(SettingsManager().get("DSP_LIMITER_ON", true));
+    controller->getDSPEquilzer9Band()->setEnabled(SettingsManager().get("DSP_EQ9BAND_ON", true));
+
+
+    controller->getDSPBitCrusher()->setSettings(SettingsManager().get<DSP::BitcrusherSettings>("DSP_BitCrusher", DSP::AMIGA_BITCRUSHER));
+    controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
+    controller->getDSPReverb()->setSettings(SettingsManager().get<DSP::ReverbSettings>("DSP_Reverb", DSP::HALL_REVERB));
+    controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::GENTLE_WARMTH));
+    controller->getDSPEquilzer9Band()->setSettings( SettingsManager().get<DSP::Equalizer9BandSettings>("DSP_EQ9BAND", DSP::FLAT_EQ ));
+    controller->getSoundCardEmulation()->setEnabled(SettingsManager().get("DSP_RENDERMODE_ON", false));
+    controller->getSoundCardEmulation()->setSettings( SettingsManager().get<DSP::SoundCardEmulationSettings>("DSP_RenderMode", DSP::BLENDED_MODE));
+    controller->getDSPLimiter()->setSettings(SettingsManager().get<DSP::LimiterSettings>("DSP_Limiter", DSP::LIMITER_DEFAULT));
+
+    getScreenObject()->setWindowMaximized(SettingsManager().get("WINDOW_MAXIMIZED", getMain()->mSettings.WindowMaximized ));
+
+    mGuiGlue = new FluxGuiGlue(true, false, nullptr);
+    if (!mGuiGlue->Initialize())
+        return false;
+
+    // fonts >>>>
+    // NOTE: Example from: https://github.com/caiocinel/imgui-fontawesome-example/tree/master
+    ImGuiIO& io = ImGui::GetIO();
+    // --- 1. DEFAULT FONT (Proggy + Small Icons merged) ---
+    mDefaultFont =  io.Fonts->AddFontDefault();
+
+    ImFontConfig merge_config;
+    merge_config.MergeMode = true;
+
+    merge_config.OversampleH = merge_config.OversampleV = 1;
+    merge_config.PixelSnapH = true;
+
+    static const ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+    // 13 ? io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 13.0f, &merge_config, ranges);
+    io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 13.0f, &merge_config, ranges);
+
+    // --- 2. BIG ICON FONT (Standalone) ---
+    ImFontConfig icon_config;
+    icon_config.MergeMode = false; // <--- IMPORTANT: DO NOT MERGE
+    // Store this pointer in your class or a global variable
+    mIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 24.0f, &icon_config, ranges);
+    mTinyFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size,  7.0f, &icon_config, ranges);
+    //<<<<<<<<<< fonts
+
+
+    // not centered ?!?!?! i guess center is not in place yet ?
+    mBackground = new FluxRenderObject(getMain()->loadTexture(getGamePath()+"assets/background.png"));
+    if (mBackground) {
+        mBackground->setPos(getMain()->getScreen()->getCenterF());
+        mBackground->setSize(getMain()->getScreen()->getScreenSize());
+        getMain()->queueObject(mBackground);
+    }
+
+    // FileManager
+    g_FileDialog.init( getGamePath(), {".fms3", ".fmb3", ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
+    // Console
+    mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
+    SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
+
+    // tests
+    mOpl3Tests = std::make_unique<OPL3Tests>(getMain()->getController());
+
+    newSong();
+
+    return true;
+}
+//------------------------------------------------------------------------------
+void OTGui::Deinitialize()
+{
+
+    SDL_SetLogOutputFunction(nullptr, nullptr);
+
+    // SAFE_DELETE(mFMComposer); //Composer before FMEditor !!!
+    // SAFE_DELETE(mFMEditor);
+    // SAFE_DELETE(mSfxEditor);
+    SAFE_DELETE(mGuiGlue);
+
+    if (SettingsManager().IsInitialized()) {
+        SettingsManager().set("EditorGui::mEditorSettings", mSettings);
+
+        auto* controller = getMain()->getController();
+        SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings());
+        SettingsManager().set("DSP_Chorus",     controller->getDSPChorus()->getSettings());
+        SettingsManager().set("DSP_Reverb",     controller->getDSPReverb()->getSettings());
+        SettingsManager().set("DSP_Warmth",     controller->getDSPWarmth()->getSettings());
+        SettingsManager().set("DSP_EQ9BAND",     controller->getDSPEquilzer9Band()->getSettings());
+
+        SettingsManager().set("DSP_SpectrumAnalyzer_ON", mSpectrumAnalyzer->isEnabled());
+        SettingsManager().set("DSP_BitCrusher_ON", controller->getDSPBitCrusher()->isEnabled());
+        SettingsManager().set("DSP_Chorus_ON", controller->getDSPChorus()->isEnabled());
+        SettingsManager().set("DSP_Reverb_ON", controller->getDSPReverb()->isEnabled());
+        SettingsManager().set("DSP_Warmth_ON", controller->getDSPWarmth()->isEnabled());
+        SettingsManager().set("DSP_LIMITER_ON", controller->getDSPLimiter()->isEnabled());
+        SettingsManager().set("DSP_EQ9BAND_ON", controller->getDSPEquilzer9Band()->isEnabled());
+
+        SettingsManager().set("DSP_RENDERMODE_ON", controller->getSoundCardEmulation()->isEnabled());
+        SettingsManager().set("DSP_RenderMode", controller->getSoundCardEmulation()->getSettings());
+
+        SettingsManager().set("DSP_Limiter", controller->getDSPLimiter()->getSettings());
+
+
+        //.....
+        SettingsManager().set("WINDOW_MAXIMIZED", getScreenObject()->getWindowMaximized());
+
+        SettingsManager().save();
+    }
+
+
+
+}
+//------------------------------------------------------------------------------
+void OTGui::onEvent(SDL_Event event)
+{
+    mGuiGlue->onEvent(event);
+
+    // if (mSfxEditor)
+    //     mSfxEditor->onEvent(event);
+    // if (mFMComposer)
+    //     mFMComposer->onEvent(event);
+    // if (mFMEditor)
+    //     mFMEditor->onEvent(event);
+
+}
+//------------------------------------------------------------------------------
+void OTGui::DrawMsgBoxPopup() {
+
+    if (POPUP_MSGBOX_ACTIVE) {
+        ImGui::OpenPopup(POPUP_MSGBOX_CAPTION.c_str());
+        POPUP_MSGBOX_ACTIVE = false;
+    }
+
+    // 2. Always attempt to begin the modal
+    // (ImGui only returns true here if the popup is actually open)
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    if (ImGui::BeginPopupModal(POPUP_MSGBOX_CAPTION.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("%s",POPUP_MSGBOX_TEXT.c_str());
+        ImGui::Separator();
+
+        if (ImGui::Button("OK", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+//------------------------------------------------------------------------------
+void OTGui::ShowMenuBar()
+{
+
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Exit")) { getMain()->TerminateApplication(); }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Window"))
+        {
+            ImGui::MenuItem("Pattern Editor", NULL, &mSettings.ShowPatternGui);
+            ImGui::MenuItem("Sound Bank", NULL, &mSettings.ShowSoundBankList);
+            ImGui::MenuItem("Instrument Editor", NULL, &mSettings.ShowInsEditor);
+            ImGui::MenuItem("Digital Sound Processing", NULL, &mSettings.ShowDSP);
+            ImGui::MenuItem("Playlist [orders]", NULL, &mSettings.ShowPlayList);
+            ImGui::Separator();
+            ImGui::MenuItem("Piano", NULL, &mSettings.ShowPiano);
+            ImGui::MenuItem("Scale Player", NULL, &mSettings.ShowScalePlayer);
+            ImGui::Separator();
+            ImGui::MenuItem("File Browser", NULL, &mSettings.ShowFileBrowser);
+            ImGui::MenuItem("Console", NULL, &mSettings.ShowConsole);
+
+
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Style"))
+        {
+            if (ImGui::MenuItem("Dark")) {ImGui::StyleColorsDark(); }
+            if (ImGui::MenuItem("Light")) {ImGui::StyleColorsLight(); }
+            if (ImGui::MenuItem("Classic")) {ImGui::StyleColorsClassic(); }
+            ImGui::EndMenu();
+        }
+
+
+        // ----------- Master Volume
+        float rightOffset = 230.0f;
+        ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
+
+        ImGui::SetNextItemWidth(100);
+        float currentVol = AudioManager.getMasterVolume();
+        if (ImGui::SliderFloat("##MasterVol", &currentVol, 0.0f, 2.0f, "Vol %.1f"))
+        {
+            if (!AudioManager.setMasterVolume(currentVol))
+                Log("Error: Failed to set SDL Master volume");
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Master Volume");
+
+
+        // -----------
+        ImGui::EndMainMenuBar();
+    }
+
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void OTGui::DrawGui()
+{
+
+    mGuiGlue->DrawBegin();
+    ShowMenuBar();
+
+    DrawMsgBoxPopup();
+
+
+    // TEST: FIXME add to ImguiTest
+#ifdef FLUX_DEBUG
+    ImFlux::ShowCaseWidgets();
+#endif
+
+
+
+    if (mSettings.ShowConsole)
+        mConsole.Draw("Console", &mSettings.ShowConsole);
+
+
+    if (mSettings.ShowSoundBankList) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 8.0f);
+        RenderInstrumentListUI(true);
+        ImGui::PopStyleVar(2);
+    }
+    if (mSettings.ShowInsEditor) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 12.0f);
+        RenderInstrumentEditorUI(true);
+        ImGui::PopStyleVar(2);
+    }
+
+
+    if (mSettings.ShowScalePlayer) RenderScalePlayerUI(true);
+    if (mSettings.ShowPiano) RenderPianoUI(true);
+
+    ShowDSPWindow();
+    ShowSoundBankWindow();
+    if (mSettings.ShowFileBrowser) ShowFileManager();
+
+
+    if (mSettings.ShowPlayList) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+        DrawFancyOrderList(mCurrentSong, true);
+        ImGui::PopStyleVar();
+    }
+
+
+    //... LAST FOR FOCUS ....
+    mPatternEditorState.visible = false;
+    if (mSettings.ShowPatternGui) {
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
+        RenderPatternUI(true);
+        ImGui::PopStyleVar();
+
+    }
+
+
+
+    InitDockSpace();  
+
+    mGuiGlue->DrawEnd();
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void OTGui::onKeyEvent(SDL_KeyboardEvent event)
+{
+    // if ( mEditorSettings.mShowFMComposer )
+    //     mFMComposer->onKeyEvent(event);
+
+    if (event.key == SDLK_ESCAPE) {
+        if (isPlaying())
+            stopSong();
+        else {
+            if (mPatternEditorState.visible )
+                mPatternEditorState.selection.init();
+        }
+
+        return ;
+    }
+
+
+    onKeyEventKeyBoard(event);
+
+}
+
+//------------------------------------------------------------------------------
+void OTGui::InitDockSpace()
+{
+    if (mSettings.EditorGuiInitialized)
+        return; 
+
+    mSettings.EditorGuiInitialized = true;
+
+    ImGuiID dockspace_id = mGuiGlue->getDockSpaceId();
+
+    // Clear any existing layout
+    ImGui::DockBuilderRemoveNode(dockspace_id);
+    ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1920, 990));
+
+    ImGuiID dock_id_left, dock_id_right_container;
+    ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.104f, &dock_id_left, &dock_id_right_container); // 199/1920 ≈ 0.104
+
+    ImGuiID dock_id_right_panel, dock_id_center_container;
+    ImGui::DockBuilderSplitNode(dock_id_right_container, ImGuiDir_Right, 0.186f, &dock_id_right_panel, &dock_id_center_container); // 320/1719 ≈ 0.186
+
+    ImGuiID dock_id_soundbank, dock_id_filebrowser;
+    ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.635f, &dock_id_soundbank, &dock_id_filebrowser);
+
+    ImGuiID dock_id_main_area, dock_id_piano;
+    ImGui::DockBuilderSplitNode(dock_id_center_container, ImGuiDir_Down, 0.17f, &dock_id_piano, &dock_id_main_area);
+
+    ImGuiID dock_id_dsp, dock_id_console;
+    ImGui::DockBuilderSplitNode(dock_id_right_panel, ImGuiDir_Up, 0.738f, &dock_id_dsp, &dock_id_console);
+
+    ImGui::DockBuilderDockWindow("Sound Bank", dock_id_soundbank);
+    ImGui::DockBuilderDockWindow("File Browser##FileBrowser", dock_id_filebrowser);
+    ImGui::DockBuilderDockWindow("Pattern Editor", dock_id_main_area);
+    ImGui::DockBuilderDockWindow("Instrument Editor", dock_id_main_area);
+    ImGui::DockBuilderDockWindow("ImFlux ShowCase Widgets", dock_id_main_area);
+    ImGui::DockBuilderDockWindow("Piano", dock_id_piano);
+    ImGui::DockBuilderDockWindow("Digital Sound Processing", dock_id_dsp);
+    ImGui::DockBuilderDockWindow("Console", dock_id_console);
+
+    ImGui::DockBuilderFinish(dockspace_id);
+}
+//------------------------------------------------------------------------------
+void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
+{
+
+
+
+    std::string cmd = fluxStr::getWord(cmdline,0);
+
+
+
+    if (cmd == "play")
+    {
+
+        std::string tone = "C-3";
+        if (fluxStr::getWord(cmdline,1) != "")
+            tone = fluxStr::toUpper(fluxStr::getWord(cmdline,1));
+
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,2) , 0);
+        SongStep step{opl3::NoteToValue(tone),instrument,63};
+        getMain()->getController()->playNoteHW(0,step);
+    }
+    else
+    if (cmd == "stop")
+    {
+        getMain()->getController()->silenceAll(false);
+    }
+    else
+    if (cmd == "list")
+    {
+        for (int i = 0; i < getMain()->getController()->getSoundBank().size(); i++)
+        {
+            // Access individual instruments
+            Instrument instrument = getMain()->getController()->getSoundBank()[i];
+            Log("#%d [%d] %s",i,instrument.isFourOp, instrument.name.c_str() );
+        }
+    }
+    else
+    if (cmd == "scale")
+    {
+        int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
+        if ( instrument < 0 )
+            instrument = mCurrentInstrumentId;
+        Log ("Using Instrument %d",instrument);
+        mCurrentSong = mOpl3Tests->createScaleSong(instrument);
+        getMain()->getController()->playSong(mCurrentSong);
+    }
+    else
+    if (cmd == "effects")
+    {
+        int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
+        if ( instrument < 0 )
+            instrument = mCurrentInstrumentId;
+        Log ("Using Instrument %d",instrument);
+        mCurrentSong = mOpl3Tests->createEffectTestSong(instrument);
+        getMain()->getController()->playSong(mCurrentSong);
+    }
+    else
+    if (cmd == "insdump")
+    {
+        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+        Log ("Using Instrument %d",instrument);
+        getMain()->getController()->dumpInstrument(instrument);
+    }
+    else
+        if (cmd == "default")
+        {
+            getMain()->getController()->initDefaultBank();
+        }
+    else
+        if (cmd == "test")
+        {
+
+            mConsole.ClearLog();
+            Log("TEST piano tone and sound like a piano (not as good as in opl3bankeeditor)");
+            getMain()->getController()->stopNoteHW(0);
+
+            // 1. CHIP INITIALISIERUNG
+            getMain()->getController()->write(0x01, 0x00);   // Test-Bits AUS (Wichtig für Ton)
+            getMain()->getController()->write(0x05, 0x01);   // OPL3 Erweiterungen AN (Bank 0)
+            getMain()->getController()->write(0x104, 0x01);  // 4-OP Modus für Kanal 0/3 AN (Bank 1)
+
+            // 2. PAAR 0 (Kanal 0) - "Der Hammer"
+            getMain()->getController()->write(0x20, 0x01);   // Multiplier
+            getMain()->getController()->write(0x40, 0x10);   // TL (Lautstärke Modulator)
+            getMain()->getController()->write(0x60, 0xF2);   // Attack (F), Decay (2)
+            getMain()->getController()->write(0x80, 0x02);   // Sustain Level 0, Release 2 (EG-Type 0 = Halten)
+            getMain()->getController()->write(0xE0, 0x00);   // Sinus
+
+            getMain()->getController()->write(0x23, 0x01);   // Multiplier
+            getMain()->getController()->write(0x43, 0x00);   // TL (Lautstärke Carrier - MAX)
+            getMain()->getController()->write(0x63, 0xF2);   // Attack (F), Decay (2)
+            getMain()->getController()->write(0x83, 0x02);   // Sustain Level 0, Release 2
+            getMain()->getController()->write(0xE3, 0x00);   // Sinus
+
+            // 3. PAAR 1 (Kanal 3) - "Der Körper"
+            getMain()->getController()->write(0x28, 0x01);
+            getMain()->getController()->write(0x48, 0x10);
+            getMain()->getController()->write(0x68, 0xF2);
+            getMain()->getController()->write(0x88, 0x02);
+            getMain()->getController()->write(0xE8, 0x00);
+
+            getMain()->getController()->write(0x2B, 0x01);
+            getMain()->getController()->write(0x4B, 0x00);   // Zweiter Carrier (MAX Lautstärke)
+            getMain()->getController()->write(0x6B, 0xF2);
+            getMain()->getController()->write(0x8B, 0x02);
+            getMain()->getController()->write(0xEB, 0x00);
+
+            // 4. PANNING & ALGORITHMUS
+            // Wir nutzen hier 4-OP Algorithmus 0 (FM -> FM -> FM -> FM) für maximale Wirkung
+            getMain()->getController()->write(0xC0, 0x30);   // Links+Rechts, Anschlusstyp 0
+            getMain()->getController()->write(0xC3, 0x30);   // Links+Rechts, Anschlusstyp 0
+
+            // 5. FREQUENZ & KEY-ON
+            getMain()->getController()->write(0xA0, 0x98);   // F-Number Low (Note A-4)
+            getMain()->getController()->write(0xB0, 0x31);   // Block 4 + Key-On
+
+            // getMain()->getController()->flush();
+    }
+    else
+    if (cmd == "test2") {
+
+        mConsole.ClearLog();
+        Log("TEST2 piano ");
+        getMain()->getController()->stopNoteHW(0);
+
+        // 1. HARD RESET & MODE ENABLE
+        getMain()->getController()->write(0x01,  0x00); // Mute off
+        getMain()->getController()->write(0x05,  0x01); // OPL3 On (Bank 0)
+        getMain()->getController()->write(0x104, 0x01); // 4-OP Ch 0 On (Bank 1)
+
+        // 2. PAIR 0 (Channel 0) - The Percussive Strike
+        getMain()->getController()->write(0x20, 0x03);  // Multi 3, Sustain Bit 0 (Decay mode)
+        getMain()->getController()->write(0x40, 0x10);  // TL (Medium Volume)
+        getMain()->getController()->write(0x60, 0xF2);  // Attack F (Fast), Decay 2 (Slow fade)
+        getMain()->getController()->write(0x80, 0x22);  // Sustain Level 2 (Audible!), Release 2
+        getMain()->getController()->write(0xE0, 0x00);  // Sine
+
+        getMain()->getController()->write(0x23, 0x01);  // Carrier Multi 1
+        getMain()->getController()->write(0x43, 0x00);  // Carrier Volume MAX
+        getMain()->getController()->write(0x63, 0xF2);
+        getMain()->getController()->write(0x83, 0x22);  // Sustain Level 2 (Audible!)
+        getMain()->getController()->write(0xE3, 0x04);  // Pulse Wave (Piano "Ping")
+
+        // 3. PAIR 1 (Channel 3) - The Body
+        getMain()->getController()->write(0x28, 0x01);
+        getMain()->getController()->write(0x48, 0x10);
+        getMain()->getController()->write(0x68, 0xF2);
+        getMain()->getController()->write(0x88, 0x22);
+
+        getMain()->getController()->write(0x2B, 0x01);
+        getMain()->getController()->write(0x4B, 0x00);
+        getMain()->getController()->write(0x6B, 0xF2);
+        getMain()->getController()->write(0x8B, 0x22);
+
+        // 4. PANNING & ALGORITHM
+        getMain()->getController()->write(0xC0, 0x31);  // Pan L/R + FM Mode
+        getMain()->getController()->write(0xC3, 0x30);  // Pan L/R
+
+        // 5. TRIGGER (Middle C - Block 3)
+        getMain()->getController()->write(0xA0, 0x69);
+        getMain()->getController()->write(0xB0, 0x31);  // Key-On + Block 3 (Octave 4)
+    }
+    else
+    if (cmd == "test6") {
+        mConsole.ClearLog();
+        Log("TEST6 still not as good as test more a organ then a piano");
+        getMain()->getController()->stopNoteHW(0);
+        // 1. Hardware Init
+        getMain()->getController()->write(0x01, 0x00);
+        getMain()->getController()->write(0x05, 0x01);
+        getMain()->getController()->write(0x104, 0x01);
+
+        // 2. Pair 0 (Channel 0) - "The Attack"
+        // Modulator 0
+        getMain()->getController()->write(0x20, 0x23); // Multi 3, Sustain Bit ON (0x20)
+        getMain()->getController()->write(0x40, 0x21); // Volume
+        getMain()->getController()->write(0x60, 0xF3); // Attack F, Decay 3
+        getMain()->getController()->write(0x80, 0xF2); // Sustain Level F, Release 2
+        getMain()->getController()->write(0xE0, 0x00); // Wave 0 (Sine)
+        // Carrier 0
+        getMain()->getController()->write(0x23, 0x2E); // Multi 14, Sustain Bit ON
+        getMain()->getController()->write(0x43, 0x00); // Volume (Loud)
+        getMain()->getController()->write(0x63, 0xF1); // Attack F, Decay 1
+        getMain()->getController()->write(0x83, 0xF4); // Sustain Level F, Release 4
+        getMain()->getController()->write(0xE3, 0x04); // Wave 4 (Pulse - CRITICAL for "Piano" strike)
+
+        // 3. Pair 1 (Channel 3) - "The Resonance"
+        // Modulator 1
+        getMain()->getController()->write(0x28, 0x22); // Multi 2, Sustain Bit ON
+        getMain()->getController()->write(0x48, 0x21);
+        getMain()->getController()->write(0x68, 0xF3);
+        getMain()->getController()->write(0x88, 0xF2);
+        getMain()->getController()->write(0xE8, 0x00); // Wave 0
+        // Carrier 1
+        getMain()->getController()->write(0x2B, 0x2E); // Multi 14, Sustain Bit ON
+        getMain()->getController()->write(0x4B, 0x00); // Volume (Loud)
+        getMain()->getController()->write(0x6B, 0xF1);
+        getMain()->getController()->write(0x8B, 0xF4);
+        getMain()->getController()->write(0xEB, 0x00); // Wave 0
+
+        // 4. Algorithm & Panning
+        getMain()->getController()->write(0xC0, 0x35); // Additive (Mixes Pair 0 and Pair 1)
+        getMain()->getController()->write(0xC3, 0x34); // FM (Internal to Pair 1)
+
+        // 5. Play Note (Middle C - C4)
+        getMain()->getController()->write(0xA0, 0x69);
+        getMain()->getController()->write(0xB0, 0x21); // Block 3 + Key-On
+
+    }
+    else
+    if (cmd == "load")
+    {
+        std::string filename = "assets/op2/GENMIDI.op2";
+        if (!opl3_bridge_op2::importBank(filename, getMain()->getController()->getSoundBank()) )
+            Log("[error] Failed to load %s", filename.c_str());
+        else
+            Log("Loaded %s", filename.c_str());
+
+    }
+    else
+    if (cmd=="noteids")
+    {
+        std::string note_str;
+        uint8_t note_id;
+        for (uint16_t u = 0 ;u <= 255; u++ ) {
+
+            note_str = opl3::ValueToNote(u);
+            note_id  = opl3::NoteToValue(note_str);
+            Log("%d => %s => %d", u, note_str.c_str(), note_id);
+        }
+        note_id  = opl3::NoteToValue("TOO LONG");
+        Log("invalid test: %d", note_id);
+        note_id  = opl3::NoteToValue("FOO");
+        Log("invalid test2: %d", note_id);
+
+    }
+    else
+    if (cmd == "t")
+    {
+        std::string filename = "assets/sbi/tumubar-bell-dmx.sbi";
+        Instrument newIns;
+        if (opl3_bridge_sbi::loadInstrument(filename,newIns)) {
+                getMain()->getController()->getSoundBank().push_back(newIns);
+                Log("Loaded %s to %zu", g_FileDialog.selectedFile.c_str(), getMain()->getController()->getSoundBank().size()-1);
+
+                SongStep step;
+                step.note = 48;
+                step.instrument = getMain()->getController()->getSoundBank().size()-1;
+                step.volume = 63;
+                getMain()->getController()->playNoteHW(0,step);
+
+            } else {
+                Log("[error] failed to load:%s",g_FileDialog.selectedFile.c_str());
+            }
+    }
+    else
+    if (cmd == "l")
+    {
+        std::string filename = "assets/wopl/fatman-4op.wopl";
+        if (!opl3_bridge_wopl::importBank(filename, getMain()->getController()->getSoundBank()) )
+            Log("[error] Failed to load %s",filename.c_str() );
+        else
+            Log("Soundbank %s loaded! %zu instruments",filename.c_str(), getMain()->getController()->getSoundBank().size() );
+    }
+    else
+        if (cmd == "exwopl")
+        {
+            std::string filename = "assets/wopl/test.wopl";
+            if (!opl3_bridge_wopl::exportBank(filename, getMain()->getController()->getSoundBank()) )
+                Log("[error] Failed to save %s",filename.c_str() );
+            else
+                Log("Soundbank %s exported",filename.c_str() );
+        }
+        else
+    if (cmd == "clearsong")
+    {
+        getMain()->getController()->stopSong(true);
+        mCurrentSong.init();
+    }
+    else
+    if (cmd == "playsong")
+    {
+       Log("Playsong is: %d", getMain()->getController()->playSong(mCurrentSong, true));
+    }
+    else
+    if (cmd == "stopsong")
+    {
+        getMain()->getController()->stopSong(true);
+    }
+    else
+    if (cmd == "patdump") {
+        if (!mCurrentSong.patterns.empty()) {
+            // 1. Get the full multi-line string
+            Pattern* pat = getCurrentPattern();
+            if (!pat) {
+                Log("[error] no pattern found !! ");
+                return ;
+            }
+            std::string fullDump = pat->dump();
+
+            // 2. Wrap it in a stream for line-by-line processing
+            std::istringstream iss(fullDump);
+            std::string line;
+
+            // 3. Extract and log each line independently
+            while (std::getline(iss, line)) {
+                LogFMT("{}", line);
+            }
+        }
+    }
+    else
+    if (cmd == "detach") {
+        getMain()->getController()->detachAudio();
+    }
+    else
+    if (cmd == "attach") {
+        getMain()->getController()->attachAudio();
+    }
+    else
+        if (cmd == "v") {
+            LogFMT("Voice active: {}", getMain()->getController()->isAnyVoiceActive());
+        }
+
+    else
+    {
+        console->AddLog("unknown command %s", cmd.c_str());
+    }
+
+
+
+
+}
+//------------------------------------------------------------------------------
