@@ -1,5 +1,5 @@
-#include "ohmfluxTrackerGui.h"
-#include "ohmfluxTrackerMain.h"
+#include "otGui.h"
+#include "otMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -9,7 +9,7 @@
 
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::ShowDSPWindow(){
+void OTGui::ShowDSPWindow(){
     if (!mSettings.ShowDSP) return;
     ImGui::SetNextWindowSize(ImVec2(320, 600), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Digital Sound Processing", &mSettings.ShowDSP))
@@ -43,7 +43,7 @@ void OhmfluxTrackerGui::ShowDSPWindow(){
 
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderSoundCardEmuUI() {
+void OTGui::RenderSoundCardEmuUI() {
     auto* lEmu = getMain()->getController()->getSoundCardEmulation();
 
     ImGui::PushID("RenderSoundCardEmu_Effect_Row");
@@ -82,7 +82,7 @@ void OhmfluxTrackerGui::RenderSoundCardEmuUI() {
     ImGui::Spacing(); // Add visual gap before the next effect
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderBitCrusherUI() {
+void OTGui::RenderBitCrusherUI() {
     // 1. Use PushID to prevent name collisions with other effects (e.g., if multiple have a "Wet" slider)
     ImGui::PushID("BitCrusher_Effect_Row");
 
@@ -163,7 +163,7 @@ void OhmfluxTrackerGui::RenderBitCrusherUI() {
 }
 //------------------------------------------------------------------------------
 
-void OhmfluxTrackerGui::RenderChorusUI() {
+void OTGui::RenderChorusUI() {
     ImGui::PushID("Chorus_Effect_Row");
     ImGui::BeginGroup();
 
@@ -237,7 +237,7 @@ void OhmfluxTrackerGui::RenderChorusUI() {
 }
 //------------------------------------------------------------------------------
 
-void OhmfluxTrackerGui::RenderReverbUI() {
+void OTGui::RenderReverbUI() {
     ImGui::PushID("Reverb_Effect_Row");
     ImGui::BeginGroup();
 
@@ -331,7 +331,7 @@ void OhmfluxTrackerGui::RenderReverbUI() {
 }
 //------------------------------------------------------------------------------
 
-void OhmfluxTrackerGui::RenderWarmthUI() {
+void OTGui::RenderWarmthUI() {
     ImGui::PushID("Warmth_Effect_Row");
     ImGui::BeginGroup();
 
@@ -425,7 +425,7 @@ void OhmfluxTrackerGui::RenderWarmthUI() {
 
 //------------------------------------------------------------------------------
 
-void OhmfluxTrackerGui::RenderLimiterUI() {
+void OTGui::RenderLimiterUI() {
     ImGui::PushID("Limiter_Effect_Row");
     ImGui::BeginGroup();
 
@@ -487,7 +487,7 @@ void OhmfluxTrackerGui::RenderLimiterUI() {
     ImGui::Spacing();
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderEquilizer9BandUI() {
+void OTGui::RenderEquilizer9BandUI() {
     ImGui::PushID("EQ9_Effect_Row");
     ImGui::BeginGroup();
 
@@ -608,7 +608,7 @@ void OhmfluxTrackerGui::RenderEquilizer9BandUI() {
     ImGui::Spacing();
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderSpectrumAnalyzer() {
+void OTGui::RenderSpectrumAnalyzer() {
     ImGui::PushID("SpectrumAnalyzer_Effect_Row");
     ImGui::BeginGroup();
 

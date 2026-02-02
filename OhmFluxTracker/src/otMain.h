@@ -5,25 +5,25 @@
 
 #include <fluxMain.h>
 #include <OPL3Controller.h>
-#include "ohmfluxTrackerGui.h"
+#include "otGui.h"
 
 
 
-class OhmFluxTrackerMain : public FluxMain
+class OTMain : public FluxMain
 {
     typedef FluxMain Parent;
 private:
 
-    OhmfluxTrackerGui* mTrackerGui = nullptr;
+    OTGui* mTrackerGui = nullptr;
 
     OPL3Controller* mController = nullptr;
 
 public:
-    OhmFluxTrackerMain() {}
-    ~OhmFluxTrackerMain() {}
+    OTMain() {}
+    ~OTMain() {}
 
 
-    OhmfluxTrackerGui* getGui() { return mTrackerGui; };
+    OTGui* getGui() { return mTrackerGui; };
     OPL3Controller* getController() { return mController; };
 
     bool Initialize() override
@@ -37,7 +37,7 @@ public:
             return false;
         }
 
-        mTrackerGui = new OhmfluxTrackerGui();
+        mTrackerGui = new OTGui();
         if (!mTrackerGui->Initialize())
             return false;
 
@@ -111,6 +111,6 @@ public:
 
 }; //class
 
-extern OhmFluxTrackerMain* g_TrackerMain;
-OhmFluxTrackerMain* getMain();
+extern OTMain* g_TrackerMain;
+OTMain* getMain();
 

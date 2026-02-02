@@ -452,7 +452,7 @@ option(BUILD_FLUXTRACKER "Build OhmFlux Tracker" ON)
 if(BUILD_FLUXTRACKER)
     set(TRACKER_SOURCES
         "${FLUXTRACKER_DIR}/src/main.cpp"
-        "${FLUXTRACKER_DIR}/src/trackerGui.cpp"
+        "${FLUXTRACKER_DIR}/src/otGui.cpp"
         "${FLUXTRACKER_DIR}/src/dspGui.cpp"
         "${FLUXTRACKER_DIR}/src/bankGui.cpp"
         "${FLUXTRACKER_DIR}/src/songGui.cpp"

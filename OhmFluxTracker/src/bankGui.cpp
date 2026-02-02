@@ -1,5 +1,5 @@
-#include "ohmfluxTrackerGui.h"
-#include "ohmfluxTrackerMain.h"
+#include "otGui.h"
+#include "otMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -9,7 +9,7 @@
 #include <OPL3Instruments.h>
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::ShowSoundBankWindow()
+void OTGui::ShowSoundBankWindow()
 {
     // if (!mGuiSettings.mShowSoundBankEditor) return;
     // ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
@@ -165,7 +165,7 @@ void RenderInsListButtons(OPL3Controller* controller)
 // }
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderInstrumentListUI(bool standAlone) {
+void OTGui::RenderInstrumentListUI(bool standAlone) {
 
     if (standAlone) {
         ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
@@ -406,7 +406,7 @@ void OhmfluxTrackerGui::RenderInstrumentListUI(bool standAlone) {
 
 
 
-void OhmfluxTrackerGui::RenderInstrumentListUI_OLD(bool standAlone)
+void OTGui::RenderInstrumentListUI_OLD(bool standAlone)
 {
     if (standAlone)
     {
@@ -486,7 +486,7 @@ uint8_t* GetValPtr(opl3::Instrument::OpPair::OpParams& op, int metaIdx)
         return nullptr;
 }
 
-void OhmfluxTrackerGui::RenderOpParam(const opl3::ParamMeta& meta, opl3::Instrument::OpPair::OpParams& op, int metaIdx) {
+void OTGui::RenderOpParam(const opl3::ParamMeta& meta, opl3::Instrument::OpPair::OpParams& op, int metaIdx) {
     uint8_t* val = GetValPtr(op, metaIdx);
     if (!val) return;
 
@@ -554,7 +554,7 @@ void DrawPanningMeter(ImVec2 size, uint8_t panValue) {
 }
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawOperatorGrid(opl3::Instrument::OpPair::OpParams& op) {
+void OTGui::DrawOperatorGrid(opl3::Instrument::OpPair::OpParams& op) {
     const auto& metas = OPL_OP_METADATA;
 
     ImGui::PushID(&op);
@@ -669,7 +669,7 @@ void OhmfluxTrackerGui::DrawOperatorGrid(opl3::Instrument::OpPair::OpParams& op)
 
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawWaveformIcon(ImDrawList* drawList, ImVec2 pos, int waveIdx, float size, ImU32 color) {
+void OTGui::DrawWaveformIcon(ImDrawList* drawList, ImVec2 pos, int waveIdx, float size, ImU32 color) {
     float h = size * 0.5f;
     float midY = pos.y + h;
     float thickness = 1.5f;
@@ -716,7 +716,7 @@ void OhmfluxTrackerGui::DrawWaveformIcon(ImDrawList* drawList, ImVec2 pos, int w
     }
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderWaveformSelector(uint8_t& waveVal) {
+void OTGui::RenderWaveformSelector(uint8_t& waveVal) {
     ImGui::TextDisabled("Waveform");
     float iconSize = 24.0f;
     float padding = 4.0f;
@@ -751,7 +751,7 @@ void OhmfluxTrackerGui::RenderWaveformSelector(uint8_t& waveVal) {
 }
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawADSRGraphBezier(ImVec2 size, const opl3::Instrument::OpPair::OpParams& op, int virtualNote, float pulseVol) {
+void OTGui::DrawADSRGraphBezier(ImVec2 size, const opl3::Instrument::OpPair::OpParams& op, int virtualNote, float pulseVol) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     ImVec2 startPos = ImGui::GetCursorScreenPos();
 
@@ -824,7 +824,7 @@ void OhmfluxTrackerGui::DrawADSRGraphBezier(ImVec2 size, const opl3::Instrument:
 
 //------------------------------------------------------------------------------
 
-void OhmfluxTrackerGui::RenderInstrumentEditorUI(bool standAlone) {
+void OTGui::RenderInstrumentEditorUI(bool standAlone) {
 
     if (getMain()->getController()->getSoundBank().size() < mCurrentInstrumentId+1)
     {

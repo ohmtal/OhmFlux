@@ -1,5 +1,5 @@
-#include "ohmfluxTrackerGui.h"
-#include "ohmfluxTrackerMain.h"
+#include "otGui.h"
+#include "otMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -12,7 +12,7 @@
  *  Like DrawFancyOrderList but vertical, no append button or header caption,
  *  small colored pattern with index only name via tooltip
  */
-void OhmfluxTrackerGui::DrawMiniOrderList(SongData& song, int currentIndex, float buttonSize, ImVec2 controlSize) {
+void OTGui::DrawMiniOrderList(SongData& song, int currentIndex, float buttonSize, ImVec2 controlSize) {
     static int move_from = -1, move_to = -1;
     int delete_idx = -1, insert_idx = -1;
 
@@ -126,7 +126,7 @@ void OhmfluxTrackerGui::DrawMiniOrderList(SongData& song, int currentIndex, floa
 //------------------------------------------------------------------------------
 // DrawFancyOrderList
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 controlSize) {
+void OTGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVec2 controlSize) {
 
     if (standAlone) {
         ImGui::SetNextWindowSize(ImVec2(250, 200), ImGuiCond_FirstUseEver);
@@ -279,7 +279,7 @@ void OhmfluxTrackerGui::DrawFancyOrderList(SongData& song, bool standAlone, ImVe
 
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawOrderListEditor(SongData& song) {
+void OTGui::DrawOrderListEditor(SongData& song) {
     // Action trackers to prevent modifying vector during iteration
     int delete_idx = -1;
     int insert_idx = -1;

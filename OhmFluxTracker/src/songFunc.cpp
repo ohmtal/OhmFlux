@@ -1,5 +1,5 @@
-#include "ohmfluxTrackerGui.h"
-#include "ohmfluxTrackerMain.h"
+#include "otGui.h"
+#include "otMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -7,35 +7,35 @@
 #include <cctype>
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::setLoop(bool loop) {
+void OTGui::setLoop(bool loop) {
     mLoopSong = loop;
     getMain()->getController()->setLoop(mLoopSong);
 }
 
-void OhmfluxTrackerGui::toogleLoop() {
+void OTGui::toogleLoop() {
     mLoopSong = !mLoopSong;
     setLoop(mLoopSong);
 }
 
 
 
-bool OhmfluxTrackerGui::isPlaying() {
+bool OTGui::isPlaying() {
     return getMain()->getController()->getTrackerState().playing;
 }
-uint16_t OhmfluxTrackerGui::getPlayingRow() {
+uint16_t OTGui::getPlayingRow() {
     return getMain()->getController()->getTrackerState().rowIdx;
 }
-uint16_t OhmfluxTrackerGui::getPlayingOrderIndex() {
+uint16_t OTGui::getPlayingOrderIndex() {
     return getMain()->getController()->getTrackerState().orderIdx;
 }
 
 
-bool OhmfluxTrackerGui::playSong() {
+bool OTGui::playSong() {
     getMain()->getController()->getTrackerStateMutable()->playRange.init();
    return  getMain()->getController()->playSong(mCurrentSong, mLoopSong);
 }
 //------------------------------------------------------------------------------
-bool OhmfluxTrackerGui::playSelected(PatternEditorState& state, bool forcePatternPlay)
+bool OTGui::playSelected(PatternEditorState& state, bool forcePatternPlay)
 {
     OPL3Controller::PlayPatternRange& lPlayRange = getMain()->getController()->getTrackerStateMutable()->playRange;
 
@@ -59,7 +59,7 @@ bool OhmfluxTrackerGui::playSelected(PatternEditorState& state, bool forcePatter
     return  getMain()->getController()->playSong(mCurrentSong, mLoopSong);
 }
 //------------------------------------------------------------------------------
-bool OhmfluxTrackerGui::clearSelectedSteps(PatternEditorState& state) {
+bool OTGui::clearSelectedSteps(PatternEditorState& state) {
     if (state.selection.getCount() < 1)
         return false;
     for (int r = state.selection.minRow(); r <= state.selection.maxRow(); ++r) {
@@ -73,14 +73,14 @@ bool OhmfluxTrackerGui::clearSelectedSteps(PatternEditorState& state) {
 
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::InsertRow(opl3::Pattern& pat, int rowIndex){
+void OTGui::InsertRow(opl3::Pattern& pat, int rowIndex){
     auto& steps = pat.getStepsMutable();
     auto pos = steps.begin() + (rowIndex * SOFTWARE_CHANNEL_COUNT);
     // Insert 12 empty steps
     steps.insert(pos, SOFTWARE_CHANNEL_COUNT, SongStep{});
 }
 //------------------------------------------------------------------------------
-opl3::Pattern* OhmfluxTrackerGui::getCurrentPattern()
+opl3::Pattern* OTGui::getCurrentPattern()
 {
     PatternEditorState& state = mPatternEditorState;
     SongData& song = mCurrentSong;
@@ -100,7 +100,7 @@ opl3::Pattern* OhmfluxTrackerGui::getCurrentPattern()
     return &song.patterns[state.currentPatternIdx];
 }
 //------------------------------------------------------------------------------
-bool OhmfluxTrackerGui::exportSongToWav(std::string filename)
+bool OTGui::exportSongToWav(std::string filename)
 {
     if (!getMain()->getController()->songValid(mCurrentSong)) {
         LogFMT("[error] current Song is invalid.. can't export!");
@@ -132,7 +132,7 @@ bool OhmfluxTrackerGui::exportSongToWav(std::string filename)
     return true;
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::callSaveSong() {
+void OTGui::callSaveSong() {
     if (!getMain()->getController()->songValid(mCurrentSong))
         return;
 
@@ -152,7 +152,7 @@ void OhmfluxTrackerGui::callSaveSong() {
     g_FileDialog.mDirty  = true;
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::callExportSong(){
+void OTGui::callExportSong(){
     if (!getMain()->getController()->songValid(mCurrentSong))
         return;
 
@@ -168,7 +168,7 @@ void OhmfluxTrackerGui::callExportSong(){
 
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::newSong(){
+void OTGui::newSong(){
     stopSong();
     mCurrentSong.init();
 
@@ -202,11 +202,11 @@ void OhmfluxTrackerGui::newSong(){
 
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::stopSong(){
+void OTGui::stopSong(){
     getMain()->getController()->stopSong();
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::deleteAndShiftDataUp(PatternEditorState& state) {
+void OTGui::deleteAndShiftDataUp(PatternEditorState& state) {
     if (!state.pattern) return;
 
     int minC = state.selection.active ? state.selection.minCol() : state.cursorCol;
@@ -232,7 +232,7 @@ void OhmfluxTrackerGui::deleteAndShiftDataUp(PatternEditorState& state) {
     if (state.selection.active) state.selection.init();
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::insertBlanksAndshiftDataDown(PatternEditorState& state) {
+void OTGui::insertBlanksAndshiftDataDown(PatternEditorState& state) {
     if (!state.pattern) return;
 
     // Determine range: Selection or single cell?
@@ -251,7 +251,7 @@ void OhmfluxTrackerGui::insertBlanksAndshiftDataDown(PatternEditorState& state) 
     }
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::setInstrumentSelection(PatternEditorState& state, uint16_t instrumentIndex)
+void OTGui::setInstrumentSelection(PatternEditorState& state, uint16_t instrumentIndex)
 {
     if (!state.selection.active || !state.pattern) return;
     if (instrumentIndex >= getMain()->getController()->getSoundBank().size()) {
@@ -268,7 +268,7 @@ void OhmfluxTrackerGui::setInstrumentSelection(PatternEditorState& state, uint16
     }
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::transposeSelection(PatternEditorState& state, int semitones) {
+void OTGui::transposeSelection(PatternEditorState& state, int semitones) {
     if (!state.selection.active || !state.pattern) return;
 
     state.selection.sort();
@@ -285,7 +285,7 @@ void OhmfluxTrackerGui::transposeSelection(PatternEditorState& state, int semito
     }
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::selectPatternRow(PatternEditorState& state){
+void OTGui::selectPatternRow(PatternEditorState& state){
     state.selection.active = true;
     state.selection.startPoint = { (uint16_t)state.cursorRow , 0};
     state.selection.endPoint = {
@@ -294,7 +294,7 @@ void OhmfluxTrackerGui::selectPatternRow(PatternEditorState& state){
     };
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::selectPatternCol(PatternEditorState& state){
+void OTGui::selectPatternCol(PatternEditorState& state){
     state.selection.active = true;
     state.selection.startPoint = {0, (uint16_t)state.cursorCol};
     state.selection.endPoint = {
@@ -303,7 +303,7 @@ void OhmfluxTrackerGui::selectPatternCol(PatternEditorState& state){
     };
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::selectPatternAll(PatternEditorState& state){
+void OTGui::selectPatternAll(PatternEditorState& state){
     state.selection.active = true;
     state.selection.startPoint = {0, 0};
     state.selection.endPoint = {
@@ -312,7 +312,7 @@ void OhmfluxTrackerGui::selectPatternAll(PatternEditorState& state){
     };
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb, bool useContextPoint) {
+void OTGui::pasteStepsFromClipboard(PatternEditorState& state, const PatternClipboard& cb, bool useContextPoint) {
     if (!cb.active || !state.pattern) return;
 
     int maxRows = cb.rows >= state.pattern->getRowCount() ? state.pattern->getRowCount() : cb.rows;
@@ -347,7 +347,7 @@ void OhmfluxTrackerGui::pasteStepsFromClipboard(PatternEditorState& state, const
     );
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::copyStepsToClipboard(PatternEditorState& state, PatternClipboard& cb) {
+void OTGui::copyStepsToClipboard(PatternEditorState& state, PatternClipboard& cb) {
     if (!state.selection.active || !state.pattern) return;
     dLog("[info] 1: selection count:%d", state.selection.getCount());
     state.selection.sort();
@@ -368,11 +368,11 @@ void OhmfluxTrackerGui::copyStepsToClipboard(PatternEditorState& state, PatternC
 }
 //------------------------------------------------------------------------------
 
-bool OhmfluxTrackerGui::deletePatternIsPending() {
+bool OTGui::deletePatternIsPending() {
     return FluxSchedule.isPending(mDeletePatternScheduleId);
 }
 
-bool OhmfluxTrackerGui::deletePattern(opl3::SongData& song, int patternIndex) {
+bool OTGui::deletePattern(opl3::SongData& song, int patternIndex) {
     if (deletePatternIsPending()) return false;
 
     mDeletePatternScheduleId = FluxSchedule.add(0.0f, nullptr, [&song, patternIndex]() {

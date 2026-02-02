@@ -12,7 +12,7 @@
 #include <gui/ImConsole.h>
 #include <gui/ImFlux.h>
 #include <DSP.h>
-#include "ohmfluxTrackerGlobals.h"
+#include "otGlobals.h"
 #include <opl3_base.h>
 #include <OPL3Tests.h>
 
@@ -42,7 +42,7 @@ static int SDLCALL ExportThreadFunc(void* data) {
 }
 
 
-class OhmfluxTrackerGui: public FluxBaseObject
+class OTGui: public FluxBaseObject
 {
 public:
     // dont forget to add a parameter 
@@ -328,8 +328,8 @@ private:
 
 public:
 
-    OhmfluxTrackerGui() {}
-    ~OhmfluxTrackerGui() {}
+    OTGui() {}
+    ~OTGui() {}
 
     ImConsole mConsole;
     bool Initialize() override;
@@ -394,7 +394,7 @@ public:
 }; //class
 
 // macro for JSON support
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(OhmfluxTrackerGui::TrackerSettings,
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(OTGui::TrackerSettings,
     EditorGuiInitialized
     ,ShowFileBrowser
     ,ShowConsole

@@ -1,5 +1,5 @@
-#include "ohmfluxTrackerGui.h"
-#include "ohmfluxTrackerMain.h"
+#include "otGui.h"
+#include "otMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -7,7 +7,7 @@
 #include <cctype>
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawAlgorithmHoverFunc(const opl3::Instrument inst){
+void OTGui::DrawAlgorithmHoverFunc(const opl3::Instrument inst){
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort)) {
         if (ImGui::BeginTooltip())
         {
@@ -29,7 +29,7 @@ void OhmfluxTrackerGui::DrawAlgorithmHoverFunc(const opl3::Instrument inst){
     }
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::Draw4OP_Algorithm0Overlay(float nodeSize, float spacing) {
+void OTGui::Draw4OP_Algorithm0Overlay(float nodeSize, float spacing) {
 
     ImGui::Text("Algorithm 0: Serial FM Chain (1 -> 2 -> 3 -> 4)");
     ImGui::Separator();
@@ -76,7 +76,7 @@ void OhmfluxTrackerGui::Draw4OP_Algorithm0Overlay(float nodeSize, float spacing)
 
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::Draw4OP_Algorithm1Overlay(float nodeSize, float spacing) {
+void OTGui::Draw4OP_Algorithm1Overlay(float nodeSize, float spacing) {
 
     ImGui::Text("Algorithm 1: (1 -> 2 -> 3) + 4");
     ImGui::Separator();
@@ -113,7 +113,7 @@ void OhmfluxTrackerGui::Draw4OP_Algorithm1Overlay(float nodeSize, float spacing)
     ImGui::Dummy(ImVec2((nodeSize + spacing) * 3 + 20, (nodeSize + spacing) * 2));
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::Draw4OP_Algorithm2Overlay(float nodeSize, float spacing) {
+void OTGui::Draw4OP_Algorithm2Overlay(float nodeSize, float spacing) {
 
     ImGui::Text("Algorithm 2: 1 + (2 -> 3 -> 4)");
     ImGui::Separator();
@@ -150,7 +150,7 @@ void OhmfluxTrackerGui::Draw4OP_Algorithm2Overlay(float nodeSize, float spacing)
     ImGui::Dummy(ImVec2((nodeSize + spacing) * 3 + 20, (nodeSize + spacing) * 2));
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::Draw4OP_Algorithm3Overlay(float nodeSize, float spacing) {
+void OTGui::Draw4OP_Algorithm3Overlay(float nodeSize, float spacing) {
 
     ImGui::Text("Algorithm 3: Parallel 2-OP Pairs");
     ImGui::Separator();
@@ -194,7 +194,7 @@ void OhmfluxTrackerGui::Draw4OP_Algorithm3Overlay(float nodeSize, float spacing)
     ImGui::Dummy(ImVec2((nodeSize + spacing) * 2 + 20, (nodeSize + spacing) * 2 + 20));
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::Draw2OP_Additive_Overlay(float nodeSize, float spacing) {
+void OTGui::Draw2OP_Additive_Overlay(float nodeSize, float spacing) {
 
     ImGui::Text("2-OP Additiv: Op 1 + Op 2");
     ImGui::Separator();
@@ -226,7 +226,7 @@ void OhmfluxTrackerGui::Draw2OP_Additive_Overlay(float nodeSize, float spacing) 
     ImGui::Dummy(ImVec2(nodeSize + 40, (nodeSize + spacing) * 2));
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::Draw2OP_FM_Overlay(float nodeSize, float spacing) {
+void OTGui::Draw2OP_FM_Overlay(float nodeSize, float spacing) {
 
     ImGui::Text("2-OP FM: Modulator -> Carrier");
     ImGui::Separator();

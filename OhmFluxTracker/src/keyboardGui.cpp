@@ -1,5 +1,5 @@
-#include "ohmfluxTrackerGui.h"
-#include "ohmfluxTrackerMain.h"
+#include "otGui.h"
+#include "otMain.h"
 #include <imgui_internal.h>
 
 
@@ -76,7 +76,7 @@ int getPianoMapOffset(SDL_Scancode scancode) {
     }
 }
 //------------------------------------------------------------------------------
-uint8_t OhmfluxTrackerGui::getCurrentChannel(){
+uint8_t OTGui::getCurrentChannel(){
 
 
     if ( getCurrentPattern() )
@@ -86,7 +86,7 @@ uint8_t OhmfluxTrackerGui::getCurrentChannel(){
     return 0;
 }
 //------------------------------------------------------------------------------
-bool OhmfluxTrackerGui::setCurrentChannel(uint8_t channel){
+bool OTGui::setCurrentChannel(uint8_t channel){
     if (channel >= SOFTWARE_CHANNEL_COUNT)
         return false;
 
@@ -98,7 +98,7 @@ bool OhmfluxTrackerGui::setCurrentChannel(uint8_t channel){
     return true;
 }
 //------------------------------------------------------------------------------
-bool OhmfluxTrackerGui::stopPlayedNotes( )
+bool OTGui::stopPlayedNotes( )
 {
     for (uint8_t i = 0; i < SOFTWARE_CHANNEL_COUNT; i++)
     {
@@ -109,7 +109,7 @@ bool OhmfluxTrackerGui::stopPlayedNotes( )
 }
 
 
-bool OhmfluxTrackerGui::stopNote(uint8_t softwareChannel)
+bool OTGui::stopNote(uint8_t softwareChannel)
 {
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
         return false;
@@ -137,7 +137,7 @@ bool OhmfluxTrackerGui::stopNote(uint8_t softwareChannel)
 //------------------------------------------------------------------------------
 int moveSchedId = -1;
 
-bool OhmfluxTrackerGui::playNote(uint8_t softwareChannel,  SongStep step)
+bool OTGui::playNote(uint8_t softwareChannel,  SongStep step)
 {
     if (softwareChannel >= SOFTWARE_CHANNEL_COUNT)
         return false;
@@ -204,7 +204,7 @@ bool OhmfluxTrackerGui::playNote(uint8_t softwareChannel,  SongStep step)
 //------------------------------------------------------------------------------
 
 
-void OhmfluxTrackerGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
+void OTGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
     // Ignore OS key repeats to prevent re-triggering FM envelopes
     if (event.repeat) return;
 
@@ -334,7 +334,7 @@ namespace chords {
 
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderScalePlayerUI(bool standAlone) {
+void OTGui::RenderScalePlayerUI(bool standAlone) {
     if (standAlone) {
         ImGui::SetNextWindowSize(ImVec2(520, 450), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("Scale Player")) { ImGui::End(); return; }
@@ -422,7 +422,7 @@ void OhmfluxTrackerGui::RenderScalePlayerUI(bool standAlone) {
     if (standAlone) ImGui::End();
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderPianoUI(bool standAlone)
+void OTGui::RenderPianoUI(bool standAlone)
 {
 
 

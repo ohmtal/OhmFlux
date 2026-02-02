@@ -1,5 +1,5 @@
-#include "ohmfluxTrackerGui.h"
-#include "ohmfluxTrackerMain.h"
+#include "otGui.h"
+#include "otMain.h"
 #include <imgui_internal.h>
 
 #include <algorithm>
@@ -13,7 +13,7 @@ constexpr float CellHeight = 22.f;
 ImVec2 cellSize = {50, CellHeight};
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawExportStatus() {
+void OTGui::DrawExportStatus() {
     // Check if the thread task exists
     if (mCurrentExport == nullptr) return;
 
@@ -47,7 +47,7 @@ void OhmfluxTrackerGui::DrawExportStatus() {
     }
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
+void OTGui::RenderPatternUI(bool standAlone)
 {
 
     ImFlux::ButtonParams bparams = ImFlux::DEFAULT_BUTTON;
@@ -281,7 +281,7 @@ void OhmfluxTrackerGui::RenderPatternUI(bool standAlone)
     if (standAlone) ImGui::End();
 }
 // //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawStepCellPopup(PatternEditorState& state) {
+void OTGui::DrawStepCellPopup(PatternEditorState& state) {
     if (state.showContextRequest) {
         ImGui::OpenPopup("PatternCellContext");
         state.showContextRequest = false; // Reset the flag immediately
@@ -406,7 +406,7 @@ void OhmfluxTrackerGui::DrawStepCellPopup(PatternEditorState& state) {
     }
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::ActionPatternEditor(PatternEditorState& state)
+void OTGui::ActionPatternEditor(PatternEditorState& state)
 {
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)) {
         // 1. Capture modifier state
@@ -501,7 +501,7 @@ void OhmfluxTrackerGui::ActionPatternEditor(PatternEditorState& state)
 }
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawPatternEditor( PatternEditorState& state) {
+void OTGui::DrawPatternEditor( PatternEditorState& state) {
     if (!state.pattern)
         return;
 
@@ -876,7 +876,7 @@ std::string GetStepText(SongStep& step, bool enhanced)
 }
 
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, int col, PatternEditorState& state) {
+void OTGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int row, int col, PatternEditorState& state) {
 
     ImGui::PushID(row * 1000 + col);
 
@@ -1086,7 +1086,7 @@ void OhmfluxTrackerGui::DrawStepCell(opl3::SongStep& step, bool isSelected, int 
     ImGui::PopID();
 }
 //------------------------------------------------------------------------------
-void OhmfluxTrackerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState& state) {
+void OTGui::DrawPatternSelector(opl3::SongData& song, PatternEditorState& state) {
 
     static bool sShowNewPatternPopup = false;
 
@@ -1288,7 +1288,7 @@ void OhmfluxTrackerGui::DrawPatternSelector(opl3::SongData& song, PatternEditorS
 
 }
 //------------------------------------------------------------------------------
-bool OhmfluxTrackerGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings& settings) {
+bool OTGui::DrawNewPatternModal(opl3::SongData& song, NewPatternSettings& settings) {
     bool result = false;
 
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.f,8.f));

@@ -2,14 +2,14 @@
 // OhmFlux Tracker
 //-----------------------------------------------------------------------------
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
-#include "ohmfluxTrackerMain.h"
+#include "otMain.h"
 //------------------------------------------------------------------------------
 // Main
 //------------------------------------------------------------------------------
 
-OhmFluxTrackerMain* g_TrackerMain = nullptr;
+OTMain* g_TrackerMain = nullptr;
 
-OhmFluxTrackerMain* getMain() {
+OTMain* getMain() {
     return g_TrackerMain;
 }
 
@@ -18,7 +18,7 @@ OhmFluxTrackerMain* getMain() {
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    OhmFluxTrackerMain* app = new OhmFluxTrackerMain();
+    OTMain* app = new OTMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "OhmFlux Tracker";
     app->mSettings.enableLogFile = true;
