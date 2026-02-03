@@ -251,6 +251,7 @@ bool SFXGenerator::SaveSettings(const char* filename)
 void SFXGenerator::ResetSample(bool restart)
 {
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    dLog(" SFXGenerator::ResetSample( %d ) ", restart);
     if(!restart)
         mState.phase=0;
     mState.fperiod=100.0/(mParams.p_base_freq*mParams.p_base_freq+0.001);

@@ -12,6 +12,9 @@ FluxEditorMain* g_FluxEditor = nullptr;
 FluxEditorMain* getGame() {
     return g_FluxEditor;
 }
+FluxEditorMain* getMain() {
+    return g_FluxEditor;
+}
 
 int main(int argc, char* argv[])
 {

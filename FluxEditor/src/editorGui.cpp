@@ -31,9 +31,17 @@ bool EditorGui::Initialize()
 
 
 
+    mSfxEditorStereo = new FluxSfxEditorStereo();
+    if (!mSfxEditorStereo->Initialize())
+        return false;
+
+    // getMain()-> queueObject(mSfxEditorStereo); //For update!
+
+
     mSfxEditor = new FluxSfxEditor();
     if (!mSfxEditor->Initialize())
         return false;
+
 
     // not centered ?!?!?! i guess center is not in place yet ?
     mBackground = new FluxRenderObject(getGame()->loadTexture("assets/fluxeditorback.png"));
@@ -53,6 +61,7 @@ void EditorGui::Deinitialize()
 {
 
     SAFE_DELETE(mSfxEditor);
+    SAFE_DELETE(mSfxEditorStereo);
     SAFE_DELETE(mGuiGlue);
 
     if (SettingsManager().IsInitialized()) {
@@ -65,6 +74,9 @@ void EditorGui::Deinitialize()
 void EditorGui::onEvent(SDL_Event event)
 {
     mGuiGlue->onEvent(event);
+
+    if (mSfxEditorStereo)
+        mSfxEditorStereo->onEvent(event);
 
     if (mSfxEditor)
         mSfxEditor->onEvent(event);
@@ -164,6 +176,12 @@ void EditorGui::DrawGui()
         mSfxEditor->Draw();
     }
 
+    if (mEditorSettings.mShowSFXEditorStereo) {
+        mSfxEditorStereo->DrawGui();
+    }
+
+
+
     if (mEditorSettings.mShowImFluxWidgets) {
         ImFlux::ShowCaseWidgets();
     }
@@ -177,15 +195,16 @@ void EditorGui::DrawGui()
 
 
 
+    if (mEditorSettings.mShowFileBrowser)
+    {
+        if (g_FileDialog.Draw()) {
+            // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+            if (g_FileDialog.mSaveMode)
+            {
+                g_FileDialog.reset();
+            } else {
 
-    if (g_FileDialog.Draw()) {
-        // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
-
-        if (g_FileDialog.mSaveMode)
-        {
-            g_FileDialog.reset();
-        } else {
-
+            }
         }
     }
 

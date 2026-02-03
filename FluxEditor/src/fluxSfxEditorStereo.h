@@ -6,7 +6,10 @@
 
 #include <core/fluxBaseObject.h>
 #include <imgui.h>
-#include <SFXGenerator.h>
+#include <SFXGeneratorStereo.h>
+#include <gui/ImFlux.h>
+#include <DSP.h>
+#include <algorithm>
 
 #ifdef __EMSCRIPTEN__
 #ifdef __cplusplus
@@ -20,7 +23,7 @@ extern "C" {
 #endif
 
 
-class FluxSfxEditor : public FluxBaseObject
+class FluxSfxEditorStereo : public FluxBaseObject
 {
 public:
     enum SFXGEN_FILE_ACTION_TYPE :int {
@@ -31,32 +34,57 @@ public:
     };
 
 private:
-    SFXGenerator* mSFXGenerator = nullptr;
+    SFXGeneratorStereo* mSFXGeneratorStereo = nullptr;
 
     struct FileDialogContext {
-        SFXGenerator* generator;
+        SFXGeneratorStereo* generator;
         SFXGEN_FILE_ACTION_TYPE action;
         SDL_DialogFileFilter filters[2];
         char* basePath;
         char* filterStrings[3];
     };
 
-public:
-    ~FluxSfxEditor() { Deinitialize(); }
+    DSP::VisualAnalyzer* mVisualAnalyzer;
 
-    SFXGenerator* getSFXGenerator() { return mSFXGenerator; }
+public:
+
+
+    ~FluxSfxEditorStereo() { Deinitialize(); }
+
+    SFXGeneratorStereo* getSFXGeneratorStereo() { return mSFXGeneratorStereo; }
 
     // void Execute() override;
     bool Initialize() override {
-            mSFXGenerator = new SFXGenerator();
-            return mSFXGenerator->initSDLAudio();
+            mSFXGeneratorStereo = new SFXGeneratorStereo();
+            if (!mSFXGeneratorStereo->initSDLAudio())
+                return false;
+
+            auto specAna = std::make_unique<DSP::VisualAnalyzer>(true);
+            mVisualAnalyzer = specAna.get();
+            mSFXGeneratorStereo->getDspEffects().push_back(std::move(specAna));
+
+
+            return mSFXGeneratorStereo->initSDLAudio();
     };
     void Deinitialize() override {
-        SAFE_DELETE(mSFXGenerator);
+        SAFE_DELETE(mSFXGeneratorStereo);
     }
-    // void Update(const double& dt) override;
-    void Draw() override {
-        if (!mSFXGenerator)
+    // void Update(const double& dt) override {
+    //     if ( mSFXGeneratorStereo )
+    //     {
+    //         // TEST:
+    //         if (mSFXGeneratorStereo->mState.playing_sample) {
+    //             int frames_to_generate = 512;
+    //             std::vector<float> buffer(frames_to_generate * 2);
+    //             mSFXGeneratorStereo->SynthSample(frames_to_generate, buffer.data());
+    //             SDL_PutAudioStreamData(mSFXGeneratorStereo->getAudioStream(), buffer.data(), buffer.size() * sizeof(float));
+    //         }
+    //     }
+    // }
+
+
+    void DrawGui()  {
+        if (!mSFXGeneratorStereo)
             return;
         DrawSFXEditor();
 
@@ -73,7 +101,7 @@ public:
     void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
         if (action == fa_export)
         {
-            if (!mSFXGenerator->ExportWAV(wav_file_name))
+            if (!mSFXGeneratorStereo->ExportWAV(wav_file_name))
                 Log("ERROR: Failed to export wav to [%s]", wav_file_name);
             else
                 emscripten_trigger_download(wav_file_name);
@@ -86,11 +114,11 @@ public:
     #else //Desktop
 
     void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
-        if (!mSFXGenerator) return;
+        if (!mSFXGeneratorStereo) return;
 
 
         auto* ctx = new FileDialogContext();
-        ctx->generator = mSFXGenerator;
+        ctx->generator = mSFXGeneratorStereo;
         ctx->action = action;
         ctx->basePath = const_cast<char*>(SDL_GetBasePath());
 
@@ -142,7 +170,7 @@ public:
                 else
                 if (c->action == fa_export) {
                     Log("Action: Export wav to [%s]", filename.c_str());
-                    if (!c->generator->ExportWAV(filename.c_str()))
+                    if (!c->generator->exportToWav(filename.c_str(), nullptr))
                         Log("ERROR: Failed to export wav to [%s]", filename.c_str());
                 }
             }
@@ -161,62 +189,24 @@ public:
         }
 
     }
-    // void FileDialog(SFXGEN_FILE_ACTION_TYPE action) {
-    //     if ( !mSFXGenerator )
-    //         return;
-    //     auto* ctx = new FileDialogContext{ mSFXGenerator, action };
-    //
-    //     const char* ext = (action == fa_export) ? "wav" : "sfx";
-    //     const SDL_DialogFileFilter filters[] = { { ext , ext }, { "*", "*" } };
-    //
-    //     auto callback = [](void* userdata, const char* const* filelist, int filter) {
-    //         auto* c = static_cast<FileDialogContext*>(userdata);
-    //         if (filelist && *filelist)
-    //         {
-    //             std::string filename = *filelist;
-    //             const char* extension = (c->action == fa_export) ? ".wav" : ".sfx";
-    //             std::string lowerFilename = filename;
-    //             std::transform(lowerFilename.begin(), lowerFilename.end(), lowerFilename.begin(), ::tolower);
-    //             if (!lowerFilename.ends_with(extension)) {
-    //                 filename += extension;
-    //             }
-    //
-    //             if (c->action == fa_load) {
-    //                 Log("Action: Load SFXR to [%s]", filename.c_str());
-    //                 if (!c->generator->LoadSettings(filename.c_str()))
-    //                     Log("ERROR: Failed to load SFXR [%s]", filename.c_str());
-    //             }
-    //             else
-    //             if (c->action == fa_save)  {
-    //                 Log("Action: Save SFXR to [%s]", filename.c_str());
-    //                 if (!c->generator->SaveSettings(filename.c_str()))
-    //                     Log("ERROR: Failed to save SFXR to [%s]", filename.c_str());
-    //             }
-    //             else
-    //             if (c->action == fa_export) {
-    //                 Log("Action: Export wav to [%s]", filename.c_str());
-    //                 if (!c->generator->ExportWAV(filename.c_str()))
-    //                     Log("ERROR: Failed to export wav to [%s]", filename.c_str());
-    //             }
-    //         }
-    //         delete c; // Clean up the async context
-    //     };
-    //
-    //       if (action == fa_save || action == fa_export) {
-    //         SDL_ShowSaveFileDialog(callback, ctx, SDL_GL_GetCurrentWindow(), filters, 2, SDL_GetBasePath());
-    //     } else {
-    //         SDL_ShowOpenFileDialog(callback, ctx, SDL_GL_GetCurrentWindow(), filters, 2, SDL_GetBasePath(), false);
-    //     }
-    // }
 #endif // Desktop
+    //--------------------------------------------------------------------------
+    bool SFXButton(std::string label, ImVec2 size)
+    {
+        // return ImGui::Button(label.c_str(), size);
+
+        ImFlux::ButtonParams bp = ImFlux::SLATE_BUTTON.WithSize(size);
+        return ImFlux::ButtonFancy(label, bp);
+
+    }
     //--------------------------------------------------------------------------
     void DrawSFXEditor()
     {
-        if (!mSFXGenerator)
+        if (!mSFXGeneratorStereo)
             return;
 
-        SFXGenerator::SFXParams& lParams = mSFXGenerator->mParams;
-        SFXGenerator* lSfxGen = mSFXGenerator;
+        SFXGeneratorStereo::SFXParams& lParams = mSFXGeneratorStereo->mParams;
+        SFXGeneratorStereo* lSfxGen = mSFXGeneratorStereo;
 
         // Persistent state for the Auto Play toggle
         static bool lAutoPlay = true;
@@ -244,7 +234,7 @@ public:
         // minimum size
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
 
-        ImGui::Begin("Sound Effects Generator");
+        ImGui::Begin("Sound Effects Generator Stereo");
 
         if (ImGui::BeginTable("EditorColumns", 3,
             ImGuiTableFlags_Resizable |
@@ -262,21 +252,24 @@ public:
             ImGui::TableSetColumnIndex(0);
             ImGui::TextDisabled("PRESETS");
 
-            ImVec2 lButtonSize = ImVec2(-FLT_MIN, 40);
+            ImVec2 lButtonSize = ImVec2(120.f, 40.f);
 
 
 
-            if (ImGui::Button("Pickup/Coin", lButtonSize)) TriggerGen([&]{ lSfxGen->GeneratePickupCoin(); });
-            if (ImGui::Button("Laser/Shoot", lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateLaserShoot(); });
-            if (ImGui::Button("Explosion",   lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateExplosion(); });
-            if (ImGui::Button("Powerup",     lButtonSize)) TriggerGen([&]{ lSfxGen->GeneratePowerup(); });
-            if (ImGui::Button("Hit/Hurt",    lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateHitHurt(); });
-            if (ImGui::Button("Jump",        lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateJump(); });
-            if (ImGui::Button("Blip/Select", lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateBlipSelect(); });
+            if (SFXButton("Pickup/Coin", lButtonSize)) TriggerGen([&]{ lSfxGen->GeneratePickupCoin(); });
+            if (SFXButton("Laser/Shoot", lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateLaserShoot(); });
+            if (SFXButton("Explosion",   lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateExplosion(); });
+            if (SFXButton("Powerup",     lButtonSize)) TriggerGen([&]{ lSfxGen->GeneratePowerup(); });
+            if (SFXButton("Hit/Hurt",    lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateHitHurt(); });
+            if (SFXButton("Jump",        lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateJump(); });
+            if (SFXButton("Blip/Select", lButtonSize)) TriggerGen([&]{ lSfxGen->GenerateBlipSelect(); });
 
             ImGui::Separator();
-            if (ImGui::Button("Randomize",   lButtonSize)) TriggerGen([&]{ lSfxGen->Randomize(); });
-            if (ImGui::Button("Mutate",      lButtonSize)) TriggerGen([&]{ lSfxGen->Mutate(); });
+            if (SFXButton("Randomize",   lButtonSize)) TriggerGen([&]{ lSfxGen->Randomize(); });
+            ImFlux::Hint("Randomize Sample [F1]");
+            if (SFXButton("Mutate",      lButtonSize)) TriggerGen([&]{ lSfxGen->Mutate(); });
+            ImFlux::Hint("Mutate Sample [F2]");
+            if (SFXButton("PanningMutate",  lButtonSize)) TriggerGen([&]{ lSfxGen->AddPanning(true); });
 
 
             // --- COLUMN 2: PARAMETERS (Middle) ---
@@ -304,7 +297,7 @@ public:
                 }
 
                 // Use the pre-calculated fixed width
-                if (ImGui::Button(label, ImVec2(button_width, 30))) {
+                if (SFXButton(label, ImVec2(button_width, 30))) {
                     lParams.wave_type = type;
                     if (lAutoPlay) lSfxGen->PlaySample();
                 }
@@ -326,8 +319,9 @@ public:
             {
                 ImGui::PushItemWidth(-FLT_MIN);
 
+
                 // 1. ENVELOPE
-                // ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "ENVELOPE");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "ENVELOPE");
                 SFXSlider("ATTACK TIME", lParams.p_env_attack, false);
                 SFXSlider("SUSTAIN TIME", lParams.p_env_sustain, false);
                 SFXSlider("SUSTAIN PUNCH", lParams.p_env_punch, false);
@@ -335,7 +329,7 @@ public:
                 ImGui::Separator();
 
                 // 2. FREQUENCY & VIBRATO
-                // ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "FREQUENCY / VIBRATO");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "FREQUENCY / VIBRATO");
                 SFXSlider("START FREQUENCY", lParams.p_base_freq, false);
                 SFXSlider("MIN FREQUENCY", lParams.p_freq_limit, false);
                 SFXSlider("SLIDE", lParams.p_freq_ramp, true);
@@ -345,35 +339,44 @@ public:
                 ImGui::Separator();
 
                 // 3. ARPEGGIATOR
-                // ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "ARPEGGIATOR");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "ARPEGGIATOR");
                 SFXSlider("CHANGE AMOUNT", lParams.p_arp_mod, true);
                 SFXSlider("CHANGE SPEED", lParams.p_arp_speed, false);
                 ImGui::Separator();
 
                 // 4. DUTY CYCLE
-                // ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "SQUARE DUTY");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "SQUARE DUTY");
                 SFXSlider("SQUARE DUTY", lParams.p_duty, false);
                 SFXSlider("DUTY SWEEP", lParams.p_duty_ramp, true);
                 ImGui::Separator();
 
                 // 5. REPEAT
-                // ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "RETREIG");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "RETREIG");
                 SFXSlider("REPEAT SPEED", lParams.p_repeat_speed, false);
                 ImGui::Separator();
 
                 // 6. PHASER
-                // ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "PHASER");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "PHASER");
                 SFXSlider("PHASER OFFSET", lParams.p_pha_offset, true);
                 SFXSlider("PHASER SWEEP", lParams.p_pha_ramp, true);
                 ImGui::Separator();
 
                 // 7. FILTERS
-                // ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "FILTERS");
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "FILTERS");
                 SFXSlider("LP FILTER CUTOFF", lParams.p_lpf_freq, false);
                 SFXSlider("LP FILTER CUTOFF SWEEP", lParams.p_lpf_ramp, true);
                 SFXSlider("LP FILTER RESONANCE", lParams.p_lpf_resonance, false);
                 SFXSlider("HP FILTER CUTOFF", lParams.p_hpf_freq, false);
                 SFXSlider("HP FILTER CUTOFF SWEEP", lParams.p_hpf_ramp, true);
+
+
+                ImGui::Separator();
+                // 8. PANNING
+                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "PANNING");
+                SFXSlider("PANNING LEFT | RIGHT", lParams.p_pan, true);
+                SFXSlider("PANNING RAMP", lParams.p_pan_ramp, true);
+                SFXSlider("PANNING SPEED", lParams.p_pan_speed, false);
+
 
                 ImGui::PopItemWidth();
             }
@@ -384,9 +387,10 @@ public:
             ImGui::TableSetColumnIndex(2);
 
             // Main Play Button
-            if (ImGui::Button("PLAY", lButtonSize)) {
+            if (SFXButton("PLAY", lButtonSize)) {
                 lSfxGen->PlaySample();
             }
+            ImFlux::Hint("Play Sample [SPACE]");
 
             // Auto Play Checkbox placed directly under PLAY button
             ImGui::Checkbox("Auto Play", &lAutoPlay);
@@ -431,8 +435,8 @@ public:
 
 
 #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
-            if (ImGui::Button("Load", lButtonSize)) FileDialog(fa_load);
-            if (ImGui::Button("Save", lButtonSize)) FileDialog(fa_save);
+            if (SFXButton("Load", lButtonSize)) FileDialog(fa_load);
+            if (SFXButton("Save", lButtonSize)) FileDialog(fa_save);
             ImGui::Spacing(); ImGui::Separator(); ImGui::Spacing();
 #endif
 
@@ -442,16 +446,30 @@ public:
             ImGui::PopItemWidth();
 #endif
 
-            if (ImGui::Button("EXPORT .WAV", lButtonSize)) {
+            if (SFXButton("EXPORT .WAV", lButtonSize)) {
                 FileDialog(fa_export);
             }
+
+
+            DSP::DrawVisualAnalyzerOszi(mVisualAnalyzer, ImVec2(lButtonSize.x,lButtonSize.y * 2.f));
+
+
             ImGui::EndTable();
         }
 
         ImGui::End();
+
+        // KEYS
+        if (ImGui::IsKeyPressed(ImGuiKey_Space))  lSfxGen->PlaySample();
+        else
+        if (ImGui::IsKeyPressed(ImGuiKey_F1))  TriggerGen([&]{ lSfxGen->Randomize(); });
+        else
+        if (ImGui::IsKeyPressed(ImGuiKey_F2))  TriggerGen([&]{ lSfxGen->Mutate(); });
+
     }
     //--------------------------------------------------------------------------
     void onEvent(SDL_Event event) {
+
     }
     //--------------------------------------------------------------------------
 

@@ -71,3 +71,4 @@ public:
 
 extern FluxEditorMain* g_FluxEditor;
 FluxEditorMain* getGame();
+FluxEditorMain* getMain();

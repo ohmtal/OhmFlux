@@ -16,8 +16,8 @@
 #include <core/fluxRenderObject.h>
 #include <gui/fluxGuiGlue.h>
 
+#include "fluxSfxEditorStereo.h"
 #include "fluxSfxEditor.h"
-
 
 
 class EditorGui: public FluxBaseObject
@@ -31,12 +31,15 @@ public:
         bool mShowSFXEditor;
         bool mEditorGuiInitialized;
         bool mShowImFluxWidgets;
+        bool mShowFileBrowser;
+        bool mShowSFXEditorStereo;
     };
 
 
 private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
+    FluxSfxEditorStereo* mSfxEditorStereo = nullptr;
     FluxSfxEditor* mSfxEditor = nullptr;
 
 
@@ -45,7 +48,9 @@ private:
         .mShowDemo = false,
         .mShowSFXEditor = true,
         .mEditorGuiInitialized = false,
-        .mShowImFluxWidgets = false
+        .mShowImFluxWidgets = false,
+        .mShowFileBrowser = false,
+        .mShowSFXEditorStereo = true
     };
 
 public:
@@ -65,7 +70,9 @@ public:
 // macro for JSON support
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EditorGui::EditorSettings,
     mShowDemo,
+    mShowSFXEditorStereo,
     mShowSFXEditor,
     mEditorGuiInitialized,
-    mShowImFluxWidgets
+    mShowImFluxWidgets,
+    mShowFileBrowser
 )

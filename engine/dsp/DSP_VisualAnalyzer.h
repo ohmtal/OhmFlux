@@ -94,9 +94,8 @@ namespace DSP {
                 draw_list->AddLine(ImVec2(x1, l_y1), ImVec2(x2, l_y2), IM_COL32(0, 255, 255, 200), 1.5f);
                 draw_list->AddLine(ImVec2(x1, r_y1), ImVec2(x2, r_y2), IM_COL32(255, 255, 0, 150), 1.5f);
             }
-
-            ImGui::EndChild();
         }
+        ImGui::EndChild();
     }
 #endif
 

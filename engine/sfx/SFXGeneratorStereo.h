@@ -6,8 +6,8 @@
 // based on: https://www.drpetter.se/project_sfxr.html
 //-----------------------------------------------------------------------------
 #pragma once
-#ifndef SFXGENERATOR_H
-#define SFXGENERATOR_H
+#ifndef SFXGENERATOR_STEREO_H
+#define SFXGENERATOR_STEREO_H
 
 #include <SDL3/SDL.h>
 #include "errorlog.h"
@@ -20,7 +20,6 @@
 #include <mutex>
 
 #include <DSP.h>
-
 
 
 class SFXGeneratorStereo
@@ -128,8 +127,6 @@ protected:
 
     //Effects
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
-    static constexpr int MAX_FRAMES = 2048;
-    std::vector<float> mF32Buffer;
 
 
 public:

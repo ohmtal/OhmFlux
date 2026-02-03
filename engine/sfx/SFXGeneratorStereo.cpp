@@ -41,14 +41,8 @@ SFXGeneratorStereo::SFXGeneratorStereo():
 {
 
 
-    master_vol = 0.5f; //0.05f;
+    master_vol = 0.5f;
     sound_vol = 0.5f;
-    wav_bits = 16;
-    wav_freq = 44100;
-
-    file_sampleswritten = 0;
-    filesample = 0.0f;
-    fileacc = 0;
 
     // Reset all sound parameters to default
     ResetParamsNoLock();
@@ -94,8 +88,6 @@ SFXGeneratorStereo::SFXGeneratorStereo():
     mState.pan = 0.f;
     mState.pan_ramp = 0.f;
 
-    // Audio buffer
-    mF32Buffer.resize(MAX_FRAMES * 2);
 
 }
 
@@ -283,6 +275,7 @@ bool SFXGeneratorStereo::SaveSettings(const char* filename)
 void SFXGeneratorStereo::ResetSample(bool restart)
 {
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    dLog(" SFXGeneratorStereo::ResetSample( %d ) ", restart);
     if(!restart)
         mState.phase=0;
     mState.fperiod=100.0/(mParams.p_base_freq*mParams.p_base_freq+0.001);
@@ -468,10 +461,10 @@ void SFXGeneratorStereo::updateSystemState() {
 //-----------------------------------------------------------------------------
 void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
 
-    if (!mState.playing_sample)  {
-        std::memset(stereoBuffer, 0, length * sizeof(float) * 2);
-        return;
-    }
+    // if (!mState.playing_sample)  {
+    //     std::memset(stereoBuffer, 0, length * sizeof(float) * 2);
+    //     return;
+    // }
 
 
     // double lock !! std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
@@ -779,6 +772,9 @@ void SFXGeneratorStereo::AddPanning(bool doLock) {
 //     if (!userdata) return;
 //     auto* gen = static_cast<SFXGeneratorStereo*>(userdata);
 //
+//     if (!gen)
+//         return;
+//
 //     int frames_needed = additional_amount / (sizeof(float) * 2);
 //
 //
@@ -797,38 +793,32 @@ void SFXGeneratorStereo::AddPanning(bool doLock) {
 //         }
 //     }
 // }
-
 void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
 {
-    auto* controller = static_cast<SFXGeneratorStereo*>(userdata);
+    if (!userdata) return;
+    auto* gen = static_cast<SFXGeneratorStereo*>(userdata);
 
-    if (!controller || additional_amount <= 0) return;
+    if (!gen)
+        return;
 
-    // Calculate frames (F32 Stereo = 8 bytes per frame)
-    int framesNeeded = additional_amount / 8;
+    int frames_needed = additional_amount / (sizeof(float) * 2);
 
 
-    const int MAX_FRAMES = 2048;
-    if (framesNeeded > MAX_FRAMES) framesNeeded = MAX_FRAMES;
-    int totalSamples = framesNeeded * 2;
-
-    // Use the pre-allocated member buffer from your class
-    // This avoids creating 16KB-24KB on the stack every callback
-    float* f32Buffer = controller->mF32Buffer.data();
-
-    if (framesNeeded > 0)
+    if (frames_needed > 0)
     {
-        std::lock_guard<std::recursive_mutex> lock(controller->mParamsMutex);
-        controller->SynthSample(framesNeeded, f32Buffer);
+        std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
+        if (gen->mState.playing_sample) {
+            std::vector<float> stereoBuffer(frames_needed * 2, 0.0f);
+            gen->SynthSample(frames_needed, stereoBuffer.data());
 
-        // DSP Effects
-        for (auto& effect : controller->mDspEffects) {
-            effect->process(f32Buffer, totalSamples);
+            for (auto& effect : gen->mDspEffects) {
+                effect->process(stereoBuffer.data(), frames_needed * 2);
+            }
+
+            // SDL_PutAudioStreamData(stream, stereoBuffer.data(), additional_amount);
+            SDL_PutAudioStreamData(stream, stereoBuffer.data(), frames_needed * 2 * sizeof(float));
         }
-
-        SDL_PutAudioStreamData(stream, f32Buffer, framesNeeded * 8);
     }
-
 }
 
 //------------------------------------------------------------------------------
@@ -941,8 +931,9 @@ bool SFXGeneratorStereo::initSDLAudio()
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_F32;
     spec.channels = 2;
-    spec.freq = 44100;
+    spec.freq =  44100 ;
     mStream = SDL_CreateAudioStream(&spec, &spec);
+
 
     if (!mStream)
     {
