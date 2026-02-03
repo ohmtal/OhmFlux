@@ -426,7 +426,7 @@ endif()
 
 
 # --- Editor ---
-option(BUILD_EDITOR "Build Editor application" OFF)
+option(BUILD_EDITOR "Build Editor application" ON)
 if(BUILD_EDITOR)
     set(GAME_SOURCES
         "${EDITOR_DIR}/src/main.cpp"

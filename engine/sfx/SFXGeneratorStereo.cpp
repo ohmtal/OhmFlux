@@ -275,7 +275,6 @@ bool SFXGeneratorStereo::SaveSettings(const char* filename)
 void SFXGeneratorStereo::ResetSample(bool restart)
 {
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-
     if(!restart)
         mState.phase=0;
     mState.fperiod=100.0/(mParams.p_base_freq*mParams.p_base_freq+0.001);
@@ -814,7 +813,6 @@ void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream*
 
     int frames_needed = additional_amount / (sizeof(float) * 2);
 
-
     if (frames_needed > 0)
     {
         std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
@@ -980,8 +978,7 @@ bool SFXGeneratorStereo::initSDLAudio()
     #endif
 
     SDL_ResumeAudioStreamDevice(mStream);
-
-    Log("SFXGeneratorStereo SDL Audio initialized");
+    Log("SFXGeneratorStereo initialized..");
     return true;
 }
 

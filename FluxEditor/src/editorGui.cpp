@@ -123,12 +123,11 @@ void EditorGui::ShowMenuBar()
             ImGui::MenuItem("IMGui Demo", NULL, &mEditorSettings.mShowDemo);
             ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mEditorSettings.mShowImFluxWidgets);
             ImGui::Separator();
-            ImGui::MenuItem("Sound Effects Generator Stereo", NULL, &mEditorSettings.mShowSFXEditorStereo);
+            ImGui::MenuItem("File Browser", NULL, &mEditorSettings.mShowFileBrowser);
+            ImGui::Separator();
             ImGui::MenuItem("Sound Effects Generator", NULL, &mEditorSettings.mShowSFXEditor);
-
-
-
-
+            ImGui::MenuItem("Sound Effects Stereo", NULL, &mEditorSettings.mShowSFXEditorStereo);
+            ImGui::Separator();
             ImGui::EndMenu();
         }
 
