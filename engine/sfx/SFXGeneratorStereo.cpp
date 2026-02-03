@@ -688,7 +688,7 @@ void SFXGeneratorStereo::Randomize() {
     mParams.p_env_attack = pow(frnd(1.0f), 3.0f);
     mParams.p_env_sustain = pow(frnd(1.0f), 2.0f);
     mParams.p_env_decay = frnd(1.0f);
-
+    // orig:
     // mParams.p_env_attack = pow(frnd(2.0f) - 1.0f, 3.0f);
     // mParams.p_env_sustain = pow(frnd(2.0f) - 1.0f, 2.0f);
     // mParams.p_env_decay = frnd(2.0f) - 1.0f;
@@ -715,6 +715,8 @@ void SFXGeneratorStereo::Randomize() {
     mParams.p_arp_mod = frnd(2.0f) - 1.0f;
 
     AddPanning(false);
+
+    ResetSample(false); // normalize values !!
 
 }
 //-----------------------------------------------------------------------------
@@ -744,9 +746,9 @@ void SFXGeneratorStereo::Mutate(){
     if (rnd(1)) mParams.p_arp_mod += frnd(0.1f) - 0.05f;
 
     // Panning Randomization
-    if (rnd(1)) AddPanning(false);
+    // use extra function !! if (rnd(1)) AddPanning(false);
 
-
+    ResetSample(false); // normalize values !!
 
 }
 //------------------------------------------------------------------------------

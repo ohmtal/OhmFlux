@@ -45,7 +45,7 @@ private:
     };
 
     DSP::VisualAnalyzer* mVisualAnalyzer;
-    DSP::Bitcrusher* mBitCrusher;
+    // not DSP::Bitcrusher* mBitCrusher;
 
 public:
 
@@ -64,9 +64,9 @@ public:
             mVisualAnalyzer = specAna.get();
             mSFXGeneratorStereo->getDspEffects().push_back(std::move(specAna));
 
-            auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
-            mBitCrusher = bitcrusher.get();
-            mSFXGeneratorStereo->getDspEffects().push_back(std::move(bitcrusher));
+            // auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
+            // mBitCrusher = bitcrusher.get();
+            // mSFXGeneratorStereo->getDspEffects().push_back(std::move(bitcrusher));
 
 
             return true;
@@ -163,7 +163,7 @@ public:
             ImFlux::Hint("Randomize Sample [F1]");
             if (SFXButton("Mutate",      lButtonSize)) TriggerGen([&]{ lSfxGen->Mutate(); });
             ImFlux::Hint("Mutate Sample [F2]");
-            if (SFXButton("PanningMutate",  lButtonSize)) TriggerGen([&]{ lSfxGen->AddPanning(true); });
+            if (SFXButton("Panning Mutate",  lButtonSize)) TriggerGen([&]{ lSfxGen->AddPanning(true); });
 
 
             // --- COLUMN 2: PARAMETERS (Middle) ---
@@ -342,7 +342,7 @@ public:
 
             }
 
-            mBitCrusher->renderUI();
+            // mBitCrusher->renderUI();
 
             ImGui::EndChild(); //<<< must be outside the if ...
 
@@ -433,91 +433,6 @@ public:
         if (ImGui::IsKeyPressed(ImGuiKey_F2))  TriggerGen([&]{ lSfxGen->Mutate(); });
 
     }
-
-    //--------------------------------------------------------------------------
-    // if (ImGui::BeginChild("PANNING_BOX", ImVec2(-FLT_MIN,65.f) )) {
-    //     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-    //     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-    //     ImGui::BeginGroup();
-    //     ImFlux::ShadowText("PANNING", ImFlux::COL32_NEONCYAN);
-    //     ImGui::Separator();
-    //     SFXKnob("PANNING LEFT | RIGHT", lParams.p_pan, true); ImGui::SameLine();
-    //     SFXKnob("PANNING RAMP", lParams.p_pan_ramp, true); ImGui::SameLine();
-    //     SFXKnob("PANNING SPEED", lParams.p_pan_speed, false); ImGui::SameLine();
-    //     ImGui::EndGroup();
-    // }
-    // ImGui::EndChild();
-
-    // void RenderBitCrusherUI() {
-    //     ImGui::PushID("BitCrusher_Effect_Row");
-    //     ImGui::BeginGroup();
-    //
-    //     bool isEnabled = mBitCrusher->isEnabled();
-    //     if (ImFlux::LEDCheckBox("BITCRUSHER", &isEnabled, ImVec4(0.8f, 0.4f, 0.5f, 1.0f))){
-    //         mBitCrusher->setEnabled(isEnabled);
-    //     }
-    //     if (isEnabled)
-    //     {
-    //         if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
-    //
-    //             ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-    //             ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-    //             ImGui::BeginGroup();
-    //
-    //
-    //             DSP::BitcrusherSettings currentSettings = mBitCrusher->getSettings();
-    //             bool changed = false;
-    //
-    //             int currentIdx = 0; // Standard: "Custom"
-    //
-    //             for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
-    //                 if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
-    //                     currentIdx = i;
-    //                     break;
-    //                 }
-    //             }
-    //             int displayIdx = currentIdx;  //<< keep currentIdx clean
-    //
-    //             const char* presetNames[] = { "Custom", "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme" };
-    //             ImGui::SetNextItemWidth(150);
-    //             if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-    //                 if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
-    //                     currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
-    //                     changed = true;
-    //                 }
-    //             }
-    //             ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
-    //
-    //             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-    //                 currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
-    //                 changed = true;
-    //             }
-    //             ImGui::Separator();
-    //
-    //
-    //             // Control Sliders
-    //             changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
-    //             changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, 44100.0f, "%.0f Hz");
-    //             changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
-    //
-    //             // Engine Update
-    //             if (changed) {
-    //                 if (isEnabled) {
-    //                     mBitCrusher->setSettings(currentSettings);
-    //                 }
-    //             }
-    //             ImGui::EndGroup();
-    //         }
-    //         ImGui::EndChild();
-    //     } else {
-    //         ImGui::Separator();
-    //     }
-    //
-    //     ImGui::EndGroup();
-    //     ImGui::PopID();
-    //     ImGui::Spacing(); // Add visual gap before the next effect
-    // }
-    //
 
     //--------------------------------------------------------------------------
     void onEvent(SDL_Event event) {
