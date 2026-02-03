@@ -25,6 +25,7 @@ namespace ImFlux {
         ImU32 color = IM_COL32(64, 64, 64, 255);
         ImVec2 size = { 60.f, 24.f };
         bool   bevel = true;
+        bool   selected = false;
         bool   gloss = true;
         bool   shadowText = true;
         float  rounding = -1.0f; // -1 use global style
@@ -41,6 +42,7 @@ namespace ImFlux {
     constexpr ButtonParams GREEN_BUTTON { .color = IM_COL32(0,180,0,255)};
     constexpr ButtonParams BLUE_BUTTON { .color = IM_COL32(0,0,180,255)};
     constexpr ButtonParams SLATE_BUTTON { .color = IM_COL32(46, 61, 79, 255) };
+    constexpr ButtonParams SLATEDARK_BUTTON { .color = IM_COL32(23, 30, 40, 255) };
 
 
 
@@ -49,9 +51,15 @@ namespace ImFlux {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
+        // 1. Calculate actual size if -FLT_MIN or 0.0f is passed
+        ImVec2 lSize = params.size;
+        if (lSize.x <= 0.0f) lSize.x = ImGui::GetContentRegionAvail().x + lSize.x; // Handles -FLT_MIN (full width)
+        if (lSize.y <= 0.0f) lSize.y = ImGui::GetFrameHeight(); // Fallback for height if not specified
+
+
         const ImGuiID id = window->GetID(label.c_str());
-        const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + params.size);
-        ImGui::ItemSize(params.size);
+        const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + lSize);
+        ImGui::ItemSize(lSize);
         if (!ImGui::ItemAdd(bb, id)) return false;
 
         bool hovered, held;
@@ -99,17 +107,6 @@ namespace ImFlux {
         ImRect rbb = ImRect(bb.Min + renderOffset, bb.Max + renderOffset);
         ImU32 finalCol = ImGui::ColorConvertFloat4ToU32(ImGui::ColorConvertU32ToFloat4(params.color) * colFactor);
 
-        // --- Render Glow ---
-        // if (glowAlpha > 0.0f) {
-        //     ImVec4 bc = ImGui::ColorConvertU32ToFloat4(params.color);
-        //     ImVec4 gc = ImVec4(ImMin(bc.x * 1.5f, 1.0f), ImMin(bc.y * 1.5f, 1.0f), ImMin(bc.z * 1.5f, 1.0f), 1.0f);
-        //     for (int i = 1; i <= 8; i++) {
-        //         float spread = (float)i * 1.2f;
-        //         float alpha = (0.35f * glowAlpha) / (float)(i * i);
-        //         ImU32 layerCol = ImGui::ColorConvertFloat4ToU32(ImVec4(gc.x, gc.y, gc.z, alpha));
-        //         dl->AddRect(rbb.Min - ImVec2(spread, spread), rbb.Max + ImVec2(spread, spread), layerCol, rounding + spread, 0, 1.5f);
-        //     }
-        // }
         if (glowAlpha > 0.001f) {
             ImVec4 bc = ImGui::ColorConvertU32ToFloat4(params.color);
             // Brighten the core of the glow significantly
@@ -139,10 +136,18 @@ namespace ImFlux {
         // --- Render Body, Bevel, Gloss & Text ---
         dl->AddRectFilled(rbb.Min, rbb.Max, finalCol, rounding);
 
+        if (params.selected) {
+            dl->AddRect(rbb.Min, rbb.Max, IM_COL32(0, 0, 0, 60), rounding);
+            dl->AddRect(rbb.Min + ImVec2(1,1), rbb.Max - ImVec2(1,1), IM_COL32(0, 0, 0, 30), rounding);
+            dl->AddRect(rbb.Min + ImVec2(2,2), rbb.Max - ImVec2(1,1), IM_COL32(255, 255, 255, 20), rounding);
+
+        } else
         if (params.bevel) {
             dl->AddRect(rbb.Min, rbb.Max, IM_COL32(255, 255, 255, 40), rounding);
             dl->AddRect(rbb.Min + ImVec2(1,1), rbb.Max - ImVec2(1,1), IM_COL32(0, 0, 0, 40), rounding);
         }
+
+
 
         if (params.gloss) {
             dl->AddRectFilledMultiColor(
@@ -164,7 +169,7 @@ namespace ImFlux {
 
         std::string lLabelStr = GetLabelText(label.c_str());
         ImVec2 textSize = ImGui::CalcTextSize(lLabelStr.c_str());
-        ImVec2 textPos = rbb.Min + (params.size - textSize) * 0.5f;
+        ImVec2 textPos = rbb.Min + (lSize - textSize) * 0.5f;
         if (params.shadowText) dl->AddText(textPos + ImVec2(1.f, 1.f), lShadowColor, lLabelStr.c_str());
         dl->AddText(textPos, lTextColor, lLabelStr.c_str());
 

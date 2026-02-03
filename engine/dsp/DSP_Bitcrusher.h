@@ -11,6 +11,13 @@
 #include <algorithm>
 #include <cmath>
 
+#if defined(IMGUI_API) && defined(FLUX_ENGINE)
+    #include <imgui.h>
+    #include <imgui_internal.h>
+    #include <gui/ImFlux.h>
+#endif
+
+
 #include "DSP_Effect.h"
 
 namespace DSP {
@@ -133,5 +140,79 @@ namespace DSP {
             }
         }
 
-    };
+    #if defined(IMGUI_API) && defined(FLUX_ENGINE)
+    void renderUI(bool withBackGround = true) {
+        ImGui::PushID("BitCrusher_Effect_Row");
+        ImGui::BeginGroup();
+
+        bool isEnabled = this->isEnabled();
+        if (ImFlux::LEDCheckBox("BITCRUSHER", &isEnabled, ImVec4(0.8f, 0.4f, 0.5f, 1.0f))){
+                this->setEnabled(isEnabled);
+        }
+            if (isEnabled)
+            {
+                if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
+
+                    if ( withBackGround ) {
+                        ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+                        ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+                    }
+                    ImGui::BeginGroup();
+
+
+                    DSP::BitcrusherSettings currentSettings = this->getSettings();
+                    bool changed = false;
+
+                    int currentIdx = 0; // Standard: "Custom"
+
+                    for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
+                        if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
+                            currentIdx = i;
+                            break;
+                        }
+                    }
+                    int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+                    const char* presetNames[] = { "Custom", "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme" };
+                    ImGui::SetNextItemWidth(150);
+                    if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                        if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
+                            currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
+                            changed = true;
+                        }
+                    }
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+
+                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                        currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
+                        changed = true;
+                    }
+                    ImGui::Separator();
+
+
+                    // Control Sliders
+                    changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
+                    changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, 44100.0f, "%.0f Hz");
+                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
+
+                    // Engine Update
+                    if (changed) {
+                        if (isEnabled) {
+                            this->setSettings(currentSettings);
+                        }
+                    }
+                    ImGui::EndGroup();
+                }
+                ImGui::EndChild();
+            } else {
+                ImGui::Separator();
+            }
+
+            ImGui::EndGroup();
+            ImGui::PopID();
+            ImGui::Spacing(); // Add visual gap before the next effect
+    }
+    #endif
+
+    }; //CLASS
 } // namespace DSP

@@ -15,6 +15,8 @@
 #include "ImFlux/lcd.h"
 #include "ImFlux/led.h"
 #include "ImFlux/sliderAndKnobs.h"
+#include "ImFlux/background.h"
+#include "ImFlux/text.h"
 
 namespace ImFlux {
 

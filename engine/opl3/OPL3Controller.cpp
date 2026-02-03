@@ -122,6 +122,12 @@ void SDLCALL OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *str
 //------------------------------------------------------------------------------
 bool OPL3Controller::initController()
 {
+
+    if ( mStream ) {
+        Log("[error] OPL3Controller::initController audio stream is ready do NOT initController again!!!!");
+        return false;
+    }
+
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_F32;  // SDL_AUDIO_S16;
     spec.channels = 2;

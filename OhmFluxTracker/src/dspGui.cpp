@@ -83,83 +83,87 @@ void OTGui::RenderSoundCardEmuUI() {
 }
 //------------------------------------------------------------------------------
 void OTGui::RenderBitCrusherUI() {
-    // 1. Use PushID to prevent name collisions with other effects (e.g., if multiple have a "Wet" slider)
-    ImGui::PushID("BitCrusher_Effect_Row");
 
-    // 2. Start a Group to treat this whole section as a single unit
-    ImGui::BeginGroup();
+    // FIXME HAPPY MOVING ALL OTHERER !!!!!
+    getMain()->getController()->getDSPBitCrusher()->renderUI(false);
 
-    bool isEnabled = getMain()->getController()->getDSPBitCrusher()->isEnabled();
-
-    // if (ImGui::Checkbox("##Active", &isEnabled))
+    // // 1. Use PushID to prevent name collisions with other effects (e.g., if multiple have a "Wet" slider)
+    // ImGui::PushID("BitCrusher_Effect_Row");
+    //
+    // // 2. Start a Group to treat this whole section as a single unit
+    // ImGui::BeginGroup();
+    //
+    // bool isEnabled = getMain()->getController()->getDSPBitCrusher()->isEnabled();
+    //
+    // // if (ImGui::Checkbox("##Active", &isEnabled))
+    // //     getMain()->getController()->getDSPBitCrusher()->setEnabled(isEnabled);
+    // //
+    // // ImGui::SameLine();
+    // // ImGui::TextColored(ImVec4(0.8f, 0.4f, 0.5f, 1.0f), "BITCRUSHER");
+    //
+    // if (ImFlux::LEDCheckBox("BITCRUSHER", &isEnabled, ImVec4(0.8f, 0.4f, 0.5f, 1.0f)))
     //     getMain()->getController()->getDSPBitCrusher()->setEnabled(isEnabled);
     //
-    // ImGui::SameLine();
-    // ImGui::TextColored(ImVec4(0.8f, 0.4f, 0.5f, 1.0f), "BITCRUSHER");
-
-    if (ImFlux::LEDCheckBox("BITCRUSHER", &isEnabled, ImVec4(0.8f, 0.4f, 0.5f, 1.0f)))
-        getMain()->getController()->getDSPBitCrusher()->setEnabled(isEnabled);
-
-
-    // 3. Create a Child window for the "Box" look.
-    // Width 0 = use parent width. Height 140 is enough for your controls.
-    if (isEnabled)
-    {
-        if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
-
-            DSP::BitcrusherSettings currentSettings = getMain()->getController()->getDSPBitCrusher()->getSettings();
-            bool changed = false;
-
-            int currentIdx = 0; // Standard: "Custom"
-
-            for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
-                if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
-                    currentIdx = i;
-                    break;
-                }
-            }
-            int displayIdx = currentIdx;  //<< keep currentIdx clean
-
-
-            // Preset Selection
-            // ImGui::SameLine();
-            const char* presetNames[] = { "Custom", "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme" };
-            ImGui::SetNextItemWidth(150);
-            if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-                if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
-                    currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
-                    changed = true;
-                }
-            }
-            ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
-
-            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-                currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
-                changed = true;
-            }
-            ImGui::Separator();
-
-            // Control Sliders
-            changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
-            changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, 44100.0f, "%.0f Hz");
-            changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
-
-            // Engine Update
-            if (changed) {
-                if (isEnabled) {
-                    getMain()->getController()->getDSPBitCrusher()->setSettings(currentSettings);
-                }
-            }
-
-        }
-        ImGui::EndChild();
-    } else {
-        ImGui::Separator();
-    }
-
-    ImGui::EndGroup();
-    ImGui::PopID();
-    ImGui::Spacing(); // Add visual gap before the next effect
+    //
+    // // 3. Create a Child window for the "Box" look.
+    // // Width 0 = use parent width. Height 140 is enough for your controls.
+    // if (isEnabled)
+    // {
+    //     if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
+    //
+    //         DSP::BitcrusherSettings currentSettings = getMain()->getController()->getDSPBitCrusher()->getSettings();
+    //         bool changed = false;
+    //
+    //         int currentIdx = 0; // Standard: "Custom"
+    //
+    //         for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
+    //             if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
+    //                 currentIdx = i;
+    //                 break;
+    //             }
+    //         }
+    //         int displayIdx = currentIdx;  //<< keep currentIdx clean
+    //
+    //
+    //         // Preset Selection
+    //         // ImGui::SameLine();
+    //         const char* presetNames[] = { "Custom", "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme" };
+    //         ImGui::SetNextItemWidth(150);
+    //         if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+    //             if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
+    //                 currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
+    //                 changed = true;
+    //             }
+    //         }
+    //         ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+    //
+    //         if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+    //             currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
+    //             changed = true;
+    //         }
+    //         ImGui::Separator();
+    //
+    //         // Control Sliders
+    //         changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
+    //         changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, 44100.0f, "%.0f Hz");
+    //         changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
+    //
+    //         // Engine Update
+    //         if (changed) {
+    //             if (isEnabled) {
+    //                 getMain()->getController()->getDSPBitCrusher()->setSettings(currentSettings);
+    //             }
+    //         }
+    //
+    //     }
+    //     ImGui::EndChild();
+    // } else {
+    //     ImGui::Separator();
+    // }
+    //
+    // ImGui::EndGroup();
+    // ImGui::PopID();
+    // ImGui::Spacing(); // Add visual gap before the next effect
 }
 //------------------------------------------------------------------------------
 

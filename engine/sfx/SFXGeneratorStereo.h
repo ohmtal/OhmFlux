@@ -21,6 +21,13 @@
 
 #include <DSP.h>
 
+#if defined(IMGUI_API) && defined(FLUX_ENGINE)
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
+#endif
+
+
 
 class SFXGeneratorStereo
 {
@@ -122,8 +129,6 @@ protected:
 
     // WAV
     bool saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate);
-    void attachAudio();
-    void detachAudio();
 
     //Effects
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
@@ -172,6 +177,9 @@ public:
     // moderisation WAV
     bool exportToWav(const std::string& filename, float* progressOut, bool applyEffects = false);
 
+    void attachAudio();
+    void detachAudio();
+
 
 public:
 
@@ -206,8 +214,6 @@ public:
     }
 
 
-
-
 private:
     int rnd(int n);
     float frnd(float range);
@@ -215,6 +221,89 @@ private:
     SDL_AudioStream* mStream = nullptr;
     void ResetParamsNoLock();
 
+public:
+#ifdef IMGUI_API
+    void DrawWaveIcon(ImDrawList* draw_list, ImVec2 center, float size, int type, ImU32 color) {
+        float h = size * 0.4f; // Half height
+        float w = size * 0.6f; // Width of the icon
+
+        if (type == 0) { // SQUARE
+            ImVec2 pts[4] = {
+                center + ImVec2(-w/2, h/2), center + ImVec2(-w/2, -h/2),
+                center + ImVec2(0, -h/2), center + ImVec2(0, h/2)
+            };
+            draw_list->AddPolyline(pts, 4, color, 0, 2.0f);
+            // Add the second half of the square wave
+            ImVec2 pts2[3] = { center + ImVec2(0, h/2), center + ImVec2(w/2, h/2), center + ImVec2(w/2, -h/2) };
+            draw_list->AddPolyline(pts2, 3, color, 0, 2.0f);
+        }
+        else if (type == 1) { // SAWTOOTH
+            ImVec2 pts[3] = { center + ImVec2(-w/2, h/2), center + ImVec2(w/2, -h/2), center + ImVec2(w/2, h/2) };
+            draw_list->AddPolyline(pts, 3, color, 0, 2.0f);
+        }
+        else if (type == 2) { // SINE
+            const int segments = 16;
+            for (int n = 0; n < segments; n++) {
+                float t1 = (float)n / segments;
+                float t2 = (float)(n + 1) / segments;
+                ImVec2 p1 = center + ImVec2(-w/2 + t1*w, sinf(t1 * 6.28f) * -h);
+                ImVec2 p2 = center + ImVec2(-w/2 + t2*w, sinf(t2 * 6.28f) * -h);
+                draw_list->AddLine(p1, p2, color, 2.0f);
+            }
+        }
+        else if (type == 3) { // NOISE (Random jagged lines)
+            for (int i = 0; i < 8; i++) {
+                float x1 = -w/2 + (w/8.0f)*i;
+                float x2 = -w/2 + (w/8.0f)*(i+1);
+                draw_list->AddLine(center + ImVec2(x1, (i%2==0?h:-h)*0.5f),
+                            center + ImVec2(x2, (i%2==0?-h:h)*0.5f), color, 1.5f);
+            }
+        }
+    }
+    //--------------------------------------------------------------------------
+    bool DrawWaveButton(const char* label, int wave_type) {
+
+        bool is_selected = mParams.wave_type == wave_type;
+
+        ImVec2 size = ImVec2(45, 45); // Fixed round size
+        float rounding = size.x * 0.5f;
+
+        // Use your ButtonFancy logic here...
+        ImGui::PushID(wave_type);
+        bool pressed = ImGui::InvisibleButton(label, size);
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImRect bb(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+
+
+
+        // Background & Bevel
+        if (is_selected) {
+            // Your "Deep" recessed effect
+            dl->AddRectFilled(bb.Min, bb.Max, IM_COL32(20, 20, 25, 255), rounding);
+            dl->AddRect(bb.Min, bb.Max, IM_COL32(0, 0, 0, 100), rounding, 0, 2.0f);
+
+        } else {
+            dl->AddRectFilled(bb.Min, bb.Max, IM_COL32(50, 50, 60, 255), rounding);
+            // Outer light bevel
+            dl->AddRect(bb.Min, bb.Max, IM_COL32(255, 255, 255, 30), rounding);
+        }
+
+        // Draw the icon
+        ImU32 icon_col = is_selected ? IM_COL32(0, 255, 180, 255) : IM_COL32(200, 200, 200, 255);
+        DrawWaveIcon(dl, bb.GetCenter(), size.x, wave_type, icon_col);
+
+        if (pressed) mParams.wave_type = wave_type;
+
+        #ifdef FLUX_ENGINE
+        ImFlux::Hint(label);
+        #endif
+
+        ImGui::PopID();
+        return pressed;
+    }
+
+
+#endif //IMGUI_API
 };
 
 #endif // SFXGENERATOR_H

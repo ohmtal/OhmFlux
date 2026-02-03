@@ -35,6 +35,8 @@ bool EditorGui::Initialize()
     if (!mSfxEditorStereo->Initialize())
         return false;
 
+    //XXTH TEST
+    // mSfxEditorStereo->getSFXGeneratorStereo()->detachAudio();
     // getMain()-> queueObject(mSfxEditorStereo); //For update!
 
 
@@ -121,8 +123,8 @@ void EditorGui::ShowMenuBar()
             ImGui::MenuItem("IMGui Demo", NULL, &mEditorSettings.mShowDemo);
             ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mEditorSettings.mShowImFluxWidgets);
             ImGui::Separator();
+            ImGui::MenuItem("Sound Effects Generator Stereo", NULL, &mEditorSettings.mShowSFXEditorStereo);
             ImGui::MenuItem("Sound Effects Generator", NULL, &mEditorSettings.mShowSFXEditor);
-            ImGui::Separator();
 
 
 

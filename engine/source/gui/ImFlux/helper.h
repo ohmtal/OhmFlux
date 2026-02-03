@@ -12,6 +12,8 @@
 
 namespace ImFlux {
 
+    constexpr ImU32 COL32_NEONCYAN = IM_COL32(0, 255, 200, 255);
+
     //---------------- GetLabelText extraxt ## stuff
     inline std::string GetLabelText(std::string label) {
         const char* begin = label.c_str();
@@ -30,6 +32,7 @@ namespace ImFlux {
         return ImVec4(ImSaturate(r), ImSaturate(g), ImSaturate(b), col.w);
     }
 
+
     inline ImVec4 ModifierColorTint(ImVec4 col, float factor) {
         if (factor > 1.0f) {
             // Blend from current color towards White (1.0)
@@ -45,6 +48,23 @@ namespace ImFlux {
             return ImVec4(col.x * factor, col.y * factor, col.z * factor, col.w);
         }
     }
+
+    inline ImU32 ModifyRGB(ImU32 col, float factor) {
+        // Extract channels using ImGui's packing format (usually RGBA)
+        float r = ((col >> IM_COL32_R_SHIFT) & 0xFF) / 255.0f;
+        float g = ((col >> IM_COL32_G_SHIFT) & 0xFF) / 255.0f;
+        float b = ((col >> IM_COL32_B_SHIFT) & 0xFF) / 255.0f;
+        ImU32 a = (col >> IM_COL32_A_SHIFT) & 0xFF;
+
+        // Apply factor with your offset logic
+        r = ImSaturate((r + 0.05f) * factor);
+        g = ImSaturate((g + 0.05f) * factor);
+        b = ImSaturate((b + 0.05f) * factor);
+
+        // Reassemble to ImU32 keeping the original Alpha
+        return IM_COL32((int)(r * 255), (int)(g * 255), (int)(b * 255), a);
+    }
+
 
     // -------- calculation for a font color when a background is painted
     inline ImVec4 GetContrastColor(ImU32 backgroundColor, bool isSelected = false)
@@ -90,16 +110,60 @@ namespace ImFlux {
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + padding);
     }
 
-    // inline void SeparatorVertical(float padding = 20.f)
-    // {
-    //     ImGui::SameLine();
-    //     ImGui::Dummy(ImVec2(padding,0.f));
-    //     ImGui::SameLine();
-    //     ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-    //     ImGui::SameLine();
-    //     ImGui::Dummy(ImVec2(padding,0.f));
-    //     ImGui::SameLine();
-    // }
+
+    // EierlegendeWollMilchSau Separator
+    inline void SeparatorFancy(ImGuiSeparatorFlags flags = ImGuiSeparatorFlags_Horizontal, float thickness = 1.0f, float padding = 8.f, float spacing = 8.f, bool inset = true) {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) return;
+
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+
+        if (flags & ImGuiSeparatorFlags_Vertical) {
+            // --- VERTICAL ---
+            // 1. Spacing before (Horizontal space)
+            ImGui::SameLine(0, spacing);
+            pos = ImGui::GetCursorScreenPos(); // Update pos after SameLine
+
+            // 2. Calculate vertical line points with padding
+            ImVec2 p1 = pos + ImVec2(0, padding);
+            ImVec2 p2 = pos + ImVec2(0, avail.y - padding);
+
+            // 3. Draw Inset Style
+            dl->AddLine(p1, p2, IM_COL32(0, 0, 0, 150), thickness); // Shadow
+            if (inset) dl->AddLine(p1 + ImVec2(1, 0), p2 + ImVec2(1, 0), IM_COL32(255, 255, 255, 30), thickness); // Rim
+
+            // 4. Advance layout
+            ImGui::Dummy(ImVec2(thickness, avail.y));
+            ImGui::SameLine(0, spacing);
+
+        } else {
+            // --- HORIZONTAL (Default) ---
+            // 1. Spacing before (Vertical space)
+            ImGui::Dummy(ImVec2(0, spacing));
+            pos = ImGui::GetCursorScreenPos();
+
+            // 2. Calculate horizontal line points with padding
+            ImVec2 p1 = pos + ImVec2(padding, 0);
+            ImVec2 p2 = pos + ImVec2(avail.x - padding, 0);
+
+            // 3. Draw Inset Style
+            dl->AddLine(p1, p2, IM_COL32(0, 0, 0, 150), thickness); // Shadow
+            if (inset) dl->AddLine(p1 + ImVec2(0, 1), p2 + ImVec2(0, 1), IM_COL32(255, 255, 255, 30), thickness); // Rim
+
+            // 4. Advance layout
+            ImGui::Dummy(ImVec2(avail.x, spacing));
+        }
+    }
+
+    inline void SeparatorHInset() {
+        SeparatorFancy(ImGuiSeparatorFlags_Horizontal, 1.f, 8.f,8.f,true);
+    }
+    inline void SeparatorVInset() {
+        SeparatorFancy(ImGuiSeparatorFlags_Vertical, 1.f, 8.f,8.f,true);
+    }
+
 
     //---------------- Separator horizontal but in a group
     inline void GroupSeparator(float width ) {
@@ -110,9 +174,8 @@ namespace ImFlux {
             width = ImGui::GetContentRegionAvail().x;
         ImVec2 pos = ImGui::GetCursorScreenPos();
         window->DrawList->AddLine(
-            pos,
-            ImVec2(pos.x + width, pos.y),
-                                  ImGui::GetColorU32(ImGuiCol_Separator)
+            pos, ImVec2(pos.x + width, pos.y),
+            ImGui::GetColorU32(ImGuiCol_Separator)
         );
         ImGui::ItemSize(ImVec2(width, 1.0f));
     }

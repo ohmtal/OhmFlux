@@ -53,6 +53,7 @@ namespace ImFlux {
 
         // --- DRAWING ---
         ImDrawList* dl = ImGui::GetWindowDrawList();
+
         ImU32 col = is_active ? ImGui::GetColorU32(ImGuiCol_SliderGrabActive) :
         (is_hovered ? ImGui::GetColorU32(ImGuiCol_FrameBgHovered) : ImGui::GetColorU32(ImGuiCol_FrameBg));
 
@@ -60,18 +61,13 @@ namespace ImFlux {
         float angle = (fraction * 1.5f * 3.14159f) + (0.75f * 3.14159f);
 
         ImVec2 center = ImVec2(pos.x + radius, pos.y + radius);
-        // dl->AddCircleFilled(center, 10.0f, col);
         dl->AddCircleFilled(center, (float)radius, col);
-        // Draw "Value Arc" (optional fancy addition)
-        // dl->PathArcTo(center, 8.0f, 0.75f * 3.14159f, angle, 10);
+        // Draw "Value Arc"
         dl->PathArcTo(center, (float)(radius - 1.f), 0.75f * 3.14159f, angle, 10);
 
         dl->PathStroke(ImGui::GetColorU32(ImGuiCol_PlotLines), 0, 2.0f);
 
         // Draw Indicator Needle
-        // dl->AddLine(center,
-        //             ImVec2(center.x + cosf(angle) * 8, center.y + sinf(angle) * 8),
-        //             ImGui::GetColorU32(ImGuiCol_Text), 2.0f);
 
         dl->AddLine(center,
                     ImVec2(center.x + cosf(angle) * (radius - 1.f), center.y + sinf(angle) * (radius - 1.f)),
@@ -87,6 +83,95 @@ namespace ImFlux {
         ImGui::PopID();
         return value_changed;
     }
+
+    //--------------------------------------------------------------------------------------------------
+    // Colors for your Dark/Gradient Theme
+    struct KnobSettings {
+        float radius       = 16.f;
+        float speed        = 0.01f;
+
+        // Background & Body
+        ImU32 bg_outer     = IM_COL32(25, 25, 30, 255);  // Deepest part
+        ImU32 bg_inner     = IM_COL32(50, 50, 55, 255);  // Surface of the knob
+
+        // Effects
+        ImU32 glare        = IM_COL32(255, 255, 255, 15); // Top shine
+        ImU32 shadow       = IM_COL32(0, 0, 0, 150);      // Inner shadow/depth
+        ImU32 bevel        = IM_COL32(255, 255, 255, 35); // Outer rim light
+
+        // Active Elements
+        ImU32 active       = IM_COL32(0, 255, 200, 255);  // Neon Cyan
+        ImU32 arc_bg       = IM_COL32(0, 0, 0, 80);       // Grooved track for the arc
+        ImU32 needle       = IM_COL32(255, 255, 255, 255); // Indicator color
+    };
+    constexpr KnobSettings DARK_KNOB;
+
+    inline bool MiniKnobF(const char* label, float* v, float v_min, float v_max, KnobSettings ks = DARK_KNOB) {
+        ImGui::PushID(label);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) { ImGui::PopID(); return false; }
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 size = ImVec2(ks.radius * 2, ks.radius * 2);
+        ImRect bb(pos, pos + size);
+
+        ImGui::ItemSize(size);
+        if (!ImGui::ItemAdd(bb, ImGui::GetID("##knob"))) { ImGui::PopID(); return false; }
+
+        bool value_changed = false;
+        bool is_active = ImGui::IsItemActive();
+        bool is_hovered = ImGui::IsItemHovered();
+        ImGuiIO& io = ImGui::GetIO();
+
+        // Interaction (Scroll & Drag)
+        if (is_hovered && io.MouseWheel != 0) {
+            float wheel_speed = (v_max - v_min) * 0.05f * (io.KeyShift ? 0.1f : 1.0f);
+            *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
+            value_changed = true;
+        }
+        if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+            float drag_speed = ks.speed * (v_max - v_min) * (io.KeyShift ? 0.1f : 1.0f);
+            *v = std::clamp(*v - (io.MouseDelta.y * drag_speed), v_min, v_max);
+            value_changed = true;
+        }
+
+        // --- DRAWING ---
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 center = ImVec2(pos.x + ks.radius, pos.y + ks.radius);
+        float fraction = (*v - v_min) / (v_max - v_min);
+        float angle = (fraction * 1.5f * IM_PI) + (0.75f * IM_PI);
+
+        // 1. Body & Depth
+        dl->AddCircleFilled(center, ks.radius, ks.bg_outer);
+        dl->AddCircleFilled(center, ks.radius - 2.0f, ks.bg_inner);
+        dl->AddCircle(center, ks.radius, ks.shadow, 32, 1.5f);
+
+        // 2. Glossy top glare
+        dl->AddCircleFilled(center - ImVec2(0, ks.radius * 0.3f), ks.radius * 0.6f, ks.glare);
+
+        // 3. Neon Value Arc
+        ImU32 current_arc_col = is_active ? ks.active : (is_hovered ? ModifyRGB(ks.active, 1.2f) : ks.active);
+        // Background track
+        dl->PathArcTo(center, ks.radius - 3.0f, 0.75f * IM_PI, 2.25f * IM_PI, 20);
+        dl->PathStroke(ks.arc_bg, 0, 3.5f);
+        // Active fill
+        dl->PathArcTo(center, ks.radius - 3.0f, 0.75f * IM_PI, angle, 20);
+        dl->PathStroke(current_arc_col, 0, 3.0f);
+
+        // 4. Indicator Needle
+        ImVec2 n_start = center + ImVec2(cosf(angle) * (ks.radius * 0.45f), sinf(angle) * (ks.radius * 0.45f));
+        ImVec2 n_end   = center + ImVec2(cosf(angle) * (ks.radius - 2.5f), sinf(angle) * (ks.radius - 2.5f));
+        dl->AddLine(n_start, n_end, ks.needle, 2.0f);
+
+        // 5. Final Outer Rim Light
+        dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
+
+        if (is_hovered) ImGui::SetTooltip("%s: %.2f", label, *v);
+
+        ImGui::PopID();
+        return value_changed;
+    }
+
 
     // --------------- LEDRingKnob
     inline bool LEDRingKnob(const char* label, float* v, float v_min, float v_max, float radius = 18.f, float speed = 0.01f) {
@@ -273,6 +358,16 @@ namespace ImFlux {
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
 
+        // ScrollWheel
+        if (is_hovered && io.MouseWheel != 0) {
+            float wheel_speed = (v_max - v_min) * 0.05f; // 5% of range per notch
+            if (io.KeyShift) wheel_speed *= 0.1f;        // 0.5% if Shift is held
+
+            *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
+            is_active = true;
+        }
+
+
         if (is_active && io.MouseDown[0]) {
             float mouse_y = io.MousePos.y - pos.y;
             float fraction = 1.0f - std::clamp(mouse_y / size.y, 0.0f, 1.0f);
@@ -386,6 +481,18 @@ namespace ImFlux {
 
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
+
+
+        // ScrollWheel
+        if (is_hovered && io.MouseWheel != 0) {
+            float wheel_speed = (v_max - v_min) * 0.05f; // 5% of range per notch
+            if (io.KeyShift) wheel_speed *= 0.1f;        // 0.5% if Shift is held
+
+            *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
+            is_active = true;
+        }
+
+
 
 
         if (is_active && io.MouseDown[0]) {

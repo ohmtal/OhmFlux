@@ -251,7 +251,6 @@ bool SFXGenerator::SaveSettings(const char* filename)
 void SFXGenerator::ResetSample(bool restart)
 {
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-    dLog(" SFXGenerator::ResetSample( %d ) ", restart);
     if(!restart)
         mState.phase=0;
     mState.fperiod=100.0/(mParams.p_base_freq*mParams.p_base_freq+0.001);
@@ -815,6 +814,11 @@ void SDLCALL SFXGenerator::audio_callback(void* userdata, SDL_AudioStream* strea
 //------------------------------------------------------------------------------
 bool SFXGenerator::initSDLAudio()
 {
+    if ( mStream ) {
+        Log("[error] SFXGenerator::initSDLAudio stream is ready do NOT initSDLAudio again!!!!");
+        return false;
+    }
+
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_F32; // not: spec.format = SDL_AUDIO_S16;
     spec.channels = 1; // mono

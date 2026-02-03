@@ -275,7 +275,7 @@ bool SFXGeneratorStereo::SaveSettings(const char* filename)
 void SFXGeneratorStereo::ResetSample(bool restart)
 {
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-    dLog(" SFXGeneratorStereo::ResetSample( %d ) ", restart);
+
     if(!restart)
         mState.phase=0;
     mState.fperiod=100.0/(mParams.p_base_freq*mParams.p_base_freq+0.001);
@@ -461,10 +461,10 @@ void SFXGeneratorStereo::updateSystemState() {
 //-----------------------------------------------------------------------------
 void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
 
-    // if (!mState.playing_sample)  {
-    //     std::memset(stereoBuffer, 0, length * sizeof(float) * 2);
-    //     return;
-    // }
+    if (!mState.playing_sample)  {
+        std::memset(stereoBuffer, 0, length * sizeof(float) * 2);
+        return;
+    }
 
 
     // double lock !! std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
@@ -485,8 +485,19 @@ void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
 
         // Panning movement
         mState.pan += mState.pan_ramp;
-        if (mState.pan < -1.0f) mState.pan = -1.0f;
-        if (mState.pan > 1.0f)  mState.pan = 1.0f;
+
+        if (mState.pan >= 1.0f) {
+            mState.pan = 1.0f;
+            mState.pan_ramp = -mState.pan_ramp; // back
+        }
+        else if (mState.pan <= -1.0f) {
+            mState.pan = -1.0f;
+            mState.pan_ramp = -mState.pan_ramp; // back
+        }
+
+        // mState.pan += mState.pan_ramp;
+        // if (mState.pan < -1.0f) mState.pan = -1.0f;
+        // if (mState.pan > 1.0f)  mState.pan = 1.0f;
 
 
         float panL = 0.5f * (1.0f - mState.pan);
@@ -916,10 +927,12 @@ bool SFXGeneratorStereo::saveWavFile(const std::string& filename, const std::vec
 }
 //------------------------------------------------------------------------------
 void SFXGeneratorStereo::detachAudio(){
+    dLog("SFXGeneratorStereo::detachAudio");
     SDL_PauseAudioStreamDevice(mStream);
     SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
 }
 void SFXGeneratorStereo::attachAudio() {
+    dLog("SFXGeneratorStereo::attachAudio");
     SDL_SetAudioStreamGetCallback(mStream, SFXGeneratorStereo::audio_callback, this);
     SDL_ResumeAudioStreamDevice(mStream);
 }
@@ -928,6 +941,11 @@ void SFXGeneratorStereo::attachAudio() {
 //------------------------------------------------------------------------------
 bool SFXGeneratorStereo::initSDLAudio()
 {
+    if ( mStream ) {
+        Log("[error] SFXGeneratorStereo::initSDLAudio stream is ready do NOT initSDLAudio again!!!!");
+        return false;
+    }
+
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_F32;
     spec.channels = 2;
@@ -942,6 +960,8 @@ bool SFXGeneratorStereo::initSDLAudio()
     }
 
     SDL_SetAudioStreamGetCallback(mStream, SFXGeneratorStereo::audio_callback, this);
+
+
 
     #ifdef FLUX_ENGINE
     AudioManager.bindStream(mStream);
@@ -960,6 +980,8 @@ bool SFXGeneratorStereo::initSDLAudio()
     #endif
 
     SDL_ResumeAudioStreamDevice(mStream);
+
+    Log("SFXGeneratorStereo SDL Audio initialized");
     return true;
 }
 
