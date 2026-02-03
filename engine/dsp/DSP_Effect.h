@@ -19,7 +19,8 @@ namespace DSP {
         Reverb             = 6,
         SoundCardEmulation = 7,
         SpectrumAnalyzer   = 8, //no extra settings only analysing for visual effect
-        Warmth             = 9
+        Warmth             = 9,
+        VisualAnalyzer     = 10  //no extra settings only analysing for visual effect
 
     };
 

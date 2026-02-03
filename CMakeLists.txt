@@ -112,6 +112,7 @@ set(ENGINE_SOURCES
 
     #  --- sfx ---
     ${SFX_DIR}/SFXGenerator.cpp
+    ${SFX_DIR}/SFXGeneratorStereo.cpp
 
     #  --- imggui ---
     ${IMGGUI_DIR}/imgui.cpp
