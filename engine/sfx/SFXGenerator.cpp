@@ -320,7 +320,7 @@ void SFXGenerator::PlaySample()
 //-----------------------------------------------------------------------------
 void SFXGenerator::SynthSample(int length, float* buffer, FILE* file)
 {
-     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    //double lock!  std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     for(int i=0;i<length;i++)
     {
         if(!mState.playing_sample)

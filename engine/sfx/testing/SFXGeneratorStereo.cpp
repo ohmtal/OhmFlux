@@ -94,9 +94,6 @@ SFXGeneratorStereo::SFXGeneratorStereo():
     mState.pan = 0.f;
     mState.pan_ramp = 0.f;
 
-    // Audio buffer
-    mF32Buffer.resize(MAX_FRAMES * 2);
-
 }
 
 SFXGeneratorStereo::~SFXGeneratorStereo()
@@ -361,132 +358,116 @@ void SFXGeneratorStereo::PlaySample()
     mState.playing_sample=true;
 }
 //-----------------------------------------------------------------------------
-// Returns a single mono sample (after supersampling, filters, and envelope)
-float SFXGeneratorStereo::generateMonoTick() {
-    float ssample = 0.0f;
-    for (int si = 0; si < 8; si++) { // 8x supersampling
-        float sample = 0.0f;
-        mState.phase++;
-        if (mState.phase >= mState.period) {
-            mState.phase %= mState.period;
-            if (mParams.wave_type == 3) {
-                for (int n = 0; n < 32; n++)
-                    mState.noise_buffer[n] = frnd(2.0f) - 1.0f;
-            }
-        }
-
-        // --- Waveform Generation ---
-        float fp = (float)mState.phase / mState.period;
-        switch (mParams.wave_type) {
-            case 0: sample = fp < mState.square_duty ? 0.5f : -0.5f; break;
-            case 1: sample = 1.0f - fp * 2; break;
-            case 2: sample = (float)sin(fp * 2 * M_PI); break;
-            case 3: sample = mState.noise_buffer[mState.phase * 32 / mState.period]; break;
-        }
-
-        // --- Filters ---
-        float pp = mState.fltp;
-        mState.fltw *= mState.fltw_d;
-        if (mState.fltw < 0.0f) mState.fltw = 0.0f;
-        if (mState.fltw > 0.1f) mState.fltw = 0.1f;
-        if (mParams.p_lpf_freq != 1.0f) {
-            mState.fltdp += (sample - mState.fltp) * mState.fltw;
-            mState.fltdp -= mState.fltdp * mState.fltdmp;
-        } else {
-            mState.fltp = sample;
-            mState.fltdp = 0.0f;
-        }
-        mState.fltp += mState.fltdp;
-        mState.fltphp += mState.fltp - pp;
-        mState.fltphp -= mState.fltphp * mState.flthp;
-        sample = mState.fltphp;
-
-        // --- Phaser ---
-        mState.phaser_buffer[mState.ipp & 1023] = sample;
-        sample += mState.phaser_buffer[(mState.ipp - mState.iphase + 1024) & 1023];
-        mState.ipp = (mState.ipp + 1) & 1023;
-
-        ssample += sample * mState.env_vol;
-    }
-    return (ssample / 8.0f);
-}
-//-----------------------------------------------------------------------------
-void SFXGeneratorStereo::updateSystemState() {
-    mState.rep_time++;
-    if (mState.rep_limit != 0 && mState.rep_time >= mState.rep_limit) {
-        mState.rep_time = 0;
-        ResetSample(true);
-    }
-
-    // Frequency envelopes / Arpeggios
-    mState.arp_time++;
-    if (mState.arp_limit != 0 && mState.arp_time >= mState.arp_limit) {
-        mState.arp_limit = 0;
-        mState.fperiod *= mState.arp_mod;
-    }
-    mState.fslide += mState.fdslide;
-    mState.fperiod *= mState.fslide;
-    if (mState.fperiod > mState.fmaxperiod) {
-        mState.fperiod = mState.fmaxperiod;
-        if (mParams.p_freq_limit > 0.0f) mState.playing_sample = false;
-    }
-
-    // Vibrato
-    float rfperiod = mState.fperiod;
-    if (mState.vib_amp > 0.0f) {
-        mState.vib_phase += mState.vib_speed;
-        rfperiod = mState.fperiod * (1.0 + sin(mState.vib_phase) * mState.vib_amp);
-    }
-    mState.period = (int)rfperiod;
-    if (mState.period < 8) mState.period = 8;
-
-    mState.square_duty += mState.square_slide;
-    if (mState.square_duty < 0.0f) mState.square_duty = 0.0f;
-    if (mState.square_duty > 0.5f) mState.square_duty = 0.5f;
-
-    // Volume envelope
-    mState.env_time++;
-    if (mState.env_time > mState.env_length[mState.env_stage]) {
-        mState.env_time = 0;
-        mState.env_stage++;
-        if (mState.env_stage == 3) mState.playing_sample = false;
-    }
-    if (mState.env_stage == 0) mState.env_vol = (float)mState.env_time / mState.env_length[0];
-    if (mState.env_stage == 1) mState.env_vol = 1.0f + pow(1.0f - (float)mState.env_time / mState.env_length[1], 1.0f) * 2.0f * mParams.p_env_punch;
-    if (mState.env_stage == 2) mState.env_vol = 1.0f - (float)mState.env_time / mState.env_length[2];
-
-    // Other updates
-    mState.fphase += mState.fdphase;
-    mState.iphase = abs((int)mState.fphase);
-    if (mState.iphase > 1023) mState.iphase = 1023;
-    if (mState.flthp_d != 0.0f) {
-        mState.flthp *= mState.flthp_d;
-        if (mState.flthp < 0.00001f) mState.flthp = 0.00001f;
-        if (mState.flthp > 0.1f) mState.flthp = 0.1f;
-    }
-}
-//-----------------------------------------------------------------------------
 void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
-
-    if (!mState.playing_sample)  {
-        std::memset(stereoBuffer, 0, length * sizeof(float) * 2);
+    if (!mState.playing_sample) {
+        if (stereoBuffer) std::memset(stereoBuffer, 0, length * sizeof(float) * 2);
         return;
     }
 
-
-    // double lock !! std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-
     for (int i = 0; i < length; i++) {
-        if (!mState.playing_sample) break;
+        if (!mState.playing_sample) {
+            if (stereoBuffer) std::memset(&stereoBuffer[i * 2], 0, (length - i) * sizeof(float) * 2);
+            break;
+        }
 
-        // Part 1: Update the simulation
-        updateSystemState();
+        mState.rep_time++;
+        if (mState.rep_limit != 0 && mState.rep_time >= mState.rep_limit) {
+            mState.rep_time = 0;
+            ResetSample(true);
+        }
 
-        // Part 2: Generate the mono core signal
-        float ssample = generateMonoTick();
+        // Frequency envelopes/arpeggios
+        mState.arp_time++;
+        if (mState.arp_limit != 0 && mState.arp_time >= mState.arp_limit) {
+            mState.arp_limit = 0;
+            mState.fperiod *= mState.arp_mod;
+        }
+        mState.fslide += mState.fdslide;
+        mState.fperiod *= mState.fslide;
+        if (mState.fperiod > mState.fmaxperiod) {
+            mState.fperiod = mState.fmaxperiod;
+            if (mParams.p_freq_limit > 0.0f) mState.playing_sample = false;
+        }
+        double rfperiod = mState.fperiod;
+        if (mState.vib_amp > 0.0f) {
+            mState.vib_phase += mState.vib_speed;
+            rfperiod = mState.fperiod * (1.0 + sin(mState.vib_phase) * mState.vib_amp);
+        }
+        mState.period = (int)rfperiod;
+        if (mState.period < 8) mState.period = 8;
+        mState.square_duty += mState.square_slide;
+        if (mState.square_duty < 0.0f) mState.square_duty = 0.0f;
+        if (mState.square_duty > 0.5f) mState.square_duty = 0.5f;
 
-        // Part 3: Global Volume & Panning
-        ssample *= master_vol * 2.0f * sound_vol;
+        // Volume envelope
+        mState.env_time++;
+        if (mState.env_time > mState.env_length[mState.env_stage]) {
+            mState.env_time = 0;
+            mState.env_stage++;
+            if (mState.env_stage == 3) mState.playing_sample = false;
+        }
+        if (mState.env_stage == 0) mState.env_vol = (float)mState.env_time / (mState.env_length[0] > 0 ? mState.env_length[0] : 1);
+        if (mState.env_stage == 1) mState.env_vol = 1.0f + pow(1.0f - (float)mState.env_time / (mState.env_length[1] > 0 ? mState.env_length[1] : 1), 1.0f) * 2.0f * mParams.p_env_punch;
+        if (mState.env_stage == 2) mState.env_vol = 1.0f - (float)mState.env_time / (mState.env_length[2] > 0 ? mState.env_length[2] : 1);
+
+        // Phaser step
+        mState.fphase += mState.fdphase;
+        mState.iphase = abs((int)mState.fphase);
+        if (mState.iphase > 1023) mState.iphase = 1023;
+
+        if (mState.flthp_d != 0.0f) {
+            mState.flthp *= mState.flthp_d;
+            if (mState.flthp < 0.00001f) mState.flthp = 0.00001f;
+            if (mState.flthp > 0.1f) mState.flthp = 0.1f;
+        }
+
+        float ssample = 0.0f;
+        for (int si = 0; si < 8; si++) { // 8x supersampling
+            float sample = 0.0f;
+            mState.phase++;
+            if (mState.phase >= mState.period) {
+                mState.phase %= mState.period;
+                if (mParams.wave_type == 3) {
+                    for (int n = 0; n < 32; n++)
+                        mState.noise_buffer[n] = frnd(2.0f) - 1.0f;
+                }
+            }
+            // Base waveform
+            float fp = (float)mState.phase / mState.period;
+            switch (mParams.wave_type) {
+                case 0: sample = fp < mState.square_duty ? 0.5f : -0.5f; break;
+                case 1: sample = 1.0f - fp * 2; break;
+                case 2: sample = (float)sin(fp * 2 * M_PI); break;
+                case 3: sample = mState.noise_buffer[mState.phase * 32 / mState.period]; break;
+            }
+            // LP filter
+            float pp = mState.fltp;
+            mState.fltw *= mState.fltw_d;
+            if (mState.fltw < 0.0f) mState.fltw = 0.0f;
+            if (mState.fltw > 0.1f) mState.fltw = 0.1f;
+            if (mParams.p_lpf_freq != 1.0f) {
+                mState.fltdp += (sample - mState.fltp) * mState.fltw;
+                mState.fltdp -= mState.fltdp * mState.fltdmp;
+            } else {
+                mState.fltp = sample;
+                mState.fltdp = 0.0f;
+            }
+            mState.fltp += mState.fltdp;
+            // HP filter
+            mState.fltphp += mState.fltp - pp;
+            mState.fltphp -= mState.fltphp * mState.flthp;
+            sample = mState.fltphp;
+            // Phaser
+            mState.phaser_buffer[mState.ipp & 1023] = sample;
+            sample += mState.phaser_buffer[(mState.ipp - mState.iphase + 1024) & 1023];
+            mState.ipp = (mState.ipp + 1) & 1023;
+            // Final accumulation
+            ssample += sample * mState.env_vol;
+        }
+        
+        ssample = ssample / 8.0f * master_vol;
+        ssample *= 2.0f * sound_vol;
+
         if (ssample > 1.0f) ssample = 1.0f;
         if (ssample < -1.0f) ssample = -1.0f;
 
@@ -495,11 +476,12 @@ void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
         if (mState.pan < -1.0f) mState.pan = -1.0f;
         if (mState.pan > 1.0f)  mState.pan = 1.0f;
 
+        // Linear panning that preserves 100% volume at center (like mono duplication)
+        float panL = 1.0f - mState.pan;
+        float panR = 1.0f + mState.pan;
+        if (panL > 1.0f) panL = 1.0f;
+        if (panR > 1.0f) panR = 1.0f;
 
-        float panL = 0.5f * (1.0f - mState.pan);
-        float panR = 0.5f * (1.0f + mState.pan);
-
-        // Part 4: Output
         if (stereoBuffer != nullptr) {
             stereoBuffer[i * 2]     = ssample * panL;
             stereoBuffer[i * 2 + 1] = ssample * panR;
@@ -800,35 +782,32 @@ void SFXGeneratorStereo::AddPanning(bool doLock) {
 
 void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
 {
-    auto* controller = static_cast<SFXGeneratorStereo*>(userdata);
+    auto* gen = static_cast<SFXGeneratorStereo*>(userdata);
+    if (!gen || additional_amount <= 0) return;
 
-    if (!controller || additional_amount <= 0) return;
+    std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
 
-    // Calculate frames (F32 Stereo = 8 bytes per frame)
-    int framesNeeded = additional_amount / 8;
-
-
-    const int MAX_FRAMES = 2048;
-    if (framesNeeded > MAX_FRAMES) framesNeeded = MAX_FRAMES;
-    int totalSamples = framesNeeded * 2;
-
-    // Use the pre-allocated member buffer from your class
-    // This avoids creating 16KB-24KB on the stack every callback
-    float* f32Buffer = controller->mF32Buffer.data();
-
+    // satisfy at least additional_amount bytes.
+    // round up to satisfy frame alignment (8 bytes for F32 stereo)
+    int framesNeeded = (additional_amount + 7) / 8;
+    
     if (framesNeeded > 0)
     {
-        std::lock_guard<std::recursive_mutex> lock(controller->mParamsMutex);
-        controller->SynthSample(framesNeeded, f32Buffer);
+        std::vector<float> buffer(framesNeeded * 2, 0.0f);
 
-        // DSP Effects
-        for (auto& effect : controller->mDspEffects) {
-            effect->process(f32Buffer, totalSamples);
+        if (gen->mState.playing_sample) {
+            gen->SynthSample(framesNeeded, buffer.data());
+
+            // DSP Effects
+            int totalSamples = framesNeeded * 2;
+            for (auto& effect : gen->mDspEffects) {
+                effect->process(buffer.data(), totalSamples);
+            }
         }
 
-        SDL_PutAudioStreamData(stream, f32Buffer, framesNeeded * 8);
+        // Put the data. SDL will buffer the excess if framesNeeded*8 > additional_amount.
+        SDL_PutAudioStreamData(stream, buffer.data(), framesNeeded * 8);
     }
-
 }
 
 //------------------------------------------------------------------------------

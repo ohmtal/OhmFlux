@@ -118,8 +118,6 @@ public:
 
 protected:
     // SynthSample parts:
-    float generateMonoTick();
-    void updateSystemState();
 
     // WAV
     bool saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate);
@@ -128,8 +126,6 @@ protected:
 
     //Effects
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
-    static constexpr int MAX_FRAMES = 2048;
-    std::vector<float> mF32Buffer;
 
 
 public:

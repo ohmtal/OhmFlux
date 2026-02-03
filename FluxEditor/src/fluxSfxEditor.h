@@ -293,10 +293,6 @@ public:
             {
                 ImGui::PushItemWidth(-FLT_MIN);
 
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "DEBUG");
-                ImGui::SliderFloat("FIXME FRAMES MULTI", &mSFXGeneratorStereo->FIXME_FRAMES, 0.f,5.f);
-                // return ImGui::SliderFloat((std::string("##") + label).c_str(), &value, min_v, 1.0f, format);
-
 
                 // 1. ENVELOPE
                 ImGui::TextColored(ImVec4(0.7f, 0.7f, 1.0f, 1.0f), "ENVELOPE");
