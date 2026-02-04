@@ -9,7 +9,7 @@ TODO Version 1 (i do not use 0 this time):
   [X] BitCrusher => void renderUI(bool withBackGround = true)
   [ ] Chorus
   [ ] Equilizer9Band
-  [ ] Limiter
+  [X] Limiter
   [ ] Reverb
   [ ] SoundCardEmulation
   [ ] Warmth

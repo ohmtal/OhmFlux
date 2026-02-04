@@ -11,11 +11,12 @@
 #include <algorithm>
 #include <cmath>
 
-#if defined(IMGUI_API) && defined(FLUX_ENGINE)
-    #include <imgui.h>
-    #include <imgui_internal.h>
-    #include <gui/ImFlux.h>
+#ifdef FLUX_ENGINE
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
 #endif
+
 
 
 #include "DSP_Effect.h"
@@ -140,7 +141,7 @@ namespace DSP {
             }
         }
 
-    #if defined(IMGUI_API) && defined(FLUX_ENGINE)
+    #ifdef FLUX_ENGINE
     void renderUI(bool withBackGround = true) {
         ImGui::PushID("BitCrusher_Effect_Row");
         ImGui::BeginGroup();

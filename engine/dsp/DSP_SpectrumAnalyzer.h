@@ -12,9 +12,12 @@
 #include <cstring>
 #include <atomic>
 
-#ifdef IMGUI_API
+#ifdef FLUX_ENGINE
 #include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
 #endif
+
 
 #include "DSP_Effect.h"
 
@@ -60,7 +63,7 @@ namespace DSP {
         }
     }; //class
 
-#ifdef IMGUI_API
+#ifdef FLUX_ENGINE
    inline void DrawSpectrumAnalyzer(SpectrumAnalyzer* analyzer, ImVec2 size) {
         if (!analyzer || !analyzer->isEnabled()) return;
 

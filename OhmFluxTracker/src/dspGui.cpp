@@ -430,65 +430,69 @@ void OTGui::RenderWarmthUI() {
 //------------------------------------------------------------------------------
 
 void OTGui::RenderLimiterUI() {
-    ImGui::PushID("Limiter_Effect_Row");
-    ImGui::BeginGroup();
 
-    auto* lim = getMain()->getController()->getDSPLimiter();
-    bool isEnabled = lim->isEnabled();
+    getMain()->getController()->getDSPLimiter()->renderUI(false);
+    getMain()->getController()->getDSPLimiter()->renderPeakTest(true);
 
-    if (ImFlux::LEDCheckBox("LIMITER", &isEnabled, ImVec4(1.0f, 0.4f, 0.4f, 1.0f)))
-        getMain()->getController()->getDSPLimiter()->setEnabled(isEnabled);
-
-    if (lim->isEnabled()) {
-        const char* presetNames[] = { "CUSTOM", "DEFAULT", "EIGHTY", "FIFTY", "LOWVOL", "EXTREM" };
-        bool changed = false;
-        DSP::LimiterSettings& currentSettings = lim->getSettings();
-
-        int currentIdx = 0; // Standard: "Custom"
-
-        for (int i = 1; i < DSP::LIMITER_PRESETS.size(); ++i) {
-            if (currentSettings == DSP::LIMITER_PRESETS[i]) {
-                currentIdx = i;
-                break;
-            }
-        }
-        int displayIdx = currentIdx;  //<< keep currentIdx clean
-
-        if (ImGui::BeginChild("EQ_Box", ImVec2(0, 35), ImGuiChildFlags_Borders)) {
-
-            ImGui::SetNextItemWidth(150);
-
-            if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
-                if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
-                            lim->setSettings(DSP::LIMITER_PRESETS[displayIdx]);
-                }
-            }
-
-            // Quick Reset Button (Now using the FLAT_EQ preset)
-            ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-
-            // if (ImGui::SmallButton("Reset")) {
-            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-                lim->setSettings(DSP::LIMITER_DEFAULT);
-            }
-            // ImGui::Separator();
-            // changed |= ImFlux::FaderHWithText("Threshold", &currentSettings.Threshold, 0.01f, 1.f, "%.3f");
-            // changed |= ImFlux::FaderHWithText("Depth", &currentSettings.Attack, 0.01f, 1.f, "%.4f");
-            // changed |= ImFlux::FaderHWithText("Release", &currentSettings.Release, 0.0000005f, 0.0001f, "%.8f");
-            //
-            //
-            // if (changed) {
-            //     selectedPresetIdx = 0;
-            //     lim->setSettings(currentSettings);
-            // }
-
-        } //box
-        ImGui::EndChild();
-    } //enabled
-
-    ImGui::EndGroup();
-    ImGui::PopID();
-    ImGui::Spacing();
+    // ImGui::PushID("Limiter_Effect_Row");
+    // ImGui::BeginGroup();
+    //
+    // auto* lim = getMain()->getController()->getDSPLimiter();
+    // bool isEnabled = lim->isEnabled();
+    //
+    // if (ImFlux::LEDCheckBox("LIMITER", &isEnabled, ImVec4(1.0f, 0.4f, 0.4f, 1.0f)))
+    //     getMain()->getController()->getDSPLimiter()->setEnabled(isEnabled);
+    //
+    // if (lim->isEnabled()) {
+    //     const char* presetNames[] = { "CUSTOM", "DEFAULT", "EIGHTY", "FIFTY", "LOWVOL", "EXTREM" };
+    //     bool changed = false;
+    //     DSP::LimiterSettings& currentSettings = lim->getSettings();
+    //
+    //     int currentIdx = 0; // Standard: "Custom"
+    //
+    //     for (int i = 1; i < DSP::LIMITER_PRESETS.size(); ++i) {
+    //         if (currentSettings == DSP::LIMITER_PRESETS[i]) {
+    //             currentIdx = i;
+    //             break;
+    //         }
+    //     }
+    //     int displayIdx = currentIdx;  //<< keep currentIdx clean
+    //
+    //     if (ImGui::BeginChild("EQ_Box", ImVec2(0, 35), ImGuiChildFlags_Borders)) {
+    //
+    //         ImGui::SetNextItemWidth(150);
+    //
+    //         if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+    //             if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
+    //                         lim->setSettings(DSP::LIMITER_PRESETS[displayIdx]);
+    //             }
+    //         }
+    //
+    //         // Quick Reset Button (Now using the FLAT_EQ preset)
+    //         ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+    //
+    //         // if (ImGui::SmallButton("Reset")) {
+    //         if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+    //             lim->setSettings(DSP::LIMITER_DEFAULT);
+    //         }
+    //         // ImGui::Separator();
+    //         // changed |= ImFlux::FaderHWithText("Threshold", &currentSettings.Threshold, 0.01f, 1.f, "%.3f");
+    //         // changed |= ImFlux::FaderHWithText("Depth", &currentSettings.Attack, 0.01f, 1.f, "%.4f");
+    //         // changed |= ImFlux::FaderHWithText("Release", &currentSettings.Release, 0.0000005f, 0.0001f, "%.8f");
+    //         //
+    //         //
+    //         // if (changed) {
+    //         //     selectedPresetIdx = 0;
+    //         //     lim->setSettings(currentSettings);
+    //         // }
+    //
+    //     } //box
+    //     ImGui::EndChild();
+    // } //enabled
+    //
+    // ImGui::EndGroup();
+    // ImGui::PopID();
+    // ImGui::Spacing();
 }
 //------------------------------------------------------------------------------
 void OTGui::RenderEquilizer9BandUI() {

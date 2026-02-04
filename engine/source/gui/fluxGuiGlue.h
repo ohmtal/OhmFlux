@@ -13,7 +13,9 @@
 
 #pragma once
 
-#define IMGUI_DEFINE_MATH_OPERATORS
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+    #define IMGUI_DEFINE_MATH_OPERATORS
+#endif
 #include <core/fluxBaseObject.h>
 #include <utils/fluxSettingsManager.h>
 #include <imgui.h>

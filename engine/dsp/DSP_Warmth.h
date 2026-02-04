@@ -4,7 +4,7 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Warmth
 // Warmth - A simple One-Pole Low-Pass Filter mimics the "warm" analog
-//          output of 90s sound cards.
+//          output of 90s
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -12,6 +12,13 @@
 #include <cstdint>
 #include <algorithm>
 #include <cmath>
+
+#ifdef FLUX_ENGINE
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
+#endif
+
 
 #include "DSP_Effect.h"
 

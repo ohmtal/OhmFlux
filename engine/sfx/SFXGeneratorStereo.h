@@ -21,7 +21,7 @@
 
 #include <DSP.h>
 
-#if defined(IMGUI_API) && defined(FLUX_ENGINE)
+#ifdef FLUX_ENGINE
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <gui/ImFlux.h>
@@ -222,7 +222,7 @@ private:
     void ResetParamsNoLock();
 
 public:
-#ifdef IMGUI_API
+#ifdef FLUX_ENGINE
     void DrawWaveIcon(ImDrawList* draw_list, ImVec2 center, float size, int type, ImU32 color) {
         float h = size * 0.4f; // Half height
         float w = size * 0.6f; // Width of the icon
@@ -294,16 +294,14 @@ public:
 
         if (pressed) mParams.wave_type = wave_type;
 
-        #ifdef FLUX_ENGINE
         ImFlux::Hint(label);
-        #endif
 
         ImGui::PopID();
         return pressed;
     }
 
 
-#endif //IMGUI_API
+#endif //FLUX_ENGINE
 };
 
 #endif // SFXGENERATOR_H

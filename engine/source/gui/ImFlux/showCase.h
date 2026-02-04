@@ -124,6 +124,9 @@ inline void ShowCase_MISC()
     ImGui::SameLine();
 
     ImFlux::SeparatorVertical(4.f);
+    KnobSettings ks = DARK_KNOB;
+    ImFlux::MiniKnobF("MiniKnobF Dark", &barFloat, 0.f, 1.f, ks);
+    ImGui::SameLine();
     ImFlux::MiniKnobFloat("MiniKnobFloat", &barFloat, 0.f, 1.f); // float radius = 12.f,  float speed = 0.01f) {
     ImGui::SameLine();
     ImFlux::MiniKnobFloat("MiniKnobFloat20", &barFloat, 0.f, 1.f, 20.f); // float radius = 12.f,  float speed = 0.01f) {

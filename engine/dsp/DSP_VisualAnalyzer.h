@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Digital Sound Processing : SpectrumAnalyzer
+// Digital Sound Processing : VisualAnalyzer
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -13,9 +13,12 @@
 #include <atomic>
 #include <mutex>
 
-#ifdef IMGUI_API
+#ifdef FLUX_ENGINE
 #include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
 #endif
+
 
 #include "DSP_Effect.h"
 
@@ -53,7 +56,7 @@ namespace DSP {
     };
 
 
-#ifdef IMGUI_API
+#ifdef FLUX_ENGINE
     inline void DrawVisualAnalyzerOszi(DSP::VisualAnalyzer* analyzer, ImVec2 size) {
         if (!analyzer || !analyzer->isEnabled()) return;
 

@@ -9,6 +9,16 @@
 #include <cmath>
 #include <vector>
 
+#ifdef FLUX_ENGINE
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
+#endif
+
+
+#include "DSP_Effect.h"
+
+
 namespace DSP {
 
     struct ChorusSettings {

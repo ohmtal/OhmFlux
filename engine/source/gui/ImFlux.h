@@ -9,14 +9,17 @@
 #include <cmath>
 #include <algorithm>
 
+
 #include "ImFlux/buttons.h"
 #include "ImFlux/comboAndStepper.h"
 #include "ImFlux/helper.h"
 #include "ImFlux/lcd.h"
 #include "ImFlux/led.h"
-#include "ImFlux/sliderAndKnobs.h"
+#include "ImFlux/slider.h"
+#include "ImFlux/knobs.h"
 #include "ImFlux/background.h"
 #include "ImFlux/text.h"
+#include "ImFlux/peekAndVU.h"
 
 namespace ImFlux {
 
@@ -74,26 +77,6 @@ namespace ImFlux {
         }
         ImGui::NewLine();
     }
-
-
-    //------------------------------------------------------------------------------
-    // Simple PeakMeter
-    inline void PeakMeter(float level) {
-        ImVec2 p = ImGui::GetCursorScreenPos();
-        ImVec2 size = ImVec2(100, 6);
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-
-        dl->AddRectFilled(p, {p.x + size.x, p.y + size.y}, IM_COL32(40, 40, 40, 255));
-        float fill = std::clamp(level, 0.0f, 1.0f) * size.x;
-        ImU32 col = level > 0.9f ? IM_COL32(255, 50, 50, 255) : IM_COL32(50, 255, 50, 255);
-        dl->AddRectFilled(p, {p.x + fill, p.y + size.y}, col);
-
-        ImGui::Dummy(size);
-    }
-
-
-
-
 
 
 

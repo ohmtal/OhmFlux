@@ -221,7 +221,7 @@ public:
                     ImGui::Separator();
                     SFXKnob("ATTACK TIME", lParams.p_env_attack, false); ImGui::SameLine();
                     SFXKnob("SUSTAIN TIME", lParams.p_env_sustain, false); ImGui::SameLine();
-                    SFXKnob("SUSTAIN PUNCH", lParams.p_env_punch, false); ImGui::SameLine();
+                    SFXKnob("SUSTAIN PUNCH", lParams.p_env_punch, true); ImGui::SameLine();
                     SFXKnob("DECAY TIME", lParams.p_env_decay, false); ImGui::SameLine();
                     ImGui::EndGroup();
                 }
@@ -239,8 +239,10 @@ public:
                     SFXKnob("MIN FREQUENCY", lParams.p_freq_limit, false); ImGui::SameLine();
                     SFXKnob("SLIDE", lParams.p_freq_ramp, true); ImGui::SameLine();
                     SFXKnob("DELTA SLIDE", lParams.p_freq_dramp, true); ImGui::SameLine();
-                    SFXKnob("VIBRATO DEPTH", lParams.p_vib_strength, false); ImGui::SameLine();
-                    SFXKnob("VIBRATO SPEED", lParams.p_vib_speed, false); ImGui::SameLine();
+                    ImFlux::SeparatorVertical(0.f, 16.f);
+                    SFXKnob("VIBRATO DEPTH", lParams.p_vib_strength, true); ImGui::SameLine();
+                    SFXKnob("VIBRATO SPEED", lParams.p_vib_speed, true); ImGui::SameLine();
+                    SFXKnob("VIBRATO DELAY", lParams.p_vib_delay, true); ImGui::SameLine();
 
                     ImGui::EndGroup();
                 }
@@ -253,7 +255,7 @@ public:
                     ImFlux::ShadowText("ARPEGGIATOR", ImFlux::COL32_NEONCYAN);
                     ImGui::Separator();
                     SFXKnob("CHANGE AMOUNT", lParams.p_arp_mod, true);ImGui::SameLine();
-                    SFXKnob("CHANGE SPEED", lParams.p_arp_speed, false);ImGui::SameLine();
+                    SFXKnob("CHANGE SPEED", lParams.p_arp_speed, true);ImGui::SameLine();
                     ImGui::EndGroup(/*1*/);
 
 
@@ -262,7 +264,7 @@ public:
                     ImGui::BeginGroup(/*2*/);
                     ImFlux::ShadowText("SQUARE DUTY", ImFlux::COL32_NEONCYAN);
                     ImGui::Dummy(ImVec2(0.f,4.f));
-                    SFXKnob("SQUARE DUTY", lParams.p_duty, false); ImGui::SameLine();
+                    SFXKnob("SQUARE DUTY", lParams.p_duty, true); ImGui::SameLine();
                     SFXKnob("DUTY SWEEP", lParams.p_duty_ramp, true); ImGui::SameLine();
                     ImGui::EndGroup(/*2*/);
 
@@ -285,7 +287,7 @@ public:
                     ImGui::BeginGroup(/*1*/);
                     ImFlux::ShadowText("REPEAT", ImFlux::COL32_NEONCYAN);
                     ImGui::Separator();
-                    SFXKnob("REPEAT SPEED", lParams.p_repeat_speed, false);
+                    SFXKnob("REPEAT SPEED", lParams.p_repeat_speed, true);
                     ImGui::EndGroup(/*1*/);
 
                     ImFlux::SeparatorVertical(0.f, 16.f);
@@ -320,7 +322,7 @@ public:
                     ImGui::Separator();
                     SFXKnob("LP FILTER CUTOFF", lParams.p_lpf_freq, false);     ImGui::SameLine();
                     SFXKnob("LP FILTER CUTOFF SWEEP", lParams.p_lpf_ramp, true); ImGui::SameLine();
-                    SFXKnob("LP FILTER RESONANCE", lParams.p_lpf_resonance, false); ImGui::SameLine();
+                    SFXKnob("LP FILTER RESONANCE", lParams.p_lpf_resonance, true); ImGui::SameLine();
                     SFXKnob("HP FILTER CUTOFF", lParams.p_hpf_freq, false); ImGui::SameLine();
                     SFXKnob("HP FILTER CUTOFF SWEEP", lParams.p_hpf_ramp, true); ImGui::SameLine();
                     ImGui::EndGroup();
@@ -334,7 +336,7 @@ public:
                     ImFlux::ShadowText("PANNING", ImFlux::COL32_NEONCYAN);
                     ImGui::Separator();
                     SFXKnob("PANNING LEFT | RIGHT", lParams.p_pan, true); ImGui::SameLine();
-                    SFXKnob("PANNING RAMP", lParams.p_pan_ramp, true); ImGui::SameLine();
+                    SFXKnob("PANNING SWEEP", lParams.p_pan_ramp, true); ImGui::SameLine();
                     SFXKnob("PANNING SPEED", lParams.p_pan_speed, false); ImGui::SameLine();
                     ImGui::EndGroup();
                 }

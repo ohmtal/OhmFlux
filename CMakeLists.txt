@@ -255,6 +255,7 @@ target_compile_definitions(ohmFlux_engine PUBLIC
 
 # so we know where we are
 target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE)
+target_compile_definitions(ohmFlux_engine PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
 
 
 if(WIN32 AND MSVC)

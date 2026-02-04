@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Digital Sound Processing : Limiter
+// Digital Sound Processing : SoundCardEmulation (maybe obsolte since warmth)
 //-----------------------------------------------------------------------------
 #pragma once
 #define _USE_MATH_DEFINES // Required for M_PI on some systems (like Windows/MSVC)
@@ -11,6 +11,15 @@
 #include <cstdint>
 #include <algorithm>
 #include <cstring>
+
+#ifdef FLUX_ENGINE
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
+#endif
+
+
+#include "DSP_Effect.h"
 
 namespace DSP {
 
