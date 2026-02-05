@@ -36,6 +36,8 @@ public:
     bool                  AutoScroll;
     bool                  ScrollToBottom;
 
+    bool mShowButtons = false; //FIXME save as option (and the other options too)
+
 
 
     //--------------------------------------------------------------------------
@@ -92,8 +94,6 @@ public:
     {
         bool result = false;
 
-        if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_F))
-            ImGui::OpenPopup("SearchPopup");
 
         // Set position to center of the current window
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -125,6 +125,10 @@ public:
 
             ImGui::EndPopup();
         }
+
+        if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_F))
+            ImGui::OpenPopup("SearchPopup");
+
         return result;
     }
     //--------------------------------------------------------------------------
@@ -139,65 +143,92 @@ public:
             return;
         }
 
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+        bool loDoCopyToClipboard = false;
 
         if (ImGui::BeginPopupContextItem())
         {
             if (ImGui::MenuItem("Close Console"))
                 *p_open = false;
+
+
+            ImGui::TextDisabled("Menu");
+            ImGui::Separator();
+            ImGui::TextDisabled("Hint:double click line => copy to clipboard");
+            ImGui::Separator();
+            if (ImGui::Selectable("Clear")) ClearLog();
+            loDoCopyToClipboard = ImGui::Selectable("Copy");
+            if (ImGui::Selectable("Show Menu Buttons", mShowButtons)) mShowButtons = !mShowButtons;
+
+
             ImGui::EndPopup();
         }
 
 
-
-        if (ImGui::Button("Clear", mButtonSize)){ ClearLog(); }
-        ImGui::SameLine();
-        bool loDoCopyToClipboard = ImGui::Button("Copy", mButtonSize);
-
-        ImGui::SameLine();
         // Options menu
         if (ImGui::BeginPopup("Options"))
         {
             ImGui::Checkbox("Auto-scroll", &AutoScroll);
             ImGui::Checkbox("Copy only visible Log entries", &mCopyOnlyVisible);
 
+            ImGui::Checkbox("Show Buttons", &mShowButtons);
             ImGui::EndPopup();
         }
 
-        // Options, Filter
-        ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_O, ImGuiInputFlags_Tooltip);
-        if (ImGui::Button("Options", mButtonSize)) ImGui::OpenPopup("Options");
 
-
-        ImGui::SameLine(ImGui::GetWindowWidth() - 110.f);
-        if (Filter.Draw("##FilterMain", 100)) mDirty = true;
-        ImGui::Separator();
-
-
-
-        //XXTH performance changes
-        if ( mDirty  )
+        if ( mShowButtons )
         {
-            mFilterIndices.clear();
-            mFilterIndices.reserve(Items.Size);
-            for (int i = 0; i < Items.Size; i++) {
-                if (Filter.PassFilter(Items[i])) {
-                    mFilterIndices.push_back(i);
-                }
-            }
-            mDirty = false;
+            if (ImGui::Button("Clear", mButtonSize)){ ClearLog(); }
+            ImGui::SameLine();
+            bool loDoCopyToClipboard = ImGui::Button("Copy", mButtonSize);
+
+            ImGui::SameLine();
+
+            // Options, Filter
+            ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_O, ImGuiInputFlags_Tooltip);
+            if (ImGui::Button("Options", mButtonSize)) ImGui::OpenPopup("Options");
+
+            ImGui::SameLine(ImGui::GetWindowWidth() - 110.f);
+            if (Filter.Draw("##FilterMain", 100)) mDirty = true;
+            ImGui::Separator();
+
         }
+
+
 
 
 
         // Reserve enough left-over height for 1 separator + 1 input text
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+        bool openOpt = false;
+        bool openSearch = false;
         if (ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), ImGuiChildFlags_NavFlattened, ImGuiWindowFlags_HorizontalScrollbar))
         {
             if (ImGui::BeginPopupContextWindow())
             {
+                ImGui::TextDisabled("Menu");
+                ImGui::Separator();
+                ImGui::TextDisabled("Hint:double click line => copy to clipboard");
+                ImGui::Separator();
                 if (ImGui::Selectable("Clear")) ClearLog();
+                loDoCopyToClipboard = ImGui::Selectable("Copy");
+                if (ImGui::Selectable("Show Menu Buttons", mShowButtons)) mShowButtons = !mShowButtons;
+
+                ImGui::Separator();
+
                 ImGui::EndPopup();
+            }
+
+
+            if ( mDirty  )
+            {
+                mFilterIndices.clear();
+                mFilterIndices.reserve(Items.Size);
+                for (int i = 0; i < Items.Size; i++) {
+                    if (Filter.PassFilter(Items[i])) {
+                        mFilterIndices.push_back(i);
+                    }
+                }
+                mDirty = false;
             }
 
             if (loDoCopyToClipboard) {
@@ -211,6 +242,7 @@ public:
                 }
             }
 
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
 
             ImGuiListClipper clipper;
             clipper.Begin(mFilterIndices.Size); // Nutze die Anzahl der GEFILTERTEN Items
@@ -228,10 +260,20 @@ public:
                     if (has_color)
                         ImGui::PushStyleColor(ImGuiCol_Text, color);
                     ImGui::TextUnformatted(item);
+
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    {
+                        ImGui::SetClipboardText(item);
+                        // ImGui::SetTooltip("Copied to clipboard!");
+                    }
+
                     if (has_color)
                         ImGui::PopStyleColor();
                 }
             }
+
+            ImGui::PopStyleVar();
+
             if (loDoCopyToClipboard ) {
                 ImGui::LogFinish();
                 loDoCopyToClipboard = false;
@@ -271,7 +313,7 @@ public:
         if (reclaim_focus)
             ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
-        ImGui::PopStyleVar();
+
 
         ImGui::End();
     }
