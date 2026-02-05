@@ -127,7 +127,7 @@ private:
     static constexpr int MAX_FRAMES = 2048;
     std::vector<float> mF32Buffer;
 
-    const int SILENCE_THRESHOLD = 44100;
+    const int SILENCE_THRESHOLD = 44100 * 20; //raised * 20 because of reverb ...
     std::atomic<bool> mIsSilent{true};
     std::atomic<int> mSilenceCounter{0};
 
