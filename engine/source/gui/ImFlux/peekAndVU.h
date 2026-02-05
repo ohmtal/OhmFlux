@@ -9,14 +9,14 @@
 #include <cmath>
 #include <algorithm>
 #include "background.h"
+#include "text.h"
 
 
 namespace ImFlux {
     //------------------------------------------------------------------------------
     // Simple PeakMeter
-    inline void PeakMeter(float level) {
+    inline void PeakMeter(float level,ImVec2 size = ImVec2(100.f, 6.f) ) {
         ImVec2 p = ImGui::GetCursorScreenPos();
-        ImVec2 size = ImVec2(100, 6);
         ImDrawList* dl = ImGui::GetWindowDrawList();
 
         dl->AddRectFilled(p, {p.x + size.x, p.y + size.y}, IM_COL32(40, 40, 40, 255));
@@ -29,17 +29,29 @@ namespace ImFlux {
 
     //------------------------------------------------------------------------------
     // old school VU Meter 70th
-    inline void VUMeter70th(ImVec2 size, float value) { // value is 0.0 to 1.0
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-        ImVec2 pos = ImGui::GetCursorScreenPos();
+    // value is 0.0 to 1.0
+    // playing with colors :
+    // IM_COL32(40, 55, 58, 255), IM_COL32(66, 76, 65, 255)
+    // IM_COL32(74, 47, 20, 255), IM_COL32(100, 84, 2, 255)
 
+
+    inline void VUMeter70th(ImVec2 size, float value, const char* label = nullptr,
+           ImU32 colorTop = IM_COL32(82, 74, 60, 255),
+           ImU32 colorBottom = IM_COL32(63, 54, 35, 255)
+    ) { // value is 0.0 to 1.0
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+
+        if (size.x <= 0.0f) size.x = ImGui::GetContentRegionAvail().x;
+        if (size.y <= 0.0f) size.y = ImGui::GetContentRegionAvail().y;
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
         // Pivot point slightly below the bottom of the box for a natural swing
         ImVec2 center = ImVec2(pos.x + size.x * 0.5f, pos.y + size.y * 1.05f);
 
         // 1. Draw Background
         GradientParams grad_params = DEFAULT_GRADIENTBOX;
-        grad_params.col_top = IM_COL32(82, 74, 60, 255);
-        grad_params.col_bot = IM_COL32(63, 54, 35, 255);
+        grad_params.col_top = colorTop;
+        grad_params.col_bot = colorBottom;
         grad_params.pos = pos;
         grad_params.size = size;
         GradientBoxDL(grad_params, dl);
@@ -80,80 +92,30 @@ namespace ImFlux {
         // 5. Pivot cap
         dl->AddCircleFilled(center, size.y * 0.1f, IM_COL32(40, 35, 30, 255));
 
-        // Advance Cursor
-        ImGui::Dummy(size);
-    }
 
-    // ------- with labels
-    inline void VUMeter70thLabeled(ImVec2 size, float value) { // value is 0.0 to 1.0 (normalized)
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-
-        // Pivot point slightly below the bottom
-        ImVec2 center = ImVec2(pos.x + size.x * 0.5f, pos.y + size.y * 1.1f);
-
-        // 1. Draw Background
-        GradientParams grad_params = DEFAULT_GRADIENTBOX;
-        grad_params.col_top = IM_COL32(82, 74, 60, 255);
-        grad_params.col_bot = IM_COL32(63, 54, 35, 255);
-        grad_params.pos = pos;
-        grad_params.size = size;
-        GradientBoxDL(grad_params, dl);
-
-        // 2. Constants for Mapping
-        float min_angle = -1.1f; // Left side
-        float max_angle =  1.1f; // Right side
-        float radius = size.y * 0.85f;
-
-        // 3. Draw dB Labels and Ticks
-        // Define the points where we want text labels
-        struct Mark { float db; const char* label; };
-        Mark marks[] = {
-            { -60.0f, "-60" }, { -40.0f, "-40" }, { -20.0f, "-20" },
-            { -10.0f, "-10" }, { 0.0f, "0" }
-        };
-
-        for (const auto& mark : marks) {
-            // Map dB to 0..1 range (Matching your mapDB lambda logic)
-            float t = (mark.db - (-60.0f)) / (0.0f - (-60.0f));
-            float s_angle = min_angle + (t * (max_angle - min_angle));
-
-            // Position for tick marks
-            ImVec2 p1 = ImVec2(center.x + std::sin(s_angle) * radius, center.y - std::cos(s_angle) * radius);
-            ImVec2 p2 = ImVec2(center.x + std::sin(s_angle) * (radius * 0.88f), center.y - std::cos(s_angle) * (radius * 0.88f));
-
-            // Position for Text (Slightly further in than the ticks)
-            ImVec2 text_p = ImVec2(center.x + std::sin(s_angle) * (radius * 0.72f), center.y - std::cos(s_angle) * (radius * 0.72f));
-
-            // Draw Ticks
-            ImU32 col = (mark.db >= 0.0f) ? IM_COL32(255, 50, 50, 255) : IM_COL32(220, 210, 190, 200);
-            dl->AddLine(p1, p2, col, 2.0f);
-
-            // Draw Text Labels (Centered)
-            ImVec2 text_size = ImGui::CalcTextSize(mark.label);
-            dl->AddText(ImVec2(text_p.x - text_size.x * 0.5f, text_p.y - text_size.y * 0.5f), col, mark.label);
+        if (label != nullptr) {
+            AddCenteredShadowText(
+                dl,
+                pos,
+                size,
+                label,
+                TextAlign::Center,
+                IM_COL32(255, 255, 255, 150)
+            );
         }
 
-        // 4. Draw Needle
-        float angle = min_angle + (std::max(0.0f, std::min(1.0f, value)) * (max_angle - min_angle));
-        float needle_len = radius * 0.98f;
-        ImVec2 needle_end = ImVec2(center.x + std::sin(angle) * needle_len, center.y - std::cos(angle) * needle_len);
-
-        // Shadow & Needle line
-        dl->AddLine(ImVec2(center.x + 1.5f, center.y), ImVec2(needle_end.x + 1.5f, needle_end.y), IM_COL32(0, 0, 0, 80), 2.0f);
-        dl->AddLine(center, needle_end, IM_COL32(230, 40, 0, 255), 2.0f);
-
-        // 5. Pivot cap
-        dl->AddCircleFilled(center, size.y * 0.12f, IM_COL32(30, 25, 20, 255));
-        dl->AddCircle(center, size.y * 0.12f, IM_COL32(100, 100, 100, 100));
 
         // Advance Cursor
         ImGui::Dummy(size);
     }
+
 
     //------------------------------------------------------------------------------
     // Old school LED Ladder Meter (80s Style)
     inline void VUMeter80th(float value, int ledCount = 12, ImVec2 ledSquare = ImVec2(22.f, 8.f)) {
+
+        if (value < 0.001f) value = 0.0f;
+
         ImDrawList* dl = ImGui::GetWindowDrawList();
         ImVec2 pos = ImGui::GetCursorScreenPos();
         float spacing = 2.0f;
@@ -199,7 +161,12 @@ namespace ImFlux {
         ImGui::Dummy(ImVec2(totalWidth, ledSquare.y));
     }
     //------------------------------------------------------------------------------
+
+    // ~~~ NOTE i keep using the 80th one since the hold looks not better to me. ~~~
+
     // LED Ladder Meter with peak cot i call it 90th
+
+
     struct VUMeterState {
         float peak = 0.0f;
         float holdTimer = 0.0f; // NEW: Timer for the "freeze" moment
@@ -228,6 +195,8 @@ namespace ImFlux {
 
     // 90s Style Vertical Studio Ladder
     inline void VUMeter90th(float value, VUMeterState& state) {
+        if (value < 0.001f) value = 0.0f;
+
         ImDrawList* dl = ImGui::GetWindowDrawList();
         ImVec2 pos = ImGui::GetCursorScreenPos();
         float spacing = 2.0f;

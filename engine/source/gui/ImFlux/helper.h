@@ -99,6 +99,15 @@ namespace ImFlux {
 
     }
 
+    //---------------- SameLineCentered very helpfull :D
+    inline void SameLineCentered(float targetHeight) {
+        float currentHeight = ImGui::GetItemRectSize().y;
+        ImGui::SameLine();
+        // Move cursor down if the next item is smaller than the previous one
+        if (currentHeight > targetHeight) {
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (currentHeight - targetHeight) * 0.5f);
+        }
+    }
     //---------------- SeparatorVertical
 
     inline void SeparatorVertical(float padding = 20.f, float spacing = 8.f) {

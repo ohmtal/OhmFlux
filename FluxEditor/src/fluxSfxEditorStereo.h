@@ -172,16 +172,7 @@ public:
             // Force column stability (as we found in step #3)
             ImGui::Dummy(ImVec2(300.0f, 0.0f));
 
-            // toggle buttons:
-            // --- WAVE TYPE SELECTION (Top of Middle Column) ---
-
-            // 1. Calculate the total width available for the row once
-            float total_width = ImGui::GetContentRegionAvail().x;
-            // 2. Subtract the spacing between buttons (default is Style.ItemSpacing.x)
-            float spacing = ImGui::GetStyle().ItemSpacing.x;
-            // 3. Divide by 4 (number of buttons)
-            float button_width = (total_width - (spacing * 3)) / 4.0f;
-
+            // --- WAVE TYPE SELECTION  ---
             auto WaveButton = [&](const char* label, int type) {
                 if (mSFXGeneratorStereo->DrawWaveButton(label,type)
                     &&   lAutoPlay
@@ -189,6 +180,30 @@ public:
 
 
             };
+
+            if (ImGui::BeginChild("NAME_BOX", ImVec2(-FLT_MIN,34.f) )) {
+                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+                ImGui::Dummy(ImVec2(2,5)); //
+                ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+
+                ImGui::BeginGroup();
+
+                ImFlux::ShadowText("Name:", ImFlux::COL32_NEONCYAN);
+                ImGui::SameLine();
+
+                ImGui::SetNextItemWidth(240.f);
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImFlux::DEFAULT_GRADIENTBOX.col_bot);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImFlux::DEFAULT_GRADIENTBOX.col_top);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImFlux::DEFAULT_GRADIENTBOX.col_top);
+                ImGui::PushStyleColor(ImGuiCol_Border, ImFlux::DEFAULT_GRADIENTBOX.col_top);
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+                ImGui::InputText("##SFXNAME", lParams.name, sizeof(lParams.name));
+                ImGui::PopStyleVar();
+                ImGui::PopStyleColor(4);
+
+                ImGui::EndGroup();
+            }
+            ImGui::EndChild();
 
 
             if (ImGui::BeginChild("WAVE_TYPE_BOX", ImVec2(-FLT_MIN,70.f) )) {
@@ -342,15 +357,27 @@ public:
                 }
                 ImGui::EndChild();
 
-            }
+
+
+
+            } //<<<< SLIDER REGION
+
+
+
 
             // mBitCrusher->renderUI();
+
+            // mVisualAnalyzer->renderPeakTest(); //TEST VU's
 
             ImGui::EndChild(); //<<< must be outside the if ...
 
 
             // --- COLUMN 3: OUTPUT (Right) ---
             ImGui::TableSetColumnIndex(2);
+
+            // background << too streched
+            // ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+
 
             // Main Play Button
             if (SFXButton("PLAY", lButtonSize)) {
@@ -372,27 +399,11 @@ public:
 //>>>>>>>>>>
             ImGui::PushItemWidth(-FLT_MIN);
 
-            // 1. Background of the whole slider (The "Unfilled" part)
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
 
-            // 2. Background when you hover or click (The "Bar" usually lightens here)
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive,  ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+            SFXKnob("Volume", lParams.sound_vol, false);
+            ImFlux::SameLineCentered(12.f);
+            ImFlux::VUMeter80th(lParams.sound_vol, 20,ImVec2(2.f, 12.f) );
 
-            // 3. THE ACTUAL KNOB (The "Bar" color in standard ImGui)
-            // To make it look like a "Bar", we make the Grab very wide or bright
-            if ( lSfxGen->sound_vol <= 0.75 ) {
-                ImGui::PushStyleColor(ImGuiCol_SliderGrab,  ImColor4F(cl_Yellow));
-                ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(1.0f, 0.9f, 0.2f, 1.0f));
-            }
-            else {
-                ImGui::PushStyleColor(ImGuiCol_SliderGrab,  ImColor4F(cl_Red));
-                ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImColor4F(cl_Red));
-            }
-
-            SFXKnob("Volume", lSfxGen->sound_vol, false);
-
-            ImGui::PopStyleColor(5);
             ImGui::PopItemWidth();
 
 //<<<<<<<<<<
@@ -418,7 +429,24 @@ public:
             }
 
 
-            DSP::DrawVisualAnalyzerOszi(mVisualAnalyzer, ImVec2(lButtonSize.x,lButtonSize.y * 2.f));
+            ImVec2 lVisuSize = ImVec2(lButtonSize.x,lButtonSize.y * 2.f );
+            if (ImGui::BeginChild("VisualAnalyzer_BOX", ImVec2(lVisuSize.x, lVisuSize.y * 3.2f ) )) {
+                // invisible nearly ... ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+
+                mVisualAnalyzer->DrawVisualAnalyzerOszi(lVisuSize);
+                float levLeft = 0.f;
+                float levRight = 0.f;
+                mVisualAnalyzer->getLevels(levLeft, levRight);
+                const ImU32 startCol = IM_COL32(70, 70, 70, 255);
+                const ImU32 endCol   = IM_COL32(15, 15, 20, 255);
+
+                ImFlux::VUMeter70th(lVisuSize, levLeft, "(L)", startCol, endCol);
+                ImFlux::VUMeter70th(lVisuSize, levRight, "(R)", startCol, endCol);
+                //  IM_COL32(75, 75, 85, 255), IM_COL32(15, 15, 20, 255)
+                // ImFlux::VUMeter70th(lVisuSize, levRight, "(R)", IM_COL32(25, 25, 30, 255), IM_COL32(45, 45, 55, 255));
+
+            }
+            ImGui::EndChild();
 
 
 
@@ -513,7 +541,7 @@ public:
                 if (c->action == fa_load) {
                     dLog("Action: Load SFXR to [%s]", filename.c_str());
                     if (!c->generator->LoadSettings(filename.c_str()))
-                        Log("[error] Failed to load SFXR [%s]", filename.c_str());
+                        Log("[error] Failed to load SFXR [%s]\n%s", filename.c_str(), c->generator->getErrors().c_str());
                 }
                 else if (c->action == fa_save)  {
                     dLog("Action: Save SFXR to [%s]", filename.c_str());

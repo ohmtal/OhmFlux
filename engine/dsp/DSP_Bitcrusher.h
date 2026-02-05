@@ -79,26 +79,26 @@ namespace DSP {
             {}
 
 
+        //----------------------------------------------------------------------
         const BitcrusherSettings& getSettings() { return mSettings; }
-
+        //----------------------------------------------------------------------
         void setSettings(const BitcrusherSettings& s) {
             mSettings = s;
             mSampleCount = 999999.0f;
         }
-
+        //----------------------------------------------------------------------
         DSP::EffectType getType() const override { return DSP::EffectType::Bitcrusher; }
-
+        //----------------------------------------------------------------------
         void save(std::ostream& os) const override {
             Effect::save(os);              // Save mEnabled
             mSettings.getBinary(os);       // Save Settings
         }
-
+        //----------------------------------------------------------------------
         bool load(std::istream& is) override {
             if (!Effect::load(is)) return false; // Load mEnabled
             return mSettings.setBinary(is);      // Load Settings
         }
-
-
+        //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples) override
         {
             if (!isEnabled()) return;
@@ -141,9 +141,11 @@ namespace DSP {
             }
         }
 
+        //----------------------------------------------------------------------
     #ifdef FLUX_ENGINE
-    void renderUI(bool withBackGround = true) {
+    void renderUI() {
         ImGui::PushID("BitCrusher_Effect_Row");
+
         ImGui::BeginGroup();
 
         bool isEnabled = this->isEnabled();
@@ -154,10 +156,7 @@ namespace DSP {
             {
                 if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
 
-                    if ( withBackGround ) {
-                        ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-                        ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-                    }
+
                     ImGui::BeginGroup();
 
 

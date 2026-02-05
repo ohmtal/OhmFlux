@@ -11,6 +11,13 @@
 #include <SDL3/SDL.h>
 #include <mutex>
 
+#include <fstream>
+#include <vector>
+#include <string>
+#include <stdexcept>
+#include <type_traits>
+
+
 #ifdef FLUX_ENGINE
 #include <audio/fluxAudio.h>
 #endif
@@ -40,9 +47,10 @@ SFXGeneratorStereo::SFXGeneratorStereo():
     m_rand_engine(std::random_device{}())
 {
 
+    mErrors = "";
 
     master_vol = 0.5f;
-    sound_vol = 0.5f;
+    // sound_vol = 0.5f;
 
     // Reset all sound parameters to default
     ResetParamsNoLock();
@@ -87,7 +95,6 @@ SFXGeneratorStereo::SFXGeneratorStereo():
     //panning
     mState.pan = 0.f;
     mState.pan_ramp = 0.f;
-
 
 }
 
@@ -149,128 +156,172 @@ void SFXGeneratorStereo::ResetParamsNoLock()
 
 }
 //-----------------------------------------------------------------------------
-bool SFXGeneratorStereo::LoadSettings(const char* filename)
+bool SFXGeneratorStereo::LoadSettings(const char* filename, bool allowLegacy)
 {
-    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
 
+    mErrors = "";
+    std::ifstream ifs; //(filePath, std::ios::binary);
+    ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
 
-    FILE* file=fopen(filename, "rb");
-    if(!file)
+    try {
+        ifs.open(filename, std::ios::binary);
+        if (!ifs.is_open()) {
+            addError(std::format("Can't open File {} for read.", filename));
+            return false;
+        }
+
+        // // Read and verify identifier
+        char identifierBuffer[FluxSFX::FILE_IDENTIFIER_SIZE];
+        bool hasIdentifier = true;
+        try {
+            ifs.read(identifierBuffer, FluxSFX::FILE_IDENTIFIER_SIZE);
+            if (std::memcmp(identifierBuffer, FluxSFX::FILE_IDENTIFIER, FluxSFX::FILE_IDENTIFIER_SIZE) != 0) {
+                hasIdentifier = false;
+            }
+        } catch (const std::ios_base::failure&) {
+            hasIdentifier = false;
+        }
+
+        if (!hasIdentifier) {
+            if (!allowLegacy) {
+                addError("File Identifier mismatch.");
+                return false;
+            }
+            // Clear error state and rewind to the very beginning
+            ifs.clear();
+            ifs.seekg(0, std::ios::beg);
+
+            // Peek at the version byte without advancing the pointer too far
+            int lVersion = 0;
+            ifs.read(reinterpret_cast<char*>(&lVersion), sizeof(int));
+
+            if (lVersion < 100 || lVersion > 103) {
+                addError(std::format("Invalid Legacy Version: {}", lVersion));
+                return false;
+            }
+            std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+            bool success = mParams.loadLegacy(ifs, lVersion);
+            if (!success) addError("Failed to load legacy file!");
+            return success;
+        }
+
+        std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+        bool success = mParams.setBinary(ifs);
+        if (!success) addError("Failed to load file!");
+        return success;
+
+    } catch (const std::ios_base::failure& e) {
+        // If we catch this, it's because a read_binary or read_vector failed
+        if (ifs.eof()) {
+            addError("Unexpected End of File: The file is truncated.");
+        } else {
+            addError(std::format("I/O failure: {}", e.what()));
+        }
         return false;
-
-    int version=0;
-    fread(&version, 1, sizeof(int), file);
-    if( version != 100 && version != 101 && version != 102 && version != 103 )
+    } catch (const std::bad_alloc&) {
+        addError("File requested too much memory (possible corruption).");
         return false;
-
-    fread(&mParams.wave_type, 1, sizeof(int), file);
-
-    sound_vol=0.5f;
-    if(version>=102)
-        fread(&sound_vol, 1, sizeof(float), file);
-
-    fread(&mParams.p_base_freq, 1, sizeof(float), file);
-    fread(&mParams.p_freq_limit, 1, sizeof(float), file);
-    fread(&mParams.p_freq_ramp, 1, sizeof(float), file);
-    if(version>=101)
-        fread(&mParams.p_freq_dramp, 1, sizeof(float), file);
-    fread(&mParams.p_duty, 1, sizeof(float), file);
-    fread(&mParams.p_duty_ramp, 1, sizeof(float), file);
-
-    fread(&mParams.p_vib_strength, 1, sizeof(float), file);
-    fread(&mParams.p_vib_speed, 1, sizeof(float), file);
-    fread(&mParams.p_vib_delay, 1, sizeof(float), file);
-
-    fread(&mParams.p_env_attack, 1, sizeof(float), file);
-    fread(&mParams.p_env_sustain, 1, sizeof(float), file);
-    fread(&mParams.p_env_decay, 1, sizeof(float), file);
-    fread(&mParams.p_env_punch, 1, sizeof(float), file);
-
-    fread(&mParams.filter_on, 1, sizeof(bool), file);
-    fread(&mParams.p_lpf_resonance, 1, sizeof(float), file);
-    fread(&mParams.p_lpf_freq, 1, sizeof(float), file);
-    fread(&mParams.p_lpf_ramp, 1, sizeof(float), file);
-    fread(&mParams.p_hpf_freq, 1, sizeof(float), file);
-    fread(&mParams.p_hpf_ramp, 1, sizeof(float), file);
-    
-    fread(&mParams.p_pha_offset, 1, sizeof(float), file);
-    fread(&mParams.p_pha_ramp, 1, sizeof(float), file);
-
-    fread(&mParams.p_repeat_speed, 1, sizeof(float), file);
-
-    if(version>=101)
-    {
-        fread(&mParams.p_arp_speed, 1, sizeof(float), file);
-        fread(&mParams.p_arp_mod, 1, sizeof(float), file);
+    } catch (const std::exception& e) {
+        addError(std::format("General error: {}", e.what()));
+        return false;
     }
 
-    if (version >= 103 ) { //panning
-        dLog("reading Version 103 params!");
-        fread(&mParams.p_pan, sizeof(float), 1, file);
-        fread(&mParams.p_pan_ramp, sizeof(float), 1, file);
-        fread(&mParams.p_pan_speed, sizeof(float), 1, file);
-    }
-
-    fclose(file);
-    return true;
+    // i should never get here ...
+    return false;
 }
 //-----------------------------------------------------------------------------
 bool SFXGeneratorStereo::SaveSettings(const char* filename)
 {
-    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+    mErrors = "";
+    std::ofstream ofs;
+    ofs.exceptions(std::ofstream::badbit | std::ofstream::failbit);
 
+    try {
+        ofs.open(filename, std::ios::binary | std::ios::trunc);
+        ofs.write(FluxSFX::FILE_IDENTIFIER, FluxSFX::FILE_IDENTIFIER_SIZE);
+        std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+        mParams.getBinary(ofs);
+        ofs.flush();
+        ofs.close();
+        return true;
 
-    FILE* file=fopen(filename, "wb");
-    if(!file)
+    } catch (const std::ios_base::failure& e) {
+        // Catch I/O errors (e.g., disk full, write protection)
+        addError(std::format("I/O failure while writing {}: {}", filename, e.what()));
         return false;
-
-    int version=103;
-    fwrite(&version, 1, sizeof(int), file);
-
-    fwrite(&mParams.wave_type, 1, sizeof(int), file);
-
-    fwrite(&sound_vol, 1, sizeof(float), file);
-
-    fwrite(&mParams.p_base_freq, 1, sizeof(float), file);
-    fwrite(&mParams.p_freq_limit, 1, sizeof(float), file);
-    fwrite(&mParams.p_freq_ramp, 1, sizeof(float), file);
-    fwrite(&mParams.p_freq_dramp, 1, sizeof(float), file);
-    fwrite(&mParams.p_duty, 1, sizeof(float), file);
-    fwrite(&mParams.p_duty_ramp, 1, sizeof(float), file);
-
-    fwrite(&mParams.p_vib_strength, 1, sizeof(float), file);
-    fwrite(&mParams.p_vib_speed, 1, sizeof(float), file);
-    fwrite(&mParams.p_vib_delay, 1, sizeof(float), file);
-
-    fwrite(&mParams.p_env_attack, 1, sizeof(float), file);
-    fwrite(&mParams.p_env_sustain, 1, sizeof(float), file);
-    fwrite(&mParams.p_env_decay, 1, sizeof(float), file);
-    fwrite(&mParams.p_env_punch, 1, sizeof(float), file);
-
-    fwrite(&mParams.filter_on, 1, sizeof(bool), file);
-    fwrite(&mParams.p_lpf_resonance, 1, sizeof(float), file);
-    fwrite(&mParams.p_lpf_freq, 1, sizeof(float), file);
-    fwrite(&mParams.p_lpf_ramp, 1, sizeof(float), file);
-    fwrite(&mParams.p_hpf_freq, 1, sizeof(float), file);
-    fwrite(&mParams.p_hpf_ramp, 1, sizeof(float), file);
-    
-    fwrite(&mParams.p_pha_offset, 1, sizeof(float), file);
-    fwrite(&mParams.p_pha_ramp, 1, sizeof(float), file);
-
-    fwrite(&mParams.p_repeat_speed, 1, sizeof(float), file);
-
-    fwrite(&mParams.p_arp_speed, 1, sizeof(float), file);
-    fwrite(&mParams.p_arp_mod, 1, sizeof(float), file);
-
-    // 103 panning
-    fwrite(&mParams.p_pan, sizeof(float), 1, file);
-    fwrite(&mParams.p_pan_ramp, sizeof(float), 1, file);
-    fwrite(&mParams.p_pan_speed, sizeof(float), 1, file);
-
-
-    fclose(file);
-    return true;
+    } catch (const std::exception& e) {
+        // Catch any other unexpected errors
+        addError(std::format("General error during saving: {}", e.what()));
+        return false;
+    }
 }
+//-----------------------------------------------------------------------------
+// obsolete
+// bool SFXGeneratorStereo::loadSettings(std::istream& is, uint8_t version) {
+//
+//     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+//
+//
+//     FILE* file=fopen(filename, "rb");
+//     if(!file)
+//         return false;
+//
+//     int version=0;
+//     fread(&version, 1, sizeof(int), file);
+//     if( version != 100 && version != 101 && version != 102 && version != 103 )
+//         return false;
+//
+//     fread(&mParams.wave_type, 1, sizeof(int), file);
+//
+//     mParams.sound_vol=0.5f;
+//     if(version>=102)
+//         fread(&mParams.sound_vol, 1, sizeof(float), file);
+//
+//     fread(&mParams.p_base_freq, 1, sizeof(float), file);
+//     fread(&mParams.p_freq_limit, 1, sizeof(float), file);
+//     fread(&mParams.p_freq_ramp, 1, sizeof(float), file);
+//     if(version>=101)
+//         fread(&mParams.p_freq_dramp, 1, sizeof(float), file);
+//     fread(&mParams.p_duty, 1, sizeof(float), file);
+//     fread(&mParams.p_duty_ramp, 1, sizeof(float), file);
+//
+//     fread(&mParams.p_vib_strength, 1, sizeof(float), file);
+//     fread(&mParams.p_vib_speed, 1, sizeof(float), file);
+//     fread(&mParams.p_vib_delay, 1, sizeof(float), file);
+//
+//     fread(&mParams.p_env_attack, 1, sizeof(float), file);
+//     fread(&mParams.p_env_sustain, 1, sizeof(float), file);
+//     fread(&mParams.p_env_decay, 1, sizeof(float), file);
+//     fread(&mParams.p_env_punch, 1, sizeof(float), file);
+//
+//     fread(&mParams.filter_on, 1, sizeof(bool), file);
+//     fread(&mParams.p_lpf_resonance, 1, sizeof(float), file);
+//     fread(&mParams.p_lpf_freq, 1, sizeof(float), file);
+//     fread(&mParams.p_lpf_ramp, 1, sizeof(float), file);
+//     fread(&mParams.p_hpf_freq, 1, sizeof(float), file);
+//     fread(&mParams.p_hpf_ramp, 1, sizeof(float), file);
+//
+//     fread(&mParams.p_pha_offset, 1, sizeof(float), file);
+//     fread(&mParams.p_pha_ramp, 1, sizeof(float), file);
+//
+//     fread(&mParams.p_repeat_speed, 1, sizeof(float), file);
+//
+//     if(version>=101)
+//     {
+//         fread(&mParams.p_arp_speed, 1, sizeof(float), file);
+//         fread(&mParams.p_arp_mod, 1, sizeof(float), file);
+//     }
+//
+//     if (version >= 103 ) { //panning
+//         dLog("reading Version 103 params!");
+//         fread(&mParams.p_pan, sizeof(float), 1, file);
+//         fread(&mParams.p_pan_ramp, sizeof(float), 1, file);
+//         fread(&mParams.p_pan_speed, sizeof(float), 1, file);
+//     }
+//
+//     fclose(file);
+//     return true;
+// }
 //-----------------------------------------------------------------------------
 void SFXGeneratorStereo::ResetSample(bool restart)
 {
@@ -478,7 +529,7 @@ void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
         float ssample = generateMonoTick();
 
         // Part 3: Global Volume & Panning
-        ssample *= master_vol * 2.0f * sound_vol;
+        ssample *= master_vol * 2.0f * mParams.sound_vol;
         if (ssample > 1.0f) ssample = 1.0f;
         if (ssample < -1.0f) ssample = -1.0f;
 
@@ -818,7 +869,8 @@ void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream*
     if (frames_needed > 0)
     {
         std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
-        if (gen->mState.playing_sample) {
+        // if (gen->mState.playing_sample)
+        {
             std::vector<float> stereoBuffer(frames_needed * 2, 0.0f);
             gen->SynthSample(frames_needed, stereoBuffer.data());
 

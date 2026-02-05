@@ -85,7 +85,7 @@ void OTGui::RenderSoundCardEmuUI() {
 void OTGui::RenderBitCrusherUI() {
 
     // FIXME HAPPY MOVING ALL OTHERER !!!!!
-    getMain()->getController()->getDSPBitCrusher()->renderUI(false);
+    getMain()->getController()->getDSPBitCrusher()->renderUI();
 
     // // 1. Use PushID to prevent name collisions with other effects (e.g., if multiple have a "Wet" slider)
     // ImGui::PushID("BitCrusher_Effect_Row");
@@ -431,8 +431,8 @@ void OTGui::RenderWarmthUI() {
 
 void OTGui::RenderLimiterUI() {
 
-    getMain()->getController()->getDSPLimiter()->renderUI(false);
-    getMain()->getController()->getDSPLimiter()->renderPeakTest(true);
+    getMain()->getController()->getDSPLimiter()->renderUI();
+    // moved to VisualAnalyser  getMain()->getController()->getDSPLimiter()->renderPeakTest(true);
 
     // ImGui::PushID("Limiter_Effect_Row");
     // ImGui::BeginGroup();

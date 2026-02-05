@@ -28,19 +28,30 @@
 #endif
 
 
+namespace FluxSFX {
+    const char FILE_IDENTIFIER[] = "FluxSFX";
+    constexpr size_t FILE_IDENTIFIER_SIZE = sizeof(FILE_IDENTIFIER) - 1;
+} ;
+
 
 class SFXGeneratorStereo
 {
+
+
 public:
     // Parameters that define the sound
     struct SFXParams
     {
-        int wave_type;
+        static const uint8_t CURRENT_VERSION = 104;
+        char name[32] = {0};   // since version 104
+        float sound_vol = 0.5; // since version 102
+
+        int wave_type;  //0..3 if you change this update the verification in loader!
 
         float p_base_freq;
         float p_freq_limit;
         float p_freq_ramp;
-        float p_freq_dramp;
+        float p_freq_dramp; //since version 101
         float p_duty;
         float p_duty_ramp;
 
@@ -65,15 +76,141 @@ public:
 
         float p_repeat_speed;
 
-        float p_arp_speed;
-        float p_arp_mod;
+        float p_arp_speed;  //since version 101
+        float p_arp_mod;    //since version 101
 
-        // stereo panning Version
+        // stereo panning since Version 103
         float p_pan;       // Position: -1.0 (Left) to 1.0 (Right), 0.0 is Center
         float p_pan_ramp;  // Change in panning over time
         float p_pan_speed; // multiplier
 
+        char DUMMY[64] = {0}; //playholder for furture use
 
+        auto operator<=>(const SFXParams&) const = default; //C++20 lazy way
+
+
+        // new file format
+        void getBinary(std::ostream& os) const {
+            uint8_t ver = CURRENT_VERSION;
+            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+            os.write(reinterpret_cast<const char*>(this), sizeof(SFXParams));
+        }
+
+        bool setBinary(std::istream& is) {
+            uint8_t fileVersion = 0;
+            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+            if (fileVersion == CURRENT_VERSION) {
+                is.read(reinterpret_cast<char*>(this), sizeof(SFXParams));
+                if (!validate()) {
+                    *this = SFXParams(); // reset to default
+                    is.setstate(std::ios::failbit);
+                    return false;
+                }
+            }
+            return  is.good();
+        }
+
+
+
+        bool validate() {
+            // Basic Range Checks
+            if (wave_type < 0 || wave_type > 3) return false;
+            if (sound_vol < 0.0f || sound_vol > 1.0f) return false;
+
+            // Safety Checks for Audio Engine (Prevent NaN or Infinity)
+            // Frequency should be positive (0.0 to 1.0 is your typical normalized range)
+            // if (p_base_freq < 0.0f || p_base_freq > 1.0f) return false;
+
+            // Filter Resonance should not be too high to avoid feedback loops/explosions
+            // if (p_lpf_resonance < 0.0f || p_lpf_resonance > 1.0f) return false;
+
+            // 3. Panning Safety (Ensure it stays within stereo bounds)
+            // if (p_pan < -1.0f || p_pan > 1.0f) return false;
+
+            // 4. Sanity check for strings (ensure name is null-terminated)
+            // Even if corruption happened, this prevents string-reading crashes
+            bool hasNull = false;
+            for (int i = 0; i < 32; ++i) {
+                if (name[i] == '\0') { hasNull = true; break; }
+            }
+            if (!hasNull) name[31] = '\0'; // Force termination
+
+            return true;
+        }
+
+        // This is now a static helper inside the struct to handle old versions
+        bool loadLegacy(std::istream& is, uint8_t version) {
+            // Reset to defaults first
+            *this = SFXParams();
+
+            // legacy check for version number
+            if (version < 100 || version > 103) {
+                return false;
+            }
+            is.read(reinterpret_cast<char*>(&wave_type), sizeof(int));
+            if (version >= 102) {
+                is.read(reinterpret_cast<char*>(&sound_vol), sizeof(float));
+            }
+
+            is.read(reinterpret_cast<char*>(&p_base_freq), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_freq_limit), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_freq_ramp), sizeof(float));
+
+            if (version >= 101) {
+                is.read(reinterpret_cast<char*>(&p_freq_dramp), sizeof(float));
+            }
+
+            is.read(reinterpret_cast<char*>(&p_duty), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_duty_ramp), sizeof(float));
+
+            is.read(reinterpret_cast<char*>(&p_vib_strength), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_vib_speed), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_vib_delay), sizeof(float));
+
+            is.read(reinterpret_cast<char*>(&p_env_attack), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_env_sustain), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_env_decay), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_env_punch), sizeof(float));
+
+            // Note: old bool might have been saved as 1 or 4 bytes depending on platform
+            // If it was 'fread(&filter_on, 1, sizeof(bool), file)', this is fine:
+            is.read(reinterpret_cast<char*>(&filter_on), sizeof(bool));
+
+            is.read(reinterpret_cast<char*>(&p_lpf_resonance), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_lpf_freq), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_lpf_ramp), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_hpf_freq), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_hpf_ramp), sizeof(float));
+
+            is.read(reinterpret_cast<char*>(&p_pha_offset), sizeof(float));
+            is.read(reinterpret_cast<char*>(&p_pha_ramp), sizeof(float));
+
+            is.read(reinterpret_cast<char*>(&p_repeat_speed), sizeof(float));
+
+            if (version >= 101) {
+                is.read(reinterpret_cast<char*>(&p_arp_speed), sizeof(float));
+                is.read(reinterpret_cast<char*>(&p_arp_mod), sizeof(float));
+            }
+
+            if (version >= 103) {
+                is.read(reinterpret_cast<char*>(&p_pan), sizeof(float));
+                is.read(reinterpret_cast<char*>(&p_pan_ramp), sizeof(float));
+                is.read(reinterpret_cast<char*>(&p_pan_speed), sizeof(float));
+            }
+
+            // version 104
+            memset(name, 0, sizeof(name));
+            strncpy(name, "Legacy SFX", 31);
+
+            if (!validate()) {
+                *this = SFXParams(); // reset to default
+                is.setstate(std::ios::failbit);
+                return false;
+            }
+
+
+            return is.good();
+        }
     };
 
     // State variables used during sound generation
@@ -133,6 +270,9 @@ protected:
     //Effects
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
 
+    //error handling load / save
+    std::string mErrors = "";
+    void addError(std::string error) { mErrors += error + "\n"; }
 
 public:
     SFXParams mParams;
@@ -141,7 +281,7 @@ public:
     std::recursive_mutex mParamsMutex;
 
     float master_vol;
-    float sound_vol;
+    // float sound_vol;
     int wav_bits;
     int wav_freq;
 
@@ -158,8 +298,10 @@ public:
     void SynthSample(int length, float* stereoBuffer);
 
     void PlaySample();
-    bool LoadSettings(const char* filename);
+    bool LoadSettings(const char* filename, bool allowLegacy = true);
     bool SaveSettings(const char* filename);
+    std::string getErrors() { return mErrors; }
+
     bool ExportWAV(const char* filename);
 
     void GeneratePickupCoin();
