@@ -45,7 +45,14 @@ namespace ImFlux {
             b = {bb.Min.x + pad, bb.Max.y - pad};
             c = {bb.Max.x - pad, bb.Min.y + size.y * 0.5f};
         }
-        dl->AddTriangleFilled(a, b, c, IM_COL32(0, 255, 200, 255));
+
+        ImU32 lTextCol = IM_COL32(0, 255, 200, 255);
+        if (ImGui::GetItemFlags() & ImGuiItemFlags_Disabled) {
+            lTextCol  = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+        }
+
+
+        dl->AddTriangleFilled(a, b, c, lTextCol);
 
         return pressed;
     }
@@ -102,8 +109,17 @@ namespace ImFlux {
         }
 
         ImVec2 t_size = ImGui::CalcTextSize(text);
-        dl->AddText({pos.x + (size.x - t_size.x) * 0.5f, pos.y + (size.y - t_size.y) * 0.5f},
-                    IM_COL32(0, 255, 180, 255), text);
+
+        ImU32 lTextCol = IM_COL32(0, 255, 180, 255);
+
+        if (ImGui::GetItemFlags() & ImGuiItemFlags_Disabled) {
+            lTextCol  = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+        }
+
+
+        dl->AddText({pos.x + (size.x - t_size.x) * 0.5f, pos.y + (size.y - t_size.y) * 0.5f}
+                    , lTextCol
+                    , text);
 
         ImGui::SameLine(0, 4);
 

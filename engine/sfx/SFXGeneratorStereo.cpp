@@ -47,7 +47,7 @@ SFXGeneratorStereo::SFXGeneratorStereo():
     m_rand_engine(std::random_device{}())
 {
 
-    mErrors = "";
+    SFXGeneratorStereo::mErrors = "";
 
     master_vol = 0.5f;
     // sound_vol = 0.5f;
@@ -297,7 +297,7 @@ bool SFXGeneratorStereo::SaveSettings(const char* filename)
 //     fread(&mParams.p_env_punch, 1, sizeof(float), file);
 //
 //     fread(&mParams.filter_on, 1, sizeof(bool), file);
-//     fread(&mParams.p_lpf_resonance, 1, sizeof(float), file);
+//     fread(&mParams.p_f_resonance, 1, sizeof(float), file);
 //     fread(&mParams.p_lpf_freq, 1, sizeof(float), file);
 //     fread(&mParams.p_lpf_ramp, 1, sizeof(float), file);
 //     fread(&mParams.p_hpf_freq, 1, sizeof(float), file);
@@ -345,6 +345,11 @@ void SFXGeneratorStereo::ResetSample(bool restart)
     mState.arp_limit=(int)(pow(1.0f-mParams.p_arp_speed, 2.0f)*20000+32);
     if(mParams.p_arp_speed==1.0f)
         mState.arp_limit=0;
+
+
+    // 2026-02-05 sustain time < 0.01 makes problems when attack > 0
+    if (mParams.p_env_sustain < 0.01f)
+        mParams.p_env_sustain = 0.01f;
 
 
 
@@ -568,7 +573,7 @@ void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
 void SFXGeneratorStereo::GeneratePickupCoin(){
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     ResetParamsNoLock();
-    mParams.p_base_freq = 0.4f + frnd(0.5f);
+    mParams.p_base_freq =  0.4f + frnd(0.5f);
     mParams.p_env_attack = 0.0f;
     mParams.p_env_sustain = frnd(0.1f);
     mParams.p_env_decay = 0.1f + frnd(0.4f);
@@ -731,9 +736,14 @@ void SFXGeneratorStereo::Randomize() {
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
      mParams.setName("Random");
 
-    mParams.p_base_freq = pow(frnd(2.0f) - 1.0f, 2.0f);
-    if (rnd(1))
+    mParams.p_base_freq = pow(frnd(1.0f), 2.0f);
+    // mParams.p_base_freq = pow(frnd(2.0f) - 1.0f, 2.0f);
+
+
+    if (rnd(1)) {
         mParams.p_base_freq = pow(frnd(2.0f) - 1.0f, 3.0f) + 0.5f;
+    }
+
 
     mParams.p_freq_limit = 0.0f;
     mParams.p_freq_ramp = pow(frnd(2.0f) - 1.0f, 5.0f);
@@ -764,7 +774,7 @@ void SFXGeneratorStereo::Randomize() {
         mParams.p_env_decay += 0.2f + frnd(0.3f);
     }
 
-    mParams.p_lpf_resonance = frnd(2.0f) - 1.0f;
+    mParams.p_lpf_resonance = std::abs( frnd(2.0f) - 1.0f);
     mParams.p_lpf_freq = 1.0f - pow(frnd(1.0f), 3.0f);
     mParams.p_lpf_ramp = pow(frnd(2.0f) - 1.0f, 3.0f);
 
@@ -787,7 +797,8 @@ void SFXGeneratorStereo::Randomize() {
 //-----------------------------------------------------------------------------
 void SFXGeneratorStereo::Mutate(){
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-    if (rnd(1)) mParams.p_base_freq += frnd(0.1f) - 0.05f;
+    if (rnd(1)) mParams.p_base_freq = std::abs(mParams.p_base_freq +  frnd(0.1f) - 0.05f);
+    // if (rnd(1)) mParams.p_base_freq += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_freq_ramp += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_freq_dramp += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_duty += frnd(0.1f) - 0.05f;
@@ -795,11 +806,20 @@ void SFXGeneratorStereo::Mutate(){
     if (rnd(1)) mParams.p_vib_strength += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_vib_speed += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_vib_delay += frnd(0.1f) - 0.05f;
-    if (rnd(1)) mParams.p_env_attack += frnd(0.1f) - 0.05f;
-    if (rnd(1)) mParams.p_env_sustain += frnd(0.1f) - 0.05f;
-    if (rnd(1)) mParams.p_env_decay += frnd(0.1f) - 0.05f;
+
+
+    if (rnd(1)) mParams.p_env_attack  = std::abs(mParams.p_env_attack + frnd(0.1f) - 0.05f);
+    if (rnd(1)) mParams.p_env_sustain = std::abs(mParams.p_env_sustain + frnd(0.1f) - 0.05f);
+    if (rnd(1)) mParams.p_env_decay   = std::abs(mParams.p_env_decay + frnd(0.1f) - 0.05f);
+
+    // if (rnd(1)) mParams.p_env_attack += frnd(0.1f) - 0.05f;
+    // if (rnd(1)) mParams.p_env_sustain += frnd(0.1f) - 0.05f;
+    // if (rnd(1)) mParams.p_env_decay += frnd(0.1f) - 0.05f;
+
     if (rnd(1)) mParams.p_env_punch += frnd(0.1f) - 0.05f;
-    if (rnd(1)) mParams.p_lpf_resonance += frnd(0.1f) - 0.05f;
+
+    if (rnd(1)) mParams.p_lpf_resonance = std::abs( mParams.p_lpf_resonance + frnd(0.1f) - 0.05f);
+    // if (rnd(1)) mParams.p_lpf_resonance += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_lpf_freq += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_lpf_ramp += frnd(0.1f) - 0.05f;
     if (rnd(1)) mParams.p_hpf_freq += frnd(0.1f) - 0.05f;
@@ -903,49 +923,132 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
     detachAudio();
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
 
-
-    // 1. Calculate total duration from envelope
-    int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
-    int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
-    int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
-
-    int totalFrames = attack + sustain + decay + 100;
-
     int sampleRate = 44100;
     int chunkSize = 1024;
 
-    // 2. Allocate Stereo Float Buffer (Size: Frames * 2)
+    // 1. Synth Duration
+    int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
+    int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
+    int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
+    int synthFrames = attack + sustain + decay + 100;
+
+    // 2. Calculate Tail Duration (Dynamic)
+    int tailFrames = 0;
+    if (applyEffects) {
+        float maxTailSec = 0.0f;
+        for (auto& effect : mDspEffects) {
+            maxTailSec = std::max(maxTailSec, effect->getTailLengthSeconds());
+        }
+        maxTailSec = std::min(maxTailSec, 10.0f); // Cap at 10s
+        tailFrames = static_cast<int>(maxTailSec * sampleRate);
+    }
+
+    int totalFrames = synthFrames + tailFrames;
+
+    // 3. Allocate Buffer (Pre-filled with 0.0f)
     std::vector<float> f32ExportBuffer(totalFrames * 2, 0.0f);
 
-    // 3. Reset Generator State
+    // 4. Reset Generator
     ResetSample(false);
     mState.playing_sample = true;
 
+    // 5. Processing Loop
     int framesProcessed = 0;
-    while (framesProcessed < totalFrames && mState.playing_sample) {
+    while (framesProcessed < totalFrames) {
         int toWrite = std::min(chunkSize, totalFrames - framesProcessed);
 
-        // Directly fill the master buffer at the correct interleaved offset
-        // Since SynthSample now writes Stereo (L/R), we pass the pointer to the current frame
-        this->SynthSample(toWrite, &f32ExportBuffer[framesProcessed * 2]);
+        // Only call SynthSample as long as the synth is actually playing
+        if (framesProcessed < synthFrames && mState.playing_sample) {
+            this->SynthSample(toWrite, &f32ExportBuffer[framesProcessed * 2]);
+        } else {
+            // We are in the Tail area: just "process" silence (do nothing, buffer is already 0)
+        }
 
         framesProcessed += toWrite;
 
         if (progressOut) {
-            *progressOut = (float)framesProcessed / (float)totalFrames;
+            float progressScale = applyEffects ? 0.70f : 1.0f;
+            *progressOut = ((float)framesProcessed / (float)totalFrames) * progressScale;
         }
     }
 
-    // 4. Effects
+    // 6. Apply Effects to the WHOLE buffer (including the silent tail)
     if (applyEffects) {
-        // Future post-processing on f32ExportBuffer
-    }
-    attachAudio();
-    // Resize to actual frames written (multiplied by 2 for stereo)
-    f32ExportBuffer.resize(framesProcessed * 2);
+        if (progressOut) *progressOut = 0.75f;
 
+        for (auto& effect : this->mDspEffects) {
+            // This now processes the tail where the echoes will appear
+            effect->process(f32ExportBuffer.data(), totalFrames * 2);
+        }
+
+        if (progressOut) *progressOut = 0.85f;
+        DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
+        if (progressOut) *progressOut = 0.90f;
+    }
+
+    if (progressOut) *progressOut = 1.0f;
+
+    attachAudio();
     return saveWavFile(filename, f32ExportBuffer, sampleRate);
 }
+
+// bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progressOut, bool applyEffects ) {
+//     detachAudio();
+//     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+//
+//
+//     // 1. Calculate total duration from envelope
+//     int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
+//     int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
+//     int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
+//
+//     int totalFrames = attack + sustain + decay + 100;
+//
+//     int sampleRate = 44100;
+//     int chunkSize = 1024;
+//
+//     // 2. Allocate Stereo Float Buffer (Size: Frames * 2)
+//     std::vector<float> f32ExportBuffer(totalFrames * 2, 0.0f);
+//
+//     // 3. Reset Generator State
+//     ResetSample(false);
+//     mState.playing_sample = true;
+//
+//     int framesProcessed = 0;
+//     while (framesProcessed < totalFrames && mState.playing_sample) {
+//         int toWrite = std::min(chunkSize, totalFrames - framesProcessed);
+//
+//         this->SynthSample(toWrite, &f32ExportBuffer[framesProcessed * 2]);
+//         framesProcessed += toWrite;
+//         if (progressOut) {
+//             // *progressOut = (float)framesProcessed / (float)totalFrames;
+//             float progressScale = applyEffects ? 0.70f : 1.0f;
+//             *progressOut = (float)framesProcessed / (float)totalFrames * progressScale;
+//         }
+//     }
+//
+//     // 4. Effects
+//     if (applyEffects) {
+//         if (progressOut) *progressOut = 0.75f;
+//
+//         // Apply DSP directly to the master float buffer
+//         for (auto& effect : this->mDspEffects) {
+//             effect->process(f32ExportBuffer.data(), f32ExportBuffer.size());
+//         }
+//         if (progressOut) *progressOut = 0.85f;
+//
+//         // Normalize
+//         DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
+//         if (progressOut) *progressOut = 0.90f;
+//     }
+//     if (progressOut) *progressOut = 1.0f;
+//
+//     attachAudio();
+//     // Resize to actual frames written (multiplied by 2 for stereo)
+//     f32ExportBuffer.resize(framesProcessed * 2);
+//
+//     return saveWavFile(filename, f32ExportBuffer, sampleRate);
+// }
 //------------------------------------------------------------------------------
 bool SFXGeneratorStereo::saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate)  {
     // Open the file for writing using SDL3's IO system

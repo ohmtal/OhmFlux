@@ -58,6 +58,11 @@ namespace DSP {
 
     constexpr LimiterSettings LIMITER_CUSTOM  = LIMITER_DEFAULT; //<< DUMMY
 
+    static const char* LIMITER_PRESET_NAMES[] = {
+        "CUSTOM", "DEFAULT", "EIGHTY"
+        , "FIFTY", "LOWVOL", "EXTREM" };
+
+
     static const std::array<DSP::LimiterSettings, 6> LIMITER_PRESETS = {
         DSP::LIMITER_CUSTOM,  // Index 0:
         DSP::LIMITER_DEFAULT, // Index 1
@@ -84,11 +89,11 @@ namespace DSP {
         DSP::EffectType getType() const override { return DSP::EffectType::Limiter; }
         //----------------------------------------------------------------------
         void setSettings(const LimiterSettings& s) {
-                resetGain(); //also reset current gain.
+                // we call reset extra reset(); //also reset current gain.
                 mSettings = s;
         }
         //----------------------------------------------------------------------
-        void resetGain() { mCurrentGain = 1.f; }
+        void reset() override { mCurrentGain = 1.f; }
         //----------------------------------------------------------------------
         LimiterSettings& getSettings() { return mSettings; }
         //----------------------------------------------------------------------
@@ -139,8 +144,85 @@ namespace DSP {
         }
 
     //----------------------------------------------------------------------
-    #ifdef FLUX_ENGINE
-        void renderUI() {
+    virtual std::string getName() const override { return "LIMITER";}
+#ifdef FLUX_ENGINE
+    virtual ImVec4 getColor() const  override { return ImVec4(1.0f, 0.4f, 0.4f, 1.0f);}
+    virtual void renderUIWide() override {
+        ImGui::PushID("Limiter_Effect_Row_WIDE");
+        if (ImGui::BeginChild("LIMITER_BOX", ImVec2(-FLT_MIN,65.f) )) {
+
+            DSP::LimiterSettings currentSettings = this->getSettings();
+            int currentIdx = 0; // Standard: "Custom"
+            bool changed = false;
+
+            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+            ImGui::BeginGroup();
+            bool isEnabled = this->isEnabled();
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+                this->setEnabled(isEnabled);
+            }
+
+            if (!isEnabled) ImGui::BeginDisabled();
+
+            ImGui::SameLine();
+            // -------- stepper >>>>
+            for (int i = 1; i < DSP::LIMITER_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::LIMITER_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
+            ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
+
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, LIMITER_PRESET_NAMES
+                , IM_ARRAYSIZE(LIMITER_PRESET_NAMES)), 100.f)
+            {
+                if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
+                    currentSettings =  DSP::LIMITER_PRESETS[displayIdx];
+                    changed = true;
+                }
+            }
+            ImGui::SameLine();
+            // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                currentSettings = DSP::LIMITER_DEFAULT; //DEFAULT
+                this->reset();
+                changed = true;
+            }
+
+            ImGui::Separator();
+            // ImFlux::MiniKnobF(label, &value, min_v, max_v);
+            changed |= ImFlux::MiniKnobF("Threshold", &currentSettings.Threshold, 0.01f, 1.f); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Depth", &currentSettings.Attack, 0.01f, 1.f); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Release", &currentSettings.Release, 0.0000005f, 0.0001f); ImGui::SameLine();
+
+            ImGui::BeginGroup();
+            float reduction = 1.0f - getGainReduction();
+            ImGui::TextDisabled("Reduction: %4.1f%%", reduction * 100.f);
+            ImFlux::PeakMeter(reduction,ImVec2(125.f, 8.f));
+            ImGui::EndGroup();
+
+
+            // Engine Update
+            if (changed) {
+                if (isEnabled) {
+                    this->setSettings(currentSettings);
+                }
+            }
+
+            if (!isEnabled) ImGui::EndDisabled();
+
+            ImGui::EndGroup();
+        }
+        ImGui::EndChild();
+        ImGui::PopID();
+
+    }
+
+
+    virtual void renderUI() override {
             ImGui::PushID("Limiter_Effect_Row");
 
 
@@ -150,13 +232,12 @@ namespace DSP {
             bool isEnabled = lim->isEnabled();
 
 
-            if (ImFlux::LEDCheckBox("LIMITER", &isEnabled, ImVec4(1.0f, 0.4f, 0.4f, 1.0f))) {
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) {
                 lim->setEnabled(isEnabled);
             }
 
 
             if (lim->isEnabled()) {
-                const char* presetNames[] = { "CUSTOM", "DEFAULT", "EIGHTY", "FIFTY", "LOWVOL", "EXTREM" };
                 bool changed = false;
                 DSP::LimiterSettings& currentSettings = lim->getSettings();
 
@@ -175,7 +256,7 @@ namespace DSP {
                     ImGui::BeginGroup();
                     ImGui::SetNextItemWidth(150);
 
-                    if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                    if (ImFlux::ValueStepper("##Preset", &displayIdx, LIMITER_PRESET_NAMES, IM_ARRAYSIZE(LIMITER_PRESET_NAMES))) {
                         if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
                                     lim->setSettings(DSP::LIMITER_PRESETS[displayIdx]);
                         }
@@ -187,6 +268,7 @@ namespace DSP {
                     // if (ImGui::SmallButton("Reset")) {
                     if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                         lim->setSettings(DSP::LIMITER_DEFAULT);
+                        lim->reset();
                     }
                     // ImGui::Separator();
                     // changed |= ImFlux::FaderHWithText("Threshold", &currentSettings.Threshold, 0.01f, 1.f, "%.3f");

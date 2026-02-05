@@ -5,15 +5,21 @@ TODO Version 1 (i do not use 0 this time):
  [ ] add speed modifier (need to handle the speed with is set on playSong - state bpm ... )
  [ ] how to editor then the best way => Popup with control's
 
-[ ] DSP Effects - add Gui to DSP Class
+[ ] DSP Effects -
+  1.) add Gui to DSP Class
+  2.) add reset function and put it to "reset" gui call
+  3.) getName / getColor / _PRESET_NAME
+  4.) renderUIWide
+
   [X] BitCrusher => void renderUI(bool withBackGround = true)
-  [ ] Chorus
+  [~] Chorus
   [ ] Equilizer9Band
   [X] Limiter
   [ ] Reverb
   [ ] SoundCardEmulation
   [ ] Warmth
   [ ] VisualEffect ?!
+  [X] Delay
 
 
 [ ] Bank editor

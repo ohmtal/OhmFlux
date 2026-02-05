@@ -16,6 +16,7 @@
 #include "DSP_SpectrumAnalyzer.h"
 #include "DSP_SoundCardEmulation.h"
 #include "DSP_VisualAnalyzer.h"
+#include "DSP_Delay.h"
 
 
 namespace DSP {

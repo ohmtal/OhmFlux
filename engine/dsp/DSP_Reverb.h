@@ -109,6 +109,14 @@ public:
         return mSettings.setBinary(is);      // Load Settings
     }
 
+    virtual float getTailLengthSeconds() const override {
+        if (!isEnabled()) return 0.0f;
+
+        // Most Reverbs provide the T60 value directly via their 'size' or 'decay' param
+        // If your reverb 'size' is roughly seconds:
+        return mSettings.decay * 1.5f; // Add a small safety margin
+    }
+
 
     virtual void process(float* buffer, int numSamples) override {
         if (!isEnabled()) return;

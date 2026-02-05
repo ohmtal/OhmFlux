@@ -36,6 +36,9 @@ namespace FluxSFX {
 
 class SFXGeneratorStereo
 {
+    //error handling load / save
+    inline static std::string mErrors = "";
+    static void addError(std::string error) { mErrors += error + "\n"; }
 
 
 public:
@@ -118,18 +121,37 @@ public:
 
         bool validate() {
             // Basic Range Checks
-            if (wave_type < 0 || wave_type > 3) return false;
-            if (sound_vol < 0.0f || sound_vol > 1.0f) return false;
+            if (wave_type < 0 || wave_type > 3){
+                addError(std::format( "wave_type out of bounds: {}",sound_vol));
+                return false;
+            }
+            if (sound_vol < 0.0f || sound_vol > 1.0f) {
+                addError(std::format( "sound_vol out of bounds: {}",sound_vol));
+                return false;
+            }
 
             // Safety Checks for Audio Engine (Prevent NaN or Infinity)
             // Frequency should be positive (0.0 to 1.0 is your typical normalized range)
-            // if (p_base_freq < 0.0f || p_base_freq > 1.0f) return false;
+            p_base_freq = std::abs(p_base_freq);
+            if (p_base_freq < 0.0f || p_base_freq > 1.0f)
+            {
+                addError(std::format( "p_base_freq out of bounds: {}",p_base_freq));
+                return false;
+            }
+
 
             // Filter Resonance should not be too high to avoid feedback loops/explosions
-            // if (p_lpf_resonance < 0.0f || p_lpf_resonance > 1.0f) return false;
+            p_lpf_resonance = std::abs(p_lpf_resonance);
+            if (p_lpf_resonance < 0.0f || p_lpf_resonance > 1.0f) {
+                addError(std::format( "p_lpf_resonance out of bounds: {} ",p_lpf_resonance));
+                return false;
+            }
 
             // 3. Panning Safety (Ensure it stays within stereo bounds)
-            // if (p_pan < -1.0f || p_pan > 1.0f) return false;
+            if (p_pan < -1.0f || p_pan > 1.0f) {
+                addError(std::format( "p_pan out of bounds: {}",p_pan));
+                return false;
+            }
 
             // 4. Sanity check for strings (ensure name is null-terminated)
             // Even if corruption happened, this prevents string-reading crashes
@@ -274,9 +296,6 @@ protected:
     //Effects
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
 
-    //error handling load / save
-    std::string mErrors = "";
-    void addError(std::string error) { mErrors += error + "\n"; }
 
 public:
     SFXParams mParams;
@@ -321,7 +340,7 @@ public:
     void AddPanning(bool doLock = true);
 
     // moderisation WAV
-    bool exportToWav(const std::string& filename, float* progressOut, bool applyEffects = false);
+    bool exportToWav(const std::string& filename, float* progressOut, bool applyEffects = true);
 
     void attachAudio();
     void detachAudio();

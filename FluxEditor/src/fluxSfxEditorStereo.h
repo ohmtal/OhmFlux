@@ -45,6 +45,9 @@ private:
     };
 
     DSP::VisualAnalyzer* mVisualAnalyzer;
+    DSP::Delay* mDelay;
+    DSP::Chorus* mChorus;
+    DSP::Limiter* mLimiter;
     // not DSP::Bitcrusher* mBitCrusher;
 
 public:
@@ -56,20 +59,37 @@ public:
 
     // void Execute() override;
     bool Initialize() override {
-            mSFXGeneratorStereo = new SFXGeneratorStereo();
-            if (!mSFXGeneratorStereo->initSDLAudio())
-                return false;
 
-            auto specAna = std::make_unique<DSP::VisualAnalyzer>(true);
-            mVisualAnalyzer = specAna.get();
-            mSFXGeneratorStereo->getDspEffects().push_back(std::move(specAna));
-
-            // auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
-            // mBitCrusher = bitcrusher.get();
-            // mSFXGeneratorStereo->getDspEffects().push_back(std::move(bitcrusher));
+        mSFXGeneratorStereo = new SFXGeneratorStereo();
+        if (!mSFXGeneratorStereo->initSDLAudio())
+            return false;
 
 
-            return true;
+        // auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
+        // mBitCrusher = bitcrusher.get();
+        // mSFXGeneratorStereo->getDspEffects().push_back(std::move(bitcrusher));
+
+        auto specChorus= std::make_unique<DSP::Chorus>(false);
+        mChorus = specChorus.get();
+        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specChorus));
+
+
+        auto specDelay = std::make_unique<DSP::Delay>(false);
+        mDelay = specDelay.get();
+        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specDelay));
+
+
+        auto specAna = std::make_unique<DSP::VisualAnalyzer>(true);
+        mVisualAnalyzer = specAna.get();
+        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specAna));
+
+        auto specLim = std::make_unique<DSP::Limiter>(true);
+        mLimiter = specLim.get();
+        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specLim));
+
+
+
+        return true;
     };
     void Deinitialize() override {
         SAFE_DELETE(mSFXGeneratorStereo);
@@ -366,6 +386,9 @@ public:
 
 
             // mBitCrusher->renderUI();
+            mChorus->renderUIWide();
+            mDelay->renderUIWide();
+            mLimiter->renderUIWide();
 
             // mVisualAnalyzer->renderPeakTest(); //TEST VU's
 

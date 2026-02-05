@@ -168,76 +168,78 @@ void OTGui::RenderBitCrusherUI() {
 //------------------------------------------------------------------------------
 
 void OTGui::RenderChorusUI() {
-    ImGui::PushID("Chorus_Effect_Row");
-    ImGui::BeginGroup();
 
-    bool isEnabled = getMain()->getController()->getDSPChorus()->isEnabled();
-    // if (ImGui::Checkbox("##Active", &isEnabled))
+    getMain()->getController()->getDSPChorus()->renderUI();
+    // ImGui::PushID("Chorus_Effect_Row");
+    // ImGui::BeginGroup();
+    //
+    // bool isEnabled = getMain()->getController()->getDSPChorus()->isEnabled();
+    // // if (ImGui::Checkbox("##Active", &isEnabled))
+    // //     getMain()->getController()->getDSPChorus()->setEnabled(isEnabled);
+    // // ImGui::SameLine();
+    // // ImGui::TextColored(ImVec4(0.6f, 0.4f, 1.0f, 1.0f), "CHORUS / ENSEMBLE");
+    //
+    // if (ImFlux::LEDCheckBox("CHORUS / ENSEMBLE", &isEnabled, ImVec4(0.6f, 0.4f, 1.0f, 1.0f)))
     //     getMain()->getController()->getDSPChorus()->setEnabled(isEnabled);
-    // ImGui::SameLine();
-    // ImGui::TextColored(ImVec4(0.6f, 0.4f, 1.0f, 1.0f), "CHORUS / ENSEMBLE");
-
-    if (ImFlux::LEDCheckBox("CHORUS / ENSEMBLE", &isEnabled, ImVec4(0.6f, 0.4f, 1.0f, 1.0f)))
-        getMain()->getController()->getDSPChorus()->setEnabled(isEnabled);
-
-
-    if (isEnabled)
-    {
-        if (ImGui::BeginChild("Chorus_Box", ImVec2(0, 160), ImGuiChildFlags_Borders)) {
-
-            DSP::ChorusSettings currentSettings = getMain()->getController()->getDSPChorus()->getSettings();
-            bool changed = false;
-
-            const char* presets[] = {"Custom", "Lush 80s", "Deep Ensemble", "Fast Leslie", "Juno-60 Style", "Vibrato", "Flanger" };
-
-            int currentIdx = 0; // Standard: "Custom"
-
-            for (int i = 1; i < DSP::CHROUS_PRESETS.size(); ++i) {
-                if (currentSettings == DSP::CHROUS_PRESETS[i]) {
-                    currentIdx = i;
-                    break;
-                }
-            }
-            int displayIdx = currentIdx;  //<< keep currentIdx clean
-
-            ImGui::SetNextItemWidth(150);
-            if (ImFlux::ValueStepper("##Preset", &displayIdx, presets, IM_ARRAYSIZE(presets))) {
-                if (displayIdx > 0 && displayIdx < DSP::CHROUS_PRESETS.size()) {
-                    currentSettings =  DSP::CHROUS_PRESETS[displayIdx];
-                    changed = true;
-                }
-            }
-            ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-
-            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-                currentSettings = DSP::LUSH80s_CHORUS;
-                changed = true;
-            }
-
-
-            ImGui::Separator();
-
-            // Parameter Sliders
-            changed |= ImFlux::FaderHWithText("Rate",  &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
-            changed |= ImFlux::FaderHWithText("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
-            changed |= ImFlux::FaderHWithText("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
-            changed |= ImFlux::FaderHWithText("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
-            changed |= ImFlux::FaderHWithText("Mix",   &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
-
-            // Engine Update logic
-            if (changed) {
-                if (isEnabled) {
-                    getMain()->getController()->getDSPChorus()->setSettings(currentSettings);
-                }
-            }
-        }
-        ImGui::EndChild();
-    } else {
-        ImGui::Separator();
-    }
-    ImGui::EndGroup();
-    ImGui::PopID();
-    ImGui::Spacing();
+    //
+    //
+    // if (isEnabled)
+    // {
+    //     if (ImGui::BeginChild("Chorus_Box", ImVec2(0, 160), ImGuiChildFlags_Borders)) {
+    //
+    //         DSP::ChorusSettings currentSettings = getMain()->getController()->getDSPChorus()->getSettings();
+    //         bool changed = false;
+    //
+    //         const char* presets[] = {"Custom", "Lush 80s", "Deep Ensemble", "Fast Leslie", "Juno-60 Style", "Vibrato", "Flanger" };
+    //
+    //         int currentIdx = 0; // Standard: "Custom"
+    //
+    //         for (int i = 1; i < DSP::CHROUS_PRESETS.size(); ++i) {
+    //             if (currentSettings == DSP::CHROUS_PRESETS[i]) {
+    //                 currentIdx = i;
+    //                 break;
+    //             }
+    //         }
+    //         int displayIdx = currentIdx;  //<< keep currentIdx clean
+    //
+    //         ImGui::SetNextItemWidth(150);
+    //         if (ImFlux::ValueStepper("##Preset", &displayIdx, presets, IM_ARRAYSIZE(presets))) {
+    //             if (displayIdx > 0 && displayIdx < DSP::CHROUS_PRESETS.size()) {
+    //                 currentSettings =  DSP::CHROUS_PRESETS[displayIdx];
+    //                 changed = true;
+    //             }
+    //         }
+    //         ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+    //
+    //         if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+    //             currentSettings = DSP::LUSH80s_CHORUS;
+    //             changed = true;
+    //         }
+    //
+    //
+    //         ImGui::Separator();
+    //
+    //         // Parameter Sliders
+    //         changed |= ImFlux::FaderHWithText("Rate",  &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
+    //         changed |= ImFlux::FaderHWithText("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
+    //         changed |= ImFlux::FaderHWithText("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
+    //         changed |= ImFlux::FaderHWithText("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
+    //         changed |= ImFlux::FaderHWithText("Mix",   &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
+    //
+    //         // Engine Update logic
+    //         if (changed) {
+    //             if (isEnabled) {
+    //                 getMain()->getController()->getDSPChorus()->setSettings(currentSettings);
+    //             }
+    //         }
+    //     }
+    //     ImGui::EndChild();
+    // } else {
+    //     ImGui::Separator();
+    // }
+    // ImGui::EndGroup();
+    // ImGui::PopID();
+    // ImGui::Spacing();
 }
 //------------------------------------------------------------------------------
 

@@ -56,6 +56,10 @@ namespace DSP {
 
     constexpr BitcrusherSettings CUSTOM_BITCRUSHER  = {  8.0f, 22050.0f, 0.0f }; //DUMMY!
 
+    static const char* BITCRUSHER_PRESETS_NAMES[] = {
+        "Custom", "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme"
+    };
+
     static const std::array<DSP::BitcrusherSettings, 5> BITCRUSHER_PRESETS = {
         DSP::CUSTOM_BITCRUSHER,
         DSP::AMIGA_BITCRUSHER,
@@ -86,6 +90,8 @@ namespace DSP {
             mSettings = s;
             mSampleCount = 999999.0f;
         }
+        //----------------------------------------------------------------------
+        void reset() override { mSampleCount = 999999.0f; }
         //----------------------------------------------------------------------
         DSP::EffectType getType() const override { return DSP::EffectType::Bitcrusher; }
         //----------------------------------------------------------------------
@@ -142,14 +148,17 @@ namespace DSP {
         }
 
         //----------------------------------------------------------------------
+        virtual std::string getName() const override { return "BITCRUSHER";}
     #ifdef FLUX_ENGINE
-    void renderUI() {
+    virtual ImVec4 getColor() const  override { return ImVec4(0.8f, 0.4f, 0.5f, 1.0f);}
+
+    virtual void renderUI() override {
         ImGui::PushID("BitCrusher_Effect_Row");
 
         ImGui::BeginGroup();
 
         bool isEnabled = this->isEnabled();
-        if (ImFlux::LEDCheckBox("BITCRUSHER", &isEnabled, ImVec4(0.8f, 0.4f, 0.5f, 1.0f))){
+        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
                 this->setEnabled(isEnabled);
         }
             if (isEnabled)
@@ -173,9 +182,8 @@ namespace DSP {
                     }
                     int displayIdx = currentIdx;  //<< keep currentIdx clean
 
-                    const char* presetNames[] = { "Custom", "Amiga (8-bit)", "NES (4-bit)", "Phone (Lo-Fi)", "Extreme" };
                     ImGui::SetNextItemWidth(150);
-                    if (ImFlux::ValueStepper("##Preset", &displayIdx, presetNames, IM_ARRAYSIZE(presetNames))) {
+                    if (ImFlux::ValueStepper("##Preset", &displayIdx, BITCRUSHER_PRESETS_NAMES, IM_ARRAYSIZE(BITCRUSHER_PRESETS_NAMES))) {
                         if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
                             currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
                             changed = true;
@@ -185,6 +193,7 @@ namespace DSP {
 
                     if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                         currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
+                        this->reset();
                         changed = true;
                     }
                     ImGui::Separator();

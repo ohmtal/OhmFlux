@@ -70,7 +70,11 @@ namespace DSP {
     constexpr ChorusSettings FLANGER_CHORUS       = { 0.2f,  0.001f, 0.003f, 0.5f,  0.10f };
 
 
-    static const std::array<DSP::ChorusSettings, 7> CHROUS_PRESETS = {
+    static const char* CHORUS_PRESET_NAMES[] = {
+        "Custom", "Lush 80s", "Deep Ensemble", "Fast Leslie",
+        "Juno-60 Style", "Vibrato", "Flanger" };
+
+    static const std::array<DSP::ChorusSettings, 7> CHORUS_PRESETS = {
         CUSTOM_CHORUS,
         LUSH80s_CHORUS,
         DEEPENSEMPLE_CHORUS,
@@ -178,6 +182,152 @@ namespace DSP {
                 }
             }
         }
+        //----------------------------------------------------------------------
+        virtual std::string getName() const override { return "CHORUS / ENSEMBLE";}
+#ifdef FLUX_ENGINE
+        virtual ImVec4 getColor() const  override { return ImVec4(0.6f, 0.4f, 1.0f, 1.0f);}
+
+        virtual void renderUIWide() override {
+            ImGui::PushID("Chorus_Effect_Row_WIDE");
+            if (ImGui::BeginChild("CHORUS_BOX", ImVec2(-FLT_MIN,65.f) )) {
+
+                DSP::ChorusSettings currentSettings = this->getSettings();
+                int currentIdx = 0; // Standard: "Custom"
+                bool changed = false;
+
+                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+                ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+                ImGui::BeginGroup();
+                bool isEnabled = this->isEnabled();
+                if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+                    this->setEnabled(isEnabled);
+                }
+
+                if (!isEnabled) ImGui::BeginDisabled();
+
+                ImGui::SameLine();
+                // -------- stepper >>>>
+                for (int i = 1; i < DSP::CHORUS_PRESETS.size(); ++i) {
+                    if (currentSettings == DSP::CHORUS_PRESETS[i]) {
+                        currentIdx = i;
+                        break;
+                    }
+                }
+                int displayIdx = currentIdx;  //<< keep currentIdx clean
+                ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
+
+                if (ImFlux::ValueStepper("##Preset", &displayIdx, CHORUS_PRESET_NAMES
+                    , IM_ARRAYSIZE(CHORUS_PRESET_NAMES)), 100.f)
+                {
+                    if (displayIdx > 0 && displayIdx < DSP::CHORUS_PRESETS.size()) {
+                        currentSettings =  DSP::CHORUS_PRESETS[displayIdx];
+                        changed = true;
+                    }
+                }
+                ImGui::SameLine();
+                // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                    currentSettings = DSP::LUSH80s_CHORUS;
+                    this->reset();
+                    changed = true;
+                }
+
+                ImGui::Separator();
+                // ImFlux::MiniKnobF(label, &value, min_v, max_v);
+                changed |= ImFlux::MiniKnobF("Rate",  &currentSettings.rate, 0.1f, 2.5f); ImGui::SameLine();
+                changed |= ImFlux::MiniKnobF("Depth", &currentSettings.depth, 0.001f, 0.010f); ImGui::SameLine();
+                changed |= ImFlux::MiniKnobF("Delay", &currentSettings.delayBase, 0.001f, 0.040f); ImGui::SameLine();
+                changed |= ImFlux::MiniKnobF("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f); ImGui::SameLine();
+                changed |= ImFlux::MiniKnobF("Mix",   &currentSettings.wet, 0.0f, 1.0f); ImGui::SameLine();
+
+                // Engine Update
+                if (changed) {
+                    if (isEnabled) {
+                        this->setSettings(currentSettings);
+                    }
+                }
+
+                if (!isEnabled) ImGui::EndDisabled();
+
+                ImGui::EndGroup();
+            }
+            ImGui::EndChild();
+            ImGui::PopID();
+
+        }
+
+
+        virtual void renderUI() override {
+            ImGui::PushID("Chorus_Effect_Row");
+            ImGui::BeginGroup();
+
+            bool isEnabled = this->isEnabled();
+
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor()))
+                this->setEnabled(isEnabled);
+
+
+            if (isEnabled)
+            {
+                if (ImGui::BeginChild("Chorus_Box", ImVec2(0, 160), ImGuiChildFlags_Borders)) {
+
+                    DSP::ChorusSettings currentSettings = this->getSettings();
+                    bool changed = false;
+
+
+                    int currentIdx = 0; // Standard: "Custom"
+
+                    for (int i = 1; i < DSP::CHORUS_PRESETS.size(); ++i) {
+                        if (currentSettings == DSP::CHORUS_PRESETS[i]) {
+                            currentIdx = i;
+                            break;
+                        }
+                    }
+                    int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+                    ImGui::SetNextItemWidth(150);
+                    if (ImFlux::ValueStepper("##Preset", &displayIdx, CHORUS_PRESET_NAMES, IM_ARRAYSIZE(CHORUS_PRESET_NAMES))) {
+                        if (displayIdx > 0 && displayIdx < DSP::CHORUS_PRESETS.size()) {
+                            currentSettings =  DSP::CHORUS_PRESETS[displayIdx];
+                            changed = true;
+                        }
+                    }
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+
+                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                        currentSettings = DSP::LUSH80s_CHORUS;
+                        this->reset();
+                        changed = true;
+                    }
+
+
+                    ImGui::Separator();
+
+                    // Parameter Sliders
+                    changed |= ImFlux::FaderHWithText("Rate",  &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
+                    changed |= ImFlux::FaderHWithText("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
+                    changed |= ImFlux::FaderHWithText("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
+                    changed |= ImFlux::FaderHWithText("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
+                    changed |= ImFlux::FaderHWithText("Mix",   &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
+
+                    // Engine Update logic
+                    if (changed) {
+                        if (isEnabled) {
+                            this->setSettings(currentSettings);
+                        }
+                    }
+                }
+                ImGui::EndChild();
+            } else {
+                ImGui::Separator();
+            }
+            ImGui::EndGroup();
+            ImGui::PopID();
+            ImGui::Spacing();
+        }
+#endif
+
+
     }; //class
 
 } // namespace DSP

@@ -7,6 +7,13 @@
 #pragma once
 #include <cstdint>
 
+#ifdef FLUX_ENGINE
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <gui/ImFlux.h>
+#endif
+
+
 namespace DSP {
 
     enum class EffectType : uint32_t {
@@ -20,7 +27,8 @@ namespace DSP {
         SoundCardEmulation = 7,
         SpectrumAnalyzer   = 8, //no extra settings only analysing for visual effect
         Warmth             = 9,
-        VisualAnalyzer     = 10  //no extra settings only analysing for visual effect
+        VisualAnalyzer     = 10,  //no extra settings only analysing for visual effect
+        Delay              = 11
 
     };
 
@@ -45,8 +53,38 @@ namespace DSP {
             return is.good();
         }
 
-        void setEnabled(bool value) { mEnabled = value; }
-        bool isEnabled() { return mEnabled; }
+        virtual void reset() {}
 
+        virtual void setEnabled(bool value) {
+            mEnabled = value;
+            reset();
+        }
+        virtual bool isEnabled() const { return mEnabled; }
+
+        // this is required for export to wave on delayed effects
+        virtual float getTailLengthSeconds() const { return 0.f; }
+
+
+        virtual std::string getName() const { return "EFFECT # FIXME ";}
+
+
+#ifdef FLUX_ENGINE
+    virtual ImVec4 getColor() const { return ImVec4(0.5f,0.5f,0.5f,1.f);}
+
+    virtual void renderUIWide() {
+        ImGui::TextDisabled("FIXME class have no renderUIWide!");
+        renderUI();
+
+    }
+    virtual void renderUI() {
+          ImGui::PushID("Effect_Row");
+          bool isEnabled = this->isEnabled();
+          if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+              this->setEnabled(isEnabled);
+          }
+          ImGui::PopID();
+     }
+
+#endif
     }; //class
 }; //namespace

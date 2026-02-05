@@ -48,6 +48,11 @@ namespace ImFlux {
 
         ImGui::InvisibleButton(label, {ks.radius*2.f, ks.radius*2.f});
 
+
+        if (ImGui::GetItemFlags() & ImGuiItemFlags_Disabled) {
+            ks.active = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+        }
+
         // ImGui::ItemSize(size);
         // if (!ImGui::ItemAdd(bb, ImGui::GetID("##knob"))) { ImGui::PopID(); return false; }
 
