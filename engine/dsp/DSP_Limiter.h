@@ -84,8 +84,11 @@ namespace DSP {
         DSP::EffectType getType() const override { return DSP::EffectType::Limiter; }
         //----------------------------------------------------------------------
         void setSettings(const LimiterSettings& s) {
+                resetGain(); //also reset current gain.
                 mSettings = s;
         }
+        //----------------------------------------------------------------------
+        void resetGain() { mCurrentGain = 1.f; }
         //----------------------------------------------------------------------
         LimiterSettings& getSettings() { return mSettings; }
         //----------------------------------------------------------------------
