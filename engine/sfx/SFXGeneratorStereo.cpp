@@ -116,6 +116,8 @@ void SFXGeneratorStereo::ResetParams()
 }
 void SFXGeneratorStereo::ResetParamsNoLock()
 {
+
+    mParams.setName("... no name ...");
     mParams.wave_type=0;
 
     mParams.p_base_freq=0.3f;
@@ -575,11 +577,15 @@ void SFXGeneratorStereo::GeneratePickupCoin(){
         mParams.p_arp_speed = 0.5f + frnd(0.2f);
         mParams.p_arp_mod = 0.2f + frnd(0.4f);
     }
+    mParams.setName("Pickup Coin");
 }
 //-----------------------------------------------------------------------------
 void SFXGeneratorStereo::GenerateLaserShoot() {
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     ResetParamsNoLock();
+
+    mParams.setName("Laser Shoot");
+
     mParams.wave_type = rnd(2);
     if (mParams.wave_type == 2 && rnd(1))
         mParams.wave_type = rnd(1);
@@ -618,6 +624,7 @@ void SFXGeneratorStereo::GenerateLaserShoot() {
 void SFXGeneratorStereo::GenerateExplosion() {
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     ResetParamsNoLock();
+    mParams.setName("Explosion");
     mParams.wave_type = 3;
     if (rnd(1)) {
         mParams.p_base_freq = 0.1f + frnd(0.4f);
@@ -654,6 +661,8 @@ void SFXGeneratorStereo::GenerateExplosion() {
 void SFXGeneratorStereo::GeneratePowerup() {
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     ResetParamsNoLock();
+    mParams.setName("Powerup");
+
     if (rnd(1)) mParams.wave_type = 1;
     else mParams.p_duty = frnd(0.6f);
 
@@ -677,6 +686,7 @@ void SFXGeneratorStereo::GeneratePowerup() {
 void SFXGeneratorStereo::GenerateHitHurt() {
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     ResetParamsNoLock();
+    mParams.setName("HitHurt");
     mParams.wave_type = rnd(2);
     if (mParams.wave_type == 2) mParams.wave_type = 3;
     if (mParams.wave_type == 0) mParams.p_duty = frnd(0.6f);
@@ -692,6 +702,7 @@ void SFXGeneratorStereo::GenerateHitHurt() {
 void SFXGeneratorStereo::GenerateJump(){
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     ResetParamsNoLock();
+    mParams.setName("Jump");
     mParams.wave_type = 0;
     mParams.p_duty = frnd(0.6f);
     mParams.p_base_freq = 0.3f + frnd(0.3f);
@@ -706,6 +717,7 @@ void SFXGeneratorStereo::GenerateJump(){
 void SFXGeneratorStereo::GenerateBlipSelect(){
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
     ResetParamsNoLock();
+    mParams.setName("Blip Select");
     mParams.wave_type = rnd(1);
     if (mParams.wave_type == 0) mParams.p_duty = frnd(0.6f);
     mParams.p_base_freq = 0.2f + frnd(0.4f);
@@ -717,6 +729,8 @@ void SFXGeneratorStereo::GenerateBlipSelect(){
 //-----------------------------------------------------------------------------
 void SFXGeneratorStereo::Randomize() {
      std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+     mParams.setName("Random");
+
     mParams.p_base_freq = pow(frnd(2.0f) - 1.0f, 2.0f);
     if (rnd(1))
         mParams.p_base_freq = pow(frnd(2.0f) - 1.0f, 3.0f) + 0.5f;

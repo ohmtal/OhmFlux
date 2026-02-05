@@ -88,6 +88,10 @@ public:
 
         auto operator<=>(const SFXParams&) const = default; //C++20 lazy way
 
+        void setName(std::string lName) {
+            memset(name, 0, sizeof(name));
+            strncpy(name, lName.c_str(), 31);
+        }
 
         // new file format
         void getBinary(std::ostream& os) const {
