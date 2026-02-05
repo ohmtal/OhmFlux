@@ -30,6 +30,13 @@
 #define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
 
 
+#ifdef FLUX_DEBUG
+inline bool isDebugBuild() { return true; }
+#else
+inline bool isDebugBuild() { return false; }
+#endif
+
+
 //--------------------------- GetScreenObject by global Instance ------------
 class FluxScreen; // Forward declaration: No #include needed yet!
 FluxScreen* getScreenObject();

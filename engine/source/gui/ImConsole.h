@@ -16,11 +16,15 @@
 
 struct ImConsole
 {
+
 private:
     char                  InputBuf[256];
     ImVector<char*>       Items;
     ImVector<char*>       History;
     int                   HistoryPos;    // -1: new line, 0..History.Size-1 browsing history.
+
+    const int mLogLimitMax = 2000; //when > 2k lines
+    const int mLogLimitDelete = 500; // the first 500 are deleted
 
 
     ImVec2 mButtonSize = ImVec2(60,20);
@@ -218,7 +222,17 @@ public:
                 ImGui::EndPopup();
             }
 
+            // Log Limit
+            if (Items.Size > mLogLimitMax)
+            {
+                for (int i = 0; i < mLogLimitDelete; i++)
+                    ImGui::MemFree(Items[i]);
+                Items.erase(Items.Data, Items.Data + mLogLimitDelete);
+                mDirty = true;
+            }
 
+
+            //
             if ( mDirty  )
             {
                 mFilterIndices.clear();

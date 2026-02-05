@@ -729,11 +729,9 @@ void OTGui::DrawPatternEditor( PatternEditorState& state) {
         int lScrolltoRow = isPlaying() ? getPlayingRow() : state.cursorRow;
         bool lDoScroll =  isPlaying() || state.scrollToSelected;
 
-
         ImGuiListClipper clipper;
         clipper.Begin(numRows, CellHeight);
 
-        // NOTE: Version ... not soo bad but bad
         if (lDoScroll) {
             clipper.IncludeItemByIndex(lScrolltoRow); // NOTE: scrolling
             state.scrollToSelected = false;
@@ -744,64 +742,49 @@ void OTGui::DrawPatternEditor( PatternEditorState& state) {
             for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
 
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, CellHeight);
+                ImGui::PushID(row);
 
                 // ~~~~~~~~~~~ scrolling madness ~~~~~~~~~~~~~~~~~~~
-                // NOTE: Version ... not soo bad but bad
+                // NOTE: Version ... not soo bad but bad - ghost rendering line
+                // NOTE: tested it's not the clipper !!
                 if ( lDoScroll
                     && row == lScrolltoRow
                     //&& lScrolltoRow > clipper.DisplayEnd - 3
                     )
                 {
-
                     ImGui::ScrollToItem(ImGuiScrollFlags_AlwaysCenterY );
+                    // SDL_Delay(20); //Test sleep 20ms << make it worse
                     //ImGui::SetScrollHereY(0.5f);
                 }
 
-                ImGui::PushID(row);
 
                 // Column 0: Row Number
                 ImGui::TableSetColumnIndex(0);
-                if ( isPlaying() && getPlayingRow() == row )
+                if ( isPlaying() && /*getPlayingRow()*/ lScrolltoRow == row )
                 {
-                   // ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, Color4FIm(cl_Coral));
-
-                   ImGui::TextColored(Color4FIm(cl_Black), "%03d", row);
-
                    ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm(cl_Coral));
-                } else {
+                } else  {
                     if (row % 4 == 0)
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm({0.12f,0.12f,0.12f,1.f}));
                     else
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, Color4FIm(cl_Black));
 
-                    // ImGui::TextDisabled("%03d", row);
-                    // if (ImGui::IsItemClicked()) {
-                    //     state.cursorRow = row;
-                    //     selectPatternRow(state);
-                    // }
-
-                    char buf[4];
-                    snprintf(buf, sizeof(buf), "%03d", row);
-                    // Get cell dimensions
-                    ImVec2 pos = ImGui::GetCursorScreenPos();
-                    ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight());
-                    if (ImGui::InvisibleButton("##cell", size)) {
-                        state.cursorRow = row;
-                        selectPatternRow(state);
-                    }
-                    ImVec2 textSize = ImGui::CalcTextSize(buf);
-                    ImVec2 textPos = ImVec2(pos.x + (size.x - textSize.x) * 0.5f, pos.y + (size.y - textSize.y) * 0.5f);
-                    ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(ImGuiCol_TextDisabled), buf);
-
-                    // std::string tmpStr = std::format( "{:03d}", row);
-                    // // ImGui::Button(tmpStr.c_str(), ImVec2(0,cellSize.y));
-                    // // if (ImFlux::FaderButton(tmpStr.c_str(), ImVec2(30,cellSize.y - 2))) {
-                    // if (ImGui::InvisibleButton(tmpStr.c_str(), ImVec2(0,cellSize.y))) {
-                    //     state.cursorRow = row;
-                    //     selectPatternRow(state);
-                    // }
-
                 }
+
+                char buf[4];
+                snprintf(buf, sizeof(buf), "%03d", row);
+                // Get cell dimensions
+                ImVec2 pos = ImGui::GetCursorScreenPos();
+                ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight());
+                if (ImGui::InvisibleButton("##cell", size)) {
+                    state.cursorRow = row;
+                    selectPatternRow(state);
+                }
+                ImVec2 textSize = ImGui::CalcTextSize(buf);
+                ImVec2 textPos = ImVec2(pos.x + (size.x - textSize.x) * 0.5f, pos.y + (size.y - textSize.y) * 0.5f);
+                ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(ImGuiCol_TextDisabled), buf);
+
+
 
 
 
@@ -866,7 +849,6 @@ std::string GetStepText(SongStep& step, bool enhanced)
             result += "  ";
         else
             result += std::format("{:02d}", step.volume);
-
 
     }
 

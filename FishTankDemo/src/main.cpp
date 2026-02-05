@@ -575,7 +575,7 @@ void DemoGame::onMouseButtonEvent(SDL_MouseButtonEvent event)
 
 					if (getQuadTreeObject()->rayCast(hitObj, getStatus().WorldMousePos.toPoint2I()))
 					{
-						#ifdef FLUX_DEBUG
+						if (isDebugBuild()) {
 							// ****** Scheduler test on deleted object ***** >>>
 							myFish* lFish = static_cast<myFish*>(hitObj);
 							// it call peep after the fish is deleted or better not ;)
@@ -591,7 +591,7 @@ void DemoGame::onMouseButtonEvent(SDL_MouseButtonEvent event)
 								_MainPeep_(savedFPS);
 							});
 							// <<<
-						#endif
+						} //if (isDebugBuild()) {
 
 						// 2. queueDelete likely takes FluxBaseObject*, which works via implicit upcast
 						if (!queueDelete(hitObj)) {

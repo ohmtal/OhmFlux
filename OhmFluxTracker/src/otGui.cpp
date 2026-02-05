@@ -272,7 +272,7 @@ void OTGui::ShowFileManager(){
 void OTGui::Update(const double& dt)
 {
     if (mCurrentExport != nullptr) return; // not while we exporting!
-    getMain()->getController()->consoleSongOutput(false);
+    if (isDebugBuild()) getMain()->getController()->consoleSongOutput(false);
 }
 //------------------------------------------------------------------------------
 bool OTGui::Initialize()
