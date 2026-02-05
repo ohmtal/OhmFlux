@@ -6,6 +6,47 @@
 #include "fluxEditorGlobals.h"
 
 #include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
+#include <gui/ImConsole.h>
+
+//------------------------------------------------------------------------------
+void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
+{
+    if (!userdata) return;
+    auto* gui = static_cast<EditorGui*>(userdata);
+
+    if (!gui)
+        return;
+
+    char lBuffer[1024];
+    if (priority == SDL_LOG_PRIORITY_ERROR)
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "[ERROR] %s", message);
+    }
+    else if (priority == SDL_LOG_PRIORITY_WARN)
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "[WARN] %s", message);
+    }
+    else
+    {
+        snprintf(lBuffer, sizeof(lBuffer), "%s", message);
+    }
+
+    // bad if we are gone !!
+    gui->mConsole.AddLog("%s", message);
+}
+//------------------------------------------------------------------------------
+void EditorGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
+    std::string cmd = fluxStr::getWord(cmdline,0);
+
+    //if i want to add "help" and autocomplete  mConsole.Commands.push_back("/spam");
+
+    if (cmd == "/spam") {
+        for (S32 i = 0; i < 1000; i++) {
+            dLog("[info] SPAM %i", i);
+        }
+    }
+
+}
 
 //------------------------------------------------------------------------------
 bool EditorGui::Initialize()
@@ -55,6 +96,11 @@ bool EditorGui::Initialize()
 
 
     g_FileDialog.init( getGamePath(), {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" });
+
+    // Console
+    mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
+    SDL_SetLogOutputFunction(ConsoleLogFunction, this);
+
 
     return true;
 }
@@ -124,6 +170,7 @@ void EditorGui::ShowMenuBar()
             ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mEditorSettings.mShowImFluxWidgets);
             ImGui::Separator();
             ImGui::MenuItem("File Browser", NULL, &mEditorSettings.mShowFileBrowser);
+            ImGui::MenuItem("Console", NULL, &mEditorSettings.mShowConsole);
             ImGui::Separator();
             ImGui::MenuItem("Sound Effects Generator", NULL, &mEditorSettings.mShowSFXEditor);
             ImGui::MenuItem("Sound Effects Stereo", NULL, &mEditorSettings.mShowSFXEditorStereo);
@@ -189,6 +236,8 @@ void EditorGui::DrawGui()
 
 
 
+    if (mEditorSettings.mShowConsole)
+        mConsole.Draw("Console", &mEditorSettings.mShowConsole);
 
 
 

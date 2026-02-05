@@ -18,6 +18,7 @@
 
 #include "fluxSfxEditorStereo.h"
 #include "fluxSfxEditor.h"
+#include <gui/ImConsole.h>
 
 
 class EditorGui: public FluxBaseObject
@@ -33,14 +34,18 @@ public:
         bool mShowImFluxWidgets;
         bool mShowFileBrowser;
         bool mShowSFXEditorStereo;
+        bool mShowConsole;
     };
 
+    ImConsole mConsole;
 
 private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
     FluxSfxEditorStereo* mSfxEditorStereo = nullptr;
     FluxSfxEditor* mSfxEditor = nullptr;
+
+    void OnConsoleCommand(ImConsole* console, const char* cmdline);
 
 
     EditorSettings mEditorSettings;
@@ -50,7 +55,8 @@ private:
         .mEditorGuiInitialized = false,
         .mShowImFluxWidgets = false,
         .mShowFileBrowser = false,
-        .mShowSFXEditorStereo = true
+        .mShowSFXEditorStereo = true,
+        .mShowConsole = false
     };
 
 public:
@@ -74,5 +80,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EditorGui::EditorSettings,
     mShowSFXEditor,
     mEditorGuiInitialized,
     mShowImFluxWidgets,
-    mShowFileBrowser
+    mShowFileBrowser,
+    mShowConsole
 )

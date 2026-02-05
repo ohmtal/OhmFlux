@@ -16,17 +16,29 @@
 
 struct ImConsole
 {
+private:
     char                  InputBuf[256];
     ImVector<char*>       Items;
-    ImVector<const char*> Commands;
     ImVector<char*>       History;
     int                   HistoryPos;    // -1: new line, 0..History.Size-1 browsing history.
+
+
+    ImVec2 mButtonSize = ImVec2(60,20);
+    bool   mCopyOnlyVisible = true;
+    ImVector<int> mFilterIndices;
+    bool mDirty = true;
+
+public:
+    std::function<void(ImConsole*, const char*)> OnCommand;
+
+    ImVector<const char*> Commands;
     ImGuiTextFilter       Filter;
     bool                  AutoScroll;
     bool                  ScrollToBottom;
 
-    std::function<void(ImConsole*, const char*)> OnCommand;
 
+
+    //--------------------------------------------------------------------------
     ImConsole()
     {
         ClearLog();
@@ -34,37 +46,38 @@ struct ImConsole
         HistoryPos = -1;
 
         // "CLASSIFY" is here to provide the test case where "C"+[tab] completes to "CL" and display multiple matches.
-        Commands.push_back("HELP");
-        Commands.push_back("HISTORY");
-        Commands.push_back("CLEAR");
-        Commands.push_back("CLASSIFY");
+        // Commands.push_back("HELP");
+        // Commands.push_back("HISTORY");
+        // Commands.push_back("CLEAR");
+        // Commands.push_back("CLASSIFY");
         AutoScroll = true;
         ScrollToBottom = false;
         // AddLog("Welcome to Dear ImGui!");
     }
+    //--------------------------------------------------------------------------
     ~ImConsole()
     {
         ClearLog();
         for (int i = 0; i < History.Size; i++)
             ImGui::MemFree(History[i]);
     }
-
+    //--------------------------------------------------------------------------
     // Portable helpers
     static int   Stricmp(const char* s1, const char* s2)         { int d; while ((d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; } return d; }
     static int   Strnicmp(const char* s1, const char* s2, int n) { int d = 0; while (n > 0 && (d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; n--; } return d; }
     static char* Strdup(const char* s)                           { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = ImGui::MemAlloc(len); IM_ASSERT(buf); return (char*)memcpy(buf, (const void*)s, len); }
     static void  Strtrim(char* s)                                { char* str_end = s + strlen(s); while (str_end > s && str_end[-1] == ' ') str_end--; *str_end = 0; }
-
-    void    ClearLog()
+    //--------------------------------------------------------------------------
+    void ClearLog()
     {
         for (int i = 0; i < Items.Size; i++)
             ImGui::MemFree(Items[i]);
         Items.clear();
+        mDirty = true;
     }
-
+    //--------------------------------------------------------------------------
     void    AddLog(const char* fmt, ...) IM_FMTARGS(2)
     {
-        // FIXME-OPT
         char buf[1024];
         va_list args;
         va_start(args, fmt);
@@ -72,20 +85,62 @@ struct ImConsole
         buf[IM_ARRAYSIZE(buf)-1] = 0;
         va_end(args);
         Items.push_back(Strdup(buf));
+        mDirty = true;
     }
+    //--------------------------------------------------------------------------
+    bool SearchPopup() //return true if closed
+    {
+        bool result = false;
+
+        if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_F))
+            ImGui::OpenPopup("SearchPopup");
+
+        // Set position to center of the current window
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        if (ImGui::BeginPopup("SearchPopup"))
+        {
+            // Focus the input field automatically when the popup appears
+            if (ImGui::IsWindowAppearing())
+                ImGui::SetKeyboardFocusHere();
+
+            // The filter input
+            // If Filter.Draw returns true, it means the text changed -> set Dirty
+            if (Filter.Draw("##FilterInput", 200.0f))
+            {
+                mDirty = true;
+            }
+
+            // Close button
+            ImGui::SameLine();
+            if ( ImGui::Button("Close") ||
+                 ImGui::IsKeyPressed(ImGuiKey_Enter)
+                 || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)
+            ) {
+                ImGui::CloseCurrentPopup();
+                result = true;
+            }
+
+
+            ImGui::EndPopup();
+        }
+        return result;
+    }
+    //--------------------------------------------------------------------------
 
     void Draw(const char* title, bool* p_open)
     {
         ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
+
         if (!ImGui::Begin(title, p_open))
         {
             ImGui::End();
             return;
         }
 
-        // As a specific feature guaranteed by the library, after calling Begin() the last Item represent the title bar.
-        // So e.g. IsItemHovered() will return true when hovering the title bar.
-        // Here we create a context menu only available from the title bar.
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+
         if (ImGui::BeginPopupContextItem())
         {
             if (ImGui::MenuItem("Close Console"))
@@ -93,40 +148,47 @@ struct ImConsole
             ImGui::EndPopup();
         }
 
-        // ImGui::TextWrapped(
-        //     "This example implements a console with basic coloring, completion (TAB key) and history (Up/Down keys). A more elaborate "
-        //     "implementation may want to store entries along with extra data such as timestamp, emitter, etc.");
-        // ImGui::TextWrapped("Enter 'HELP' for help.");
 
-        // TODO: display items starting from the bottom
 
-        // if (ImGui::SmallButton("Add Debug Text"))  { AddLog("%d some text", Items.Size); AddLog("some more text"); AddLog("display very important message here!"); }
-        // ImGui::SameLine();
-        // if (ImGui::SmallButton("Add Debug Error")) { AddLog("[error] something went wrong"); }
-        // ImGui::SameLine();
-        if (ImGui::Button("Clear"))           { ClearLog(); }
+        if (ImGui::Button("Clear", mButtonSize)){ ClearLog(); }
         ImGui::SameLine();
-        bool copy_to_clipboard = ImGui::Button("Copy");
-        //static float t = 0.0f; if (ImGui::GetTime() - t > 0.02f) { t = ImGui::GetTime(); AddLog("Spam %f", t); }
+        bool loDoCopyToClipboard = ImGui::Button("Copy", mButtonSize);
 
         ImGui::SameLine();
         // Options menu
         if (ImGui::BeginPopup("Options"))
         {
             ImGui::Checkbox("Auto-scroll", &AutoScroll);
+            ImGui::Checkbox("Copy only visible Log entries", &mCopyOnlyVisible);
+
             ImGui::EndPopup();
         }
 
         // Options, Filter
         ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_O, ImGuiInputFlags_Tooltip);
-        if (ImGui::Button("Options"))
-            ImGui::OpenPopup("Options");
-        ImGui::SameLine();
-        ImGui::Text("Filter:");
-        ImGui::SameLine();
-        Filter.Draw("##Filter", 180);
-        // Filter.Draw("Filter (\"incl,-excl\") (\"error\")", 180);
+        if (ImGui::Button("Options", mButtonSize)) ImGui::OpenPopup("Options");
+
+
+        ImGui::SameLine(ImGui::GetWindowWidth() - 110.f);
+        if (Filter.Draw("##FilterMain", 100)) mDirty = true;
         ImGui::Separator();
+
+
+
+        //XXTH performance changes
+        if ( mDirty  )
+        {
+            mFilterIndices.clear();
+            mFilterIndices.reserve(Items.Size);
+            for (int i = 0; i < Items.Size; i++) {
+                if (Filter.PassFilter(Items[i])) {
+                    mFilterIndices.push_back(i);
+                }
+            }
+            mDirty = false;
+        }
+
+
 
         // Reserve enough left-over height for 1 separator + 1 input text
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
@@ -138,67 +200,59 @@ struct ImConsole
                 ImGui::EndPopup();
             }
 
-            // Display every line as a separate entry so we can change their color or add custom widgets.
-            // If you only want raw text you can use ImGui::TextUnformatted(log.begin(), log.end());
-            // NB- if you have thousands of entries this approach may be too inefficient and may require user-side clipping
-            // to only process visible items. The clipper will automatically measure the height of your first item and then
-            // "seek" to display only items in the visible area.
-            // To use the clipper we can replace your standard loop:
-            //      for (int i = 0; i < Items.Size; i++)
-            //   With:
-            //      ImGuiListClipper clipper;
-            //      clipper.Begin(Items.Size);
-            //      while (clipper.Step())
-            //         for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
-            // - That your items are evenly spaced (same height)
-            // - That you have cheap random access to your elements (you can access them given their index,
-            //   without processing all the ones before)
-            // You cannot this code as-is if a filter is active because it breaks the 'cheap random-access' property.
-            // We would need random-access on the post-filtered list.
-            // A typical application wanting coarse clipping and filtering may want to pre-compute an array of indices
-            // or offsets of items that passed the filtering test, recomputing this array when user changes the filter,
-            // and appending newly elements as they are inserted. This is left as a task to the user until we can manage
-            // to improve this example code!
-            // If your items are of variable height:
-            // - Split them into same height items would be simpler and facilitate random-seeking into your list.
-            // - Consider using manual call to IsRectVisible() and skipping extraneous decoration from your items.
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
-            if (copy_to_clipboard)
-                ImGui::LogToClipboard();
-            for (const char* item : Items)
-            {
-                if (!Filter.PassFilter(item))
-                    continue;
-
-                // Normally you would store more information in your item than just a string.
-                // (e.g. make Items[] an array of structure, store color/type etc.)
-                ImVec4 color;
-                bool has_color = false;
-                if (strstr(item, "[error]")) { color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); has_color = true; }
-                else if (strstr(item, "[warn]")) { color = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); has_color = true; }
-                else if (strstr(item, "[info]")) { color = ImVec4(0.4f, 0.4f, 1.0f, 1.0f); has_color = true; }
-                else if (strncmp(item, "# ", 2) == 0) { color = ImVec4(1.0f, 0.8f, 0.6f, 1.0f); has_color = true; }
-                if (has_color)
-                    ImGui::PushStyleColor(ImGuiCol_Text, color);
-                ImGui::TextUnformatted(item);
-                if (has_color)
-                    ImGui::PopStyleColor();
+            if (loDoCopyToClipboard) {
+                if (!mCopyOnlyVisible) {
+                    ImGui::LogToClipboard();
+                    for (int idx : mFilterIndices) ImGui::TextUnformatted(Items[idx]);
+                    ImGui::LogFinish();
+                    loDoCopyToClipboard = false;
+                } else {
+                    ImGui::LogToClipboard();
+                }
             }
-            if (copy_to_clipboard)
-                ImGui::LogFinish();
 
-            // Keep up at the bottom of the scroll region if we were already at the bottom at the beginning of the frame.
-            // Using a scrollbar or mouse-wheel will take away from the bottom edge.
+
+            ImGuiListClipper clipper;
+            clipper.Begin(mFilterIndices.Size); // Nutze die Anzahl der GEFILTERTEN Items
+            while (clipper.Step())
+            {
+                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                {
+                    const char* item = Items[mFilterIndices[i]];
+                    ImVec4 color;
+                    bool has_color = false;
+                    if (strstr(item, "[error]")) { color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); has_color = true; }
+                    else if (strstr(item, "[warn]")) { color = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); has_color = true; }
+                    else if (strstr(item, "[info]")) { color = ImVec4(0.4f, 0.4f, 1.0f, 1.0f); has_color = true; }
+                    else if (strncmp(item, "# ", 2) == 0) { color = ImVec4(1.0f, 0.8f, 0.6f, 1.0f); has_color = true; }
+                    if (has_color)
+                        ImGui::PushStyleColor(ImGuiCol_Text, color);
+                    ImGui::TextUnformatted(item);
+                    if (has_color)
+                        ImGui::PopStyleColor();
+                }
+            }
+            if (loDoCopyToClipboard ) {
+                ImGui::LogFinish();
+                loDoCopyToClipboard = false;
+            }
+
             if (ScrollToBottom || (AutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()))
                 ImGui::SetScrollHereY(1.0f);
             ScrollToBottom = false;
 
-            ImGui::PopStyleVar();
-        }
+        } //ScrollingRegion
         ImGui::EndChild();
         ImGui::Separator();
 
-        // Command-line
+        // Command-line && search PopUp
+        if (SearchPopup())
+        {
+            // next one is focused :D
+            ImGui::SetKeyboardFocusHere();
+        }
+
+
         bool reclaim_focus = false;
         ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
         ImGui::SetNextItemWidth(-FLT_MIN);
@@ -217,9 +271,11 @@ struct ImConsole
         if (reclaim_focus)
             ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
+        ImGui::PopStyleVar();
+
         ImGui::End();
     }
-
+    //--------------------------------------------------------------------------
     void ExecCommand(const char* command_line)
     {
         AddLog("# %s\n", command_line);
@@ -241,14 +297,14 @@ struct ImConsole
         // On command input, we scroll to bottom even if AutoScroll==false
         ScrollToBottom = true;
     }
-
+    //--------------------------------------------------------------------------
     // In C++11 you'd be better off using lambdas for this sort of forwarding callbacks
     static int TextEditCallbackStub(ImGuiInputTextCallbackData* data)
     {
         ImConsole* console = (ImConsole*)data->UserData;
         return console->TextEditCallback(data);
     }
-
+    //--------------------------------------------------------------------------
     int     TextEditCallback(ImGuiInputTextCallbackData* data)
     {
         //AddLog("cursor: %d, selection: %d-%d", data->CursorPos, data->SelectionStart, data->SelectionEnd);
