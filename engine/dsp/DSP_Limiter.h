@@ -177,7 +177,7 @@ namespace DSP {
             ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
 
             if (ImFlux::ValueStepper("##Preset", &displayIdx, LIMITER_PRESET_NAMES
-                , IM_ARRAYSIZE(LIMITER_PRESET_NAMES)), 100.f)
+                , IM_ARRAYSIZE(LIMITER_PRESET_NAMES)))
             {
                 if (displayIdx > 0 && displayIdx < DSP::LIMITER_PRESETS.size()) {
                     currentSettings =  DSP::LIMITER_PRESETS[displayIdx];

@@ -45,6 +45,8 @@ private:
     };
 
     DSP::VisualAnalyzer* mVisualAnalyzer;
+    DSP::RingModulator* mRingMod;
+    DSP::VoiceModulator* mVoiceMod;
     DSP::Delay* mDelay;
     DSP::Chorus* mChorus;
     DSP::Limiter* mLimiter;
@@ -68,6 +70,16 @@ public:
         // auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
         // mBitCrusher = bitcrusher.get();
         // mSFXGeneratorStereo->getDspEffects().push_back(std::move(bitcrusher));
+
+
+        auto specVoice= std::make_unique<DSP::VoiceModulator>(false);
+        mVoiceMod = specVoice.get();
+        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specVoice));
+
+        auto specRing = std::make_unique<DSP::RingModulator>(false);
+        mRingMod = specRing.get();
+        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specRing));
+
 
         auto specChorus= std::make_unique<DSP::Chorus>(false);
         mChorus = specChorus.get();
@@ -386,6 +398,8 @@ public:
 
 
             // mBitCrusher->renderUI();
+            mRingMod->renderUIWide();
+            mVoiceMod->renderUIWide();
             mChorus->renderUIWide();
             mDelay->renderUIWide();
             mLimiter->renderUIWide();

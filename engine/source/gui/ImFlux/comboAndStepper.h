@@ -57,6 +57,7 @@ namespace ImFlux {
         return pressed;
     }
 
+
     template<typename T>
     inline bool ValueStepper(const char* label, int* current_idx, const T& items, int items_count, float width = 140.0f) {
         ImGui::PushID(label);
@@ -64,7 +65,6 @@ namespace ImFlux {
         float h = ImGui::GetFrameHeight();
         ImVec2 btn_sz(h, h);
 
-        // 1. Custom Left Button
         if (StepperButton("##left", true, btn_sz)) {
             *current_idx = (*current_idx > 0) ? *current_idx - 1 : items_count - 1;
             changed = true;
@@ -72,32 +72,29 @@ namespace ImFlux {
 
         ImGui::SameLine(0, 4);
 
-        // 2. LCD Display Area
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImVec2 size(width, h);
 
-        if (ImGui::InvisibleButton("##display", size)) {
+        if (ImGui::InvisibleButton("##display_btn", size)) {
             *current_idx = (*current_idx + 1) % items_count;
             changed = true;
         }
 
-        // Popup logic remains for Right-Click
-        if (ImGui::BeginPopupContextItem("StepperPopup")) {
+        if (ImGui::BeginPopupContextItem("##StepperPopupLocal")) {
             for (int i = 0; i < items_count; i++) {
-                // Determine text for selectable
                 const char* item_name = "";
                 if constexpr (std::is_pointer_v<std::decay_t<decltype(items[0])>>) item_name = items[i];
-                else item_name = items[i].name.c_str(); // Handles your Instrument struct
+                else item_name = items[i].name.c_str();
 
                 if (ImGui::Selectable(item_name, *current_idx == i)) {
                     *current_idx = i;
                     changed = true;
+                    ImGui::CloseCurrentPopup();
                 }
             }
             ImGui::EndPopup();
         }
 
-        // DRAW DISPLAY
         ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddRectFilled(pos, pos + size, IM_COL32(10, 10, 12, 255), 2.0f);
         dl->AddRect(pos, pos + size, IM_COL32(60, 60, 70, 255), 2.0f);
@@ -109,21 +106,15 @@ namespace ImFlux {
         }
 
         ImVec2 t_size = ImGui::CalcTextSize(text);
+        ImU32 lTextCol = (ImGui::GetItemFlags() & ImGuiItemFlags_Disabled)
+        ? ImGui::GetColorU32(ImGuiCol_TextDisabled)
+        : IM_COL32(0, 255, 180, 255);
 
-        ImU32 lTextCol = IM_COL32(0, 255, 180, 255);
-
-        if (ImGui::GetItemFlags() & ImGuiItemFlags_Disabled) {
-            lTextCol  = ImGui::GetColorU32(ImGuiCol_TextDisabled);
-        }
-
-
-        dl->AddText({pos.x + (size.x - t_size.x) * 0.5f, pos.y + (size.y - t_size.y) * 0.5f}
-                    , lTextCol
-                    , text);
+        dl->AddText({pos.x + (size.x - t_size.x) * 0.5f, pos.y + (size.y - t_size.y) * 0.5f}, lTextCol, text);
 
         ImGui::SameLine(0, 4);
 
-        // 3. Custom Right Button
+        // 3. Rechter Button
         if (StepperButton("##right", false, btn_sz)) {
             *current_idx = (*current_idx + 1) % items_count;
             changed = true;
@@ -132,6 +123,82 @@ namespace ImFlux {
         ImGui::PopID();
         return changed;
     }
+
+    // template<typename T>
+    // inline bool ValueStepper(const char* label, int* current_idx, const T& items, int items_count, float width = 140.0f) {
+    //     ImGui::PushID(label);
+    //     bool changed = false;
+    //     float h = ImGui::GetFrameHeight();
+    //     ImVec2 btn_sz(h, h);
+    //
+    //     // 1. Custom Left Button
+    //     if (StepperButton("##left", true, btn_sz)) {
+    //         *current_idx = (*current_idx > 0) ? *current_idx - 1 : items_count - 1;
+    //         changed = true;
+    //     }
+    //
+    //     ImGui::SameLine(0, 4);
+    //
+    //     // 2. LCD Display Area
+    //     ImVec2 pos = ImGui::GetCursorScreenPos();
+    //     ImVec2 size(width, h);
+    //
+    //     if (ImGui::InvisibleButton("##display", size)) {
+    //         *current_idx = (*current_idx + 1) % items_count;
+    //         changed = true;
+    //     }
+    //
+    //     // Popup logic remains for Right-Click
+    //     if (ImGui::BeginPopupContextItem("StepperPopup")) {
+    //         for (int i = 0; i < items_count; i++) {
+    //             // Determine text for selectable
+    //             const char* item_name = "";
+    //             if constexpr (std::is_pointer_v<std::decay_t<decltype(items[0])>>) item_name = items[i];
+    //             else item_name = items[i].name.c_str(); // Handles your Instrument struct
+    //
+    //             if (ImGui::Selectable(item_name, *current_idx == i)) {
+    //                 *current_idx = i;
+    //                 changed = true;
+    //             }
+    //         }
+    //         ImGui::EndPopup();
+    //     }
+    //
+    //     // DRAW DISPLAY
+    //     ImDrawList* dl = ImGui::GetWindowDrawList();
+    //     dl->AddRectFilled(pos, pos + size, IM_COL32(10, 10, 12, 255), 2.0f);
+    //     dl->AddRect(pos, pos + size, IM_COL32(60, 60, 70, 255), 2.0f);
+    //
+    //     const char* text = "";
+    //     if (*current_idx >= 0 && *current_idx < items_count) {
+    //         if constexpr (std::is_pointer_v<std::decay_t<decltype(items[0])>>) text = items[*current_idx];
+    //         else text = items[*current_idx].name.c_str();
+    //     }
+    //
+    //     ImVec2 t_size = ImGui::CalcTextSize(text);
+    //
+    //     ImU32 lTextCol = IM_COL32(0, 255, 180, 255);
+    //
+    //     if (ImGui::GetItemFlags() & ImGuiItemFlags_Disabled) {
+    //         lTextCol  = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+    //     }
+    //
+    //
+    //     dl->AddText({pos.x + (size.x - t_size.x) * 0.5f, pos.y + (size.y - t_size.y) * 0.5f}
+    //                 , lTextCol
+    //                 , text);
+    //
+    //     ImGui::SameLine(0, 4);
+    //
+    //     // 3. Custom Right Button
+    //     if (StepperButton("##right", false, btn_sz)) {
+    //         *current_idx = (*current_idx + 1) % items_count;
+    //         changed = true;
+    //     }
+    //
+    //     ImGui::PopID();
+    //     return changed;
+    // }
 
 
 };

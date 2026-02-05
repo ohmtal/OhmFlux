@@ -28,7 +28,9 @@ namespace DSP {
         SpectrumAnalyzer   = 8, //no extra settings only analysing for visual effect
         Warmth             = 9,
         VisualAnalyzer     = 10,  //no extra settings only analysing for visual effect
-        Delay              = 11
+        Delay              = 11,
+        VoiceModulator     = 12,
+        RingModulator      = 13
 
     };
 
@@ -72,7 +74,7 @@ namespace DSP {
     virtual ImVec4 getColor() const { return ImVec4(0.5f,0.5f,0.5f,1.f);}
 
     virtual void renderUIWide() {
-        ImGui::TextDisabled("FIXME class have no renderUIWide!");
+        ImGui::TextDisabled("[warning] class have no renderUIWide!");
         renderUI();
 
     }

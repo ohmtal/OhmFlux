@@ -260,7 +260,7 @@ public:
             ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
 
             if (ImFlux::ValueStepper("##Preset", &displayIdx, DELAY_PRESET_NAMES
-                , IM_ARRAYSIZE(DELAY_PRESET_NAMES)), 100.f)
+                , IM_ARRAYSIZE(DELAY_PRESET_NAMES)))
             {
                 if (displayIdx > 0 && displayIdx < DSP::DELAY_PRESETS.size()) {
                     currentSettings =  DSP::DELAY_PRESETS[displayIdx];

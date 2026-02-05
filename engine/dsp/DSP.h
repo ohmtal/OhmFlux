@@ -17,6 +17,8 @@
 #include "DSP_SoundCardEmulation.h"
 #include "DSP_VisualAnalyzer.h"
 #include "DSP_Delay.h"
+#include "DSP_VoiceModulator.h"
+#include "DSP_RingModulator.h"
 
 
 namespace DSP {
