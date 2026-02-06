@@ -60,6 +60,8 @@ public:
     RingModulator(bool switchOn = false) :
         DSP::Effect(switchOn)
     {
+        mSettings.frequency = 400.0f; // Default carrier freq
+        mSettings.wet = 0.5f;         // Usually 100% wet for this effect
         reset();
     }
 
@@ -75,8 +77,7 @@ public:
     // }
 
     virtual void reset() override {
-        mSettings.frequency = 400.0f; // Default carrier freq
-        mSettings.wet = 0.5f;         // Usually 100% wet for this effect
+
         mPhaseL = 0.0f;
         mSampleRate = 44100.0f;
 
