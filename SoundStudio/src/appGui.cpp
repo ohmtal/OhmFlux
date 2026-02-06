@@ -35,6 +35,18 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     gui->mConsole.AddLog("%s", message);
 }
 //------------------------------------------------------------------------------
+void AppGui::ShowFileBrowser(){
+    if (g_FileDialog.Draw()) {
+        // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+        if (g_FileDialog.mSaveMode)
+        {
+            g_FileDialog.reset();
+        } else {
+
+        }
+    }
+}
+//------------------------------------------------------------------------------
 void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
     std::string cmd = fluxStr::getWord(cmdline,0);
 
@@ -51,6 +63,8 @@ void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
 //------------------------------------------------------------------------------
 bool AppGui::Initialize()
 {
+
+
     std::string lSettingsFile =
         getGame()->mSettings.getPrefsPath()
         .append(getGame()->mSettings.getSafeCaption())
@@ -70,10 +84,18 @@ bool AppGui::Initialize()
     if (!mGuiGlue->Initialize())
         return false;
 
+    // Console right after GuiGlue
+    mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
+    SDL_SetLogOutputFunction(ConsoleLogFunction, this);
 
 
-    mSfxStereoModule = new FluxSfxStereoModule();
+
+    mSfxStereoModule = new SfxStereoModule();
     if (!mSfxStereoModule->Initialize())
+        return false;
+
+    mSoundMixModule  = new SoundMixModule();
+    if (!mSoundMixModule ->Initialize())
         return false;
 
     //XXTH TEST
@@ -81,7 +103,7 @@ bool AppGui::Initialize()
     // getMain()-> queueObject(mSfxEditorStereo); //For update!
 
 
-    mSfxModule = new FluxSfxModule();
+    mSfxModule = new SfxModule();
     if (!mSfxModule->Initialize())
         return false;
 
@@ -97,9 +119,6 @@ bool AppGui::Initialize()
 
     g_FileDialog.init( getGamePath(), {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" });
 
-    // Console
-    mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
-    SDL_SetLogOutputFunction(ConsoleLogFunction, this);
 
 
     return true;
@@ -110,6 +129,7 @@ void AppGui::Deinitialize()
 
     SAFE_DELETE(mSfxModule);
     SAFE_DELETE(mSfxStereoModule);
+    SAFE_DELETE(mSoundMixModule);
     SAFE_DELETE(mGuiGlue);
 
     if (SettingsManager().IsInitialized()) {
@@ -166,12 +186,18 @@ void AppGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::MenuItem("IMGui Demo", NULL, &mAppSettings.mShowDemo);
-            ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mAppSettings.mShowImFluxWidgets);
-            ImGui::Separator();
+            if (isDebugBuild())
+            {
+                ImGui::TextDisabled("Debug");
+                ImGui::MenuItem("IMGui Demo", NULL, &mAppSettings.mShowDemo);
+                ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mAppSettings.mShowImFluxWidgets);
+                ImGui::Separator();
+            }
+            ImGui::TextDisabled("Main");
             ImGui::MenuItem("File Browser", NULL, &mAppSettings.mShowFileBrowser);
             ImGui::MenuItem("Console", NULL, &mAppSettings.mShowConsole);
             ImGui::Separator();
+            ImGui::TextDisabled("Modules");
             ImGui::MenuItem("Sound Effects Generator", NULL, &mAppSettings.mShowSFXModule);
             ImGui::MenuItem("Sound Effects Stereo", NULL, &mAppSettings.mShowSFXStereoModule);
             ImGui::Separator();
@@ -208,63 +234,26 @@ void AppGui::ShowMenuBar()
 //------------------------------------------------------------------------------
 void AppGui::DrawGui()
 {
-
     mGuiGlue->DrawBegin();
     ShowMenuBar();
 
-
-    if ( mAppSettings.mShowDemo )
+    if (isDebugBuild())
     {
-        ImGui::ShowDemoWindow();
+        if ( mAppSettings.mShowDemo ) ImGui::ShowDemoWindow();
+        if (mAppSettings.mShowImFluxWidgets) ImFlux::ShowCaseWidgets();
     }
 
+    if (mAppSettings.mShowFileBrowser) ShowFileBrowser();
+    if (mAppSettings.mShowConsole) mConsole.Draw("Console", &mAppSettings.mShowConsole);
 
-
-    if (mAppSettings.mShowSFXModule) {
-        mSfxModule->Draw();
-    }
-
-    if (mAppSettings.mShowSFXStereoModule) {
-        mSfxStereoModule->DrawGui();
-    }
-
-
-
-    if (mAppSettings.mShowImFluxWidgets) {
-        ImFlux::ShowCaseWidgets();
-    }
-
-
-
-    if (mAppSettings.mShowConsole)
-        mConsole.Draw("Console", &mAppSettings.mShowConsole);
-
+    if (mAppSettings.mShowSFXModule) mSfxModule->Draw();
+    if (mAppSettings.mShowSFXStereoModule) mSfxStereoModule->DrawGui();
 
 
     DrawMsgBoxPopup();
-
-
-
-    if (mAppSettings.mShowFileBrowser)
-    {
-        if (g_FileDialog.Draw()) {
-            // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
-            if (g_FileDialog.mSaveMode)
-            {
-                g_FileDialog.reset();
-            } else {
-
-            }
-        }
-    }
-
-
-
-    InitDockSpace();  
-
+    InitDockSpace();
     mGuiGlue->DrawEnd();
 }
-//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void AppGui::onKeyEvent(SDL_KeyboardEvent event)
 {

@@ -6,6 +6,8 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#include "DSP_Effect.h"
+
 #include "DSP_Bitcrusher.h"
 #include "DSP_Chorus.h"
 #include "DSP_Limiter.h"
@@ -21,8 +23,11 @@
 #include "DSP_RingModulator.h"
 
 
+
 namespace DSP {
 
+
+ //-----------------------------------------------------------------------------
  // normalize a stream
  inline void normalizeBuffer(float* buffer, size_t count, float targetPeak = 1.0f) {
         float currentPeak = 0.0f;

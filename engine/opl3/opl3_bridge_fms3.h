@@ -27,7 +27,7 @@ namespace opl3_bridge_fms3 {
     constexpr size_t ID_SIZE_BANK = sizeof(FILE_IDENTIFIER_BANK) - 1;
     constexpr uint16_t FILE_VERSION_BANK = 1;
 
-    constexpr uint32_t DSP_MAGIC = 0x4658534E; // "FXSN"
+    // MOVED to DSP_Effects constexpr uint32_t DSP_MAGIC = 0x4658534E; // "FXSN"
 
     constexpr uint8_t DUMMYBYTE = 0; // a dummy for reserve bytes
 
@@ -334,16 +334,14 @@ namespace opl3_bridge_fms3 {
             //DSP >>>>>>>>>>>>>>>>>>>>>
             if (withDspSettings)
             {
-                write_binary(ofs, DSP_MAGIC);
+                write_binary(ofs, DSP::DSP_MAGIC);
                 uint32_t count = static_cast<uint32_t>(dspEffects.size());
                 write_binary(ofs, count);
-                // 3. Jeden Effekt speichern (Typ-ID + Daten)
                 for (const auto& fx : dspEffects) {
                     DSP::EffectType type = fx->getType();
                     write_binary(ofs, type);
                     fx->save(ofs);
                 }
-
             }
             //<<<<<<<<<<<<<<<<<<< DSP
 
@@ -466,7 +464,7 @@ namespace opl3_bridge_fms3 {
                 uint32_t magic = 0;
                 // Note: We use ifs.peek() or check read() to see if there is any data left
                 if (ifs.read(reinterpret_cast<char*>(&magic), sizeof(magic))) {
-                    if (magic == DSP_MAGIC) {
+                    if (magic == DSP::DSP_MAGIC) {
                         uint32_t count = 0;
                         if (!ifs.read(reinterpret_cast<char*>(&count), sizeof(count))) return false;
 

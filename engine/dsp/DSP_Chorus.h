@@ -108,6 +108,9 @@ namespace DSP {
             mSettings = LUSH80s_CHORUS;
         }
 
+
+
+
         const ChorusSettings& getSettings() { return mSettings; }
 
         void setSettings(const ChorusSettings& s) {

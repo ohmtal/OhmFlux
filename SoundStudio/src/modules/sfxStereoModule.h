@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 
-class FluxSfxStereoModule : public FluxBaseObject
+class SfxStereoModule : public FluxBaseObject
 {
 public:
     enum SFXGEN_FILE_ACTION_TYPE :int {
@@ -55,7 +55,7 @@ private:
 public:
 
 
-    ~FluxSfxStereoModule() { Deinitialize(); }
+    ~SfxStereoModule() { Deinitialize(); }
 
     SFXGeneratorStereo* getSFXGeneratorStereo() { return mSFXGeneratorStereo; }
 

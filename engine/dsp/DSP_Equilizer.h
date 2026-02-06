@@ -95,9 +95,19 @@ namespace DSP {
         }
 
     public:
-        Equalizer(EQBand settings, bool switchOn = true) : Effect(switchOn), mSettings(settings) {
+        Equalizer(bool switchOn = true) : Effect(switchOn) {
+            mSettings = {100.f, 0.f, 0.707f};
+
             calculateCoefficients();
         }
+
+        const EQBand& getSettings() { return mSettings; }
+
+        void setSettings(const EQBand& s) {
+            mSettings = s;
+            calculateCoefficients();
+        }
+
 
         void updateSettings(float freq, float gain) {
             mSettings.frequency = freq;

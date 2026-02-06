@@ -17,8 +17,6 @@
 #include <gui/ImFlux.h>
 #endif
 
-
-
 #include "DSP_Effect.h"
 
 namespace DSP {
@@ -81,6 +79,8 @@ namespace DSP {
             Effect(switchOn),
             mSettings(AMIGA_BITCRUSHER)
             {}
+
+
 
 
         //----------------------------------------------------------------------

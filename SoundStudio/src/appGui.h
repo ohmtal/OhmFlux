@@ -12,9 +12,11 @@
 #include <core/fluxRenderObject.h>
 #include <gui/fluxGuiGlue.h>
 
-#include "fluxSfxStereoModule.h"
-#include "fluxSfxModule.h"
 #include <gui/ImConsole.h>
+
+#include "modules/sfxStereoModule.h"
+#include "modules/sfxModule.h"
+#include "modules/soundMixModule.h"
 
 
 class AppGui: public FluxBaseObject
@@ -38,8 +40,10 @@ public:
 private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
-    FluxSfxStereoModule* mSfxStereoModule = nullptr;
-    FluxSfxModule* mSfxModule = nullptr;
+    SfxStereoModule* mSfxStereoModule = nullptr;
+    SfxModule* mSfxModule = nullptr;
+    SoundMixModule* mSoundMixModule = nullptr;
+
 
     void OnConsoleCommand(ImConsole* console, const char* cmdline);
 
@@ -65,6 +69,8 @@ public:
     void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event);
     void InitDockSpace(); 
+
+    void ShowFileBrowser();
 
 
 }; //class

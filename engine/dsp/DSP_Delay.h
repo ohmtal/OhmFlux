@@ -102,6 +102,8 @@ public:
 
     }
 
+
+
     DSP::EffectType getType() const override { return DSP::EffectType::Delay; }
 
     const DelaySettings& getSettings() { return mSettings; }
