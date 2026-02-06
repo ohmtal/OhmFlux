@@ -1,9 +1,9 @@
-#include "editorGui.h"
-#include "fluxEditorMain.h"
+#include "appGui.h"
+#include "appMain.h"
 #include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
-#include "fluxEditorGlobals.h"
+#include "appGlobals.h"
 
 #include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
 #include <gui/ImConsole.h>
@@ -12,7 +12,7 @@
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
 {
     if (!userdata) return;
-    auto* gui = static_cast<EditorGui*>(userdata);
+    auto* gui = static_cast<AppGui*>(userdata);
 
     if (!gui)
         return;
@@ -35,7 +35,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     gui->mConsole.AddLog("%s", message);
 }
 //------------------------------------------------------------------------------
-void EditorGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
+void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
     std::string cmd = fluxStr::getWord(cmdline,0);
 
     //if i want to add "help" and autocomplete  mConsole.Commands.push_back("/spam");
@@ -49,7 +49,7 @@ void EditorGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
 }
 
 //------------------------------------------------------------------------------
-bool EditorGui::Initialize()
+bool AppGui::Initialize()
 {
     std::string lSettingsFile =
         getGame()->mSettings.getPrefsPath()
@@ -62,7 +62,7 @@ bool EditorGui::Initialize()
         LogFMT("Error: Can not open setting file: {}", lSettingsFile);
     }
 
-    mEditorSettings = SettingsManager().get("EditorGui::mEditorSettings", mDefaultEditorSettings);
+    mAppSettings = SettingsManager().get("AppGui::mAppSettings", mDefaultAppSettings);
 
 
 
@@ -72,8 +72,8 @@ bool EditorGui::Initialize()
 
 
 
-    mSfxEditorStereo = new FluxSfxEditorStereo();
-    if (!mSfxEditorStereo->Initialize())
+    mSfxStereoModule = new FluxSfxStereoModule();
+    if (!mSfxStereoModule->Initialize())
         return false;
 
     //XXTH TEST
@@ -81,18 +81,18 @@ bool EditorGui::Initialize()
     // getMain()-> queueObject(mSfxEditorStereo); //For update!
 
 
-    mSfxEditor = new FluxSfxEditor();
-    if (!mSfxEditor->Initialize())
+    mSfxModule = new FluxSfxModule();
+    if (!mSfxModule->Initialize())
         return false;
 
 
-    // not centered ?!?!?! i guess center is not in place yet ?
-    mBackground = new FluxRenderObject(getGame()->loadTexture("assets/fluxeditorback.png"));
-    if (mBackground) {
-        mBackground->setPos(getGame()->getScreen()->getCenterF());
-        mBackground->setSize(getGame()->getScreen()->getScreenSize());
-        getGame()->queueObject(mBackground);
-    }
+    // // not centered ?!?!?! i guess center is not in place yet ?
+    // mBackground = new FluxRenderObject(getGame()->loadTexture("assets/fluxeditorback.png"));
+    // if (mBackground) {
+    //     mBackground->setPos(getGame()->getScreen()->getCenterF());
+    //     mBackground->setSize(getGame()->getScreen()->getScreenSize());
+    //     getGame()->queueObject(mBackground);
+    // }
 
 
     g_FileDialog.init( getGamePath(), {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" });
@@ -105,33 +105,33 @@ bool EditorGui::Initialize()
     return true;
 }
 //------------------------------------------------------------------------------
-void EditorGui::Deinitialize()
+void AppGui::Deinitialize()
 {
 
-    SAFE_DELETE(mSfxEditor);
-    SAFE_DELETE(mSfxEditorStereo);
+    SAFE_DELETE(mSfxModule);
+    SAFE_DELETE(mSfxStereoModule);
     SAFE_DELETE(mGuiGlue);
 
     if (SettingsManager().IsInitialized()) {
-        SettingsManager().set("EditorGui::mEditorSettings", mEditorSettings);
+        SettingsManager().set("AppGui::mAppSettings", mAppSettings);
         SettingsManager().save();
     }
 
 }
 //------------------------------------------------------------------------------
-void EditorGui::onEvent(SDL_Event event)
+void AppGui::onEvent(SDL_Event event)
 {
     mGuiGlue->onEvent(event);
 
-    if (mSfxEditorStereo)
-        mSfxEditorStereo->onEvent(event);
+    if (mSfxStereoModule)
+        mSfxStereoModule->onEvent(event);
 
-    if (mSfxEditor)
-        mSfxEditor->onEvent(event);
+    if (mSfxModule)
+        mSfxModule->onEvent(event);
 
 }
 //------------------------------------------------------------------------------
-void EditorGui::DrawMsgBoxPopup() {
+void AppGui::DrawMsgBoxPopup() {
 
     if (POPUP_MSGBOX_ACTIVE) {
         ImGui::OpenPopup(POPUP_MSGBOX_CAPTION.c_str());
@@ -154,7 +154,7 @@ void EditorGui::DrawMsgBoxPopup() {
     }
 }
 
-void EditorGui::ShowMenuBar()
+void AppGui::ShowMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
     {
@@ -166,14 +166,14 @@ void EditorGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::MenuItem("IMGui Demo", NULL, &mEditorSettings.mShowDemo);
-            ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mEditorSettings.mShowImFluxWidgets);
+            ImGui::MenuItem("IMGui Demo", NULL, &mAppSettings.mShowDemo);
+            ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mAppSettings.mShowImFluxWidgets);
             ImGui::Separator();
-            ImGui::MenuItem("File Browser", NULL, &mEditorSettings.mShowFileBrowser);
-            ImGui::MenuItem("Console", NULL, &mEditorSettings.mShowConsole);
+            ImGui::MenuItem("File Browser", NULL, &mAppSettings.mShowFileBrowser);
+            ImGui::MenuItem("Console", NULL, &mAppSettings.mShowConsole);
             ImGui::Separator();
-            ImGui::MenuItem("Sound Effects Generator", NULL, &mEditorSettings.mShowSFXEditor);
-            ImGui::MenuItem("Sound Effects Stereo", NULL, &mEditorSettings.mShowSFXEditorStereo);
+            ImGui::MenuItem("Sound Effects Generator", NULL, &mAppSettings.mShowSFXModule);
+            ImGui::MenuItem("Sound Effects Stereo", NULL, &mAppSettings.mShowSFXStereoModule);
             ImGui::Separator();
             ImGui::EndMenu();
         }
@@ -206,38 +206,38 @@ void EditorGui::ShowMenuBar()
 
 }
 //------------------------------------------------------------------------------
-void EditorGui::DrawGui()
+void AppGui::DrawGui()
 {
 
     mGuiGlue->DrawBegin();
     ShowMenuBar();
 
 
-    if ( mEditorSettings.mShowDemo )
+    if ( mAppSettings.mShowDemo )
     {
         ImGui::ShowDemoWindow();
     }
 
 
 
-    if (mEditorSettings.mShowSFXEditor) {
-        mSfxEditor->Draw();
+    if (mAppSettings.mShowSFXModule) {
+        mSfxModule->Draw();
     }
 
-    if (mEditorSettings.mShowSFXEditorStereo) {
-        mSfxEditorStereo->DrawGui();
+    if (mAppSettings.mShowSFXStereoModule) {
+        mSfxStereoModule->DrawGui();
     }
 
 
 
-    if (mEditorSettings.mShowImFluxWidgets) {
+    if (mAppSettings.mShowImFluxWidgets) {
         ImFlux::ShowCaseWidgets();
     }
 
 
 
-    if (mEditorSettings.mShowConsole)
-        mConsole.Draw("Console", &mEditorSettings.mShowConsole);
+    if (mAppSettings.mShowConsole)
+        mConsole.Draw("Console", &mAppSettings.mShowConsole);
 
 
 
@@ -245,7 +245,7 @@ void EditorGui::DrawGui()
 
 
 
-    if (mEditorSettings.mShowFileBrowser)
+    if (mAppSettings.mShowFileBrowser)
     {
         if (g_FileDialog.Draw()) {
             // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
@@ -266,16 +266,16 @@ void EditorGui::DrawGui()
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void EditorGui::onKeyEvent(SDL_KeyboardEvent event)
+void AppGui::onKeyEvent(SDL_KeyboardEvent event)
 {
 }
 //------------------------------------------------------------------------------
-void EditorGui::InitDockSpace()
+void AppGui::InitDockSpace()
 {
-    if (mEditorSettings.mEditorGuiInitialized)
+    if (mAppSettings.mEditorGuiInitialized)
         return; 
 
-    mEditorSettings.mEditorGuiInitialized = true;
+    mAppSettings.mEditorGuiInitialized = true;
 
     ImGuiID dockspace_id = mGuiGlue->getDockSpaceId();
 
@@ -288,12 +288,8 @@ void EditorGui::InitDockSpace()
     ImGuiID dock_main_id = dockspace_id;
     ImGuiID dock_id_left, dock_id_right, dock_id_central;
 
-    // First Split: Left (FM Instrument Editor) vs Right (Everything else)
-    // ratio ~413/1920 = 0.215f
     dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.215f, nullptr, &dock_main_id);
 
-    // Second Split: Center (Composer/Generator) vs Right (File Browser)
-    // ratio ~259/1505 = 0.172f from the right
     dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.172f, nullptr, &dock_id_central);
 
     // Dock the Windows to these IDs

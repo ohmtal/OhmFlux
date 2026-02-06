@@ -4,24 +4,24 @@
 #pragma once
 
 #include <fluxMain.h>
-#include "editorGui.h"
+#include "appGui.h"
 
-class FluxEditorMain : public FluxMain
+class AppMain : public FluxMain
 {
     typedef FluxMain Parent;
 private:
 
-    EditorGui* mEditorGui = nullptr;
+    AppGui* mEditorGui = nullptr;
 
 public:
-    FluxEditorMain() {}
-    ~FluxEditorMain() {}
+    AppMain() {}
+    ~AppMain() {}
 
     bool Initialize() override
     {
         if (!Parent::Initialize()) return false;
 
-        mEditorGui = new EditorGui();
+        mEditorGui = new AppGui();
         if (!mEditorGui->Initialize())
             return false;
 
@@ -69,6 +69,6 @@ public:
 
 }; //classe ImguiTest
 
-extern FluxEditorMain* g_FluxEditor;
-FluxEditorMain* getGame();
-FluxEditorMain* getMain();
+extern AppMain* gAppMain;
+AppMain* getGame();
+AppMain* getMain();

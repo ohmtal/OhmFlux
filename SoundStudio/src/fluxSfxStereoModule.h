@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 
-class FluxSfxEditorStereo : public FluxBaseObject
+class FluxSfxStereoModule : public FluxBaseObject
 {
 public:
     enum SFXGEN_FILE_ACTION_TYPE :int {
@@ -55,7 +55,7 @@ private:
 public:
 
 
-    ~FluxSfxEditorStereo() { Deinitialize(); }
+    ~FluxSfxStereoModule() { Deinitialize(); }
 
     SFXGeneratorStereo* getSFXGeneratorStereo() { return mSFXGeneratorStereo; }
 
@@ -398,6 +398,7 @@ public:
 
 
             // mBitCrusher->renderUI();
+            mRingMod->renderUI();
             mRingMod->renderUIWide();
             mVoiceMod->renderUIWide();
             mChorus->renderUIWide();

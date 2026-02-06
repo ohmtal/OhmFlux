@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 
-class FluxSfxEditor : public FluxBaseObject
+class FluxSfxModule : public FluxBaseObject
 {
 public:
     enum SFXGEN_FILE_ACTION_TYPE :int {
@@ -42,7 +42,7 @@ private:
     };
 
 public:
-    ~FluxSfxEditor() { Deinitialize(); }
+    ~FluxSfxModule() { Deinitialize(); }
 
     SFXGenerator* getSFXGenerator() { return mSFXGenerator; }
 

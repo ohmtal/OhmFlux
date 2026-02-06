@@ -251,7 +251,7 @@ namespace DSP {
                 }
                 int displayIdx = currentIdx;  //<< keep currentIdx clean
 
-                if (ImGui::BeginChild("EQ_Box", ImVec2(0, 75.f),  ImGuiChildFlags_Borders)) {
+                if (ImGui::BeginChild("LIM_Box", ImVec2(0, 75.f),  ImGuiChildFlags_Borders)) {
 
                     ImGui::BeginGroup();
                     ImGui::SetNextItemWidth(150);

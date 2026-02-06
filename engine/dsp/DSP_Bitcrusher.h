@@ -25,7 +25,7 @@ namespace DSP {
 
     struct BitcrusherSettings {
         float bits;        // 1.0 to 16.0 (e.g., 8.0 for 8-bit sound)
-        float sampleRate;  // 1000.0 to 44100.0 (e.g., 8000.0 for lo-fi)
+        float sampleRate;  // 1000.0 to SAMPLE_RATE (e.g., 8000.0 for lo-fi)
         float wet;         // 0.0 to 1.0
 
         static const uint8_t CURRENT_VERSION = 1;
@@ -110,7 +110,7 @@ namespace DSP {
             if (!isEnabled()) return;
             if (mSettings.wet <= 0.001f) return;
 
-            float samplesToHold = 44100.0f / std::max(1.0f, mSettings.sampleRate);
+            float samplesToHold = getSampleRateF() / std::max(1.0f, mSettings.sampleRate);
             float levels = std::pow(2.0f, std::clamp(mSettings.bits, 1.0f, 16.0f));
 
             for (int i = 0; i < numSamples; i++) {
@@ -201,7 +201,7 @@ namespace DSP {
 
                     // Control Sliders
                     changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
-                    changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, 44100.0f, "%.0f Hz");
+                    changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, getSampleRateF(), "%.0f Hz");
                     changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
 
                     // Engine Update

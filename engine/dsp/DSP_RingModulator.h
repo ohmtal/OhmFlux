@@ -54,7 +54,7 @@ class RingModulator : public DSP::Effect {
 private:
     RingModSettings mSettings;
     float mPhaseL = 0.0f; // Oscillator phase for left channel
-    float mSampleRate = 44100.0f; // Assumed fixed SR, needs updating in prepareToPlay
+    float mSampleRate = getSampleRateF(); // Assumed fixed SR, needs updating in prepareToPlay
 
 public:
     RingModulator(bool switchOn = false) :
@@ -71,15 +71,10 @@ public:
     void setSettings(const RingModSettings& s) { mSettings = s; }
     RingModSettings getSettings() const { return mSettings; }
 
-    // void prepareToPlay(float sampleRate = 44100.f) {
-    //     mSampleRate = sampleRate;
-    //     reset();
-    // }
-
     virtual void reset() override {
 
         mPhaseL = 0.0f;
-        mSampleRate = 44100.0f;
+        mSampleRate = getSampleRateF();
 
     }
 
@@ -147,6 +142,37 @@ public:
         ImGui::EndChild();
         ImGui::PopID();
     }
+
+    virtual void renderUI() override {
+        ImGui::PushID("RingMod_Effect_Row");
+
+            DSP::RingModSettings currentSettings = this->getSettings();
+            bool changed = false;
+
+            bool isEnabled = this->isEnabled();
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) {
+                this->setEnabled(isEnabled);
+            }
+            if (isEnabled)
+            {
+                if (ImGui::BeginChild("RINGMOD_BOX", ImVec2(-FLT_MIN, 65.f),ImGuiChildFlags_Borders)) {
+
+                    ImGui::BeginGroup();
+                    changed |= ImFlux::FaderHWithText("Frequency", &currentSettings.frequency, 200.0f, 2000.0f, "5.2f Hz");
+                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f wet");
+                    ImGui::EndGroup();
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 65.f);
+                    if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)))) {
+                        this->reset();
+                    }
+
+                    if (changed) this->setSettings(currentSettings);
+                }
+                ImGui::EndChild();
+            } //enabled
+        ImGui::PopID();
+    }
+
 #endif
 }; //CLASS
 }; //namespace

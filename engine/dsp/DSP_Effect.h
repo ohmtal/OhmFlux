@@ -16,6 +16,11 @@
 
 namespace DSP {
 
+    inline static float SAMPLE_RATE = 44100.f; // global setting for SampleRate
+    inline int getSampleRateI()  { return static_cast<int>(SAMPLE_RATE); }
+    inline float getSampleRateF() { return SAMPLE_RATE; }
+
+
     enum class EffectType : uint32_t {
         NONE               = 0,
         Bitcrusher         = 1,

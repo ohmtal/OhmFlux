@@ -2,28 +2,28 @@
 // ohmFlux FluxEditor
 //-----------------------------------------------------------------------------
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
-#include "fluxEditorMain.h"
+#include "appMain.h"
 //------------------------------------------------------------------------------
 // Main
 //------------------------------------------------------------------------------
 
-FluxEditorMain* g_FluxEditor = nullptr;
+AppMain* gAppMain = nullptr;
 
-FluxEditorMain* getGame() {
-    return g_FluxEditor;
+AppMain* getGame() {
+    return gAppMain;
 }
-FluxEditorMain* getMain() {
-    return g_FluxEditor;
+AppMain* getMain() {
+    return gAppMain;
 }
 
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    FluxEditorMain* game = new FluxEditorMain();
-    game->mSettings.Company = "Ohmflux";
-    game->mSettings.Caption = "Flux Editor";
-    game->mSettings.enableLogFile = true;
-    game->mSettings.WindowMaximized = true;
+    AppMain* app = new AppMain();
+    app->mSettings.Company = "Ohmtal";
+    app->mSettings.Caption = "Ohmtal Sound Studio";
+    app->mSettings.enableLogFile = true;
+    app->mSettings.WindowMaximized = true;
     // game->mSettings.ScreenWidth  = 1920;
     // game->mSettings.ScreenHeight = 1080;
     // game->mSettings.IconFilename = "assets/particles/Skull2.bmp";
@@ -32,12 +32,12 @@ int main(int argc, char* argv[])
     // game->mSettings.cursorHotSpotY = 10;
 
 
-    g_FluxEditor = game;
+    gAppMain = app;
 
 
 
-    game->Execute();
-    SAFE_DELETE(game);
+    app->Execute();
+    SAFE_DELETE(app);
     return 0;
 }
 

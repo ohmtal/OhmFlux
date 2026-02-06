@@ -76,7 +76,7 @@ private:
     uint32_t mPosR = 0;
     DelaySettings mSettings;
 
-    float mSampleRate = 44100.f;
+    float mSampleRate = getSampleRateF();
     uint32_t mMaxBufSize;
 
     float mSmoothedDelaySamples = 0.f;
@@ -87,7 +87,7 @@ public:
     Effect(switchOn)
     {
         // Allocate 1 second of buffer for 44.1kHz as float
-        mSampleRate = 44100.f;
+        mSampleRate = getSampleRateF();
         mMaxBufSize = static_cast<uint32_t>(mSampleRate * 2.f); //2 sec
 
         mBufL.assign(mMaxBufSize, 0.0f);
@@ -279,7 +279,7 @@ public:
             // ImFlux::MiniKnobF(label, &value, min_v, max_v);
             changed |= ImFlux::MiniKnobF("Time", &currentSettings.time, 10.0f, 2000.0f); ImGui::SameLine();
             changed |= ImFlux::MiniKnobF("Feedback", &currentSettings.feedback, 0.1f, 0.95f); ImGui::SameLine();
-            changed |= ImFlux::MiniKnobF("Wet", &currentSettings.wet, 0.01f, 1.0f); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.01f, 1.0f); ImGui::SameLine();
 
             // Engine Update
             if (changed) {
@@ -347,7 +347,7 @@ public:
                     // Control Sliders
                     changed |= ImFlux::FaderHWithText("Time", &currentSettings.time, 10.0f, 2000.0f, "%.1f ms");
                     changed |= ImFlux::FaderHWithText("Feedback", &currentSettings.feedback, 0.1f, 0.95f, "%.2f");
-                    changed |= ImFlux::FaderHWithText("Wet", &currentSettings.wet, 0.01f, 1.0f, "%.2f");
+                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.01f, 1.0f, "%.2f wet");
 
                     // Engine Update
                     if (changed) {

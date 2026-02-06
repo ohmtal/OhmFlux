@@ -2,7 +2,7 @@
 
 # Configuration
 # --------------
-DEMO_DIRS := FishTankDemo TickTacToe TestBed LuaTest Amana ImguiTest FluxEditor HTSequencer
+DEMO_DIRS := FishTankDemo TestBed LuaTest Amana SoundStudio OhmFluxTracker
 
 BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web

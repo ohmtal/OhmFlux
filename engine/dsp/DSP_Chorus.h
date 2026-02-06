@@ -94,8 +94,8 @@ namespace DSP {
 
         int mWritePos = 0;
         float mLfoPhase = 0.0f;
-        const float mSampleRate = 44100.0f;
-        const int mMaxBufferSize = 4410; // 100ms at 44.1kHz
+        const float mSampleRate = getSampleRateF();
+        const int mMaxBufferSize = static_cast<int>(mSampleRate / 10); // 100ms at 44.1kHz
 
         ChorusSettings mSettings;
 

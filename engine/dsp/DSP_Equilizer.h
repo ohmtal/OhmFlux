@@ -79,7 +79,7 @@ namespace DSP {
 
         void calculateCoefficients() {
             // Standard Audio EQ Cookbook formula for a Peaking EQ
-            float sampleRate = 44100.0f;
+            float sampleRate = getSampleRateF();
             float A = pow(10.0f, mSettings.gainDb / 40.0f);
             float omega = 2.0f * M_PI * mSettings.frequency / sampleRate;
             float sn = sin(omega);

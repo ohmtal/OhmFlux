@@ -91,7 +91,7 @@ namespace DSP {
         BiquadCoeffs mCoeffs[NUM_BANDS];
         FilterState mStateL[NUM_BANDS];
         FilterState mStateR[NUM_BANDS];
-        float mSampleRate = 44100.0f;
+        float mSampleRate = getSampleRateF();
 
         void calculateBand(int band) {
             float A = pow(10.0f, mSettings.gains[band] / 40.0f);
@@ -114,7 +114,7 @@ namespace DSP {
         }
 
     public:
-        Equalizer9Band(bool switchOn = false, float sampleRate = 44100.0f)
+        Equalizer9Band(bool switchOn = false, float sampleRate = DSP::SAMPLE_RATE)
         : Effect(switchOn)
         , mSampleRate(sampleRate)
         {

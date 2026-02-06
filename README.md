@@ -24,7 +24,6 @@ A lightweight, high-performance,  modern C++ game engine With ongoing optimizati
 
 ## 🕹 Included Demos
 - **FishTankDemo**: A stress test for high-entity counts. Press `Space` to start; reach the fish target and press `Space` again to finish.
-- **TicTacToeDemo**: A classic logic game implementation demonstrating the engine's UI and grid capabilities.
 - **TestBed**: A sandbox environment for testing new engine features and particle presets.
 
 ---

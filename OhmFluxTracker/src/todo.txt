@@ -12,7 +12,7 @@ TODO Version 1 (i do not use 0 this time):
   4.) renderUIWide
 
   [X] BitCrusher => void renderUI(bool withBackGround = true)
-  [~] Chorus
+  [X] Chorus
   [ ] Equilizer9Band
   [X] Limiter
   [ ] Reverb
@@ -20,6 +20,7 @@ TODO Version 1 (i do not use 0 this time):
   [ ] Warmth
   [ ] VisualEffect ?!
   [X] Delay
+  [X] RingModulator
 
 
 [ ] Bank editor

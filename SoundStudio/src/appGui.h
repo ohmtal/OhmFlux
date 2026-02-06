@@ -2,11 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// TODO: to options:
-//              FluxEditorOplController => mSyncInstrumentChannel
-//              fileDialog => mDefaultPath
-// 2026-01-10
-// * save your own settings file !! and ImGui ==> SaveIniSettingsToMemory
+// App Gui (Main Gui)
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -16,24 +12,24 @@
 #include <core/fluxRenderObject.h>
 #include <gui/fluxGuiGlue.h>
 
-#include "fluxSfxEditorStereo.h"
-#include "fluxSfxEditor.h"
+#include "fluxSfxStereoModule.h"
+#include "fluxSfxModule.h"
 #include <gui/ImConsole.h>
 
 
-class EditorGui: public FluxBaseObject
+class AppGui: public FluxBaseObject
 {
 public:
     // dont forget to add a parameter 
     // a.) mDefaultEditorSettings
     // b.) on the bottom to the json macro!!! 
-    struct EditorSettings {
+    struct AppSettings {
         bool mShowDemo;
-        bool mShowSFXEditor;
+        bool mShowSFXModule;
         bool mEditorGuiInitialized;
         bool mShowImFluxWidgets;
         bool mShowFileBrowser;
-        bool mShowSFXEditorStereo;
+        bool mShowSFXStereoModule;
         bool mShowConsole;
     };
 
@@ -42,20 +38,20 @@ public:
 private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
-    FluxSfxEditorStereo* mSfxEditorStereo = nullptr;
-    FluxSfxEditor* mSfxEditor = nullptr;
+    FluxSfxStereoModule* mSfxStereoModule = nullptr;
+    FluxSfxModule* mSfxModule = nullptr;
 
     void OnConsoleCommand(ImConsole* console, const char* cmdline);
 
 
-    EditorSettings mEditorSettings;
-    EditorSettings mDefaultEditorSettings = {
+    AppSettings mAppSettings;
+    AppSettings mDefaultAppSettings = {
         .mShowDemo = false,
-        .mShowSFXEditor = true,
+        .mShowSFXModule = true,
         .mEditorGuiInitialized = false,
         .mShowImFluxWidgets = false,
         .mShowFileBrowser = false,
-        .mShowSFXEditorStereo = true,
+        .mShowSFXStereoModule = true,
         .mShowConsole = false
     };
 
@@ -74,10 +70,10 @@ public:
 }; //class
 
 // macro for JSON support
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(EditorGui::EditorSettings,
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
     mShowDemo,
-    mShowSFXEditorStereo,
-    mShowSFXEditor,
+    mShowSFXStereoModule,
+    mShowSFXModule,
     mEditorGuiInitialized,
     mShowImFluxWidgets,
     mShowFileBrowser,

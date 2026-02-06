@@ -116,7 +116,7 @@ private:
         }
 
         // Standard Alpha calculation for 1-pole LPF
-        float sampleRate = 44100.0f;
+        float sampleRate = getSampleRateF();
         float dt = 1.0f / sampleRate;
         float rc = 1.0f / (2.0f * M_PI * cutoff);
         mAlpha = (cutoff >= 20000.0f) ? 1.0f : (dt / (rc + dt));

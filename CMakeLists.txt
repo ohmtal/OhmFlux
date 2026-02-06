@@ -56,11 +56,10 @@ set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/json/single_include")
 # PROJECTS SECTION >>>>
 # =============================================================================
 set(DEMO_DIR    "${CMAKE_CURRENT_LIST_DIR}/FishTankDemo")
-set(TTT_DIR     "${CMAKE_CURRENT_LIST_DIR}/TickTacToe")
 set(TESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}/TestBed")
 set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
-set(EDITOR_DIR "${CMAKE_CURRENT_LIST_DIR}/FluxEditor")
+set(SOUNDSTUDIO_DIR "${CMAKE_CURRENT_LIST_DIR}/SoundStudio")
 set(FLUXTRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmFluxTracker")
 
 # =============================================================================
@@ -359,12 +358,6 @@ if(BUILD_FISHTANK)
     configure_demo_target(FishTankDemo ${DEMO_DIR} "${DEMO_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
-# --- 2. TicTacToe ---
-option(BUILD_TICTACTOE "Build TicTacToe demo" OFF)
-if(BUILD_TICTACTOE)
-    set(GAME_SOURCES "${TTT_DIR}/src/main.cpp")
-    configure_demo_target(TicTacToeDemo ${TTT_DIR} "${TTT_DIR}/assets@assets" "${GAME_SOURCES}")
-endif()
 
 # --- TestBed ---
 option(BUILD_TESTBED "Build TestBed application" ON)
@@ -426,14 +419,14 @@ endif()
 
 
 
-# --- Editor ---
-option(BUILD_EDITOR "Build Editor application" ON)
-if(BUILD_EDITOR)
-    set(GAME_SOURCES
-        "${EDITOR_DIR}/src/main.cpp"
-        "${EDITOR_DIR}/src/editorGui.cpp"
+# --- SOUNDSTUDIO ---
+option(BUILD_SOUNDSTUDIO "Build SoundStudio application" ON)
+if(BUILD_SOUNDSTUDIO)
+    set(APP_SOURCES
+        "${SOUNDSTUDIO_DIR}/src/main.cpp"
+        "${SOUNDSTUDIO_DIR}/src/appGui.cpp"
     )
-    configure_demo_target(FluxEditor ${EDITOR_DIR} "${EDITOR_DIR}/assets@assets" "${GAME_SOURCES}")
+    configure_demo_target(SoundStudio ${SOUNDSTUDIO_DIR} "${SOUNDSTUDIO_DIR}/assets@assets" "${APP_SOURCES}")
 endif()
 
 

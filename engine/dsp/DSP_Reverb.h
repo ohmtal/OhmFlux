@@ -80,8 +80,8 @@ public:
     Effect(switchOn)
     {
         // Allocate 1 second of buffer for 44.1kHz as float
-        mBufL.assign(44100, 0.0f);
-        mBufR.assign(44100, 0.0f);
+        mBufL.assign(getSampleRateI(), 0.0f);
+        mBufR.assign(getSampleRateI(), 0.0f);
         mSettings = ROOM_REVERB;
     }
 
@@ -91,7 +91,7 @@ public:
 
     void setSettings(const ReverbSettings& s) {
         mSettings = s;
-        // Ensure size settings don't exceed the allocated 44100
+        // Ensure size settings don't exceed the allocated DSP::SAMPLE_RATE
         // and reset positions to avoid clicks
         std::fill(mBufL.begin(), mBufL.end(), 0.0f);
         std::fill(mBufR.begin(), mBufR.end(), 0.0f);
