@@ -177,7 +177,7 @@ public:
     }
     virtual std::string getName() const override { return "SOUND RENDERING";}
     #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.7f, 0.5f, 1.0f);}
+    virtual ImVec4 getColor() const  override { return ImVec4(0.62f, 0.42f, 0.5f, 1.0f);}
 
     virtual void renderUIWide() override {
         ImGui::PushID("RenderSoundCardEmu_Effect_Row_WIDE");

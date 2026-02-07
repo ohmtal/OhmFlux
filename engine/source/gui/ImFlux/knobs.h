@@ -118,6 +118,88 @@ namespace ImFlux {
         return value_changed;
     }
 
+    // ~~~~~~~~~~~~~~~  LEDMiniKnob
+
+    inline bool LEDMiniKnob(const char* label, float* v, float v_min, float v_max, KnobSettings ks = DARK_KNOB) {
+        ImGui::PushID(label);
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) { ImGui::PopID(); return false; }
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 size = ImVec2(ks.radius * 2, ks.radius * 2);
+        ImRect bb(pos, pos + size);
+
+        ImGui::InvisibleButton(label, size);
+
+        bool value_changed = false;
+        bool is_active = ImGui::IsItemActive();
+        bool is_hovered = ImGui::IsItemHovered();
+        ImGuiIO& io = ImGui::GetIO();
+
+        // Interaction logic
+        if (is_hovered && io.MouseWheel != 0) {
+            float wheel_speed = (v_max - v_min) * 0.05f * (io.KeyShift ? 0.1f : 1.0f);
+            *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
+            value_changed = true;
+        }
+
+        if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+            float range = v_max - v_min;
+            float current_speed = ks.speed * range * (io.KeyShift ? 0.1f : 1.0f);
+            *v = std::clamp(*v + (-io.MouseDelta.y * current_speed), v_min, v_max);
+            value_changed = true;
+        }
+
+        // --- DRAWING ---
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 center = ImVec2(pos.x + ks.radius, pos.y + ks.radius);
+        float fraction = (*v - v_min) / (v_max - v_min);
+
+        // 1. Knob Body (from MiniKnobF)
+        dl->AddCircleFilled(center, ks.radius * 0.75f, ks.bg_outer);
+        dl->AddCircleFilled(center, ks.radius * 0.70f, ks.bg_inner);
+        dl->AddCircleFilled(center - ImVec2(0, ks.radius * 0.2f), ks.radius * 0.4f, ks.glare);
+
+        // 2. LED Ring (Replacing the Arc)
+        const int num_leds = 12;
+        const float start_angle = 0.75f * IM_PI;
+        const float end_angle   = 2.25f * IM_PI;
+        const float led_radius  = ks.radius - 2.5f; // Positioned near the edge
+
+        for (int i = 0; i < num_leds; i++) {
+            // Calculate position along the 270-degree arc
+            float t = (float)i / (float)(num_leds - 1);
+            float ang = start_angle + t * (end_angle - start_angle);
+
+            ImVec2 led_pos = center + ImVec2(cosf(ang) * led_radius, sinf(ang) * led_radius);
+
+            // Determine LED color
+            ImU32 led_col;
+            if (t <= fraction && fraction > 0.0f) {
+                led_col = is_active ? ks.active : (is_hovered ? ModifyRGB(ks.active, 1.3f) : ks.active);
+            } else {
+                led_col = ks.arc_bg; // Dim color for "off" LEDs
+            }
+
+            // Draw the LED (with a slight glow if active)
+            dl->AddCircleFilled(led_pos, 2.0f, led_col);
+            if (t <= fraction) {
+                dl->AddCircle(led_pos, 2.5f, ModifyRGB(led_col, 0.6f), 12, 1.0f); // Subtle outer glow
+            }
+        }
+
+        // 3. Indicator Needle (Mini version)
+        float needle_ang = start_angle + fraction * (end_angle - start_angle);
+        ImVec2 n_start = center + ImVec2(cosf(needle_ang) * (ks.radius * 0.35f), sinf(needle_ang) * (ks.radius * 0.35f));
+        ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (ks.radius * 0.60f), sinf(needle_ang) * (ks.radius * 0.60f));
+        dl->AddLine(n_start, n_end, ks.needle, 1.5f);
+
+        if (is_hovered) ImGui::SetTooltip("%s: %.2f", label, *v);
+
+        ImGui::PopID();
+        return value_changed;
+    }
+
 
     // --------------- LEDRingKnob
     inline bool LEDRingKnob(const char* label, float* v, float v_min, float v_max, float radius = 18.f, float speed = 0.01f) {
@@ -358,6 +440,7 @@ namespace ImFlux {
 
         return value_changed;
     }
+
 
 
 }//namespace

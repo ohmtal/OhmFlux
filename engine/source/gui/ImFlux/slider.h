@@ -88,6 +88,17 @@ namespace ImFlux {
         bool is_hovered = ImGui::IsItemHovered();
         bool changed = false;
 
+
+        // ScrollWheel
+        if (is_hovered && io.MouseWheel != 0) {
+            float wheel_speed = (v_max - v_min) * 0.05f; // 5% of range per notch
+            if (io.KeyShift) wheel_speed *= 0.1f;        // 0.5% if Shift is held
+
+            *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
+            is_active = true;
+        }
+
+
         if (is_active && io.MouseDown[0]) {
             float mouse_y = io.MousePos.y - pos.y;
             float fraction = 1.0f - std::clamp(mouse_y / size.y, 0.0f, 1.0f);
@@ -162,8 +173,6 @@ namespace ImFlux {
             *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
             is_active = true;
         }
-
-
 
 
         if (is_active && io.MouseDown[0]) {

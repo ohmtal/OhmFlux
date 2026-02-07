@@ -117,7 +117,7 @@ namespace DSP {
         virtual std::string getName() const override { return "VISUAL ANALYSER";}
 #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.93f, 0.8f, 0.93f, 1.0f);}
-        // i dont want a render UI here !
+        // i dont want to render UI here !
         virtual void renderUIWide() override {};
         virtual void renderUI() override {};
 

@@ -171,62 +171,13 @@ public:
         }
     }
 
-    // virtual void process(float* buffer, int numSamples) override {
-    //     if (!isEnabled()) return;
-    //
-    //     for (int i = 0; i < numSamples; i += 2) {
-    //         float dryL = buffer[i];
-    //         float dryR = buffer[i+1];
-    //
-    //         // 1. Write to ring buffer
-    //         mBufL[mWritePos] = dryL;
-    //         mBufR[mWritePos] = dryR;
-    //
-    //         // 2. Dual-Tap Pitch Shifting Logic (to prevent clicks)
-    //         // We read at a different speed (mSettings.pitch)
-    //         auto processChannel = [&](std::vector<float>& buf, float& readPos) {
-    //             int p1 = (int)readPos;
-    //             int p2 = (p1 + mBufSize / 2) % mBufSize;
-    //
-    //             // Triangular crossfade window
-    //             float fade = abs((readPos / (float)mBufSize) * 2.0f - 1.0f);
-    //
-    //             float sample = buf[p1] * fade + buf[p2] * (1.0f - fade);
-    //
-    //             readPos += mSettings.pitch;
-    //             while (readPos >= mBufSize) readPos -= mBufSize;
-    //             return sample;
-    //         };
-    //
-    //         float outL = processChannel(mBufL, mReadPosL);
-    //         float outR = processChannel(mBufR, mReadPosR);
-    //
-    //         if (mSettings.grit > 0.01f) {
-    //             float steps = powf(2.0f, 16.0f * (1.0f - mSettings.grit * 0.7f));
-    //             if (steps < 2.0f) steps = 2.0f;
-    //
-    //             outL = std::floor(outL * steps) / steps;
-    //             outR = std::floor(outR * steps) / steps;
-    //
-    //             outL *= (1.0f + mSettings.grit * 0.2f);
-    //             outR *= (1.0f + mSettings.grit * 0.2f);
-    //         }
-    //
-    //         // 3. Final Mix
-    //         buffer[i]   = (dryL * (1.0f - mSettings.wet)) + (outL * mSettings.wet);
-    //         buffer[i+1] = (dryR * (1.0f - mSettings.wet)) + (outR * mSettings.wet);
-    //
-    //         mWritePos = (mWritePos + 1) % mBufSize;
-    //     }
-    // }
-
     //--------------------------------------------------------------------------
     #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const override { return ImVec4(0.8f, 0.4f, 0.2f, 1.0f); } // Darth Vader Orange/Red
 
     virtual void renderUIWide() override {
         ImGui::PushID("VoiceMod_Effect_Row_WIDE");
-        if (ImGui::BeginChild("VOICEMOD_BOX", ImVec2(-FLT_MIN, 65.f))) {
+        if (ImGui::BeginChild("VOICEMOD_W_BOX", ImVec2(-FLT_MIN, 65.f))) {
 
             DSP::VoiceSettings currentSettings = this->getSettings();
             int currentIdx = 0; // "Custom"
@@ -244,15 +195,6 @@ public:
             if (!isEnabled) ImGui::BeginDisabled();
 
             ImGui::SameLine();
-
-            // Preset Detection
-            // for (int i = 1; i < DSP::VOICE_PRESETS.size(); ++i) {
-            //     // Approximate check for floats
-            //     if (std::abs(currentSettings.pitch - DSP::VOICE_PRESETS[i].pitch) < 0.01f) {
-            //         currentIdx = i;
-            //         break;
-            //     }
-            // }
             for (int i = 1; i < DSP::VOICE_PRESETS.size(); ++i) {
                 if (currentSettings == DSP::VOICE_PRESETS[i]) {
                     currentIdx = i;
@@ -307,6 +249,75 @@ public:
         ImGui::EndChild();
         ImGui::PopID();
     }
+
+    virtual void renderUI() override {
+        ImGui::PushID("VoiceMod_Effect_Row");
+
+        ImGui::BeginGroup();
+
+        bool isEnabled = this->isEnabled();
+        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+            this->setEnabled(isEnabled);
+        }
+        if (isEnabled)
+        {
+            if (ImGui::BeginChild("VoiceModulator_BOX", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
+                ImGui::BeginGroup();
+                DSP::VoiceSettings currentSettings = this->getSettings();
+                bool changed = false;
+                int currentIdx = 0;
+                for (int i = 1; i < DSP::VOICE_PRESETS.size(); ++i) {
+                    if (currentSettings == DSP::VOICE_PRESETS[i]) {
+                        currentIdx = i;
+                        break;
+                    }
+                }
+                int displayIdx = currentIdx;  //<< keep currentIdx clean
+
+                ImGui::SetNextItemWidth(150);
+                if (ImFlux::ValueStepper("##Preset", &displayIdx, VOICE_PRESET_NAMES,
+                        IM_ARRAYSIZE(VOICE_PRESET_NAMES)))
+                {
+                    if (displayIdx > 0 && displayIdx < DSP::VOICE_PRESETS.size()) {
+                        currentSettings =  DSP::VOICE_PRESETS[displayIdx];
+                        changed = true;
+                    }
+                }
+                ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+                if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                    currentSettings = DSP::VADER_VOICE; //DEFAULT
+                    changed = true;
+                }
+                ImGui::Separator();
+
+                // Pitch conversion for UI: Factor -> Semitones
+                // 1.0 -> 0 semitones, 0.5 -> -12 semitones, 2.0 -> +12 semitones
+                float semitones = log2f(currentSettings.pitch) * 12.0f;
+                if (ImFlux::FaderHWithText("Pitch", &semitones, -12.0f, 12.0f, "%.1f")) {
+                    // Convert back: Semitones -> Factor
+                    currentSettings.pitch = powf(2.0f, semitones / 12.0f);
+                    changed = true;
+                }
+                changed |= ImFlux::FaderHWithText("Grit", &currentSettings.grit, 0.0f, 1.0f , "%.2f");
+                changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.01f, 1.0f, "%.2f wet");
+                // Engine Update
+                if (changed) {
+                    if (isEnabled) {
+                        this->setSettings(currentSettings);
+                    }
+                }
+                ImGui::EndGroup();
+            }
+            ImGui::EndChild();
+        } else {
+            ImGui::Separator();
+        }
+
+        ImGui::EndGroup();
+        ImGui::PopID();
+        ImGui::Spacing(); // Add visual gap before the next effect
+    }
+
     #endif
 }; //CLASS
 }; //namespace

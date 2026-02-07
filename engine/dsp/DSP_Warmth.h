@@ -142,7 +142,7 @@ namespace DSP {
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "ANALOG WARMTH / SATURATION";}
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return  ImVec4(1.0f, 0.6f, 0.4f, 1.0f);}
+        virtual ImVec4 getColor() const  override { return  ImVec4(1.0f, 0.6f, 0.77f, 1.0f);}
         //----------------------------------------------------------------------
         virtual void renderUIWide() override {
             ImGui::PushID("Warmth_Effect_Row_WIDE");

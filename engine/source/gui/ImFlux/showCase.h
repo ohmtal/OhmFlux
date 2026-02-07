@@ -127,6 +127,13 @@ inline void ShowCase_MISC()
     KnobSettings ks = DARK_KNOB;
     ImFlux::MiniKnobF("MiniKnobF Dark", &barFloat, 0.f, 1.f, ks);
     ImGui::SameLine();
+
+    KnobSettings ls = DARK_KNOB;
+    ls.active = IM_COL32(0,255,0,255);
+    ls.radius = 30.f;
+    ImFlux::LEDMiniKnob("LEDMiniKnob Dark", &barFloat, 0.f, 1.f, ls);
+
+    ImGui::SameLine();
     ImFlux::MiniKnobFloat("MiniKnobFloat", &barFloat, 0.f, 1.f); // float radius = 12.f,  float speed = 0.01f) {
     ImGui::SameLine();
     ImFlux::MiniKnobFloat("MiniKnobFloat20", &barFloat, 0.f, 1.f, 20.f); // float radius = 12.f,  float speed = 0.01f) {

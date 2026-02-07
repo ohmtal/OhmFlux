@@ -194,40 +194,6 @@ public:
     }
 
 
-    // virtual void process(float* buffer, int numSamples) override {
-    //     if (!isEnabled() || mSettings.wet <= 0.001f) return;
-    //
-    //     // Calculate delay offset in samples
-    //     int delaySamples = static_cast<int>((mSettings.time / 1000.0f) * mSampleRate);
-    //
-    //     for (int i = 0; i < numSamples; i++) {
-    //         float dry = buffer[i];
-    //         float delayed;
-    //
-    //         if (i % 2 == 0) { // Left Channel
-    //             // Calculate read position relative to current write position
-    //             int readPos = (mPosL - delaySamples + mMaxBufSize) % mMaxBufSize;
-    //             delayed = mBufL[readPos];
-    //
-    //             // Store the dry input + feedback into the current write position
-    //             mBufL[mPosL] = dry + (delayed * mSettings.feedback);
-    //
-    //             // Advance write position
-    //             mPosL = (mPosL + 1) % mMaxBufSize;
-    //         } else { // Right Channel
-    //             int readPos = (mPosR - delaySamples + mMaxBufSize) % mMaxBufSize;
-    //             delayed = mBufR[readPos];
-    //
-    //             mBufR[mPosR] = dry + (delayed * mSettings.feedback);
-    //             mPosR = (mPosR + 1) % mMaxBufSize;
-    //         }
-    //
-    //         // Apply mix to the output buffer
-    //         buffer[i] = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
-    //     }
-    // }
-
-
     virtual std::string getName() const override { return "DELAY";}
 #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const  override { return ImVec4(0.3f, 0.8f, 0.6f, 1.0f);}

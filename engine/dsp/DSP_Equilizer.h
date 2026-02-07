@@ -154,6 +154,9 @@ namespace DSP {
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.2f, 0.2f, 1.0f);}
         // we have not extra gui here it must be added manually since it's a single band !
+        virtual void renderUIWide() override {};
+        virtual void renderUI() override {};
+
         #endif
     }; //Class
 
