@@ -44,7 +44,7 @@ namespace ImFlux {
 
     //--------------------------------------------------------------------------
 
-    inline void ShadowText(const char* label, ImU32 textColor = IM_COL32(200,200,200,255), ImU32 shadowColor = IM_COL32(0, 0, 0, 200)) {
+    inline void ShadowText(const char* label, ImU32 textColor = IM_COL32(200,200,200,255), ImU32 shadowColor = IM_COL32(30, 30, 30, 200)) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return;
 

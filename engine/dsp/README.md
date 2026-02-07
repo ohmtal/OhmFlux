@@ -19,3 +19,4 @@ But it basicly can be used in every Project.
 - Voice Modulator 
 - Warmth a One-Pole Low-Pass Filter
 - Normalizer for export to Wav 
+

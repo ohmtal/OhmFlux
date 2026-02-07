@@ -168,33 +168,34 @@ namespace ImFlux {
 
 
     struct VUMeterState {
-        float peak = 0.0f;
-        float holdTimer = 0.0f; // NEW: Timer for the "freeze" moment
-
         // settings:
-        int ledCount = 30;
-        ImVec2 ledSquare = ImVec2(4.f, 16.f);
-        bool vertical = false;
+        int ledCount = 20;
+        ImVec2 ledSquare = ImVec2(12.f, 2.f);
+        bool vertical = true;
+        float holdTime = 0.4f; //0.8f; in seconds
+
+        // state variables
+        float _peak = 0.0f;
+        float _holdTimer = 0.0f; // NEW: Timer for the "freeze" moment
 
         void update(float current, float deltaTime) {
-            if (current >= peak) {
-                peak = current;
-                holdTimer = 0.8f; //0.8 Stay at the top for 800ms
+            if (current >= _peak) {
+                _peak = current;
+                _holdTimer = holdTime; //0.8 Stay at the top for 800ms
             } else {
-                if (holdTimer > 0.0f) {
-                    holdTimer -= deltaTime; // Just wait
+                if (_holdTimer > 0.0f) {
+                    _holdTimer -= deltaTime; // Just wait
                 } else {
-                    peak -= deltaTime * 0.5f; // Now fall slowly
+                    _peak -= deltaTime * 0.5f; // Now fall slowly
                 }
             }
-            if (peak < 0) peak = 0;
+            if (_peak < 0) _peak = 0;
         }
     };
 
-    constexpr VUMeterState VUMETER_DEFAULT = {0.f, 0.f, 40, {4.f, 16.f}, false};
 
     // 90s Style Vertical Studio Ladder
-    inline void VUMeter90th(float value, VUMeterState& state) {
+    inline void VUMeter90th(float value, VUMeterState& state ) {
         if (value < 0.001f) value = 0.0f;
 
         ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -202,8 +203,8 @@ namespace ImFlux {
         float spacing = 2.0f;
         float dt = ImGui::GetIO().DeltaTime;
 
-        // 1. Update Ballistics
-        state.update(value, dt);
+        //  Update Ballistics if holdttime set
+        if (state.holdTime > 0.01f)  state.update(value, dt);
 
         // 2. Calculate Total Dimensions
         float totalW = state.vertical ? state.ledSquare.x : (state.ledCount * (state.ledSquare.x + spacing));
@@ -213,7 +214,7 @@ namespace ImFlux {
             // Threshold for this LED (0.0 to 1.0)
             float ledThreshold = (float)(i + 1) / (float)state.ledCount;
             bool isLit = (value >= ledThreshold);
-            bool isPeak = (state.peak >= ledThreshold) && !isLit;
+            bool isPeak = (state._peak >= ledThreshold) && !isLit;
 
             // 3. 90s Color Grading
             ImU32 led_col;

@@ -112,11 +112,42 @@ inline void ShowCase_MISC()
     ImFlux::LCDNumber((float)foobit, 3, 0, 24.0f, Color4FIm(cl_Yellow));
 
     ImGui::Separator();
+    float value = foobit / 255.f;
     ImGui::TextDisabled("PeakMeter");
-    ImFlux::PeakMeter( foobit / 255.f);
+    ImFlux::PeakMeter( value);
 
     ImGui::Separator();
-    ImGui::TextDisabled("Knobs");
+    ImGui::TextDisabled("VU Meter");
+    ImFlux::VUMeter70th(ImVec2(160,70),value, "VU");
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    ImFlux::VUMeter80th(value);
+    ImFlux::VUMeter80th(value, 5, ImVec2(30.f, 8.f));
+    ImFlux::VUMeter80th(value, 30, ImVec2(4.f, 8.f));
+    ImFlux::VUMeter80th(value, 100, ImVec2(2.f, 8.f));
+    ImGui::EndGroup();
+    ImGui::SameLine();
+    ImFlux::VUMeter70th(ImVec2(160,70),value, "VU", IM_COL32(200, 200, 200, 255), IM_COL32(5, 5, 5, 5));
+    ImGui::SameLine();
+
+    static VUMeterState myState1;
+    myState1.ledCount = 16;
+    myState1.ledSquare = ImVec2(12.f, 3.f);
+    VUMeter90th(value, myState1);
+
+    ImGui::SameLine();
+
+    static VUMeterState myState2;
+    myState2.holdTime = 0.f;
+    VUMeter90th(value, myState2);
+
+    ImGui::Separator();
+    ImGui::TextDisabled("Text");
+
+    ImFlux::ShadowText("Shadow Text");
+
+    ImGui::Separator();
+    ImGui::TextDisabled("Knobs, with scroll wheel action (hold shift for small changes)");
 
     static float barFloat = 0.5f;
     static int   barInt   = 128;
@@ -138,6 +169,7 @@ inline void ShowCase_MISC()
     ImGui::SameLine();
     ImFlux::MiniKnobFloat("MiniKnobFloat20", &barFloat, 0.f, 1.f, 20.f); // float radius = 12.f,  float speed = 0.01f) {
     ImGui::SameLine();
+    ImFlux::LCDNumber(barFloat, 5, 2, 32.0f, Color4FIm(cl_Lime));
     ImFlux::SeparatorVertical(4.f);
     ImFlux::MiniKnobInt("MiniKnobInt", &barInt, 0,255);
     ImGui::SameLine();

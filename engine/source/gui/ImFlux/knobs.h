@@ -32,6 +32,8 @@ namespace ImFlux {
         ImU32 active       = IM_COL32(0, 255, 200, 255);  // Neon Cyan
         ImU32 arc_bg       = IM_COL32(0, 0, 0, 80);       // Grooved track for the arc
         ImU32 needle       = IM_COL32(255, 255, 255, 255); // Indicator color
+
+        int  numLEDs       = 24; // for LEDKnob
     };
     constexpr KnobSettings DARK_KNOB;
 
@@ -136,7 +138,7 @@ namespace ImFlux {
         bool is_hovered = ImGui::IsItemHovered();
         ImGuiIO& io = ImGui::GetIO();
 
-        // Interaction logic
+        // --- INTERACTION ---
         if (is_hovered && io.MouseWheel != 0) {
             float wheel_speed = (v_max - v_min) * 0.05f * (io.KeyShift ? 0.1f : 1.0f);
             *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
@@ -155,44 +157,48 @@ namespace ImFlux {
         ImVec2 center = ImVec2(pos.x + ks.radius, pos.y + ks.radius);
         float fraction = (*v - v_min) / (v_max - v_min);
 
-        // 1. Knob Body (from MiniKnobF)
-        dl->AddCircleFilled(center, ks.radius * 0.75f, ks.bg_outer);
-        dl->AddCircleFilled(center, ks.radius * 0.70f, ks.bg_inner);
-        dl->AddCircleFilled(center - ImVec2(0, ks.radius * 0.2f), ks.radius * 0.4f, ks.glare);
+        // Outer Border / Housing (Integration of bg_outer)
+        dl->AddCircle(center, ks.radius, ks.bg_inner, 32, 1.5f);
+        // dl->AddCircleFilled(center, ks.radius + 1.f, ks.bg_inner);
+        dl->AddCircleFilled(center, ks.radius, ks.bg_outer);
 
-        // 2. LED Ring (Replacing the Arc)
-        const int num_leds = 12;
+        // Main Knob Body
+        float knob_radius = ks.radius * 0.8f; // 0.65f;
+        dl->AddCircleFilled(center, knob_radius, ks.bg_outer);
+        dl->AddCircleFilled(center, knob_radius - 1.5f, ks.bg_inner);
+        dl->AddCircleFilled(center - ImVec2(0, knob_radius * 0.3f), knob_radius * 0.5f, ks.glare);
+
+        // 3. LED Ring
         const float start_angle = 0.75f * IM_PI;
         const float end_angle   = 2.25f * IM_PI;
-        const float led_radius  = ks.radius - 2.5f; // Positioned near the edge
+        const float led_track_radius = ks.radius - 4.0f;
 
-        for (int i = 0; i < num_leds; i++) {
-            // Calculate position along the 270-degree arc
-            float t = (float)i / (float)(num_leds - 1);
+        for (int i = 0; i < ks.numLEDs; i++) {
+            float t = (float)i / (float)(ks.numLEDs - 1);
             float ang = start_angle + t * (end_angle - start_angle);
+            ImVec2 led_pos = center + ImVec2(cosf(ang) * led_track_radius, sinf(ang) * led_track_radius);
 
-            ImVec2 led_pos = center + ImVec2(cosf(ang) * led_radius, sinf(ang) * led_radius);
-
-            // Determine LED color
             ImU32 led_col;
-            if (t <= fraction && fraction > 0.0f) {
+            bool is_on = (t <= fraction && fraction > 0.0f);
+
+            if (is_on) {
                 led_col = is_active ? ks.active : (is_hovered ? ModifyRGB(ks.active, 1.3f) : ks.active);
+                dl->AddCircleFilled(led_pos, 3.5f, (ModifyRGB(led_col, 0.4f) & IM_COL32_A_MASK) | 0x33000000);
             } else {
-                led_col = ks.arc_bg; // Dim color for "off" LEDs
+                led_col = ks.arc_bg;
             }
 
-            // Draw the LED (with a slight glow if active)
             dl->AddCircleFilled(led_pos, 2.0f, led_col);
-            if (t <= fraction) {
-                dl->AddCircle(led_pos, 2.5f, ModifyRGB(led_col, 0.6f), 12, 1.0f); // Subtle outer glow
-            }
         }
 
-        // 3. Indicator Needle (Mini version)
+        // 4. Indicator Needle (On the knob body)
         float needle_ang = start_angle + fraction * (end_angle - start_angle);
-        ImVec2 n_start = center + ImVec2(cosf(needle_ang) * (ks.radius * 0.35f), sinf(needle_ang) * (ks.radius * 0.35f));
-        ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (ks.radius * 0.60f), sinf(needle_ang) * (ks.radius * 0.60f));
-        dl->AddLine(n_start, n_end, ks.needle, 1.5f);
+        ImVec2 n_start = center + ImVec2(cosf(needle_ang) * (knob_radius * 0.3f), sinf(needle_ang) * (knob_radius * 0.3f));
+        ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (knob_radius - 2.0f), sinf(needle_ang) * (knob_radius - 2.0f));
+        dl->AddLine(n_start, n_end, ks.needle, 2.0f);
+
+        // 5. Bevel Light (Top edge of the housing)
+        dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
 
         if (is_hovered) ImGui::SetTooltip("%s: %.2f", label, *v);
 
