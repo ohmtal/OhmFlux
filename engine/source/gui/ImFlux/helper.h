@@ -12,7 +12,17 @@
 
 namespace ImFlux {
 
-    constexpr ImU32 COL32_NEONCYAN = IM_COL32(0, 255, 200, 255);
+
+
+    // NEON
+    constexpr ImU32 COL32_NEON_CYAN    = IM_COL32(0, 255, 255, 255);
+    constexpr ImU32 COL32_NEON_GREEN   = IM_COL32(57, 255, 20, 255);  //
+    constexpr ImU32 COL32_NEON_PINK    = IM_COL32(255, 0, 255, 255);  //
+    constexpr ImU32 COL32_NEON_YELLOW  = IM_COL32(255, 255, 0, 255);  //
+    constexpr ImU32 COL32_NEON_RED     = IM_COL32(255, 49, 49, 255);
+    constexpr ImU32 COL32_NEON_PURPLE  = IM_COL32(160, 0, 208, 255);  //
+    constexpr ImU32 COL32_NEON_ORANGE  = IM_COL32(255, 173, 0, 255);
+    constexpr ImU32 COL32_NEON_ELECTRIC= IM_COL32(125, 249, 255, 255);
 
     //---------------- GetLabelText extraxt ## stuff
     inline std::string GetLabelText(std::string label) {

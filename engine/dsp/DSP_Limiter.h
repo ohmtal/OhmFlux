@@ -50,11 +50,11 @@ namespace DSP {
     };
 
 
-    constexpr LimiterSettings LIMITER_DEFAULT = { 0.95f,  0.05f,  0.0000005f };
-    constexpr LimiterSettings LIMITER_EIGHTY  = { 0.80f,  0.05f,  0.0000005f };
-    constexpr LimiterSettings LIMITER_FIFTY   = { 0.50f,  0.05f,  0.0000005f };
-    constexpr LimiterSettings LIMITER_LOWVOL  = { 0.25f,  0.05f,  0.0000005f };
-    constexpr LimiterSettings LIMITER_EXTREM  = { 0.05f,  0.50f,  0.0000005f };
+    constexpr LimiterSettings LIMITER_DEFAULT = { 0.95f,  0.05f,  0.000005f };
+    constexpr LimiterSettings LIMITER_EIGHTY  = { 0.80f,  0.05f,  0.000005f };
+    constexpr LimiterSettings LIMITER_FIFTY   = { 0.50f,  0.05f,  0.000005f };
+    constexpr LimiterSettings LIMITER_LOWVOL  = { 0.25f,  0.05f,  0.000005f };
+    constexpr LimiterSettings LIMITER_EXTREM  = { 0.05f,  0.50f,  0.000005f };
 
     constexpr LimiterSettings LIMITER_CUSTOM  = LIMITER_DEFAULT; //<< DUMMY
 
@@ -109,7 +109,8 @@ namespace DSP {
         //----------------------------------------------------------------------
         // fetch current Gain
         // 1.0 = open , 0.5 = -6dB
-        float getGainReduction() const { return mCurrentGain; }
+        float getGain() const { return mCurrentGain; }
+        float getGainReduction() const { return 1.f - mCurrentGain; }
         //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples) override {
             if (!isEnabled()) return;
@@ -199,7 +200,7 @@ namespace DSP {
             changed |= ImFlux::MiniKnobF("Release", &currentSettings.Release, 0.0000005f, 0.0001f); ImGui::SameLine();
 
             ImGui::BeginGroup();
-            float reduction = 1.0f - getGainReduction();
+            float reduction = getGainReduction();
             ImGui::TextDisabled("Reduction: %4.1f%%", reduction * 100.f);
             ImFlux::PeakMeter(reduction,ImVec2(125.f, 8.f));
             ImGui::EndGroup();
@@ -282,7 +283,7 @@ namespace DSP {
                     // }
 
                     ImGui::Separator();
-                    float reduction = 1.0f - getGainReduction();
+                    float reduction = getGainReduction();
                     ImGui::TextDisabled("Reduction: %3.3f", reduction);
                     ImFlux::PeakMeter(reduction,ImVec2(150.f, 7.f));
                     ImGui::EndGroup();

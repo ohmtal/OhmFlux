@@ -158,7 +158,7 @@ public:
                 if (ImGui::BeginChild("RINGMOD_BOX", ImVec2(-FLT_MIN, 65.f),ImGuiChildFlags_Borders)) {
 
                     ImGui::BeginGroup();
-                    changed |= ImFlux::FaderHWithText("Frequency", &currentSettings.frequency, 200.0f, 2000.0f, "5.2f Hz");
+                    changed |= ImFlux::FaderHWithText("Frequency", &currentSettings.frequency, 200.0f, 2000.0f, "%5.2f Hz");
                     changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f wet");
                     ImGui::EndGroup();
                     ImGui::SameLine(ImGui::GetWindowWidth() - 65.f);

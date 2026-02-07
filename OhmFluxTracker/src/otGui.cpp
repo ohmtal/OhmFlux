@@ -112,7 +112,7 @@ void OTGui::ShowFileManager(){
         {
             if (!g_FileDialog.mCancelPressed)
             {
-                if ( g_FileDialog.selectedExt == ".fms3" ) {
+                if ( g_FileDialog.mSaveExt == ".fms3" ) {
                     mCurrentSong.instruments = getMain()->getController()->getSoundBank();
                     if (opl3_bridge_fms3::saveSong(g_FileDialog.selectedFile, mCurrentSong, getMain()->getController()->getDspEffects())) {
                         Log("Song saved to %s.", g_FileDialog.selectedFile.c_str());
@@ -125,7 +125,7 @@ void OTGui::ShowFileManager(){
 
                 }
                 else
-                if ( g_FileDialog.selectedExt == ".fmb3" ) {
+                if ( g_FileDialog.mSaveExt == ".fmb3" ) {
                     if (opl3_bridge_fms3::saveBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank())) {
                         Log("Soundbank saved to %s.", g_FileDialog.selectedFile.c_str());
                     } else {
@@ -133,7 +133,7 @@ void OTGui::ShowFileManager(){
                     }
                 }
                 else
-                if ( g_FileDialog.selectedExt == ".wopl" ) {
+                if ( g_FileDialog.mSaveExt == ".wopl" ) {
                     mCurrentSong.instruments = getMain()->getController()->getSoundBank();
                     if (opl3_bridge_wopl::exportBank(g_FileDialog.selectedFile, getMain()->getController()->getSoundBank() )) {
                         Log("Bank saved to %s.", g_FileDialog.selectedFile.c_str());

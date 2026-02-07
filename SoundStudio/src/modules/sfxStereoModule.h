@@ -44,13 +44,12 @@ private:
         char* filterStrings[3];
     };
 
+    // DSP::RingModulator* mRingMod;
+    // DSP::VoiceModulator* mVoiceMod;
+    // DSP::Delay* mDelay;
+    // DSP::Chorus* mChorus;
     DSP::VisualAnalyzer* mVisualAnalyzer;
-    DSP::RingModulator* mRingMod;
-    DSP::VoiceModulator* mVoiceMod;
-    DSP::Delay* mDelay;
-    DSP::Chorus* mChorus;
     DSP::Limiter* mLimiter;
-    // not DSP::Bitcrusher* mBitCrusher;
 
 public:
 
@@ -68,10 +67,10 @@ public:
 
 
 
-        mVoiceMod = DSP::addEffectToChain<DSP::VoiceModulator>(mSFXGeneratorStereo->getDspEffects(), false);
-        mRingMod  = DSP::addEffectToChain<DSP::RingModulator>(mSFXGeneratorStereo->getDspEffects(), false);
-        mChorus   = DSP::addEffectToChain<DSP::Chorus>(mSFXGeneratorStereo->getDspEffects(), false);
-        mDelay    = DSP::addEffectToChain<DSP::Delay>(mSFXGeneratorStereo->getDspEffects(), false);
+        // mVoiceMod = DSP::addEffectToChain<DSP::VoiceModulator>(mSFXGeneratorStereo->getDspEffects(), false);
+        // mRingMod  = DSP::addEffectToChain<DSP::RingModulator>(mSFXGeneratorStereo->getDspEffects(), false);
+        // mChorus   = DSP::addEffectToChain<DSP::Chorus>(mSFXGeneratorStereo->getDspEffects(), false);
+        // mDelay    = DSP::addEffectToChain<DSP::Delay>(mSFXGeneratorStereo->getDspEffects(), false);
         mVisualAnalyzer = DSP::addEffectToChain<DSP::VisualAnalyzer>(mSFXGeneratorStereo->getDspEffects(), true);
         mLimiter = DSP::addEffectToChain<DSP::Limiter>(mSFXGeneratorStereo->getDspEffects(), true);
 
@@ -196,7 +195,7 @@ public:
 
                 ImGui::BeginGroup();
 
-                ImFlux::ShadowText("Name:", ImFlux::COL32_NEONCYAN);
+                ImFlux::ShadowText("Name:", ImFlux::COL32_NEON_CYAN);
                 ImGui::SameLine();
 
                 ImGui::SetNextItemWidth(240.f);
@@ -219,7 +218,7 @@ public:
                 ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
                 ImGui::BeginGroup();
 
-                ImFlux::ShadowText("WAVE TYPE", ImFlux::COL32_NEONCYAN);
+                ImFlux::ShadowText("WAVE TYPE", ImFlux::COL32_NEON_CYAN);
                 ImGui::Separator();
                 WaveButton("SQUARE",   0); ImGui::SameLine();
                 WaveButton("SAWTOOTH", 1); ImGui::SameLine();
@@ -240,7 +239,7 @@ public:
 
                     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
                     ImGui::BeginGroup();
-                    ImFlux::ShadowText("ENVELOPE", ImFlux::COL32_NEONCYAN);
+                    ImFlux::ShadowText("ENVELOPE", ImFlux::COL32_NEON_CYAN);
                     ImGui::Separator();
                     SFXKnob("ATTACK TIME", lParams.p_env_attack, false); ImGui::SameLine();
                     SFXKnob("SUSTAIN TIME", lParams.p_env_sustain, false); ImGui::SameLine();
@@ -254,20 +253,26 @@ public:
                 if (ImGui::BeginChild("FREQUENCY_VIBRATO_BOX", ImVec2(-FLT_MIN,65.f) )) {
                     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
                     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-                    ImGui::BeginGroup();
 
-                    ImFlux::ShadowText("FREQUENCY / VIBRATO", ImFlux::COL32_NEONCYAN);
+                    ImGui::BeginGroup(/*1*/);
+                    ImFlux::ShadowText("FREQUENCY", ImFlux::COL32_NEON_CYAN);
                     ImGui::Separator();
                     SFXKnob("START FREQUENCY", lParams.p_base_freq, false); ImGui::SameLine();
                     SFXKnob("MIN FREQUENCY", lParams.p_freq_limit, false); ImGui::SameLine();
                     SFXKnob("SLIDE", lParams.p_freq_ramp, true); ImGui::SameLine();
                     SFXKnob("DELTA SLIDE", lParams.p_freq_dramp, true); ImGui::SameLine();
+                    ImGui::EndGroup(/*1*/);
+
                     ImFlux::SeparatorVertical(0.f, 16.f);
+
+                    ImGui::BeginGroup(/*2*/);
+                    ImFlux::ShadowText("VIBRATO", ImFlux::COL32_NEON_CYAN);
+                    ImGui::Dummy(ImVec2(0.f,3.5f));
                     SFXKnob("VIBRATO DEPTH", lParams.p_vib_strength, true); ImGui::SameLine();
                     SFXKnob("VIBRATO SPEED", lParams.p_vib_speed, true); ImGui::SameLine();
                     SFXKnob("VIBRATO DELAY", lParams.p_vib_delay, true); ImGui::SameLine();
+                    ImGui::EndGroup(/*2*/);
 
-                    ImGui::EndGroup();
                 }
                 ImGui::EndChild();
 
@@ -275,7 +280,7 @@ public:
                     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
                     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
                     ImGui::BeginGroup(/*1*/);
-                    ImFlux::ShadowText("ARPEGGIATOR", ImFlux::COL32_NEONCYAN);
+                    ImFlux::ShadowText("ARPEGGIATOR", ImFlux::COL32_NEON_CYAN);
                     ImGui::Separator();
                     SFXKnob("CHANGE AMOUNT", lParams.p_arp_mod, true);ImGui::SameLine();
                     SFXKnob("CHANGE SPEED", lParams.p_arp_speed, true);ImGui::SameLine();
@@ -285,8 +290,8 @@ public:
                     ImFlux::SeparatorVertical(0.f, 16.f);
 
                     ImGui::BeginGroup(/*2*/);
-                    ImFlux::ShadowText("SQUARE DUTY", ImFlux::COL32_NEONCYAN);
-                    ImGui::Dummy(ImVec2(0.f,4.f));
+                    ImFlux::ShadowText("SQUARE DUTY", ImFlux::COL32_NEON_CYAN);
+                    ImGui::Dummy(ImVec2(0.f,3.5f));
                     SFXKnob("SQUARE DUTY", lParams.p_duty, true); ImGui::SameLine();
                     SFXKnob("DUTY SWEEP", lParams.p_duty_ramp, true); ImGui::SameLine();
                     ImGui::EndGroup(/*2*/);
@@ -297,7 +302,7 @@ public:
 
                 // if (ImGui::BeginChild("DUTYCYCLE_BOX", ImVec2(-FLT_MIN,65.f) )) {
                 //     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-                //     ImFlux::ShadowText("SQUARE DUTY", ImFlux::COL32_NEONCYAN);
+                //     ImFlux::ShadowText("SQUARE DUTY", ImFlux::COL32_NEON_CYAN);
                 //     ImGui::Separator();
                 //     SFXKnob("SQUARE DUTY", lParams.p_duty, false); ImGui::SameLine();
                 //     SFXKnob("DUTY SWEEP", lParams.p_duty_ramp, true); ImGui::SameLine();
@@ -308,7 +313,7 @@ public:
                     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
                     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
                     ImGui::BeginGroup(/*1*/);
-                    ImFlux::ShadowText("REPEAT", ImFlux::COL32_NEONCYAN);
+                    ImFlux::ShadowText("REPEAT", ImFlux::COL32_NEON_CYAN);
                     ImGui::Separator();
                     SFXKnob("REPEAT SPEED", lParams.p_repeat_speed, true);
                     ImGui::EndGroup(/*1*/);
@@ -316,7 +321,7 @@ public:
                     ImFlux::SeparatorVertical(0.f, 16.f);
 
                     ImGui::BeginGroup(/*2*/);
-                    ImFlux::ShadowText("PHASER", ImFlux::COL32_NEONCYAN);
+                    ImFlux::ShadowText("PHASER", ImFlux::COL32_NEON_CYAN);
                     ImGui::Dummy(ImVec2(0.f,4.f));
                     SFXKnob("PHASER OFFSET", lParams.p_pha_offset, true); ImGui::SameLine();
                     SFXKnob("PHASER SWEEP", lParams.p_pha_ramp, true);
@@ -330,7 +335,7 @@ public:
                 // if (ImGui::BeginChild("PHASER_BOX", ImVec2(-FLT_MIN,65.f) )) {
                 //
                 //     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-                //     ImFlux::ShadowText("PHASER", ImFlux::COL32_NEONCYAN);
+                //     ImFlux::ShadowText("PHASER", ImFlux::COL32_NEON_CYAN);
                 //     SFXKnob("PHASER OFFSET", lParams.p_pha_offset, true); ImGui::SameLine();
                 //     SFXKnob("PHASER SWEEP", lParams.p_pha_ramp, true);
                 //     ImGui::Separator();
@@ -341,7 +346,7 @@ public:
                     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
                     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
                     ImGui::BeginGroup();
-                    ImFlux::ShadowText("FILTERS", ImFlux::COL32_NEONCYAN);
+                    ImFlux::ShadowText("FILTERS", ImFlux::COL32_NEON_CYAN);
                     ImGui::Separator();
                     SFXKnob("LP FILTER CUTOFF", lParams.p_lpf_freq, false);     ImGui::SameLine();
                     SFXKnob("LP FILTER CUTOFF SWEEP", lParams.p_lpf_ramp, true); ImGui::SameLine();
@@ -356,7 +361,7 @@ public:
                     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
                     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
                     ImGui::BeginGroup();
-                    ImFlux::ShadowText("PANNING", ImFlux::COL32_NEONCYAN);
+                    ImFlux::ShadowText("PANNING", ImFlux::COL32_NEON_CYAN);
                     ImGui::Separator();
                     SFXKnob("PANNING LEFT | RIGHT", lParams.p_pan, true); ImGui::SameLine();
                     SFXKnob("PANNING SWEEP", lParams.p_pan_ramp, true); ImGui::SameLine();
@@ -365,6 +370,37 @@ public:
                 }
                 ImGui::EndChild();
 
+                if (ImGui::BeginChild("PREAMP_BOX", ImVec2(-FLT_MIN,65.f) )) {
+                    ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+                    ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+                    ImGui::BeginGroup(/*1*/);
+                    ImFlux::ShadowText("PREAMP VOLUME", ImFlux::COL32_NEON_CYAN);
+                    ImGui::Separator();
+                    SFXKnob("Volume", lParams.sound_vol, false);
+                    ImFlux::SameLineCentered(12.f);
+                    ImFlux::VUMeter80th(lParams.sound_vol, 20,ImVec2(2.f, 12.f) );
+                    ImGui::EndGroup(/*1*/);
+
+                    ImFlux::SeparatorVertical(0.f, 16.f);
+
+                    ImGui::BeginGroup(/*2*/);
+                    bool changed = false;
+                    DSP::LimiterSettings& currentSettings = mLimiter->getSettings();
+                    float reduction = mLimiter->getGainReduction();
+                    ImFlux::ShadowText("LIMITER", ImFlux::COL32_NEON_CYAN);
+                    ImGui::Dummy(ImVec2(0.f,1.5f));
+                    ImGui::BeginGroup(/*2.2*/);
+                     changed |= ImFlux::MiniKnobF("Threshold", &currentSettings.Threshold, 0.01f, 1.f);
+                     if (changed) mLimiter->setSettings(currentSettings);
+                     ImGui::SameLine();
+                     ImGui::BeginGroup(/*2.1*/);
+                      ImGui::TextDisabled("Reduction: %4.1f%%", reduction * 100.f);
+                      ImFlux::PeakMeter(reduction,ImVec2(125.f, 8.f));
+                     ImGui::EndGroup(/*2.1*/);
+                    ImGui::EndGroup(/*2.2*/);
+                    ImGui::EndGroup(/*2*/);
+                }
+                ImGui::EndChild();
 
 
 
@@ -374,13 +410,11 @@ public:
 
 
             // mBitCrusher->renderUI();
-            mRingMod->renderUI();
-            mRingMod->renderUIWide();
-            mVoiceMod->renderUIWide();
-            mChorus->renderUIWide();
-            mDelay->renderUIWide();
-            mLimiter->renderUIWide();
-
+            // mRingMod->renderUIWide();
+            // mVoiceMod->renderUIWide();
+            // mChorus->renderUIWide();
+            // mDelay->renderUIWide();
+            // mLimiter->renderUIWide();
             // mVisualAnalyzer->renderPeakTest(); //TEST VU's
 
             ImGui::EndChild(); //<<< must be outside the if ...
@@ -403,7 +437,7 @@ public:
             // ImGui::Checkbox("Auto Play", &lAutoPlay);
             ImFlux::LEDCheckBox("AUTO PLAY", &lAutoPlay,ImColor(32, 128, 128));
 
-            ImGui::Separator();
+            // ImGui::Separator();
 
             // ---- Volume ----
             // ImGui::PushItemWidth(-FLT_MIN);
@@ -411,14 +445,14 @@ public:
             // ImGui::PopItemWidth();
 
 //>>>>>>>>>>
-            ImGui::PushItemWidth(-FLT_MIN);
-
-
-            SFXKnob("Volume", lParams.sound_vol, false);
-            ImFlux::SameLineCentered(12.f);
-            ImFlux::VUMeter80th(lParams.sound_vol, 20,ImVec2(2.f, 12.f) );
-
-            ImGui::PopItemWidth();
+            // ImGui::PushItemWidth(-FLT_MIN);
+            //
+            //
+            // SFXKnob("Volume", lParams.sound_vol, false);
+            // ImFlux::SameLineCentered(12.f);
+            // ImFlux::VUMeter80th(lParams.sound_vol, 20,ImVec2(2.f, 12.f) );
+            //
+            // ImGui::PopItemWidth();
 
 //<<<<<<<<<<
 

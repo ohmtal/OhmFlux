@@ -63,7 +63,7 @@ namespace ImFlux {
         ImGui::PushID(label);
         bool changed = false;
         float h = ImGui::GetFrameHeight();
-        ImVec2 btn_sz(h, h);
+        ImVec2 btn_sz(h , h);
 
         if (StepperButton("##left", true, btn_sz)) {
             *current_idx = (*current_idx > 0) ? *current_idx - 1 : items_count - 1;

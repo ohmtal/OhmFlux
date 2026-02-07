@@ -72,6 +72,8 @@ public:
 
     void ShowFileBrowser();
 
+    void ApplyStudioTheme();
+
 
 }; //class
 

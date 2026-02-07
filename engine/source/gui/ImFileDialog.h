@@ -40,6 +40,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 #include "imgui.h"
+#include "ImFlux.h"
 #include <filesystem>
 #include <vector>
 #include <string>
@@ -69,11 +70,41 @@ struct ImFileDialog {
     std::string mSaveExt = "";
     bool mCancelPressed = false;
     bool mInitDone = false;
-    //--------------------------------------------------------------------------
+    // //--------------------------------------------------------------------------
+    // void setFileName(std::string filename)
+    // {
+    //     strncpy(fileInput, filename.c_str(), sizeof(fileInput));
+    // }
     void setFileName(std::string filename)
     {
-        strncpy(fileInput, filename.c_str(), sizeof(fileInput));
+        fs::path p(filename);
+
+        // Check if the provided filename is an absolute path or contains directory separators
+        if (p.is_absolute() || p.has_parent_path()) {
+            if (fs::exists(p.parent_path())) {
+                // Update the browser's current directory
+                currentPath = p.parent_path().string();
+
+                // Extract only the filename for the input field
+                std::string nameOnly = p.filename().string();
+                strncpy(fileInput, nameOnly.c_str(), sizeof(fileInput) - 1);
+                fileInput[sizeof(fileInput) - 1] = '\0'; // Ensure null-termination
+
+                // Update pathInput if you use it as a text field for the path
+                strncpy(pathInput, currentPath.c_str(), sizeof(pathInput) - 1);
+                pathInput[sizeof(pathInput) - 1] = '\0';
+
+                // Trigger a refresh of the file list
+                mDirty = true;
+                return;
+            }
+        }
+
+        // Fallback: If it's just a filename or path doesn't exist, just set the input
+        strncpy(fileInput, filename.c_str(), sizeof(fileInput) - 1);
+        fileInput[sizeof(fileInput) - 1] = '\0';
     }
+
     //--------------------------------------------------------------------------
     void init(std::string path, std::vector<std::string> filters)
     {
@@ -83,12 +114,14 @@ struct ImFileDialog {
         mDefaultFilters = filters;
         mFilters = filters;
         mInitDone = true;
+        reset();
     }
     //--------------------------------------------------------------------------
     void reset() {
         mLabel = "File Browser";
         mSaveMode = false;
         mFilters = mDefaultFilters;
+        mSelectedFilterIdx = -1; // NOTE: ALL - good or bad to set it here
         mSaveExt = "";
         mCancelPressed = false;
         mDirty = true;
@@ -98,58 +131,42 @@ struct ImFileDialog {
     //--------------------------------------------------------------------------
     bool fetchFiles()
     {
-        if (currentPath.empty() || !fs::exists(currentPath) || !fs::is_directory(currentPath)) {
-            Log("FileBrowser: Invalid or inaccessible path: %s", currentPath.c_str());
-            return false;
-        }
+        if (currentPath.empty() || !fs::exists(currentPath)) return false;
+
         std::vector<fs::directory_entry> localEntries;
-
         try {
-            auto options = fs::directory_options::skip_permission_denied;
-
-            for (const auto& entry : fs::directory_iterator(currentPath, options)) {
-                const auto& path = entry.path();
-
-                // Handle directory logic
-                if (entry.is_directory()) {
-                    localEntries.push_back(entry);
-                    continue;
+            for (const auto& entry : fs::directory_iterator(currentPath, fs::directory_options::skip_permission_denied)) {
+                // Apply your extension filters here
+                if (!entry.is_directory()) {
+                    std::string ext = entry.path().extension().string();
+                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                    if (!mFilters.empty() && std::find(mFilters.begin(), mFilters.end(), ext) == mFilters.end()) {
+                        continue;
+                    }
                 }
-                std::string ext = path.extension().string();
-                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-                if (mFilters.empty() || std::find(mFilters.begin(), mFilters.end(), ext) != mFilters.end()) {
-                    localEntries.push_back(entry);
-                }
+                localEntries.push_back(entry);
             }
-            std::sort(localEntries.begin(), localEntries.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
-                bool a_is_dir = a.is_directory();
-                bool b_is_dir = b.is_directory();
-
-                if (a_is_dir != b_is_dir) {
-                    return a_is_dir; // Directories first
-                }
-                std::string aName = a.path().filename().string();
-                std::string bName = b.path().filename().string();
-                return std::lexicographical_compare(
-                    aName.begin(), aName.end(),
-                                                    bName.begin(), bName.end(),
-                                                    [](char c1, char c2) { return tolower(c1) < tolower(c2); }
-                );
-            });
             mEntries.swap(localEntries);
-        } catch (const fs::filesystem_error& e) {
-            Log("FileBrowser OS Error: %s", e.what());
-            return false;
-        } catch (const std::exception& e) {
-            Log("FileBrowser Generic Error: %s", e.what());
-            return false;
-        } catch (...) {
-            Log("FileBrowser Critical: Unknown permission or memory fault.");
-            return false;
-        }
+        } catch (...) { return false; }
 
         return true;
+    }
+
+
+    //--------------------------------------------------------------------------
+    void cdDotDot() {
+        fs::path p(currentPath);
+
+        // Remove trailing slash if it exists (except for root like "C:\" or "/")
+        if (p.has_relative_path()) {
+            if (currentPath.back() == '/' || currentPath.back() == '\\') {
+                currentPath.pop_back();
+                p = fs::path(currentPath);
+            }
+        }
+
+        currentPath = p.parent_path().string();
+        mDirty = true;
     }
     //--------------------------------------------------------------------------
     void DrawHeader()
@@ -192,6 +209,7 @@ struct ImFileDialog {
         ImGui::SameLine();
         std::string preview = (mSelectedFilterIdx == -1) ? "All" : "";
         if (mSelectedFilterIdx != -1) {
+            // dLog("mSelectedFilterIdx is %d", mSelectedFilterIdx);
             for (const auto& filterStr : mFilters) {
                 preview += "*";   // Add the literal
                 preview += filterStr;   // Add the extension string
@@ -199,7 +217,7 @@ struct ImFileDialog {
             }
         }
 
-        ImGui::PushItemWidth(80.0f);
+        ImGui::PushItemWidth(100.0f);
         if (ImGui::BeginCombo("##FilterCombo", preview.c_str())) {
 
             // Option: All Files
@@ -234,8 +252,7 @@ struct ImFileDialog {
 
 
         if (ImGui::ArrowButton("##Up", ImGuiDir_Up)) {
-            currentPath = fs::path(currentPath).parent_path().string();
-            mDirty = true;
+            cdDotDot();
         }
         ImGui::SameLine();
         strncpy(pathInput, currentPath.c_str(), sizeof(pathInput));
@@ -254,96 +271,246 @@ struct ImFileDialog {
 
     }
     //--------------------------------------------------------------------------
+    // this can be overwritten for your custom icons
+
+    virtual void DrawIcon(fs::directory_entry entry)
+    {
+        const ImVec2 size = { 14.f, 14.f }; // Slightly larger for better visibility
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+
+        ImU32 col = ImGui::GetColorU32(ImGuiCol_Header);
+        ImU32 colDarker = ImGui::GetColorU32(ImGuiCol_Tab);
+
+        if (entry.is_directory()) {
+            float tabHeight = size.y * 0.25f;
+            float tabWidth = size.x * 0.4f;
+            dl->AddRectFilled(
+                pos,
+                { pos.x + tabWidth, pos.y + tabHeight + 1.0f },
+                colDarker, 2.0f, ImDrawFlags_RoundCornersTop
+            );
+
+            dl->AddRectFilled(
+                { pos.x, pos.y + tabHeight },
+                { pos.x + size.x, pos.y + size.y },
+                col, 2.0f
+            );
+
+            ImGui::Dummy(size);
+            ImGui::SameLine();
+        }
+        else {
+            // // Simple file icon (empty rectangle or vertical line)
+            // dl->AddRect(pos, { pos.x + size.x, pos.y + size.y }, ImGui::GetColorU32(ImGuiCol_TextDisabled), 1.0f);
+            // ImGui::Dummy(size);
+            // ImGui::SameLine();
+        }
+    }
+
+    //--------------------------------------------------------------------------
     bool Draw() {
         bool result = false;
-        // -------- Fetch Files and sort ---------------
-        if (mDirty)
-        {
-            mDirty = false;
-            if (!fetchFiles())
-                return false;
-
-        }
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
 
         std::string mWindowIdStr = mLabel+"##FileBrowser";
-        if (ImGui::Begin(mWindowIdStr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+
+        ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
+
+        // if (ImGui::Begin(mWindowIdStr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::Begin(mWindowIdStr.c_str()))
         {
 
             DrawHeader();
             // ------- Add to gui -------------------
-
-
-
             ImVec2 listSize = ImVec2(-FLT_MIN, -FLT_MIN - 25);
 
             // if ( mSaveMode ) listSize.y = 200.f;
             ImGuiWindow* window = ImGui::GetCurrentWindow();
-            if ( window && !window->DockIsActive)
-                listSize.y = 200.f;
+            // if ( window && !window->DockIsActive)
+            //     listSize.y = 200.f;
 
 
-            if (ImGui::BeginChild("FileList", listSize, true)) {
-                if (ImGui::Selectable("..", false, ImGuiSelectableFlags_AllowDoubleClick)) {
-                    if (ImGui::IsMouseDoubleClicked(0)) {
-                        currentPath = fs::path(currentPath).parent_path().string();
-                        mDirty = true;
+            if (ImGui::BeginChild("FileList", listSize)) {
+                // if (ImGui::Selectable("..", false, ImGuiSelectableFlags_AllowDoubleClick)) {
+                //     if (ImGui::IsMouseDoubleClicked(0)) {
+                //         currentPath = fs::path(currentPath).parent_path().string();
+                //         mDirty = true;
+                //     }
+                // }
+                //------------------> NEW TABLE < -----------------------
+
+                // Table flags for professional behavior
+                static ImGuiTableFlags table_flags =
+                ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
+                ImGuiTableFlags_Sortable  | ImGuiTableFlags_ScrollY     | ImGuiTableFlags_RowBg    |
+                ImGuiTableFlags_BordersOuter;
+
+                if (ImGui::BeginTable("FileBrowserTable", 3, table_flags, ImVec2(0, 0)))
+                {
+                    // Column definitions
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+                    ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+                    ImGui::TableHeadersRow();
+
+                    // --- SORTING LOGIC ---
+
+                    if (ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs())
+                    {
+                        // FORCE update if user clicked header OR if directory changed (mDirty)
+                        if (sort_specs->SpecsDirty || mDirty)
+                        {
+                            if (mDirty) fetchFiles(); // Reload files before sorting
+
+                            std::sort(mEntries.begin(), mEntries.end(), [&](const fs::directory_entry& a, const fs::directory_entry& b) {
+                                if (a.is_directory() != b.is_directory()) return a.is_directory(); // Dirs always first
+
+                                const ImGuiTableColumnSortSpecs& spec = sort_specs->Specs[0];
+                                bool res = false;
+                                switch (spec.ColumnIndex) {
+                                    case 0: res = a.path().filename().string() < b.path().filename().string(); break;
+                                    case 1: res = (a.is_regular_file() ? fs::file_size(a) : 0) < (b.is_regular_file() ? fs::file_size(b) : 0); break;
+                                    case 2: res = fs::last_write_time(a) < fs::last_write_time(b); break;
+                                }
+                                return (spec.SortDirection == ImGuiSortDirection_Ascending) ? res : !res;
+                            });
+
+                            sort_specs->SpecsDirty = false;
+                            mDirty = false; // Reset flag after sorting is done
+                        }
                     }
-                }
+                    // --- ROW RENDERING ---
+                    for (const auto& entry : mEntries) {
+                        ImGui::TableNextRow();
 
-                for (const auto& entry : mEntries) {
-                    const auto& path = entry.path();
-                    std::string name = path.filename().string();
+                        const auto& path = entry.path();
+                        std::string name = path.filename().string();
+                        bool isDir = entry.is_directory();
 
-                    if (entry.is_directory()) {
-                        // Double-click on directory to enter it
-                        if (ImGui::Selectable((name + "/").c_str(), false, ImGuiSelectableFlags_AllowDoubleClick)) {
+                        // Column 0: Name and Selection Logic
+                        ImGui::TableSetColumnIndex(0);
+                        bool isSelected = (selectedFile == name);
+
+                        // Use SpanAllColumns so the selection highlight covers the whole row
+                        ImGuiSelectableFlags sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick;
+                        // std::string display_name = isDir ? "[D] " + name : name;
+
+
+                        DrawIcon(entry);
+
+                        if (ImGui::Selectable(name.c_str(), isSelected, sel_flags)) {
                             if (ImGui::IsMouseDoubleClicked(0)) {
-                                currentPath = path.string();
+                                if (isDir) {
+                                    currentPath = path.string();
+                                    mDirty = true; // Trigger directory change
+                                } else {
+                                    if (strlen(fileInput) > 0) {
+
+                                        std::string ext = path.extension().string();
+                                        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                                        selectedFile = (fs::path(currentPath) / fileInput).string();
+                                        selectedExt  = ext;
+                                        result = true;
+                                    }
+                                }
+                            } else {
+                                if (!isDir)
+                                {
+                                    dLog("Selected File: %s", selectedFile.c_str());
+                                    selectedFile = name;
+                                    strncpy(fileInput, name.c_str(), sizeof(fileInput));
+                                }
+                            }
+                        }
+
+                        // Column 1: File Size
+                        ImGui::TableSetColumnIndex(1);
+                        if (isDir) {
+                            ImGui::TextDisabled("--");
+                        } else {
+                            std::error_code ec;
+                            uintmax_t size = fs::file_size(entry, ec);
+                            if (!ec)
+                            {
+                                if (size < 1024) ImGui::Text("%llu B", static_cast<unsigned long long>(size));
+                                else if (size < 1024 * 1024) ImGui::Text("%.1f KB", size / 1024.0f);
+                                else ImGui::Text("%.1f MB", size / (1024.0f * 1024.0f));
+                            } else {
+                                dLog("[warn] filesize: File does not exists any more... ");
                                 mDirty = true;
                             }
                         }
-                    } else {
-                        std::string ext = path.extension().string();
-                        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-                        // Use AllowDoubleClick flag to ensure the click isn't swallowed
-                        bool isSelected = (selectedFile == name);
-                        if (ImGui::Selectable(name.c_str(), isSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
-                            if (ImGui::IsMouseDoubleClicked(0)) {
-                                if (strlen(fileInput) > 0) {
-                                    selectedFile = (fs::path(currentPath) / fileInput).string();
-                                    selectedExt  = ext;
-                                    result = true; // This triggers the 'Save/Open' action
-                                }
+                        // Column 2: Date Modified
+                        ImGui::TableSetColumnIndex(2);
+
+                        if (!mDirty)
+                        {
+                            std::error_code ec;
+                            auto ftime = fs::last_write_time(entry, ec);
+                            if (!ec)
+                            {
+                                auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                                    ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now()
+                                );
+                                std::time_t ctime = std::chrono::system_clock::to_time_t(sctp);
+
+                                // Format time string (e.g., YYYY-MM-DD HH:MM)
+                                char time_str[32];
+                                // std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M", std::localtime(&ctime));
+                                std::strftime(time_str, sizeof(time_str), "%y-%m-%d %H:%M", std::localtime(&ctime));
+                                ImGui::TextDisabled("%s", time_str);
                             } else {
-                                selectedFile = name;
-                                strncpy(fileInput, name.c_str(), sizeof(fileInput));
+                                dLog("[warn] file datetime: File does not exists any more...");
+                                mDirty = true;
                             }
                         }
-
                     }
-                } //for
+                    ImGui::EndTable();
+                }
             }
             ImGui::EndChild();
 
             ImGui::BeginGroup();
-            ImGui::SetNextItemWidth(150);
+
+            // Calculate required width for buttons
+            float button_save_width = ImGui::CalcTextSize(mSaveMode ? "Save" : "Open").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+            float button_cancel_width = ImGui::CalcTextSize("Cancel").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+            float spacing = ImGui::GetStyle().ItemSpacing.x;
+
+            // Calculate remaining width for InputText
+            // GetContentRegionAvail().x is the full width of the window/group
+            float input_width = ImGui::GetContentRegionAvail().x - button_save_width - spacing;
+            if (!window->DockIsActive) {
+                input_width -= (button_cancel_width + spacing);
+            }
+
+            // Draw InputText with dynamic width
+            ImGui::SetNextItemWidth(input_width);
             ImGui::InputText("##File", fileInput, sizeof(fileInput));
 
             ImGui::SameLine();
-            if (ImGui::Button(mSaveMode ? "Save" : "Open")) {
+            if (ImGui::Button(mSaveMode ? "Save" : "Open", ImVec2(button_save_width, 0))) {
                 if (strlen(fileInput) > 0) {
                     selectedFile = (fs::path(currentPath) / fileInput).string();
                     selectedExt = fs::path(selectedFile).extension().string();
+
+
+                    if (mSaveMode) {
+                      if (selectedExt == "" ) {
+                          dLog("Adding extension: %s", mSaveExt.c_str());
+                          selectedFile += mSaveExt;
+                          selectedExt = mSaveExt;
+                      }
+                    }
+
                     result = true;
                 }
             }
-             if (!window->DockIsActive)
-            {
+
+            if (!window->DockIsActive) {
                 ImGui::SameLine();
-                if (ImGui::Button("Cancel")) {
-                    // ImGui::CloseCurrentPopup(); // Or handle state
+                if (ImGui::Button("Cancel", ImVec2(button_cancel_width, 0))) {
                     mCancelPressed = true;
                     result = true;
                 }
@@ -351,7 +518,6 @@ struct ImFileDialog {
             ImGui::EndGroup();
 
         }
-        ImGui::PopStyleVar();
         ImGui::End();
         return result;
     } //Draw
