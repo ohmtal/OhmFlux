@@ -57,6 +57,9 @@ constexpr ReverbSettings ROOM_REVERB      = { 0.40f,  4000,  3950,  0.25f }; // 
 constexpr ReverbSettings HAUNTED_REVERB   = { 0.88f, 22050, 21500,  0.60f }; // Haunted Corridor
 
 
+static const char* REVERB_PRESET_NAMES[] = {
+    "Custom", "Concert Hall", "Massive Cave", "Small Room", "Haunted Corridor" };
+
 static const std::array<DSP::ReverbSettings, 5> REVERB_PRESETS = {
     CUSTOM_REVERB,
     HALL_REVERB,
@@ -142,5 +145,133 @@ public:
             buffer[i] = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
         }
     }
-};
+    virtual std::string getName() const override { return "REVERB / SPACE";}
+#ifdef FLUX_ENGINE
+    virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.9f, 0.5f, 1.0f);}
+
+    virtual void renderUIWide() override {
+        ImGui::PushID("Reverb_Effect_Row_WIDE");
+        if (ImGui::BeginChild("REVERB_W_BOX", ImVec2(-FLT_MIN,65.f) )) {
+            DSP::ReverbSettings currentSettings = this->getSettings();
+            int currentIdx = 0; // Standard: "Custom"
+            bool changed = false;
+
+            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+            ImGui::BeginGroup();
+            bool isEnabled = this->isEnabled();
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+                this->setEnabled(isEnabled);
+            }
+            if (!isEnabled) ImGui::BeginDisabled();
+            ImGui::SameLine();
+            // -------- stepper >>>>
+            for (int i = 1; i < DSP::REVERB_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::REVERB_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
+            ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
+
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, REVERB_PRESET_NAMES
+                , IM_ARRAYSIZE(REVERB_PRESET_NAMES)))
+            {
+                if (displayIdx > 0 && displayIdx < DSP::REVERB_PRESETS.size()) {
+                    currentSettings =  DSP::REVERB_PRESETS[displayIdx];
+                    changed = true;
+                }
+            }
+            ImGui::SameLine();
+            // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                currentSettings = DSP::ROOM_REVERB; //DEFAULT
+                // this->reset();
+                changed = true;
+            }
+
+            ImGui::Separator();
+            // ImFlux::MiniKnobF(label, &value, min_v, max_v);
+            changed |= ImFlux::MiniKnobF("Decay", &currentSettings.decay, 0.1f, 0.98f ); ImGui::SameLine();
+            float sizeL = (float) currentSettings.sizeL;
+            float sizeR = (float) currentSettings.sizeR;
+            changed |= ImFlux::MiniKnobF("Size L", &sizeL, 500, 35000); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Size R", &sizeR, 500, 35000); ImGui::SameLine();
+            currentSettings.sizeL = (int) sizeL;
+            currentSettings.sizeR = (int) sizeR;
+            changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.0f, 1.0f); ImGui::SameLine();
+            // Engine Update
+            if (changed) {
+                if (isEnabled) {
+                    this->setSettings(currentSettings);
+                }
+            }
+
+            if (!isEnabled) ImGui::EndDisabled();
+
+            ImGui::EndGroup();
+        }
+        ImGui::EndChild();
+        ImGui::PopID();
+
+    }
+    //--------------------------------------------------------------------------
+
+    virtual void renderUI() override {
+        ImGui::PushID("Reverb_Effect_Row");
+        ImGui::BeginGroup();
+        bool isEnabled = this->isEnabled();
+        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) this->setEnabled(isEnabled);
+        if (isEnabled)
+        {
+            if (ImGui::BeginChild("Reverb_Box", ImVec2(0, 140), ImGuiChildFlags_Borders)) {
+                DSP::ReverbSettings currentSettings = this->getSettings();
+                bool changed = false;
+                int currentIdx = 0; // Standard: "Custom"
+                for (int i = 1; i < DSP::REVERB_PRESETS.size(); ++i) {
+                    if (currentSettings == DSP::REVERB_PRESETS[i]) {
+                        currentIdx = i;
+                        break;
+                    }
+                }
+                int displayIdx = currentIdx;  //<< keep currentIdx clean
+                ImGui::SetNextItemWidth(150);
+                if (ImFlux::ValueStepper("##Preset", &displayIdx, DSP::REVERB_PRESET_NAMES, IM_ARRAYSIZE(DSP::REVERB_PRESET_NAMES))) {
+                    if (displayIdx > 0 && displayIdx < DSP::REVERB_PRESETS.size()) {
+                        currentSettings =  DSP::REVERB_PRESETS[displayIdx];
+                        changed = true;
+                    }
+                }
+                ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+                if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                    currentSettings = DSP::ROOM_REVERB;
+                    changed = true;
+                }
+                ImGui::Separator();
+                changed |= ImFlux::FaderHWithText("Decay", &currentSettings.decay, 0.1f, 0.98f, "%.2f");
+                float sizeL = (float) currentSettings.sizeL;
+                float sizeR = (float) currentSettings.sizeR;
+                changed |= ImFlux::FaderHWithText("Size L", &sizeL, 500, 35000, "%5.0f smp");
+                changed |= ImFlux::FaderHWithText("Size R", &sizeR, 500, 35000, "%5.0f smp");
+                currentSettings.sizeL = (int) sizeL;
+                currentSettings.sizeR = (int) sizeR;
+                changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
+
+                if (changed) {
+                    if (isEnabled) {
+                        this->setSettings(currentSettings);
+                    }
+                }
+            }
+            ImGui::EndChild();
+        } else {
+            ImGui::Separator();
+        }
+        ImGui::EndGroup();
+        ImGui::PopID();
+        ImGui::Spacing();
+    }
+#endif
+}; //CLASS
 }; //namespace

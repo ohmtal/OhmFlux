@@ -67,37 +67,13 @@ public:
             return false;
 
 
-        // auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
-        // mBitCrusher = bitcrusher.get();
-        // mSFXGeneratorStereo->getDspEffects().push_back(std::move(bitcrusher));
 
-
-        auto specVoice= std::make_unique<DSP::VoiceModulator>(false);
-        mVoiceMod = specVoice.get();
-        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specVoice));
-
-        auto specRing = std::make_unique<DSP::RingModulator>(false);
-        mRingMod = specRing.get();
-        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specRing));
-
-
-        auto specChorus= std::make_unique<DSP::Chorus>(false);
-        mChorus = specChorus.get();
-        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specChorus));
-
-
-        auto specDelay = std::make_unique<DSP::Delay>(false);
-        mDelay = specDelay.get();
-        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specDelay));
-
-
-        auto specAna = std::make_unique<DSP::VisualAnalyzer>(true);
-        mVisualAnalyzer = specAna.get();
-        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specAna));
-
-        auto specLim = std::make_unique<DSP::Limiter>(true);
-        mLimiter = specLim.get();
-        mSFXGeneratorStereo->getDspEffects().push_back(std::move(specLim));
+        mVoiceMod = DSP::addEffectToChain<DSP::VoiceModulator>(mSFXGeneratorStereo->getDspEffects(), false);
+        mRingMod  = DSP::addEffectToChain<DSP::RingModulator>(mSFXGeneratorStereo->getDspEffects(), false);
+        mChorus   = DSP::addEffectToChain<DSP::Chorus>(mSFXGeneratorStereo->getDspEffects(), false);
+        mDelay    = DSP::addEffectToChain<DSP::Delay>(mSFXGeneratorStereo->getDspEffects(), false);
+        mVisualAnalyzer = DSP::addEffectToChain<DSP::VisualAnalyzer>(mSFXGeneratorStereo->getDspEffects(), true);
+        mLimiter = DSP::addEffectToChain<DSP::Limiter>(mSFXGeneratorStereo->getDspEffects(), true);
 
 
 

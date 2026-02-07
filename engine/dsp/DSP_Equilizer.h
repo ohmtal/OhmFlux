@@ -149,5 +149,12 @@ namespace DSP {
                 buffer[i] = out;
             }
         }
-    };
+
+        virtual std::string getName() const override { return "Equalizer Band";}
+        #ifdef FLUX_ENGINE
+        virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.2f, 0.2f, 1.0f);}
+        // we have not extra gui here it must be added manually since it's a single band !
+        #endif
+    }; //Class
+
 }

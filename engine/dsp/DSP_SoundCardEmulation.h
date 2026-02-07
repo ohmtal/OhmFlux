@@ -23,6 +23,10 @@
 
 namespace DSP {
 
+    static const char* SC_RENDER_MODE_NAMES[] = {
+        "Blended (Smooth)", "Modern LPF (Warm)",
+        "Sound Blaster Pro", "Sound Blaster", "AdLib Gold", "Sound Blaster Clone"
+    };
 
     enum class RenderMode : uint32_t { // Explicitly set size to 4 bytes
         BLENDED, MODERN_LPF, SBPRO, SB_ORIGINAL, ADLIB_GOLD, CLONE_CARD
@@ -171,6 +175,71 @@ public:
             buffer[i + 1] = outR;
         }
     }
+    virtual std::string getName() const override { return "SOUND RENDERING";}
+    #ifdef FLUX_ENGINE
+    virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.7f, 0.5f, 1.0f);}
+
+    virtual void renderUIWide() override {
+        ImGui::PushID("RenderSoundCardEmu_Effect_Row_WIDE");
+        if (ImGui::BeginChild("SCEMU_BOX", ImVec2(-FLT_MIN,30.f) )) {
+            auto* lEmu = this;
+            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+            ImGui::BeginGroup();
+            bool isEnabled = this->isEnabled();
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+                this->setEnabled(isEnabled);
+            }
+            if (!isEnabled) ImGui::BeginDisabled();
+
+            // -------- stepper >>>>
+             ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
+            DSP::RenderMode currentMode = lEmu->getMode();
+            int lRenderModeInt  = (int)currentMode;
+            if (ImFlux::ValueStepper("##Preset", &lRenderModeInt, SC_RENDER_MODE_NAMES, IM_ARRAYSIZE(SC_RENDER_MODE_NAMES))) {
+                lEmu->setSettings({ (DSP::RenderMode)lRenderModeInt });
+            }
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                lEmu->setSettings( BLENDED_MODE );
+            }
+
+            if (!isEnabled) ImGui::EndDisabled();
+
+            ImGui::EndGroup();
+        }
+        ImGui::EndChild();
+        ImGui::PopID();
+
+    }
+
+    virtual void renderUI() override {
+        ImGui::PushID("RenderSoundCardEmu_Effect_Row");
+        ImGui::BeginGroup();
+
+        auto* lEmu = this;
+        bool isEnabled = lEmu->isEnabled();
+        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor()))
+            lEmu->setEnabled(isEnabled);
+
+        if (isEnabled) {
+            if (ImGui::BeginChild("SC_Box", ImVec2(0, 35), ImGuiChildFlags_Borders)) {
+                DSP::RenderMode currentMode = lEmu->getMode();
+                int lRenderModeInt  = (int)currentMode;
+                if (ImFlux::ValueStepper("##Preset", &lRenderModeInt, SC_RENDER_MODE_NAMES, IM_ARRAYSIZE(SC_RENDER_MODE_NAMES))) {
+                    lEmu->setSettings({ (DSP::RenderMode)lRenderModeInt });
+                }
+            }
+            ImGui::EndChild();
+        } else {
+            ImGui::Separator();
+        }
+
+        ImGui::EndGroup();
+        ImGui::PopID();
+        ImGui::Spacing(); // Add visual gap before the next effect
+    }
+#endif
 
 
 }; //class

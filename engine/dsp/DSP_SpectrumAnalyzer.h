@@ -61,44 +61,52 @@ namespace DSP {
             }
             return mDisplayMagnitudes;
         }
-    }; //class
+        virtual std::string getName() const override { return "SPECTRUM ANALYSER";}
+        #ifdef FLUX_ENGINE
+        virtual ImVec4 getColor() const  override { return ImVec4(0.73f, 0.8f, 0.73f, 1.0f);}
+        // i dont want a render UI here !
+        virtual void renderUIWide() override {};
+        virtual void renderUI() override {};
 
-#ifdef FLUX_ENGINE
-   inline void DrawSpectrumAnalyzer(SpectrumAnalyzer* analyzer, ImVec2 size) {
-        if (!analyzer || !analyzer->isEnabled()) return;
 
-        const auto& mags = analyzer->getMagnitudes();
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-        ImVec2 p = ImGui::GetCursorScreenPos();
+        inline void DrawSpectrumAnalyzer(ImVec2 size) {
+            SpectrumAnalyzer* analyzer = this;
+            if (!analyzer->isEnabled()) return;
 
-        // Background
-        drawList->AddRectFilled(p, {p.x + size.x, p.y + size.y}, ImColor(15, 15, 15), 2.0f);
+            const auto& mags = analyzer->getMagnitudes();
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
+            ImVec2 p = ImGui::GetCursorScreenPos();
 
-        int numBars = (int)mags.size() / 4; // Group bins for cleaner look
-        float barWidth = size.x / numBars;
-        float gap = 1.0f;
+            // Background
+            drawList->AddRectFilled(p, {p.x + size.x, p.y + size.y}, ImColor(15, 15, 15), 2.0f);
 
-        for (int i = 0; i < numBars; i++) {
-            // Average a few bins for each bar
-            float val = (mags[i*2] + mags[i*2+1]) * 0.5f;
-            float height = std::clamp(val * size.y * 2.0f, 2.0f, size.y);
+            int numBars = (int)mags.size() / 4; // Group bins for cleaner look
+            float barWidth = size.x / numBars;
+            float gap = 1.0f;
 
-            // Color Gradient: Green (bottom) to Red (top)
-            ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(
-                std::clamp(val * 2.0f, 0.0f, 1.0f), // Red increases with height
-                                                                std::clamp(2.0f - val * 2.0f, 0.0f, 1.0f), // Green decreases
-                                                                0.2f, 1.0f
-            ));
+            for (int i = 0; i < numBars; i++) {
+                // Average a few bins for each bar
+                float val = (mags[i*2] + mags[i*2+1]) * 0.5f;
+                float height = std::clamp(val * size.y * 2.0f, 2.0f, size.y);
 
-            ImVec2 barMin = {p.x + (i * barWidth) + gap, p.y + size.y - height};
-            ImVec2 barMax = {p.x + ((i + 1) * barWidth) - gap, p.y + size.y};
+                // Color Gradient: Green (bottom) to Red (top)
+                ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(
+                    std::clamp(val * 2.0f, 0.0f, 1.0f), // Red increases with height
+                                                                  std::clamp(2.0f - val * 2.0f, 0.0f, 1.0f), // Green decreases
+                                                                  0.2f, 1.0f
+                ));
 
-            drawList->AddRectFilled(barMin, barMax, col, 1.0f);
+                ImVec2 barMin = {p.x + (i * barWidth) + gap, p.y + size.y - height};
+                ImVec2 barMax = {p.x + ((i + 1) * barWidth) - gap, p.y + size.y};
+
+                drawList->AddRectFilled(barMin, barMax, col, 1.0f);
+            }
+
+            ImGui::Dummy(size);
         }
+        #endif
 
-        ImGui::Dummy(size);
-    }
-#endif
+    }; //class
 
 
 } //namespace

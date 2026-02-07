@@ -293,10 +293,7 @@ bool OTGui::Initialize()
 
     auto* controller = getMain()->getController();
 
-    auto specAna = std::make_unique<DSP::SpectrumAnalyzer>(false);
-    mSpectrumAnalyzer = specAna.get();
-    controller->getDspEffects().push_back(std::move(specAna));
-
+    mSpectrumAnalyzer = DSP::addEffectToChain<DSP::SpectrumAnalyzer>(controller->getDspEffects(), false);
 
     mSpectrumAnalyzer->setEnabled(SettingsManager().get("DSP_SpectrumAnalyzer_ON", false));
     controller->getDSPBitCrusher()->setEnabled(SettingsManager().get("DSP_BitCrusher_ON", false));

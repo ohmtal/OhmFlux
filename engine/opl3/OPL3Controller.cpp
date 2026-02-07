@@ -167,40 +167,21 @@ bool OPL3Controller::initController()
 
     // Digital post processing
     //------------------------
-    // bitcrusher:
-    auto bitcrusher = std::make_unique<DSP::Bitcrusher>(false);
-    mDSPBitCrusher = bitcrusher.get();
-    mDspEffects.push_back(std::move(bitcrusher));
-    //------------------------
-    // good old times ;)
-    auto soundCardEmu = std::make_unique<DSP::SoundCardEmulation>(false);
-    mSoundCardEmulation = soundCardEmu.get();
-    mDspEffects.push_back(std::move(soundCardEmu));
-    //------------------------
-    // warmth:
-    auto warmth = std::make_unique<DSP::Warmth>(false);
-    mDSPWarmth = warmth.get();
-    mDspEffects.push_back(std::move(warmth));
-    //------------------------
-    // Chrous:
-    auto chorus = std::make_unique<DSP::Chorus>(false);
-    mDSPChorus = chorus.get();
-    mDspEffects.push_back(std::move(chorus));
-    //------------------------
-    // Reverb:
-    auto reverb = std::make_unique<DSP::Reverb>(false);
-    mDSPReverb = reverb.get();
-    mDspEffects.push_back(std::move(reverb));
-    //------------------------
-    // 9Band:
-    auto eq9band = std::make_unique<DSP::Equalizer9Band>(false);
-    mEquilzer9Band = eq9band.get();
-    mDspEffects.push_back(std::move(eq9band));
-    //------------------------
-    //Limiter Last !
-    auto limiter = std::make_unique<DSP::Limiter>(false);
-    mLimiter = limiter.get();
-    mDspEffects.push_back(std::move(limiter));
+    // 1. Bitcrusher
+    mDSPBitCrusher = DSP::addEffectToChain<DSP::Bitcrusher>(mDspEffects, false);
+    // 2. Sound Card Emulation (good old times)
+    mSoundCardEmulation = DSP::addEffectToChain<DSP::SoundCardEmulation>(mDspEffects, false);
+    // 3. Warmth
+    mDSPWarmth = DSP::addEffectToChain<DSP::Warmth>(mDspEffects, false);
+    // 4. Chorus
+    mDSPChorus = DSP::addEffectToChain<DSP::Chorus>(mDspEffects, false);
+    // 5. Reverb
+    mDSPReverb = DSP::addEffectToChain<DSP::Reverb>(mDspEffects, false);
+    // 6. 9-Band Equalizer
+    mEquilzer9Band = DSP::addEffectToChain<DSP::Equalizer9Band>(mDspEffects, false);
+    // 7. Limiter (Always keep this last!)
+    mLimiter = DSP::addEffectToChain<DSP::Limiter>(mDspEffects, false);
+    // --- End of Initialization ---
     // ------------------------
 
     Log("OPL3 Controller initialized..");

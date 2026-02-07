@@ -64,6 +64,11 @@ namespace DSP {
     constexpr Equalizer9BandSettings CUSTOM_EQ = FLAT_EQ; //DUMMY
 
 
+    static const char* EQ9BAND_PRESET_NAMES[] = {
+        "Custom", "Flat", "Bass Boost", "Loudness", "Radio", "Clarity" };
+
+    static const char* EQ9BAND_LABELS[] = { "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k" };
+
     static const std::array<DSP::Equalizer9BandSettings, 6> EQ9BAND_PRESETS = {
         CUSTOM_EQ,
         FLAT_EQ,
@@ -188,6 +193,140 @@ namespace DSP {
                 buffer[i] = sample;
             }
         }
-    };
+        virtual std::string getName() const override { return "9-BAND EQUALIZER";}
+        #ifdef FLUX_ENGINE
+        virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.7f, 1.0f, 1.0f);}
+
+        virtual void renderUIWide() override {
+            ImGui::PushID("EQ9BAND_Effect_Row_WIDE");
+            if (ImGui::BeginChild("EQ9BAND_W_BOX", ImVec2(-FLT_MIN,85.f) )) { //default if 65
+                auto* eq = this;
+                int currentIdx = 0; // Standard: "Custom"
+                DSP::Equalizer9BandSettings currentSettings = eq->getSettings();
+                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+                ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+                ImGui::BeginGroup();
+                bool isEnabled = this->isEnabled();
+                if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+                    this->setEnabled(isEnabled);
+                }
+                if (!isEnabled) ImGui::BeginDisabled();
+                ImGui::SameLine();
+                // -------- stepper >>>>
+                for (int i = 1; i < DSP::EQ9BAND_PRESETS.size(); ++i) {
+                    if (currentSettings == DSP::EQ9BAND_PRESETS[i]) {
+                        currentIdx = i;
+                        break;
+                    }
+                }
+                int displayIdx = currentIdx;  //<< keep currentIdx clean
+                ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
+
+                if (ImFlux::ValueStepper("##Preset", &displayIdx, EQ9BAND_PRESET_NAMES, IM_ARRAYSIZE(EQ9BAND_PRESET_NAMES))) {
+                    if (displayIdx > 0 && displayIdx < DSP::EQ9BAND_PRESETS.size()) {
+                        currentSettings =  DSP::EQ9BAND_PRESETS[displayIdx];
+                        eq->setSettings(currentSettings);
+                    }
+                }
+                ImGui::SameLine();
+                if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                    eq->setSettings(DSP::FLAT_EQ);
+                }
+                ImGui::Separator();
+                const float minGain = -12.0f;
+                const float maxGain = 12.0f;
+                const float sliderWidth = ImFlux::DARK_KNOB.radius * 2.f;
+                for (int i = 0; i < 9; i++) {
+                    ImGui::PushID(i);
+                    float currentGain = eq->getGain(i);
+                    ImGui::BeginGroup();
+                    if (ImFlux::MiniKnobF("##v", &currentGain, minGain, maxGain)) {
+                        eq->setGain(i, currentGain);
+                    }
+                    float textWidth = ImGui::CalcTextSize(EQ9BAND_LABELS[i]).x;
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
+                    ImGui::TextUnformatted(EQ9BAND_LABELS[i]);
+                    ImGui::EndGroup();
+                    if (i < 8) ImGui::SameLine();
+                    ImGui::PopID();
+                }
+                if (!isEnabled) ImGui::EndDisabled();
+                ImGui::EndGroup();
+            }
+            ImGui::EndChild();
+            ImGui::PopID();
+        }
+
+        virtual void renderUI() override {
+            ImGui::PushID("EQ9_Effect_Row");
+            ImGui::BeginGroup();
+            auto* eq = this;
+            bool isEnabled = eq->isEnabled();
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) eq->setEnabled(isEnabled);
+
+            if (eq->isEnabled()) {
+                if (ImGui::BeginChild("EQ_Box", ImVec2(0, 180), ImGuiChildFlags_Borders)) {
+                    int currentIdx = 0;
+                    DSP::Equalizer9BandSettings currentSettings = eq->getSettings();
+                    for (int i = 1; i < DSP::EQ9BAND_PRESETS.size(); ++i) {
+                        if (currentSettings == DSP::EQ9BAND_PRESETS[i]) {
+                            currentIdx = i;
+                            break;
+                        }
+                    }
+                    int displayIdx = currentIdx;
+                    ImGui::SetNextItemWidth(150);
+                    if (ImFlux::ValueStepper("##Preset", &displayIdx, EQ9BAND_PRESET_NAMES, IM_ARRAYSIZE(EQ9BAND_PRESET_NAMES))) {
+                        if (displayIdx > 0 && displayIdx < DSP::EQ9BAND_PRESETS.size()) {
+                            currentSettings =  DSP::EQ9BAND_PRESETS[displayIdx];
+                            eq->setSettings(currentSettings);
+                        }
+                    }
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                        eq->setSettings(DSP::FLAT_EQ);
+                    }
+                    ImGui::Separator();
+
+
+                    const float minGain = -12.0f;
+                    const float maxGain = 12.0f;
+
+                    float sliderWidth = 20.f; //35.0f;
+                    float sliderHeight = 80.f; //150.0f;
+                    float sliderSpaceing = 12.f ; //12.f;
+                    ImVec2 padding = ImVec2(10, 50);
+
+
+                    ImGui::SetCursorPos(padding);
+
+                    for (int i = 0; i < 9; i++) {
+                        ImGui::PushID(i);
+                        float currentGain = eq->getGain(i);
+                        ImGui::BeginGroup();
+                        if (ImFlux::FaderVertical("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain)) {
+                            eq->setGain(i, currentGain);
+                        }
+                        float textWidth = ImGui::CalcTextSize(EQ9BAND_LABELS[i]).x;
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
+                        ImGui::TextUnformatted(EQ9BAND_LABELS[i]);
+                        ImGui::EndGroup();
+                        if (i < 8) ImGui::SameLine(0, sliderSpaceing); // Spacing between sliders
+                        ImGui::PopID();
+                    }
+                }
+                ImGui::EndChild();
+            } else {
+                ImGui::Separator();
+            }
+            ImGui::EndGroup();
+            ImGui::PopID();
+            ImGui::Spacing();
+        }
+
+        #endif
+
+
+    }; //CLASS
 
 } // namespace DSP

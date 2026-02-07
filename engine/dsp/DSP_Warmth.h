@@ -52,10 +52,11 @@ namespace DSP {
     constexpr WarmthSettings ANALOGDESK_WARMTH     = { 0.70f, 1.3f, 0.8f };
     constexpr WarmthSettings TUBEAMP_WARMTH        = { 0.50f, 1.6f, 1.0f };
     constexpr WarmthSettings EXTREME_WARMTH        = { 0.10f, 2.0f, 1.0f };
-
     constexpr WarmthSettings CUSTOM__WARMTH =  GENTLE_WARMTH; //<<dummy
 
 
+    static const char* WARMTH_PRESET_NAMES[] = {
+        "Custom", "Gentle Warmth", "Analog Desk", "Tube Amp", "Extreme" };
     static const std::array<DSP::WarmthSettings, 5> WARMTH_PRESETS = {
         CUSTOM__WARMTH,
         GENTLE_WARMTH,
@@ -138,6 +139,124 @@ namespace DSP {
                 buffer[i] = std::clamp(mixed, -1.0f, 1.0f);
             }
         }
+        //----------------------------------------------------------------------
+        virtual std::string getName() const override { return "ANALOG WARMTH / SATURATION";}
+        #ifdef FLUX_ENGINE
+        virtual ImVec4 getColor() const  override { return  ImVec4(1.0f, 0.6f, 0.4f, 1.0f);}
+        //----------------------------------------------------------------------
+        virtual void renderUIWide() override {
+            ImGui::PushID("Warmth_Effect_Row_WIDE");
+            if (ImGui::BeginChild("WARMTH_W_BOX", ImVec2(-FLT_MIN,65.f) )) {
+                DSP::WarmthSettings currentSettings = this->getSettings();
+                int currentIdx = 0; // Standard: "Custom"
+                bool changed = false;
+                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+                ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+                ImGui::BeginGroup();
+                bool isEnabled = this->isEnabled();
+                if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+                    this->setEnabled(isEnabled);
+                }
+                if (!isEnabled) ImGui::BeginDisabled();
+                ImGui::SameLine();
+                // -------- stepper >>>>
+                for (int i = 1; i < DSP::WARMTH_PRESETS.size(); ++i) {
+                    if (currentSettings == DSP::WARMTH_PRESETS[i]) {
+                        currentIdx = i;
+                        break;
+                    }
+                }
+                int displayIdx = currentIdx;  //<< keep currentIdx clean
+                ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
+
+                if (ImFlux::ValueStepper("##Preset", &displayIdx, WARMTH_PRESET_NAMES
+                    , IM_ARRAYSIZE(WARMTH_PRESET_NAMES)))
+                {
+                    if (displayIdx > 0 && displayIdx < DSP::WARMTH_PRESETS.size()) {
+                        currentSettings =  DSP::WARMTH_PRESETS[displayIdx];
+                        changed = true;
+                    }
+                }
+                ImGui::SameLine();
+                // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                    currentSettings = DSP::GENTLE_WARMTH; //DEFAULT
+                    // this->reset();
+                    changed = true;
+                }
+
+                ImGui::Separator();
+                changed |= ImFlux::MiniKnobF("Cutoff", &currentSettings.cutoff, 0.0f, 1.0f); ImGui::SameLine();
+                changed |= ImFlux::MiniKnobF("Drive", &currentSettings.drive, 1.0f, 2.0f); ImGui::SameLine();
+                changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.0f, 1.0f); ImGui::SameLine();
+
+                // Engine Update
+                if (changed) {
+                    if (isEnabled) {
+                        this->setSettings(currentSettings);
+                    }
+                }
+
+                if (!isEnabled) ImGui::EndDisabled();
+
+                ImGui::EndGroup();
+            }
+            ImGui::EndChild();
+            ImGui::PopID();
+        }
+        //----------------------------------------------------------------------
+        virtual void renderUI() override {
+            ImGui::PushID("Warmth_Effect_Row");
+            ImGui::BeginGroup();
+
+            bool isEnabled = this->isEnabled();
+            if (ImFlux::LEDCheckBox("ANALOG WARMTH / SATURATION", &isEnabled, ImVec4(1.0f, 0.6f, 0.4f, 1.0f)))
+                this->setEnabled(isEnabled);
+
+            if (isEnabled)
+            {
+                if (ImGui::BeginChild("Warmth_Box", ImVec2(0, 115), ImGuiChildFlags_Borders)) {
+                    DSP::WarmthSettings currentSettings = this->getSettings();
+                    bool changed = false;
+                    int currentIdx = 0; // Standard: "Custom"
+                    for (int i = 1; i < DSP::WARMTH_PRESETS.size(); ++i) {
+                        if (currentSettings == DSP::WARMTH_PRESETS[i]) {
+                            currentIdx = i;
+                            break;
+                        }
+                    }
+                    int displayIdx = currentIdx;  //<< keep currentIdx clean
+                    ImGui::SetNextItemWidth(150);
+                    if (ImFlux::ValueStepper("##Preset", &displayIdx, WARMTH_PRESET_NAMES, IM_ARRAYSIZE(WARMTH_PRESET_NAMES))) {
+                        if (displayIdx > 0 && displayIdx < DSP::WARMTH_PRESETS.size()) {
+                            currentSettings =  DSP::WARMTH_PRESETS[displayIdx];
+                            changed = true;
+                        }
+                    }
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                        currentSettings = DSP::GENTLE_WARMTH;
+                        changed = true;
+                    }
+                    ImGui::Separator();
+                    changed |= ImFlux::FaderHWithText("Cutoff", &currentSettings.cutoff, 0.0f, 1.0f, "%.2f (Filter)");
+                    changed |= ImFlux::FaderHWithText("Drive", &currentSettings.drive, 1.0f, 2.0f, "%.2f (Gain)");
+                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
+                    if (changed) {
+                        if (isEnabled) {
+                            this->setSettings(currentSettings);
+                        }
+                    }
+                }
+                ImGui::EndChild();
+            } else {
+                ImGui::Separator();
+            }
+            ImGui::EndGroup();
+            ImGui::PopID();
+            ImGui::Spacing();
+        }
+#endif
 
 
     };

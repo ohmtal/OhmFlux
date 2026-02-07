@@ -149,79 +149,136 @@ namespace DSP {
 
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "BITCRUSHER";}
-    #ifdef FLUX_ENGINE
+#ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const  override { return ImVec4(0.8f, 0.4f, 0.5f, 1.0f);}
 
+
+    virtual void renderUIWide() override {
+        ImGui::PushID("BitCrusher_Effect_Row_WIDE");
+        if (ImGui::BeginChild("DELAY_BOX", ImVec2(-FLT_MIN,65.f) )) {
+
+            DSP::BitcrusherSettings currentSettings = this->getSettings();
+            int currentIdx = 0; // Standard: "Custom"
+            bool changed = false;
+            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+            ImGui::BeginGroup();
+            bool isEnabled = this->isEnabled();
+            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+                this->setEnabled(isEnabled);
+            }
+            if (!isEnabled) ImGui::BeginDisabled();
+
+            ImGui::SameLine();
+            // -------- stepper >>>>
+            for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
+                if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+            int displayIdx = currentIdx;  //<< keep currentIdx clean
+            ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
+
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, BITCRUSHER_PRESETS_NAMES
+                , IM_ARRAYSIZE(BITCRUSHER_PRESETS_NAMES)))
+            {
+                if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
+                    currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
+                    changed = true;
+                }
+            }
+            ImGui::SameLine();
+            // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
+                this->reset();
+                changed = true;
+            }
+
+            ImGui::Separator();
+            // ImFlux::MiniKnobF(label, &value, min_v, max_v);
+            changed |= ImFlux::MiniKnobF("Bits", &currentSettings.bits, 1.0f, 16.0f); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Rate", &currentSettings.sampleRate, 1000.0f, getSampleRateF()); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.0f, 1.0f); ImGui::SameLine();
+            // Engine Update
+            if (changed) {
+                if (isEnabled) {
+                    this->setSettings(currentSettings);
+                }
+            }
+            if (!isEnabled) ImGui::EndDisabled();
+            ImGui::EndGroup();
+        }
+        ImGui::EndChild();
+        ImGui::PopID();
+
+    }
+    //----------------------------------------------------------------------
     virtual void renderUI() override {
         ImGui::PushID("BitCrusher_Effect_Row");
-
         ImGui::BeginGroup();
-
         bool isEnabled = this->isEnabled();
         if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
                 this->setEnabled(isEnabled);
         }
-            if (isEnabled)
-            {
-                if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
+        if (isEnabled)
+        {
+            if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
+                ImGui::BeginGroup();
+                DSP::BitcrusherSettings currentSettings = this->getSettings();
+                bool changed = false;
 
+                int currentIdx = 0; // Standard: "Custom"
 
-                    ImGui::BeginGroup();
-
-
-                    DSP::BitcrusherSettings currentSettings = this->getSettings();
-                    bool changed = false;
-
-                    int currentIdx = 0; // Standard: "Custom"
-
-                    for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
-                        if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
-                            currentIdx = i;
-                            break;
-                        }
+                for (int i = 1; i < DSP::BITCRUSHER_PRESETS.size(); ++i) {
+                    if (currentSettings == DSP::BITCRUSHER_PRESETS[i]) {
+                        currentIdx = i;
+                        break;
                     }
-                    int displayIdx = currentIdx;  //<< keep currentIdx clean
+                }
+                int displayIdx = currentIdx;  //<< keep currentIdx clean
 
-                    ImGui::SetNextItemWidth(150);
-                    if (ImFlux::ValueStepper("##Preset", &displayIdx, BITCRUSHER_PRESETS_NAMES, IM_ARRAYSIZE(BITCRUSHER_PRESETS_NAMES))) {
-                        if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
-                            currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
-                            changed = true;
-                        }
-                    }
-                    ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
-
-                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-                        currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
-                        this->reset();
+                ImGui::SetNextItemWidth(150);
+                if (ImFlux::ValueStepper("##Preset", &displayIdx, BITCRUSHER_PRESETS_NAMES, IM_ARRAYSIZE(BITCRUSHER_PRESETS_NAMES))) {
+                    if (displayIdx > 0 && displayIdx < DSP::BITCRUSHER_PRESETS.size()) {
+                        currentSettings =  DSP::BITCRUSHER_PRESETS[displayIdx];
                         changed = true;
                     }
-                    ImGui::Separator();
-
-
-                    // Control Sliders
-                    changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
-                    changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, getSampleRateF(), "%.0f Hz");
-                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
-
-                    // Engine Update
-                    if (changed) {
-                        if (isEnabled) {
-                            this->setSettings(currentSettings);
-                        }
-                    }
-                    ImGui::EndGroup();
                 }
-                ImGui::EndChild();
-            } else {
-                ImGui::Separator();
-            }
+                ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
 
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing(); // Add visual gap before the next effect
+                if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                    currentSettings = DSP::AMIGA_BITCRUSHER; //DEFAULT
+                    this->reset();
+                    changed = true;
+                }
+                ImGui::Separator();
+
+
+                // Control Sliders
+                changed |= ImFlux::FaderHWithText("Bits", &currentSettings.bits, 1.0f, 16.0f, "%.1f");
+                changed |= ImFlux::FaderHWithText("Rate", &currentSettings.sampleRate, 1000.0f, getSampleRateF(), "%.0f Hz");
+                changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
+
+                // Engine Update
+                if (changed) {
+                    if (isEnabled) {
+                        this->setSettings(currentSettings);
+                    }
+                }
+                ImGui::EndGroup();
+            }
+            ImGui::EndChild();
+        } else {
+            ImGui::Separator();
+        }
+
+        ImGui::EndGroup();
+        ImGui::PopID();
+        ImGui::Spacing(); // Add visual gap before the next effect
     }
-    #endif
+#endif
 
     }; //CLASS
 } // namespace DSP

@@ -249,6 +249,8 @@ void AppGui::DrawGui()
     if (mAppSettings.mShowSFXModule) mSfxModule->Draw();
     if (mAppSettings.mShowSFXStereoModule) mSfxStereoModule->DrawGui();
 
+    mSoundMixModule->DrawRack();
+
 
     DrawMsgBoxPopup();
     InitDockSpace();
