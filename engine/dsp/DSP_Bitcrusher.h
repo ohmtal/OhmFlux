@@ -105,8 +105,9 @@ namespace DSP {
             return mSettings.setBinary(is);      // Load Settings
         }
         //----------------------------------------------------------------------
-        virtual void process(float* buffer, int numSamples) override
-        {
+        virtual void process(float* buffer, int numSamples, int numChannels) override {
+            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+
             if (!isEnabled()) return;
             if (mSettings.wet <= 0.001f) return;
 

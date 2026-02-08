@@ -909,7 +909,7 @@ void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream*
             gen->SynthSample(frames_needed, stereoBuffer.data());
 
             for (auto& effect : gen->mDspEffects) {
-                effect->process(stereoBuffer.data(), frames_needed * 2);
+                effect->process(stereoBuffer.data(), frames_needed * 2, 2);
             }
 
             // SDL_PutAudioStreamData(stream, stereoBuffer.data(), additional_amount);
@@ -978,7 +978,7 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
 
         for (auto& effect : this->mDspEffects) {
             // This now processes the tail where the echoes will appear
-            effect->process(f32ExportBuffer.data(), totalFrames * 2);
+            effect->process(f32ExportBuffer.data(), totalFrames * 2, 2);
         }
 
         if (progressOut) *progressOut = 0.85f;

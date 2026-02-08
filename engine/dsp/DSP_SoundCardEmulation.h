@@ -142,7 +142,9 @@ public:
         return mSettings.setBinary(is);      // Load Settings
     }
 
-    void process(float* buffer, int numSamples) override {
+    virtual void process(float* buffer, int numSamples, int numChannels) override {
+        if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+
         if (!mEnabled) return;
 
         for (int i = 0; i < numSamples; i += 2) {

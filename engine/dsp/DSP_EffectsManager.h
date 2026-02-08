@@ -51,6 +51,7 @@ private:
     bool mEnabled = true;
     std::string mErrors = "";
     std::vector<std::unique_ptr<DSP::Effect>> mEffects;
+    std::recursive_mutex mEffectMutex;
 
 public:
     //--------------------------------------------------------------------------
@@ -77,11 +78,30 @@ public:
     }
     void clearErrors() { mErrors = "";}
     //--------------------------------------------------------------------------
+    void lock() {
+        mEffectMutex.lock();
+    }
+
+    void unlock() {
+        mEffectMutex.unlock();
+    }
+    //--------------------------------------------------------------------------
     bool addEffect(std::unique_ptr<DSP::Effect> fx) {
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
         if (!fx) return false;
         mEffects.push_back(std::move(fx));
         return true;
     }
+
+
+    DSP::Effect* getEffectByType(DSP::EffectType type) {
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
+        for (auto& fx : mEffects) {
+            if (fx->getType() == type) return fx.get();
+        }
+        return nullptr;
+    }
+
     //--------------------------------------------------------------------------
     bool removeEffect( size_t effectIndex  ) {
         if (effectIndex >= mEffects.size() )
@@ -127,6 +147,7 @@ public:
 
             this->clear();
 
+            std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
             for (uint32_t i = 0; i < count; ++i) {
                 DSP::EffectType type;
                 ifs.read(reinterpret_cast<char*>(&type), sizeof(type));
@@ -181,6 +202,7 @@ public:
             }
             DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_MAGIC);
             uint32_t count = static_cast<uint32_t>(mEffects.size());
+            std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
             DSP_STREAM_TOOLS::write_binary(ofs, count);
             for (const auto& fx : mEffects) {
                 DSP::EffectType type = fx->getType();
@@ -201,11 +223,11 @@ public:
         return false;
     }
     //--------------------------------------------------------------------------
-    void process(float* buffer, int numSamples) {
+    void process(float* buffer, int numSamples, int numChannels) {
         if (!mEnabled) return;
 
         for (auto& effect : this->mEffects) {
-            effect->process(buffer, numSamples);
+            effect->process(buffer, numSamples, numChannels);
         }
     }
     //--------------------------------------------------------------------------

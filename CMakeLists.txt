@@ -425,6 +425,7 @@ if(BUILD_SOUNDSTUDIO)
     set(APP_SOURCES
         "${SOUNDSTUDIO_DIR}/src/main.cpp"
         "${SOUNDSTUDIO_DIR}/src/appGui.cpp"
+        "${SOUNDSTUDIO_DIR}/src/modules/soundMixModule.cpp"
     )
     configure_demo_target(SoundStudio ${SOUNDSTUDIO_DIR} "${SOUNDSTUDIO_DIR}/assets@assets" "${APP_SOURCES}")
 endif()

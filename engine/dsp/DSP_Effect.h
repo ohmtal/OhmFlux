@@ -52,7 +52,7 @@ namespace DSP {
     public:
         Effect(bool switchOn = false) { mEnabled = switchOn;}
         virtual ~Effect() {}
-        virtual void process(float* buffer, int numSamples) {}
+        virtual void process(float* buffer, int numSamples, int numChannels) {}
 
         virtual DSP::EffectType getType() const { return DSP::EffectType::NONE; }
 
@@ -85,12 +85,24 @@ namespace DSP {
     virtual ImVec4 getColor() const { return ImVec4(0.5f,0.5f,0.5f,1.f);}
 
     virtual void renderUIWide() {
-        ImGui::TextDisabled("[warning] class have no renderUIWide!");
-        renderUI();
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Effect_Row_W_%d", getType());
+        ImGui::PushID(buf);
 
+        ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+        ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+
+        bool isEnabled = this->isEnabled();
+        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+            this->setEnabled(isEnabled);
+        }
+        ImGui::PopID();
     }
+
     virtual void renderUI() {
-          ImGui::PushID("Effect_Row");
+          char buf[32];
+          snprintf(buf, sizeof(buf), "Effect_Row_%d", getType());
+          ImGui::PushID(buf);
           bool isEnabled = this->isEnabled();
           if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
               this->setEnabled(isEnabled);

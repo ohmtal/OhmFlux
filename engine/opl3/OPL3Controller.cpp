@@ -70,7 +70,7 @@ void SDLCALL OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *str
     if (controller->isAnyVoiceActive())
     {
         for (auto& effect : controller->mDspEffects) {
-            effect->process(f32Buffer, totalSamples);
+            effect->process(f32Buffer, totalSamples, 2);
         }
     }
 
@@ -1607,7 +1607,7 @@ bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename
 
         // Apply DSP directly to the master float buffer
         for (auto& effect : this->mDspEffects) {
-            effect->process(f32ExportBuffer.data(), f32ExportBuffer.size());
+            effect->process(f32ExportBuffer.data(), f32ExportBuffer.size(), 2);
         }
         if (progressOut) *progressOut = 0.85f;
 

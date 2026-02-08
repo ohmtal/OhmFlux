@@ -81,7 +81,7 @@ namespace DSP {
 
     public:
 
-        Limiter(bool switchOn = false) :
+        Limiter(bool switchOn = true) :
             Effect(switchOn),
             mSettings(LIMITER_DEFAULT)
             {}
@@ -112,38 +112,85 @@ namespace DSP {
         float getGain() const { return mCurrentGain; }
         float getGainReduction() const { return 1.f - mCurrentGain; }
         //----------------------------------------------------------------------
-        virtual void process(float* buffer, int numSamples) override {
-            if (!isEnabled()) return;
-            // Process in steps of 2 for Stereo Interleaved data
-            for (int i = 0; i < numSamples; i += 2) {
-                // 1. Get both channels
-                float inputL = buffer[i];
-                float inputR = buffer[i + 1];
+        virtual void process(float* buffer, int numSamples, int numChannels) override {
+            // Basic safety check: exit if disabled or no channels present
+            if (!isEnabled() || numChannels <= 0) return;
 
-                // Stereo-Link: Find the max absolute peak of BOTH channels
-                float absL = std::abs(inputL);
-                float absR = std::abs(inputR);
-                float maxAbsInput = std::max(absL, absR);
+            // Calculate how many timeframes (multi-channel bundles) are in the buffer
+            int numFrames = numSamples / numChannels;
 
-                // Calculate Target Gain based on the loudest channel
+            for (int f = 0; f < numFrames; f++) {
+                // Calculate the starting index for this timeframe
+                int frameIndex = f * numChannels;
+
+                // 1. Peak Detection: Find the maximum absolute peak across ALL channels in this frame
+                // This ensures a "Stereo Link" (equal gain reduction for all channels)
+                float maxAbsInput = 0.0f;
+                for (int c = 0; c < numChannels; c++) {
+                    float absVal = std::abs(buffer[frameIndex + c]);
+                    if (absVal > maxAbsInput) {
+                        maxAbsInput = absVal;
+                    }
+                }
+
+                // 2. Gain Calculation: Determine target gain based on the threshold
                 float targetGain = 1.0f;
                 if (maxAbsInput > mSettings.Threshold) {
+                    // Prevent division by zero using a small epsilon (1e-9f)
                     targetGain = mSettings.Threshold / (maxAbsInput + 1e-9f);
                 }
 
-                // Smooth the Gain (Shared for both L and R)
+                // 3. Envelope Smoothing: Apply Attack or Release depending on gain direction
+                // Note: Attack and Release should be coefficients based on the sample rate
                 if (targetGain < mCurrentGain) {
+                    // Attack phase (gain reduction is getting stronger)
                     mCurrentGain += (targetGain - mCurrentGain) * mSettings.Attack;
                 } else {
+                    // Release phase (gain is returning to unity)
                     mCurrentGain += (targetGain - mCurrentGain) * mSettings.Release;
                 }
 
-                // Apply SAME Gain to both (Preserves stereo image)
-                buffer[i]     = inputL * mCurrentGain;
-                buffer[i + 1] = inputR * mCurrentGain;
+                // 4. Application: Apply the calculated gain to every channel in this frame
+                // This preserves the spatial balance (stereo image) of the audio
+                for (int c = 0; c < numChannels; c++) {
+                    buffer[frameIndex + c] *= mCurrentGain;
+                }
             }
         }
 
+
+        // STEREO
+        // virtual void process(float* buffer, int numSamples) override {
+        //     if (!isEnabled()) return;
+        //     // Process in steps of 2 for Stereo Interleaved data
+        //     for (int i = 0; i < numSamples; i += 2) {
+        //         // 1. Get both channels
+        //         float inputL = buffer[i];
+        //         float inputR = buffer[i + 1];
+        //
+        //         // Stereo-Link: Find the max absolute peak of BOTH channels
+        //         float absL = std::abs(inputL);
+        //         float absR = std::abs(inputR);
+        //         float maxAbsInput = std::max(absL, absR);
+        //
+        //         // Calculate Target Gain based on the loudest channel
+        //         float targetGain = 1.0f;
+        //         if (maxAbsInput > mSettings.Threshold) {
+        //             targetGain = mSettings.Threshold / (maxAbsInput + 1e-9f);
+        //         }
+        //
+        //         // Smooth the Gain (Shared for both L and R)
+        //         if (targetGain < mCurrentGain) {
+        //             mCurrentGain += (targetGain - mCurrentGain) * mSettings.Attack;
+        //         } else {
+        //             mCurrentGain += (targetGain - mCurrentGain) * mSettings.Release;
+        //         }
+        //
+        //         // Apply SAME Gain to both (Preserves stereo image)
+        //         buffer[i]     = inputL * mCurrentGain;
+        //         buffer[i + 1] = inputR * mCurrentGain;
+        //     }
+        // }
     //----------------------------------------------------------------------
     virtual std::string getName() const override { return "LIMITER";}
 #ifdef FLUX_ENGINE

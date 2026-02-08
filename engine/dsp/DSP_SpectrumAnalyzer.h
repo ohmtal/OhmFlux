@@ -38,7 +38,9 @@ namespace DSP {
         DSP::EffectType getType() const override { return DSP::EffectType::SpectrumAnalyzer; }
 
         // The audio callback calls this
-        virtual void process(float* buffer, int numSamples) override {
+        virtual void process(float* buffer, int numSamples, int numChannels) override {
+            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+
             if (!mEnabled) return;
 
             // Capture samples into our circular buffer

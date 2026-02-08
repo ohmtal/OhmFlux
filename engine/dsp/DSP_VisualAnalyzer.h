@@ -37,12 +37,13 @@ namespace DSP {
 
 
     public:
-        VisualAnalyzer( bool switchOn = false) : Effect(switchOn) {
+        VisualAnalyzer( bool switchOn = true) : Effect(switchOn) {
             mMirrorBuffer.resize(2048, 0.0f); // Size for the oscilloscope display
         }
         //----------------------------------------------------------------------
         // The process method just copies data, it doesn't change it
-        void process(float* buffer, int numSamples) override {
+        virtual void process(float* buffer, int numSamples, int numChannels) override {
+            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
             if (!mEnabled) return;
 
             std::lock_guard<std::mutex> lock(mDataMutex);

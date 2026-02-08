@@ -128,7 +128,8 @@ namespace DSP {
         }
 
 
-        virtual void process(float* buffer, int numSamples) override {
+        virtual void process(float* buffer, int numSamples, int numChannels) override {
+            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
             if (!isEnabled()) return;
 
             for (int i = 0; i < numSamples; i++) {
