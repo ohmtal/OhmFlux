@@ -71,8 +71,8 @@ public:
         // mRingMod  = DSP::addEffectToChain<DSP::RingModulator>(mSFXGeneratorStereo->getDspEffects(), false);
         // mChorus   = DSP::addEffectToChain<DSP::Chorus>(mSFXGeneratorStereo->getDspEffects(), false);
         // mDelay    = DSP::addEffectToChain<DSP::Delay>(mSFXGeneratorStereo->getDspEffects(), false);
-        mVisualAnalyzer = DSP::addEffectToChain<DSP::VisualAnalyzer>(mSFXGeneratorStereo->getDspEffects(), true);
         mLimiter = DSP::addEffectToChain<DSP::Limiter>(mSFXGeneratorStereo->getDspEffects(), true);
+        mVisualAnalyzer = DSP::addEffectToChain<DSP::VisualAnalyzer>(mSFXGeneratorStereo->getDspEffects(), true);
 
 
 
@@ -481,10 +481,14 @@ public:
             if (ImGui::BeginChild("VisualAnalyzer_BOX", ImVec2(lVisuSize.x, lVisuSize.y * 3.2f ) )) {
                 // invisible nearly ... ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
 
-                mVisualAnalyzer->DrawVisualAnalyzerOszi(lVisuSize);
+                mVisualAnalyzer->DrawVisualAnalyzerOszi(lVisuSize, 2);
                 float levLeft = 0.f;
                 float levRight = 0.f;
-                mVisualAnalyzer->getLevels(levLeft, levRight);
+
+                levLeft = mVisualAnalyzer->getLevel(0);
+                levRight = mVisualAnalyzer->getLevel(1);
+
+                // mVisualAnalyzer->getLevels(levLeft, levRight);
                 const ImU32 startCol = IM_COL32(70, 70, 70, 255);
                 const ImU32 endCol   = IM_COL32(15, 15, 20, 255);
 

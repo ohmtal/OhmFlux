@@ -79,33 +79,35 @@ public:
     }
 
     virtual void process(float* buffer, int numSamples, int numChannels) override {
-        if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+        if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
-        if (!isEnabled()) return;
-        if (mSettings.wet <= 0.001f) return;
+        const float TWO_PI = 2.0f * (float)M_PI;
+        // Frequency increment per sample frame
+        const float phaseIncrement = (TWO_PI * mSettings.frequency) / mSampleRate;
 
-        // Frequency increment per sample step (LFO speed)
-        const float phaseIncrement = (2.0f * M_PI * mSettings.frequency) / mSampleRate;
+        for (int i = 0; i < numSamples; i++) {
+            int channel = i % numChannels;
+            float dry = buffer[i];
 
-        for (int i = 0; i < numSamples; i += 2) {
-            float dryL = buffer[i];
-            float dryR = buffer[i+1]; // Keep stereo image but use mono carrier
+            // 1. Calculate the carrier wave (sinusoidal LFO)
+            // We use the same phase for all channels in a frame to preserve phase alignment
+            float carrier = std::sin(mPhaseL);
 
-            // Calculate the carrier wave (sinusoidal LFO)
-            // We run one phase accumulator (mLPhase) for simplicity
-            float carrier = sinf(mPhaseL);
+            // 2. Ring Modulation: Multiply dry signal by carrier
+            float modulated = dry * carrier;
 
-            // Ring Modulation: Simple multiplication of dry signal by carrier wave
-            float modulatedL = dryL * carrier;
-            float modulatedR = dryR * carrier;
+            // 3. Mix: Dry + Wet
+            buffer[i] = (dry * (1.0f - mSettings.wet)) + (modulated * mSettings.wet);
 
-            // Mix: Dry (Original) + Wet (Modulated)
-            buffer[i]     = (dryL * (1.0f - mSettings.wet)) + (modulatedL * mSettings.wet);
-            buffer[i + 1] = (dryR * (1.0f - mSettings.wet)) + (modulatedR * mSettings.wet);
+            // 4. Advance phase only after all channels of the current frame are processed
+            if (channel == numChannels - 1) {
+                mPhaseL += phaseIncrement;
 
-            // Advance phase
-            mPhaseL += phaseIncrement;
-            while (mPhaseL >= 2.0f * M_PI) mPhaseL -= 2.0f * M_PI;
+                // Wrap phase to keep it within [0, 2*PI]
+                if (mPhaseL >= TWO_PI) {
+                    mPhaseL -= TWO_PI;
+                }
+            }
         }
     }
 
@@ -171,8 +173,12 @@ public:
                     if (changed) this->setSettings(currentSettings);
                 }
                 ImGui::EndChild();
-            } //enabled
+            } else {
+                ImGui::Separator();
+            }
+
         ImGui::PopID();
+        ImGui::Spacing(); // Add visual gap before the next effect
     }
 
 #endif

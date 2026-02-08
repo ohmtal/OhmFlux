@@ -53,6 +53,7 @@ bool SoundMixModule::Initialize() {
         //     mEffectsManager->addEffect(DSP::EffectFactory::Create((DSP::EffectType) i));
         // }
         std::vector<DSP::EffectType> types = {
+            DSP::EffectType::OverDrive,
             DSP::EffectType::Bitcrusher,
             DSP::EffectType::SoundCardEmulation,
             DSP::EffectType::RingModulator,

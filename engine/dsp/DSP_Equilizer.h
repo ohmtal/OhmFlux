@@ -38,6 +38,7 @@
 
 namespace DSP {
 
+
     struct EQBand {
         float frequency; // e.g., 100.0f for Bass, 3000.0f for Presence
         float gainDb;    // e.g., +6.0f for boost, -6.0f for cut
@@ -69,9 +70,17 @@ namespace DSP {
     };
 
     class Equalizer : public DSP::Effect {
+        struct BiquadState {
+            float x1 = 0.0f, x2 = 0.0f; // Input history
+            float y1 = 0.0f, y2 = 0.0f; // Output history
+        };
+
     private:
         EQBand mSettings;
         BiquadCoeffs mCoeffs;
+
+        std::vector<BiquadState> mStates;
+
 
         // Previous samples for Left and Right (Required for IIR filtering)
         float x1L = 0, x2L = 0, y1L = 0, y2L = 0;
@@ -97,6 +106,9 @@ namespace DSP {
     public:
         Equalizer(bool switchOn = true) : Effect(switchOn) {
             mSettings = {100.f, 0.f, 0.707f};
+
+            //default stereo
+            mStates = { {0.f,0.f,0.f,0.f} , {0.f,0.f,0.f,0.f} };
 
             calculateCoefficients();
         }
@@ -129,27 +141,57 @@ namespace DSP {
 
 
         virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
             if (!isEnabled()) return;
 
-            for (int i = 0; i < numSamples; i++) {
-                float in = buffer[i];
-                float out;
+            // Ensure we have a state object for every channel
+            if (mStates.size() != static_cast<size_t>(numChannels)) {
+                mStates.assign(numChannels, BiquadState());
+            }
 
-                if (i % 2 == 0) { // Left Channel
-                    out = mCoeffs.b0 * in + mCoeffs.b1 * x1L + mCoeffs.b2 * x2L
-                    - mCoeffs.a1 * y1L - mCoeffs.a2 * y2L;
-                    x2L = x1L; x1L = in;
-                    y2L = y1L; y1L = out;
-                } else { // Right Channel
-                    out = mCoeffs.b0 * in + mCoeffs.b1 * x1R + mCoeffs.b2 * x2R
-                    - mCoeffs.a1 * y1R - mCoeffs.a2 * y2R;
-                    x2R = x1R; x1R = in;
-                    y2R = y1R; y1R = out;
-                }
+            for (int i = 0; i < numSamples; i++) {
+                int channel = i % numChannels;
+                float in = buffer[i];
+
+                // Access the state for the current channel
+                BiquadState& s = mStates[channel];
+
+                // 1. Calculate the Direct Form I Biquad equation
+                float out = mCoeffs.b0 * in + mCoeffs.b1 * s.x1 + mCoeffs.b2 * s.x2
+                - mCoeffs.a1 * s.y1 - mCoeffs.a2 * s.y2;
+
+                // 2. Update state history for this channel
+                s.x2 = s.x1;
+                s.x1 = in;
+                s.y2 = s.y1;
+                s.y1 = out;
+
+                // 3. Write back to buffer
                 buffer[i] = out;
             }
         }
+
+        // virtual void process(float* buffer, int numSamples, int numChannels) override {
+        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+        //     if (!isEnabled()) return;
+        //
+        //     for (int i = 0; i < numSamples; i++) {
+        //         float in = buffer[i];
+        //         float out;
+        //
+        //         if (i % 2 == 0) { // Left Channel
+        //             out = mCoeffs.b0 * in + mCoeffs.b1 * x1L + mCoeffs.b2 * x2L
+        //             - mCoeffs.a1 * y1L - mCoeffs.a2 * y2L;
+        //             x2L = x1L; x1L = in;
+        //             y2L = y1L; y1L = out;
+        //         } else { // Right Channel
+        //             out = mCoeffs.b0 * in + mCoeffs.b1 * x1R + mCoeffs.b2 * x2R
+        //             - mCoeffs.a1 * y1R - mCoeffs.a2 * y2R;
+        //             x2R = x1R; x1R = in;
+        //             y2R = y1R; y1R = out;
+        //         }
+        //         buffer[i] = out;
+        //     }
+        // }
 
         virtual std::string getName() const override { return "Equalizer Band";}
         #ifdef FLUX_ENGINE

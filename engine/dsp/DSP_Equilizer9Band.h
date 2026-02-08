@@ -80,23 +80,27 @@ namespace DSP {
 
 
 
-    struct FilterState {
-        float x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-    };
 
 
 
     class Equalizer9Band : public DSP::Effect {
+        struct FilterState {
+            float x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        };
+
     private:
         Equalizer9BandSettings mSettings;
         static constexpr int NUM_BANDS = 9;
         // Standard ISO 9-band center frequencies
         const float mFrequencies[NUM_BANDS] = { 63.0f, 125.0f, 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f, 8000.0f, 16000.0f };
 
-        BiquadCoeffs mCoeffs[NUM_BANDS];
-        FilterState mStateL[NUM_BANDS];
-        FilterState mStateR[NUM_BANDS];
         float mSampleRate = getSampleRateF();
+
+        BiquadCoeffs mCoeffs[NUM_BANDS];
+        // FilterState mStateL[NUM_BANDS];
+        // FilterState mStateR[NUM_BANDS];
+
+        std::vector<std::vector<FilterState>> mChannelStates;
 
         void calculateBand(int band) {
             float A = pow(10.0f, mSettings.gains[band] / 40.0f);
@@ -171,29 +175,71 @@ namespace DSP {
 
 
         virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
             if (!isEnabled()) return;
 
-            for (int i = 0; i < numSamples; i++) {
-                float sample = buffer[i];
-                bool isLeft = (i % 2 == 0);
+            // 1. Ensure we have state vectors for every channel
+            if (mChannelStates.size() != static_cast<size_t>(numChannels)) {
+                // Initialize numChannels vectors, each containing NUM_BANDS states
+                mChannelStates.assign(numChannels, std::vector<FilterState>(NUM_BANDS));
+            }
 
-                // Cascade the sample through all 9 filters
+            for (int i = 0; i < numSamples; i++) {
+                int channel = i % numChannels;
+                float sample = buffer[i];
+
+                // Get the specific state array for this channel
+                std::vector<FilterState>& bands = mChannelStates[channel];
+
+                // 2. Cascade the sample through all 9 filters for the current channel
                 for (int b = 0; b < NUM_BANDS; b++) {
-                    FilterState& s = isLeft ? mStateL[b] : mStateR[b];
+                    FilterState& s = bands[b];
                     BiquadCoeffs& c = mCoeffs[b];
 
+                    // Standard Direct Form I Biquad
                     float out = c.b0 * sample + c.b1 * s.x1 + c.b2 * s.x2
                     - c.a1 * s.y1 - c.a2 * s.y2;
 
-                    s.x2 = s.x1; s.x1 = sample;
-                    s.y2 = s.y1; s.y1 = out;
+                    // Update history for this specific band and channel
+                    s.x2 = s.x1;
+                    s.x1 = sample;
+                    s.y2 = s.y1;
+                    s.y1 = out;
 
-                    sample = out; // Result of this band is input to next band
+                    sample = out; // Current output becomes input for the next band
                 }
+
+                // 3. Store final processed sample back into the interleaved buffer
                 buffer[i] = sample;
             }
         }
+
+        // virtual void process(float* buffer, int numSamples, int numChannels) override {
+        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+        //     if (!isEnabled()) return;
+        //
+        //     for (int i = 0; i < numSamples; i++) {
+        //         float sample = buffer[i];
+        //         bool isLeft = (i % 2 == 0);
+        //
+        //         // Cascade the sample through all 9 filters
+        //         for (int b = 0; b < NUM_BANDS; b++) {
+        //             FilterState& s = isLeft ? mStateL[b] : mStateR[b];
+        //             BiquadCoeffs& c = mCoeffs[b];
+        //
+        //             float out = c.b0 * sample + c.b1 * s.x1 + c.b2 * s.x2
+        //             - c.a1 * s.y1 - c.a2 * s.y2;
+        //
+        //             s.x2 = s.x1; s.x1 = sample;
+        //             s.y2 = s.y1; s.y1 = out;
+        //
+        //             sample = out; // Result of this band is input to next band
+        //         }
+        //         buffer[i] = sample;
+        //     }
+        // }
+
+
+
         virtual std::string getName() const override { return "9-BAND EQUALIZER";}
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.7f, 1.0f, 1.0f);}

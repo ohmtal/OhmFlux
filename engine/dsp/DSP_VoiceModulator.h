@@ -76,17 +76,23 @@ static const std::array<DSP::VoiceSettings, 5> VOICE_PRESETS = {
 class VoiceModulator : public DSP::Effect {
 private:
     VoiceSettings mSettings = VADER_VOICE;
-    std::vector<float> mBufL, mBufR;
-    float mReadPosL = 0.0f,
-    mReadPosR = 0.0f;
-    uint32_t mWritePos = 0;
+    // std::vector<float> mBufL, mBufR;
+    // float mReadPosL = 0.0f,
+    // mReadPosR = 0.0f;
+    // uint32_t mWritePos = 0;
+
     const uint32_t mBufSize = 4096; // Short buffer for pitch shifting
+
+    std::vector<std::vector<float>> mBuffers;
+    std::vector<float> mReadPositions;
+    uint32_t mWritePos = 0;
+
 
 public:
     VoiceModulator(bool switchOn = false) :
         DSP::Effect(switchOn) {
-        mBufL.resize(mBufSize, 0.0f);
-        mBufR.resize(mBufSize, 0.0f);
+        // mBufL.resize(mBufSize, 0.0f);
+        // mBufR.resize(mBufSize, 0.0f);
         mSettings = VADER_VOICE;
     }
 
@@ -99,11 +105,11 @@ public:
     void setSettings(const VoiceSettings& s) { mSettings = s; }
 
     virtual void reset() override {
-        std::fill(mBufL.begin(), mBufL.end(), 0.0f);
-        std::fill(mBufR.begin(), mBufR.end(), 0.0f);
-        mWritePos = 0;
-        mReadPosL = 0.0f;
-        mReadPosR = 0.0f;
+        // std::fill(mBufL.begin(), mBufL.end(), 0.0f);
+        // std::fill(mBufR.begin(), mBufR.end(), 0.0f);
+        // mWritePos = 0;
+        // mReadPosL = 0.0f;
+        // mReadPosR = 0.0f;
     }
     void save(std::ostream& os) const override {
         Effect::save(os);              // Save mEnabled
@@ -119,59 +125,124 @@ public:
 
     //--------------------------------------------------------------------------
     virtual void process(float* buffer, int numSamples, int numChannels) override {
-        if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
         if (!isEnabled()) return;
 
-        for (int i = 0; i < numSamples; i += 2) {
-            float dryL = buffer[i];
-            float dryR = buffer[i + 1];
+        if (mBuffers.size() != static_cast<size_t>(numChannels)) {
+            mBuffers.assign(numChannels, std::vector<float>(mBufSize, 0.0f));
+            mReadPositions.assign(numChannels, 0.0f);
+        }
 
-            // 1. Store input in ring buffer
-            mBufL[mWritePos] = dryL;
-            mBufR[mWritePos] = dryR;
+        float grit = std::clamp(mSettings.grit, 0.0f, 1.0f);
+        float levels = std::pow(2.0f, std::max(1.0f, 16.0f * (1.0f - grit * 0.9f)));
 
-            // 2. Dual-Tap Pitch Shifter with crossfading to prevent clicks
-            auto processChannel = [&](std::vector<float>& buf, float& readPos) {
-                int p1 = static_cast<int>(readPos);
-                int p2 = (p1 + mBufSize / 2) % mBufSize;
+        for (int i = 0; i < numSamples; i++) {
+            int channel = i % numChannels;
+            float dry = buffer[i];
 
-                // Linear crossfade window
-                float fade = std::abs((readPos / static_cast<float>(mBufSize)) * 2.0f - 1.0f);
-                float sample = buf[p1] * fade + buf[p2] * (1.0f - fade);
+            // 1. Write to buffer
+            mBuffers[channel][mWritePos] = dry;
 
-                // Increment read pointer by pitch factor
-                readPos += mSettings.pitch;
-                while (readPos >= mBufSize) readPos -= mBufSize;
+            // 2. Pitch Shifting mit Crossfading
+            float& rp = mReadPositions[channel];
+            std::vector<float>& buf = mBuffers[channel];
 
-                return sample;
+            // Zwei Taps, die 180 Grad phasenverschoben sind
+            float p1 = rp;
+            float p2 = rp + (mBufSize * 0.5f);
+            if (p2 >= mBufSize) p2 -= mBufSize;
+
+            // Hann-Window-ähnlicher Crossfade (sinusoidal ist weicher als linear)
+            // Verhindert das "Knacken" an den Loop-Punkten
+            float phase = rp / static_cast<float>(mBufSize);
+            float fade = 0.5f * (1.0f - std::cos(2.0f * M_PI * phase));
+
+            auto getInterpolated = [&](float pos) {
+                int i1 = static_cast<int>(pos);
+                int i2 = (i1 + 1) % mBufSize;
+                float frac = pos - i1;
+                return buf[i1] * (1.0f - frac) + buf[i2] * frac;
             };
 
-            float outL = processChannel(mBufL, mReadPosL);
-            float outR = processChannel(mBufR, mReadPosR);
+            // Crossfade zwischen Tap 1 und Tap 2
+            float wet = getInterpolated(p1) * (1.0f - fade) + getInterpolated(p2) * fade;
 
-            // 3. Apply Grit (Bitcrushing)
-            if (mSettings.grit > 0.01f) {
-                // Reduce bit depth based on grit setting (16-bit down to approx 2-bit)
-                float steps = std::pow(2.0f, 16.0f * (1.0f - mSettings.grit * 0.8f));
-                if (steps < 2.0f) steps = 2.0f;
-
-                outL = std::floor(outL * steps) / steps;
-                outR = std::floor(outR * steps) / steps;
-
-                // Slight volume compensation for grit harshness
-                outL *= (1.0f + mSettings.grit * 0.1f);
-                outR *= (1.0f + mSettings.grit * 0.1f);
+            // 3. Grit Logic (Bitcrushing)
+            if (grit > 0.01f) {
+                float shifted = (wet + 1.0f) * 0.5f;
+                float quantized = std::round(shifted * (levels - 1.0f)) / (levels - 1.0f);
+                wet = (quantized * 2.0f) - 1.0f;
+                wet *= (1.0f + grit * 0.2f);
             }
 
-            // 4. Final Dry/Wet Mix
-            buffer[i]     = (dryL * (1.0f - mSettings.wet)) + (outL * mSettings.wet);
-            buffer[i + 1] = (dryR * (1.0f - mSettings.wet)) + (outR * mSettings.wet);
+            // 4. Final Mix
+            buffer[i] = (dry * (1.0f - mSettings.wet)) + (wet * mSettings.wet);
 
-            // Advance write pointer
-            mWritePos = (mWritePos + 1) % mBufSize;
+            // 5. Sync Update: Alle Kanäle im Frame müssen denselben Fortschritt haben
+            if (channel == numChannels - 1) {
+                mWritePos = (mWritePos + 1) % mBufSize;
+                for (int c = 0; c < numChannels; ++c) {
+                    mReadPositions[c] += mSettings.pitch;
+                    if (mReadPositions[c] >= mBufSize) mReadPositions[c] -= mBufSize;
+                    if (mReadPositions[c] < 0) mReadPositions[c] += mBufSize;
+                }
+            }
         }
     }
 
+    // virtual void processOLD(float* buffer, int numSamples, int numChannels) override {
+    //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+    //     if (!isEnabled()) return;
+    //
+    //     for (int i = 0; i < numSamples; i += 2) {
+    //         float dryL = buffer[i];
+    //         float dryR = buffer[i + 1];
+    //
+    //         // 1. Store input in ring buffer
+    //         mBufL[mWritePos] = dryL;
+    //         mBufR[mWritePos] = dryR;
+    //
+    //         // 2. Dual-Tap Pitch Shifter with crossfading to prevent clicks
+    //         auto processChannel = [&](std::vector<float>& buf, float& readPos) {
+    //             int p1 = static_cast<int>(readPos);
+    //             int p2 = (p1 + mBufSize / 2) % mBufSize;
+    //
+    //             // Linear crossfade window
+    //             float fade = std::abs((readPos / static_cast<float>(mBufSize)) * 2.0f - 1.0f);
+    //             float sample = buf[p1] * fade + buf[p2] * (1.0f - fade);
+    //
+    //             // Increment read pointer by pitch factor
+    //             readPos += mSettings.pitch;
+    //             while (readPos >= mBufSize) readPos -= mBufSize;
+    //
+    //             return sample;
+    //         };
+    //
+    //         float outL = processChannel(mBufL, mReadPosL);
+    //         float outR = processChannel(mBufR, mReadPosR);
+    //
+    //         // 3. Apply Grit (Bitcrushing)
+    //         if (mSettings.grit > 0.01f) {
+    //             // Reduce bit depth based on grit setting (16-bit down to approx 2-bit)
+    //             float steps = std::pow(2.0f, 16.0f * (1.0f - mSettings.grit * 0.8f));
+    //             if (steps < 2.0f) steps = 2.0f;
+    //
+    //             outL = std::floor(outL * steps) / steps;
+    //             outR = std::floor(outR * steps) / steps;
+    //
+    //             // Slight volume compensation for grit harshness
+    //             outL *= (1.0f + mSettings.grit * 0.1f);
+    //             outR *= (1.0f + mSettings.grit * 0.1f);
+    //         }
+    //
+    //         // 4. Final Dry/Wet Mix
+    //         buffer[i]     = (dryL * (1.0f - mSettings.wet)) + (outL * mSettings.wet);
+    //         buffer[i + 1] = (dryR * (1.0f - mSettings.wet)) + (outR * mSettings.wet);
+    //
+    //         // Advance write pointer
+    //         mWritePos = (mWritePos + 1) % mBufSize;
+    //     }
+    // }
+    //
     //--------------------------------------------------------------------------
     #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const override { return ImVec4(0.8f, 0.4f, 0.2f, 1.0f); } // Darth Vader Orange/Red

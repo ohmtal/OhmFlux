@@ -37,7 +37,8 @@ namespace DSP {
         VisualAnalyzer     = 10,  //no extra settings only analysing for visual effect
         Delay              = 11,
         VoiceModulator     = 12,
-        RingModulator      = 13
+        RingModulator      = 13,
+        OverDrive          = 14
         // NOTE  don't forget to add this to the Effect Factory !!!
 
     };

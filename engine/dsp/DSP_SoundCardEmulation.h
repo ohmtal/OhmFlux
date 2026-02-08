@@ -68,7 +68,10 @@ namespace DSP {
 
 
 class SoundCardEmulation : public DSP::Effect {
-
+    struct FilterChannelState {
+        float prevInput = 0.0f;
+        float filterState = 0.0f;
+    };
 
 private:
     float mAlpha = 1.0f;
@@ -78,13 +81,15 @@ private:
     SoundCardEmulationSettings mSettings;
 
     // State for filtering and blending
-    float mPrevL = 0.0f;
-    float mPrevR = 0.0f;
+    std::vector<FilterChannelState> mStates;
 
-    float mFilterStateL = 0.0f;
-    float mFilterStateR = 0.0f;
-    float mPrevInputL = 0.0f;
-    float mPrevInputR = 0.0f;
+    // float mPrevL = 0.0f;
+    // float mPrevR = 0.0f;
+    //
+    // float mFilterStateL = 0.0f;
+    // float mFilterStateR = 0.0f;
+    // float mPrevInputL = 0.0f;
+    // float mPrevInputR = 0.0f;
 
 public:
 
@@ -125,10 +130,12 @@ private:
         float rc = 1.0f / (2.0f * M_PI * cutoff);
         mAlpha = (cutoff >= 20000.0f) ? 1.0f : (dt / (rc + dt));
 
-        mFilterStateL = 0.0f;
-        mFilterStateR = 0.0f;
-        mPrevInputL = 0.0f;
-        mPrevInputR = 0.0f;
+        mStates = {{0.f,0.f} , {0.f, 0.f}};
+
+        // mFilterStateL = 0.0f;
+        // mFilterStateR = 0.0f;
+        // mPrevInputL = 0.0f;
+        // mPrevInputR = 0.0f;
     }
 public:
 
@@ -142,41 +149,83 @@ public:
         return mSettings.setBinary(is);      // Load Settings
     }
 
-    virtual void process(float* buffer, int numSamples, int numChannels) override {
-        if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
 
+    virtual void process(float* buffer, int numSamples, int numChannels) override {
         if (!mEnabled) return;
 
-        for (int i = 0; i < numSamples; i += 2) {
-            float inputL = buffer[i];
-            float inputR = buffer[i + 1];
+        // Ensure we have a state object for every channel
+        if (mStates.size() != static_cast<size_t>(numChannels)) {
+            mStates.assign(numChannels, FilterChannelState());
+        }
+
+        for (int i = 0; i < numSamples; i++) {
+            int channel = i % numChannels;
+            float input = buffer[i];
+
+            // Access the state for the current channel
+            FilterChannelState& s = mStates[channel];
 
             // 1. Blending (Linear Interpolation)
-            // We use the raw input and the raw previous input for blending
-            float blendedL = mUseBlending ? (inputL + mPrevInputL) * 0.5f : inputL;
-            float blendedR = mUseBlending ? (inputR + mPrevInputR) * 0.5f : inputR;
+            // Average of current input and previous input
+            float blended = mUseBlending ? (input + s.prevInput) * 0.5f : input;
 
             // Save raw input for the next sample's blending
-            mPrevInputL = inputL;
-            mPrevInputR = inputR;
+            s.prevInput = input;
 
             // 2. Low-Pass Filter (One-Pole IIR)
-            // Use a separate state variable for the filter (mFilterStateL/R)
-            mFilterStateL = mFilterStateL + mAlpha * (blendedL - mFilterStateL);
-            mFilterStateR = mFilterStateR + mAlpha * (blendedR - mFilterStateR);
+            // Simple smoothing formula: y[n] = y[n-1] + alpha * (x[n] - y[n-1])
+            s.filterState = s.filterState + mAlpha * (blended - s.filterState);
 
-            // 3. Apply Gain and Clamp to prevent clipping or NaN propagation
-            float outL = std::clamp(mFilterStateL * mGain, -1.0f, 1.0f);
-            float outR = std::clamp(mFilterStateR * mGain, -1.0f, 1.0f);
+            // 3. Apply Gain and Clamp
+            float out = std::clamp(s.filterState * mGain, -1.0f, 1.0f);
 
-            // Check for NaN (safety for 2026 DSP standards)
-            if (std::isnan(outL)) { mFilterStateL = 0.0f; outL = 0.0f; }
-            if (std::isnan(outR)) { mFilterStateR = 0.0f; outR = 0.0f; }
+            // Safety: Check for NaN and reset if necessary
+            if (std::isnan(out)) {
+                s.filterState = 0.0f;
+                out = 0.0f;
+            }
 
-            buffer[i] = outL;
-            buffer[i + 1] = outR;
+            buffer[i] = out;
         }
     }
+
+    // virtual void process(float* buffer, int numSamples, int numChannels) override {
+    //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+    //
+    //     if (!mEnabled) return;
+    //
+    //     for (int i = 0; i < numSamples; i += 2) {
+    //         float inputL = buffer[i];
+    //         float inputR = buffer[i + 1];
+    //
+    //         // 1. Blending (Linear Interpolation)
+    //         // We use the raw input and the raw previous input for blending
+    //         float blendedL = mUseBlending ? (inputL + mPrevInputL) * 0.5f : inputL;
+    //         float blendedR = mUseBlending ? (inputR + mPrevInputR) * 0.5f : inputR;
+    //
+    //         // Save raw input for the next sample's blending
+    //         mPrevInputL = inputL;
+    //         mPrevInputR = inputR;
+    //
+    //         // 2. Low-Pass Filter (One-Pole IIR)
+    //         // Use a separate state variable for the filter (mFilterStateL/R)
+    //         mFilterStateL = mFilterStateL + mAlpha * (blendedL - mFilterStateL);
+    //         mFilterStateR = mFilterStateR + mAlpha * (blendedR - mFilterStateR);
+    //
+    //         // 3. Apply Gain and Clamp to prevent clipping or NaN propagation
+    //         float outL = std::clamp(mFilterStateL * mGain, -1.0f, 1.0f);
+    //         float outR = std::clamp(mFilterStateR * mGain, -1.0f, 1.0f);
+    //
+    //         // Check for NaN (safety for 2026 DSP standards)
+    //         if (std::isnan(outL)) { mFilterStateL = 0.0f; outL = 0.0f; }
+    //         if (std::isnan(outR)) { mFilterStateR = 0.0f; outR = 0.0f; }
+    //
+    //         buffer[i] = outL;
+    //         buffer[i + 1] = outR;
+    //     }
+    // }
+
+
     virtual std::string getName() const override { return "SOUND RENDERING";}
     #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const  override { return ImVec4(0.62f, 0.42f, 0.5f, 1.0f);}

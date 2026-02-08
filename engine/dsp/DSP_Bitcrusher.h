@@ -70,15 +70,19 @@ namespace DSP {
     class Bitcrusher : public Effect {
     private:
         BitcrusherSettings mSettings;
-        float mStepL = 0.0f;
-        float mStepR = 0.0f;
+        // float mStepL = 0.0f;
+        // float mStepR = 0.0f;
+         std::vector<float> mSteps;
+
         float mSampleCount = 1000.0f;
 
     public:
         Bitcrusher(bool switchOn = false) :
             Effect(switchOn),
             mSettings(AMIGA_BITCRUSHER)
-            {}
+            {
+                std::vector<float> mSteps{0.0f, 0.0f}; //default 2 channel
+            }
 
 
 
@@ -105,48 +109,91 @@ namespace DSP {
             return mSettings.setBinary(is);      // Load Settings
         }
         //----------------------------------------------------------------------
-        virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+        // Ensure mSteps is resized to numChannels in a 'prepare' or 'reset' method
+        // std::vector<float> mSteps;
 
-            if (!isEnabled()) return;
-            if (mSettings.wet <= 0.001f) return;
+        virtual void process(float* buffer, int numSamples, int numChannels) override {
+            if (!isEnabled() || mSettings.wet <= 0.001f) return;
+
+            // Resize state buffer if channel count changes dynamically
+            if (mSteps.size() != (size_t)numChannels) {
+                mSteps.assign(numChannels, 0.0f);
+            }
 
             float samplesToHold = getSampleRateF() / std::max(1.0f, mSettings.sampleRate);
             float levels = std::pow(2.0f, std::clamp(mSettings.bits, 1.0f, 16.0f));
 
             for (int i = 0; i < numSamples; i++) {
+                int channel = i % numChannels;
                 float dry = buffer[i];
 
-                // --- FIXED SAMPLE & HOLD LOGIC ---
-                bool isLeft = (i % 2 == 0);
-
-                if (isLeft) {
-                    mSampleCount++; // Increment only once per stereo pair
-                }
-
-                if (mSampleCount >= samplesToHold) {
-                    // Update the specific channel for this iteration
-                    if (isLeft) mStepL = dry;
-                    else mStepR = dry;
-
-                    // ONLY reset after the Right channel has had a chance to update
-                    if (!isLeft) {
+                // Update sample-and-hold values at the start of a new multi-channel frame
+                if (channel == 0) {
+                    mSampleCount++;
+                    if (mSampleCount >= samplesToHold) {
                         mSampleCount = 0;
+                        // Capture the current dry value for all channels in this frame
+                        // Note: This assumes interleaved data [C1, C2, ..., Cn, C1, C2...]
+                        for (int c = 0; c < numChannels; ++c) {
+                            mSteps[c] = buffer[i + c];
+                        }
                     }
                 }
 
-                float held = isLeft ? mStepL : mStepR;
-                // ----------------------------------
+                float held = mSteps[channel];
 
-                // 3. Bit Crushing
+                // Bit Crushing
                 float shifted = (held + 1.0f) * 0.5f;
                 float quantized = std::round(shifted * (levels - 1.0f)) / (levels - 1.0f);
                 float crushed = (quantized * 2.0f) - 1.0f;
 
-                // 4. Mix
+                // Mix
                 buffer[i] = (dry * (1.0f - mSettings.wet)) + (crushed * mSettings.wet);
             }
         }
+
+        // virtual void process(float* buffer, int numSamples, int numChannels) override {
+        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+        //
+        //     if (!isEnabled()) return;
+        //     if (mSettings.wet <= 0.001f) return;
+        //
+        //     float samplesToHold = getSampleRateF() / std::max(1.0f, mSettings.sampleRate);
+        //     float levels = std::pow(2.0f, std::clamp(mSettings.bits, 1.0f, 16.0f));
+        //
+        //     for (int i = 0; i < numSamples; i++) {
+        //         float dry = buffer[i];
+        //
+        //         // --- FIXED SAMPLE & HOLD LOGIC ---
+        //         bool isLeft = (i % 2 == 0);
+        //
+        //         if (isLeft) {
+        //             mSampleCount++; // Increment only once per stereo pair
+        //         }
+        //
+        //         if (mSampleCount >= samplesToHold) {
+        //             // Update the specific channel for this iteration
+        //             if (isLeft) mStepL = dry;
+        //             else mStepR = dry;
+        //
+        //             // ONLY reset after the Right channel has had a chance to update
+        //             if (!isLeft) {
+        //                 mSampleCount = 0;
+        //             }
+        //         }
+        //
+        //         float held = isLeft ? mStepL : mStepR;
+        //         // ----------------------------------
+        //
+        //         // 3. Bit Crushing
+        //         float shifted = (held + 1.0f) * 0.5f;
+        //         float quantized = std::round(shifted * (levels - 1.0f)) / (levels - 1.0f);
+        //         float crushed = (quantized * 2.0f) - 1.0f;
+        //
+        //         // 4. Mix
+        //         buffer[i] = (dry * (1.0f - mSettings.wet)) + (crushed * mSettings.wet);
+        //     }
+        // }
 
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "BITCRUSHER";}

@@ -37,32 +37,77 @@ namespace DSP {
 
         DSP::EffectType getType() const override { return DSP::EffectType::SpectrumAnalyzer; }
 
-        // The audio callback calls this
-        virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
 
+        virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!mEnabled) return;
 
-            // Capture samples into our circular buffer
-            for (int i = 0; i < numSamples; ++i) {
-                mCaptureBuffer[mWriteIdx] = buffer[i];
+            // Process in frames to handle interleaving correctly
+            for (int i = 0; i < numSamples; i += numChannels) {
+                float monoSum = 0.0f;
+                // 1. Sum all channels in the current frame
+                for (int c = 0; c < numChannels; ++c) {
+                    monoSum += buffer[i + c];
+                }
+                // 2. Average the sum to keep the level consistent
+                monoSum /= static_cast<float>(numChannels);
+                // 3. Capture into the circular buffer
+                mCaptureBuffer[mWriteIdx] = monoSum;
                 mWriteIdx = (mWriteIdx + 1) % FFT_SIZE;
             }
         }
 
-        // The GUI thread calls this to get the data
         const std::vector<float>& getMagnitudes() {
-            // TODO: Replace with a FFT logic (e.g., KissFFT)
-            for (int i = 0; i < mDisplayMagnitudes.size(); ++i) {
-                // Smoothing logic: slowly decay the bars
+            // 1. Determine how many samples to check per display bar
+            // This ensures all captured data is represented in the visual
+            int samplesPerBar = FFT_SIZE / std::max(1, (int)mDisplayMagnitudes.size());
+
+            for (int i = 0; i < (int)mDisplayMagnitudes.size(); ++i) {
+                // Smoothing: Slow decay for a "fallback" effect
                 mDisplayMagnitudes[i] *= 0.92f;
 
-                // Peak detection from the captured buffer
-                float sample = std::abs(mCaptureBuffer[i % FFT_SIZE]);
-                if (sample > mDisplayMagnitudes[i]) mDisplayMagnitudes[i] = sample;
+                // 2. Peak Detection in the range assigned to this bar
+                float peak = 0.0f;
+                for (int j = 0; j < samplesPerBar; ++j) {
+                    int idx = (i * samplesPerBar + j) % FFT_SIZE;
+                    float val = std::abs(mCaptureBuffer[idx]);
+                    if (val > peak) peak = val;
+                }
+
+                // 3. Update the display bar if the new peak is higher
+                if (peak > mDisplayMagnitudes[i]) {
+                    mDisplayMagnitudes[i] = peak;
+                }
             }
+
             return mDisplayMagnitudes;
         }
+
+
+        // virtual void process(float* buffer, int numSamples, int numChannels) override {
+        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+        //
+        //     if (!mEnabled) return;
+        //
+        //     // Capture samples into our circular buffer
+        //     for (int i = 0; i < numSamples; ++i) {
+        //         mCaptureBuffer[mWriteIdx] = buffer[i];
+        //         mWriteIdx = (mWriteIdx + 1) % FFT_SIZE;
+        //     }
+        // }
+
+        // // The GUI thread calls this to get the data
+        // const std::vector<float>& getMagnitudes() {
+        //     // TODO: Replace with a FFT logic (e.g., KissFFT)
+        //     for (int i = 0; i < mDisplayMagnitudes.size(); ++i) {
+        //         // Smoothing logic: slowly decay the bars
+        //         mDisplayMagnitudes[i] *= 0.92f;
+        //
+        //         // Peak detection from the captured buffer
+        //         float sample = std::abs(mCaptureBuffer[i % FFT_SIZE]);
+        //         if (sample > mDisplayMagnitudes[i]) mDisplayMagnitudes[i] = sample;
+        //     }
+        //     return mDisplayMagnitudes;
+        // }
         virtual std::string getName() const override { return "SPECTRUM ANALYSER";}
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.73f, 0.8f, 0.73f, 1.0f);}

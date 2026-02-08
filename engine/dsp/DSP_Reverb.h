@@ -71,20 +71,45 @@ static const std::array<DSP::ReverbSettings, 5> REVERB_PRESETS = {
 
 class Reverb : public DSP::Effect {
 private:
-    // CHANGED: Must be float to maintain precision in feedback loops
-    std::vector<float> mBufL;
-    std::vector<float> mBufR;
-    int mPosL = 0;
-    int mPosR = 0;
+
+    std::vector<std::vector<float>> mBuffers;
+    std::vector<uint32_t> mPositions;
+    std::vector<uint32_t> mSizes; // Stores unique sizes per channel
+
+    uint32_t mMaxBufSize;
+
+    // std::vector<float> mBufL;
+    // std::vector<float> mBufR;
+    // int mPosL = 0;
+    // int mPosR = 0;
     ReverbSettings mSettings;
+
+    void updateSizes( int numChannels)
+    {
+        mSizes.resize(numChannels);
+        for (int c = 0; c < numChannels; ++c) {
+            float ratio = (numChannels > 1) ? (float)c / (numChannels - 1) : 0.0f;
+            mSizes[c] = static_cast<uint32_t>(mSettings.sizeL + ratio * (mSettings.sizeR - mSettings.sizeL));
+            if (mSizes[c] > mMaxBufSize) mSizes[c] = mMaxBufSize;
+        }
+    }
+
 
 public:
     Reverb(bool switchOn = false) :
     Effect(switchOn)
     {
-        // Allocate 1 second of buffer for 44.1kHz as float
-        mBufL.assign(getSampleRateI(), 0.0f);
-        mBufR.assign(getSampleRateI(), 0.0f);
+        mMaxBufSize = getSampleRateI();
+
+        //default stereo
+        mBuffers.assign(2,  std::vector<float>(mMaxBufSize, 0.0f ));
+        mPositions = { 0, 0 };
+        updateSizes(2);
+
+        // mBufL.assign(getSampleRateI(), 0.0f);
+        // mBufR.assign(getSampleRateI(), 0.0f);
+
+
         mSettings = ROOM_REVERB;
     }
 
@@ -94,12 +119,17 @@ public:
 
     void setSettings(const ReverbSettings& s) {
         mSettings = s;
-        // Ensure size settings don't exceed the allocated DSP::SAMPLE_RATE
-        // and reset positions to avoid clicks
-        std::fill(mBufL.begin(), mBufL.end(), 0.0f);
-        std::fill(mBufR.begin(), mBufR.end(), 0.0f);
-        mPosL = 0;
-        mPosR = 0;
+
+        mMaxBufSize = getSampleRateI();
+        //default stereo
+        mBuffers.assign(2,  std::vector<float>(mMaxBufSize, 0.0f ));
+        mPositions = { 0, 0 };
+        updateSizes(2);
+
+        // std::fill(mBufL.begin(), mBufL.end(), 0.0f);
+        // std::fill(mBufR.begin(), mBufR.end(), 0.0f);
+        // mPosL = 0;
+        // mPosR = 0;
     }
 
     void save(std::ostream& os) const override {
@@ -121,32 +151,72 @@ public:
     }
 
 
-    virtual void process(float* buffer, int numSamples, int numChannels) override {
-        if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
 
-        if (!isEnabled()) return;
-        if (mSettings.wet <= 0.001f) return;
+
+    virtual void process(float* buffer, int numSamples, int numChannels) override {
+        if (!isEnabled() || mSettings.wet <= 0.001f) return;
+
+        // 1. Initialize resources if channel count changed
+        if (mBuffers.size() != static_cast<size_t>(numChannels)) {
+            mBuffers.assign(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
+            mPositions.assign(numChannels, 0);
+            updateSizes(numChannels);
+        }
 
         for (int i = 0; i < numSamples; i++) {
+            int channel = i % numChannels;
             float dry = buffer[i];
-            float delayed;
 
-            if (i % 2 == 0) { // Left Channel
-                delayed = mBufL[mPosL];
-                // FEEDBACK: High precision float math
-                mBufL[mPosL] = dry + (delayed * mSettings.decay);
-                // Wrap position based on current room size
-                mPosL = (mPosL + 1) % mSettings.sizeL;
-            } else { // Right Channel
-                delayed = mBufR[mPosR];
-                mBufR[mPosR] = dry + (delayed * mSettings.decay);
-                mPosR = (mPosR + 1) % mSettings.sizeR;
+            // 3. Access resources for the current channel
+            std::vector<float>& activeBuf = mBuffers[channel];
+            uint32_t& activePos = mPositions[channel];
+            uint32_t activeSize = mSizes[channel];
+
+            // 4. Reverb logic
+            float delayed = activeBuf[activePos];
+
+            // Feedback loop
+            activeBuf[activePos] = dry + (delayed * mSettings.decay);
+
+            // 5. Wrap position based on this channel's specific size
+            activePos = (activePos + 1);
+            if (activePos >= activeSize) {
+                activePos = 0;
             }
 
-            // MIX: Linear interpolation between dry and wet
+            // 6. Mix Dry + Wet
             buffer[i] = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
         }
     }
+
+    // virtual void process(float* buffer, int numSamples, int numChannels) override {
+    //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+    //
+    //     if (!isEnabled()) return;
+    //     if (mSettings.wet <= 0.001f) return;
+    //
+    //     for (int i = 0; i < numSamples; i++) {
+    //         float dry = buffer[i];
+    //         float delayed;
+    //
+    //         if (i % 2 == 0) { // Left Channel
+    //             delayed = mBufL[mPosL];
+    //             // FEEDBACK: High precision float math
+    //             mBufL[mPosL] = dry + (delayed * mSettings.decay);
+    //             // Wrap position based on current room size
+    //             mPosL = (mPosL + 1) % mSettings.sizeL;
+    //         } else { // Right Channel
+    //             delayed = mBufR[mPosR];
+    //             mBufR[mPosR] = dry + (delayed * mSettings.decay);
+    //             mPosR = (mPosR + 1) % mSettings.sizeR;
+    //         }
+    //
+    //         // MIX: Linear interpolation between dry and wet
+    //         buffer[i] = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
+    //     }
+    // }
+
+
     virtual std::string getName() const override { return "REVERB / SPACE";}
 #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.9f, 0.5f, 1.0f);}

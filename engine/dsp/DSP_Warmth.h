@@ -70,16 +70,17 @@ namespace DSP {
     class Warmth : public Effect {
     private:
         WarmthSettings mSettings;
-        float mPolesL[4];
-        float mPolesR[4];
+        // float mPolesL[4];
+        // float mPolesR[4];
+        std::vector<std::array<float, 4>> mChannelPoles;
 
     public:
         Warmth(bool switchOn = false) :
             Effect(switchOn),
             mSettings(GENTLE_WARMTH)
         {
-            std::memset(mPolesL, 0, sizeof(mPolesL));
-            std::memset(mPolesR, 0, sizeof(mPolesR));
+            // std::memset(mPolesL, 0, sizeof(mPolesL));
+            // std::memset(mPolesR, 0, sizeof(mPolesR));
         }
 
         DSP::EffectType getType() const override { return DSP::EffectType::Warmth; }
@@ -88,8 +89,8 @@ namespace DSP {
 
         void setSettings(const WarmthSettings& s) {
             mSettings = s;
-            std::memset(mPolesL, 0, sizeof(mPolesL));
-            std::memset(mPolesR, 0, sizeof(mPolesR));
+            // std::memset(mPolesL, 0, sizeof(mPolesL));
+            // std::memset(mPolesR, 0, sizeof(mPolesR));
         }
 
         void save(std::ostream& os) const override {
@@ -104,22 +105,25 @@ namespace DSP {
 
 
         virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
-            if (!isEnabled()) return;
-            if (mSettings.wet <= 0.001f) return;
+            if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
-            // alpha represents the cutoff frequency (0.01 to 0.99)
+            // 1. Initialize poles for all channels if count changed
+            if (mChannelPoles.size() != static_cast<size_t>(numChannels)) {
+                mChannelPoles.assign(numChannels, {0.0f, 0.0f, 0.0f, 0.0f});
+            }
+
+            // Alpha represents the cutoff frequency (0.01 to 0.99)
             float alpha = std::clamp(mSettings.cutoff, 0.01f, 0.99f);
 
             for (int i = 0; i < numSamples; i++) {
-                // 1. Input is already float (-1.0 to 1.0)
+                int channel = i % numChannels;
                 float dry = buffer[i];
 
-                // 2. Select poles for Left or Right channel
-                // Ensure mPolesL/R are float[4] initialized to 0.0f
-                float* p = (i % 2 == 0) ? mPolesL : mPolesR;
+                // 2. Access the 4-pole state for the current channel
+                std::array<float, 4>& p = mChannelPoles[channel];
 
                 // 3. 4-POLE CASCADE (-24dB/octave)
+                // Each stage smooths the output of the previous stage
                 p[0] = (dry  * alpha) + (p[0] * (1.0f - alpha));
                 p[1] = (p[0] * alpha) + (p[1] * (1.0f - alpha));
                 p[2] = (p[1] * alpha) + (p[2] * (1.0f - alpha));
@@ -128,18 +132,58 @@ namespace DSP {
                 float filtered = p[3];
 
                 // 4. Analog Saturation (Soft Clipping)
-                // In the float pipeline, 'x' is already normalized.
                 float x = filtered * mSettings.drive;
 
                 // Polynomial approximation of Tanh for "warm" analog saturation
-                float saturated = x * (1.5f - (0.5f * x * x));
+                // Note: This approximation is valid for x between -1 and 1.
+                // For higher drive, we clamp x before saturation or use a more robust function.
+                float x_limited = std::clamp(x, -1.0f, 1.0f);
+                float saturated = x_limited * (1.5f - (0.5f * x_limited * x_limited));
 
                 // 5. Final Mix and Clamp
-                // We clamp here because saturation/drive can push values outside [-1, 1]
                 float mixed = (dry * (1.0f - mSettings.wet)) + (saturated * mSettings.wet);
                 buffer[i] = std::clamp(mixed, -1.0f, 1.0f);
             }
         }
+
+
+        // virtual void process(float* buffer, int numSamples, int numChannels) override {
+        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
+        //     if (!isEnabled()) return;
+        //     if (mSettings.wet <= 0.001f) return;
+        //
+        //     // alpha represents the cutoff frequency (0.01 to 0.99)
+        //     float alpha = std::clamp(mSettings.cutoff, 0.01f, 0.99f);
+        //
+        //     for (int i = 0; i < numSamples; i++) {
+        //         // 1. Input is already float (-1.0 to 1.0)
+        //         float dry = buffer[i];
+        //
+        //         // 2. Select poles for Left or Right channel
+        //         // Ensure mPolesL/R are float[4] initialized to 0.0f
+        //         float* p = (i % 2 == 0) ? mPolesL : mPolesR;
+        //
+        //         // 3. 4-POLE CASCADE (-24dB/octave)
+        //         p[0] = (dry  * alpha) + (p[0] * (1.0f - alpha));
+        //         p[1] = (p[0] * alpha) + (p[1] * (1.0f - alpha));
+        //         p[2] = (p[1] * alpha) + (p[2] * (1.0f - alpha));
+        //         p[3] = (p[2] * alpha) + (p[3] * (1.0f - alpha));
+        //
+        //         float filtered = p[3];
+        //
+        //         // 4. Analog Saturation (Soft Clipping)
+        //         // In the float pipeline, 'x' is already normalized.
+        //         float x = filtered * mSettings.drive;
+        //
+        //         // Polynomial approximation of Tanh for "warm" analog saturation
+        //         float saturated = x * (1.5f - (0.5f * x * x));
+        //
+        //         // 5. Final Mix and Clamp
+        //         // We clamp here because saturation/drive can push values outside [-1, 1]
+        //         float mixed = (dry * (1.0f - mSettings.wet)) + (saturated * mSettings.wet);
+        //         buffer[i] = std::clamp(mixed, -1.0f, 1.0f);
+        //     }
+        // }
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "ANALOG WARMTH / SATURATION";}
         #ifdef FLUX_ENGINE

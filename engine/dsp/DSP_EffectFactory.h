@@ -54,6 +54,9 @@ namespace DSP {
                 case EffectType::RingModulator:
                     return std::make_unique<RingModulator>();
 
+                case EffectType::OverDrive:
+                    return std::make_unique<OverDrive>();
+
                 case EffectType::NONE:
                 default:
                     // Hier landen wir, wenn der Typ 0 ist oder vergessen wurde
