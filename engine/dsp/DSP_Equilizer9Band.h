@@ -97,8 +97,6 @@ namespace DSP {
         float mSampleRate = getSampleRateF();
 
         BiquadCoeffs mCoeffs[NUM_BANDS];
-        // FilterState mStateL[NUM_BANDS];
-        // FilterState mStateR[NUM_BANDS];
 
         std::vector<std::vector<FilterState>> mChannelStates;
 
@@ -213,36 +211,39 @@ namespace DSP {
             }
         }
 
-        // virtual void process(float* buffer, int numSamples, int numChannels) override {
-        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
-        //     if (!isEnabled()) return;
-        //
-        //     for (int i = 0; i < numSamples; i++) {
-        //         float sample = buffer[i];
-        //         bool isLeft = (i % 2 == 0);
-        //
-        //         // Cascade the sample through all 9 filters
-        //         for (int b = 0; b < NUM_BANDS; b++) {
-        //             FilterState& s = isLeft ? mStateL[b] : mStateR[b];
-        //             BiquadCoeffs& c = mCoeffs[b];
-        //
-        //             float out = c.b0 * sample + c.b1 * s.x1 + c.b2 * s.x2
-        //             - c.a1 * s.y1 - c.a2 * s.y2;
-        //
-        //             s.x2 = s.x1; s.x1 = sample;
-        //             s.y2 = s.y1; s.y1 = out;
-        //
-        //             sample = out; // Result of this band is input to next band
-        //         }
-        //         buffer[i] = sample;
-        //     }
-        // }
+        //----------------------------------------------------------------------
+        float getMagnitudeAtFrequency(float freq, float sampleRate) {
+            // Nutze double für die Berechnung der Visualisierung (Präzision!)
+            double phi = 2.0 * M_PI * (double)freq / (double)sampleRate;
+            double cos1 = std::cos(phi);
+            double cos2 = std::cos(2.0 * phi);
 
+            double totalMag = 1.0;
+
+            for (int b = 0; b < NUM_BANDS; b++) {
+                const BiquadCoeffs& c = mCoeffs[b];
+
+                double num = (double)c.b0*c.b0 + (double)c.b1*c.b1 + (double)c.b2*c.b2
+                + 2.0 * ((double)c.b0*c.b1 + (double)c.b1*c.b2) * cos1
+                + 2.0 * ((double)c.b0*c.b2) * cos2;
+
+                double den = 1.0 + (double)c.a1*c.a1 + (double)c.a2*c.a2
+                + 2.0 * ((double)c.a1 + (double)c.a1*c.a2) * cos1
+                + 2.0 * ((double)c.a2) * cos2;
+
+                if (den > 0.0) {
+                    totalMag *= std::sqrt(num / den);
+                }
+            }
+            return (float)totalMag;
+        }
 
 
         virtual std::string getName() const override { return "9-BAND EQUALIZER";}
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.7f, 1.0f, 1.0f);}
+
+
 
         virtual void renderUIWide() override {
             ImGui::PushID("EQ9BAND_Effect_Row_WIDE");
@@ -370,6 +371,38 @@ namespace DSP {
             ImGui::PopID();
             ImGui::Spacing();
         }
+
+
+        //-----------------------------------------------------------------
+        void renderCurve(ImVec2 size) {
+            if (!isEnabled() ) return ;
+            if (size.x < 10.f || size.y < 10.f  || !ImGui::IsRectVisible(size)) return;
+
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            float midY = pos.y + size.y * 0.5f;
+
+            static std::vector<ImVec2> points;
+            points.resize(size.x);
+
+            for (int x = 0; x < (int)size.x; x++) {
+                float normX = (float)x / size.x;
+                float minF = 20.0f;
+                float maxF = 20000.0f;
+                float freq = minF * std::pow(maxF / minF, normX);
+                float mag = getMagnitudeAtFrequency(freq, mSampleRate);
+
+                float db = 20.0f * std::log10(mag + 1e-6f);
+
+                float y = midY - (db * (size.y / 30.0f));
+                points[x] = ImVec2(pos.x + x, std::clamp(y, pos.y, pos.y + size.y));
+            }
+
+            dl->AddPolyline(points.data(), points.size(), IM_COL32(255, 255, 0, 255), 0, 2.0f);
+
+            ImGui::Dummy(size);
+        }
+
 
         #endif
 

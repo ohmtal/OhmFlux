@@ -57,6 +57,10 @@ namespace DSP {
                 case EffectType::OverDrive:
                     return std::make_unique<OverDrive>();
 
+                case EffectType::NoiseGate:
+                    return std::make_unique<NoiseGate>();
+
+
                 case EffectType::NONE:
                 default:
                     // Hier landen wir, wenn der Typ 0 ist oder vergessen wurde

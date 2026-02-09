@@ -50,11 +50,11 @@ namespace DSP {
     };
 
 
-    constexpr LimiterSettings LIMITER_DEFAULT = { 0.95f,  0.05f,  0.000005f };
-    constexpr LimiterSettings LIMITER_EIGHTY  = { 0.80f,  0.05f,  0.000005f };
-    constexpr LimiterSettings LIMITER_FIFTY   = { 0.50f,  0.05f,  0.000005f };
-    constexpr LimiterSettings LIMITER_LOWVOL  = { 0.25f,  0.05f,  0.000005f };
-    constexpr LimiterSettings LIMITER_EXTREM  = { 0.05f,  0.50f,  0.000005f };
+    constexpr LimiterSettings LIMITER_DEFAULT = { 0.95f,  0.05f,  0.150f };
+    constexpr LimiterSettings LIMITER_EIGHTY  = { 0.80f,  0.05f,  0.150f };
+    constexpr LimiterSettings LIMITER_FIFTY   = { 0.50f,  0.05f,  0.150f };
+    constexpr LimiterSettings LIMITER_LOWVOL  = { 0.25f,  0.05f,  0.150f };
+    constexpr LimiterSettings LIMITER_EXTREM  = { 0.05f,  0.50f,  0.150f };
 
     constexpr LimiterSettings LIMITER_CUSTOM  = LIMITER_DEFAULT; //<< DUMMY
 
@@ -147,7 +147,7 @@ namespace DSP {
                     mCurrentGain += (targetGain - mCurrentGain) * mSettings.Attack;
                 } else {
                     // Release phase (gain is returning to unity)
-                    mCurrentGain += (targetGain - mCurrentGain) * mSettings.Release;
+                    mCurrentGain += (targetGain - mCurrentGain) * mSettings.Release * 0.0001f;
                 }
 
                 // 4. Application: Apply the calculated gain to every channel in this frame
@@ -159,38 +159,6 @@ namespace DSP {
         }
 
 
-        // STEREO
-        // virtual void process(float* buffer, int numSamples) override {
-        //     if (!isEnabled()) return;
-        //     // Process in steps of 2 for Stereo Interleaved data
-        //     for (int i = 0; i < numSamples; i += 2) {
-        //         // 1. Get both channels
-        //         float inputL = buffer[i];
-        //         float inputR = buffer[i + 1];
-        //
-        //         // Stereo-Link: Find the max absolute peak of BOTH channels
-        //         float absL = std::abs(inputL);
-        //         float absR = std::abs(inputR);
-        //         float maxAbsInput = std::max(absL, absR);
-        //
-        //         // Calculate Target Gain based on the loudest channel
-        //         float targetGain = 1.0f;
-        //         if (maxAbsInput > mSettings.Threshold) {
-        //             targetGain = mSettings.Threshold / (maxAbsInput + 1e-9f);
-        //         }
-        //
-        //         // Smooth the Gain (Shared for both L and R)
-        //         if (targetGain < mCurrentGain) {
-        //             mCurrentGain += (targetGain - mCurrentGain) * mSettings.Attack;
-        //         } else {
-        //             mCurrentGain += (targetGain - mCurrentGain) * mSettings.Release;
-        //         }
-        //
-        //         // Apply SAME Gain to both (Preserves stereo image)
-        //         buffer[i]     = inputL * mCurrentGain;
-        //         buffer[i + 1] = inputR * mCurrentGain;
-        //     }
-        // }
     //----------------------------------------------------------------------
     virtual std::string getName() const override { return "LIMITER";}
 #ifdef FLUX_ENGINE
@@ -243,8 +211,10 @@ namespace DSP {
             ImGui::Separator();
             // ImFlux::MiniKnobF(label, &value, min_v, max_v);
             changed |= ImFlux::MiniKnobF("Threshold", &currentSettings.Threshold, 0.01f, 1.f); ImGui::SameLine();
-            changed |= ImFlux::MiniKnobF("Depth", &currentSettings.Attack, 0.01f, 1.f); ImGui::SameLine();
-            changed |= ImFlux::MiniKnobF("Release", &currentSettings.Release, 0.0000005f, 0.0001f); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Depth", &currentSettings.Attack, 0.0f, 1.f); ImGui::SameLine();
+            changed |= ImFlux::MiniKnobF("Release", &currentSettings.Release, 0.05f, 1.f); ImGui::SameLine();
+
+
 
             ImGui::BeginGroup();
             float reduction = getGainReduction();
@@ -299,6 +269,8 @@ namespace DSP {
                 }
                 int displayIdx = currentIdx;  //<< keep currentIdx clean
 
+                // height 150 with all sliders!
+
                 if (ImGui::BeginChild("LIM_Box", ImVec2(0, 75.f),  ImGuiChildFlags_Borders)) {
 
                     ImGui::BeginGroup();
@@ -320,14 +292,13 @@ namespace DSP {
                     }
                     // ImGui::Separator();
                     // changed |= ImFlux::FaderHWithText("Threshold", &currentSettings.Threshold, 0.01f, 1.f, "%.3f");
-                    // changed |= ImFlux::FaderHWithText("Depth", &currentSettings.Attack, 0.01f, 1.f, "%.4f");
-                    // changed |= ImFlux::FaderHWithText("Release", &currentSettings.Release, 0.0000005f, 0.0001f, "%.8f");
+                    // changed |= ImFlux::FaderHWithText("Depth", &currentSettings.Attack, 0.f, 1.f, "%.2f ms");
+                    // changed |= ImFlux::FaderHWithText("Release", &currentSettings.Release, 0.05f, 1.f, "%.5f");
                     //
                     //
-                    // if (changed) {
-                    //     selectedPresetIdx = 0;
-                    //     lim->setSettings(currentSettings);
-                    // }
+                    if (changed) {
+                         lim->setSettings(currentSettings);
+                    }
 
                     ImGui::Separator();
                     float reduction = getGainReduction();
@@ -337,11 +308,14 @@ namespace DSP {
 
                 } //box
                 ImGui::EndChild();
-            } //enabled
+            } else {
+                ImGui::Separator();
+            }
 
             ImGui::EndGroup();
             ImGui::PopID();
             ImGui::Spacing();
+
         }
 
     #endif //FLUX_ENGINE

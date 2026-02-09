@@ -17,7 +17,8 @@
 #include "modules/sfxStereoModule.h"
 #include "modules/sfxModule.h"
 #include "modules/soundMixModule.h"
-
+#include "modules/waveModule.h"
+#include "modules/inputModule.h"
 
 class AppGui: public FluxBaseObject
 {
@@ -33,6 +34,7 @@ public:
         bool mShowFileBrowser;
         bool mShowSFXStereoModule;
         bool mShowConsole;
+        bool mShowWaveModule;
     };
 
     ImConsole mConsole;
@@ -43,6 +45,8 @@ private:
     SfxStereoModule* mSfxStereoModule = nullptr;
     SfxModule* mSfxModule = nullptr;
     SoundMixModule* mSoundMixModule = nullptr;
+    WaveModule* mWaveModule = nullptr;
+    InputModule* mInputModule = nullptr;
 
 
     void OnConsoleCommand(ImConsole* console, const char* cmdline);
@@ -56,7 +60,8 @@ private:
         .mShowImFluxWidgets = false,
         .mShowFileBrowser = false,
         .mShowSFXStereoModule = true,
-        .mShowConsole = false
+        .mShowConsole = false,
+        .mShowWaveModule = true
     };
 
 public:
@@ -85,5 +90,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
     mEditorGuiInitialized,
     mShowImFluxWidgets,
     mShowFileBrowser,
-    mShowConsole
+    mShowConsole,
+    mShowWaveModule
 )

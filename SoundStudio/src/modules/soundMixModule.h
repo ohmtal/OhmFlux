@@ -46,53 +46,14 @@ public:
 
         return static_cast<DSP::VisualAnalyzer*>(fx);
     }
-    //--------------------------------------------------------------------------
-    void DrawRack()
-    {
-        if (!mInitialized ||  mEffectsManager == nullptr) return;
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack");
-        mEffectsManager->renderUI(true);
-        ImGui::End();
+    DSP::Equalizer9Band* getEqualizer9Band() {
+        auto* fx = mEffectsManager->getEffectByType(DSP::EffectType::Equalizer9Band);
+        if (!fx) return nullptr;
 
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Visualizer");
-        if (auto* analyzer = getSpectrumAnalyzer()) {
-            ImGui::PushID("SpectrumAnalyzer_Effect_Row");
-            ImGui::BeginGroup();
-            bool isEnabled = analyzer->isEnabled();
-            if (ImFlux::LEDCheckBox(analyzer->getName(), &isEnabled, analyzer->getColor()))
-                analyzer->setEnabled(isEnabled);
-            float fullWidth = ImGui::GetContentRegionAvail().x;
-            analyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f));
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing();
-        }
-        if (auto* analyzer = getVisualAnalyzer()) {
-            ImGui::PushID("VisualAnalyzer_Effect_Row");
-            ImGui::BeginGroup();
-            bool isEnabled = analyzer->isEnabled();
-            if (ImFlux::LEDCheckBox(analyzer->getName(), &isEnabled, analyzer->getColor()))
-                analyzer->setEnabled(isEnabled);
-            float fullWidth = ImGui::GetContentRegionAvail().x;
-            analyzer->renderPeakTest(); //FIXME
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing();
-        }
-        ImGui::End();
-
-
-        //  ~~~~~~~~~~~ TEST RENDERIU ~~~~~~~~~~~~~~~~~~~~~
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack Alternate Rendering");
-        mEffectsManager->renderUI(false);
-        ImGui::End();
-
-
+        return static_cast<DSP::Equalizer9Band*>(fx);
     }
     //--------------------------------------------------------------------------
+    void DrawRack();
     //--------------------------------------------------------------------------
     void WriteWavHeader(SDL_IOStream *io, SDL_AudioSpec *spec, Uint32 dataSize) {
         SDL_SeekIO(io, 0, SDL_IO_SEEK_SET);

@@ -21,7 +21,7 @@
 class FluxAudioStream : public FluxBaseObject
 {
 private:
-    const char* mFileName = nullptr;
+    std::string mFileName = "";
     bool mInitDone = false;
     bool mPlaying = false;
     bool mLooping = false;
@@ -30,6 +30,7 @@ private:
     Uint32 mWaveDataLen = 0;
     // SDL_AudioDeviceID mAudioDevice;
     float mGain = 1.f; //volume 0.f..1.f
+
 
     // position
     bool mUsePostion = false;
@@ -69,6 +70,17 @@ public:
     }
     bool getInitDone() { return mInitDone; }
     bool IsInitialized() { return mInitDone; }
+
+    std::string  getFileName() { return mFileName; }
+
+    bool getWaveData(Uint8 *data, Uint32& len ) {
+        if (mWaveDataLen == 0)
+            return false;
+        data = mWavData;
+        len = mWaveDataLen;
+        return true;
+    }
+
 
 }; //class
 

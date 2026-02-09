@@ -34,6 +34,7 @@ namespace FluxAudio {
         bool init() {
             if (mAudioDevice != 0)
                 return true;
+
             mAudioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
             Log("Init Audiomanager ID:%d", mAudioDevice);
 
@@ -43,12 +44,28 @@ namespace FluxAudio {
 
         SDL_AudioDeviceID getDeviceID() const { return mAudioDevice; }
 
-        // Bind any new stream (OPL or OGG) to this master device
         bool bindStream(SDL_AudioStream* stream)
         {
             if (!mAudioDevice || !stream)
                 return false;
+            SDL_AudioDeviceID currentDevice = SDL_GetAudioStreamDevice(stream);
+
+            if (currentDevice == mAudioDevice) {
+                return true;
+            }
+            if (currentDevice != 0) {
+                SDL_UnbindAudioStream(stream);
+            }
             return SDL_BindAudioStream(mAudioDevice, stream);
+        }
+
+
+        bool unBindStream(SDL_AudioStream* stream)
+        {
+            if (!mAudioDevice || !stream)
+                return false;
+            SDL_UnbindAudioStream( stream);
+            return (SDL_GetAudioStreamDevice(stream) == 0);
         }
 
         // Global Master Volume

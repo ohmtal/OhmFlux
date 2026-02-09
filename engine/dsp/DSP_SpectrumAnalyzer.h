@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstring>
 #include <atomic>
+#include <complex>
 
 #ifdef FLUX_ENGINE
 #include <imgui.h>
@@ -37,7 +38,7 @@ namespace DSP {
 
         DSP::EffectType getType() const override { return DSP::EffectType::SpectrumAnalyzer; }
 
-
+        //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!mEnabled) return;
 
@@ -55,6 +56,89 @@ namespace DSP {
                 mWriteIdx = (mWriteIdx + 1) % FFT_SIZE;
             }
         }
+        //----------------------------------------------------------------------
+        // Helper to reorder the array for FFT (Bit-reversal)
+        void bitReverse(std::vector<std::complex<float>>& x) {
+            int n = (int)x.size();
+            for (int i = 1, j = 0; i < n; i++) {
+                int bit = n >> 1;
+                for (; j & bit; bit >>= 1) j ^= bit;
+                j ^= bit;
+                if (i < j) std::swap(x[i], x[j]);
+            }
+        }
+        //----------------------------------------------------------------------
+        // Efficient In-Place FFT implementation
+        void performFFT(std::vector<std::complex<float>>& x) {
+            int n = (int)x.size();
+            bitReverse(x);
+
+            for (int len = 2; len <= n; len <<= 1) {
+                float angle = -2.0f * M_PI / len;
+                std::complex<float> wlen(std::cos(angle), std::sin(angle));
+                for (int i = 0; i < n; i += len) {
+                    std::complex<float> w(1, 0);
+                    for (int j = 0; j < len / 2; j++) {
+                        std::complex<float> u = x[i + j];
+                        std::complex<float> v = x[i + j + len / 2] * w;
+                        x[i + j] = u + v;
+                        x[i + j + len / 2] = u - v;
+                        w *= wlen;
+                    }
+                }
+            }
+        }
+        //----------------------------------------------------------------------
+        const std::vector<float>& getMagnitudesFFT() {
+            // 1. Prepare data for FFT (Windowing)
+            // Reuse a static vector to avoid heap allocation every frame
+            static std::vector<std::complex<float>> fftData(FFT_SIZE);
+
+            for (int i = 0; i < FFT_SIZE; i++) {
+                // Hann Window to prevent spectral leakage
+                float window = 0.5f * (1.0f - std::cos(2.0f * (float)M_PI * i / (FFT_SIZE - 1)));
+                // Align read pointer to the latest write position
+                float sample = mCaptureBuffer[(mWriteIdx + i) % FFT_SIZE];
+                fftData[i] = std::complex<float>(sample * window, 0.0f);
+            }
+
+            // 2. Perform the calculation
+            performFFT(fftData);
+
+            // 3. Map FFT Bins to UI Bars
+            int numBars = (int)mDisplayMagnitudes.size();
+            for (int i = 0; i < numBars; i++) {
+                // Smooth decay (fallback)
+                mDisplayMagnitudes[i] *= 0.88f;
+
+                // Logarithmic frequency mapping
+                float normX = (float)i / numBars;
+                // Map bar index to FFT bin index (log scale)
+                // 0.5 bin to 256 bin range
+                int lowBin = (int)(std::pow(2.0f, normX * 8.0f));
+                int highBin = (int)(std::pow(2.0f, (i + 1.0f) / numBars * 8.0f));
+
+                lowBin = std::clamp(lowBin, 0, FFT_SIZE / 2 - 1);
+                highBin = std::clamp(highBin, lowBin + 1, FFT_SIZE / 2);
+
+                float avgMag = 0.0f;
+                for (int bin = lowBin; bin < highBin; bin++) {
+                    // Magnitude calculation: sqrt(re^2 + im^2)
+                    avgMag += std::abs(fftData[bin]);
+                }
+                avgMag /= (highBin - lowBin); // Average energy in this frequency band
+
+                // Apply visual boost (FFT magnitude is normalized by size)
+                float visualVal = (avgMag / (FFT_SIZE * 0.1f)) * 10.0f;
+
+                if (visualVal > mDisplayMagnitudes[i]) {
+                    mDisplayMagnitudes[i] = visualVal;
+                }
+            }
+
+            return mDisplayMagnitudes;
+        }
+
 
         const std::vector<float>& getMagnitudes() {
             // 1. Determine how many samples to check per display bar
@@ -81,34 +165,10 @@ namespace DSP {
 
             return mDisplayMagnitudes;
         }
-
-
-        // virtual void process(float* buffer, int numSamples, int numChannels) override {
-        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
-        //
-        //     if (!mEnabled) return;
-        //
-        //     // Capture samples into our circular buffer
-        //     for (int i = 0; i < numSamples; ++i) {
-        //         mCaptureBuffer[mWriteIdx] = buffer[i];
-        //         mWriteIdx = (mWriteIdx + 1) % FFT_SIZE;
-        //     }
-        // }
-
-        // // The GUI thread calls this to get the data
-        // const std::vector<float>& getMagnitudes() {
-        //     // TODO: Replace with a FFT logic (e.g., KissFFT)
-        //     for (int i = 0; i < mDisplayMagnitudes.size(); ++i) {
-        //         // Smoothing logic: slowly decay the bars
-        //         mDisplayMagnitudes[i] *= 0.92f;
-        //
-        //         // Peak detection from the captured buffer
-        //         float sample = std::abs(mCaptureBuffer[i % FFT_SIZE]);
-        //         if (sample > mDisplayMagnitudes[i]) mDisplayMagnitudes[i] = sample;
-        //     }
-        //     return mDisplayMagnitudes;
-        // }
+        //----------------------------------------------------------------------
         virtual std::string getName() const override { return "SPECTRUM ANALYSER";}
+        //----------------------------------------------------------------------
+        //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.73f, 0.8f, 0.73f, 1.0f);}
         // i dont want to render UI here !

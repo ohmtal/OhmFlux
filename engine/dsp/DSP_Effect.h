@@ -38,7 +38,8 @@ namespace DSP {
         Delay              = 11,
         VoiceModulator     = 12,
         RingModulator      = 13,
-        OverDrive          = 14
+        OverDrive          = 14,
+        NoiseGate          = 15
         // NOTE  don't forget to add this to the Effect Factory !!!
 
     };
@@ -68,6 +69,8 @@ namespace DSP {
         }
 
         virtual void reset() {}
+
+        virtual void setSampleRate(float sampleRate) {}
 
         virtual void setEnabled(bool value) {
             mEnabled = value;

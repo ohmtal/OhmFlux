@@ -43,6 +43,67 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
     // }
 }
 //------------------------------------------------------------------------------
+void SoundMixModule::DrawRack()
+    {
+        if (!mInitialized ||  mEffectsManager == nullptr) return;
+        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::Begin("Post Digital Sound Effects Rack");
+        mEffectsManager->renderUI(true);
+        ImGui::End();
+
+        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::Begin("Post Digital Sound Effects Visualizer");
+        if (auto* analyzer = getSpectrumAnalyzer()) {
+            ImGui::PushID("SpectrumAnalyzer_Effect_Row");
+            ImGui::BeginGroup();
+            bool isEnabled = analyzer->isEnabled();
+            if (ImFlux::LEDCheckBox(analyzer->getName(), &isEnabled, analyzer->getColor()))
+                analyzer->setEnabled(isEnabled);
+            float fullWidth = ImGui::GetContentRegionAvail().x;
+            analyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f));
+            ImGui::EndGroup();
+            ImGui::PopID();
+            ImGui::Spacing();
+        }
+
+
+        if (auto* analyzer = getEqualizer9Band())
+         if (analyzer->isEnabled()) {
+            ImGui::PushID("Equalizer9Band_Effect_Row");
+            ImGui::BeginGroup();
+            float fullWidth = ImGui::GetContentRegionAvail().x;
+            analyzer->renderCurve(ImVec2(fullWidth, 60.0f));
+            ImGui::EndGroup();
+            ImGui::PopID();
+            ImGui::Spacing();
+        }
+
+
+        if (auto* analyzer = getVisualAnalyzer()) {
+            ImGui::PushID("VisualAnalyzer_Effect_Row");
+            ImGui::BeginGroup();
+            bool isEnabled = analyzer->isEnabled();
+            if (ImFlux::LEDCheckBox(analyzer->getName(), &isEnabled, analyzer->getColor()))
+                analyzer->setEnabled(isEnabled);
+            float fullWidth = ImGui::GetContentRegionAvail().x;
+            analyzer->renderPeakTest(); //FIXME
+            ImGui::EndGroup();
+            ImGui::PopID();
+            ImGui::Spacing();
+        }
+
+        ImGui::End();
+
+
+        //  ~~~~~~~~~~~ TEST RENDERIU ~~~~~~~~~~~~~~~~~~~~~
+        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::Begin("Post Digital Sound Effects Rack Alternate Rendering");
+        mEffectsManager->renderUI(false);
+        ImGui::End();
+
+
+    }
+//------------------------------------------------------------------------------
 bool SoundMixModule::Initialize() {
 
         mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
@@ -53,6 +114,7 @@ bool SoundMixModule::Initialize() {
         //     mEffectsManager->addEffect(DSP::EffectFactory::Create((DSP::EffectType) i));
         // }
         std::vector<DSP::EffectType> types = {
+            DSP::EffectType::NoiseGate,
             DSP::EffectType::OverDrive,
             DSP::EffectType::Bitcrusher,
             DSP::EffectType::SoundCardEmulation,
@@ -95,4 +157,4 @@ bool SoundMixModule::Initialize() {
         return true;
 
     }
-
+//------------------------------------------------------------------------------

@@ -172,8 +172,11 @@ namespace DSP {
                     if (changed) setSettings(currentSettings);
                 }
                 ImGui::EndChild();
+            } else {
+                ImGui::Separator();
             }
             ImGui::PopID();
+
         }
         #endif
     };

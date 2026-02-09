@@ -173,6 +173,10 @@ void AppGui::ShowFileBrowser(){
         {
             g_FileDialog.reset();
         } else {
+            if (g_FileDialog.selectedExt == ".wav" ) {
+                mWaveModule->loadWave(g_FileDialog.selectedFile);
+            }
+
 
         }
     }
@@ -242,6 +246,17 @@ bool AppGui::Initialize()
         return false;
 
 
+    mWaveModule = new WaveModule();
+    if (!mWaveModule->Initialize())
+        return false;
+    getMain()->queueObject(mWaveModule); //we need update here ..
+
+
+    mInputModule = new InputModule();
+    if (!mInputModule->Initialize())
+        return false;
+
+
     // // not centered ?!?!?! i guess center is not in place yet ?
     // mBackground = new FluxRenderObject(getGame()->loadTexture("assets/fluxeditorback.png"));
     // if (mBackground) {
@@ -251,7 +266,7 @@ bool AppGui::Initialize()
     // }
 
 
-    g_FileDialog.init( getGamePath(), {  ".sfx", ".fmi", ".fms", ".wav", ".ogg" });
+    g_FileDialog.init( getGamePath(), { ".sfx", ".wav" });
 
 
 
@@ -260,7 +275,8 @@ bool AppGui::Initialize()
 //------------------------------------------------------------------------------
 void AppGui::Deinitialize()
 {
-
+    getMain()->unQueueObject(mWaveModule);
+    SAFE_DELETE(mWaveModule);
     SAFE_DELETE(mSfxModule);
     SAFE_DELETE(mSfxStereoModule);
     SAFE_DELETE(mSoundMixModule);
@@ -334,6 +350,8 @@ void AppGui::ShowMenuBar()
             ImGui::TextDisabled("Modules");
             ImGui::MenuItem("Sound Effects Generator", NULL, &mAppSettings.mShowSFXModule);
             ImGui::MenuItem("Sound Effects Stereo", NULL, &mAppSettings.mShowSFXStereoModule);
+            ImGui::MenuItem("Wave Files", NULL, &mAppSettings.mShowWaveModule);
+
             ImGui::Separator();
             ImGui::EndMenu();
         }
@@ -386,6 +404,12 @@ void AppGui::DrawGui()
 
     if (mAppSettings.mShowSFXModule) mSfxModule->Draw();
     if (mAppSettings.mShowSFXStereoModule) mSfxStereoModule->DrawGui();
+
+    if (mAppSettings.mShowWaveModule ) mWaveModule->DrawWaveStreams();
+
+    //FIXME settings
+    mInputModule->DrawInputModuleUI();
+
 
     mSoundMixModule->DrawRack();
 
