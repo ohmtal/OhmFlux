@@ -20,6 +20,7 @@
 #include "ImFlux/background.h"
 #include "ImFlux/text.h"
 #include "ImFlux/peekAndVU.h"
+#include "ImFlux/window.h"
 
 namespace ImFlux {
 

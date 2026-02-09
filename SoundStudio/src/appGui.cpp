@@ -367,6 +367,7 @@ void AppGui::ShowMenuBar()
             if (ImGui::MenuItem("Classic")) {ImGui::StyleColorsClassic(); }
             ImGui::EndMenu();
         }
+        ImFlux::drawWindowMenu();
 
         // ----------- Master Volume
         float rightOffset = 230.0f;
