@@ -265,7 +265,6 @@ endif()
 
 # ---------------- Macro for Projects ------------------
 macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
-    # FIX 1: Ensure SOURCE_DIR is absolute so output paths don't break
     get_filename_component(ABS_OUT_DIR "${SOURCE_DIR}" ABSOLUTE)
 
     set(GUI_TYPE "")
@@ -445,7 +444,6 @@ if(BUILD_FLUXTRACKER)
         "${FLUXTRACKER_DIR}/src/keyboardGui.cpp"
         "${FLUXTRACKER_DIR}/src/fancyOverlays.cpp"
         "${FLUXTRACKER_DIR}/src/ordersGui.cpp"
-        # not! "${FLUXTRACKER_DIR}/src/ImFileDialog/ImFileDialog.cpp"
     )
     configure_demo_target(OhmFluxTracker ${FLUXTRACKER_DIR} "${FLUXTRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
 endif()
