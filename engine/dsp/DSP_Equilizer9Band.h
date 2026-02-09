@@ -133,7 +133,7 @@ namespace DSP {
 
         float getSampleRate() const { return mSampleRate; }
 
-        void setSampleRate(float newRate) {
+        void setSampleRate(float newRate) override {
             if (newRate <= 0) return;
             mSampleRate = newRate;
             updateAllBands();

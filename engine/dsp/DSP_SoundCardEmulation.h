@@ -93,7 +93,7 @@ private:
 
 public:
 
-    SoundCardEmulation(bool switchOn = true) : DSP::Effect(switchOn) {
+    SoundCardEmulation(bool switchOn = false) : DSP::Effect(switchOn) {
         mSettings.renderMode = RenderMode::BLENDED;
     }
     DSP::EffectType getType() const override { return DSP::EffectType::SoundCardEmulation; }

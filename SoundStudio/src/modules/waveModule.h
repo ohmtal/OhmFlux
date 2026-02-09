@@ -89,7 +89,7 @@ public:
 
                         if (ImGui::BeginPopupContextItem("##WavePopup")) {
                             ImGui::TextColored(Color4FIm(cl_SkyBlue), "%s", waveCaption.c_str());
-                            ImGui::TextDisabled("%",mAudioStreams[n]->getFileName().c_str());
+                            ImGui::TextDisabled("%s",mAudioStreams[n]->getFileName().c_str());
 
                             ImGui::Separator();
                             ImGui::EndPopup();
