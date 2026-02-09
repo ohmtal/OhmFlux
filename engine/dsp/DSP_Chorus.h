@@ -95,8 +95,8 @@ namespace DSP {
 
         int mWritePos = 0;
         float mLfoPhase = 0.0f;
-        const float mSampleRate = getSampleRateF();
-        const int mMaxBufferSize = static_cast<int>(mSampleRate / 10); // 100ms at 44.1kHz
+        float mSampleRate = getSampleRateF();
+        int mMaxBufferSize = static_cast<int>(mSampleRate / 10); // 100ms at 44.1kHz
 
         ChorusSettings mSettings;
 
@@ -104,8 +104,15 @@ namespace DSP {
         Chorus(bool switchOn = false) :
             Effect(switchOn)
         {
-            mDelayBuffers.assign(2, std::vector<float>(mMaxBufferSize, 0.0f));
+            setSampleRate(getSampleRateF());
             mSettings = LUSH80s_CHORUS;
+
+        }
+
+        virtual void setSampleRate(float sampleRate) override {
+            mSampleRate = sampleRate;
+            mMaxBufferSize = static_cast<int>(mSampleRate / 10);
+            mDelayBuffers.assign(2, std::vector<float>(mMaxBufferSize, 0.0f));
         }
 
         const ChorusSettings& getSettings() { return mSettings; }
@@ -178,66 +185,6 @@ namespace DSP {
                 }
             }
         }
-
-        // virtual void process(float* buffer, int numSamples, int numChannels) override {
-        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
-        //
-        //     if (!isEnabled()) return;
-        //
-        //     // Skip if wet mix is effectively zero
-        //     if (mSettings.wet <= 0.001f) return;
-        //
-        //     const float TWO_PI = 2.0f * M_PI;
-        //
-        //     for (int i = 0; i < numSamples; i++) {
-        //         // 1. Dry signal is already float (-1.0 to 1.0)
-        //         float dry = buffer[i];
-        //
-        //         // 2. Determine LFO Phase for this specific channel
-        //         float channelPhase = mLfoPhase;
-        //         if (i % 2 != 0) { // Right Channel
-        //             channelPhase += (mSettings.phaseOffset * TWO_PI);
-        //             // Wrap phase
-        //             if (channelPhase >= TWO_PI) channelPhase -= TWO_PI;
-        //         }
-        //
-        //         // 3. Calculate modulated delay time
-        //         float lfo = std::sin(channelPhase);
-        //         float currentDelaySec = mSettings.delayBase + (lfo * mSettings.depth);
-        //         float delaySamples = currentDelaySec * mSampleRate;
-        //
-        //         // 4. Linear Interpolation
-        //         float readPos = static_cast<float>(mWritePos) - delaySamples;
-        //         while (readPos < 0) readPos += static_cast<float>(mMaxBufferSize);
-        //
-        //         int idx1 = static_cast<int>(readPos) % mMaxBufferSize;
-        //         int idx2 = (idx1 + 1) % mMaxBufferSize;
-        //         float frac = readPos - static_cast<float>(idx1);
-        //
-        //         float wetSample = 0.0f;
-        //         if (i % 2 == 0) {
-        //             // LEFT CHANNEL (Ensure mDelayBufL is float*)
-        //             wetSample = mDelayBufL[idx1] * (1.0f - frac) + mDelayBufL[idx2] * frac;
-        //             mDelayBufL[mWritePos] = dry;
-        //         } else {
-        //             // RIGHT CHANNEL (Ensure mDelayBufR is float*)
-        //             wetSample = mDelayBufR[idx1] * (1.0f - frac) + mDelayBufR[idx2] * frac;
-        //             mDelayBufR[mWritePos] = dry;
-        //         }
-        //
-        //         // 5. Mix Dry + (Wet * Mix)
-        //         // No clamping needed. Final output remains in float range.
-        //         buffer[i] = dry + (wetSample * mSettings.wet);
-        //
-        //         // 6. Update LFO and Write Position (after the Right channel/Stereo frame)
-        //         if (i % 2 != 0) {
-        //             mLfoPhase += (TWO_PI * mSettings.rate) / mSampleRate;
-        //             if (mLfoPhase >= TWO_PI) mLfoPhase -= TWO_PI;
-        //
-        //             mWritePos = (mWritePos + 1) % mMaxBufferSize;
-        //         }
-        //     }
-        // }
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "CHORUS / ENSEMBLE";}
 #ifdef FLUX_ENGINE
