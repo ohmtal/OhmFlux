@@ -24,6 +24,8 @@ namespace FluxAudio {
 
         SDL_AudioDeviceID mAudioDevice;
 
+        SDL_AudioSpec mOutputSpec;
+
     public:
         // Get the single instance
         static Manager&  getInstance() {
@@ -36,10 +38,13 @@ namespace FluxAudio {
                 return true;
 
             mAudioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
-            Log("Init Audiomanager ID:%d", mAudioDevice);
+
+            if (SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &mOutputSpec, nullptr)) {
+                Log("[info] Audio output Hardware: %d Hz, %d Channels, Format id: %d ", mOutputSpec.freq, mOutputSpec.channels, mOutputSpec.format);
+            }
+            Log("Init Audiomanager ID:%d.", mAudioDevice);
 
             return mAudioDevice != 0;
-
         }
 
         SDL_AudioDeviceID getDeviceID() const { return mAudioDevice; }

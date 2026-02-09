@@ -255,6 +255,7 @@ bool AppGui::Initialize()
     mInputModule = new InputModule();
     if (!mInputModule->Initialize())
         return false;
+    // getMain()->queueObject(mInputModule);
 
 
     // // not centered ?!?!?! i guess center is not in place yet ?
@@ -275,6 +276,7 @@ bool AppGui::Initialize()
 //------------------------------------------------------------------------------
 void AppGui::Deinitialize()
 {
+    // getMain()->unQueueObject(mInputModule);
     getMain()->unQueueObject(mWaveModule);
     SAFE_DELETE(mWaveModule);
     SAFE_DELETE(mSfxModule);

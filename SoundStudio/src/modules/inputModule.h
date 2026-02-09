@@ -18,7 +18,7 @@ private:
     bool mInitialized = false;
 
     float buffer[BUFFER_SIZE] = {0};
-    SDL_AudioStream *mStream = nullptr;
+    SDL_AudioStream *mOutStream = nullptr;
     SDL_AudioStream* mInStream   = nullptr;
 
     // NO ..effects here !! DSP::NoiseGate*  mNoiseGate = nullptr;
@@ -44,7 +44,7 @@ public:
     float (&getBuffer())[BUFFER_SIZE] {
         return buffer;
     }
-    SDL_AudioStream *getStream()  { return mStream; }
+    SDL_AudioStream *getStream()  { return mOutStream; }
 
 
     bool isOpen() const { return mOpen; }

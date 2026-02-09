@@ -17,6 +17,7 @@ void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additiona
     auto* inMod = static_cast<InputModule*>(userdata);
 
     if (additional_amount <= 0 || !inMod || !inMod->isOpen()) return;
+
     SDL_AudioStream* pStream = inMod->getStream();
     if (!pStream) {
         dLog("[error] NO STREAM!!!");
@@ -28,10 +29,27 @@ void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additiona
     int max_bytes = sizeof(inMod->getBuffer());
     int to_read = std::min(available, max_bytes);
 
-    if (to_read > 0) bytesRead = SDL_GetAudioStreamData(stream, inMod->getBuffer(), to_read);
+    if (to_read > 0) {
+        bytesRead = SDL_GetAudioStreamData(stream, inMod->getBuffer(), to_read);
+    }
+
+
 
     if (bytesRead > 0) {
-        // DO   NOT USE A EFFECT HERE !!!!!
+        // // DO   NOT USE A EFFECT HERE !!!!!
+        // int channel = 0;
+        // int num_samples = bytesRead / sizeof(float);
+        // for (int i = 0; i < num_samples; ++i) {
+        //     float raw_in = inMod->getBuffer()[i];
+        //     float out = raw_in;
+        //
+        //     channel = i % inMod->mInputSpec.channels;
+        //
+        //     out *= 0.5f;
+        //
+        //     inMod->getBuffer()[i] = out;
+        // }
+        //
         SDL_PutAudioStreamData(inMod->getStream(), inMod->getBuffer(), bytesRead);
     }
 }
@@ -61,28 +79,27 @@ bool InputModule::open(SDL_AudioSpec dstSpec) {
 
     SDL_AudioSpec hardwareSpec;
     if (SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &hardwareSpec, nullptr)) {
-        int channels = hardwareSpec.channels;
-        int frequency = hardwareSpec.freq;
-
         mInputSpec = hardwareSpec;
-        Log("[info] Input Module Hardware: %d Hz, %d Channels", frequency, channels);
+        Log("[info] Input Module Hardware: %d Hz, %d channels formatid: %d", hardwareSpec.freq, hardwareSpec.channels, hardwareSpec.format);
     }
 
     mInStream  = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &mInputSpec, nullptr, nullptr);
 
-    mStream = SDL_CreateAudioStream(&mInputSpec, &dstSpec);
+    // mStream = SDL_CreateAudioStream(&mInputSpec, &dstSpec);
+    mOutStream = SDL_CreateAudioStream(&mInputSpec, nullptr);
 
-    if ( mInStream  && mStream ) {
-        AudioManager.bindStream(mStream);
+    if ( mInStream  && mOutStream ) {
         if (
-            SDL_ResumeAudioStreamDevice(mInStream )
+            SDL_ResumeAudioStreamDevice(mInStream ) //<<< first!
             &&
             SDL_SetAudioStreamPutCallback(mInStream , PipeCallback, this)
-
         )
         {
-            SDL_ResumeAudioStreamDevice(mStream);
+            AudioManager.bindStream(mOutStream);
+
+            // SDL_ResumeAudioStreamDevice(mStream);
             Log("[info] Input Module: stream ready.");
+
             mOpen = true;
         } else {
             Log("[error] Input Module: failed! %s", SDL_GetError());
@@ -98,7 +115,7 @@ bool InputModule::close() {
         Log("[error] Imput Module. cant close device not marked as open!");
         return false;
     }
-    AudioManager.unBindStream(mStream);
+    AudioManager.unBindStream(mOutStream);
     SDL_PauseAudioStreamDevice(mInStream);
     SDL_SetAudioStreamPutCallback(mInStream, nullptr, nullptr);
     SDL_DestroyAudioStream(mInStream);
@@ -108,6 +125,4 @@ bool InputModule::close() {
     mOpen = false;
     return true;
 }
-
-
 
