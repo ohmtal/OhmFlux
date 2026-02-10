@@ -37,14 +37,6 @@ inline bool isDebugBuild() { return false; }
 #endif
 
 
-//--------------------------- GetScreenObject by global Instance ------------
-class FluxScreen; // Forward declaration: No #include needed yet!
-FluxScreen* getScreenObject();
-
-class FluxQuadtree;
-FluxQuadtree* getQuadTreeObject();
-static constexpr auto getContainer = getQuadTreeObject;
-
 
 
 //--------- failsave check for sprintf style functions  like Log ------------

@@ -11,6 +11,7 @@
 #ifndef _FLUXMAIN_H_
 #define _FLUXMAIN_H_
 #include "core/fluxGlobals.h"
+#include "core/fluxGlue.h"
 #include <SDL3/SDL.h>
 
 #include <vector>
@@ -28,23 +29,10 @@
 #include "audio/fluxAudioStream.h"
 #include "core/fluxQuadtree.h"
 #include "core/fluxCamera.h"
-#include "core/fluxGlobals.h"
 
 
-inline FluxScreen* g_CurrentScreen = nullptr;
 
-inline FluxScreen* getScreenObject() {
-	return g_CurrentScreen;
-}
-
-inline FluxQuadtree* g_CurrentQuadTree = nullptr;
-
-inline FluxQuadtree* getQuadTreeObject()  {
-	return g_CurrentQuadTree;
-}
-
-
-// extern FluxScreen* g_CurrentScreen;
+extern FluxScreen* g_CurrentScreen;
 
 class FluxMain : public FluxBaseObject
 {

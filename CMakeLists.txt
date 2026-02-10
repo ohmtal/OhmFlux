@@ -73,7 +73,7 @@ set(ENGINE_SOURCES
 
     ${ENGINE_DIR}/audio/fluxAudioStream.cpp
 
-    ${ENGINE_DIR}/core/fluxGlobals.cpp
+    ${ENGINE_DIR}/core/fluxGlue.cpp
     ${ENGINE_DIR}/core/fluxScreen.cpp
     ${ENGINE_DIR}/core/fluxTexture.cpp
     ${ENGINE_DIR}/core/fluxRenderObject.cpp

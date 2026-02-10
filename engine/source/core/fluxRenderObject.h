@@ -16,6 +16,9 @@
 #include "core/fluxTexture.h"
 #include "fluxScreen.h"
 #include "render/fluxRender2D.h"
+#include "fluxGlue.h"
+
+
 
 
 // Forward declarations
