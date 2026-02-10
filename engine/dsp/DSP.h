@@ -6,6 +6,8 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#include <memory>
+
 #include "DSP_Effect.h"
 
 #include "DSP_Bitcrusher.h"
