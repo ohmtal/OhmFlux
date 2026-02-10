@@ -11,7 +11,6 @@
 #include <string>
 #include <format>
 
-#include <utils/errorlog.h>
 #include "helper.h"
 
 namespace ImFlux {
@@ -437,9 +436,6 @@ namespace ImFlux {
 
         if (format == NULL)
             format = "%d";
-
-
-        Log("");
 
         char buff[32];
         snprintf(buff, sizeof(buff), format, *v);
