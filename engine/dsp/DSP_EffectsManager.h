@@ -24,6 +24,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <gui/ImFlux.h>
+#include <utils/errorlog.h>
 #endif
 
 

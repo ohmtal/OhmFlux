@@ -3,20 +3,8 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "core/fluxGlobals.h"
-#include "fluxMain.h"
 
 
 
-FluxScreen* g_CurrentScreen = nullptr;
-
-FluxScreen* getScreenObject() {
-    return g_CurrentScreen;
-}
-
-FluxQuadtree* g_CurrentQuadTree = nullptr;
-
-FluxQuadtree* getQuadTreeObject()  {
-    return g_CurrentQuadTree;
-}
 
 

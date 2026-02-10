@@ -31,7 +31,20 @@
 #include "core/fluxGlobals.h"
 
 
-extern FluxScreen* g_CurrentScreen;
+inline FluxScreen* g_CurrentScreen = nullptr;
+
+inline FluxScreen* getScreenObject() {
+	return g_CurrentScreen;
+}
+
+inline FluxQuadtree* g_CurrentQuadTree = nullptr;
+
+inline FluxQuadtree* getQuadTreeObject()  {
+	return g_CurrentQuadTree;
+}
+
+
+// extern FluxScreen* g_CurrentScreen;
 
 class FluxMain : public FluxBaseObject
 {
