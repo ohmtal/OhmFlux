@@ -36,7 +36,9 @@ namespace ImFlux {
         GradientParams WithInset(bool i) const { GradientParams gp = *this; gp.inset = i; return gp; }
     };
 
-    constexpr GradientParams DEFAULT_GRADIENTBOX;
+    constexpr GradientParams DEFAULT_GRADIENPARAMS;
+    constexpr GradientParams DEFAULT_GRADIENTBOX; // renamed it but to many uses in external source
+
 
     inline void GradientBoxDL(GradientParams gp, ImDrawList* dl = nullptr) {
         // 1. Fallback for DrawList (Get current window if none provided)
@@ -102,14 +104,14 @@ namespace ImFlux {
         if (lSize.y <= 0.0f) lSize.y = avail.y + lSize.y;
 
 
-        GradientParams gp =  DEFAULT_GRADIENTBOX.WithPosSize(pos,lSize);
+        GradientParams gp =  DEFAULT_GRADIENPARAMS.WithPosSize(pos,lSize);
         gp.rounding = rounding;
         gp.inset = inset;
 
         GradientBoxDL(gp);
     }
     //--------------------------------------------------------------------------
-    inline void GradientBox(ImVec2 size, GradientParams gp = DEFAULT_GRADIENTBOX)
+    inline void GradientBox(ImVec2 size, GradientParams gp = DEFAULT_GRADIENPARAMS)
     {
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImVec2 avail = ImGui::GetContentRegionAvail();

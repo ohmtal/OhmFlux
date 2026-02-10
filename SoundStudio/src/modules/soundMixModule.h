@@ -34,24 +34,6 @@ public:
         return mEffectsManager.get();
     }
 
-    DSP::SpectrumAnalyzer* getSpectrumAnalyzer() {
-        auto* fx = mEffectsManager->getEffectByType(DSP::EffectType::SpectrumAnalyzer);
-        if (!fx) return nullptr;
-
-        return static_cast<DSP::SpectrumAnalyzer*>(fx);
-    }
-    DSP::VisualAnalyzer* getVisualAnalyzer() {
-        auto* fx = mEffectsManager->getEffectByType(DSP::EffectType::VisualAnalyzer);
-        if (!fx) return nullptr;
-
-        return static_cast<DSP::VisualAnalyzer*>(fx);
-    }
-    DSP::Equalizer9Band* getEqualizer9Band() {
-        auto* fx = mEffectsManager->getEffectByType(DSP::EffectType::Equalizer9Band);
-        if (!fx) return nullptr;
-
-        return static_cast<DSP::Equalizer9Band*>(fx);
-    }
     //--------------------------------------------------------------------------
     void DrawRack();
     //--------------------------------------------------------------------------

@@ -103,6 +103,10 @@ namespace DSP {
         ImGui::PopID();
     }
 
+    virtual void renderPaddle() {
+
+    }
+
     virtual void renderUI() {
           char buf[32];
           snprintf(buf, sizeof(buf), "Effect_Row_%d", getType());

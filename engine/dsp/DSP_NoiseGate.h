@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Noise Gate
+// FIXME THIS DOES NOT WORK correctly!!!!!
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -146,7 +147,7 @@ namespace DSP {
             }
         }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "NOISE GATE";}
+    virtual std::string getName() const override { return "NOISE GATE *malfuct* ";}
 #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const  override { return ImVec4(0.6f, 0.4f, 0.6f, 1.0f);}
     virtual void renderUIWide() override {

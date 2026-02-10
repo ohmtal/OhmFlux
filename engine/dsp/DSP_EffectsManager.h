@@ -65,6 +65,29 @@ public:
     std::vector<std::unique_ptr<DSP::Effect>>& getEffects() { return mEffects;    }
 
     void clear() { mEffects.clear();}
+
+
+    //--------------------------------------------------------------------------
+    // for visual calls. Only looks for the first one.... should be ok in 99%
+    DSP::SpectrumAnalyzer* getSpectrumAnalyzer() {
+        auto* fx = getEffectByType(DSP::EffectType::SpectrumAnalyzer);
+        if (!fx) return nullptr;
+
+        return static_cast<DSP::SpectrumAnalyzer*>(fx);
+    }
+    DSP::VisualAnalyzer* getVisualAnalyzer() {
+        auto* fx = getEffectByType(DSP::EffectType::VisualAnalyzer);
+        if (!fx) return nullptr;
+
+        return static_cast<DSP::VisualAnalyzer*>(fx);
+    }
+    DSP::Equalizer9Band* getEqualizer9Band() {
+        auto* fx = getEffectByType(DSP::EffectType::Equalizer9Band);
+        if (!fx) return nullptr;
+
+        return static_cast<DSP::Equalizer9Band*>(fx);
+    }
+
     //--------------------------------------------------------------------------
     void addError(std::string error) {
         #ifdef FLUX_ENGINE
@@ -230,6 +253,14 @@ public:
         for (auto& effect : this->mEffects) {
             effect->process(buffer, numSamples, numChannels);
         }
+    }
+    //--------------------------------------------------------------------------
+    void setSampleRate(float sampleRate) {
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
+        for (auto& effect : this->mEffects) {
+            effect->setSampleRate(sampleRate);
+        }
+
     }
     //--------------------------------------------------------------------------
 

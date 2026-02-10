@@ -53,7 +53,7 @@ void SoundMixModule::DrawRack()
 
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
         ImGui::Begin("Post Digital Sound Effects Visualizer");
-        if (auto* analyzer = getSpectrumAnalyzer()) {
+        if (auto* analyzer = getEffectsManager()->getSpectrumAnalyzer()) {
             ImGui::PushID("SpectrumAnalyzer_Effect_Row");
             ImGui::BeginGroup();
             bool isEnabled = analyzer->isEnabled();
@@ -67,7 +67,7 @@ void SoundMixModule::DrawRack()
         }
 
 
-        if (auto* analyzer = getEqualizer9Band())
+        if (auto* analyzer = getEffectsManager()->getEqualizer9Band())
          if (analyzer->isEnabled()) {
             ImGui::PushID("Equalizer9Band_Effect_Row");
             ImGui::BeginGroup();
@@ -79,7 +79,7 @@ void SoundMixModule::DrawRack()
         }
 
 
-        if (auto* analyzer = getVisualAnalyzer()) {
+        if (auto* analyzer = getEffectsManager()->getVisualAnalyzer()) {
             ImGui::PushID("VisualAnalyzer_Effect_Row");
             ImGui::BeginGroup();
             bool isEnabled = analyzer->isEnabled();
@@ -114,7 +114,7 @@ bool SoundMixModule::Initialize() {
         //     mEffectsManager->addEffect(DSP::EffectFactory::Create((DSP::EffectType) i));
         // }
         std::vector<DSP::EffectType> types = {
-            DSP::EffectType::NoiseGate,
+            // DSP::EffectType::NoiseGate,
             DSP::EffectType::OverDrive,
             DSP::EffectType::Bitcrusher,
             DSP::EffectType::SoundCardEmulation,
