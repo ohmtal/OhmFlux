@@ -63,6 +63,8 @@ namespace DSP {
                 case EffectType::DistortionBasic:
                     return std::make_unique<DistortionBasic >();
 
+                case EffectType::Metal:
+                    return std::make_unique<Metal >();
 
 
                 case EffectType::NONE:

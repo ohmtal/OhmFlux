@@ -130,6 +130,8 @@ bool InputModule::open(SDL_AudioSpec dstSpec) {
 
     mInputSpec.format=SDL_AUDIO_F32; //<< THIS!! override to float!!
 
+    // mInputSpec.freq = 44100 ; //<< test 44.1k
+
     //TEST: use mono !!
     mInputSpec.channels = 1;
 

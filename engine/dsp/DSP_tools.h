@@ -70,7 +70,7 @@ namespace DSP {
         ImFlux::GradientBox(ImVec2(0.f,50.f),gpHeader);
         ImGui::BeginGroup();
         ImGui::Dummy(ImVec2(0,8));ImGui::Dummy(ImVec2(4,0)); ImGui::SameLine();
-        ImFlux::DrawLED("on/off",enabled, lp);
+        if (ImFlux::DrawLED("on/off",enabled, lp)) enabled = !enabled;
         ImGui::SameLine();
         ImGui::SetWindowFontScale(2.f);
         ImFlux::ShadowText(caption);

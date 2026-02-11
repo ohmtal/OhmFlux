@@ -30,9 +30,10 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
         {
             int numSamples = buflen / sizeof(float);
 
-            for (auto& effect : soundMix->getEffectsManager()->getEffects()) {
-                effect->process(buffer, numSamples, spec->channels);
-            }
+            soundMix->getEffectsManager()->process(buffer, numSamples, spec->channels);
+            // for (auto& effect : soundMix->getEffectsManager()->getEffects()) {
+            //     effect->process(buffer, numSamples, spec->channels);
+            // }
         }
         soundMix->getEffectsManager()->unlock();
     }
@@ -120,9 +121,10 @@ bool SoundMixModule::Initialize() {
         //     mEffectsManager->addEffect(DSP::EffectFactory::Create((DSP::EffectType) i));
         // }
         std::vector<DSP::EffectType> types = {
-            // DSP::EffectType::NoiseGate,
+            DSP::EffectType::NoiseGate,
             DSP::EffectType::DistortionBasic,
             DSP::EffectType::OverDrive,
+            DSP::EffectType::Metal,
             DSP::EffectType::Bitcrusher,
             DSP::EffectType::SoundCardEmulation,
             DSP::EffectType::RingModulator,

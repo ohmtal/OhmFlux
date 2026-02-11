@@ -257,9 +257,12 @@ public:
     void process(float* buffer, int numSamples, int numChannels) {
         if (!mEnabled) return;
 
+        // int i = 0;
         for (auto& effect : this->mEffects) {
+            // i++; dLog("processing %d => %s",i, effect->getName().c_str());
             effect->process(buffer, numSamples, numChannels);
         }
+
     }
     //--------------------------------------------------------------------------
     void setSampleRate(float sampleRate) {

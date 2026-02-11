@@ -41,7 +41,8 @@ namespace DSP {
         RingModulator      = 13,
         OverDrive          = 14,
         NoiseGate          = 15,
-        DistortionBasic    = 16
+        DistortionBasic    = 16,
+        Metal              = 17
         // NOTE  don't forget to add this to the Effect Factory !!!
 
     };

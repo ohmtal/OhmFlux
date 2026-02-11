@@ -27,6 +27,7 @@
 #include "DSP_OverDrive.h"
 #include "DSP_NoiseGate.h"
 #include "DSP_DistortionBasic.h"
+#include "DSP_Metal.h"
 
 
 namespace DSP {

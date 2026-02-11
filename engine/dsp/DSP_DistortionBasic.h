@@ -67,6 +67,7 @@ namespace DSP {
 
         // process per single float value
         virtual float processFloat(float input) override {
+            if (!isEnabled() || mSettings.level <= 0.001f) input;
             float out = input;
             out =  std::tanh(out * mSettings.gain) * mSettings.level;
             return out;
