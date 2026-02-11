@@ -36,12 +36,11 @@ void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additiona
         // simple effect TEST >>>>
         int channel = 0;
         int num_samples = bytesRead / sizeof(float);
-        float gate_threshold  = inMod->mSimpleEffectConfig.gate_threshold.load();
-        float gate_release_ms = inMod->mSimpleEffectConfig.gate_release_ms.load();
-        bool gate_enabled     = inMod->mSimpleEffectConfig.gate_enabled.load();
-
-        float release_samples = (gate_release_ms / 1000.0f) * inMod->mInputSpec.freq;
-        if (release_samples < 1.0f) release_samples = 1.0f;
+        // float gate_threshold  = inMod->mSimpleEffectConfig.gate_threshold.load();
+        // float gate_release_ms = inMod->mSimpleEffectConfig.gate_release_ms.load();
+        // bool gate_enabled     = inMod->mSimpleEffectConfig.gate_enabled.load();
+        // float release_samples = (gate_release_ms / 1000.0f) * inMod->mInputSpec.freq;
+        // if (release_samples < 1.0f) release_samples = 1.0f;
 
         for (int i = 0; i < num_samples; ++i) {
             float raw_in = inMod->getBuffer()[i];
@@ -49,11 +48,14 @@ void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additiona
 
             channel = i % inMod->mInputSpec.channels;
 
-            if ( gate_enabled )
-                out = inMod->mNoiseGate.process(out, gate_threshold, release_samples, gate_enabled);
 
+            inMod->mVisuallizer.add_sample(raw_in);
+
+            // if ( gate_enabled )
+            //     out = inMod->mNoiseGate.process(out, gate_threshold, release_samples, gate_enabled);
+            //
             // out *= 0.1f;
-            inMod->lastInputValue = (float) gate_enabled; // out; //DEBUG
+            // inMod->lastInputValue = (float) gate_enabled; // out; //DEBUG
 
             inMod->getBuffer()[i] = out;
         }
@@ -76,39 +78,22 @@ void InputModule::DrawInputModuleUI(){
     } else {
         if (ImGui::Button("CLOSE")) close();
 
-        ImGui::TextDisabled("%f", lastInputValue.load());
+        // ImGui::TextDisabled("%f", lastInputValue.load());
         ImGui::TextDisabled("%d Hz channels:%d", mInputSpec.freq, mInputSpec.channels);
 
         ImGui::Spacing();
-
-        if (ImGui::CollapsingHeader("Input Noise Filter", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Text("Noise Gate");
-            bool gate_enabled = mSimpleEffectConfig.gate_enabled.load();
-            if (ImGui::Checkbox("Gate Toggle", &gate_enabled)) mSimpleEffectConfig.gate_enabled = gate_enabled;
-
-            float threshold = mSimpleEffectConfig.gate_threshold.load();
-            if (ImGui::SliderFloat("Gate Threshold", &threshold, 0.0f, 0.1f, "%.4f")) mSimpleEffectConfig.gate_threshold = threshold;
-
-            float release = mSimpleEffectConfig.gate_release_ms.load();
-            if (ImGui::SliderFloat("Gate Release (ms)", &release, 1.0f, 500.0f)) mSimpleEffectConfig.gate_release_ms = release;
-
-            ImGui::Separator();
-            ImGui::Text("Frequency Filters");
-
-            bool hpf_enabled = mSimpleEffectConfig.hpf_enabled.load();
-            if (ImGui::Checkbox("HPF Toggle (Hum Cut)", &hpf_enabled)) mSimpleEffectConfig.hpf_enabled = hpf_enabled;
-            float hpf_a = mSimpleEffectConfig.hpf_alpha.load();
-            if (ImGui::SliderFloat("HPF Alpha", &hpf_a, 0.900f, 1.0f, "%.4f")) mSimpleEffectConfig.hpf_alpha = hpf_a;
-            ImGui::SetItemTooltip("1.0 = Bypass, lower = more bass cut");
-
-            bool lpf_enabled = mSimpleEffectConfig.lpf_enabled.load();
-            if (ImGui::Checkbox("LPF Toggle (Hiss Cut)", &lpf_enabled)) mSimpleEffectConfig.lpf_enabled = lpf_enabled;
-            float lpf_a = mSimpleEffectConfig.lpf_alpha.load();
-            if (ImGui::SliderFloat("LPF Alpha", &lpf_a, 0.001f, 1.0f, "%.4f")) mSimpleEffectConfig.lpf_alpha = lpf_a;
-            ImGui::SetItemTooltip("1.0 = Bypass, lower = more treble cut");
-        }
-
-
+        // input Osci::
+        ImGui::BeginChild("InputOsci", ImVec2(0.f,60.f));
+        static float scope_zoom = 1.0f;
+        ImGui::SliderFloat("Zoom", &scope_zoom, 0.1f, 10.0f);
+        ImGui::PlotLines("##Scope", mVisuallizer.scope_buffer,
+                         SimpleDSP::Visualizer::scope_size,
+                         mVisuallizer.scope_pos.load(),
+                         NULL,
+                         -1.0f/scope_zoom,
+                         1.0f/scope_zoom,
+                         ImVec2(-1, -1));
+        //<<<<
 
 
     }

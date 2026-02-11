@@ -239,7 +239,7 @@ namespace DSP {
                 // ImFlux::MiniKnobF(label, &value, min_v, max_v);
                 changed |= ImFlux::MiniKnobF("Rate",  &currentSettings.rate, 0.1f, 2.5f); ImGui::SameLine();
                 changed |= ImFlux::MiniKnobF("Depth", &currentSettings.depth, 0.001f, 0.010f); ImGui::SameLine();
-                changed |= ImFlux::MiniKnobF("Delay", &currentSettings.delayBase, 0.001f, 0.040f); ImGui::SameLine();
+                changed |= ImFlux::MiniKnobF("Delay", &currentSettings.delayBase, 0.01f, 0.04f); ImGui::SameLine();
                 changed |= ImFlux::MiniKnobF("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f); ImGui::SameLine();
                 changed |= ImFlux::MiniKnobF("Mix",   &currentSettings.wet, 0.0f, 1.0f); ImGui::SameLine();
 
@@ -309,7 +309,7 @@ namespace DSP {
                     // Parameter Sliders
                     changed |= ImFlux::FaderHWithText("Rate",  &currentSettings.rate, 0.1f, 2.5f, "%.2f Hz");
                     changed |= ImFlux::FaderHWithText("Depth", &currentSettings.depth, 0.001f, 0.010f, "%.4f");
-                    changed |= ImFlux::FaderHWithText("Delay", &currentSettings.delayBase, 0.001f, 0.040f, "%.3f s");
+                    changed |= ImFlux::FaderHWithText("Delay", &currentSettings.delayBase, 0.01f, 0.04f, "%.3f s");
                     changed |= ImFlux::FaderHWithText("Phase", &currentSettings.phaseOffset, 0.0f, 1.0f, "Stereo %.2f");
                     changed |= ImFlux::FaderHWithText("Mix",   &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
 
