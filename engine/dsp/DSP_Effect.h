@@ -42,7 +42,8 @@ namespace DSP {
         OverDrive          = 14,
         NoiseGate          = 15,
         DistortionBasic    = 16,
-        Metal              = 17
+        Metal              = 17,
+        ChromaticTuner     = 18
         // NOTE  don't forget to add this to the Effect Factory !!!
 
     };

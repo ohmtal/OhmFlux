@@ -12,7 +12,7 @@
 #include "soundMixModule.h"
 //------------------------------------------------------------------------------
 void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *buffer, int buflen) {
-    if (!userdata) return;
+    if (!userdata || !spec || !buffer || buflen < 1) return;
     auto* soundMix = static_cast<SoundMixModule*>(userdata);
 
     if (!soundMix )
@@ -29,6 +29,8 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
         if (buflen > 0 && soundMix->getEffectsManager()->getEffects().size() > 0)
         {
             int numSamples = buflen / sizeof(float);
+
+            soundMix->getEffectsManager()->checkFrequence(spec->freq);
 
             soundMix->getEffectsManager()->process(buffer, numSamples, spec->channels);
             // for (auto& effect : soundMix->getEffectsManager()->getEffects()) {
@@ -122,6 +124,7 @@ bool SoundMixModule::Initialize() {
         // }
         std::vector<DSP::EffectType> types = {
             DSP::EffectType::NoiseGate,
+            DSP::EffectType::ChromaticTuner,
             DSP::EffectType::DistortionBasic,
             DSP::EffectType::OverDrive,
             DSP::EffectType::Metal,

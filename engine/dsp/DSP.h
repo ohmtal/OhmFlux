@@ -28,6 +28,7 @@
 #include "DSP_NoiseGate.h"
 #include "DSP_DistortionBasic.h"
 #include "DSP_Metal.h"
+#include "DSP_ChromaticTuner.h"
 
 
 namespace DSP {

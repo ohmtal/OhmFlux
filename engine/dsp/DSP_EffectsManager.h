@@ -54,9 +54,33 @@ private:
     std::vector<std::unique_ptr<DSP::Effect>> mEffects;
     std::recursive_mutex mEffectMutex;
 
+    int mFrequence = 0;
+
+
 public:
     //--------------------------------------------------------------------------
-    EffectsManager(bool switchOn = false) { mEnabled = switchOn;}
+    EffectsManager(bool switchOn = false) { mEnabled = switchOn;mFrequence = getSampleRateI();}
+
+
+    //--------------------------------------------------------------------------
+    void setSampleRate(float sampleRate) {
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
+        for (auto& effect : this->mEffects) {
+            effect->setSampleRate(sampleRate);
+        }
+
+    }
+
+    void checkFrequence( int freq) {
+        if ( freq != mFrequence ) {
+            mFrequence = freq;
+#ifdef FLUX_DEBUG
+            LogFMT("[info] Change frequence to {}", freq);
+#endif
+            setSampleRate(static_cast<float>(mFrequence));
+        }
+    }
+
 
     void setEnabled(bool value) { mEnabled = value;}
 
@@ -261,14 +285,6 @@ public:
         for (auto& effect : this->mEffects) {
             // i++; dLog("processing %d => %s",i, effect->getName().c_str());
             effect->process(buffer, numSamples, numChannels);
-        }
-
-    }
-    //--------------------------------------------------------------------------
-    void setSampleRate(float sampleRate) {
-        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
-        for (auto& effect : this->mEffects) {
-            effect->setSampleRate(sampleRate);
         }
 
     }

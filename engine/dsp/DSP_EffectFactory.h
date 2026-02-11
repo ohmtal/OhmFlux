@@ -61,10 +61,13 @@ namespace DSP {
                     return std::make_unique<NoiseGate>();
 
                 case EffectType::DistortionBasic:
-                    return std::make_unique<DistortionBasic >();
+                    return std::make_unique<DistortionBasic>();
 
                 case EffectType::Metal:
-                    return std::make_unique<Metal >();
+                    return std::make_unique<Metal>();
+
+                case EffectType::ChromaticTuner:
+                    return std::make_unique<ChromaticTuner>();
 
 
                 case EffectType::NONE:

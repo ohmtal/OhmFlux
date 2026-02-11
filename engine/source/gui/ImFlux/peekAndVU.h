@@ -37,7 +37,8 @@ namespace ImFlux {
 
     inline void VUMeter70th(ImVec2 size, float value, const char* label = nullptr,
            ImU32 colorTop = IM_COL32(82, 74, 60, 255),
-           ImU32 colorBottom = IM_COL32(63, 54, 35, 255)
+           ImU32 colorBottom = IM_COL32(63, 54, 35, 255),
+           bool withClipZone = true
     ) { // value is 0.0 to 1.0
         ImDrawList* dl = ImGui::GetWindowDrawList();
 
@@ -74,7 +75,7 @@ namespace ImFlux {
 
             // Color transition
             ImU32 col = IM_COL32(220, 210, 190, 180);
-            if (st > 0.9f) col = IM_COL32(255, 30, 30, 255); // Clip zone
+            if (withClipZone && st > 0.9f) col = IM_COL32(255, 30, 30, 255); // Clip zone
 
             dl->AddLine(p1, p2, col, (i % 3 == 0) ? 2.0f : 1.0f);
         }
@@ -250,6 +251,58 @@ namespace ImFlux {
         ImGui::Dummy(ImVec2(totalW, totalH));
     }
 
+
+    inline void LEDNeedleBar(float value, int ledCount = 13, ImVec2 ledSquare = ImVec2(22.f, 8.f),
+                             ImU32 onColor = IM_COL32(12, 255, 12, 255), ImU32 offColor = IM_COL32(16, 16, 16, 255)
+                             , float targetValue = 0.5f
+                )
+    {
+        // Ensure value is clamped [0.0, 1.0]
+        value = std::clamp(value, 0.f, 1.f);
+
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        float spacing = 1.0f;
+        float totalWidth = ledCount * (ledSquare.x + spacing) - spacing;
+
+        // Center the bar horizontally relative to the available content region
+        float availWidth = ImGui::GetContentRegionAvail().x;
+        float startX = ImGui::GetCursorScreenPos().x; // center optinal ?  + (availWidth - totalWidth) * 0.5f;
+        float startY = ImGui::GetCursorScreenPos().y;
+
+        // Calculate the exact index to light up
+        // Using (ledCount - 1) so 1.0f hits the very last LED
+        int targetIdx = (int)(targetValue * (ledCount - 1) + 0.5f);
+        int needleIdx = (int)(value * (ledCount - 1) + 0.5f);
+//
+
+        for (int i = 0; i < ledCount; i++) {
+            bool isLit = (i == needleIdx);
+            ImU32 led_col = isLit ? onColor : offColor;
+
+            ImVec2 p_min = ImVec2(startX + i * (ledSquare.x + spacing), startY);
+            ImVec2 p_max = ImVec2(p_min.x + ledSquare.x, p_min.y + ledSquare.y);
+
+            // Draw the LED base
+            dl->AddRectFilled(p_min, p_max, led_col, 1.0f);
+
+            if (i == targetIdx ) {
+                float lx = p_min.x + ledSquare.x * 0.5;
+                // overdriven ... idc
+                 dl->AddLine(ImVec2(lx, p_min.y - 1.f), ImVec2(lx, p_max.y + 1.f), ImFlux::COL32_NEON_ELECTRIC);
+
+                // dl->AddRectFilled(p_min, p_max, IM_COL32(128,128,128,200) , 1.f);
+
+                // High-intensity glow/highlight for the "Needle" LED
+                // dl->AddRectFilledMultiColor(p_min, p_max,
+                //                             onColor, onColor, IM_COL32(255,255,255,100), IM_COL32(255,255,255,100));
+                // dl->AddLine(p_min, ImVec2(p_max.x, p_min.y), IM_COL32(255, 255, 255, 150));
+            }
+        }
+
+
+        // optinal center ImGui::Dummy(ImVec2(availWidth, ledSquare.y));
+        ImGui::Dummy(ImVec2(totalWidth, ledSquare.y));
+    }
 
 } //namespace
 

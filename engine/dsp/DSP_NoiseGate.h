@@ -122,7 +122,7 @@ namespace DSP {
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled()) return;
 
-            float lThresHold =  mSettings.Threshold ;
+            float lThresHold =  mSettings.Threshold * 0.01f;
 
             if (mCurrentGains.size() != (size_t)numChannels) {
                 initVectors(numChannels);
