@@ -11,6 +11,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <gui/ImFlux.h>
+#include "DSP_tools.h"
 #endif
 
 
@@ -39,7 +40,8 @@ namespace DSP {
         VoiceModulator     = 12,
         RingModulator      = 13,
         OverDrive          = 14,
-        NoiseGate          = 15
+        NoiseGate          = 15,
+        DistortionBasic    = 16
         // NOTE  don't forget to add this to the Effect Factory !!!
 
     };
@@ -54,7 +56,15 @@ namespace DSP {
     public:
         Effect(bool switchOn = false) { mEnabled = switchOn;}
         virtual ~Effect() {}
+
+        // process the samples and modify the buffer ... here is the beef :)
         virtual void process(float* buffer, int numSamples, int numChannels) {}
+
+        // added for single float processing ...
+        // you need to handle it manually since it's not supported on all
+        // classes !!! We simply return the input again by default
+        virtual float processFloat(float input) { return input; }
+
 
         virtual DSP::EffectType getType() const { return DSP::EffectType::NONE; }
 
@@ -103,8 +113,9 @@ namespace DSP {
         ImGui::PopID();
     }
 
-    virtual void renderPaddle() {
 
+    virtual void renderPaddle() {
+        // paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
     }
 
     virtual void renderUI() {

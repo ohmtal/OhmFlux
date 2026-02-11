@@ -116,6 +116,19 @@ namespace DSP {
         virtual ImVec4 getColor() const  override { return  ImVec4(0.827f, 0.521f, 0.329f, 1.0f);}
 
         //--------------------------------------------------------------------------
+        virtual void renderPaddle() override {
+            ImGui::PushID("OVERDRIVE_Effect_PADDLE");
+            paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
+            OverDriveSettings currentSettings = this->getSettings();
+            bool changed = false;
+            changed |= rackKnob("DRIVE", &currentSettings.drive, {1.0f, 20.0f}, ksRed);ImGui::SameLine();
+            changed |= rackKnob("TONE", &currentSettings.tone, {0.0f, 1.0f}, ksBlue);ImGui::SameLine();
+            changed |= rackKnob("PRESERVE", &currentSettings.bassPreserve, {0.0f, 1.0f}, ksBlue);ImGui::SameLine();
+            changed |= rackKnob("LEVEL", &currentSettings.wet, {0.0f, 1.f}, ksBlack);
+            if (changed) this->setSettings(currentSettings);
+            ImGui::PopID();
+        }
+
         virtual void renderUIWide() override {
             ImGui::PushID("OverDrive_Effect_WIDE");
             if (ImGui::BeginChild("OVERDRIVE_BOX", ImVec2(-FLT_MIN, 65.f))) {
@@ -132,10 +145,10 @@ namespace DSP {
                     this->setEnabled(isEnabled);
                 }
                 if (!isEnabled) ImGui::BeginDisabled();
-                ImGui::SameLine(ImGui::GetWindowWidth() - 65.f);
-                if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)))) {
-                    this->reset();
-                }
+                // ImGui::SameLine(ImGui::GetWindowWidth() - 65.f);
+                // if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)))) {
+                //     this->reset();
+                // }
                 ImGui::Separator();
                 changed |= ImFlux::MiniKnobF("Drive", &currentSettings.drive, 1.0f, 20.0f); //, "%.1fx");
                 ImGui::SameLine();

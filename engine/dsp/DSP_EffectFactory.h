@@ -60,10 +60,13 @@ namespace DSP {
                 case EffectType::NoiseGate:
                     return std::make_unique<NoiseGate>();
 
+                case EffectType::DistortionBasic:
+                    return std::make_unique<DistortionBasic >();
+
+
 
                 case EffectType::NONE:
                 default:
-                    // Hier landen wir, wenn der Typ 0 ist oder vergessen wurde
                     return nullptr;
             }
         }

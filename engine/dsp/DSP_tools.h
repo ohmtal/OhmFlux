@@ -7,6 +7,9 @@
 #pragma once
 
 #include <memory>
+#include <atomic>
+#include <fstream>
+
 
 #ifdef FLUX_ENGINE
 #include <imgui.h>
@@ -14,72 +17,47 @@
 #include <gui/ImFlux.h>
 #endif
 
-
-
 namespace DSP {
-
-
     //-----------------------------------------------------------------------------
-    // HELPER FUNCTION IF YOU NEED TO ADD A EFFECT TO A SHADOW POINTER:
-    // Example:  mDSPBitCrusher = addEffectToChain<DSP::Bitcrusher>(mDspEffects, false);
-    template<typename T>
-    T* addEffectToChain(std::vector<std::unique_ptr<DSP::Effect>>& chain, bool enabled = false) {
-        auto fx = std::make_unique<T>(enabled);
-        T* ptr = fx.get();
-        chain.push_back(std::move(fx));
-        return ptr;
-    }
-    //-----------------------------------------------------------------------------
-    // normalize a stream
-    inline void normalizeBuffer(float* buffer, size_t count, float targetPeak = 1.0f) {
-        float currentPeak = 0.0f;
-
-        // Pass 1: Find the absolute maximum peak
-        for (size_t i = 0; i < count; ++i) {
-            float absValue = std::abs(buffer[i]);
-            if (absValue > currentPeak) {
-                currentPeak = absValue;
-            }
-        }
-
-        // Pass 2: Scale all samples (only if the buffer isn't silent)
-        if (currentPeak > 0.0f) {
-            float factor = targetPeak / currentPeak;
-            for (size_t i = 0; i < count; ++i) {
-                buffer[i] *= factor;
-            }
-        }
-    }
+    // lazy usage inside: auto writeVal = [&](const auto& atomicVal) {...}
+    inline void writeAtomicVal(std::ostream& os,  const auto& atomicVal) {
+        auto v = atomicVal.load();
+        os.write(reinterpret_cast<const char*>(&v), sizeof(v));
+    };
+    // lazy usage inside: auto readVal = [&](auto& atomicDest) {...}
+    inline void readAtomicVal(std::istream& is, auto& atomicDest) {
+        typename std::remove_reference_t<decltype(atomicDest)>::value_type temp;
+        is.read(reinterpret_cast<char*>(&temp), sizeof(temp));
+        atomicDest.store(temp);
+    };
     //-----------------------------------------------------------------------------
     #ifdef FLUX_ENGINE
 
-    void rackKnobAtomic( const char* caption, auto& atomicVal,
+    inline ImFlux::KnobSettings ksBlack = {.radius=25.f, .active=IM_COL32(200,200,0,255)   };
+    inline ImFlux::KnobSettings ksRed   = {.radius=25.f, .bg_outer = IM_COL32(45, 5, 4, 255), .bg_inner = IM_COL32(65, 5, 4, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksBlue  = {.radius=25.f, .bg_outer = IM_COL32(4, 5, 45, 255), .bg_inner = IM_COL32(4, 5, 65, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksGreen = {.radius=25.f, .bg_outer = IM_COL32(4, 45, 5, 255), .bg_inner = IM_COL32(4, 65, 5, 255),.active=IM_COL32(200,200,0,255)  };
+
+
+    inline bool rackKnob( const char* caption, float* value,
                          ImVec2 minMax, ImFlux::KnobSettings ks,
                          ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
                         )
     {
-        auto v = atomicVal.load();
-
         ImFlux::GradientBox(ImVec2(70.f,80.f),gp);
-        ImGui::Dummy(ImVec2(5.f, 5.f)); ImGui::SameLine();
         ImGui::BeginGroup();
         ImFlux::ShadowText(caption, IM_COL32(132,132,132,255));
-        if ( ImFlux::LEDMiniKnob(caption, &v, minMax.x, minMax.y, ks) ) {
-            atomicVal = v;
-        }
+        ImGui::Dummy(ImVec2(5.f, 5.f)); ImGui::SameLine();
+        bool result = ImFlux::LEDMiniKnob(caption, value, minMax.x, minMax.y, ks);
         ImGui::EndGroup();
-        // ImGui::SameLine();ImGui::Dummy(ImVec2(2.f, 5.f));
-
+        return result;
     };
 
-    void paddleHeader(const char* caption, ImU32 baseColor, auto& atomicEnabledVal,
+    inline void paddleHeader(const char* caption, ImU32 baseColor, bool& enabled,
                       ImFlux::LedParams lp = ImFlux::LED_GREEN_ANIMATED_GLOW,
                       ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
-
-
-
     ) {
-        auto enabled = atomicEnabledVal.load();
+
 
 
         // FOR HEADER CLICK :
@@ -101,8 +79,10 @@ namespace DSP {
         ImGui::EndGroup();
 
         // click magic:
-        if (ImGui::IsMouseHoveringRect(min, max) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            atomicEnabledVal = !atomicEnabledVal;
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(min, max)) {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                enabled = !enabled;
+            }
         }
 
         ImFlux::GradientBox(ImVec2(0.f,0.f),gp);

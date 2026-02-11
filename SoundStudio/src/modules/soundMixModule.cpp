@@ -48,7 +48,7 @@ void SoundMixModule::DrawRack()
         if (!mInitialized ||  mEffectsManager == nullptr) return;
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
         ImGui::Begin("Post Digital Sound Effects Rack");
-        mEffectsManager->renderUI(true);
+        mEffectsManager->renderUI(1);
         ImGui::End();
 
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
@@ -98,7 +98,13 @@ void SoundMixModule::DrawRack()
         //  ~~~~~~~~~~~ TEST RENDERIU ~~~~~~~~~~~~~~~~~~~~~
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
         ImGui::Begin("Post Digital Sound Effects Rack Alternate Rendering");
-        mEffectsManager->renderUI(false);
+        mEffectsManager->renderUI(0);
+        ImGui::End();
+
+        //  ~~~~~~~~~~~ TEST RENDERPADDLE ~~~~~~~~~~~~~~~~~~~~~
+        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::Begin("Post Digital Sound Effects Rack Paddles TEST ");
+        mEffectsManager->renderUI(2);
         ImGui::End();
 
 
@@ -115,6 +121,7 @@ bool SoundMixModule::Initialize() {
         // }
         std::vector<DSP::EffectType> types = {
             // DSP::EffectType::NoiseGate,
+            DSP::EffectType::DistortionBasic,
             DSP::EffectType::OverDrive,
             DSP::EffectType::Bitcrusher,
             DSP::EffectType::SoundCardEmulation,

@@ -88,6 +88,7 @@ public:
         return static_cast<DSP::Equalizer9Band*>(fx);
     }
 
+
     //--------------------------------------------------------------------------
     void addError(std::string error) {
         #ifdef FLUX_ENGINE
@@ -137,15 +138,21 @@ public:
         return true;
     }
     //--------------------------------------------------------------------------
-    void renderUI(bool wide ) {
+    // modes:0 = renderUI,  1=  renderUIWide, 2 = renderPaddle
+    void renderUI(int mode = 0 ) {
 
 #ifdef FLUX_ENGINE
         bool isEnabled = mEnabled;
 
         if (!isEnabled) ImGui::BeginDisabled();
         for (auto& effect : this->mEffects) {
-            if (wide) effect->renderUIWide();
-            else effect->renderUI();
+            switch ( mode )
+            {
+                case 1: effect->renderUIWide();break;
+                case 2: effect->renderPaddle();break;
+                default: effect->renderUI(); break;
+            }
+
         }
         if (!isEnabled) ImGui::EndDisabled();
 #endif
