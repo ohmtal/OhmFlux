@@ -5,6 +5,7 @@
 // Digital Sound Processing : Base class Effect
 //-----------------------------------------------------------------------------
 // TODO: move templates out to a not file
+// TODO: add color (U32) to params ( for buttons :D )
 //-----------------------------------------------------------------------------
 #pragma once
 #include <cstdint>
@@ -152,17 +153,16 @@ namespace DSP {
         virtual std::vector<IParameter*> getAll() = 0;
         virtual std::vector<const IParameter*> getAll() const = 0;
 
-         virtual std::vector<std::shared_ptr<IPreset>> getPresets() const = 0;
+         // virtual std::vector<std::shared_ptr<IPreset>> getPresets() const = 0;
         //----------------------------------------------------------------------
-        //  // FIXME .... not implemented
         void resetToDefaults() {
             for (auto* p : getAll()) {
                 p->setDefaultValue();
-
-// #ifdef FLUX_ENGINE
-//                 LogFMT("{} default {}", p->getName(), p->getDefaultValueAsString());
-// #endif
             }
+        }
+        //----------------------------------------------------------------------
+        virtual std::vector<std::shared_ptr<IPreset>> getPresets() const {
+            return {}; // defaults to none
         }
         //----------------------------------------------------------------------
         void save(std::ostream& os) const {

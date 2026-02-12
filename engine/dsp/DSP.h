@@ -30,6 +30,8 @@
 #include "DSP_Metal.h"
 #include "DSP_ChromaticTuner.h"
 
+// #include "MonoProcessors/KickSynh.h"
+
 
 namespace DSP {
 
