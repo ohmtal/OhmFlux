@@ -67,7 +67,9 @@ struct EffectsRack {
         DSP_STREAM_TOOLS::write_string(os, mName);
         uint32_t count = static_cast<uint32_t>(mEffects.size());
 
-        if (count > MAX_RACKS) throw std::runtime_error("Too many effects in rack!");
+        if (count > MAX_RACKS) {
+            throw std::runtime_error(std::format("Too many effects in rack! count={} (max allowed: {})", count, MAX_RACKS));
+        }
 
         DSP_STREAM_TOOLS::write_binary(os, count);
 
@@ -78,11 +80,12 @@ struct EffectsRack {
         }
     }
     bool load(std::istream& is) {
-        try {
             DSP_STREAM_TOOLS::read_string(is, mName);
             uint32_t count = 0;
             DSP_STREAM_TOOLS::read_binary(is, count);
-            if (count > MAX_RACKS) throw std::runtime_error("Too many effects in rack!");
+            if (count > MAX_RACKS) {
+                throw std::runtime_error(std::format("Too many effects in rack! count={} (max allowed: {})", count, MAX_RACKS));
+            }
 
             mEffects.clear();
             mEffects.reserve(count);
@@ -100,10 +103,6 @@ struct EffectsRack {
                 mEffects.push_back(std::move(fx));
             }
             return true;
-        } catch (const std::exception& e) {
-            // FIXME ERRORS here too
-            return false;
-        }
     }
 };
 
@@ -360,7 +359,7 @@ public:
             std::ofstream ofs(filePath, std::ios::binary);
             ofs.exceptions(std::ios::badbit | std::ios::failbit);
             DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_MAGIC);
-            DSP_STREAM_TOOLS::write_binary(ofs, uint32_t(1));
+            DSP_STREAM_TOOLS::write_binary(ofs, uint32_t(DSP_RACKVERSION));
             mActiveRack->save(ofs);
             ofs.close();
             return true;
@@ -387,6 +386,14 @@ public:
                 addError("Invalid File Format (Magic mismatch)");
                 return false;
             }
+
+            uint32_t version  = 0;
+            DSP_STREAM_TOOLS::read_binary(ifs, version);
+            if (version > DSP_RACKVERSION) {
+                addError(std::format("RackLoad - INVALID VERSION NUMBER:{}", version));
+                return false;
+            }
+
 
             auto loadedRack = std::make_unique<EffectsRack>();
             if (!loadedRack->load(ifs)) {
@@ -424,110 +431,34 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    // bool Load(std::string filePath) {
-    //
-    //     if (!std::filesystem::exists(filePath)) {
-    //         addError(std::format("File {} not found.", filePath));
-    //         return false; //file not found
-    //     }
-    //
-    //
-    //     clearErrors();
-    //     std::ifstream ifs;
-    //     ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-    //     try {
-    //         ifs.open(filePath, std::ios::binary);
-    //
-    //         uint32_t magic = 0;
-    //         ifs.read(reinterpret_cast<char*>(&magic), sizeof(magic));
-    //
-    //         if (magic != DSP::DSP_MAGIC) {
-    //             addError("Invalid File Format (Magic mismatch)");
-    //             return false;
-    //         }
-    //
-    //         uint32_t count = 0;
-    //         ifs.read(reinterpret_cast<char*>(&count), sizeof(count));
-    //
-    //         this->clear();
-    //
-    //         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
-    //         for (uint32_t i = 0; i < count; ++i) {
-    //             DSP::EffectType type;
-    //             ifs.read(reinterpret_cast<char*>(&type), sizeof(type));
-    //
-    //             std::unique_ptr<DSP::Effect> fx = DSP::EffectFactory::Create(type);
-    //
-    //             if (fx) {
-    //                 if (!fx->load(ifs)) {
-    //                     addError(std::format("Failed to load settings for effect type: {}", (uint32_t)type));
-    //                     return false;
-    //                 }
-    //                 mActiveRack->mEffects.push_back(std::move(fx));
-    //             } else {
-    //                 addError(std::format("Unknown Effect type: {}. Loading aborted to prevent corruption.", (uint32_t)type));
-    //                 return false;
-    //             }
-    //         }
-    //         ifs.exceptions(std::ifstream::badbit);
-    //         ifs.clear();
-    //
-    //         ifs.get();
-    //         if (!ifs.eof()) {
-    //             addError("File too long (unexpected trailing data)!");
-    //             return false;
-    //         }
-    //
-    //         return true;
-    //
-    //     } catch (const std::ios_base::failure& e) {
-    //         if (ifs.eof()) {
-    //             addError("Unexpected End of File: The file is truncated.");
-    //         } else {
-    //             addError(std::format("I/O failure: {}", e.what()));
-    //         }
-    //         return false;
-    //     } catch (const std::exception& e) {
-    //         addError(std::format("General error: {}", e.what()));
-    //         return false;
-    //     }
-    // }
-    //
+    // FIXME IMPLEMENT AND TEST
+    bool scanAndLoadPresetsFromFolder(const std::string& folderPath, bool createIfMissing = true) {
+        namespace fs = std::filesystem;
 
+        if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
+            if ( createIfMissing ) {
+                if (!fs::create_directories(folderPath))
+                    addError(std::format("Failed to create preset directory:{}", folderPath));
+            }
+            // we have no folder
+            return true;
+        }
 
-    // bool Save(std::string filePath) {
-    //     clearErrors();
-    //     std::ofstream ofs; // (filePath, std::ios::binary);
-    //     ofs.exceptions(std::ofstream::badbit | std::ofstream::failbit);
-    //     try {
-    //         ofs.open(filePath, std::ios::binary);
-    //
-    //         if (!ofs.is_open()) {
-    //             addError(std::format("Can't open File {} for write.", filePath));
-    //             return false;
-    //         }
-    //         DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_MAGIC);
-    //         uint32_t count = static_cast<uint32_t>(mActiveRack->mEffects.size());
-    //         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
-    //         DSP_STREAM_TOOLS::write_binary(ofs, count);
-    //         for (const auto& fx : mActiveRack->mEffects) {
-    //             DSP::EffectType type = fx->getType();
-    //             DSP_STREAM_TOOLS::write_binary(ofs, type);
-    //             fx->save(ofs);
-    //         }
-    //         ofs.close();
-    //         return true;
-    //     } catch (const std::ios_base::failure& e) {
-    //         // Detailed system error (e.g., "No space left on device")
-    //         addError(std::format("Disk I/O Error: {}", e.what()));
-    //         return false;
-    //     } catch (const std::exception& e) {
-    //         addError(std::format("General write exception: {}", e.what()));
-    //         return false;
-    //     }
-    //
-    //     return false;
-    // }
+        for (const auto& entry : fs::directory_iterator(folderPath)) {
+            // let's rock ;)
+            if (entry.is_regular_file() && entry.path().extension() == ".rock") {
+                std::string path = entry.path().string();
+
+                if (LoadRack(path, true)) {
+                    Log("[info] Preset loaded: %s", path.c_str());
+                } else {
+                    Log("[error] Failed to auto-load: %s", path.c_str());
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
     //--------------------------------------------------------------------------
     void process(float* buffer, int numSamples, int numChannels) {
         if (!mEnabled) return;
@@ -538,6 +469,7 @@ public:
 
     }
     //--------------------------------------------------------------------------
+
 
 }; //class Effects
 }; //namespace

@@ -20,6 +20,7 @@ private:
 public:
     SoundMixModule() = default;
     ~SoundMixModule() {
+        mEffectsManager->SaveRack("bla.rack");
         SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), NULL, NULL);
     }
 

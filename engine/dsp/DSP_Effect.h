@@ -22,6 +22,7 @@ namespace DSP {
     inline float getSampleRateF() { return SAMPLE_RATE; }
 
     constexpr uint32_t DSP_MAGIC = 0x524F434B; // ASCII: 'R' 'O' 'C' 'K' -> 0x524F434B
+    constexpr uint32_t DSP_RACKVERSION = 1;
 
 
 

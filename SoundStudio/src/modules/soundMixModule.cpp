@@ -179,6 +179,9 @@ bool SoundMixModule::Initialize() {
 
         Log("[info] SoundMixModule init done.");
 
+
+        mEffectsManager->LoadRack("bla.rack");
+
         mInitialized = true;
         return true;
 
