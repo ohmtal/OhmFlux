@@ -20,7 +20,7 @@ namespace DSP {
             switch(type) {
                 #define X_FACTORY(name, id) \
                 case EffectType::name: \
-                    dLog("EffectFactory: Match found for %s\n", #name); \
+                    // dLog("EffectFactory: Match found for %s\n", #name); \
                     return std::make_unique<name>();
                     EFFECT_LIST(X_FACTORY)
                     #undef X_FACTORY
