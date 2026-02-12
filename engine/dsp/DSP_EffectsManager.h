@@ -450,9 +450,9 @@ public:
                 std::string path = entry.path().string();
 
                 if (LoadRack(path, true)) {
-                    Log("[info] Preset loaded: %s", path.c_str());
+                    // Log("[info] Preset loaded: %s", path.c_str());
                 } else {
-                    Log("[error] Failed to auto-load: %s", path.c_str());
+                    addError(std::format("[error] Failed to auto-load: {}", path.c_str()));
                     return false;
                 }
             }
