@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2026 Ohmtal Game Studio
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Main include
@@ -30,7 +30,7 @@
 #include "DSP_Metal.h"
 #include "DSP_ChromaticTuner.h"
 
-// #include "MonoProcessors/KickSynh.h"
+#include "Drums/DSP_DrumKit.h" //(Wip)
 
 
 namespace DSP {

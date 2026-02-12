@@ -25,6 +25,7 @@
 
 
 namespace DSP {
+namespace Drums {
 
 struct KickData {
     float pitch;
@@ -99,4 +100,4 @@ private:
     float mPitchEnv = 0.0f;
     bool mActive = false;
 };
-}; //namespace
+};}; //namespace

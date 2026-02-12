@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2026 Ohmtal Game Studio
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Base class Effect
@@ -54,7 +54,8 @@ namespace DSP {
         X(NoiseGate          ,15) \
         X(DistortionBasic    ,16) \
         X(Metal              ,17) \
-        X(ChromaticTuner     ,18)
+        X(ChromaticTuner     ,18) \
+        X(DrumKit            ,19)
 
 
 
@@ -72,12 +73,10 @@ namespace DSP {
     }
     //---------------------- PARAMETER DEFINITION --------------------------
     #define REGISTER_SETTINGS(ClassName, ...) \
-    /* 1. Der Kopierkonstruktor (löst deinen Fehler) */ \
     ClassName(const ClassName& other) : ClassName() { \
         this->copyValuesFrom(other); \
     } \
     \
-    /* 2. Der Zuweisungsoperator (für settings = other) */ \
     ClassName& operator=(const ClassName& other) { \
         if (this != &other) { \
             this->copyValuesFrom(other); \
@@ -85,7 +84,6 @@ namespace DSP {
         return *this; \
     } \
     \
-    /* 3. Die restlichen Interface-Methoden */ \
     std::vector<IParameter*> getAll() override { return { __VA_ARGS__ }; } \
     std::vector<const IParameter*> getAll() const override { return { __VA_ARGS__ }; } \
     std::unique_ptr<ISettings> clone() const override { \

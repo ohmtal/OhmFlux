@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2026 Ohmtal Game Studio
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Bitcrusher - "Lo-Fi" Filter
@@ -36,7 +36,6 @@ namespace DSP {
 
 
     struct BitcrusherSettings : public ISettings {
-        // 1. Definitionen nur EINMAL hier oben
         AudioParam<float> bits       { "Resolution", 8.f, 1.0f, 16.0f, "%.1f" };
         AudioParam<float> sampleRate { "Downsampling", 22050.f, 1000.0f, 44100.0f, "%.0f Hz" };
         AudioParam<float> wet        { "Mix", 1.f, 0.0f, 1.0f, "%.2f" };
