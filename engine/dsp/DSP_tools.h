@@ -109,41 +109,6 @@ namespace DSP {
             ifs.read(reinterpret_cast<char*>(&value), sizeof(T));
         }
 
-        // // Helper to write std::string
-        // void write_string(std::ofstream& ofs, const std::string& str) {
-        //     // 1. Determine the safe length to write
-        //     uint32_t length = static_cast<uint32_t>(str.length());
-        //
-        //     if (length > MAX_STRING_LENGTH) {
-        //         length = static_cast<uint32_t>(MAX_STRING_LENGTH);
-        //     }
-        //
-        //     // 2. Write the (possibly truncated) length
-        //     write_binary(ofs, length);
-        //
-        //     // 3. Write exactly 'length' bytes from the string
-        //     if (length > 0) {
-        //         ofs.write(str.data(), length);
-        //     }
-        // }
-        //
-        // // Helper to read std::string
-        // void read_string(std::ifstream& ifs, std::string& str) {
-        //     uint32_t length;
-        //     read_binary(ifs, length);
-        //
-        //     // Safety check: prevent allocating gigabytes from a corrupted file
-        //     // This now matches the limit enforced during saving.
-        //     if (length > MAX_STRING_LENGTH) {
-        //         throw std::runtime_error(std::format("String length {} exceeds limit {}",
-        //                                              length, MAX_STRING_LENGTH));
-        //     }
-        //
-        //     str.resize(length);
-        //     if (length > 0) {
-        //         ifs.read(str.data(), length);
-        //     }
-        // }
 
         //-----------------------------------------------------------------------------
         // lazy usage inside: auto writeVal = [&](const auto& atomicVal) {...}

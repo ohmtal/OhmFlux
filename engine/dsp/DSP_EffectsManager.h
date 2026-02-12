@@ -37,12 +37,10 @@ struct EffectsRack {
     std::string mName;
     std::vector<std::unique_ptr<DSP::Effect>> mEffects;
 
-    // Tiefes Kopieren (Clone), falls du ein Preset duplizieren willst
     std::unique_ptr<EffectsRack> clone() const {
         auto newRack = std::make_unique<EffectsRack>();
         newRack->mName = this->mName + " (copy)";
         for (const auto& fx : mEffects) {
-            // Hier sollte jeder Effekt eine clone() Methode haben
             newRack->mEffects.push_back(fx->clone());
         }
         return newRack;
@@ -350,6 +348,13 @@ public:
 #endif
     }
     //--------------------------------------------------------------------------
+    void SaveRackStream(std::ostream& ofs) const {
+        ofs.exceptions(std::ios::badbit | std::ios::failbit);
+        DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_RACK_MAGIC);
+        DSP_STREAM_TOOLS::write_binary(ofs, uint32_t(DSP_RACK_VERSION));
+        mActiveRack->save(ofs);
+    }
+    //--------------------------------------------------------------------------
     bool SaveRack(std::string filePath) {
         if (!mActiveRack) return false;
 
@@ -357,10 +362,7 @@ public:
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
         try {
             std::ofstream ofs(filePath, std::ios::binary);
-            ofs.exceptions(std::ios::badbit | std::ios::failbit);
-            DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_MAGIC);
-            DSP_STREAM_TOOLS::write_binary(ofs, uint32_t(DSP_RACKVERSION));
-            mActiveRack->save(ofs);
+            SaveRackStream(ofs);
             ofs.close();
             return true;
         } catch (const std::exception& e) {
@@ -369,7 +371,59 @@ public:
         }
     }
     //--------------------------------------------------------------------------
-    bool LoadRack(std::string filePath, bool appendToPresets = false) {
+    enum RackLoadMode {
+        ReplacePresets = 0,
+        AppendToPresets = 1,
+        AppendToPresetsAndSetActive = 2
+    };
+    bool LoadRackStream(std::istream& ifs, RackLoadMode loadMode = RackLoadMode::ReplacePresets) {
+        uint32_t magic = 0;
+        DSP_STREAM_TOOLS::read_binary(ifs, magic);
+        if (magic != DSP::DSP_RACK_MAGIC) {
+            addError("Invalid File Format (Magic mismatch)");
+            return false;
+        }
+
+        uint32_t version  = 0;
+        DSP_STREAM_TOOLS::read_binary(ifs, version);
+        if (version > DSP_RACK_VERSION) {
+            addError(std::format("RackLoad - INVALID VERSION NUMBER:{}", version));
+            return false;
+        }
+
+
+        auto loadedRack = std::make_unique<EffectsRack>();
+        if (!loadedRack->load(ifs)) {
+            addError("Failed to parse Rack data.");
+            return false;
+        }
+
+        ifs.exceptions(std::ifstream::badbit);
+        ifs.get();
+        if (!ifs.eof()) {
+            addError("File too long (unexpected trailing data)!");
+            return false;
+        }
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
+
+        switch (loadMode) {
+            case RackLoadMode::AppendToPresets:
+                mPresets.push_back(std::move(loadedRack));
+                break;
+            case AppendToPresetsAndSetActive:
+                mPresets.push_back(std::move(loadedRack));
+                mActiveRack = mPresets.back().get();
+                break;
+            default: //ReplacePresets
+                mPresets.clear();
+                mPresets.push_back(std::move(loadedRack));
+                mActiveRack = mPresets.front().get();
+        }
+
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    bool LoadRack(std::string filePath, RackLoadMode loadMode = RackLoadMode::ReplacePresets) {
         if (!std::filesystem::exists(filePath)) {
             addError(std::format("File {} not found.", filePath));
             return false;
@@ -380,43 +434,10 @@ public:
 
         try {
             ifs.open(filePath, std::ios::binary);
-            uint32_t magic = 0;
-            DSP_STREAM_TOOLS::read_binary(ifs, magic);
-            if (magic != DSP::DSP_MAGIC) {
-                addError("Invalid File Format (Magic mismatch)");
+
+            if (!LoadRackStream(ifs,loadMode))
                 return false;
-            }
 
-            uint32_t version  = 0;
-            DSP_STREAM_TOOLS::read_binary(ifs, version);
-            if (version > DSP_RACKVERSION) {
-                addError(std::format("RackLoad - INVALID VERSION NUMBER:{}", version));
-                return false;
-            }
-
-
-            auto loadedRack = std::make_unique<EffectsRack>();
-            if (!loadedRack->load(ifs)) {
-                addError("Failed to parse Rack data.");
-                return false;
-            }
-
-            ifs.exceptions(std::ifstream::badbit);
-            ifs.get();
-            if (!ifs.eof()) {
-                addError("File too long (unexpected trailing data)!");
-                return false;
-            }
-            std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
-
-            if (appendToPresets) {
-                mPresets.push_back(std::move(loadedRack));
-                mActiveRack = mPresets.back().get();
-            } else {
-                mPresets.clear();
-                mPresets.push_back(std::move(loadedRack));
-                mActiveRack = mPresets.front().get();
-            }
             return true;
         } catch (const std::ios_base::failure& e) {
             if (ifs.eof()) {
@@ -434,7 +455,6 @@ public:
     // FIXME IMPLEMENT AND TEST
     bool scanAndLoadPresetsFromFolder(const std::string& folderPath, bool createIfMissing = true) {
         namespace fs = std::filesystem;
-
         if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
             if ( createIfMissing ) {
                 if (!fs::create_directories(folderPath))
@@ -443,13 +463,11 @@ public:
             // we have no folder
             return true;
         }
-
         for (const auto& entry : fs::directory_iterator(folderPath)) {
             // let's rock ;)
             if (entry.is_regular_file() && entry.path().extension() == ".rock") {
                 std::string path = entry.path().string();
-
-                if (LoadRack(path, true)) {
+                if (LoadRack(path, RackLoadMode::AppendToPresets)) {
                     // Log("[info] Preset loaded: %s", path.c_str());
                 } else {
                     addError(std::format("[error] Failed to auto-load: {}", path.c_str()));

@@ -83,7 +83,7 @@ void InputModule::DrawInputModuleUI(){
 
         ImGui::Spacing();
         // input Osci::
-        ImGui::BeginChild("InputOsci", ImVec2(0.f,60.f));
+        ImGui::BeginChild("InputOsci", ImVec2(0.f,140.f));
         static float scope_zoom = 1.0f;
         ImGui::SliderFloat("Zoom", &scope_zoom, 0.1f, 10.0f);
         ImGui::PlotLines("##Scope", mVisuallizer.scope_buffer,
@@ -94,7 +94,7 @@ void InputModule::DrawInputModuleUI(){
                          1.0f/scope_zoom,
                          ImVec2(-1, -1));
         //<<<<
-
+        ImGui::EndChild();
 
     }
     ImGui::End();

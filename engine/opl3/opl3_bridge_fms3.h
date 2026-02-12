@@ -334,7 +334,7 @@ namespace opl3_bridge_fms3 {
             //DSP >>>>>>>>>>>>>>>>>>>>>
             if (withDspSettings)
             {
-                write_binary(ofs, DSP::DSP_MAGIC);
+                write_binary(ofs, DSP::DSP_RACK_MAGIC);
                 uint32_t count = static_cast<uint32_t>(dspEffects.size());
                 write_binary(ofs, count);
                 for (const auto& fx : dspEffects) {
@@ -464,7 +464,7 @@ namespace opl3_bridge_fms3 {
                 uint32_t magic = 0;
                 // Note: We use ifs.peek() or check read() to see if there is any data left
                 if (ifs.read(reinterpret_cast<char*>(&magic), sizeof(magic))) {
-                    if (magic == DSP::DSP_MAGIC) {
+                    if (magic == DSP::DSP_RACK_MAGIC) {
                         uint32_t count = 0;
                         if (!ifs.read(reinterpret_cast<char*>(&count), sizeof(count))) return false;
 

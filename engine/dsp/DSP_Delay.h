@@ -30,16 +30,21 @@ struct DelaySettings {
     static const uint8_t CURRENT_VERSION = 1;
     void getBinary(std::ostream& os) const {
         uint8_t ver = CURRENT_VERSION;
-        os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
-        os.write(reinterpret_cast<const char*>(this), sizeof(DelaySettings));
+        DSP_STREAM_TOOLS::write_binary(os, ver);
+
+        DSP_STREAM_TOOLS::write_binary(os, time);
+        DSP_STREAM_TOOLS::write_binary(os, feedback);
+        DSP_STREAM_TOOLS::write_binary(os, wet);
     }
 
     bool  setBinary(std::istream& is) {
         uint8_t fileVersion = 0;
-        is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
-        if (fileVersion != CURRENT_VERSION) //Something is wrong !
-            return false;
-        is.read(reinterpret_cast<char*>(this), sizeof(DelaySettings));
+        DSP_STREAM_TOOLS::read_binary(is, fileVersion);
+        if (fileVersion != CURRENT_VERSION) return false;
+        DSP_STREAM_TOOLS::read_binary(is, time);
+        DSP_STREAM_TOOLS::read_binary(is, feedback);
+        DSP_STREAM_TOOLS::read_binary(is, wet);
+
         return  is.good();
     }
 

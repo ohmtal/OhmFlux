@@ -31,16 +31,22 @@ namespace DSP {
         static const uint8_t CURRENT_VERSION = 1;
         void getBinary(std::ostream& os) const {
             uint8_t ver = CURRENT_VERSION;
-            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
-            os.write(reinterpret_cast<const char*>(this), sizeof(OverDriveSettings));
+            DSP_STREAM_TOOLS::write_binary(os, ver);
+            DSP_STREAM_TOOLS::write_binary(os, drive);
+            DSP_STREAM_TOOLS::write_binary(os, tone);
+            DSP_STREAM_TOOLS::write_binary(os, bassPreserve);
+            DSP_STREAM_TOOLS::write_binary(os, wet);
         }
 
         bool  setBinary(std::istream& is) {
             uint8_t fileVersion = 0;
-            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
-            if (fileVersion != CURRENT_VERSION) //Something is wrong !
-                return false;
-            is.read(reinterpret_cast<char*>(this), sizeof(OverDriveSettings));
+            DSP_STREAM_TOOLS::read_binary(is, fileVersion);
+            if (fileVersion != CURRENT_VERSION) return false;
+            DSP_STREAM_TOOLS::read_binary(is, drive);
+            DSP_STREAM_TOOLS::read_binary(is, tone);
+            DSP_STREAM_TOOLS::read_binary(is, bassPreserve);
+            DSP_STREAM_TOOLS::read_binary(is, wet);
+
             return  is.good();
         }
     };
