@@ -15,7 +15,7 @@ namespace DSP {
     public:
 
         static std::unique_ptr<Effect> Create(EffectType type) {
-            dLog("EffectFactory: Trying to create effect ID: %d\n", (uint32_t)type);
+            // dLog("EffectFactory: Trying to create effect ID: %d\n", (uint32_t)type);
 
             switch(type) {
                 #define X_FACTORY(name, id) \
@@ -26,7 +26,7 @@ namespace DSP {
                     #undef X_FACTORY
 
                 default:
-                    Log("[error] EffectFactory: NO MATCH found for ID %d\n", (uint32_t)type);
+                    // Log("[error] EffectFactory: NO MATCH found for ID %d\n", (uint32_t)type);
                     return nullptr;
             }
         }

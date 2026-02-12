@@ -160,7 +160,7 @@ public:
     int cloneRack( int fromIndex  )
     {
         if (fromIndex < 0 || fromIndex >= (int)mPresets.size()) {
-            Log("[error] Cant clone rack. index out of bounds! idx:%d max:%d", fromIndex, (int)mPresets.size());
+            addError(std::format("[error] Cant clone rack. index out of bounds! idx:{} max:{}", fromIndex, (int)mPresets.size()));
             return -1;
         }
         auto newRack = mPresets[fromIndex]->clone();
@@ -168,20 +168,20 @@ public:
         return (int)mPresets.size() - 1;
     }
     //--------------------------------------------------------------------------
-    int getCurrentRackIndex() const {
+    int getCurrentRackIndex()  {
         for (int i = 0; i < (int)mPresets.size(); ++i) {
             if (mPresets[i].get() == mActiveRack) {
                 return i;
             }
         }
-        Log("[error] Current Rack not found! Something is really wrong here!"); //maybe assert
+        addError("[error] Current Rack not found! Something is really wrong here!"); //maybe assert
         return -1; // should not happen!
     }
     //--------------------------------------------------------------------------
     int cloneCurrent() {
         int currentIndex = getCurrentRackIndex();
         if (currentIndex == -1) {
-            Log("[error] No active rack to clone!");
+            addError("[error] No active rack to clone!");
             return -1;
         }
         return cloneRack(currentIndex);
@@ -197,7 +197,7 @@ public:
     bool removeRack(int index) {
         if (index < 0 || index >= (int)mPresets.size()) return false;
         if (mPresets.size() <= 1) {
-            Log("[warn] Cannot remove the last remaining rack.");
+            addError("[warn] Cannot remove the last remaining rack.");
             return false;
         }
         int currentIndex = getCurrentRackIndex();
@@ -214,7 +214,7 @@ public:
         mActiveRack = mPresets[nextActiveIndex].get();
 
 
-        Log("[info] Rack at index %d removed. New active index: %d", index, nextActiveIndex);
+        // dLog("[info] Rack at index %d removed. New active index: %d", index, nextActiveIndex);
         return true;
     }
     //--------------------------------------------------------------------------
@@ -532,9 +532,7 @@ public:
     void process(float* buffer, int numSamples, int numChannels) {
         if (!mEnabled) return;
 
-        // int i = 0;
         for (auto& effect : this->mActiveRack->mEffects) {
-            // i++; dLog("processing %d => %s",i, effect->getName().c_str());
             effect->process(buffer, numSamples, numChannels);
         }
 
