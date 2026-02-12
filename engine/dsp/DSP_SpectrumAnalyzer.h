@@ -31,6 +31,8 @@ namespace DSP {
         int mWriteIdx = 0;
 
     public:
+        IMPLEMENT_EFF_CLONE(SpectrumAnalyzer)
+
         SpectrumAnalyzer(bool switchOn = false) : Effect(switchOn) {
             mCaptureBuffer.resize(FFT_SIZE, 0.0f);
             mDisplayMagnitudes.resize(FFT_SIZE / 2, 0.0f);

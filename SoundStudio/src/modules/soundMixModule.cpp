@@ -10,6 +10,20 @@
 
 #include <audio/fluxAudio.h>
 #include "soundMixModule.h"
+
+//FIXME: Select Rack example :
+// int currentIdx = getCurrentRackIndex();
+// if (ImGui::BeginCombo("Select Rack", mPresets[currentIdx]->mName.c_str())) {
+//     for (int n = 0; n < mPresets.size(); n++) {
+//         bool is_selected = (currentIdx == n);
+//         if (ImGui::Selectable(mPresets[n]->mName.c_str(), is_selected)) {
+//             setActiveRack(n);
+//         }
+//     }
+//     ImGui::EndCombo();
+// }
+
+
 //------------------------------------------------------------------------------
 void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *buffer, int buflen) {
     if (!userdata || !spec || !buffer || buflen < 1) return;

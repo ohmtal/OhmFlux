@@ -75,6 +75,8 @@ namespace DSP {
         std::vector<std::array<float, 4>> mChannelPoles;
 
     public:
+        IMPLEMENT_EFF_CLONE(Warmth)
+
         Warmth(bool switchOn = false) :
             Effect(switchOn),
             mSettings(GENTLE_WARMTH)

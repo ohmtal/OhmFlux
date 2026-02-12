@@ -101,6 +101,8 @@ namespace DSP {
         ChorusSettings mSettings;
 
     public:
+        IMPLEMENT_EFF_CLONE(Chorus)
+
         Chorus(bool switchOn = false) :
             Effect(switchOn)
         {

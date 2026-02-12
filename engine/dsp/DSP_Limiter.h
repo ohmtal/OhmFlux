@@ -80,6 +80,7 @@ namespace DSP {
 
 
     public:
+        IMPLEMENT_EFF_CLONE(Limiter)
 
         Limiter(bool switchOn = true) :
             Effect(switchOn),

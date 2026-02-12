@@ -57,6 +57,8 @@ private:
     float mSampleRate = getSampleRateF(); // Assumed fixed SR, needs updating in prepareToPlay
 
 public:
+    IMPLEMENT_EFF_CLONE(RingModulator)
+
     RingModulator(bool switchOn = false) :
         DSP::Effect(switchOn)
     {

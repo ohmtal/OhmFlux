@@ -65,6 +65,8 @@ namespace DSP {
         float mSampleRate = getSampleRateF();
 
     public:
+        IMPLEMENT_EFF_CLONE(Metal)
+
         Metal(bool switchOn = false) : DSP::Effect(switchOn) {
             mSettings.gain = 50.0f;
             mSettings.tight = 0.5f;

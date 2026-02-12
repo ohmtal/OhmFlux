@@ -52,6 +52,8 @@ namespace DSP {
         std::vector<float> mBassStates;  // Low-pass state for Bass Preserve per channel
 
     public:
+        IMPLEMENT_EFF_CLONE(OverDrive)
+
         OverDrive(bool switchOn = false) : DSP::Effect(switchOn) {
             mSettings.drive = 5.0f;
             mSettings.tone = 0.5f;

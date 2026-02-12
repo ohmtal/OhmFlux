@@ -104,6 +104,8 @@ namespace DSP {
         }
 
     public:
+        IMPLEMENT_EFF_CLONE(Equalizer)
+
         Equalizer(bool switchOn = true) : Effect(switchOn) {
             mSettings = {100.f, 0.f, 0.707f};
 

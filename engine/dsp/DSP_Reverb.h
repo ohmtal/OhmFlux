@@ -96,6 +96,8 @@ private:
 
 
 public:
+    IMPLEMENT_EFF_CLONE(Reverb)
+
     Reverb(bool switchOn = false) :
     Effect(switchOn)
     {

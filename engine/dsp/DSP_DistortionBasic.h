@@ -53,6 +53,8 @@ namespace DSP {
     private:
         DistortionBasicSettings mSettings;
     public:
+        IMPLEMENT_EFF_CLONE(DistortionBasic)
+
         DistortionBasic(bool switchOn = false) : DSP::Effect(switchOn) {
             mSettings.gain = 20.f;
             mSettings.level = 0.5;

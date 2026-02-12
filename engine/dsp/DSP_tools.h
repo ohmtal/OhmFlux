@@ -18,18 +18,147 @@
 #endif
 
 namespace DSP {
-    //-----------------------------------------------------------------------------
-    // lazy usage inside: auto writeVal = [&](const auto& atomicVal) {...}
-    inline void writeAtomicVal(std::ostream& os,  const auto& atomicVal) {
-        auto v = atomicVal.load();
-        os.write(reinterpret_cast<const char*>(&v), sizeof(v));
-    };
-    // lazy usage inside: auto readVal = [&](auto& atomicDest) {...}
-    inline void readAtomicVal(std::istream& is, auto& atomicDest) {
-        typename std::remove_reference_t<decltype(atomicDest)>::value_type temp;
-        is.read(reinterpret_cast<char*>(&temp), sizeof(temp));
-        atomicDest.store(temp);
-    };
+
+    namespace DSP_STREAM_TOOLS {
+        constexpr uint16_t  MAX_VECTOR_ELEMENTS = 1024;
+        constexpr uint16_t  MAX_STRING_LENGTH = 1024;
+
+        // i should have this in a dedicated header ... but since DSP is standalone ...
+
+        //---------
+        template <typename T>
+        void write_binary(std::ostream& os, const T& value) {
+            static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for binary write");
+            os.write(reinterpret_cast<const char*>(&value), sizeof(T));
+        }
+        //---------
+        template <typename T>
+        void read_binary(std::istream& is, T& value) {
+            static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable for binary read");
+            is.read(reinterpret_cast<char*>(&value), sizeof(T));
+            // if (!is) throw std::runtime_error("Binary read failed");
+        }
+        //---------
+        inline void write_string(std::ostream& os, const std::string& str) {
+            uint32_t size = static_cast<uint32_t>(str.size());
+            if (size > MAX_STRING_LENGTH) {
+                size = static_cast<uint32_t>(MAX_STRING_LENGTH);
+            }
+            write_binary(os, size);
+            if (size > 0) {
+                os.write(str.data(), size);
+            }
+        }
+        //---------
+        inline void read_string(std::istream& is, std::string& str) {
+            uint32_t size = 0;
+            read_binary(is, size);
+            if (size > MAX_STRING_LENGTH) {
+                throw std::runtime_error(std::format("String length {} exceeds limit of {}", size, MAX_STRING_LENGTH));
+            }
+            str.resize(size);
+            if (size > 0) {
+                is.read(str.data(), size);
+            }
+        }
+        //---------
+        // Helper to write std::vector of POD/Trivial types
+        template <typename T>
+        void write_vector(std::ostream& os, const std::vector<T>& vec) {
+            static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable for binary I/O");
+            uint32_t size = static_cast<uint32_t>(vec.size());
+            if (size > MAX_VECTOR_ELEMENTS) {
+                throw std::runtime_error(std::format("Vector size exceeds limit: read {} (max allowed: {})",
+                                                     size, MAX_VECTOR_ELEMENTS));
+            }
+            write_binary(os, size);
+            if (size > 0) {
+                os.write(reinterpret_cast<const char*>(vec.data()), static_cast<size_t>(size) * sizeof(T));
+            }
+        }
+        //---------
+
+        template <typename T>
+        void read_vector(std::istream& is, std::vector<T>& vec) {
+            static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable for binary I/O");
+
+            uint32_t size = 0;
+            read_binary(is, size);
+            if (size > MAX_VECTOR_ELEMENTS) {
+                throw std::runtime_error(std::format("Vector size {} in file exceeds limit of {}",
+                                                     size, MAX_VECTOR_ELEMENTS));
+            }
+            vec.resize(size);
+            if (size > 0) {
+                is.read(reinterpret_cast<char*>(vec.data()), static_cast<std::streamsize>(size) * sizeof(T));
+            }
+        }
+
+
+        //----------------------------------------------------------------------
+        // ~~~~~~~~~~~~ ofstream versions:  ~~~~~~~~~~~~~~~~~~
+        template <typename T>
+        void write_binary(std::ofstream& ofs, const T& value) {
+            static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable for binary write");
+            ofs.write(reinterpret_cast<const char*>(&value), sizeof(T));
+        }
+
+        template <typename T>
+        void read_binary(std::ifstream& ifs, T& value) {
+            static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable for binary read");
+            ifs.read(reinterpret_cast<char*>(&value), sizeof(T));
+        }
+
+        // // Helper to write std::string
+        // void write_string(std::ofstream& ofs, const std::string& str) {
+        //     // 1. Determine the safe length to write
+        //     uint32_t length = static_cast<uint32_t>(str.length());
+        //
+        //     if (length > MAX_STRING_LENGTH) {
+        //         length = static_cast<uint32_t>(MAX_STRING_LENGTH);
+        //     }
+        //
+        //     // 2. Write the (possibly truncated) length
+        //     write_binary(ofs, length);
+        //
+        //     // 3. Write exactly 'length' bytes from the string
+        //     if (length > 0) {
+        //         ofs.write(str.data(), length);
+        //     }
+        // }
+        //
+        // // Helper to read std::string
+        // void read_string(std::ifstream& ifs, std::string& str) {
+        //     uint32_t length;
+        //     read_binary(ifs, length);
+        //
+        //     // Safety check: prevent allocating gigabytes from a corrupted file
+        //     // This now matches the limit enforced during saving.
+        //     if (length > MAX_STRING_LENGTH) {
+        //         throw std::runtime_error(std::format("String length {} exceeds limit {}",
+        //                                              length, MAX_STRING_LENGTH));
+        //     }
+        //
+        //     str.resize(length);
+        //     if (length > 0) {
+        //         ifs.read(str.data(), length);
+        //     }
+        // }
+
+        //-----------------------------------------------------------------------------
+        // lazy usage inside: auto writeVal = [&](const auto& atomicVal) {...}
+        inline void writeAtomicVal(std::ostream& os,  const auto& atomicVal) {
+            auto v = atomicVal.load();
+            os.write(reinterpret_cast<const char*>(&v), sizeof(v));
+        };
+        // lazy usage inside: auto readVal = [&](auto& atomicDest) {...}
+        inline void readAtomicVal(std::istream& is, auto& atomicDest) {
+            typename std::remove_reference_t<decltype(atomicDest)>::value_type temp;
+            is.read(reinterpret_cast<char*>(&temp), sizeof(temp));
+            atomicDest.store(temp);
+        };
+    } ; // namespace DSP_STREAM_TOOLS
+
     //-----------------------------------------------------------------------------
     #ifdef FLUX_ENGINE
 

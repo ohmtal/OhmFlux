@@ -77,6 +77,8 @@ namespace DSP {
         float mSampleCount = 1000.0f;
 
     public:
+        IMPLEMENT_EFF_CLONE(Bitcrusher)
+
         Bitcrusher(bool switchOn = false) :
             Effect(switchOn),
             mSettings(AMIGA_BITCRUSHER)

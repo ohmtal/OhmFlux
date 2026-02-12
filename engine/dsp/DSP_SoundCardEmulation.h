@@ -92,6 +92,7 @@ private:
     // float mPrevInputR = 0.0f;
 
 public:
+    IMPLEMENT_EFF_CLONE(SoundCardEmulation)
 
     SoundCardEmulation(bool switchOn = false) : DSP::Effect(switchOn) {
         mSettings.renderMode = RenderMode::BLENDED;

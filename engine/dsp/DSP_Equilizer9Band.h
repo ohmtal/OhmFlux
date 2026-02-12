@@ -121,6 +121,8 @@ namespace DSP {
         }
 
     public:
+        IMPLEMENT_EFF_CLONE(Equalizer9Band)
+
         Equalizer9Band(bool switchOn = false, float sampleRate = DSP::SAMPLE_RATE)
         : Effect(switchOn)
         , mSampleRate(sampleRate)

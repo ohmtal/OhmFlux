@@ -41,9 +41,13 @@ namespace DSP {
         std::vector<float> mSums;
 
 
-
-
     public:
+        std::unique_ptr<Effect> clone() const override {
+            // IMPLEMENT_EFF_CLONE: we do not need the clone macro here ... we have no data to copy
+            return std::make_unique<VisualAnalyzer>();
+        }
+
+
         VisualAnalyzer( bool switchOn = true) : Effect(switchOn) {
             mMirrorBuffer.resize(2048, 0.0f); // Size for the oscilloscope display
         }

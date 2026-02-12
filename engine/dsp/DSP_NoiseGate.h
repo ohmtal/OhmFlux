@@ -69,6 +69,7 @@ namespace DSP {
         float mSampleRate;
         float mReleaseSamples = 1.f;
     public:
+        IMPLEMENT_EFF_CLONE(NoiseGate)
 
         NoiseGate(bool switchOn = false) :
             Effect(switchOn),

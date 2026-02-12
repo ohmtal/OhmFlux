@@ -89,6 +89,8 @@ private:
 
 
 public:
+    IMPLEMENT_EFF_CLONE(VoiceModulator)
+
     VoiceModulator(bool switchOn = false) :
         DSP::Effect(switchOn) {
         // mBufL.resize(mBufSize, 0.0f);

@@ -88,6 +88,8 @@ private:
 
 
 public:
+    IMPLEMENT_EFF_CLONE(Delay)
+
     Delay(bool switchOn = false) :
     Effect(switchOn)
     {

@@ -20,33 +20,69 @@ namespace DSP {
     inline static float SAMPLE_RATE = 44100.f; // global setting for SampleRate
     inline int getSampleRateI()  { return static_cast<int>(SAMPLE_RATE); }
     inline float getSampleRateF() { return SAMPLE_RATE; }
-    constexpr uint32_t DSP_MAGIC = 0x4658534E; // "FXSN" file Identifier
+
+    // ASCII: 'R' 'O' 'C' 'K' -> 0x524F434B
+    constexpr uint32_t DSP_MAGIC = 0x524F434B;
 
 
 
+    // enum class EffectType : uint32_t {
+    //     NONE               = 0,
+    //     Bitcrusher         = 1,
+    //     Chorus             = 2,
+    //     Equalizer          = 3, //UNUSED: only one band so i would be attached multiple times ...
+    //     Equalizer9Band     = 4,
+    //     Limiter            = 5,
+    //     Reverb             = 6,
+    //     SoundCardEmulation = 7,
+    //     SpectrumAnalyzer   = 8, //no extra settings only analysing for visual effect
+    //     Warmth             = 9,
+    //     VisualAnalyzer     = 10,  //no extra settings only analysing for visual effect
+    //     Delay              = 11,
+    //     VoiceModulator     = 12,
+    //     RingModulator      = 13,
+    //     OverDrive          = 14,
+    //     NoiseGate          = 15,
+    //     DistortionBasic    = 16,
+    //     Metal              = 17,
+    //     ChromaticTuner     = 18
+    //     // NOTE  don't forget to add this to the Effect Factory !!!
+    //
+    // };
+    #define EFFECT_LIST(X) \
+        X(Bitcrusher         ,1) \
+        X(Chorus             ,2) \
+        X(Equalizer          ,3) \
+        X(Equalizer9Band     ,4) \
+        X(Limiter            ,5) \
+        X(Reverb             ,6) \
+        X(SoundCardEmulation ,7) \
+        X(SpectrumAnalyzer   ,8) \
+        X(Warmth             ,9) \
+        X(VisualAnalyzer     ,10) \
+        X(Delay              ,11) \
+        X(VoiceModulator     ,12) \
+        X(RingModulator      ,13) \
+        X(OverDrive          ,14) \
+        X(NoiseGate          ,15) \
+        X(DistortionBasic    ,16) \
+        X(Metal              ,17) \
+        X(ChromaticTuner     ,18)
+
+
+
+    // macro power :
     enum class EffectType : uint32_t {
-        NONE               = 0,
-        Bitcrusher         = 1,
-        Chorus             = 2,
-        Equalizer          = 3, //UNUSED: only one band so i would be attached multiple times ...
-        Equalizer9Band     = 4,
-        Limiter            = 5,
-        Reverb             = 6,
-        SoundCardEmulation = 7,
-        SpectrumAnalyzer   = 8, //no extra settings only analysing for visual effect
-        Warmth             = 9,
-        VisualAnalyzer     = 10,  //no extra settings only analysing for visual effect
-        Delay              = 11,
-        VoiceModulator     = 12,
-        RingModulator      = 13,
-        OverDrive          = 14,
-        NoiseGate          = 15,
-        DistortionBasic    = 16,
-        Metal              = 17,
-        ChromaticTuner     = 18
-        // NOTE  don't forget to add this to the Effect Factory !!!
-
+        NONE = 0,
+        #define X_ENUM(name, id) name = id,
+        EFFECT_LIST(X_ENUM)
+        #undef X_ENUM
     };
+
+    #define IMPLEMENT_EFF_CLONE(ClassName) \
+    std::unique_ptr<Effect> clone() const override { \
+        return std::make_unique<ClassName>(*this); \
+    }
 
 
     //------------------------- BASE CLASS --------------------------------
@@ -58,6 +94,8 @@ namespace DSP {
     public:
         Effect(bool switchOn = false) { mEnabled = switchOn;}
         virtual ~Effect() {}
+
+        virtual std::unique_ptr<Effect> clone() const = 0;
 
         // process the samples and modify the buffer ... here is the beef :)
         virtual void process(float* buffer, int numSamples, int numChannels) {}

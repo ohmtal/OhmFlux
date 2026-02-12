@@ -72,6 +72,8 @@ namespace DSP {
 
 
     public:
+        IMPLEMENT_EFF_CLONE(ChromaticTuner)
+
         ChromaticTuner(bool switchOn = false) : DSP::Effect(switchOn) {
             mSampleRate = getSampleRateI();
         }
