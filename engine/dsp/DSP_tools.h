@@ -18,6 +18,8 @@
 #endif
 
 namespace DSP {
+    class IParameter;
+    template <typename T> class AudioParam;
 
     namespace DSP_STREAM_TOOLS {
         constexpr uint16_t  MAX_VECTOR_ELEMENTS = 1024;
@@ -25,20 +27,47 @@ namespace DSP {
 
         // i should have this in a dedicated header ... but since DSP is standalone ...
 
+
         //---------
+        //--------- standard read write
         template <typename T>
-        void write_binary(std::ostream& os, const T& value) {
-            static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable for binary write");
+        auto write_binary(std::ostream& os, const T& value)
+        -> std::enable_if_t<!std::is_base_of_v<IParameter, T>>
+        {
+            static_assert(std::is_trivially_copyable_v<T>, "Type must be trivially copyable");
             os.write(reinterpret_cast<const char*>(&value), sizeof(T));
         }
         //---------
         template <typename T>
-        void read_binary(std::istream& is, T& value) {
+        auto read_binary(std::istream& is, T& value)
+        -> std::enable_if_t<!std::is_base_of_v<IParameter, T>>
+        {
             static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable for binary read");
             is.read(reinterpret_cast<char*>(&value), sizeof(T));
-            // if (!is) throw std::runtime_error("Binary read failed");
+            if (!is) throw std::runtime_error("Binary read failed");
         }
+
         //---------
+        // Overload AudioParam
+
+        template <typename T>
+        void write_binary(std::ostream& os, const AudioParam<T>& param) {
+            T val = param.get();
+            os.write(reinterpret_cast<const char*>(&val), sizeof(T));
+        }
+
+        // Overload AudioParam
+        template <typename T>
+        void read_binary(std::istream& is, AudioParam<T>& param) {
+            T val;
+            is.read(reinterpret_cast<char*>(&val), sizeof(T));
+            if (!is) throw std::runtime_error("Binary read failed");
+            param.set(val);
+        }
+
+        //---------
+
+
         inline void write_string(std::ostream& os, const std::string& str) {
             uint32_t size = static_cast<uint32_t>(str.size());
             if (size > MAX_STRING_LENGTH) {

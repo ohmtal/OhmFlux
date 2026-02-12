@@ -4,8 +4,16 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Base class Effect
 //-----------------------------------------------------------------------------
+// TODO: move templates out to a not file
+//-----------------------------------------------------------------------------
 #pragma once
 #include <cstdint>
+#include <string>
+#include <atomic>
+#include <algorithm>
+#include <vector>
+#include <memory>
+
 
 #ifdef FLUX_ENGINE
 #include <imgui.h>
@@ -24,31 +32,9 @@ namespace DSP {
     constexpr uint32_t DSP_RACK_MAGIC = 0x524F434B; // ASCII: 'R' 'O' 'C' 'K' -> 0x524F434B
     constexpr uint32_t DSP_RACK_VERSION = 1;
 
+    //------------------------- EFFECT LIST  --------------------------------
 
 
-    // enum class EffectType : uint32_t {
-    //     NONE               = 0,
-    //     Bitcrusher         = 1,
-    //     Chorus             = 2,
-    //     Equalizer          = 3, //UNUSED: only one band so i would be attached multiple times ...
-    //     Equalizer9Band     = 4,
-    //     Limiter            = 5,
-    //     Reverb             = 6,
-    //     SoundCardEmulation = 7,
-    //     SpectrumAnalyzer   = 8, //no extra settings only analysing for visual effect
-    //     Warmth             = 9,
-    //     VisualAnalyzer     = 10,  //no extra settings only analysing for visual effect
-    //     Delay              = 11,
-    //     VoiceModulator     = 12,
-    //     RingModulator      = 13,
-    //     OverDrive          = 14,
-    //     NoiseGate          = 15,
-    //     DistortionBasic    = 16,
-    //     Metal              = 17,
-    //     ChromaticTuner     = 18
-    //     // NOTE  don't forget to add this to the Effect Factory !!!
-    //
-    // };
     #define EFFECT_LIST(X) \
         X(Bitcrusher         ,1) \
         X(Chorus             ,2) \
@@ -83,7 +69,282 @@ namespace DSP {
     std::unique_ptr<Effect> clone() const override { \
         return std::make_unique<ClassName>(*this); \
     }
+    //---------------------- PARAMETER DEFINITION --------------------------
+    #define REGISTER_SETTINGS(ClassName, ...) \
+    /* 1. Der Kopierkonstruktor (löst deinen Fehler) */ \
+    ClassName(const ClassName& other) : ClassName() { \
+        this->copyValuesFrom(other); \
+    } \
+    \
+    /* 2. Der Zuweisungsoperator (für settings = other) */ \
+    ClassName& operator=(const ClassName& other) { \
+        if (this != &other) { \
+            this->copyValuesFrom(other); \
+        } \
+        return *this; \
+    } \
+    \
+    /* 3. Die restlichen Interface-Methoden */ \
+    std::vector<IParameter*> getAll() override { return { __VA_ARGS__ }; } \
+    std::vector<const IParameter*> getAll() const override { return { __VA_ARGS__ }; } \
+    std::unique_ptr<ISettings> clone() const override { \
+        auto copy = std::make_unique<ClassName>(); \
+        copy->copyValuesFrom(*this); \
+        return copy; \
+    }
 
+
+    // Parameter Interface
+    class IParameter {
+    public:
+        virtual ~IParameter() = default;
+        virtual std::string getName() const = 0;
+        virtual float getNormalized() const = 0;
+
+        virtual std::string getDisplayValue() const = 0;
+
+
+        virtual void setDefaultValue() = 0;
+        virtual std::string getDefaultValueAsString() const = 0;
+
+
+        virtual bool isEqual(const IParameter* other) const = 0;
+
+        virtual void saveToStream(std::ostream& os) const = 0;
+        virtual void loadFromStream(std::istream& is) = 0;
+
+        virtual void setFrom(const IParameter* other) = 0;
+
+
+        #ifdef FLUX_ENGINE
+        virtual bool  MiniKnobF() = 0;
+        virtual bool FaderHWithText() = 0;
+        #endif
+
+    };
+
+    //--------------------------------------------------------------------------
+    // Preset Interface
+    struct ISettings; // fwd
+    struct IPreset {
+        virtual ~IPreset() = default;
+        virtual const char* getName() const = 0;
+        virtual void apply(ISettings& settings) const = 0;
+    };
+    // Preset Params
+    template <typename T_Settings, typename T_Data>
+    struct Preset : public IPreset {
+        const char* name;
+        T_Data data;
+        Preset(const char* n, T_Data d) : name(n), data(d) {}
+        const char* getName() const override { return name; }
+        void apply(ISettings& settings) const override {
+            if (auto* s = dynamic_cast<T_Settings*>(&settings)) {
+                s->setData(data);
+            }
+        }
+    };
+    //--------------------------------------------------------------------------
+    // Settings Interface
+    struct ISettings {
+        virtual ~ISettings() = default;
+
+        virtual std::vector<IParameter*> getAll() = 0;
+        virtual std::vector<const IParameter*> getAll() const = 0;
+
+         virtual std::vector<std::shared_ptr<IPreset>> getPresets() const = 0;
+        //----------------------------------------------------------------------
+        //  // FIXME .... not implemented
+        void resetToDefaults() {
+            for (auto* p : getAll()) {
+                p->setDefaultValue();
+
+// #ifdef FLUX_ENGINE
+//                 LogFMT("{} default {}", p->getName(), p->getDefaultValueAsString());
+// #endif
+            }
+        }
+        //----------------------------------------------------------------------
+        void save(std::ostream& os) const {
+            uint8_t ver = 1; //fake version and sanity check on load
+            DSP_STREAM_TOOLS::write_binary(os, ver);
+            for (auto* p : getAll()) {
+                 p->saveToStream(os);
+            }
+        }
+        bool load(std::istream& is) {
+            // read fake version
+            uint8_t ver = 0;
+            DSP_STREAM_TOOLS::read_binary(is, ver);
+            if (ver != 1) return false;
+
+            for (auto* p : getAll()) {
+                p->loadFromStream(is);
+            }
+            return is.good();
+        }
+        //----------------------------------------------------------------------
+        bool operator==(const ISettings& other) const {
+            auto paramsMe = this->getAll();
+            auto paramsOther = other.getAll();
+            if (paramsMe.size() != paramsOther.size()) return false;
+
+            for (size_t i = 0; i < paramsMe.size(); ++i) {
+                if (!paramsMe[i]->isEqual(paramsOther[i])) return false;
+            }
+            return true;
+        }
+        //----------------------------------------------------------------------
+         virtual std::unique_ptr<ISettings> clone() const = 0;
+        //----------------------------------------------------------------------
+         void apply(const IPreset* preset) {
+             if (preset) preset->apply(*this);
+         }
+        //----------------------------------------------------------------------
+        bool isMatchingPreset(const IPreset* preset) {
+            auto clone = this->clone();
+            preset->apply(*clone);
+            return *this == *clone;
+        }
+        //----------------------------------------------------------------------
+        void copyValuesFrom(const ISettings& other) {
+            auto myParams = getAll();
+            auto otherParams = other.getAll();
+            for (size_t i = 0; i < myParams.size(); ++i) {
+                myParams[i]->setFrom(otherParams[i]);
+            }
+        }
+        //----------------------------------------------------------------------
+#ifdef FLUX_ENGINE
+        bool drawStepper(ISettings& settings) {
+            bool changed = false;
+            auto presets = settings.getPresets();
+            if (presets.empty()) return changed;
+            int currentIdx = 0; // Default: "Custom" oder erster Eintrag
+            for (int i = 0; i < (int)presets.size(); ++i) {
+                if (settings.isMatchingPreset(presets[i].get())) {
+                    currentIdx = i;
+                    break;
+                }
+            }
+            std::vector<const char*> names;
+            for (auto& p : presets) names.push_back(p->getName());
+
+            int displayIdx = currentIdx;
+            ImGui::SameLine(ImGui::GetWindowWidth() - 260.f);
+
+            if (ImFlux::ValueStepper("##Preset", &displayIdx, names.data(), (int)names.size()))
+            {
+                if (displayIdx >= 0 && displayIdx < (int)presets.size()) {
+                    presets[displayIdx]->apply(settings);
+                    changed = true;
+                }
+            }
+            return changed;
+        }
+#endif
+    }; //ISettings
+
+
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    // Parameter Template-Class Thread safe
+    template <typename T>
+    class AudioParam : public IParameter {
+    public:
+        AudioParam(std::string name, T def, T min, T max, std::string unit = "")
+        : name(name), minVal(min), maxVal(max), unit(unit) {
+            value.store(def);
+            defaultValue = def;
+        }
+
+        operator T() const { return value.load(std::memory_order_relaxed); }
+
+        AudioParam& operator=(T newValue) {
+            set(newValue);
+            return *this;
+        }
+
+        T get() const { return value.load(std::memory_order_relaxed); }
+
+        void set(T newValue) {
+            value.store(std::clamp(newValue, minVal, maxVal));
+        }
+
+        void setDefaultValue() override { set(defaultValue);}
+        T getDefaultValue() { return defaultValue; }
+        std::string getDefaultValueAsString() const override {
+            if constexpr (std::is_same_v<T, float>) {
+                return std::to_string(defaultValue);
+            } else if constexpr (std::is_same_v<T, bool>) {
+                return defaultValue ? "true" : "false";
+            } else {
+                return std::to_string(defaultValue);
+            }
+        }
+
+        std::string getName() const override { return name; }
+        float getNormalized() const override {
+            return static_cast<float>(get() - minVal) / static_cast<float>(maxVal - minVal);
+        }
+        std::string getDisplayValue() const override {
+            return std::to_string(get()) + " " + unit;
+        }
+
+        T getMin() const { return minVal; }
+        T getMax() const { return maxVal; }
+        void setMin( T value ) { minVal = value; }
+        void setMax( T value ) { maxVal = value; }
+        std::string getUnit() const { return unit; }
+
+        bool isEqual(const IParameter* other) const override {
+            auto* typedOther = dynamic_cast<const AudioParam<T>*>(other);
+            if (!typedOther) return false;
+            return this->get() == typedOther->get();
+        }
+
+        void saveToStream(std::ostream& os) const override {
+            DSP_STREAM_TOOLS::write_binary(os, *this);
+        }
+
+        void loadFromStream(std::istream& is) override {
+            DSP_STREAM_TOOLS::read_binary(is, *this);
+        }
+
+        void setFrom(const IParameter* other) override {
+            if (auto* typedOther = dynamic_cast<const AudioParam<T>*>(other)) {
+                this->set(typedOther->get());
+            }
+        }
+
+    private:
+        std::string name;
+        std::atomic<T> value;
+        T defaultValue;
+        T minVal, maxVal;
+        std::string unit;
+
+    public:
+#ifdef FLUX_ENGINE
+   virtual bool  MiniKnobF() override {
+        float tmpValue = get();
+        if (ImFlux::MiniKnobF(name.c_str(), &tmpValue, minVal, maxVal)) {
+            set(tmpValue);
+            return true;
+        }
+        return false;
+    }
+    virtual bool FaderHWithText() override {
+        float tmpValue = get();
+        if (ImFlux::FaderHWithText(name.c_str(), &tmpValue, minVal, maxVal, unit.c_str())) {
+            set(tmpValue);
+            return true;
+        }
+        return false;
+    }
+
+#endif
+    };
 
     //------------------------- BASE CLASS --------------------------------
 

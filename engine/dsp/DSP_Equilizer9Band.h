@@ -27,6 +27,33 @@
 
 namespace DSP {
 
+// TODO: i need to replace the array with single parameters for the new templates ..
+//       i dont want to add another template for arrays !
+//
+//     struct Equalizer9BandSettings : public ISettings {
+//         // 9 Bänder einzeln definiert
+//         AudioParam<float> b1 { "60 Hz",  0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b2 { "170 Hz", 0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b3 { "310 Hz", 0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b4 { "600 Hz", 0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b5 { "1 kHz",  0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b6 { "3 kHz",  0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b7 { "6 kHz",  0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b8 { "12 kHz", 0.f, -24.f, 24.f, "%.1f dB" };
+//         AudioParam<float> b9 { "16 kHz", 0.f, -24.f, 24.f, "%.1f dB" };
+//
+//         REGISTER_SETTINGS(Equalizer9BandSettings, &b1, &b2, &b3, &b4, &b5, &b6, &b7, &b8, &b9)
+//     .....
+//     float getGains(float* outArray) const {
+//         outArray[0] = b1.get(); outArray[1] = b2.get(); // ... etc
+//     }
+//
+//     void setData(const Equalizer9BandData& d) {
+//         b1.set(d.gains[0]); b2.set(d.gains[1]); // ... etc
+//     }
+// };
+
+
     struct Equalizer9BandSettings {
         std::array<float, 9> gains; // Gain for each band in dB
 

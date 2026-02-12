@@ -97,7 +97,7 @@ namespace DSP {
 
         virtual void setSampleRate(float sampleRate) override { mSampleRate = (int)sampleRate;}
 
-        virtual DSP::EffectType getType() const override { return DSP::EffectType::DistortionBasic; }
+        virtual DSP::EffectType getType() const override { return DSP::EffectType::ChromaticTuner; }
         virtual std::string getName() const override { return "Chromatic Tuner"; }
         //----------------------------------------------------------------------
         void analyzeAccurate() {

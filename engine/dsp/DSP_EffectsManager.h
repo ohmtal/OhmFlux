@@ -211,7 +211,6 @@ public:
         mActiveRack = mPresets[nextActiveIndex].get();
 
 
-        // dLog("[info] Rack at index %d removed. New active index: %d", index, nextActiveIndex);
         return true;
     }
     //--------------------------------------------------------------------------
@@ -468,7 +467,6 @@ public:
             if (entry.is_regular_file() && entry.path().extension() == ".rock") {
                 std::string path = entry.path().string();
                 if (LoadRack(path, RackLoadMode::AppendToPresets)) {
-                    // Log("[info] Preset loaded: %s", path.c_str());
                 } else {
                     addError(std::format("[error] Failed to auto-load: {}", path.c_str()));
                     return false;

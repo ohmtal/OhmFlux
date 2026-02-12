@@ -411,8 +411,22 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(OTGui::TrackerSettings,
 )
 
 namespace DSP {
+    // for Effects with AudioParams ready
+    template <typename T>
+    void to_json(nlohmann::json& j, const AudioParam<T>& p) {
+        j = p.get();
+    }
+
+    template <typename T>
+    void from_json(const nlohmann::json& j, AudioParam<T>& p) {
+        p.set(j.get<T>());
+    }
+
     // Macros generate the to_json/from_json functions automatically
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BitcrusherSettings, bits, sampleRate, wet)
+    // old: NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BitcrusherSettings, bits, sampleRate, wet)
+    // FIXME all to data .....
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BitcrusherData, bits, sampleRate, wet)
+
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ChorusSettings, rate, depth, delayBase, wet, phaseOffset)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReverbSettings, decay, sizeL, sizeR, wet)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarmthSettings, cutoff, drive, wet)

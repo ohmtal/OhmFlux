@@ -304,7 +304,10 @@ bool OTGui::Initialize()
     controller->getDSPEquilzer9Band()->setEnabled(SettingsManager().get("DSP_EQ9BAND_ON", true));
 
 
-    controller->getDSPBitCrusher()->setSettings(SettingsManager().get<DSP::BitcrusherSettings>("DSP_BitCrusher", DSP::AMIGA_BITCRUSHER));
+    // now DATA!!
+    auto savedData = SettingsManager().get<DSP::BitcrusherData>("DSP_BitCrusher", DSP::DEFAULT_BITCRUSHER_DATA);
+    controller->getDSPBitCrusher()->getSettings().setData(savedData);
+
     controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
     controller->getDSPReverb()->setSettings(SettingsManager().get<DSP::ReverbSettings>("DSP_Reverb", DSP::HALL_REVERB));
     controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::GENTLE_WARMTH));
@@ -380,7 +383,12 @@ void OTGui::Deinitialize()
         SettingsManager().set("EditorGui::mEditorSettings", mSettings);
 
         auto* controller = getMain()->getController();
-        SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings());
+
+        SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings().getData());
+
+        //FIXME SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings());
+
+
         SettingsManager().set("DSP_Chorus",     controller->getDSPChorus()->getSettings());
         SettingsManager().set("DSP_Reverb",     controller->getDSPReverb()->getSettings());
         SettingsManager().set("DSP_Warmth",     controller->getDSPWarmth()->getSettings());
