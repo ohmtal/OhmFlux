@@ -12,47 +12,12 @@
 
 namespace DSP {
 
-    // fixed version for LLVM CLANG:
-    // but does not work anymore!!
-    // template<int Size>
-    // struct SinLutProvider {
-    //     static constexpr std::array<float, Size> data = []() {
-    //         std::array<float, Size> arr{};
-    //         for (int i = 0; i < Size; ++i) {
-    //             float x = 2.0f * std::numbers::pi_v<float> * (float)i / (float)Size;
-    //             float res = 0.0f, term = x, x2 = x * x;
-    //             for (int j = 1; j <= 11; j += 2) {
-    //                 res += term;
-    //                 term *= -x2 / (float)((j + 1) * (j + 2));
-    //             }
-    //             arr[i] = res;
-    //         }
-    //         return arr;
-    //     }();
-    // };
-    //
-    // struct FastMath {
-    //     static constexpr int LUT_SIZE = 1024;
-    //     static inline float fastSin(float phase01) {
-    //         if (phase01 >= 1.0f) phase01 -= (int)phase01;
-    //         if (phase01 < 0.0f) phase01 += 1.0f;
-    //         int index = static_cast<int>(phase01 * (float)LUT_SIZE) & (LUT_SIZE - 1);
-    //
-    //         return SinLutProvider<LUT_SIZE>::data[index];
-    //     }
-    //
-    //     static inline float fastCos(float phase01) {
-    //         return fastSin(phase01 + 0.25f);
-    //     }
-    // };
-    //
-
     struct FastMath {
         static constexpr int LUT_SIZE = 1024;
 
         struct SinTable {
             std::array<float, LUT_SIZE> data;
-            constexpr SinTable() : data() {
+            /*constexpr*/ SinTable() : data() {
                 for (int i = 0; i < LUT_SIZE; ++i) {
                     data[i] = std::sin(2.0f * 3.1415926535f * (float)i / (float)LUT_SIZE);
                 }
