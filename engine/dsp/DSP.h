@@ -29,6 +29,7 @@
 #include "DSP_DistortionBasic.h"
 #include "DSP_Metal.h"
 #include "DSP_ChromaticTuner.h"
+#include "DSP_ToneControl.h" //<<<  copy for new template based effects!
 
 #include "Drums/DSP_DrumKit.h" //(Wip)
 #include "Drums/DSP_KickDrum.h"

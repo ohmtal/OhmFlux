@@ -12,6 +12,18 @@
 
 namespace DSP {
 
+    // FastMath LUT: used as a replacement of std::sin and std::cos
+    // NOTE:  we need normalized data :
+    // replace source like this:
+    //     mPhase += (2.0f * M_PI * currentFreq) / sampleRate;
+    //     if (mPhase >= 2.0f * M_PI) mPhase -= 2.0f * M_PI;
+    //     float signal = std::sin(mPhase);
+    // with this:
+    //     float phaseIncrement = currentFreq / sampleRate;
+    //     mPhase += phaseIncrement;
+    //     if (mPhase >= 1.0f) mPhase -= 1.0f;
+    //     float signal = DSP::FastMath::fastSin(mPhase);
+
     struct FastMath {
         static constexpr int LUT_SIZE = 1024;
 
@@ -37,6 +49,15 @@ namespace DSP {
 
         static inline float fastCos(float phase01) {
             return fastSin(phase01 + 0.25f);
+        }
+
+        static inline float fastSinLerp(float phase) {
+            float pos = (phase * (LUT_SIZE / (2.0f * (float)M_PI)));
+            int idxA = static_cast<int>(pos) % LUT_SIZE;
+            int idxB = (idxA + 1) % LUT_SIZE;
+            float frac = pos - std::floor(pos);
+
+            return getTable().data[idxA] * (1.0f - frac) + getTable().data[idxB] * frac;
         }
     };
 

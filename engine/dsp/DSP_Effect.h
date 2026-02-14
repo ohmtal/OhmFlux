@@ -97,7 +97,9 @@ namespace DSP {
     X(Metal              , 17, EffectCatId::Distortion) \
     X(ChromaticTuner     , 18, EffectCatId::Analyzer)   \
     X(DrumKit            , 19, EffectCatId::Generator)  \
-    X(KickDrum           , 20, EffectCatId::Generator)
+    X(KickDrum           , 20, EffectCatId::Generator)  \
+    X(ToneControl        , 21, EffectCatId::Tone)       \
+
 
 
     enum class EffectType : uint32_t {
@@ -107,37 +109,6 @@ namespace DSP {
         #undef X_ENUM
     };
 
-    // #define EFFECT_LIST(X) \
-    //     X(Bitcrusher         ,1) \
-    //     X(Chorus             ,2) \
-    //     X(Equalizer          ,3) \
-    //     X(Equalizer9Band     ,4) \
-    //     X(Limiter            ,5) \
-    //     X(Reverb             ,6) \
-    //     X(SoundCardEmulation ,7) \
-    //     X(SpectrumAnalyzer   ,8) \
-    //     X(Warmth             ,9) \
-    //     X(VisualAnalyzer     ,10) \
-    //     X(Delay              ,11) \
-    //     X(VoiceModulator     ,12) \
-    //     X(RingModulator      ,13) \
-    //     X(OverDrive          ,14) \
-    //     X(NoiseGate          ,15) \
-    //     X(DistortionBasic    ,16) \
-    //     X(Metal              ,17) \
-    //     X(ChromaticTuner     ,18) \
-    //     X(DrumKit            ,19) \
-    //     X(KickDrum           ,20)
-    //
-    //
-    //
-    // // macro power :
-    // enum class EffectType : uint32_t {
-    //     NONE = 0,
-    //     #define X_ENUM(name, id) name = id,
-    //     EFFECT_LIST(X_ENUM)
-    //     #undef X_ENUM
-    // };
 
     #define IMPLEMENT_EFF_CLONE(ClassName) \
     std::unique_ptr<Effect> clone() const override { \
@@ -537,17 +508,21 @@ namespace DSP {
         //----------------------------------------------------------------------
         bool DrawPaddle(Effect* effect)  {
             ImGui::PushID(this); ImGui::PushID("UI_PADDLE");
-            ImGui::BeginGroup();
+
             bool isEnabled = effect->isEnabled();
             if (paddleHeader(effect->getName().c_str(), ImGui::ColorConvertFloat4ToU32(effect->getColor()), isEnabled)) {
                 effect->setEnabled(isEnabled);
             }
             bool changed = false;
-            for (auto* param : getAll() ) {
-                changed |= param->RackKnob();
-                ImGui::SameLine();
+            ImFlux::GradientBox(ImVec2(0.f,125.f),ImFlux::DEFAULT_GRADIENPARAMS);
+
+            std::vector<IParameter*> allParams = getAll();
+            uint16_t count = allParams.size();
+            for (uint16_t i = 0; i < count; i++ ) {
+                changed |= allParams[i]->RackKnob();
+                if ( i < count -1 ) ImGui::SameLine();
             }
-            ImGui::EndGroup();
+
             ImGui::PopID();ImGui::PopID();
 
             return changed;

@@ -221,7 +221,7 @@ namespace DSP {
             }
         }
 
-        ImFlux::GradientBox(ImVec2(0.f,0.f),gp);
+        // Bad idea here : ImFlux::GradientBox(ImVec2(0.f,0.f),gp);
         return changed;
 
     };
