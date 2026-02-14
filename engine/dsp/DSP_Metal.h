@@ -65,12 +65,11 @@ namespace DSP {
         };
         std::vector<FilterState> mStates;
 
-        float mSampleRate = getSampleRateF();
 
     public:
         IMPLEMENT_EFF_CLONE(Metal)
 
-        Metal(bool switchOn = false) : DSP::Effect(switchOn) {
+        Metal(bool switchOn = false) : DSP::Effect(DSP::EffectType::Metal, switchOn) {
             mSettings.gain = 50.0f;
             mSettings.tight = 0.5f;
             mSettings.level = 0.5f;
@@ -85,7 +84,6 @@ namespace DSP {
         }
 
 
-        virtual DSP::EffectType getType() const override { return DSP::EffectType::Metal; }
         virtual std::string getName() const override { return "Metal Distortion"; }
 
         virtual void process(float* buffer, int numSamples, int numChannels) override {

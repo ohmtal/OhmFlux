@@ -4,6 +4,9 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Effect Factory
 //-----------------------------------------------------------------------------
+// NOTE: fetch category in gui with:
+//          EffectCatId cat = EffectFactory::GetCategory(myEffect->getType());
+//-----------------------------------------------------------------------------
 #pragma once
 
 #include <memory>
@@ -11,22 +14,63 @@
 
 namespace DSP {
 
+
     class EffectFactory {
     public:
-
         static std::unique_ptr<Effect> Create(EffectType type) {
             switch(type) {
-                #define X_FACTORY(name, id) \
+                #define X_FACTORY(name, id, cat) \
                 case EffectType::name: \
                     return std::make_unique<name>();
                     EFFECT_LIST(X_FACTORY)
                     #undef X_FACTORY
-
-                default:
-                    // Log("[error] EffectFactory: NO MATCH found for ID %d\n", (uint32_t)type);
-                    return nullptr;
+                default: return nullptr;
             }
         }
+
+        static EffectCatId GetCategory(EffectType type) {
+            switch(type) {
+                #define X_GET_CAT(name, id, cat) \
+                case EffectType::name: return cat;
+                EFFECT_LIST(X_GET_CAT)
+                #undef X_GET_CAT
+                default: return EffectCatId::Utility;
+            }
+        }
+
+        static std::vector<EffectType> GetEffectsByCategory(EffectCatId category) {
+            std::vector<EffectType> results;
+            #define X_FILTER(name, id, cat) \
+            if (cat == category) { results.push_back(EffectType::name); }
+            EFFECT_LIST(X_FILTER)
+            #undef X_FILTER
+            return results;
+        }
+
+        // get the basic name (not the defined in class)
+        static const char* GetName(EffectType type) {
+            switch(type) {
+                #define X_NAME(name, id, cat) \
+                case EffectType::name: return #name;
+                EFFECT_LIST(X_NAME)
+                #undef X_NAME
+                default: return "Unknown";
+            }
+        }
+
+        // static std::unique_ptr<Effect> Create(EffectType type) {
+        //     switch(type) {
+        //         #define X_FACTORY(name, id) \
+        //         case EffectType::name: \
+        //             return std::make_unique<name>();
+        //             EFFECT_LIST(X_FACTORY)
+        //             #undef X_FACTORY
+        //
+        //         default:
+        //             // Log("[error] EffectFactory: NO MATCH found for ID %d\n", (uint32_t)type);
+        //             return nullptr;
+        //     }
+        // }
         // static std::unique_ptr<DSP::Effect> Create(EffectType type) {
         //     switch (type) {
         //         case EffectType::Bitcrusher:

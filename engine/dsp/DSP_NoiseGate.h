@@ -72,16 +72,14 @@ namespace DSP {
         std::vector<float> mHpfLastOut;
 
         NoiseGateSettings mSettings;
-        float mSampleRate;
         float mReleaseSamples = 1.f;
     public:
         IMPLEMENT_EFF_CLONE(NoiseGate)
 
         NoiseGate(bool switchOn = false) :
-            Effect(switchOn),
+            Effect(DSP::EffectType::NoiseGate, switchOn),
             mSettings(NOISEGATE_DEFAULT)
             {
-                mSampleRate = getSampleRateF();
                 initVectors(2);
             }
         void updateReleaseSamples() {
@@ -93,7 +91,6 @@ namespace DSP {
             updateReleaseSamples();
         }
 
-        DSP::EffectType getType() const override { return DSP::EffectType::NoiseGate; }
         //----------------------------------------------------------------------
         void setSettings(const NoiseGateSettings& s) {
                 mSettings = s;

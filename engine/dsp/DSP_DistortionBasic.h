@@ -59,7 +59,8 @@ namespace DSP {
     public:
         IMPLEMENT_EFF_CLONE(DistortionBasic)
 
-        DistortionBasic(bool switchOn = false) : DSP::Effect(switchOn) {
+        DistortionBasic(bool switchOn = false) :
+            DSP::Effect(DSP::EffectType::DistortionBasic, switchOn) {
             mSettings.gain = 20.f;
             mSettings.level = 0.5;
         }
@@ -67,7 +68,6 @@ namespace DSP {
         void setSettings(const DistortionBasicSettings& s) {mSettings = s;}
         const DistortionBasicSettings& getSettings() { return mSettings; }
 
-        virtual DSP::EffectType getType() const override { return DSP::EffectType::DistortionBasic; }
         virtual std::string getName() const override { return "Distortion"; }
 
 

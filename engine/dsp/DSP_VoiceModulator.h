@@ -81,12 +81,8 @@ static const std::array<DSP::VoiceSettings, 5> VOICE_PRESETS = {
 class VoiceModulator : public DSP::Effect {
 private:
     VoiceSettings mSettings = VADER_VOICE;
-    // std::vector<float> mBufL, mBufR;
-    // float mReadPosL = 0.0f,
-    // mReadPosR = 0.0f;
-    // uint32_t mWritePos = 0;
 
-    const uint32_t mBufSize = 4096; // Short buffer for pitch shifting
+    const uint32_t mBufSize = 8192; //4096; // Short buffer for pitch shifting
 
     std::vector<std::vector<float>> mBuffers;
     std::vector<float> mReadPositions;
@@ -97,26 +93,18 @@ public:
     IMPLEMENT_EFF_CLONE(VoiceModulator)
 
     VoiceModulator(bool switchOn = false) :
-        DSP::Effect(switchOn) {
-        // mBufL.resize(mBufSize, 0.0f);
-        // mBufR.resize(mBufSize, 0.0f);
+        DSP::Effect(DSP::EffectType::VoiceModulator, switchOn) {
         mSettings = VADER_VOICE;
     }
 
 
 
-    virtual DSP::EffectType getType() const override { return DSP::EffectType::VoiceModulator; }
     virtual std::string getName() const override { return "Voice Modulator"; }
 
     const VoiceSettings& getSettings() { return mSettings; }
     void setSettings(const VoiceSettings& s) { mSettings = s; }
 
     virtual void reset() override {
-        // std::fill(mBufL.begin(), mBufL.end(), 0.0f);
-        // std::fill(mBufR.begin(), mBufR.end(), 0.0f);
-        // mWritePos = 0;
-        // mReadPosL = 0.0f;
-        // mReadPosR = 0.0f;
     }
     void save(std::ostream& os) const override {
         Effect::save(os);              // Save mEnabled
@@ -132,69 +120,133 @@ public:
 
     //--------------------------------------------------------------------------
     virtual void process(float* buffer, int numSamples, int numChannels) override {
-        if (!isEnabled()) return;
+        if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
         if (mBuffers.size() != static_cast<size_t>(numChannels)) {
             mBuffers.assign(numChannels, std::vector<float>(mBufSize, 0.0f));
             mReadPositions.assign(numChannels, 0.0f);
         }
 
-        float grit = std::clamp(mSettings.grit, 0.0f, 1.0f);
-        float levels = std::pow(2.0f, std::max(1.0f, 16.0f * (1.0f - grit * 0.9f)));
+        const uint32_t mask = mBufSize - 1;
+        const float halfBuf = mBufSize * 0.5f;
+        const float invBuf = 1.0f / (float)mBufSize;
 
+        const float grit = std::clamp(mSettings.grit, 0.0f, 1.0f);
+        const float levels = std::pow(2.0f, std::max(1.0f, 16.0f * (1.0f - grit * 0.9f)));
+        const float invLevelsMinus1 = 1.0f / (levels - 1.0f);
+
+        float* channelPtrs[8];
+        for (int c = 0; c < numChannels; ++c) channelPtrs[c] = mBuffers[c].data();
+
+        int channel = 0;
         for (int i = 0; i < numSamples; i++) {
-            int channel = i % numChannels;
             float dry = buffer[i];
-
-            // 1. Write to buffer
-            mBuffers[channel][mWritePos] = dry;
-
-            // 2. Pitch Shifting mit Crossfading
+            float* buf = channelPtrs[channel];
             float& rp = mReadPositions[channel];
-            std::vector<float>& buf = mBuffers[channel];
 
-            // Zwei Taps, die 180 Grad phasenverschoben sind
             float p1 = rp;
-            float p2 = rp + (mBufSize * 0.5f);
-            if (p2 >= mBufSize) p2 -= mBufSize;
+            float p2 = rp + halfBuf;
+            if (p2 >= (float)mBufSize) p2 -= (float)mBufSize;
 
-            // Hann-Window-ähnlicher Crossfade (sinusoidal ist weicher als linear)
-            // Verhindert das "Knacken" an den Loop-Punkten
-            float phase = rp / static_cast<float>(mBufSize);
-            float fade = 0.5f * (1.0f - std::cos(2.0f * M_PI * phase));
+            float phase01 = p1 * invBuf;
+            float fade = 0.5f * (1.0f - DSP::FastMath::fastCos(phase01));
 
-            auto getInterpolated = [&](float pos) {
-                int i1 = static_cast<int>(pos);
-                int i2 = (i1 + 1) % mBufSize;
-                float frac = pos - i1;
-                return buf[i1] * (1.0f - frac) + buf[i2] * frac;
+            auto sampleAt = [&](float pos) {
+                uint32_t i1 = (uint32_t)pos & mask;
+                uint32_t i2 = (i1 + 1) & mask;
+                float f = pos - (float)((uint32_t)pos);
+                return buf[i1] + f * (buf[i2] - buf[i1]);
             };
 
-            // Crossfade zwischen Tap 1 und Tap 2
-            float wet = getInterpolated(p1) * (1.0f - fade) + getInterpolated(p2) * fade;
+            float wet = sampleAt(p1) * (1.0f - fade) + sampleAt(p2) * fade;
 
-            // 3. Grit Logic (Bitcrushing)
             if (grit > 0.01f) {
                 float shifted = (wet + 1.0f) * 0.5f;
-                float quantized = std::round(shifted * (levels - 1.0f)) / (levels - 1.0f);
-                wet = (quantized * 2.0f) - 1.0f;
+                wet = (std::floor(shifted * (levels - 1.0f) + 0.5f) * invLevelsMinus1) * 2.0f - 1.0f;
                 wet *= (1.0f + grit * 0.2f);
             }
 
-            // 4. Final Mix
             buffer[i] = (dry * (1.0f - mSettings.wet)) + (wet * mSettings.wet);
+            buf[mWritePos] = dry;
 
-            // 5. Sync Update: Alle Kanäle im Frame müssen denselben Fortschritt haben
-            if (channel == numChannels - 1) {
-                mWritePos = (mWritePos + 1) % mBufSize;
+            if (++channel >= numChannels) {
+                channel = 0;
+                mWritePos = (mWritePos + 1) & mask;
                 for (int c = 0; c < numChannels; ++c) {
                     mReadPositions[c] += mSettings.pitch;
-                    if (mReadPositions[c] >= mBufSize) mReadPositions[c] -= mBufSize;
-                    if (mReadPositions[c] < 0) mReadPositions[c] += mBufSize;
+                    if (mReadPositions[c] >= (float)mBufSize) mReadPositions[c] -= (float)mBufSize;
+                    else if (mReadPositions[c] < 0) mReadPositions[c] += (float)mBufSize;
                 }
             }
         }
     }
+
+    // virtual void process(float* buffer, int numSamples, int numChannels) override {
+    //     if (!isEnabled()) return;
+    //
+    //     if (mBuffers.size() != static_cast<size_t>(numChannels)) {
+    //         mBuffers.assign(numChannels, std::vector<float>(mBufSize, 0.0f));
+    //         mReadPositions.assign(numChannels, 0.0f);
+    //     }
+    //
+    //     float grit = std::clamp(mSettings.grit, 0.0f, 1.0f);
+    //     float levels = std::pow(2.0f, std::max(1.0f, 16.0f * (1.0f - grit * 0.9f)));
+    //
+    //     int channel = 0;
+    //     for (int i = 0; i < numSamples; i++) {
+    //         float dry = buffer[i];
+    //
+    //         // 1. Write to buffer
+    //         mBuffers[channel][mWritePos] = dry;
+    //
+    //         // 2. Pitch Shifting mit Crossfading
+    //         float& rp = mReadPositions[channel];
+    //         std::vector<float>& buf = mBuffers[channel];
+    //
+    //         // Zwei Taps, die 180 Grad phasenverschoben sind
+    //         float p1 = rp;
+    //         float p2 = rp + (mBufSize * 0.5f);
+    //         if (p2 >= mBufSize) p2 -= mBufSize;
+    //
+    //         // Hann-Window-ähnlicher Crossfade (sinusoidal ist weicher als linear)
+    //         // Verhindert das "Knacken" an den Loop-Punkten
+    //         float phase = rp / static_cast<float>(mBufSize);
+    //         float fade = 0.5f * (1.0f - std::cos(2.0f * M_PI * phase));
+    //
+    //         auto getInterpolated = [&](float pos) {
+    //             int i1 = static_cast<int>(pos);
+    //             int i2 = (i1 + 1) % mBufSize;
+    //             float frac = pos - i1;
+    //             return buf[i1] * (1.0f - frac) + buf[i2] * frac;
+    //         };
+    //
+    //         // Crossfade zwischen Tap 1 und Tap 2
+    //         float wet = getInterpolated(p1) * (1.0f - fade) + getInterpolated(p2) * fade;
+    //
+    //         // 3. Grit Logic (Bitcrushing)
+    //         if (grit > 0.01f) {
+    //             float shifted = (wet + 1.0f) * 0.5f;
+    //             float quantized = std::round(shifted * (levels - 1.0f)) / (levels - 1.0f);
+    //             wet = (quantized * 2.0f) - 1.0f;
+    //             wet *= (1.0f + grit * 0.2f);
+    //         }
+    //
+    //         // 4. Final Mix
+    //         buffer[i] = (dry * (1.0f - mSettings.wet)) + (wet * mSettings.wet);
+    //
+    //         // 5. Sync Update: Alle Kanäle im Frame müssen denselben Fortschritt haben
+    //         if (channel == numChannels - 1) {
+    //             mWritePos = (mWritePos + 1) % mBufSize;
+    //             for (int c = 0; c < numChannels; ++c) {
+    //                 mReadPositions[c] += mSettings.pitch;
+    //                 if (mReadPositions[c] >= mBufSize) mReadPositions[c] -= mBufSize;
+    //                 if (mReadPositions[c] < 0) mReadPositions[c] += mBufSize;
+    //             }
+    //         }
+    //
+    //         if (++channel >= numChannels) channel = 0;
+    //     }
+    // }
 
     // virtual void processOLD(float* buffer, int numSamples, int numChannels) override {
     //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS

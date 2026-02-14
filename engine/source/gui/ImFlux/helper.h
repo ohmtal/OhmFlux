@@ -8,6 +8,7 @@
 #include <imgui_internal.h>
 #include <cmath>
 #include <algorithm>
+#include <string>
 
 
 namespace ImFlux {

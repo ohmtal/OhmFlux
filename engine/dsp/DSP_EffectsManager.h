@@ -121,7 +121,8 @@ public:
     //--------------------------------------------------------------------------
     EffectsManager(bool switchOn = false) {
         mEnabled = switchOn;
-        mFrequence = getSampleRateI();
+        mFrequence = SAMPLE_RATE_I;
+
 
         auto defaultRack = std::make_unique<EffectsRack>();
         defaultRack->mName = "Rack n Roll";
@@ -373,7 +374,8 @@ public:
     enum RackLoadMode {
         ReplacePresets = 0,
         AppendToPresets = 1,
-        AppendToPresetsAndSetActive = 2
+        AppendToPresetsAndSetActive = 2,
+        OnlyUpdateExistingSingularity = 3
     };
     bool LoadRackStream(std::istream& ifs, RackLoadMode loadMode = RackLoadMode::ReplacePresets) {
         uint32_t magic = 0;
@@ -413,6 +415,21 @@ public:
                 mPresets.push_back(std::move(loadedRack));
                 mActiveRack = mPresets.back().get();
                 break;
+
+            case OnlyUpdateExistingSingularity:
+                for (const auto& fx : loadedRack->mEffects) {
+                    EffectType type = fx->getType();
+                    Effect* foundFX = getEffectByType(type);
+                    if (foundFX) {
+                        std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+                        fx->save(ss);
+                        ss.seekg(0);
+                        foundFX->load(ss);
+                    }
+                }
+                break;
+
+
             default: //ReplacePresets
                 mPresets.clear();
                 mPresets.push_back(std::move(loadedRack));

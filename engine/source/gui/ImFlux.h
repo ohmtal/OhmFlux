@@ -53,6 +53,42 @@ namespace ImFlux {
     }
 
 
+    inline void PatternEditor16Bit(const char* label,
+                                   uint16_t* bits,
+                                   uint8_t currentStep, // 0 .. 15
+                                   ImU32 color_on = IM_COL32(255, 50, 50, 255),
+                                   ImU32 color_step = IM_COL32(255, 255, 255, 180))
+    {
+        currentStep = currentStep % 16; //fail safe
+        ImGui::TextDisabled("%s", label);
+        ImGui::SameLine(80.0f);
+        for (int i = 15; i >= 0; i--) {
+            ImGui::PushID(i);
+            bool isSet = (*bits >> i) & 1;
+            bool isCurrent = (15 - i) == currentStep;
+            ImU32 col = isSet ? color_on : IM_COL32(45, 45, 45, 255);
+            if (isCurrent) col = ImGui::GetColorU32(ImGuiCol_CheckMark);
+            ImVec2 p = ImGui::GetCursorScreenPos();
+            if (ImGui::InvisibleButton("bit", {18, 18})) {
+                *bits ^= (1 << i);
+            }
+            auto drawList = ImGui::GetWindowDrawList();
+            drawList->AddRectFilled(p, {p.x + 16, p.y + 16}, col, 2.0f);
+            if (isCurrent) {
+                drawList->AddRect(p, {p.x + 16, p.y + 16}, color_step, 2.0f, 0, 1.5f);
+            }
+            if (i > 0) {
+                float spacing = (i % 4 == 0) ? 8.0f : 2.0f;
+                ImGui::SameLine(0, spacing);
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Step %d", 15 - i);
+            ImGui::PopID();
+        }
+        ImGui::NewLine();
+    }
+
+
+
 
 } //namespace
 

@@ -152,6 +152,7 @@ bool SoundMixModule::Initialize() {
             DSP::EffectType::Delay,
             DSP::EffectType::Equalizer9Band,
             DSP::EffectType::Limiter,
+            DSP::EffectType::DrumKit,
             DSP::EffectType::SpectrumAnalyzer,
             DSP::EffectType::VisualAnalyzer
         };
@@ -180,7 +181,7 @@ bool SoundMixModule::Initialize() {
         Log("[info] SoundMixModule init done.");
 
 
-        mEffectsManager->LoadRack("bla.rack");
+         mEffectsManager->LoadRack("bla.rack", DSP::EffectsManager::OnlyUpdateExistingSingularity); //only existing ...
 
         mInitialized = true;
         return true;

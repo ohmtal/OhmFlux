@@ -95,9 +95,8 @@ namespace DSP {
 
         void calculateCoefficients() {
             // Standard Audio EQ Cookbook formula for a Peaking EQ
-            float sampleRate = getSampleRateF();
             float A = pow(10.0f, mSettings.gainDb / 40.0f);
-            float omega = 2.0f * M_PI * mSettings.frequency / sampleRate;
+            float omega = 2.0f * M_PI * mSettings.frequency / mSampleRate;
             float sn = sin(omega);
             float cs = cos(omega);
             float alpha = sn / (2.0f * mSettings.Q);
@@ -113,7 +112,7 @@ namespace DSP {
     public:
         IMPLEMENT_EFF_CLONE(Equalizer)
 
-        Equalizer(bool switchOn = true) : Effect(switchOn) {
+        Equalizer(bool switchOn = true) : Effect(DSP::EffectType::Equalizer, switchOn) {
             mSettings = {100.f, 0.f, 0.707f};
 
             //default stereo
@@ -136,8 +135,6 @@ namespace DSP {
             calculateCoefficients();
         }
 
-        DSP::EffectType getType() const override { return DSP::EffectType::Equalizer; }
-
         void save(std::ostream& os) const override {
             Effect::save(os);              // Save mEnabled
             mSettings.getBinary(os);       // Save Settings
@@ -157,8 +154,9 @@ namespace DSP {
                 mStates.assign(numChannels, BiquadState());
             }
 
+            int channel = 0;
             for (int i = 0; i < numSamples; i++) {
-                int channel = i % numChannels;
+
                 float in = buffer[i];
 
                 // Access the state for the current channel
@@ -176,31 +174,10 @@ namespace DSP {
 
                 // 3. Write back to buffer
                 buffer[i] = out;
+
+                if (++channel >= numChannels) channel = 0;
             }
         }
-
-        // virtual void process(float* buffer, int numSamples, int numChannels) override {
-        //     if (numChannels !=  2) { return;  }  //FIXME REWRITE from stereo TO variable CHANNELS
-        //     if (!isEnabled()) return;
-        //
-        //     for (int i = 0; i < numSamples; i++) {
-        //         float in = buffer[i];
-        //         float out;
-        //
-        //         if (i % 2 == 0) { // Left Channel
-        //             out = mCoeffs.b0 * in + mCoeffs.b1 * x1L + mCoeffs.b2 * x2L
-        //             - mCoeffs.a1 * y1L - mCoeffs.a2 * y2L;
-        //             x2L = x1L; x1L = in;
-        //             y2L = y1L; y1L = out;
-        //         } else { // Right Channel
-        //             out = mCoeffs.b0 * in + mCoeffs.b1 * x1R + mCoeffs.b2 * x2R
-        //             - mCoeffs.a1 * y1R - mCoeffs.a2 * y2R;
-        //             x2R = x1R; x1R = in;
-        //             y2R = y1R; y1R = out;
-        //         }
-        //         buffer[i] = out;
-        //     }
-        // }
 
         virtual std::string getName() const override { return "Equalizer Band";}
         #ifdef FLUX_ENGINE

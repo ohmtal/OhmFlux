@@ -156,10 +156,14 @@ namespace DSP {
     //-----------------------------------------------------------------------------
     #ifdef FLUX_ENGINE
 
+
     inline ImFlux::KnobSettings ksBlack = {.radius=25.f, .active=IM_COL32(200,200,0,255)   };
     inline ImFlux::KnobSettings ksRed   = {.radius=25.f, .bg_outer = IM_COL32(45, 5, 4, 255), .bg_inner = IM_COL32(65, 5, 4, 255),.active=IM_COL32(200,200,0,255)  };
     inline ImFlux::KnobSettings ksBlue  = {.radius=25.f, .bg_outer = IM_COL32(4, 5, 45, 255), .bg_inner = IM_COL32(4, 5, 65, 255),.active=IM_COL32(200,200,0,255)  };
     inline ImFlux::KnobSettings ksGreen = {.radius=25.f, .bg_outer = IM_COL32(4, 45, 5, 255), .bg_inner = IM_COL32(4, 65, 5, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksPurple = {.radius=25.f, .bg_outer = IM_COL32(45, 4, 45, 255), .bg_inner = IM_COL32(65, 4, 65, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksYellow = {.radius=25.f, .bg_outer = IM_COL32(45, 45, 4, 255), .bg_inner = IM_COL32(65, 65, 4, 255),.active=IM_COL32(200,200,0,255)  };
+
 
 
     inline bool rackKnob( const char* caption, float* value,
@@ -167,21 +171,26 @@ namespace DSP {
                          ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
                         )
     {
-        ImFlux::GradientBox(ImVec2(70.f,80.f),gp);
+        const float width = 70.f;
+        const float heigth = 80.f;
+        ImFlux::GradientBox(ImVec2(width,heigth),gp);
         ImGui::BeginGroup();
-        ImFlux::ShadowText(caption, IM_COL32(132,132,132,255));
+        // inline void TextColoredEllipsis(ImVec4 color, std::string text, float maxWidth) {
+        ImFlux::TextColoredEllipsis(ImVec4(0.52f,0.52f,0.52f,1.f), caption, width);
+
+        // ImFlux::ShadowText(caption, IM_COL32(132,132,132,255));
         ImGui::Dummy(ImVec2(5.f, 5.f)); ImGui::SameLine();
         bool result = ImFlux::LEDMiniKnob(caption, value, minMax.x, minMax.y, ks);
         ImGui::EndGroup();
         return result;
     };
 
-    inline void paddleHeader(const char* caption, ImU32 baseColor, bool& enabled,
+    inline bool paddleHeader(const char* caption, ImU32 baseColor, bool& enabled,
                       ImFlux::LedParams lp = ImFlux::LED_GREEN_ANIMATED_GLOW,
                       ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
     ) {
 
-
+        bool changed = false;
 
         // FOR HEADER CLICK :
         ImVec2 min = ImGui::GetCursorScreenPos();
@@ -193,7 +202,10 @@ namespace DSP {
         ImFlux::GradientBox(ImVec2(0.f,50.f),gpHeader);
         ImGui::BeginGroup();
         ImGui::Dummy(ImVec2(0,8));ImGui::Dummy(ImVec2(4,0)); ImGui::SameLine();
-        if (ImFlux::DrawLED("on/off",enabled, lp)) enabled = !enabled;
+        if (ImFlux::DrawLED("on/off",enabled, lp)) {
+            enabled = !enabled;
+            changed = true;
+        }
         ImGui::SameLine();
         ImGui::SetWindowFontScale(2.f);
         ImFlux::ShadowText(caption);
@@ -205,10 +217,12 @@ namespace DSP {
         if (ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(min, max)) {
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 enabled = !enabled;
+                changed = true;
             }
         }
 
         ImFlux::GradientBox(ImVec2(0.f,0.f),gp);
+        return changed;
 
     };
 

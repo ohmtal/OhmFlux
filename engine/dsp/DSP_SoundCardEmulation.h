@@ -94,10 +94,9 @@ private:
 public:
     IMPLEMENT_EFF_CLONE(SoundCardEmulation)
 
-    SoundCardEmulation(bool switchOn = false) : DSP::Effect(switchOn) {
+    SoundCardEmulation(bool switchOn = false) : DSP::Effect(DSP::EffectType::SoundCardEmulation, switchOn) {
         mSettings.renderMode = RenderMode::BLENDED;
     }
-    DSP::EffectType getType() const override { return DSP::EffectType::SoundCardEmulation; }
 
     const SoundCardEmulationSettings& getSettings() { return mSettings; }
 
@@ -126,8 +125,7 @@ private:
         }
 
         // Standard Alpha calculation for 1-pole LPF
-        float sampleRate = getSampleRateF();
-        float dt = 1.0f / sampleRate;
+        float dt = 1.0f / mSampleRate;
         float rc = 1.0f / (2.0f * M_PI * cutoff);
         mAlpha = (cutoff >= 20000.0f) ? 1.0f : (dt / (rc + dt));
 
@@ -159,8 +157,8 @@ public:
             mStates.assign(numChannels, FilterChannelState());
         }
 
+        int channel = 0;
         for (int i = 0; i < numSamples; i++) {
-            int channel = i % numChannels;
             float input = buffer[i];
 
             // Access the state for the current channel
@@ -187,6 +185,8 @@ public:
             }
 
             buffer[i] = out;
+
+            if (++channel >= numChannels) channel = 0;
         }
     }
 

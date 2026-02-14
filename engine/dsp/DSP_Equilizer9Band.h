@@ -123,8 +123,6 @@ namespace DSP {
         // Standard ISO 9-band center frequencies
         const float mFrequencies[NUM_BANDS] = { 63.0f, 125.0f, 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f, 8000.0f, 16000.0f };
 
-        float mSampleRate = getSampleRateF();
-
         BiquadCoeffs mCoeffs[NUM_BANDS];
 
         std::vector<std::vector<FilterState>> mChannelStates;
@@ -153,14 +151,13 @@ namespace DSP {
         IMPLEMENT_EFF_CLONE(Equalizer9Band)
 
         Equalizer9Band(bool switchOn = false, float sampleRate = DSP::SAMPLE_RATE)
-        : Effect(switchOn)
-        , mSampleRate(sampleRate)
+        : Effect(DSP::EffectType::Equalizer9Band, switchOn)
         {
+            mSampleRate = sampleRate;
             setSettings(FLAT_EQ);
             updateAllBands();
         }
 
-        DSP::EffectType getType() const override { return DSP::EffectType::Equalizer9Band; }
 
         float getSampleRate() const { return mSampleRate; }
 
@@ -212,8 +209,8 @@ namespace DSP {
                 mChannelStates.assign(numChannels, std::vector<FilterState>(NUM_BANDS));
             }
 
+            int channel = 0;
             for (int i = 0; i < numSamples; i++) {
-                int channel = i % numChannels;
                 float sample = buffer[i];
 
                 // Get the specific state array for this channel
@@ -239,6 +236,8 @@ namespace DSP {
 
                 // 3. Store final processed sample back into the interleaved buffer
                 buffer[i] = sample;
+
+                if (++channel >= numChannels) channel = 0;
             }
         }
 

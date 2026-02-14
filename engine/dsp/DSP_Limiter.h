@@ -86,11 +86,10 @@ namespace DSP {
         IMPLEMENT_EFF_CLONE(Limiter)
 
         Limiter(bool switchOn = true) :
-            Effect(switchOn),
+            Effect(DSP::EffectType::Limiter, switchOn),
             mSettings(LIMITER_DEFAULT)
             {}
 
-        DSP::EffectType getType() const override { return DSP::EffectType::Limiter; }
         //----------------------------------------------------------------------
         void setSettings(const LimiterSettings& s) {
                 // we call reset extra reset(); //also reset current gain.

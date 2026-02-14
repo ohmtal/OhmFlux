@@ -60,7 +60,7 @@ namespace DSP {
     public:
         IMPLEMENT_EFF_CLONE(OverDrive)
 
-        OverDrive(bool switchOn = false) : DSP::Effect(switchOn) {
+        OverDrive(bool switchOn = false) : DSP::Effect(DSP::EffectType::OverDrive, switchOn) {
             mSettings.drive = 5.0f;
             mSettings.tone = 0.5f;
             mSettings.bassPreserve = 0.3f;
@@ -71,7 +71,6 @@ namespace DSP {
         void setSettings(const OverDriveSettings& s) { mSettings = s; }
         OverDriveSettings getSettings() const { return mSettings; }
 
-        virtual DSP::EffectType getType() const override { return DSP::EffectType::OverDrive; }
         virtual std::string getName() const override { return "OverDrive"; }
 
         virtual void reset() override {
@@ -92,8 +91,8 @@ namespace DSP {
             // Bass Alpha (Low-pass crossover, usually around 100Hz - 400Hz)
             float bassAlpha = DSP::clamp(mSettings.bassPreserve * 0.2f, 0.01f, 0.5f);
 
+            int channel = 0;
             for (int i = 0; i < numSamples; i++) {
-                int channel = i % numChannels;
                 float dry = buffer[i];
 
                 // 1. Extract Clean Bass (Low-pass filter)
@@ -116,6 +115,8 @@ namespace DSP {
                 // 5. Final Mix
                 float out = (dry * (1.0f - mSettings.wet)) + (combined * mSettings.wet);
                 buffer[i] = DSP::clamp(out, -1.0f, 1.0f);
+
+                if (++channel >= numChannels) channel = 0;
             }
         }
 

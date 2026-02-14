@@ -75,18 +75,12 @@ static const std::array<DSP::DelaySettings, 4> DELAY_PRESETS = {
 
 class Delay : public DSP::Effect {
 private:
-    // std::vector<float> mBufL;
-    // std::vector<float> mBufR;
-    // uint32_t mPosL = 0;
-    // uint32_t mPosR = 0;
 
     std::vector<std::vector<float>> mBuffers;
     std::vector<uint32_t> mPositions;
-
+    float* mChannelPtrs[8];
 
     DelaySettings mSettings;
-
-    float mSampleRate = getSampleRateF();
     uint32_t mMaxBufSize;
 
     float mSmoothedDelaySamples = 0.f;
@@ -96,30 +90,43 @@ public:
     IMPLEMENT_EFF_CLONE(Delay)
 
     Delay(bool switchOn = false) :
-    Effect(switchOn)
+    Effect(DSP::EffectType::Delay, switchOn)
     {
-        // Allocate 1 second of buffer for 44.1kHz as float
-        mSampleRate = getSampleRateF();
-        mMaxBufSize = static_cast<uint32_t>(mSampleRate * 2.f); //2 sec
         mSettings = MEDIUM_DELAY;
-
-        //default 2 channels :
-        mPositions = { 0,0 };
-        mBuffers.assign(2,  std::vector<float>(mMaxBufSize, 0.0f));
-
-
-        // mBufL.assign(mMaxBufSize, 0.0f);
-        // mBufR.assign(mMaxBufSize, 0.0f);
-        // mPosL = 0;
-        // mPosR = 0;
-
+        setSampleRate(mSampleRate);
         mSmoothedDelaySamples = 0.f;
 
     }
 
+    void updateBuffers( int numChannels) {
+        mBuffers.assign(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
+        mPositions.assign(numChannels, 0);
+
+        for (int i = 0; i < numChannels; ++i) {
+            mChannelPtrs[i] = mBuffers[i].data();
+        }
+
+    }
 
 
-    DSP::EffectType getType() const override { return DSP::EffectType::Delay; }
+    void init(int numChannels, float sampleRate) {
+
+        mMaxBufSize = 32768;
+        while (mMaxBufSize < (int)(sampleRate * 2.0f)) mMaxBufSize <<= 1;
+        updateBuffers(numChannels);
+
+    }
+
+
+    void setSampleRate(float sampleRate) override {
+
+        mSampleRate = sampleRate;
+        int curChannels = (int) mBuffers.size();
+        init(curChannels, sampleRate);
+
+    }
+
+
 
     const DelaySettings& getSettings() { return mSettings; }
 
@@ -129,14 +136,9 @@ public:
 
     void reset() override {
 
-        //default 2 channels :
-        mPositions = { 0,0 };
-        mBuffers.assign(2,  std::vector<float>(mMaxBufSize, 0.0f));
+        int curChannels = (int) mBuffers.size();
+        updateBuffers(curChannels);
 
-        // std::fill(mBufL.begin(), mBufL.end(), 0.0f);
-        // std::fill(mBufR.begin(), mBufR.end(), 0.0f);
-        // mPosL = 0;
-        // mPosR = 0;
         mSmoothedDelaySamples = 0.f;
     }
 
@@ -172,51 +174,103 @@ public:
     virtual void process(float* buffer, int numSamples, int numChannels) override {
         if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
-        // Initialize/Resize buffers and positions if channel count changes
-        if (mBuffers.size() != static_cast<size_t>(numChannels)) {
-            mBuffers.assign(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
-            mPositions.assign(numChannels, 0);
-        }
 
-        // Target delay in samples
-        float targetDelaySamples = (mSettings.time / 1000.0f) * mSampleRate;
+        int curChannels = (int) mBuffers.size();
+        if (numChannels != curChannels) updateBuffers(numChannels);
 
+
+        // prepare ( mMaxBufSize must have power of 2 !!! )
+        const uint32_t mask = mMaxBufSize - 1;
+        const float targetDelaySamples = (mSettings.time / 1000.0f) * mSampleRate;
+        const float feedback = mSettings.feedback;
+        const float wet = mSettings.wet;
+        const float dryGain = 1.0f - wet;
+
+        // Pointer-Array
+        for (int c = 0; c < numChannels; ++c) mChannelPtrs[c] = mBuffers[c].data();
+
+        int channel = 0;
         for (int i = 0; i < numSamples; i++) {
-            int channel = i % numChannels;
-            float dry = buffer[i];
-
-            // 1. Smooth the delay time (Only once per frame to maintain pitch consistency)
+            //  Smoothing (
             if (channel == 0) {
                 mSmoothedDelaySamples += 0.001f * (targetDelaySamples - mSmoothedDelaySamples);
             }
 
-            // 2. Identify active resources for current channel
-            std::vector<float>& activeBuf = mBuffers[channel];
+            float dry = buffer[i];
+            float* activeBuf = mChannelPtrs[channel];
             uint32_t& activePos = mPositions[channel];
 
-            // 3. Safe Read Position Calculation
-            float readPos = static_cast<float>(activePos) - mSmoothedDelaySamples;
+            //  Read Position (no Modulo!)
+            float readPos = (float)activePos - mSmoothedDelaySamples;
+            while (readPos < 0.0f) readPos += (float)mMaxBufSize;
 
-            // Wrap-around logic
-            while (readPos < 0.0f) readPos += static_cast<float>(mMaxBufSize);
+            uint32_t indexA = (uint32_t)readPos & mask;
+            uint32_t indexB = (indexA + 1) & mask;
+            float fraction = readPos - (float)((uint32_t)readPos);
 
-            // 4. Linear Interpolation
-            int indexA = static_cast<int>(readPos) % mMaxBufSize;
-            int indexB = (indexA + 1) % mMaxBufSize;
-            float fraction = readPos - static_cast<float>(indexA);
-
+            // Linear Interpolation
             float delayed = activeBuf[indexA] + fraction * (activeBuf[indexB] - activeBuf[indexA]);
 
-            // 5. Update Buffer (Feedback)
-            activeBuf[activePos] = dry + (delayed * mSettings.feedback);
+            // Update Buffer & Mix
+            activeBuf[activePos] = dry + (delayed * feedback);
+            buffer[i] = (dry * dryGain) + (delayed * wet);
 
-            // 6. Final Mix
-            buffer[i] = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
+            // Increment (Bitmasking instead of %)
+            activePos = (activePos + 1) & mask;
 
-            // 7. Advance write position for this specific channel
-            activePos = (activePos + 1) % mMaxBufSize;
+            if (++channel >= numChannels) channel = 0;
         }
     }
+
+
+    // virtual void process(float* buffer, int numSamples, int numChannels) override {
+    //     if (!isEnabled() || mSettings.wet <= 0.001f) return;
+    //
+    //     // Initialize/Resize buffers and positions if channel count changes
+    //     if (mBuffers.size() != static_cast<size_t>(numChannels)) {
+    //         mBuffers.assign(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
+    //         mPositions.assign(numChannels, 0);
+    //     }
+    //
+    //     // Target delay in samples
+    //     float targetDelaySamples = (mSettings.time / 1000.0f) * mSampleRate;
+    //
+    //     for (int i = 0; i < numSamples; i++) {
+    //         int channel = i % numChannels;
+    //         float dry = buffer[i];
+    //
+    //         // 1. Smooth the delay time (Only once per frame to maintain pitch consistency)
+    //         if (channel == 0) {
+    //             mSmoothedDelaySamples += 0.001f * (targetDelaySamples - mSmoothedDelaySamples);
+    //         }
+    //
+    //         // 2. Identify active resources for current channel
+    //         std::vector<float>& activeBuf = mBuffers[channel];
+    //         uint32_t& activePos = mPositions[channel];
+    //
+    //         // 3. Safe Read Position Calculation
+    //         float readPos = static_cast<float>(activePos) - mSmoothedDelaySamples;
+    //
+    //         // Wrap-around logic
+    //         while (readPos < 0.0f) readPos += static_cast<float>(mMaxBufSize);
+    //
+    //         // 4. Linear Interpolation
+    //         int indexA = static_cast<int>(readPos) % mMaxBufSize;
+    //         int indexB = (indexA + 1) % mMaxBufSize;
+    //         float fraction = readPos - static_cast<float>(indexA);
+    //
+    //         float delayed = activeBuf[indexA] + fraction * (activeBuf[indexB] - activeBuf[indexA]);
+    //
+    //         // 5. Update Buffer (Feedback)
+    //         activeBuf[activePos] = dry + (delayed * mSettings.feedback);
+    //
+    //         // 6. Final Mix
+    //         buffer[i] = (dry * (1.0f - mSettings.wet)) + (delayed * mSettings.wet);
+    //
+    //         // 7. Advance write position for this specific channel
+    //         activePos = (activePos + 1) % mMaxBufSize;
+    //     }
+    // }
 
 
     // virtual void process(float* buffer, int numSamples, int numChannels) override {

@@ -48,7 +48,7 @@ namespace DSP {
         }
 
 
-        VisualAnalyzer( bool switchOn = true) : Effect(switchOn) {
+        VisualAnalyzer( bool switchOn = true) : Effect(DSP::EffectType::VisualAnalyzer, switchOn) {
             mMirrorBuffer.resize(2048, 0.0f); // Size for the oscilloscope display
         }
         //----------------------------------------------------------------------
@@ -80,14 +80,16 @@ namespace DSP {
             // 3. RMS Level Calculation per Channel
             int numFrames = numSamples / numChannels;
             if (numFrames > 0) {
+                int channel = 0;
                 for (int i = 0; i < numSamples; i++) {
-                    int channel = i % numChannels;
                     float sample = buffer[i];
 
                     // Safety check
                     if (!std::isfinite(sample)) sample = 0.0f;
 
                     mSums[channel] += (sample * sample);
+
+                    if (++channel >= numChannels) channel = 0;
                 }
 
                 for (int c = 0; c < numChannels; ++c) {
@@ -188,7 +190,6 @@ namespace DSP {
             return 0.0f;
         }
         //----------------------------------------------------------------------
-        DSP::EffectType getType() const override { return DSP::EffectType::VisualAnalyzer; }
 
 
         virtual std::string getName() const override { return "VISUAL ANALYSER";}

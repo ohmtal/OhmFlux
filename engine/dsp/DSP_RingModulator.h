@@ -21,6 +21,7 @@
 
 
 #include "DSP_Effect.h"
+#include "DSP_Math.h"
 
 namespace DSP {
 
@@ -59,20 +60,18 @@ class RingModulator : public DSP::Effect {
 private:
     RingModSettings mSettings;
     float mPhaseL = 0.0f; // Oscillator phase for left channel
-    float mSampleRate = getSampleRateF(); // Assumed fixed SR, needs updating in prepareToPlay
 
 public:
     IMPLEMENT_EFF_CLONE(RingModulator)
 
     RingModulator(bool switchOn = false) :
-        DSP::Effect(switchOn)
+        DSP::Effect(DSP::EffectType::RingModulator, switchOn)
     {
         mSettings.frequency = 400.0f; // Default carrier freq
         mSettings.wet = 0.5f;         // Usually 100% wet for this effect
         reset();
     }
 
-    virtual DSP::EffectType getType() const override { return DSP::EffectType::RingModulator; }
     virtual std::string getName() const override { return "Ring Modulator"; }
 
     void setSettings(const RingModSettings& s) { mSettings = s; }
@@ -81,42 +80,68 @@ public:
     virtual void reset() override {
 
         mPhaseL = 0.0f;
-        mSampleRate = getSampleRateF();
 
     }
+
 
     virtual void process(float* buffer, int numSamples, int numChannels) override {
         if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
-        const float TWO_PI = 2.0f * (float)M_PI;
-        // Frequency increment per sample frame
-        const float phaseIncrement = (TWO_PI * mSettings.frequency) / mSampleRate;
+        const float phaseIncrement = mSettings.frequency / mSampleRate;
+        const float wet = mSettings.wet;
+        const float dryGain = 1.0f - wet;
 
+        int channel = 0;
         for (int i = 0; i < numSamples; i++) {
-            int channel = i % numChannels;
             float dry = buffer[i];
 
-            // 1. Calculate the carrier wave (sinusoidal LFO)
-            // We use the same phase for all channels in a frame to preserve phase alignment
-            float carrier = std::sin(mPhaseL);
-
-            // 2. Ring Modulation: Multiply dry signal by carrier
+            float carrier = DSP::FastMath::fastSin(mPhaseL);
             float modulated = dry * carrier;
 
-            // 3. Mix: Dry + Wet
-            buffer[i] = (dry * (1.0f - mSettings.wet)) + (modulated * mSettings.wet);
+            buffer[i] = (dry * dryGain) + (modulated * wet);
 
-            // 4. Advance phase only after all channels of the current frame are processed
-            if (channel == numChannels - 1) {
+            if (++channel >= numChannels) {
+                channel = 0;
                 mPhaseL += phaseIncrement;
-
-                // Wrap phase to keep it within [0, 2*PI]
-                if (mPhaseL >= TWO_PI) {
-                    mPhaseL -= TWO_PI;
-                }
+                if (mPhaseL >= 1.0f) mPhaseL -= 1.0f;
             }
         }
     }
+
+    // virtual void process(float* buffer, int numSamples, int numChannels) override {
+    //     if (!isEnabled() || mSettings.wet <= 0.001f) return;
+    //
+    //     const float TWO_PI = 2.0f * (float)M_PI;
+    //     // Frequency increment per sample frame
+    //     const float phaseIncrement = (TWO_PI * mSettings.frequency) / mSampleRate;
+    //
+    //     int channel = 0;
+    //     for (int i = 0; i < numSamples; i++) {
+    //         float dry = buffer[i];
+    //
+    //         // 1. Calculate the carrier wave (sinusoidal LFO)
+    //         // We use the same phase for all channels in a frame to preserve phase alignment
+    //         float carrier = std::sin(mPhaseL);
+    //
+    //         // 2. Ring Modulation: Multiply dry signal by carrier
+    //         float modulated = dry * carrier;
+    //
+    //         // 3. Mix: Dry + Wet
+    //         buffer[i] = (dry * (1.0f - mSettings.wet)) + (modulated * mSettings.wet);
+    //
+    //         // 4. Advance phase only after all channels of the current frame are processed
+    //         if (channel == numChannels - 1) {
+    //             mPhaseL += phaseIncrement;
+    //
+    //             // Wrap phase to keep it within [0, 2*PI]
+    //             if (mPhaseL >= TWO_PI) {
+    //                 mPhaseL -= TWO_PI;
+    //             }
+    //         }
+    //
+    //         if (++channel >= numChannels) channel = 0;
+    //     }
+    // }
 
     //--------------------------------------------------------------------------
 #ifdef FLUX_ENGINE

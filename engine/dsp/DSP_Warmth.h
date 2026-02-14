@@ -83,14 +83,12 @@ namespace DSP {
         IMPLEMENT_EFF_CLONE(Warmth)
 
         Warmth(bool switchOn = false) :
-            Effect(switchOn),
+            Effect(DSP::EffectType::Warmth, switchOn),
             mSettings(GENTLE_WARMTH)
         {
             // std::memset(mPolesL, 0, sizeof(mPolesL));
             // std::memset(mPolesR, 0, sizeof(mPolesR));
         }
-
-        DSP::EffectType getType() const override { return DSP::EffectType::Warmth; }
 
         const WarmthSettings& getSettings() { return mSettings; }
 
@@ -122,8 +120,8 @@ namespace DSP {
             // Alpha represents the cutoff frequency (0.01 to 0.99)
             float alpha = std::clamp(mSettings.cutoff, 0.01f, 0.99f);
 
+            int channel = 0;
             for (int i = 0; i < numSamples; i++) {
-                int channel = i % numChannels;
                 float dry = buffer[i];
 
                 // 2. Access the 4-pole state for the current channel
@@ -150,6 +148,8 @@ namespace DSP {
                 // 5. Final Mix and Clamp
                 float mixed = (dry * (1.0f - mSettings.wet)) + (saturated * mSettings.wet);
                 buffer[i] = std::clamp(mixed, -1.0f, 1.0f);
+
+                if (++channel >= numChannels) channel = 0;
             }
         }
 

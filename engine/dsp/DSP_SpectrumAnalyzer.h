@@ -21,6 +21,7 @@
 
 
 #include "DSP_Effect.h"
+#include "DSP_Math.h"
 
 namespace DSP {
     class SpectrumAnalyzer : public Effect {
@@ -33,12 +34,11 @@ namespace DSP {
     public:
         IMPLEMENT_EFF_CLONE(SpectrumAnalyzer)
 
-        SpectrumAnalyzer(bool switchOn = false) : Effect(switchOn) {
+        SpectrumAnalyzer(bool switchOn = false) : Effect(DSP::EffectType::SpectrumAnalyzer, switchOn) {
             mCaptureBuffer.resize(FFT_SIZE, 0.0f);
             mDisplayMagnitudes.resize(FFT_SIZE / 2, 0.0f);
         }
 
-        DSP::EffectType getType() const override { return DSP::EffectType::SpectrumAnalyzer; }
 
         //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
@@ -75,9 +75,17 @@ namespace DSP {
             int n = (int)x.size();
             bitReverse(x);
 
+
+
+
             for (int len = 2; len <= n; len <<= 1) {
-                float angle = -2.0f * M_PI / len;
-                std::complex<float> wlen(std::cos(angle), std::sin(angle));
+                float phase01 = -1.0f / (float)len;
+                while (phase01 < 0.0f) phase01 += 1.0f;
+                std::complex<float> wlen(
+                    DSP::FastMath::fastCos(phase01),
+                    DSP::FastMath::fastSin(phase01)
+                );
+
                 for (int i = 0; i < n; i += len) {
                     std::complex<float> w(1, 0);
                     for (int j = 0; j < len / 2; j++) {
@@ -89,6 +97,25 @@ namespace DSP {
                     }
                 }
             }
+
+
+            // for (int len = 2; len <= n; len <<= 1) {
+            //     float angle = -2.0f * M_PI / len;
+            //     std::complex<float> wlen(std::cos(angle), std::sin(angle));
+            //     for (int i = 0; i < n; i += len) {
+            //         std::complex<float> w(1, 0);
+            //         for (int j = 0; j < len / 2; j++) {
+            //             std::complex<float> u = x[i + j];
+            //             std::complex<float> v = x[i + j + len / 2] * w;
+            //             x[i + j] = u + v;
+            //             x[i + j + len / 2] = u - v;
+            //             w *= wlen;
+            //         }
+            //     }
+            // }
+
+
+
         }
         //----------------------------------------------------------------------
         const std::vector<float>& getMagnitudesFFT() {

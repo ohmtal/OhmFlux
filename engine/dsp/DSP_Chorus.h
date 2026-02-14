@@ -17,6 +17,7 @@
 
 
 #include "DSP_Effect.h"
+#include "DSP_Math.h"
 
 
 namespace DSP {
@@ -103,7 +104,6 @@ namespace DSP {
 
         int mWritePos = 0;
         float mLfoPhase = 0.0f;
-        float mSampleRate = getSampleRateF();
         int mMaxBufferSize = static_cast<int>(mSampleRate / 10); // 100ms at 44.1kHz
 
         ChorusSettings mSettings;
@@ -112,9 +112,8 @@ namespace DSP {
         IMPLEMENT_EFF_CLONE(Chorus)
 
         Chorus(bool switchOn = false) :
-            Effect(switchOn)
+            Effect(DSP::EffectType::Chorus, switchOn)
         {
-            setSampleRate(getSampleRateF());
             mSettings = LUSH80s_CHORUS;
 
         }
@@ -131,7 +130,6 @@ namespace DSP {
             mSettings = s;
         }
 
-        DSP::EffectType getType() const override { return DSP::EffectType::Chorus; }
         void save(std::ostream& os) const override {
             Effect::save(os);              // Save mEnabled
             mSettings.getBinary(os);       // Save Settings
@@ -143,7 +141,6 @@ namespace DSP {
         }
 
 
-
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
@@ -152,49 +149,113 @@ namespace DSP {
                 mDelayBuffers.assign(numChannels, std::vector<float>(mMaxBufferSize, 0.0f));
             }
 
-            const float TWO_PI = 2.0f * M_PI;
 
+            // prepare for party
+            const float invSampleRate = 1.0f / mSampleRate;
+            const float lfoIncrement = mSettings.rate * invSampleRate;
+            const float delayBaseSamples = mSettings.delayBase * mSampleRate;
+            const float depthSamples = mSettings.depth * mSampleRate;
+            const uint32_t mask = mMaxBufferSize - 1; // FUNKTIONIERT NUR WENN BUFFER-SIZE = 2^n (z.B. 4096)
+
+            // local pointer table!
+            float* channelPtrs[8];
+            for (int c = 0; c < numChannels; ++c) channelPtrs[c] = mDelayBuffers[c].data();
+
+            int channel = 0;
             for (int i = 0; i < numSamples; i++) {
-                int channel = i % numChannels;
                 float dry = buffer[i];
+                float* channelBuf = channelPtrs[channel];
 
-                // 1. Calculate LFO Phase with channel-specific offset
-                // We spread the phase offset across all channels
-                float channelPhase = mLfoPhase + (channel * mSettings.phaseOffset * TWO_PI);
-                while (channelPhase >= TWO_PI) channelPhase -= TWO_PI;
+                //  LFO Phase (Normalized 0.0 - 1.0 for FastMath)
+                float phase01 = mLfoPhase + (channel * mSettings.phaseOffset);
+                if (phase01 >= 1.0f) phase01 -= 1.0f;
 
-                // 2. Calculate modulated delay time
-                float lfo = std::sin(channelPhase);
-                float currentDelaySec = mSettings.delayBase + (lfo * mSettings.depth);
-                float delaySamples = currentDelaySec * mSampleRate;
+                // Delay Position
+                float lfo = DSP::FastMath::fastSin(phase01);
+                float delaySamples = delayBaseSamples + (lfo * depthSamples);
 
-                // 3. Linear Interpolation Read Position
-                float readPos = static_cast<float>(mWritePos) - delaySamples;
-                while (readPos < 0) readPos += static_cast<float>(mMaxBufferSize);
+                float readPos = (float)mWritePos - delaySamples;
 
-                int idx1 = static_cast<int>(readPos) % mMaxBufferSize;
-                int idx2 = (idx1 + 1) % mMaxBufferSize;
-                float frac = readPos - static_cast<float>(idx1);
+                // modulo replaced
+                while (readPos < 0) readPos += (float)mMaxBufferSize;
 
-                // 4. Access the specific buffer for this channel
-                std::vector<float>& channelBuf = mDelayBuffers[channel];
-                float wetSample = channelBuf[idx1] * (1.0f - frac) + channelBuf[idx2] * frac;
+                int idx1 = (int)readPos;
+                float frac = readPos - (float)idx1;
 
-                // Write dry signal to current channel's delay line
+                // masking
+                int i1 = idx1 % mMaxBufferSize;
+                int i2 = (i1 + 1) % mMaxBufferSize;
+
+                //  Linear Interpolation & Write
+                float wetSample = channelBuf[i1] * (1.0f - frac) + channelBuf[i2] * frac;
                 channelBuf[mWritePos] = dry;
 
-                // 5. Mix
+                // Mix & Buffer Write
                 buffer[i] = dry + (wetSample * mSettings.wet);
 
-                // 6. Update LFO and Write Position only after processing a full frame
-                if (channel == numChannels - 1) {
-                    mLfoPhase += (TWO_PI * mSettings.rate) / mSampleRate;
-                    if (mLfoPhase >= TWO_PI) mLfoPhase -= TWO_PI;
+                // Frame-Management
+                if (++channel >= numChannels) {
+                    channel = 0;
+                    mLfoPhase += lfoIncrement;
+                    if (mLfoPhase >= 1.0f) mLfoPhase -= 1.0f;
 
                     mWritePos = (mWritePos + 1) % mMaxBufferSize;
                 }
-            }
+            } //for
         }
+
+
+        // virtual void process(float* buffer, int numSamples, int numChannels) override {
+        //     if (!isEnabled() || mSettings.wet <= 0.001f) return;
+        //
+        //     // Ensure we have enough delay buffers for the current channel count
+        //     if (mDelayBuffers.size() != static_cast<size_t>(numChannels)) {
+        //         mDelayBuffers.assign(numChannels, std::vector<float>(mMaxBufferSize, 0.0f));
+        //     }
+        //
+        //     const float TWO_PI = 2.0f * M_PI;
+        //
+        //     for (int i = 0; i < numSamples; i++) {
+        //         int channel = i % numChannels;
+        //         float dry = buffer[i];
+        //
+        //         // 1. Calculate LFO Phase with channel-specific offset
+        //         // We spread the phase offset across all channels
+        //         float channelPhase = mLfoPhase + (channel * mSettings.phaseOffset * TWO_PI);
+        //         while (channelPhase >= TWO_PI) channelPhase -= TWO_PI;
+        //
+        //         // 2. Calculate modulated delay time
+        //         float lfo = DSP::FastMath::fastSin(channelPhase);
+        //         float currentDelaySec = mSettings.delayBase + (lfo * mSettings.depth);
+        //         float delaySamples = currentDelaySec * mSampleRate;
+        //
+        //         // 3. Linear Interpolation Read Position
+        //         float readPos = static_cast<float>(mWritePos) - delaySamples;
+        //         while (readPos < 0) readPos += static_cast<float>(mMaxBufferSize);
+        //
+        //         int idx1 = static_cast<int>(readPos) % mMaxBufferSize;
+        //         int idx2 = (idx1 + 1) % mMaxBufferSize;
+        //         float frac = readPos - static_cast<float>(idx1);
+        //
+        //         // 4. Access the specific buffer for this channel
+        //         std::vector<float>& channelBuf = mDelayBuffers[channel];
+        //         float wetSample = channelBuf[idx1] * (1.0f - frac) + channelBuf[idx2] * frac;
+        //
+        //         // Write dry signal to current channel's delay line
+        //         channelBuf[mWritePos] = dry;
+        //
+        //         // 5. Mix
+        //         buffer[i] = dry + (wetSample * mSettings.wet);
+        //
+        //         // 6. Update LFO and Write Position only after processing a full frame
+        //         if (channel == numChannels - 1) {
+        //             mLfoPhase += (TWO_PI * mSettings.rate) / mSampleRate;
+        //             if (mLfoPhase >= TWO_PI) mLfoPhase -= TWO_PI;
+        //
+        //             mWritePos = (mWritePos + 1) % mMaxBufferSize;
+        //         }
+        //     }
+        // }
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "CHORUS / ENSEMBLE";}
 #ifdef FLUX_ENGINE

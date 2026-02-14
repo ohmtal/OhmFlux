@@ -31,6 +31,7 @@
 #include "DSP_ChromaticTuner.h"
 
 #include "Drums/DSP_DrumKit.h" //(Wip)
+#include "Drums/DSP_KickDrum.h"
 
 
 namespace DSP {

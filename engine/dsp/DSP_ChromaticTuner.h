@@ -60,7 +60,6 @@ namespace DSP {
     class ChromaticTuner : public DSP::Effect {
     private:
         ChromaticTunerSettings mSettings;
-        int mSampleRate;
         uint8_t mChannelCount = 2;
 
 
@@ -76,9 +75,8 @@ namespace DSP {
     public:
         IMPLEMENT_EFF_CLONE(ChromaticTuner)
 
-        ChromaticTuner(bool switchOn = false) : DSP::Effect(switchOn) {
-            mSampleRate = getSampleRateI();
-        }
+        ChromaticTuner(bool switchOn = false) :
+            DSP::Effect(DSP::EffectType::ChromaticTuner, switchOn) {}
 
 
         float getFrequence() {return mTunerFreq;}
@@ -95,9 +93,6 @@ namespace DSP {
         void setSettings(const ChromaticTunerSettings& s) {mSettings = s;}
         const ChromaticTunerSettings& getSettings() { return mSettings; }
 
-        virtual void setSampleRate(float sampleRate) override { mSampleRate = (int)sampleRate;}
-
-        virtual DSP::EffectType getType() const override { return DSP::EffectType::ChromaticTuner; }
         virtual std::string getName() const override { return "Chromatic Tuner"; }
         //----------------------------------------------------------------------
         void analyzeAccurate() {
@@ -130,8 +125,8 @@ namespace DSP {
                 return diff;
             };
 
-            int min_lag = mSampleRate / 1000;
-            int max_lag = mSampleRate / 50;
+            int min_lag =  (int)( mSampleRate / 1000.f );
+            int max_lag = (int)(mSampleRate / 50.f);
             float min_diff = 1e10f;
             int best_lag = -1;
 
@@ -156,7 +151,7 @@ namespace DSP {
                     offset = (v1 - v3) / (2.0f * denom);
                 }
 
-                float raw_freq = (float)mSampleRate / (static_cast<float>(best_lag) + offset);
+                float raw_freq = mSampleRate / (static_cast<float>(best_lag) + offset);
 
                 // 5. Intelligent Smoothing
                 // Use a smaller alpha for a more stable reading
@@ -173,8 +168,8 @@ namespace DSP {
             if (analysis_counter < mTunerThreshold) return;
             analysis_counter = 0;
 
-            int min_lag = mSampleRate / 1000; // 1000 Hz
-            int max_lag = mSampleRate / 50;   // 50 Hz
+            int min_lag = (int)(mSampleRate / 1000.f); // 1000 Hz
+            int max_lag = (int)(mSampleRate / 50.f);   // 50 Hz
 
             float best_corr = -1e10f;
             int best_lag = -1;
@@ -203,7 +198,7 @@ namespace DSP {
                 }
             }
             if (best_lag > 0) {
-                mTunerFreq = (float)mSampleRate / best_lag;
+                mTunerFreq = mSampleRate / (float)best_lag;
             }
         }
         //----------------------------------------------------------------------
@@ -437,6 +432,7 @@ namespace DSP {
                     ImVec2 m_pos = ImGui::GetCursorScreenPos();
                     m_pos.y += 10;
                     float m_w = region.x;
+                    if (m_w <= 0.0f) return;
                     float m_h = 30;
 
                     draw_list->AddRectFilled(m_pos, ImVec2(m_pos.x + m_w, m_pos.y + m_h), IM_COL32(20, 40, 20, 255));
