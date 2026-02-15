@@ -59,8 +59,10 @@ namespace DSP {
 
             return getTable().data[idxA] * (1.0f - frac) + getTable().data[idxB] * frac;
         }
-    };
 
+
+        //----------------------------------------------------------------------
+    }; //FathMath
 
     template<typename T>
     inline constexpr T clamp(T val, T min, T max) {
@@ -95,4 +97,6 @@ namespace DSP {
     inline constexpr float dbToGain(float db) {
         return std::pow(10.0f, db * 0.05f);
     }
-}
+
+
+} //namespace

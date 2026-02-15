@@ -130,10 +130,10 @@ namespace DSP {
             paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
             OverDriveSettings currentSettings = this->getSettings();
             bool changed = false;
-            changed |= rackKnob("DRIVE", &currentSettings.drive, {1.0f, 20.0f}, ksRed);ImGui::SameLine();
-            changed |= rackKnob("TONE", &currentSettings.tone, {0.0f, 1.0f}, ksBlue);ImGui::SameLine();
-            changed |= rackKnob("PRESERVE", &currentSettings.bassPreserve, {0.0f, 1.0f}, ksBlue);ImGui::SameLine();
-            changed |= rackKnob("LEVEL", &currentSettings.wet, {0.0f, 1.f}, ksBlack);
+            changed |= rackKnob("DRIVE", &currentSettings.drive, {1.0f, 20.0f}, ImFlux::ksRed);ImGui::SameLine();
+            changed |= rackKnob("TONE", &currentSettings.tone, {0.0f, 1.0f}, ImFlux::ksBlue);ImGui::SameLine();
+            changed |= rackKnob("PRESERVE", &currentSettings.bassPreserve, {0.0f, 1.0f}, ImFlux::ksBlue);ImGui::SameLine();
+            changed |= rackKnob("LEVEL", &currentSettings.wet, {0.0f, 1.f}, ImFlux::ksBlack);
             if (changed) this->setSettings(currentSettings);
             ImGui::PopID();
         }

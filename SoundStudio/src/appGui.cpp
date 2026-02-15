@@ -353,6 +353,9 @@ void AppGui::ShowMenuBar()
             ImGui::MenuItem("Sound Effects Generator", NULL, &mAppSettings.mShowSFXModule);
             ImGui::MenuItem("Sound Effects Stereo", NULL, &mAppSettings.mShowSFXStereoModule);
             ImGui::MenuItem("Wave Files", NULL, &mAppSettings.mShowWaveModule);
+            ImGui::MenuItem("Drum Kit", NULL, &mAppSettings.mShowDrumKit);
+
+
 
             ImGui::Separator();
             ImGui::EndMenu();

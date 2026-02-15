@@ -84,9 +84,6 @@ namespace DSP {
 
             {
                 std::vector<float> mSteps{0.0f, 0.0f}; //default 2 channel
-                #ifdef FLUX_ENGINE
-                    mSettings.wet.setKnobSettings(ksPurple);
-                #endif
 
             }
         //----------------------------------------------------------------------
@@ -228,14 +225,16 @@ namespace DSP {
     virtual ImVec4 getColor() const  override { return ImVec4(0.8f, 0.4f, 0.5f, 1.0f);}
 
 
-    virtual void renderPaddle() override {
+    virtual void renderPaddle( ) override {
         DSP::BitcrusherSettings currentSettings = this->getSettings();
+        currentSettings.wet.setKnobSettings(ImFlux::ksPurple); // NOTE only works here !
+
         if (currentSettings.DrawPaddle(this)) {
             this->setSettings(currentSettings);
         }
     }
 
-    virtual void renderUIWide() override {
+    virtual void renderUIWide( ) override {
         DSP::BitcrusherSettings currentSettings = this->getSettings();
         if (currentSettings.DrawUIWide(this)) {
             this->setSettings(currentSettings);

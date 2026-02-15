@@ -3,10 +3,6 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : ToneControl
-// TODO:
-// [ ] finish class
-// [~] NOT! Test FastMath biquad
-// [ ] port BiQuad ... do i really need it 3times ?!
 //-----------------------------------------------------------------------------
 #pragma once
 #include <cstdint>
@@ -25,6 +21,9 @@
 #include <imgui_internal.h>
 #include <gui/ImFlux.h>
 #endif
+
+
+#include <assert.h> //FIXME remove again
 
 
 namespace DSP {
@@ -69,7 +68,13 @@ public:
     ToneControl(bool switchOn = false) :
         Effect(DSP::EffectType::ToneControl, switchOn)
         , mSettings()
-        {}
+        {
+
+            #ifdef FLUX_ENGINE
+            mSettings.volume.setKnobSettings(ImFlux::ksBlue);
+            #endif
+
+        }
 
     //----------------------------------------------------------------------
     virtual std::string getName() const override { return "Volume and Tone ";}
@@ -101,9 +106,10 @@ public:
         const float treble = mSettings.treble.get();
         const float presence = mSettings.presence.get();
 
+        float in, out;
         // no channel handling needed here ...
         for (int i = 0; i < numSamples; i++) {
-            buffer[i] = mToneControl.process(buffer[i], volume,  bass, treble, presence, mSampleRate);
+            if ( buffer[i] != 0.f ) buffer[i] = mToneControl.process(buffer[i], volume,  bass, treble, presence, mSampleRate);
         }
     }
 

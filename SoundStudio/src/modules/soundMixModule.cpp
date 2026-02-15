@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include <src/appMain.h>
+
 #include <audio/fluxAudio.h>
 #include "soundMixModule.h"
 
@@ -47,6 +49,13 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
             soundMix->getEffectsManager()->checkFrequence(spec->freq);
 
             soundMix->getEffectsManager()->process(buffer, numSamples, spec->channels);
+
+
+            soundMix->mDrumKit->process(buffer, numSamples, spec->channels);
+            soundMix->mSpectrumAnalyzer->process(buffer, numSamples, spec->channels);
+            soundMix->mVisualAnalyzer->process(buffer, numSamples, spec->channels);
+
+
             // for (auto& effect : soundMix->getEffectsManager()->getEffects()) {
             //     effect->process(buffer, numSamples, spec->channels);
             // }
@@ -70,46 +79,47 @@ void SoundMixModule::DrawRack()
 
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
         ImGui::Begin("Post Digital Sound Effects Visualizer");
-        if (auto* analyzer = getEffectsManager()->getSpectrumAnalyzer()) {
+
+        {
             ImGui::PushID("SpectrumAnalyzer_Effect_Row");
             ImGui::BeginGroup();
-            bool isEnabled = analyzer->isEnabled();
-            if (ImFlux::LEDCheckBox(analyzer->getName(), &isEnabled, analyzer->getColor()))
-                analyzer->setEnabled(isEnabled);
+            bool isEnabled = mSpectrumAnalyzer->isEnabled();
+            if (ImFlux::LEDCheckBox(mSpectrumAnalyzer->getName(), &isEnabled, mSpectrumAnalyzer->getColor()))
+                mSpectrumAnalyzer->setEnabled(isEnabled);
             float fullWidth = ImGui::GetContentRegionAvail().x;
-            analyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f));
+            mSpectrumAnalyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f));
             ImGui::EndGroup();
             ImGui::PopID();
             ImGui::Spacing();
         }
 
-
-        if (auto* analyzer = getEffectsManager()->getEqualizer9Band())
-         if (analyzer->isEnabled()) {
-            ImGui::PushID("Equalizer9Band_Effect_Row");
-            ImGui::BeginGroup();
-            float fullWidth = ImGui::GetContentRegionAvail().x;
-            analyzer->renderCurve(ImVec2(fullWidth, 60.0f));
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing();
-        }
-
-
-        if (auto* analyzer = getEffectsManager()->getVisualAnalyzer()) {
+        {
             ImGui::PushID("VisualAnalyzer_Effect_Row");
             ImGui::BeginGroup();
-            bool isEnabled = analyzer->isEnabled();
-            if (ImFlux::LEDCheckBox(analyzer->getName(), &isEnabled, analyzer->getColor()))
-                analyzer->setEnabled(isEnabled);
+            bool isEnabled = mVisualAnalyzer->isEnabled();
+            if (ImFlux::LEDCheckBox(mVisualAnalyzer->getName(), &isEnabled, mVisualAnalyzer->getColor()))
+                mVisualAnalyzer->setEnabled(isEnabled);
             float fullWidth = ImGui::GetContentRegionAvail().x;
-            analyzer->renderPeakTest(); //FIXME
+            mVisualAnalyzer->renderPeakTest(); //FIXME
             ImGui::EndGroup();
             ImGui::PopID();
             ImGui::Spacing();
         }
 
         ImGui::End();
+
+        // bool dummy = true;renderSequencerWindow(&dummy);
+
+        // AppGui::getAppSettings getAppSettings() {return mAppGui->getAppSettings();}
+
+
+        // bool showDrumKit = getMain()->getAppSettings().mShowDrumKit;
+        // mDrumKit->renderSequencerWindow(&showDrumKit);
+
+        // getMain()->getAppSettings().mShowDrumKit = true;
+
+        mDrumKit->renderSequencerWindow(&getMain()->getAppSettings()->mShowDrumKit);
+
 
 
         //  ~~~~~~~~~~~ TEST RENDERIU ~~~~~~~~~~~~~~~~~~~~~
@@ -153,10 +163,14 @@ bool SoundMixModule::Initialize() {
             DSP::EffectType::Delay,
             DSP::EffectType::Equalizer9Band,
             DSP::EffectType::Limiter,
-            DSP::EffectType::DrumKit,
-            DSP::EffectType::SpectrumAnalyzer,
-            DSP::EffectType::VisualAnalyzer
         };
+
+
+        // manually !!
+        // DSP::EffectType::DrumKit,
+        // DSP::EffectType::SpectrumAnalyzer,
+        // DSP::EffectType::VisualAnalyzer
+
 
         for (auto type : types) {
             auto fx = DSP::EffectFactory::Create(type);
@@ -165,6 +179,14 @@ bool SoundMixModule::Initialize() {
                 mEffectsManager->addEffect(std::move(fx));
             }
         }
+
+        mDrumKit = cast_unique<DSP::DrumKit>(DSP::EffectFactory::Create(DSP::EffectType::DrumKit));
+        //FIXME TEST !!
+        mDrumKit->loadFromFile("bla.drum");
+
+        mSpectrumAnalyzer = cast_unique<DSP::SpectrumAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::SpectrumAnalyzer));
+        mVisualAnalyzer = cast_unique<DSP::VisualAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::VisualAnalyzer));
+
 
 
         for (const auto& fx : mEffectsManager->getEffects()) {
@@ -182,6 +204,7 @@ bool SoundMixModule::Initialize() {
         Log("[info] SoundMixModule init done.");
 
 
+        //FIXME TEST !!
          mEffectsManager->LoadRack("bla.rack", DSP::EffectsManager::OnlyUpdateExistingSingularity); //only existing ...
 
         mInitialized = true;

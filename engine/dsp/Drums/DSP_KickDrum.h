@@ -147,7 +147,7 @@ public:
         }
     }
 
-    virtual void renderUIWide() override {
+    virtual void renderUIWide( ) override {
         DSP::KickSettings currentSettings = this->getSettings();
         if (currentSettings.DrawUIWide(this)) {
             this->setSettings(currentSettings);

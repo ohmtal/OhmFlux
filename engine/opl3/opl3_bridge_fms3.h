@@ -260,7 +260,7 @@ namespace opl3_bridge_fms3 {
     // --------------- saveSong
     bool saveSong(const std::string& filePath, const opl3::SongData& song,
             const std::vector<std::unique_ptr<DSP::Effect>>& dspEffects,
-            bool withDspSettings = true
+            bool withDspSettings = false
     ) {
         errors = "";
 
@@ -495,7 +495,9 @@ namespace opl3_bridge_fms3 {
                         // We found something, but it's not FXSN.
                         // This is only an error if you expect NO other data after the song.
                         addError("Unknown data block at end of file.");
+#ifndef FLUX_DEBUG // i changed the magic !!
                         return false;
+#endif
                     }
                 }
 

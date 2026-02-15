@@ -86,10 +86,6 @@ private:
 
     uint32_t mMaxBufSize;
 
-    // std::vector<float> mBufL;
-    // std::vector<float> mBufR;
-    // int mPosL = 0;
-    // int mPosR = 0;
     ReverbSettings mSettings;
 
     void updateSizes( int numChannels)
@@ -109,15 +105,17 @@ public:
     Reverb(bool switchOn = false) :
     Effect(DSP::EffectType::Reverb, switchOn)
     {
-        mMaxBufSize = SAMPLE_RATE_I;
-
-        //default stereo
-        mBuffers.assign(2,  std::vector<float>(mMaxBufSize, 0.0f ));
-        mPositions = { 0, 0 };
-        updateSizes(2);
-
 
         mSettings = ROOM_REVERB;
+
+        // mMaxBufSize = SAMPLE_RATE_I;
+        // //default stereo
+        // mBuffers.assign(2,  std::vector<float>(mMaxBufSize, 0.0f ));
+        // mPositions = { 0, 0 };
+        // updateSizes(2);
+
+        updateBufferSize(); //should be all do what we need
+
     }
 
     const ReverbSettings& getSettings() { return mSettings; }
@@ -125,9 +123,7 @@ public:
 
     virtual void setSampleRate(float sampleRate) override {
         mSampleRate = sampleRate;
-        mMaxBufSize = static_cast<uint32_t>(mSampleRate);
-
-        mBuffers.assign(2,  std::vector<float>(mMaxBufSize, 0.0f ));
+        updateBufferSize();
 
     }
 
@@ -135,14 +131,17 @@ public:
     {
         mMaxBufSize = static_cast<uint32_t>(mSampleRate);
         int curChannels = (int)mBuffers.size();
+        if (curChannels == 0) curChannels = 2; //default stereo
         mBuffers.assign(curChannels,  std::vector<float>(mMaxBufSize, 0.0f ));
+        mPositions.assign(curChannels, 0);
         updateSizes(curChannels);
     }
 
     void setSettings(const ReverbSettings& s) {
         mSettings = s;
-        mPositions = { 0, 0 };
-        updateBufferSize();
+        int curChannels = (int)mBuffers.size();
+        mPositions.assign(curChannels, 0);
+        updateSizes(curChannels);
     }
 
     void save(std::ostream& os) const override {
@@ -157,21 +156,17 @@ public:
 
     virtual float getTailLengthSeconds() const override {
         if (!isEnabled()) return 0.0f;
-
-        // Most Reverbs provide the T60 value directly via their 'size' or 'decay' param
-        // If your reverb 'size' is roughly seconds:
         return mSettings.decay * 1.5f; // Add a small safety margin
     }
 
 
+    //----------------------------------------
 
     virtual void process(float* buffer, int numSamples, int numChannels) override {
         if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
         if (mBuffers.size() != (size_t)numChannels) {
-            mBuffers.assign(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
-            mPositions.assign(numChannels, 0);
-            updateSizes(numChannels);
+            updateBufferSize();
         }
 
         // prefetch channel pointers

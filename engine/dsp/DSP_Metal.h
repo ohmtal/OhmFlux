@@ -27,72 +27,85 @@
 
 namespace DSP {
 
-    struct MetalSettings {
-        float gain;   // Gain (1.0 - 500.0)
-        float tight;  // Pre-HPF (0.0 - 1.0)
-        float level;  // Output Level (0.0 - 1.0)
+    struct MetalData {
+        float gain;
+        float tight;
+        float level;
+    };
 
-        static const uint8_t CURRENT_VERSION = 1;
-        void getBinary(std::ostream& os) const {
-            uint8_t ver = CURRENT_VERSION;
-            DSP_STREAM_TOOLS::write_binary(os, ver);
-            DSP_STREAM_TOOLS::write_binary(os, gain);
-            DSP_STREAM_TOOLS::write_binary(os, tight);
-            DSP_STREAM_TOOLS::write_binary(os, level);
+    struct MetalSettings: public ISettings {
+        AudioParam<float> gain  { "Gain",  50.f , 1.f, 500.f, "%.2f" };
+        AudioParam<float> tight { "Tight", 0.5f , 0.f, 1.f, "%.2f" };
+        AudioParam<float> level { "Level", 0.5f , 0.f, 1.f, "%.2f" };
+
+
+
+        MetalSettings() = default;
+        REGISTER_SETTINGS(MetalSettings, &gain,&tight, &level )
+
+        MetalData getData() const {
+            return { gain.get(), tight.get(), level.get() };
+        }
+        void setData( const MetalData& data ){
+            gain.set(data.gain);
+            tight.set(data.tight);
+            level.set(data.level);
         }
 
-        bool setBinary(std::istream& is) {
-            uint8_t fileVersion = 0;
-            DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-            if (fileVersion != CURRENT_VERSION) return false;
-            DSP_STREAM_TOOLS::read_binary(is, gain);
-            DSP_STREAM_TOOLS::read_binary(is, tight);
-            DSP_STREAM_TOOLS::read_binary(is, level);
-            return is.good();
+        std::vector<std::shared_ptr<IPreset>> getPresets() const override {
+            return {
+                std::make_shared<Preset<MetalSettings, MetalData>>(
+                    "Custom", MetalData{ 200.f, 0.5f, 0.5f}
+                ),
+
+                std::make_shared<Preset<MetalSettings, MetalData>>(
+                    "Low gain", MetalData{ 50.f, 0.5f, 0.5f}
+                ),
+                std::make_shared<Preset<MetalSettings, MetalData>>(
+                    "Med gain", MetalData{ 200.f, 0.5f, 0.5f}
+                ),
+                std::make_shared<Preset<MetalSettings, MetalData>>(
+                    "Hi gain", MetalData{ 400.f, 0.5f, 0.5f}
+                ),
+            };
         }
-        auto operator<=>(const MetalSettings&) const = default;
+
+
     };
 
     class Metal : public DSP::Effect {
-    private:
-        MetalSettings mSettings;
-
-        // States for filtering
-        struct FilterState {
-            float last_in_hpf = 0.0f;
-            float last_out_hpf = 0.0f;
-            float last_out_lpf = 0.0f;
-        };
-        std::vector<FilterState> mStates;
 
 
     public:
         IMPLEMENT_EFF_CLONE(Metal)
 
         Metal(bool switchOn = false) : DSP::Effect(DSP::EffectType::Metal, switchOn) {
-            mSettings.gain = 50.0f;
-            mSettings.tight = 0.5f;
-            mSettings.level = 0.5f;
+
             mStates.assign(2, FilterState()); // Default to stereo
+
         }
-
-        void setSettings(const MetalSettings& s) { mSettings = s; }
-        const MetalSettings& getSettings() { return mSettings; }
-
-        virtual void setSampleRate(float sampleRate) override {
-            mSampleRate = sampleRate;
-        }
-
-
         virtual std::string getName() const override { return "Metal Distortion"; }
-
+        //----------------------------------------------------------------------
+        const MetalSettings& getSettings() { return mSettings; }
+        void setSettings(const MetalSettings& s) { mSettings = s; }
+        //----------------------------------------------------------------------
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.save(os);       // Save Settings
+        }
+        //----------------------------------------------------------------------
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.load(is);      // Load Settings
+            return true;
+        }
+        //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled()) return;
 
             if (mStates.size() != static_cast<size_t>(numChannels)) {
                 mStates.assign(numChannels, FilterState());
             }
-
 
             float dt = 1.0f / mSampleRate;
 
@@ -130,77 +143,43 @@ namespace DSP {
             }
         }
 
-        #ifdef FLUX_ENGINE
+    private:
+        MetalSettings mSettings;
+
+        // States for filtering
+        struct FilterState {
+            float last_in_hpf = 0.0f;
+            float last_out_hpf = 0.0f;
+            float last_out_lpf = 0.0f;
+        };
+        std::vector<FilterState> mStates;
+
+    #ifdef FLUX_ENGINE
+    public:
         virtual ImVec4 getColor() const override { return ImVec4(0.7f, 0.0f, 0.0f, 1.0f); }
 
         virtual void renderPaddle() override {
-            ImGui::PushID("Metal_Distortion_Effect_PADDLE");
-            paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
-            MetalSettings currentSettings = this->getSettings();
-            bool changed = false;
-            changed |= rackKnob("GAIN", &currentSettings.gain, {1.0f, 500.0f}, ksRed);
-            ImGui::SameLine();
-            changed |= rackKnob("TIGHT", &currentSettings.tight, {0.0f, 1.0f}, ksBlack);
-            ImGui::SameLine();
-            changed |= rackKnob("LEVEL", &currentSettings.level, {0.0f, 1.0f}, ksBlack);
-
-            if (changed) this->setSettings(currentSettings);
-            ImGui::PopID();
+            DSP::MetalSettings currentSettings = this->getSettings();
+            currentSettings.gain.setKnobSettings(ImFlux::ksRed); // NOTE only works here !
+            if (currentSettings.DrawPaddle(this)) {
+                this->setSettings(currentSettings);
+            }
         }
 
         virtual void renderUIWide() override {
-            ImGui::PushID("Metal_Distortion_Effect_Row_WIDE");
-            if (ImGui::BeginChild("Metal_Distortion_W_BOX", ImVec2(-FLT_MIN, 65.f))) {
-                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN), 0.f);
-                ImGui::Dummy(ImVec2(2, 0)); ImGui::SameLine();
-                ImGui::BeginGroup();
-                bool isEnabled = this->isEnabled();
-                if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) {
-                    this->setEnabled(isEnabled);
-                }
-                ImGui::Separator();
-                bool changed = false;
-                MetalSettings currentSettings = this->getSettings();
-                if (!isEnabled) ImGui::BeginDisabled();
-
-                changed |= ImFlux::MiniKnobF("Gain", &currentSettings.gain, 1.0f, 500.0f); ImGui::SameLine();
-                changed |= ImFlux::MiniKnobF("Tight", &currentSettings.tight, 0.0f, 1.0f); ImGui::SameLine();
-                changed |= ImFlux::MiniKnobF("Level", &currentSettings.level, 0.0f, 1.0f); ImGui::SameLine();
-
-                if (changed) {
-                    if (isEnabled) {
-                        this->setSettings(currentSettings);
-                    }
-                }
-
-                if (!isEnabled) ImGui::EndDisabled();
-                ImGui::EndGroup();
+            DSP::MetalSettings currentSettings = this->getSettings();
+            if (currentSettings.DrawUIWide(this)) {
+                this->setSettings(currentSettings);
             }
-            ImGui::EndChild();
-            ImGui::PopID();
         }
-
         virtual void renderUI() override {
-            ImGui::PushID("Metal_Distortion_Effect");
-            MetalSettings currentSettings = this->getSettings();
-            bool changed = false;
-            bool enabled = this->isEnabled();
-
-            if (ImFlux::LEDCheckBox(getName(), &enabled, getColor())) setEnabled(enabled);
-
-            if (enabled) {
-                if (ImGui::BeginChild("METAL_DIST_BOX", ImVec2(-FLT_MIN, 100.f), ImGuiChildFlags_Borders)) {
-                    changed |= ImFlux::FaderHWithText("Gain", &currentSettings.gain, 1.0f, 500.0f, "%.1f");
-                    changed |= ImFlux::FaderHWithText("Tight", &currentSettings.tight, 0.0f, 1.0f, "%.2f");
-                    changed |= ImFlux::FaderHWithText("Level", &currentSettings.level, 0.0f, 1.0f, "%.2f");
-                    if (changed) setSettings(currentSettings);
-                }
-                ImGui::EndChild();
-            } else {
-                ImGui::Separator();
+            DSP::MetalSettings currentSettings = this->getSettings();
+            if (currentSettings.DrawUI(this)) {
+                this->setSettings(currentSettings);
             }
-            ImGui::PopID();
         }
+
+
         #endif
     };
 

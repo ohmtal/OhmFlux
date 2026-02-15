@@ -14,6 +14,31 @@
 
 namespace DSP {
 
+    // Example usage:
+    // mDrumKit = cast_unique<DSP::DrumKit>(DSP::EffectFactory::Create(DSP::EffectType::DrumKit));
+
+    template <typename T>
+    std::unique_ptr<T> cast_unique(std::unique_ptr<DSP::Effect> source) {
+        if (!source) return nullptr;
+        // Release ownership from the base pointer and wrap it in the derived type
+        return std::unique_ptr<T>(static_cast<T*>(source.release()));
+    }
+
+    // save version:
+    // Example usage:
+    //     auto tempEffect = DSP::EffectFactory::Create(DSP::EffectType::DrumKit);
+    //     mDrumKit = dynamic_cast_unique<DSP::DrumKit>(tempEffect);
+    template <typename T>
+    std::unique_ptr<T> dynamic_cast_unique(std::unique_ptr<DSP::Effect>& source) {
+        T* derived = dynamic_cast<T*>(source.get());
+        if (derived) {
+            source.release(); // Only release if the cast was successful
+            return std::unique_ptr<T>(derived);
+        }
+        return nullptr;
+    }
+
+
 
     class EffectFactory {
     public:
@@ -27,6 +52,7 @@ namespace DSP {
                 default: return nullptr;
             }
         }
+
 
         static EffectCatId GetCategory(EffectType type) {
             switch(type) {

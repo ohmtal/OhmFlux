@@ -97,9 +97,9 @@ namespace DSP {
             paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
             DistortionBasicSettings currentSettings = this->getSettings();
             bool changed = false;
-            changed |= rackKnob("GAIN", &currentSettings.gain, {1.0f, 50.0f}, ksRed);
+            changed |= rackKnob("GAIN", &currentSettings.gain, {1.0f, 50.0f}, ImFlux::ksRed);
             ImGui::SameLine();
-            changed |= rackKnob("LEVEL", &currentSettings.level, {0.0f, 1.f}, ksBlack);
+            changed |= rackKnob("LEVEL", &currentSettings.level, {0.0f, 1.f}, ImFlux::ksBlack);
 
             if (changed) this->setSettings(currentSettings);
             ImGui::PopID();

@@ -47,6 +47,7 @@ namespace DSP {
         Space,
         Analyzer,
         Utility,
+        Locked, //not for selection
         COUNT
     };
 
@@ -63,7 +64,8 @@ namespace DSP {
         { EffectCatId::Distortion, "Distortion" },
         { EffectCatId::Space,      "Reverb & Delay" },
         { EffectCatId::Analyzer,   "Analyzer" },
-        { EffectCatId::Utility,    "Utility" }
+        { EffectCatId::Utility,    "Utility" },
+        { EffectCatId::Locked,     "Locked not for selection" },
     };
 
     // Generator	KickDrum, DrumKit (ersetzt durch Synth?), VoiceModulator
@@ -96,7 +98,7 @@ namespace DSP {
     X(DistortionBasic    , 16, EffectCatId::Distortion) \
     X(Metal              , 17, EffectCatId::Distortion) \
     X(ChromaticTuner     , 18, EffectCatId::Analyzer)   \
-    X(DrumKit            , 19, EffectCatId::Generator)  \
+    X(DrumKit            , 19, EffectCatId::Locked)     \
     X(KickDrum           , 20, EffectCatId::Generator)  \
     X(ToneControl        , 21, EffectCatId::Tone)       \
 
@@ -270,7 +272,7 @@ namespace DSP {
         T minVal, maxVal;
         std::string unit;
 #ifdef FLUX_ENGINE //hackfest
-        ImFlux::KnobSettings knobSettings = ksBlack;
+        ImFlux::KnobSettings knobSettings = ImFlux::ksBlack;
 #endif
 
 
@@ -347,11 +349,13 @@ namespace DSP {
 
         // Interface for serialization
         virtual void save(std::ostream& os) const {
-            os.write(reinterpret_cast<const char*>(&mEnabled), sizeof(mEnabled));
+            // os.write(reinterpret_cast<const char*>(&mEnabled), sizeof(mEnabled));
+            DSP_STREAM_TOOLS::write_binary(os,mEnabled);
         }
 
         virtual bool load(std::istream& is) {
-            is.read(reinterpret_cast<char*>(&mEnabled), sizeof(mEnabled));
+            // is.read(reinterpret_cast<char*>(&mEnabled), sizeof(mEnabled));
+            DSP_STREAM_TOOLS::read_binary(is, mEnabled);
             return is.good();
         }
 
@@ -377,7 +381,7 @@ namespace DSP {
 
 
 
-    virtual void renderUIWide() {
+    virtual void renderUIWide(  ) {
         char buf[32];
         snprintf(buf, sizeof(buf), "Effect_Row_W_%d", getType());
         ImGui::PushID(buf);
@@ -393,7 +397,7 @@ namespace DSP {
     }
 
 
-    virtual void renderPaddle() {
+    virtual void renderPaddle(   ) {
         // paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
     }
 
@@ -404,7 +408,7 @@ namespace DSP {
     // when the class is converted for using ISettings
     // --------------------------------------------------------
     // helper to start the UI Header/Footer
-    virtual void renderUIHeader() {
+    virtual void renderUIHeader(   ) {
         ImGui::PushID(this); ImGui::PushID("UI");
         ImGui::BeginGroup();
 
@@ -456,22 +460,48 @@ namespace DSP {
         //----------------------------------------------------------------------
         void save(std::ostream& os) const {
             uint8_t ver = 1; //fake version and sanity check on load
+            auto params = getAll();
+            uint8_t count = static_cast<uint8_t>(params.size());
+
             DSP_STREAM_TOOLS::write_binary(os, ver);
+            DSP_STREAM_TOOLS::write_binary(os, count);
+
             for (auto* p : getAll()) {
                 p->saveToStream(os);
             }
         }
         bool load(std::istream& is) {
-            // read fake version
             uint8_t ver = 0;
+            uint8_t fileParamCount = 0;
+
             DSP_STREAM_TOOLS::read_binary(is, ver);
             if (ver != 1) return false;
-
-            for (auto* p : getAll()) {
-                p->loadFromStream(is);
+            DSP_STREAM_TOOLS::read_binary(is, fileParamCount);
+            auto currentParams = getAll();
+            size_t paramsToLoad = std::min((size_t)fileParamCount, currentParams.size());
+            for (size_t i = 0; i < paramsToLoad; ++i) {
+                currentParams[i]->loadFromStream(is);
+            }
+            if (fileParamCount > currentParams.size()) {
+                throw std::runtime_error("File version missmatch!");
             }
             return is.good();
         }
+
+        // bool load(std::istream& is) {
+        //     // read fake version
+        //     uint8_t ver = 0;
+        //     uint8_t count = 0;
+        //     DSP_STREAM_TOOLS::read_binary(is, ver);
+        //     if (ver != 1) return false;
+        //     DSP_STREAM_TOOLS::read_binary(is, count);
+        //
+        //     //FIXME GET ALL !!
+        //     for (auto* p : getAll()) {
+        //         p->loadFromStream(is);
+        //     }
+        //     return is.good();
+        // }
         //----------------------------------------------------------------------
         bool operator==(const ISettings& other) const {
             auto paramsMe = this->getAll();
@@ -531,8 +561,9 @@ namespace DSP {
         //----------------------------------------------------------------------
         // return Changed!
         bool DrawUIWide(Effect* effect, bool resetEffect = true, float height = 65.f) {
+
             bool changed = false;
-            ImGui::PushID(this); ImGui::PushID("UI_WIDE");
+            ImGui::PushID(effect); ImGui::PushID("UI_WIDE");
             if (ImGui::BeginChild("WILDE_CHILD", ImVec2(-FLT_MIN,height) )) {
                 ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
                 ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();

@@ -15,17 +15,27 @@
 class SoundMixModule : public FluxBaseObject {
 private:
     std::unique_ptr<DSP::EffectsManager> mEffectsManager = nullptr;
+
+
+
     bool mInitialized = false;
 
 public:
     SoundMixModule() = default;
     ~SoundMixModule() {
+        //FIXME TEST !!
         mEffectsManager->SaveRack("bla.rack");
+        //FIXME TEST !!
+        mDrumKit->saveToFile("bla.drum");
+
         SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), NULL, NULL);
     }
 
     bool Initialize() override;
 
+    std::unique_ptr<DSP::DrumKit> mDrumKit = nullptr;
+    std::unique_ptr<DSP::SpectrumAnalyzer> mSpectrumAnalyzer = nullptr;
+    std::unique_ptr<DSP::VisualAnalyzer> mVisualAnalyzer = nullptr;
 
 
     //--------------------------------------------------------------------------

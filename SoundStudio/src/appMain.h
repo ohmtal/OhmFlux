@@ -11,7 +11,7 @@ class AppMain : public FluxMain
     typedef FluxMain Parent;
 private:
 
-    AppGui* mEditorGui = nullptr;
+    AppGui* mAppGui = nullptr;
 
 public:
     AppMain() {}
@@ -21,8 +21,8 @@ public:
     {
         if (!Parent::Initialize()) return false;
 
-        mEditorGui = new AppGui();
-        if (!mEditorGui->Initialize())
+        mAppGui = new AppGui();
+        if (!mAppGui->Initialize())
             return false;
 
         return true;
@@ -30,8 +30,8 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        mEditorGui->Deinitialize();
-        SAFE_DELETE(mEditorGui);
+        mAppGui->Deinitialize();
+        SAFE_DELETE(mAppGui);
 
         Parent::Deinitialize();
     }
@@ -43,7 +43,7 @@ public:
         if (event.key == SDLK_F4 && isAlt  && isKeyUp)
             TerminateApplication();
         else
-            mEditorGui->onKeyEvent(event);
+            mAppGui->onKeyEvent(event);
 
 
     }
@@ -52,7 +52,7 @@ public:
     //--------------------------------------------------------------------------------------
     void onEvent(SDL_Event event) override
     {
-        mEditorGui->onEvent(event);
+        mAppGui->onEvent(event);
     }
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
@@ -63,8 +63,13 @@ public:
     // imGui must be put in here !!
     void onDrawTopMost() override
     {
-        mEditorGui->DrawGui();
+        mAppGui->DrawGui();
     }
+    //--------------------------------------------------------------------------------------
+    AppGui* getAppGui() {return mAppGui; }
+    AppGui::AppSettings* getAppSettings() {return mAppGui->getAppSettings();}
+
+
 
 
 }; //classe ImguiTest

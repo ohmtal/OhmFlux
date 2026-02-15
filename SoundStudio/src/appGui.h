@@ -35,6 +35,7 @@ public:
         bool mShowSFXStereoModule;
         bool mShowConsole;
         bool mShowWaveModule;
+        bool mShowDrumKit;
     };
 
     ImConsole mConsole;
@@ -61,7 +62,8 @@ private:
         .mShowFileBrowser = false,
         .mShowSFXStereoModule = true,
         .mShowConsole = false,
-        .mShowWaveModule = true
+        .mShowWaveModule = true,
+        .mShowDrumKit = true
     };
 
 public:
@@ -79,6 +81,8 @@ public:
 
     void ApplyStudioTheme();
 
+    AppSettings* getAppSettings() {return &mAppSettings;}
+
 
 }; //class
 
@@ -91,5 +95,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
     mShowImFluxWidgets,
     mShowFileBrowser,
     mShowConsole,
-    mShowWaveModule
+    mShowWaveModule,
+    mShowDrumKit
 )

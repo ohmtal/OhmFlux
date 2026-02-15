@@ -28,6 +28,14 @@ namespace DSP {
         // i should have this in a dedicated header ... but since DSP is standalone ...
 
 
+        constexpr uint32_t MakeMagic(const char s[4]) {
+            return static_cast<uint32_t>(s[0]) << 0  |
+            static_cast<uint32_t>(s[1]) << 8  |
+            static_cast<uint32_t>(s[2]) << 16 |
+            static_cast<uint32_t>(s[3]) << 24;
+        }
+
+
         //---------
         //--------- standard read write
         template <typename T>
@@ -155,14 +163,6 @@ namespace DSP {
 
     //-----------------------------------------------------------------------------
     #ifdef FLUX_ENGINE
-
-
-    inline ImFlux::KnobSettings ksBlack = {.radius=25.f, .active=IM_COL32(200,200,0,255)   };
-    inline ImFlux::KnobSettings ksRed   = {.radius=25.f, .bg_outer = IM_COL32(45, 5, 4, 255), .bg_inner = IM_COL32(65, 5, 4, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksBlue  = {.radius=25.f, .bg_outer = IM_COL32(4, 5, 45, 255), .bg_inner = IM_COL32(4, 5, 65, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksGreen = {.radius=25.f, .bg_outer = IM_COL32(4, 45, 5, 255), .bg_inner = IM_COL32(4, 65, 5, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksPurple = {.radius=25.f, .bg_outer = IM_COL32(45, 4, 45, 255), .bg_inner = IM_COL32(65, 4, 65, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksYellow = {.radius=25.f, .bg_outer = IM_COL32(45, 45, 4, 255), .bg_inner = IM_COL32(65, 65, 4, 255),.active=IM_COL32(200,200,0,255)  };
 
 
 

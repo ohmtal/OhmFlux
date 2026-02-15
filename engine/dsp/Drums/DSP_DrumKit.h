@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : DrumKit - Metronome with spice
-// FIXME do i need to add the params of each DrumSynth here ??
-//       for now i use the default values .... this is a basic Metronome :P
 //-----------------------------------------------------------------------------
 #pragma once
 #include <cstdint>
@@ -14,6 +12,7 @@
 #include <cmath>
 #include <atomic>
 #include <algorithm>
+#include <filesystem>
 
 #include "../DSP_Effect.h"
 #include "DrumSynth.h"
@@ -72,14 +71,27 @@ namespace DSP {
         std::vector<std::shared_ptr<IPreset>> getPresets() const override {
             return {
                 std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Custom", DrumKitData{}),
+
+
                 std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Standard Rock",
-                    DrumKitData{ 1.f, 110, 0x8888, 0x2222, 0xAAAA, 0x0000, 0x8080 }),
+                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0xAAAA, 0x0000, 0x8080 }),
 
                 std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Driving Rock",
-                    DrumKitData{ 1.f,125, 0x8282, 0x2222, 0xEEEE, 0x0101, 0x0000 }),
+                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0xEEEE, 0x0101, 0x0000 }),
 
                 std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Heavy Half-Time",
-                    DrumKitData{ 1.f,80, 0x8080, 0x0202, 0xAAAA, 0x0000, 0x8888 })
+                    DrumKitData{ 0.8f,80, 0x8080, 0x0202, 0xAAAA, 0x0000, 0x8888 }),
+
+                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Punk",
+                    DrumKitData{ 0.8f,125, 34952, 0, 8738, 0x0000, 0x0000 }),
+
+                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Simple Rock",
+                    DrumKitData{ 0.8f,125, 34952, 0, 12850, 0x0000, 128 }),
+
+                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Metronome",
+                    DrumKitData{ 0.8f,125, 0, 0, 34952, 0x0000, 0 }),
+
+
             };
         }
     };
@@ -104,6 +116,44 @@ namespace DSP {
             mSettings = s;
         }
         //----------------------------------------------------------------------
+        // FIXME DEFINE A "MAGIC" SYSTEM and move this to settings!!
+        bool saveToFile( std::string filePath )
+        {
+            try {
+                std::ofstream ofs(filePath, std::ios::binary);
+                DSP_STREAM_TOOLS::write_binary(ofs, DSP_STREAM_TOOLS::MakeMagic("DRUM"));
+                mSettings.save(ofs);
+                ofs.close();
+                return true;
+            } catch (const std::exception& e) {
+                 std::cerr << e.what() << std::endl;
+                return false;
+            }
+        }
+        bool loadFromFile(std::string filePath) {
+            if (!std::filesystem::exists(filePath)) {
+                return false;
+            }
+            std::ifstream ifs;
+            ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+            try {
+                ifs.open(filePath, std::ios::binary);
+                uint32_t magic = 0;
+                DSP::DSP_STREAM_TOOLS::read_binary(ifs,magic);
+                if (magic != DSP_STREAM_TOOLS::MakeMagic("DRUM")) return false;
+                if (!mSettings.load(ifs)) return false;
+
+                return true;
+            } catch (const std::ios_base::failure& e) {
+                std::cerr << e.what() << std::endl;
+                return false;
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+                return false;
+            }
+        }
+     //----------------------------------------------------------------------
+
         void save(std::ostream& os) const override {
             Effect::save(os);              // Save mEnabled
             mSettings.save(os);       // Save Settings
@@ -168,6 +218,10 @@ namespace DSP {
         // void Trigger() {
         //         mTriggered = true;
         // }
+        virtual void reset() override {
+            mPhase = 0.0;
+            mCurrentStep = -1;
+        }
 
     private:
         DrumKitSettings mSettings;
@@ -185,7 +239,7 @@ namespace DSP {
         virtual ImVec4 getColor() const  override { return ImVec4(0.1f, 0.4f, 0.8f, 1.0f);} //FIXME check color
 
         // i'am so happy with this, before it was hell to add the gui's :D
-        virtual void renderPaddle() override {
+        virtual void renderPaddle( ) override {
             DSP::DrumKitSettings currentSettings = this->getSettings();
             if (currentSettings.DrawPaddle(this)) {
                 this->setSettings(currentSettings);
@@ -198,11 +252,99 @@ namespace DSP {
                 this->setSettings(currentSettings);
             }
         }
-        virtual void renderUI() override {
+        virtual void renderUI() override {  }
+
+        //---------------- Special Window !!! ------------------
+        virtual void renderSequencerWindow(bool* showWindow)  {
+            if (!*showWindow) return;
+
             DSP::DrumKitSettings currentSettings = this->getSettings();
-            if (currentSettings.DrawUI(this, 200.f)) {
-                this->setSettings(currentSettings);
+
+            ImGui::SetNextWindowSize(ImVec2(280, 400), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Drum Kit", showWindow ); //window start .........
+            renderUIHeader();
+            bool changed = false;
+            // NOTE tricky access the AudioParams:
+            using DrumParamPtr = AudioParam<uint16_t> DrumKitSettings::*;
+            static const DrumParamPtr patterns[] = {
+                &DrumKitSettings::kickPat,
+                &DrumKitSettings::snarePat,
+                &DrumKitSettings::hiHatPat,
+                &DrumKitSettings::tomPat,
+                &DrumKitSettings::cymbalsPat
+            };
+
+            ImGui::PushID(this); ImGui::PushID("UI_WIDE");
+            // bool isEnabled = this->isEnabled();
+            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+
+            ImGui::SameLine();
+            // -------- stepper >>>>
+            changed |= mSettings.drawStepper(currentSettings, 260.f);
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                mSettings.resetToDefaults();
+                this->reset();
+                changed = true;
             }
+            ImGui::Separator();
+
+            changed |= currentSettings.vol.RackKnob();
+            ImGui::SameLine();
+            changed |= currentSettings.bpm.RackKnob();
+
+
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            auto bpmButton = [&](uint16_t bpm) {
+                if (ImFlux::ButtonFancy(std::format("{} bmp", bpm))) {
+                    currentSettings.bpm.set(bpm);
+                    return true;
+                }
+                return false;
+            };
+            changed |= bpmButton(60); ImGui::SameLine(); changed |= bpmButton(90);
+            changed |= bpmButton(120); ImGui::SameLine(); changed |= bpmButton(144);
+            ImGui::SetNextItemWidth(80.f);
+            int bmpInt = (int)currentSettings.bpm.get();
+            if (ImGui::InputInt("Bmp##manual", &bmpInt,1,15)) {
+                bmpInt = DSP::clamp((uint16_t)bmpInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
+                currentSettings.bpm.set(bmpInt);
+                changed = true;
+
+            }
+
+            // changed |= bpmButton(120); ImGui::SameLine() changed |= bpmButton(144);
+            ImGui::EndGroup();
+            ImGui::SameLine();
+            ImFlux::LCDNumber(currentSettings.bpm.get(), 3, 0, 24.0f);
+
+
+            ImGui::Dummy(ImVec2(0.f, 30.f));
+
+
+            ImGui::BeginGroup();
+
+            for (auto ptr : patterns) {
+                auto& param = currentSettings.*ptr;
+
+                uint16_t bits = param.get();
+
+                if (ImFlux::PatternEditor16Bit(param.getName().c_str(), &bits, mCurrentStep)) {
+                    // dLog("Bits: %d", bits); //FIXME REMOVE THIS AGAIN
+                    param.set(bits);
+                    changed = true;
+                }
+            }
+            ImGui::EndGroup();
+            ImGui::NewLine();
+
+
+            ImGui::PopID();ImGui::PopID();
+            renderUIFooter();
+            if (changed) this->setSettings(currentSettings);
+            ImGui::End(); //window
         }
 
         #endif
