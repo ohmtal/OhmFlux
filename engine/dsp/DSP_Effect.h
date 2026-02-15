@@ -628,7 +628,7 @@ namespace DSP {
             bool changed = false;
             auto presets = settings.getPresets();
             if (presets.empty()) return changed;
-            int currentIdx = 0; // Default: "Custom" oder first entry
+            int currentIdx = 0; // Default: "Custom" =>  first entry
             for (int i = 0; i < (int)presets.size(); ++i) {
                 if (settings.isMatchingPreset(presets[i].get())) {
                     currentIdx = i;

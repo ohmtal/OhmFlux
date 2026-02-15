@@ -68,31 +68,32 @@ namespace DSP {
 
         }
 
+
+        DrumKitData customData;
+        // with customdata !!!
         std::vector<std::shared_ptr<IPreset>> getPresets() const override {
-            return {
-                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Custom", DrumKitData{}),
+            std::vector<std::shared_ptr<IPreset>> list;
 
+               list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Custom", DrumKitData{}));
 
-                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Standard Rock",
-                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0xAAAA, 0x0000, 0x8080 }),
+                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Standard Rock",
+                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0xAAAA, 0x0000, 0x8080 }));
 
-                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Driving Rock",
-                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0xEEEE, 0x0101, 0x0000 }),
+                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Driving Rock",
+                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0xEEEE, 0x0101, 0x0000 }));
 
-                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Heavy Half-Time",
-                    DrumKitData{ 0.8f,80, 0x8080, 0x0202, 0xAAAA, 0x0000, 0x8888 }),
+                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Heavy Half-Time",
+                    DrumKitData{ 0.8f,80, 0x8080, 0x0202, 0xAAAA, 0x0000, 0x8888 }));
 
-                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Punk",
-                    DrumKitData{ 0.8f,125, 34952, 0, 8738, 0x0000, 0x0000 }),
+                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Punk",
+                    DrumKitData{ 0.8f,125, 34952, 0, 8738, 0x0000, 0x0000 }));
 
-                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Simple Rock",
-                    DrumKitData{ 0.8f,125, 34952, 0, 12850, 0x0000, 128 }),
+                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Simple Rock",
+                    DrumKitData{ 0.8f,125, 34952, 0, 12850, 0x0000, 128 }));
 
-                std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Metronome",
-                    DrumKitData{ 0.8f,125, 0, 0, 34952, 0x0000, 0 }),
-
-
-            };
+                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Metronome",
+                    DrumKitData{ 0.8f,125, 0, 0, 34952, 0x0000, 0 }));
+            return list;
         }
     };
 
@@ -142,6 +143,11 @@ namespace DSP {
                 DSP::DSP_STREAM_TOOLS::read_binary(ifs,magic);
                 if (magic != DSP_STREAM_TOOLS::MakeMagic("DRUM")) return false;
                 if (!mSettings.load(ifs)) return false;
+
+                // customdata hackfest
+                // i dont check if it's not custom better than empty!
+                // i dont save the customdata as a clone ... bsss
+                mSettings.customData = mSettings.getData();
 
                 return true;
             } catch (const std::ios_base::failure& e) {
@@ -264,6 +270,9 @@ namespace DSP {
             ImGui::Begin("Drum Kit", showWindow ); //window start .........
             renderUIHeader();
             bool changed = false;
+            bool presetChanged = false;
+
+
             // NOTE tricky access the AudioParams:
             using DrumParamPtr = AudioParam<uint16_t> DrumKitSettings::*;
             static const DrumParamPtr patterns[] = {
@@ -281,11 +290,14 @@ namespace DSP {
 
             ImGui::SameLine();
             // -------- stepper >>>>
-            changed |= mSettings.drawStepper(currentSettings, 260.f);
+            presetChanged |= mSettings.drawStepper(currentSettings, 260.f);
+            changed |= presetChanged;
+
             ImGui::SameLine();
             if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
                 mSettings.resetToDefaults();
                 this->reset();
+                presetChanged = true;
                 changed = true;
             }
             ImGui::Separator();
@@ -343,7 +355,21 @@ namespace DSP {
 
             ImGui::PopID();ImGui::PopID();
             renderUIFooter();
-            if (changed) this->setSettings(currentSettings);
+            if (changed)  {
+                //hackfest!!
+                if ( !presetChanged ) {
+                    mSettings.customData = currentSettings.getData();
+                    SDL_Log("Custom data set !!");
+                } else {
+                    if (currentSettings.isMatchingPreset(currentSettings.getPresets()[0].get())) {
+                        currentSettings.setData(mSettings.customData);
+                    }
+
+                }
+                this->setSettings(currentSettings);
+
+            }
+
             ImGui::End(); //window
         }
 
