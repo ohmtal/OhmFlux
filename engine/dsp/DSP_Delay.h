@@ -4,6 +4,9 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Delay
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
+
 #pragma once
 #include <vector>
 #include <cstdint>
@@ -21,57 +24,52 @@
 
 namespace DSP {
 
-
-struct DelaySettings {
+struct DelayData  {
     float time;      //  10 - 2000ms max 2 sek
     float feedback;  //   0 - 0.95f
     float wet;       // 0.1 - 1.f
+};
 
-    static const uint8_t CURRENT_VERSION = 1;
-    void getBinary(std::ostream& os) const {
-        uint8_t ver = CURRENT_VERSION;
-        DSP_STREAM_TOOLS::write_binary(os, ver);
+// default { 300.f, 0.4f, 0.3f }
+struct DelaySettings : public ISettings {
+    AudioParam<float> time     { "Time" ,  300.f, 10.f,  2000.f, "%.1f ms" };
+    AudioParam<float> feedback { "Feedback", 0.4f, 0.1f,  0.95f, "%.2f" };
+    AudioParam<float> wet      { "Mix",   0.3f ,  0.0f, 1.0f, "Wet %.2f"};
 
-        DSP_STREAM_TOOLS::write_binary(os, time);
-        DSP_STREAM_TOOLS::write_binary(os, feedback);
-        DSP_STREAM_TOOLS::write_binary(os, wet);
+    DelaySettings() = default;
+    REGISTER_SETTINGS(DelaySettings, &time, &feedback, &wet)
+
+    DelayData getData() const {
+        return { time.get(), feedback.get(), wet.get()};
     }
 
-    bool  setBinary(std::istream& is) {
-        uint8_t fileVersion = 0;
-        DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-        if (fileVersion != CURRENT_VERSION) return false;
-        DSP_STREAM_TOOLS::read_binary(is, time);
-        DSP_STREAM_TOOLS::read_binary(is, feedback);
-        DSP_STREAM_TOOLS::read_binary(is, wet);
-
-        return  is.good();
+    void setData(const DelayData& data) {
+        time.set(data.time);
+        feedback.set(data.feedback);
+        wet.set(data.wet);
     }
+    std::vector<std::shared_ptr<IPreset>> getPresets() const override {
+        return {
+            std::make_shared<Preset<DelaySettings, DelayData>>
+                ("Custom", DelayData{ 300.f, 0.4f, 0.3f }),
 
-    auto operator<=>(const DelaySettings&) const = default; //C++20 lazy way
+            std::make_shared<Preset<DelaySettings, DelayData>>
+                ("Slapback", DelayData{ 50.f,  0.3f, 0.2f }),
+
+            std::make_shared<Preset<DelaySettings, DelayData>>
+                ("Standard", DelayData{ 300.f, 0.4f, 0.3f }),
+
+            std::make_shared<Preset<DelaySettings, DelayData>>
+                ("Spacey", DelayData{ 800.f, 0.5f, 0.4f })
+        };
+    }
 
 };
 
-
 //-----
-constexpr DelaySettings SLAPBACK_DELAY  = { 50.f,  0.3f, 0.2f }; // Slapback style
-constexpr DelaySettings MEDIUM_DELAY = { 300.f, 0.4f, 0.3f }; // Standard echo
-constexpr DelaySettings SPACEY_DELAY   = { 800.f, 0.5f, 0.4f }; // Atmospheric/Spacey
-
-
-constexpr DelaySettings  CUSTOM_DELAY     = MEDIUM_DELAY;
+constexpr DelayData DEFAULT_DELAY_DATA = { 300.f, 0.4f, 0.3f }; // Standard echo
 //-----
 
-
-
-static const char* DELAY_PRESET_NAMES[] = { "Custom","Standard", "Slapback", "Spacey" };
-
-static const std::array<DSP::DelaySettings, 4> DELAY_PRESETS = {
-    CUSTOM_DELAY,
-    MEDIUM_DELAY,
-    SLAPBACK_DELAY,
-    SPACEY_DELAY
-};
 
 class Delay : public DSP::Effect {
 private:
@@ -91,13 +89,20 @@ public:
 
     Delay(bool switchOn = false) :
     Effect(DSP::EffectType::Delay, switchOn)
+    ,mSettings()
     {
-        mSettings = MEDIUM_DELAY;
         setSampleRate(mSampleRate);
         mSmoothedDelaySamples = 0.f;
-
     }
-
+    //----------------------------------------------------------------------
+    virtual std::string getName() const override { return "DELAY";}
+    //----------------------------------------------------------------------
+    DelaySettings& getSettings() { return mSettings; }
+    //----------------------------------------------------------------------
+    void setSettings(const DelaySettings& s) {
+        mSettings = s;
+    }
+    //----------------------------------------------------------------------
     void updateBuffers( int numChannels) {
         mBuffers.assign(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
         mPositions.assign(numChannels, 0);
@@ -107,33 +112,20 @@ public:
         }
 
     }
-
-
+    //----------------------------------------------------------------------
     void init(int numChannels, float sampleRate) {
-
         mMaxBufSize = 32768;
         while (mMaxBufSize < (int)(sampleRate * 2.0f)) mMaxBufSize <<= 1;
         updateBuffers(numChannels);
-
     }
-
-
+    //----------------------------------------------------------------------
     void setSampleRate(float sampleRate) override {
 
         mSampleRate = sampleRate;
         int curChannels = (int) mBuffers.size();
         init(curChannels, sampleRate);
-
     }
-
-
-
-    const DelaySettings& getSettings() { return mSettings; }
-
-    void setSettings(const DelaySettings& s) {
-        mSettings = s;
-    }
-
+    //----------------------------------------------------------------------
     void reset() override {
 
         int curChannels = (int) mBuffers.size();
@@ -141,17 +133,17 @@ public:
 
         mSmoothedDelaySamples = 0.f;
     }
-
+    //----------------------------------------------------------------------
     void save(std::ostream& os) const override {
         Effect::save(os);              // Save mEnabled
-        mSettings.getBinary(os);       // Save Settings
+        mSettings.save(os);       // Save Settings
     }
-
+    //----------------------------------------------------------------------
     bool load(std::istream& is) override {
         if (!Effect::load(is)) return false; // Load mEnabled
-        return mSettings.setBinary(is);      // Load Settings
+        return mSettings.load(is);      // Load Settings
     }
-
+    //----------------------------------------------------------------------
     virtual float getTailLengthSeconds() const override {
         if (!isEnabled()) return 0.0f;
 
@@ -169,8 +161,9 @@ public:
         float iterations = logf(0.001f) / logf(feedback);
         return (iterations * delayMs) / 1000.0f;
     }
-
-
+    //----------------------------------------------------------------------
+    // Process
+    //----------------------------------------------------------------------
     virtual void process(float* buffer, int numSamples, int numChannels) override {
         if (!isEnabled() || mSettings.wet <= 0.001f) return;
 
@@ -317,9 +310,31 @@ public:
     // }
 
 
-    virtual std::string getName() const override { return "DELAY";}
 #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const  override { return ImVec4(0.3f, 0.8f, 0.6f, 1.0f);}
+
+    virtual void renderPaddle() override {
+        DSP::DelaySettings currentSettings = this->getSettings();
+        currentSettings.wet.setKnobSettings(ImFlux::ksBlue); // NOTE only works here !
+        if (currentSettings.DrawPaddle(this)) {
+            this->setSettings(currentSettings);
+        }
+    }
+
+    virtual void renderUIWide() override {
+        DSP::DelaySettings currentSettings = this->getSettings();
+        if (currentSettings.DrawUIWide(this)) {
+            this->setSettings(currentSettings);
+        }
+    }
+    virtual void renderUI() override {
+        DSP::DelaySettings currentSettings = this->getSettings();
+        if (currentSettings.DrawUI(this, 110.f, true)) {
+            this->setSettings(currentSettings);
+        }
+    }
+/*
+
 
     virtual void renderUIWide() override {
         ImGui::PushID("Delay_Effect_Row_WIDE");
@@ -456,7 +471,7 @@ public:
             ImGui::EndGroup();
             ImGui::PopID();
             ImGui::Spacing(); // Add visual gap before the next effect
-    }
+    }*/
     #endif
 
 }; //CLASS

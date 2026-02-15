@@ -4,6 +4,9 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Distortion - very basic
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include <cstdint>
@@ -27,30 +30,26 @@
 #include "DSP_Effect.h"
 namespace DSP {
 
-    struct DistortionBasicSettings {
-        float gain;  // Input gain (10 - 50) // extreme would be 500 but destroy the sound
+    struct DistortionBasicData {
+        float gain;  // Input gain (1 - 50) // extreme would be 500 but destroy the sound
         float level;    //  (0.0 - 1.0)
+    };
+    struct DistortionBasicSettings: public ISettings {
+        AudioParam<float> gain      { "Gain"  , 20.f  ,   1.f,  50.f, "%.1f" };
+        AudioParam<float> level     { "Level" , 0.5f  ,   0.f,  1.f, "%.2f" };
 
-        static const uint8_t CURRENT_VERSION = 1;
-        void getBinary(std::ostream& os) const {
-            uint8_t ver = CURRENT_VERSION;
-            DSP_STREAM_TOOLS::write_binary(os, ver);
+        DistortionBasicSettings() = default;
+        REGISTER_SETTINGS(DistortionBasicSettings, &gain, &level)
 
-            DSP_STREAM_TOOLS::write_binary(os, gain);
-            DSP_STREAM_TOOLS::write_binary(os, level);
+        DistortionBasicData getData() const {
+            return { gain.get(), level.get()};
         }
 
-        bool  setBinary(std::istream& is) {
-            uint8_t fileVersion = 0;
-            DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-            if (fileVersion != CURRENT_VERSION) return false;
-
-            DSP_STREAM_TOOLS::read_binary(is, gain);
-            DSP_STREAM_TOOLS::read_binary(is, level);
-
-            return  is.good();
+        void setData(const DistortionBasicData& data) {
+            gain.set(data.gain);
+            level.set(data.level);
         }
-        auto operator<=>(const DistortionBasicSettings&) const = default; //C++20 lazy way
+
     };
 
     class DistortionBasic : public DSP::Effect {
@@ -60,17 +59,27 @@ namespace DSP {
         IMPLEMENT_EFF_CLONE(DistortionBasic)
 
         DistortionBasic(bool switchOn = false) :
-            DSP::Effect(DSP::EffectType::DistortionBasic, switchOn) {
-            mSettings.gain = 20.f;
-            mSettings.level = 0.5;
-        }
+            DSP::Effect(DSP::EffectType::DistortionBasic, switchOn)
+            , mSettings()
+            {}
 
-        void setSettings(const DistortionBasicSettings& s) {mSettings = s;}
-        const DistortionBasicSettings& getSettings() { return mSettings; }
-
+        //----------------------------------------------------------------------
         virtual std::string getName() const override { return "Distortion"; }
-
-
+        //----------------------------------------------------------------------
+        void setSettings(const DistortionBasicSettings& s) {mSettings = s;}
+        //----------------------------------------------------------------------
+        DistortionBasicSettings& getSettings() { return mSettings; }
+        //----------------------------------------------------------------------
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.save(os);       // Save Settings
+        }
+        //----------------------------------------------------------------------
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.load(is);      // Load Settings
+        }
+        //----------------------------------------------------------------------
         // process per single float value
         virtual float processFloat(float input) override {
             if (!isEnabled() || mSettings.level <= 0.001f) return input;
@@ -78,7 +87,6 @@ namespace DSP {
             out =  DSP::fast_tanh(out * mSettings.gain) * mSettings.level;
             return out;
         }
-
 
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled() || mSettings.level <= 0.001f) return;
@@ -89,9 +97,32 @@ namespace DSP {
             }
         }
 
+        //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return  ImVec4(0.6f, 0.6f, 0.0f, 1.0f);}
 
+        virtual void renderPaddle() override {
+            DSP::DistortionBasicSettings currentSettings = this->getSettings();
+            currentSettings.gain.setKnobSettings(ImFlux::ksRed); // NOTE only works here !
+            if (currentSettings.DrawPaddle(this)) {
+                this->setSettings(currentSettings);
+            }
+        }
+
+        virtual void renderUIWide() override {
+            DSP::DistortionBasicSettings currentSettings = this->getSettings();
+            if (currentSettings.DrawUIWide(this)) {
+                this->setSettings(currentSettings);
+            }
+        }
+        virtual void renderUI() override {
+            DSP::DistortionBasicSettings currentSettings = this->getSettings();
+            if (currentSettings.DrawUI(this, 85.f)) {
+                this->setSettings(currentSettings);
+            }
+        }
+
+/*
         virtual void renderPaddle() override {
             ImGui::PushID("Basic_Distortion_Effect_PADDLE");
             paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
@@ -158,7 +189,7 @@ namespace DSP {
                 ImGui::Separator();
             }
             ImGui::PopID();
-        }
+        }*/
         #endif
     };
 

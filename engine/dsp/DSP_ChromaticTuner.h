@@ -4,6 +4,8 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Chromatic Tuner
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
 #pragma once
 
 #include <cstdint>
@@ -26,32 +28,26 @@
 
 #include "DSP_Effect.h"
 namespace DSP {
-
-    struct ChromaticTunerSettings {
-        // we analyse only one channel ! default 0
+    struct ChromaticTunerData {
         int channel = 0;
-        // fast mode can be used to see what the current node is
-        // the default accurate mode is much better for tuning
         bool    fastMode = false;
+    };
 
-        static const uint8_t CURRENT_VERSION = 1;
-        void getBinary(std::ostream& os) const {
-            uint8_t ver = CURRENT_VERSION;
-            DSP_STREAM_TOOLS::write_binary(os, ver);
-            DSP_STREAM_TOOLS::write_binary(os, channel);
-            DSP_STREAM_TOOLS::write_binary(os, fastMode);
+    struct ChromaticTunerSettings : public ISettings {
+        AudioParam<int> channel { "Channel", 0, 0,  8, "%d" };
+        AudioParam<bool> fastMode { "Fast mode", 0, 0, 1, "%d" };
+
+        ChromaticTunerSettings () = default;
+        REGISTER_SETTINGS(ChromaticTunerSettings , &channel, &fastMode)
+
+        ChromaticTunerData getData() const {
+            return { channel.get(), fastMode.get()};
         }
 
-        bool  setBinary(std::istream& is) {
-            uint8_t fileVersion = 0;
-            DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-            if (fileVersion != CURRENT_VERSION) return false;
-            DSP_STREAM_TOOLS::read_binary(is, channel);
-            DSP_STREAM_TOOLS::read_binary(is, fastMode);
-
-            return is.good();
+        void setData(const ChromaticTunerData& data) {
+            channel.set(data.channel);
+            fastMode.set(data.fastMode);
         }
-        auto operator<=>(const ChromaticTunerSettings&) const = default; //C++20 lazy way
     };
 
     static const char* NOTE_NAMES[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
@@ -76,11 +72,27 @@ namespace DSP {
         IMPLEMENT_EFF_CLONE(ChromaticTuner)
 
         ChromaticTuner(bool switchOn = false) :
-            DSP::Effect(DSP::EffectType::ChromaticTuner, switchOn) {}
-
-
+            DSP::Effect(DSP::EffectType::ChromaticTuner, switchOn),
+            mSettings() {}
+        //----------------------------------------------------------------------
+        virtual std::string getName() const override { return "Chromatic Tuner"; }
+        //----------------------------------------------------------------------
+        void setSettings(const ChromaticTunerSettings& s) {mSettings = s;}
+        //----------------------------------------------------------------------
+        ChromaticTunerSettings& getSettings() { return mSettings; }
+        //----------------------------------------------------------------------
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.save(os);       // Save Settings
+        }
+        //----------------------------------------------------------------------
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.load(is);      // Load Settings
+        }
+        //----------------------------------------------------------------------
         float getFrequence() {return mTunerFreq;}
-
+        //----------------------------------------------------------------------
         bool fetchNoteAndCents(int& note_index, float& cents) {
             if (mTunerFreq == 0.f) return false;
             float n = 12.0f * std::log2(mTunerFreq / 440.0f) + 69.0f;
@@ -88,12 +100,6 @@ namespace DSP {
             cents = (n - note_index) * 100.0f;
             return true;
         }
-
-
-        void setSettings(const ChromaticTunerSettings& s) {mSettings = s;}
-        const ChromaticTunerSettings& getSettings() { return mSettings; }
-
-        virtual std::string getName() const override { return "Chromatic Tuner"; }
         //----------------------------------------------------------------------
         void analyzeAccurate() {
             analysis_counter++;
@@ -202,8 +208,6 @@ namespace DSP {
             }
         }
         //----------------------------------------------------------------------
-
-
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled()) return;
             mChannelCount = numChannels;

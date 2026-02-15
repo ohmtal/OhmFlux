@@ -305,10 +305,22 @@ bool OTGui::Initialize()
 
 
     // now DATA!!
-    auto savedData = SettingsManager().get<DSP::BitcrusherData>("DSP_BitCrusher", DSP::DEFAULT_BITCRUSHER_DATA);
-    controller->getDSPBitCrusher()->getSettings().setData(savedData);
+    auto loadEffectSettings = [&](auto* effect, const std::string& key, auto defaultData) {
+        using DataType = std::decay_t<decltype(defaultData)>;
+        auto savedData = SettingsManager().get<DataType>(key, defaultData);
+        effect->getSettings().setData(savedData);
+    };
 
-    controller->getDSPChorus()->setSettings(SettingsManager().get<DSP::ChorusSettings>("DSP_Chorus", DSP::LUSH80s_CHORUS));
+    loadEffectSettings(controller->getDSPBitCrusher(), "DSP_BitCrusher", DSP::DEFAULT_BITCRUSHER_DATA);
+    loadEffectSettings(controller->getDSPChorus(),     "DSP_Chorus",     DSP::DEFAULT_CHORUS_DATA);
+
+    // auto savedData = SettingsManager().get<DSP::BitcrusherData>("DSP_BitCrusher", DSP::DEFAULT_BITCRUSHER_DATA);
+    // controller->getDSPBitCrusher()->getSettings().setData(savedData);
+    //
+    //
+     // auto savedData = SettingsManager().get<DSP::ChorusData>("DSP_Chorus", DSP::DEFAULT_CHORUS_DATA);
+     // controller->getDSPChorus()->getSettings().setData(savedData);
+
     controller->getDSPReverb()->setSettings(SettingsManager().get<DSP::ReverbSettings>("DSP_Reverb", DSP::HALL_REVERB));
     controller->getDSPWarmth()->setSettings(SettingsManager().get<DSP::WarmthSettings>("DSP_Warmth", DSP::GENTLE_WARMTH));
     controller->getDSPEquilzer9Band()->setSettings( SettingsManager().get<DSP::Equalizer9BandSettings>("DSP_EQ9BAND", DSP::FLAT_EQ ));
@@ -384,16 +396,15 @@ void OTGui::Deinitialize()
 
         auto* controller = getMain()->getController();
 
+        //FIXME TODO MOVE ALL TO data
         SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings().getData());
-
-        //FIXME SettingsManager().set("DSP_BitCrusher", controller->getDSPBitCrusher()->getSettings());
-
-
-        SettingsManager().set("DSP_Chorus",     controller->getDSPChorus()->getSettings());
+        SettingsManager().set("DSP_Chorus",     controller->getDSPChorus()->getSettings().getData());
+        // -------
         SettingsManager().set("DSP_Reverb",     controller->getDSPReverb()->getSettings());
         SettingsManager().set("DSP_Warmth",     controller->getDSPWarmth()->getSettings());
         SettingsManager().set("DSP_EQ9BAND",     controller->getDSPEquilzer9Band()->getSettings());
 
+        //.......
         SettingsManager().set("DSP_SpectrumAnalyzer_ON", mSpectrumAnalyzer->isEnabled());
         SettingsManager().set("DSP_BitCrusher_ON", controller->getDSPBitCrusher()->isEnabled());
         SettingsManager().set("DSP_Chorus_ON", controller->getDSPChorus()->isEnabled());

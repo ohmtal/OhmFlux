@@ -310,7 +310,7 @@ namespace DSP {
             ImGui::SameLine();
             ImGui::BeginGroup();
             auto bpmButton = [&](uint16_t bpm) {
-                if (ImFlux::ButtonFancy(std::format("{} bmp", bpm))) {
+                if (ImFlux::ButtonFancy(std::format("{} bpm", bpm))) {
                     currentSettings.bpm.set(bpm);
                     return true;
                 }
@@ -319,10 +319,10 @@ namespace DSP {
             changed |= bpmButton(60); ImGui::SameLine(); changed |= bpmButton(90);
             changed |= bpmButton(120); ImGui::SameLine(); changed |= bpmButton(144);
             ImGui::SetNextItemWidth(80.f);
-            int bmpInt = (int)currentSettings.bpm.get();
-            if (ImGui::InputInt("Bmp##manual", &bmpInt,1,15)) {
-                bmpInt = DSP::clamp((uint16_t)bmpInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
-                currentSettings.bpm.set(bmpInt);
+            int bpmInt = (int)currentSettings.bpm.get();
+            if (ImGui::InputInt("Bmp##manual", &bpmInt,1,15)) {
+                bpmInt = DSP::clamp((uint16_t)bpmInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
+                currentSettings.bpm.set(bpmInt);
                 changed = true;
 
             }
@@ -359,7 +359,6 @@ namespace DSP {
                 //hackfest!!
                 if ( !presetChanged ) {
                     mSettings.customData = currentSettings.getData();
-                    SDL_Log("Custom data set !!");
                 } else {
                     if (currentSettings.isMatchingPreset(currentSettings.getPresets()[0].get())) {
                         currentSettings.setData(mSettings.customData);

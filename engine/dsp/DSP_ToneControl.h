@@ -4,6 +4,9 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : ToneControl
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
+
 #pragma once
 #include <cstdint>
 #include <string>
@@ -124,6 +127,7 @@ public:
     // i'am so happy with this, before it was hell to add the gui's :D
     virtual void renderPaddle() override {
         DSP::ToneControlSettings currentSettings = this->getSettings();
+        currentSettings.volume.setKnobSettings(ImFlux::ksBlue); // NOTE only works here !
         if (currentSettings.DrawPaddle(this)) {
             this->setSettings(currentSettings);
         }

@@ -4,6 +4,10 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Equalizer (single Band)
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
 // USAGE Example:
 // ==============
 // DSP::Equalizer lowBand({100.0f, 3.0f, 0.707f});   // +3dB Bass boost
@@ -34,40 +38,32 @@
 
 #include "DSP_Effect.h"
 
-
-
 namespace DSP {
-
-
-    struct EQBand {
+    // default: {100.f, 0.f, 0.707f};
+    struct EQBandData {
         float frequency; // e.g., 100.0f for Bass, 3000.0f for Presence
         float gainDb;    // e.g., +6.0f for boost, -6.0f for cut
         float Q;         // 0.707 is standard; higher is narrower
+    };
 
-        static const uint8_t CURRENT_VERSION = 1;
-        void getBinary(std::ostream& os) const {
-            uint8_t ver = CURRENT_VERSION;
-            DSP_STREAM_TOOLS::write_binary(os, ver);
 
-            DSP_STREAM_TOOLS::write_binary(os, frequency);
-            DSP_STREAM_TOOLS::write_binary(os, gainDb);
-            DSP_STREAM_TOOLS::write_binary(os, Q);
+    struct EQBandSettings : public ISettings {
+        AudioParam<float> frequency { "Frequency" , 100.f, 20.f,  16000.f, "%.1f" };
+        AudioParam<float> gainDb    { "Gain", 0.f, -6.f,  6.f, "%.2f db" };
+        AudioParam<float> Q         { "Q", 0.707, 0.f,  1.414f, "%.3f"}; //range??
 
+        EQBandSettings() = default;
+        REGISTER_SETTINGS(EQBandSettings, &frequency, &gainDb, &Q)
+
+        EQBandData getData() const {
+            return { frequency.get(), gainDb.get(), Q.get()};
         }
 
-        bool  setBinary(std::istream& is) {
-            uint8_t fileVersion = 0;
-            DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-            if (fileVersion != CURRENT_VERSION) return false;
-
-            DSP_STREAM_TOOLS::read_binary(is, frequency);
-            DSP_STREAM_TOOLS::read_binary(is, gainDb);
-            DSP_STREAM_TOOLS::read_binary(is, Q);
-
-            return  is.good();
+        void setData(const EQBandData& data) {
+            frequency.set(data.frequency);
+            gainDb.set(data.gainDb) ;
+            Q.set(data.Q);
         }
-
-        auto operator<=>(const EQBand&) const = default; //C++20 lazy way
 
     };
 
@@ -76,18 +72,16 @@ namespace DSP {
         float b0, b1, b2, a1, a2;
     };
 
+
     class Equalizer : public DSP::Effect {
         struct BiquadState {
             float x1 = 0.0f, x2 = 0.0f; // Input history
             float y1 = 0.0f, y2 = 0.0f; // Output history
         };
-
     private:
-        EQBand mSettings;
+        EQBandSettings mSettings;
         BiquadCoeffs mCoeffs;
-
         std::vector<BiquadState> mStates;
-
 
         // Previous samples for Left and Right (Required for IIR filtering)
         float x1L = 0, x2L = 0, y1L = 0, y2L = 0;
@@ -112,40 +106,39 @@ namespace DSP {
     public:
         IMPLEMENT_EFF_CLONE(Equalizer)
 
-        Equalizer(bool switchOn = true) : Effect(DSP::EffectType::Equalizer, switchOn) {
-            mSettings = {100.f, 0.f, 0.707f};
-
+        Equalizer(bool switchOn = true) : Effect(DSP::EffectType::Equalizer, switchOn)
+                , mSettings() {
             //default stereo
             mStates = { {0.f,0.f,0.f,0.f} , {0.f,0.f,0.f,0.f} };
-
             calculateCoefficients();
         }
-
-        const EQBand& getSettings() { return mSettings; }
-
-        void setSettings(const EQBand& s) {
+        //----------------------------------------------------------------------
+        virtual std::string getName() const override { return "Equalizer Band";}
+        //----------------------------------------------------------------------
+        EQBandSettings& getSettings() { return mSettings; }
+        //----------------------------------------------------------------------
+        void setSettings(const EQBandSettings& s) {
             mSettings = s;
             calculateCoefficients();
         }
-
-
+        //----------------------------------------------------------------------
         void updateSettings(float freq, float gain) {
             mSettings.frequency = freq;
             mSettings.gainDb = gain;
             calculateCoefficients();
         }
-
+        //----------------------------------------------------------------------
         void save(std::ostream& os) const override {
             Effect::save(os);              // Save mEnabled
-            mSettings.getBinary(os);       // Save Settings
+            mSettings.save(os);       // Save Settings
         }
-
+        //----------------------------------------------------------------------
         bool load(std::istream& is) override {
             if (!Effect::load(is)) return false; // Load mEnabled
-            return mSettings.setBinary(is);      // Load Settings
+            return mSettings.load(is);      // Load Settings
         }
-
-
+        //----------------------------------------------------------------------
+        //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled()) return;
 
@@ -179,12 +172,12 @@ namespace DSP {
             }
         }
 
-        virtual std::string getName() const override { return "Equalizer Band";}
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.2f, 0.2f, 1.0f);}
         // we have not extra gui here it must be added manually since it's a single band !
         virtual void renderUIWide() override {};
         virtual void renderUI() override {};
+        virtual void renderPaddle() override {};
 
         #endif
     }; //Class

@@ -27,6 +27,11 @@
 
 namespace DSP {
 
+    // const float minGain = -12.0f;
+    // const float maxGain = 12.0f;
+    // static const char* EQ9BAND_LABELS[] = { "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k" };
+
+
 // TODO: i need to replace the array with single parameters for the new templates ..
 //       i dont want to add another template for arrays !
 //

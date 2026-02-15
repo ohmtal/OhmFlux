@@ -4,6 +4,9 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Bitcrusher - "Lo-Fi" Filter
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include <vector>
@@ -87,6 +90,9 @@ namespace DSP {
 
             }
         //----------------------------------------------------------------------
+        virtual std::string getName() const override { return "BITCRUSHER";}
+        //----------------------------------------------------------------------
+        //NOTE  for porting  remove CONST !!!!!!!!
         BitcrusherSettings& getSettings() { return mSettings; }
         //----------------------------------------------------------------------
         void setSettings(const BitcrusherSettings& s) {
@@ -220,7 +226,6 @@ namespace DSP {
         // }
 
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "BITCRUSHER";}
 #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const  override { return ImVec4(0.8f, 0.4f, 0.5f, 1.0f);}
 
@@ -228,61 +233,15 @@ namespace DSP {
     virtual void renderPaddle( ) override {
         DSP::BitcrusherSettings currentSettings = this->getSettings();
         currentSettings.wet.setKnobSettings(ImFlux::ksPurple); // NOTE only works here !
-
         if (currentSettings.DrawPaddle(this)) {
             this->setSettings(currentSettings);
         }
     }
-
     virtual void renderUIWide( ) override {
         DSP::BitcrusherSettings currentSettings = this->getSettings();
         if (currentSettings.DrawUIWide(this)) {
             this->setSettings(currentSettings);
         }
-
-        // ImGui::PushID("BitCrusher_Effect_Row_WIDE");
-        // if (ImGui::BeginChild("DELAY_BOX", ImVec2(-FLT_MIN,65.f) )) {
-        //
-        //     DSP::BitcrusherSettings currentSettings = this->getSettings();
-        //     int currentIdx = 0; // Standard: "Custom"
-        //     bool changed = false;
-        //     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-        //     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-        //     ImGui::BeginGroup();
-        //     bool isEnabled = this->isEnabled();
-        //     if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
-        //         this->setEnabled(isEnabled);
-        //     }
-        //     if (!isEnabled) ImGui::BeginDisabled();
-        //
-        //     ImGui::SameLine();
-        //     // -------- stepper >>>>
-        //     changed |= mSettings.drawStepper(currentSettings, 260.f);
-        //
-        //     ImGui::SameLine();
-        //     // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-        //     if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
-        //         currentSettings.resetToDefaults();
-        //         changed = true;
-        //     }
-        //
-        //     ImGui::Separator();
-        //     for (auto* param :currentSettings.getAll() ) {
-        //         changed |= param->MiniKnobF();
-        //         ImGui::SameLine();
-        //     }
-        //     // Engine Update
-        //     if (changed) {
-        //         if (isEnabled) {
-        //             this->setSettings(currentSettings);
-        //         }
-        //     }
-        //     if (!isEnabled) ImGui::EndDisabled();
-        //     ImGui::EndGroup();
-        // }
-        // ImGui::EndChild();
-        // ImGui::PopID();
-
     }
     //----------------------------------------------------------------------
     // Thats it after Template is ready :D
