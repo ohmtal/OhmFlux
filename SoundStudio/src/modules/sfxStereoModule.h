@@ -390,7 +390,8 @@ public:
                     ImFlux::ShadowText("LIMITER", ImFlux::COL32_NEON_CYAN);
                     ImGui::Dummy(ImVec2(0.f,1.5f));
                     ImGui::BeginGroup(/*2.2*/);
-                     changed |= ImFlux::MiniKnobF("Threshold", &currentSettings.Threshold, 0.01f, 1.f);
+                     // changed |= ImFlux::MiniKnobF("Threshold", &currentSettings.Threshold, 0.01f, 1.f);
+                    changed |= currentSettings.Threshold.MiniKnobF();
                      if (changed) mLimiter->setSettings(currentSettings);
                      ImGui::SameLine();
                      ImGui::BeginGroup(/*2.1*/);

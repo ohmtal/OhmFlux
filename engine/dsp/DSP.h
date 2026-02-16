@@ -19,7 +19,7 @@
 #include "DSP_Equilizer.h"
 #include "DSP_Equilizer9Band.h"
 #include "DSP_SpectrumAnalyzer.h"
-#include "DSP_SoundCardEmulation.h"
+#include "DSP_AnalogGlow.h" //replaced SoundCardEmulation
 #include "DSP_VisualAnalyzer.h"
 #include "DSP_Delay.h"
 #include "DSP_VoiceModulator.h"

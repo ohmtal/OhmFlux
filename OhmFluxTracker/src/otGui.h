@@ -260,7 +260,6 @@ private:
     void RenderLimiterUI();
     void RenderEquilizer9BandUI();
     void RenderSpectrumAnalyzer();
-    void RenderSoundCardEmuUI();
 
 
 
@@ -427,12 +426,23 @@ namespace DSP {
     // FIXME all to data .....
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BitcrusherData, bits, sampleRate, wet)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ChorusData, rate, depth, delayBase, wet, phaseOffset)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Equalizer9BandData,
+        b1,
+        b2,
+        b3,
+        b4,
+        b5,
+        b6,
+        b7,
+        b8,
+        b9
+    )
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LimiterData, Threshold, Attack, Release);
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReverbData, decay, sizeL, sizeR, wet)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarmthData, cutoff, drive, wet)
 
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ReverbSettings, decay, sizeL, sizeR, wet)
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WarmthSettings, cutoff, drive, wet)
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Equalizer9BandSettings, gains)
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SoundCardEmulationSettings, renderMode)
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LimiterSettings, Threshold, Attack, Release);
+    //----
+    // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SoundCardEmulationSettings, renderMode)
 
 
 }

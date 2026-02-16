@@ -27,7 +27,7 @@ namespace DSP {
         float depth;     // Intensity (0.001 - 0.005)
         float delayBase; // Offset (0.01 - 0.03)
         float phaseOffset; // NEW: 0.0 to 1.0 (Phase shift between ears)
-        float wet;       // Mix (0.0 - 0.5)
+        float wet;       // Mix (0.0 - 1.0)
     };
 
     struct ChorusSettings : public ISettings {
@@ -156,7 +156,12 @@ namespace DSP {
         // Process :D
         //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (!isEnabled() || mSettings.wet <= 0.001f) return;
+            float wet = mSettings.wet.get();
+            if (!isEnabled() || wet <= 0.001f) return;
+            float rate = mSettings.rate.get();
+            float delayBase = mSettings.delayBase.get();
+            float depth = mSettings.depth.get();
+            float phaseOffset = mSettings.phaseOffset.get();
 
             // Ensure we have enough delay buffers for the current channel count
             if (mDelayBuffers.size() != static_cast<size_t>(numChannels)) {
@@ -166,9 +171,9 @@ namespace DSP {
 
             // prepare for party
             const float invSampleRate = 1.0f / mSampleRate;
-            const float lfoIncrement = mSettings.rate * invSampleRate;
-            const float delayBaseSamples = mSettings.delayBase * mSampleRate;
-            const float depthSamples = mSettings.depth * mSampleRate;
+            const float lfoIncrement = rate * invSampleRate;
+            const float delayBaseSamples = delayBase * mSampleRate;
+            const float depthSamples = depth * mSampleRate;
             const uint32_t mask = mMaxBufferSize - 1; // FUNKTIONIERT NUR WENN BUFFER-SIZE = 2^n (z.B. 4096)
 
             // local pointer table!
@@ -181,7 +186,7 @@ namespace DSP {
                 float* channelBuf = channelPtrs[channel];
 
                 //  LFO Phase (Normalized 0.0 - 1.0 for FastMath)
-                float phase01 = mLfoPhase + (channel * mSettings.phaseOffset);
+                float phase01 = mLfoPhase + (channel * phaseOffset);
                 if (phase01 >= 1.0f) phase01 -= 1.0f;
 
                 // Delay Position
@@ -205,7 +210,7 @@ namespace DSP {
                 channelBuf[mWritePos] = dry;
 
                 // Mix & Buffer Write
-                buffer[i] = dry + (wetSample * mSettings.wet);
+                buffer[i] = dry + (wetSample * wet);
 
                 // Frame-Management
                 if (++channel >= numChannels) {

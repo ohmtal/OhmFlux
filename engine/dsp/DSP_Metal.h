@@ -104,7 +104,8 @@ namespace DSP {
         }
         //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (!isEnabled()) return;
+            float level = mSettings.level.get();
+            if (!isEnabled() || level <= 0.001f) return;
 
             if (mStates.size() != static_cast<size_t>(numChannels)) {
                 mStates.assign(numChannels, FilterState());
@@ -113,13 +114,15 @@ namespace DSP {
             float dt = 1.0f / mSampleRate;
 
             // Pre-calculate filter parameters
-            float hpf_freq = 80.0f + mSettings.tight * 800.0f;
+            float hpf_freq = 80.0f + mSettings.tight.get() * 800.0f;
             float rc_hpf = 1.0f / (2.0f * (float)M_PI * hpf_freq);
             float alpha_hpf = rc_hpf / (rc_hpf + dt);
 
             float lpf_freq = 4500.0f;
             float rc_lpf = 1.0f / (2.0f * (float)M_PI * lpf_freq);
             float alpha_lpf = dt / (rc_lpf + dt);
+
+            float gain = mSettings.gain.get();
 
             for (int i = 0; i < numSamples; i++) {
                 int ch = i % numChannels;
@@ -132,7 +135,7 @@ namespace DSP {
                 s.last_out_hpf = hpf_out;
 
                 // 2. High Gain Distortion
-                float drive = hpf_out * mSettings.gain;
+                float drive = hpf_out * gain;
                 float distorted = std::tanh(drive);
                 // Soft clipping / refinement
                 if (distorted > 0.9f) distorted = 0.9f + (distorted - 0.9f) * 0.1f;
@@ -142,7 +145,7 @@ namespace DSP {
                 float out = s.last_out_lpf + alpha_lpf * (distorted - s.last_out_lpf);
                 s.last_out_lpf = out;
 
-                buffer[i] = out * mSettings.level;
+                buffer[i] = out * level;
             }
         }
 

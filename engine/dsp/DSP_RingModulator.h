@@ -25,35 +25,29 @@
 
 namespace DSP {
 
-
-struct RingModSettings {
+struct RingModData {
     float frequency; // The carrier frequency (Hz). e.g., 200Hz - 2000Hz
     float wet;       // Dry/Wet mix (0.0 - 1.0)
+};
 
-    static const uint8_t CURRENT_VERSION = 1;
 
-    void getBinary(std::ostream& os) const {
-        uint8_t ver = CURRENT_VERSION;
-        DSP_STREAM_TOOLS::write_binary(os, ver);
+struct RingModSettings: public ISettings {
 
-        DSP_STREAM_TOOLS::write_binary(os, frequency);
-        DSP_STREAM_TOOLS::write_binary(os, wet);
+    AudioParam<float> frequency  { "Frequency", 400.f,  200.0f, 2000.0f, "Stereo %.2f Hz"};
+    AudioParam<float> wet        { "Mix",   0.50f ,  0.0f, 1.0f, "Wet %.2f"};
 
+
+    RingModSettings() = default;
+    REGISTER_SETTINGS(RingModSettings, &frequency, &wet)
+
+    RingModData getData() const {
+        return { frequency.get(), wet.get()};
     }
 
-    bool  setBinary(std::istream& is) {
-        uint8_t fileVersion = 0;
-        DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-        if (fileVersion != CURRENT_VERSION) return false;
-
-        DSP_STREAM_TOOLS::read_binary(is, frequency);
-        DSP_STREAM_TOOLS::read_binary(is, wet);
-
-        return  is.good();
+    void setData(const RingModData& data) {
+        frequency.set(data.frequency);
+        wet.set(data.wet);
     }
-
-    auto operator<=>(const RingModSettings&) const = default; //C++20 lazy way
-
 };
 
 class RingModulator : public DSP::Effect {
@@ -66,29 +60,36 @@ public:
 
     RingModulator(bool switchOn = false) :
         DSP::Effect(DSP::EffectType::RingModulator, switchOn)
+        ,mSettings()
     {
-        mSettings.frequency = 400.0f; // Default carrier freq
-        mSettings.wet = 0.5f;         // Usually 100% wet for this effect
         reset();
     }
-
+    //----------------------------------------------------------------------
     virtual std::string getName() const override { return "Ring Modulator"; }
-
+    //----------------------------------------------------------------------
     void setSettings(const RingModSettings& s) { mSettings = s; }
+    //----------------------------------------------------------------------
     RingModSettings getSettings() const { return mSettings; }
-
+    //----------------------------------------------------------------------
     virtual void reset() override {
-
         mPhaseL = 0.0f;
-
     }
-
-
+    //----------------------------------------------------------------------
+    void save(std::ostream& os) const override {
+        Effect::save(os);              // Save mEnabled
+        mSettings.save(os);       // Save Settings
+    }
+    //----------------------------------------------------------------------
+    bool load(std::istream& is) override {
+        if (!Effect::load(is)) return false; // Load mEnabled
+        return mSettings.load(is);      // Load Settings
+    }
+    //----------------------------------------------------------------------
     virtual void process(float* buffer, int numSamples, int numChannels) override {
-        if (!isEnabled() || mSettings.wet <= 0.001f) return;
+        const float wet = mSettings.wet.get();
+        if (!isEnabled() || wet <= 0.001f) return;
 
-        const float phaseIncrement = mSettings.frequency / mSampleRate;
-        const float wet = mSettings.wet;
+        const float phaseIncrement = mSettings.frequency.get() / mSampleRate;
         const float dryGain = 1.0f - wet;
 
         int channel = 0;
@@ -108,110 +109,31 @@ public:
         }
     }
 
-    // virtual void process(float* buffer, int numSamples, int numChannels) override {
-    //     if (!isEnabled() || mSettings.wet <= 0.001f) return;
-    //
-    //     const float TWO_PI = 2.0f * (float)M_PI;
-    //     // Frequency increment per sample frame
-    //     const float phaseIncrement = (TWO_PI * mSettings.frequency) / mSampleRate;
-    //
-    //     int channel = 0;
-    //     for (int i = 0; i < numSamples; i++) {
-    //         float dry = buffer[i];
-    //
-    //         // 1. Calculate the carrier wave (sinusoidal LFO)
-    //         // We use the same phase for all channels in a frame to preserve phase alignment
-    //         float carrier = std::sin(mPhaseL);
-    //
-    //         // 2. Ring Modulation: Multiply dry signal by carrier
-    //         float modulated = dry * carrier;
-    //
-    //         // 3. Mix: Dry + Wet
-    //         buffer[i] = (dry * (1.0f - mSettings.wet)) + (modulated * mSettings.wet);
-    //
-    //         // 4. Advance phase only after all channels of the current frame are processed
-    //         if (channel == numChannels - 1) {
-    //             mPhaseL += phaseIncrement;
-    //
-    //             // Wrap phase to keep it within [0, 2*PI]
-    //             if (mPhaseL >= TWO_PI) {
-    //                 mPhaseL -= TWO_PI;
-    //             }
-    //         }
-    //
-    //         if (++channel >= numChannels) channel = 0;
-    //     }
-    // }
-
     //--------------------------------------------------------------------------
 #ifdef FLUX_ENGINE
     virtual ImVec4 getColor() const override { return ImVec4(0.1f, 0.2f, 0.7f, 1.0f); } // blueish
 
-    virtual void renderUIWide() override {
-        ImGui::PushID("RingMod_Effect_Row_WIDE");
-        if (ImGui::BeginChild("RINGMOD_BOX", ImVec2(-FLT_MIN, 65.f))) {
-
-            DSP::RingModSettings currentSettings = this->getSettings();
-            bool changed = false;
-
-            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN), 0.f);
-            ImGui::Dummy(ImVec2(2, 0)); ImGui::SameLine();
-            ImGui::BeginGroup();
-
-            bool isEnabled = this->isEnabled();
-            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) {
-                this->setEnabled(isEnabled);
-            }
-            if (!isEnabled) ImGui::BeginDisabled();
-            ImGui::SameLine(ImGui::GetWindowWidth() - 65.f);
-            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)))) {
-                this->reset();
-            }
-            ImGui::Separator();
-            changed |= ImFlux::MiniKnobF("Frequency", &currentSettings.frequency, 200.0f, 2000.0f);ImGui::SameLine();
-            changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.0f, 1.0f);ImGui::SameLine();
-
-            if (changed) this->setSettings(currentSettings);
-            if (!isEnabled) ImGui::EndDisabled();
-            ImGui::EndGroup();
+    virtual void renderPaddle() override {
+        DSP::RingModSettings currentSettings = this->getSettings();
+        currentSettings.wet.setKnobSettings(ImFlux::ksBlue); // NOTE only works here !
+        if (currentSettings.DrawPaddle(this)) {
+            this->setSettings(currentSettings);
         }
-        ImGui::EndChild();
-        ImGui::PopID();
     }
 
+    virtual void renderUIWide() override {
+        DSP::RingModSettings currentSettings = this->getSettings();
+        if (currentSettings.DrawUIWide(this)) {
+            this->setSettings(currentSettings);
+        }
+    }
     virtual void renderUI() override {
-        ImGui::PushID("RingMod_Effect_Row");
-
-            DSP::RingModSettings currentSettings = this->getSettings();
-            bool changed = false;
-
-            bool isEnabled = this->isEnabled();
-            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) {
-                this->setEnabled(isEnabled);
-            }
-            if (isEnabled)
-            {
-                if (ImGui::BeginChild("RINGMOD_BOX", ImVec2(-FLT_MIN, 65.f),ImGuiChildFlags_Borders)) {
-
-                    ImGui::BeginGroup();
-                    changed |= ImFlux::FaderHWithText("Frequency", &currentSettings.frequency, 200.0f, 2000.0f, "%5.2f Hz");
-                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f wet");
-                    ImGui::EndGroup();
-                    ImGui::SameLine(ImGui::GetWindowWidth() - 65.f);
-                    if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)))) {
-                        this->reset();
-                    }
-
-                    if (changed) this->setSettings(currentSettings);
-                }
-                ImGui::EndChild();
-            } else {
-                ImGui::Separator();
-            }
-
-        ImGui::PopID();
-        ImGui::Spacing(); // Add visual gap before the next effect
+        DSP::RingModSettings currentSettings = this->getSettings();
+        if (currentSettings.DrawUI(this, 160.f, true)) {
+            this->setSettings(currentSettings);
+        }
     }
+
 
 #endif
 }; //CLASS

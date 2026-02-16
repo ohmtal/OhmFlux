@@ -89,11 +89,11 @@ namespace DSP {
 
         void calculateCoefficients() {
             // Standard Audio EQ Cookbook formula for a Peaking EQ
-            float A = pow(10.0f, mSettings.gainDb / 40.0f);
-            float omega = 2.0f * M_PI * mSettings.frequency / mSampleRate;
+            float A = pow(10.0f, mSettings.gainDb.get() / 40.0f);
+            float omega = 2.0f * M_PI * mSettings.frequency.get() / mSampleRate;
             float sn = sin(omega);
             float cs = cos(omega);
-            float alpha = sn / (2.0f * mSettings.Q);
+            float alpha = sn / (2.0f * mSettings.Q.get());
 
             float a0 = 1.0f + alpha / A;
             mCoeffs.b0 = (1.0f + alpha * A) / a0;
@@ -123,8 +123,8 @@ namespace DSP {
         }
         //----------------------------------------------------------------------
         void updateSettings(float freq, float gain) {
-            mSettings.frequency = freq;
-            mSettings.gainDb = gain;
+            mSettings.frequency.set( freq ) ;
+            mSettings.gainDb.set( gain );
             calculateCoefficients();
         }
         //----------------------------------------------------------------------

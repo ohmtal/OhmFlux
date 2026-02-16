@@ -212,17 +212,21 @@ namespace DSP {
             if (!isEnabled()) return;
             mChannelCount = numChannels;
 
-            if ( mSettings.channel > numChannels ) mSettings.channel = 0; //reset to zero
+            int channel = mSettings.channel.get();
+            bool fastMode = mSettings.fastMode.get();
+
+
+            if ( channel > numChannels ) channel = 0; //reset to zero
             for (int i = 0; i < numSamples; i++) {
                 int ch = i % numChannels;
 
 
-                if (ch == mSettings.channel) {
+                if (ch == channel) {
                     // --- add a sample ---
                     mBuffer[mWritePos] = buffer[i];
                     mWritePos = (mWritePos + 1) % BUFFER_SIZE;
                     // analyse
-                    if ( mSettings.fastMode ) analyzeFast();
+                    if ( fastMode ) analyzeFast();
                     else analyzeAccurate();
                 }
             }

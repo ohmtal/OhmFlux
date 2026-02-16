@@ -4,6 +4,9 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Distortion
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include <mutex>
@@ -22,34 +25,36 @@
 #include "DSP_Effect.h"
 namespace DSP {
 
-    struct OverDriveSettings {
+    struct OverDriveData {
         float drive;  // Input gain (1.0 - 20.0)
         float tone;   // Low-pass/High-pass tilt (0.0 - 1.0)
         float bassPreserve;  // Cross-over frequency for clean bass (0.0 - 1.0)
         float wet;    // Mix (0.0 - 1.0)
-
-        static const uint8_t CURRENT_VERSION = 1;
-        void getBinary(std::ostream& os) const {
-            uint8_t ver = CURRENT_VERSION;
-            DSP_STREAM_TOOLS::write_binary(os, ver);
-            DSP_STREAM_TOOLS::write_binary(os, drive);
-            DSP_STREAM_TOOLS::write_binary(os, tone);
-            DSP_STREAM_TOOLS::write_binary(os, bassPreserve);
-            DSP_STREAM_TOOLS::write_binary(os, wet);
-        }
-
-        bool  setBinary(std::istream& is) {
-            uint8_t fileVersion = 0;
-            DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-            if (fileVersion != CURRENT_VERSION) return false;
-            DSP_STREAM_TOOLS::read_binary(is, drive);
-            DSP_STREAM_TOOLS::read_binary(is, tone);
-            DSP_STREAM_TOOLS::read_binary(is, bassPreserve);
-            DSP_STREAM_TOOLS::read_binary(is, wet);
-
-            return  is.good();
-        }
     };
+
+    struct OverDriveSettings : public ISettings {
+        AudioParam<float> drive         { "Drive" ,   5.0f, 1.0f,20.0f, "%.1f" };
+        AudioParam<float> tone          { "Tone",     0.5f, 0.0f, 1.0f, "%.2f" };
+        AudioParam<float> bassPreserve  { "Preserve", 0.3f, 0.0f, 1.0f, "%.2f" };
+        AudioParam<float> wet           { "Mix",      1.0f, 0.0f, 1.0f, "%.2f"};
+
+
+        OverDriveSettings() = default;
+        REGISTER_SETTINGS(OverDriveSettings, &drive,&tone, &bassPreserve, &wet)
+
+        OverDriveData getData() const {
+            return { drive.get(), tone.get(), bassPreserve.get(), wet.get()};
+        }
+
+        void setData(const OverDriveData& data) {
+            drive.set(data.drive);
+            tone.set(data.tone);
+            bassPreserve.set(data.bassPreserve);
+            wet.set(data.wet);
+        }
+
+    };
+
 
     class OverDrive : public DSP::Effect {
     private:
@@ -60,26 +65,34 @@ namespace DSP {
     public:
         IMPLEMENT_EFF_CLONE(OverDrive)
 
-        OverDrive(bool switchOn = false) : DSP::Effect(DSP::EffectType::OverDrive, switchOn) {
-            mSettings.drive = 5.0f;
-            mSettings.tone = 0.5f;
-            mSettings.bassPreserve = 0.3f;
-            mSettings.wet = 1.0f;
-        }
-
-
-        void setSettings(const OverDriveSettings& s) { mSettings = s; }
-        OverDriveSettings getSettings() const { return mSettings; }
-
+        OverDrive(bool switchOn = false) : DSP::Effect(DSP::EffectType::OverDrive, switchOn)
+            ,mSettings()
+            { }
+        //----------------------------------------------------------------------
         virtual std::string getName() const override { return "OverDrive"; }
-
+        //----------------------------------------------------------------------
+        void setSettings(const OverDriveSettings& s) { mSettings = s; }
+        //----------------------------------------------------------------------
+        OverDriveSettings getSettings() const { return mSettings; }
+        //----------------------------------------------------------------------
         virtual void reset() override {
             std::fill(mToneStates.begin(), mToneStates.end(), 0.0f);
             std::fill(mBassStates.begin(), mBassStates.end(), 0.0f);
         }
-
+        //----------------------------------------------------------------------
+        void save(std::ostream& os) const override {
+            Effect::save(os);              // Save mEnabled
+            mSettings.save(os);       // Save Settings
+        }
+        //----------------------------------------------------------------------
+        bool load(std::istream& is) override {
+            if (!Effect::load(is)) return false; // Load mEnabled
+            return mSettings.load(is);      // Load Settings
+        }
+        //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (!isEnabled() || mSettings.wet <= 0.001f) return;
+            float wet = mSettings.wet.get();
+            if (!isEnabled() || wet <= 0.001f) return;
 
             if (mToneStates.size() != (size_t)numChannels) {
                 mToneStates.assign(numChannels, 0.0f);
@@ -87,9 +100,12 @@ namespace DSP {
             }
 
             // Coefficients
-            float toneAlpha = DSP::clamp(mSettings.tone, 0.01f, 0.99f);
+            float toneAlpha = DSP::clamp(mSettings.tone.get(), 0.01f, 0.99f);
             // Bass Alpha (Low-pass crossover, usually around 100Hz - 400Hz)
-            float bassAlpha = DSP::clamp(mSettings.bassPreserve * 0.2f, 0.01f, 0.5f);
+            float bassAlpha = DSP::clamp(mSettings.bassPreserve.get() * 0.2f, 0.01f, 0.5f);
+
+            float drive = mSettings.drive.get();
+
 
             int channel = 0;
             for (int i = 0; i < numSamples; i++) {
@@ -100,7 +116,7 @@ namespace DSP {
                 float cleanBass = mBassStates[channel];
 
                 // 2. Drive & Clip (processed signal)
-                float x = (dry - cleanBass) * mSettings.drive; // Distort mainly mids/highs
+                float x = (dry - cleanBass) * drive; // Distort mainly mids/highs
 
                 // Cubic Soft-Clipper
                 float clipped = DSP::clamp(x - (x * x * x * 0.15f), -0.8f, 0.8f);
@@ -113,7 +129,7 @@ namespace DSP {
                 float combined = distorted + cleanBass;
 
                 // 5. Final Mix
-                float out = (dry * (1.0f - mSettings.wet)) + (combined * mSettings.wet);
+                float out = (dry * (1.0f - wet)) + (combined * wet);
                 buffer[i] = DSP::clamp(out, -1.0f, 1.0f);
 
                 if (++channel >= numChannels) channel = 0;
@@ -124,82 +140,45 @@ namespace DSP {
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return  ImVec4(0.827f, 0.521f, 0.329f, 1.0f);}
 
-        //--------------------------------------------------------------------------
         virtual void renderPaddle() override {
-            ImGui::PushID("OVERDRIVE_Effect_PADDLE");
-            paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
-            OverDriveSettings currentSettings = this->getSettings();
-            bool changed = false;
-            changed |= rackKnob("DRIVE", &currentSettings.drive, {1.0f, 20.0f}, ImFlux::ksRed);ImGui::SameLine();
-            changed |= rackKnob("TONE", &currentSettings.tone, {0.0f, 1.0f}, ImFlux::ksBlue);ImGui::SameLine();
-            changed |= rackKnob("PRESERVE", &currentSettings.bassPreserve, {0.0f, 1.0f}, ImFlux::ksBlue);ImGui::SameLine();
-            changed |= rackKnob("LEVEL", &currentSettings.wet, {0.0f, 1.f}, ImFlux::ksBlack);
-            if (changed) this->setSettings(currentSettings);
-            ImGui::PopID();
+            DSP::OverDriveSettings currentSettings = this->getSettings();
+            currentSettings.drive.setKnobSettings(ImFlux::ksRed);
+            // currentSettings.tone.setKnobSettings(ImFlux::ksBlue);
+            currentSettings.bassPreserve.setKnobSettings(ImFlux::ksPurple);
+            currentSettings.wet.setKnobSettings(ImFlux::ksBlue);
+            if (currentSettings.DrawPaddle(this)) {
+                this->setSettings(currentSettings);
+            }
         }
 
         virtual void renderUIWide() override {
-            ImGui::PushID("OverDrive_Effect_WIDE");
-            if (ImGui::BeginChild("OVERDRIVE_BOX", ImVec2(-FLT_MIN, 65.f))) {
-
-                DSP::OverDriveSettings currentSettings = this->getSettings();
-                bool changed = false;
-
-                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN), 0.f);
-                ImGui::Dummy(ImVec2(2, 0)); ImGui::SameLine();
-                ImGui::BeginGroup();
-
-                bool isEnabled = this->isEnabled();
-                if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) {
-                    this->setEnabled(isEnabled);
-                }
-                if (!isEnabled) ImGui::BeginDisabled();
-                // ImGui::SameLine(ImGui::GetWindowWidth() - 65.f);
-                // if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)))) {
-                //     this->reset();
-                // }
-                ImGui::Separator();
-                changed |= ImFlux::MiniKnobF("Drive", &currentSettings.drive, 1.0f, 20.0f); //, "%.1fx");
-                ImGui::SameLine();
-                changed |= ImFlux::MiniKnobF("Tone", &currentSettings.tone, 0.0f, 1.0f); //, "%.2f");
-                ImGui::SameLine();
-                changed |= ImFlux::MiniKnobF("Preserve", &currentSettings.bassPreserve, 0.0f, 1.0f); //, "%.2f");
-                ImGui::SameLine();
-                changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.0f, 1.0f); //, "%.2f");
-
-                if (changed) setSettings(currentSettings);
-
-                if (!isEnabled) ImGui::EndDisabled();
-                ImGui::EndGroup();
+            DSP::OverDriveSettings currentSettings = this->getSettings();
+            if (currentSettings.DrawUIWide(this)) {
+                this->setSettings(currentSettings);
             }
-            ImGui::EndChild();
-            ImGui::PopID();
         }
+        virtual void renderUI() override {
+            DSP::OverDriveSettings currentSettings = this->getSettings();
+            if (currentSettings.DrawUI(this, 160.f, true)) {
+                this->setSettings(currentSettings);
+            }
+        }
+
 
         //--------------------------------------------------------------------------
-        virtual void renderUI() override {
-            ImGui::PushID("OverDrive_Effect");
-            OverDriveSettings currentSettings = this->getSettings();
-            bool changed = false;
-            bool enabled = this->isEnabled();
+        // virtual void renderPaddle() override {
+        //     ImGui::PushID("OVERDRIVE_Effect_PADDLE");
+        //     paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
+        //     OverDriveSettings currentSettings = this->getSettings();
+        //     bool changed = false;
+        //     changed |= rackKnob("DRIVE", &currentSettings.drive, {1.0f, 20.0f}, ImFlux::ksRed);ImGui::SameLine();
+        //     changed |= rackKnob("TONE", &currentSettings.tone, {0.0f, 1.0f}, ImFlux::ksBlue);ImGui::SameLine();
+        //     changed |= rackKnob("PRESERVE", &currentSettings.bassPreserve, {0.0f, 1.0f}, ImFlux::ksBlue);ImGui::SameLine();
+        //     changed |= rackKnob("LEVEL", &currentSettings.wet, {0.0f, 1.f}, ImFlux::ksBlack);
+        //     if (changed) this->setSettings(currentSettings);
+        //     ImGui::PopID();
+        // }
 
-            if (ImFlux::LEDCheckBox(getName(), &enabled, getColor())) setEnabled(enabled);
-
-            if (enabled) {
-                if (ImGui::BeginChild("DIST_BOX", ImVec2(-FLT_MIN, 75.f), ImGuiChildFlags_Borders)) {
-                    changed |= ImFlux::FaderHWithText("Drive", &currentSettings.drive, 1.0f, 20.0f, "%.1fx");
-                    changed |= ImFlux::FaderHWithText("Tone", &currentSettings.tone, 0.0f, 1.0f, "%.2f");
-                    changed |= ImFlux::FaderHWithText("Preserve", &currentSettings.bassPreserve, 0.0f, 1.0f, "%.2f");
-                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "%.2f");
-                    if (changed) setSettings(currentSettings);
-                }
-                ImGui::EndChild();
-            } else {
-                ImGui::Separator();
-            }
-            ImGui::PopID();
-
-        }
         #endif
     };
 

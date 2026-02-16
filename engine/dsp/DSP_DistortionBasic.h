@@ -80,20 +80,15 @@ namespace DSP {
             return mSettings.load(is);      // Load Settings
         }
         //----------------------------------------------------------------------
-        // process per single float value
-        virtual float processFloat(float input) override {
-            if (!isEnabled() || mSettings.level <= 0.001f) return input;
-            float out = input;
-            out =  DSP::fast_tanh(out * mSettings.gain) * mSettings.level;
-            return out;
-        }
-
         virtual void process(float* buffer, int numSamples, int numChannels) override {
-            if (!isEnabled() || mSettings.level <= 0.001f) return;
+            float level = mSettings.level.get();
+            float gain  = mSettings.gain.get();
+
+            if (!isEnabled() || level <= 0.001f) return;
 
             // no channel handling needed here
             for (int i = 0; i < numSamples; i++) {
-                buffer[i] = processFloat(buffer[i]);
+                buffer[i] = DSP::fast_tanh(buffer[i] * gain) * level;
             }
         }
 
@@ -122,74 +117,6 @@ namespace DSP {
             }
         }
 
-/*
-        virtual void renderPaddle() override {
-            ImGui::PushID("Basic_Distortion_Effect_PADDLE");
-            paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
-            DistortionBasicSettings currentSettings = this->getSettings();
-            bool changed = false;
-            changed |= rackKnob("GAIN", &currentSettings.gain, {1.0f, 50.0f}, ImFlux::ksRed);
-            ImGui::SameLine();
-            changed |= rackKnob("LEVEL", &currentSettings.level, {0.0f, 1.f}, ImFlux::ksBlack);
-
-            if (changed) this->setSettings(currentSettings);
-            ImGui::PopID();
-        }
-
-        virtual void renderUIWide() override {
-            ImGui::PushID("Basic_Distortion_Effect_Row_WIDE");
-            if (ImGui::BeginChild("Basic_Distortion_W_BOX", ImVec2(-FLT_MIN,65.f) )) {
-
-                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-                ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-                ImGui::BeginGroup();
-                bool isEnabled = this->isEnabled();
-                if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
-                    this->setEnabled(isEnabled);
-                }
-                ImGui::Separator();
-                bool changed = false;
-                DistortionBasicSettings currentSettings = this->getSettings();
-                if (!isEnabled) ImGui::BeginDisabled();
-
-                changed |= ImFlux::MiniKnobF("Gain", &currentSettings.gain, 1.0f, 50.0f); ImGui::SameLine();
-                changed |= ImFlux::MiniKnobF("Level", &currentSettings.level, 0.0f, 1.0f); ImGui::SameLine();
-
-                // Engine Update
-                if (changed) {
-                    if (isEnabled) {
-                        this->setSettings(currentSettings);
-                    }
-                }
-
-                if (!isEnabled) ImGui::EndDisabled();
-                ImGui::EndGroup();
-            }
-            ImGui::EndChild();
-            ImGui::PopID();
-
-        }
-
-        virtual void renderUI() override {
-            ImGui::PushID("Basic_Distortion_Effect");
-            DistortionBasicSettings currentSettings = this->getSettings();
-            bool changed = false;
-            bool enabled = this->isEnabled();
-
-            if (ImFlux::LEDCheckBox(getName(), &enabled, getColor())) setEnabled(enabled);
-
-            if (enabled) {
-                if (ImGui::BeginChild("DIST_BOX", ImVec2(-FLT_MIN, 75.f), ImGuiChildFlags_Borders)) {
-                    changed |= ImFlux::FaderHWithText("Gain", &currentSettings.gain, 1.0f, 50.0f, "%.1f");
-                    changed |= ImFlux::FaderHWithText("Level", &currentSettings.level, 0.0f, 1.0f, "%.2f");
-                    if (changed) setSettings(currentSettings);
-                }
-                ImGui::EndChild();
-            } else {
-                ImGui::Separator();
-            }
-            ImGui::PopID();
-        }*/
         #endif
     };
 

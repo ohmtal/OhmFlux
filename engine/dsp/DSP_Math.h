@@ -64,6 +64,11 @@ namespace DSP {
         //----------------------------------------------------------------------
     }; //FathMath
 
+    // Fast Soft-Clipping Approximation: x / (1 + |x|)
+    inline float softClip(float x) {
+        return x / (1.0f + std::abs(x));
+    }
+
     template<typename T>
     inline constexpr T clamp(T val, T min, T max) {
         if (val < min) return min;

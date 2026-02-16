@@ -25,10 +25,6 @@
 #include <gui/ImFlux.h>
 #endif
 
-
-#include <assert.h> //FIXME remove again
-
-
 namespace DSP {
 
 struct ToneControlData {

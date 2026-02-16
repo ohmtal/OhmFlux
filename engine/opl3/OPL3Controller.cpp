@@ -170,7 +170,7 @@ bool OPL3Controller::initController()
     // 1. Bitcrusher
     mDSPBitCrusher = DSP::addEffectToChain<DSP::Bitcrusher>(mDspEffects, false);
     // 2. Sound Card Emulation (good old times)
-    mSoundCardEmulation = DSP::addEffectToChain<DSP::SoundCardEmulation>(mDspEffects, false);
+    // mSoundCardEmulation = DSP::addEffectToChain<DSP::SoundCardEmulation>(mDspEffects, false);
     // 3. Warmth
     mDSPWarmth = DSP::addEffectToChain<DSP::Warmth>(mDspEffects, false);
     // 4. Chorus

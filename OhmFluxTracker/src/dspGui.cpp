@@ -30,7 +30,6 @@ void OTGui::ShowDSPWindow(){
     // Sound Renderer Combo box
     RenderSpectrumAnalyzer();
     RenderBitCrusherUI();
-    RenderSoundCardEmuUI();
     RenderWarmthUI();
     RenderChorusUI();
     RenderReverbUI();
@@ -41,47 +40,6 @@ void OTGui::ShowDSPWindow(){
 
     ImGui::End();
 
-}
-//------------------------------------------------------------------------------
-void OTGui::RenderSoundCardEmuUI() {
-    auto* lEmu = getMain()->getController()->getSoundCardEmulation();
-
-    lEmu->renderUI();
-
-    // ImGui::PushID("RenderSoundCardEmu_Effect_Row");
-    // ImGui::BeginGroup();
-    //
-    // bool isEnabled = lEmu->isEnabled();
-    //
-    // if (ImFlux::LEDCheckBox("SOUND RENDERING", &isEnabled, ImVec4(0.2f, 0.7f, 0.5f, 1.0f)))
-    //     lEmu->setEnabled(isEnabled);
-    //
-    //
-    // if (isEnabled) {
-    //     if (ImGui::BeginChild("BC_Box", ImVec2(0, 35), ImGuiChildFlags_Borders)) {
-    //
-    //         DSP::RenderMode currentMode = lEmu->getMode();
-    //
-    //         // Mapping for display names
-    //         const char* modeNames[] = {
-    //             "Blended (Smooth)", "Modern LPF (Warm)",
-    //             "Sound Blaster Pro", "Sound Blaster", "AdLib Gold", "Sound Blaster Clone"
-    //         };
-    //
-    //         int lRenderModeInt  = (int)currentMode;
-    //
-    //         if (ImFlux::ValueStepper("##Preset", &lRenderModeInt, modeNames, IM_ARRAYSIZE(modeNames))) {
-    //             lEmu->setSettings({ (DSP::RenderMode)lRenderModeInt });
-    //         }
-    //     }
-    // ImGui::EndChild();
-    // } else {
-    //     ImGui::Separator();
-    // }
-    //
-    // ImGui::EndGroup();
-    // ImGui::PopID();
-    // ImGui::Spacing(); // Add visual gap before the next effect
 }
 //------------------------------------------------------------------------------
 void OTGui::RenderBitCrusherUI() {

@@ -57,11 +57,6 @@ namespace DrumSynth {
 
             float currentFreq = pitch + (mPitchEnv * dynamicClick * 500.0f);
 
-            // float phaseIncrement = (2.0f * (float)M_PI * currentFreq) / sampleRate;
-            // mPhase += phaseIncrement;
-            // if (mPhase >= 2.0f * (float)M_PI) mPhase -= 2.0f * (float)M_PI;
-            // float signal = DSP::FastMath::fastSin(mPhase);
-            // 1. Increment berechnen (0.0 bis 1.0 pro Kreislauf)
             float phaseIncrement = currentFreq / sampleRate;
             mPhase += phaseIncrement;
             if (mPhase >= 1.0f) mPhase -= 1.0f;
@@ -192,10 +187,16 @@ namespace DrumSynth {
             float currentFreq = startFreq + (mPitchEnv * clickAmount);
 
 
-            float phaseIncrement = (2.0f * M_PI * currentFreq) / sampleRate;
+            float phaseIncrement = currentFreq / sampleRate;
             mPhase += phaseIncrement;
-            if (mPhase >= 2.0f * M_PI) mPhase -= 2.0f * M_PI;
+            if (mPhase >= 1.0f) mPhase -= 1.0f;
             float signal = DSP::FastMath::fastSin(mPhase);
+
+            // float phaseIncrement = (2.0f * M_PI * currentFreq) / sampleRate;
+            // mPhase += phaseIncrement;
+            // if (mPhase >= 2.0f * M_PI) mPhase -= 2.0f * M_PI;
+            // // float signal = DSP::FastMath::fastSin(mPhase);
+            // float signal = std::sin(mPhase);
 
 
             float decayFactor = 1.0f / (decay * sampleRate);

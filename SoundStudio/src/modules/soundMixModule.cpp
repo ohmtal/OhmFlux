@@ -154,7 +154,7 @@ bool SoundMixModule::Initialize() {
             DSP::EffectType::OverDrive,
             DSP::EffectType::Metal,
             DSP::EffectType::Bitcrusher,
-            DSP::EffectType::SoundCardEmulation,
+            DSP::EffectType::AnalogGlow,
             DSP::EffectType::RingModulator,
             DSP::EffectType::VoiceModulator,
             DSP::EffectType::Warmth,

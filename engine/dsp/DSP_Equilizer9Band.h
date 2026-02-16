@@ -5,6 +5,8 @@
 // Digital Sound Processing : 9 Band Equalizer
 // ISO Standard Frequencies for the 9 bands (63Hz to 16kHz).
 //-----------------------------------------------------------------------------
+// * using ISettings
+//-----------------------------------------------------------------------------
 #pragma once
 #define _USE_MATH_DEFINES // Required for M_PI on some systems (like Windows/MSVC)
 #include <cmath>          // Provides pow, sin, cos, and math constants
@@ -27,93 +29,163 @@
 
 namespace DSP {
 
-    // const float minGain = -12.0f;
-    // const float maxGain = 12.0f;
+    struct Equalizer9BandData {
+        float b1;
+        float b2;
+        float b3;
+        float b4;
+        float b5;
+        float b6;
+        float b7;
+        float b8;
+        float b9;
+    };
+
+    struct Equalizer9BandSettings : public ISettings {
+        AudioParam<float> b1 { "63",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b2 { "125",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b3 { "250",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b4 { "500",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b5 { "1k",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b6 { "2k",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b7 { "4k",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b8 { "8k",  0.f, -12.f, 12.f, "%.1f dB" };
+        AudioParam<float> b9 { "16k",  0.f, -12.f, 12.f, "%.1f dB" };
+
+        Equalizer9BandSettings() = default;
+        REGISTER_SETTINGS(Equalizer9BandSettings,
+                &b1,
+                &b2,
+                &b3,
+                &b4,
+                &b5,
+                &b6,
+                &b7,
+                &b8,
+                &b9
+        )
+
+        Equalizer9BandData getData() const {
+            return {
+                b1.get(),
+                b2.get(),
+                b3.get(),
+                b4.get(),
+                b5.get(),
+                b6.get(),
+                b7.get(),
+                b8.get(),
+                b9.get(),
+            };
+        }
+
+        void getGains(float* outArray) const {
+            outArray[0] = b1.get();
+            outArray[1] = b2.get();
+            outArray[2] = b3.get();
+            outArray[3] = b4.get();
+            outArray[4] = b5.get();
+            outArray[5] = b6.get();
+            outArray[6] = b7.get();
+            outArray[7] = b8.get();
+            outArray[8] = b9.get();
+        }
+
+        void setGain(int band, float value) {
+            switch (band) {
+                case 0: b1.set(value); return;
+                case 1: b2.set(value); return;
+                case 2: b3.set(value); return;
+                case 3: b4.set(value); return;
+                case 4: b5.set(value); return;
+                case 5: b6.set(value); return;
+                case 6: b7.set(value); return;
+                case 7: b8.set(value); return;
+                case 8: b9.set(value); return;
+            }
+        }
+
+        float getGain(int band) const {
+            switch (band) {
+                case 0: return b1.get();
+                case 1: return b2.get();
+                case 2: return b3.get();
+                case 3: return b4.get();
+                case 4: return b5.get();
+                case 5: return b6.get();
+                case 6: return b7.get();
+                case 7: return b8.get();
+                case 8: return b9.get();
+            }
+            return 0.f; // error?!
+        }
+
+
+        void setData(const Equalizer9BandData& data) {
+            b1.set(data.b1);
+            b2.set(data.b2);
+            b3.set(data.b3);
+            b4.set(data.b4);
+            b5.set(data.b5);
+            b6.set(data.b6);
+            b7.set(data.b7);
+            b8.set(data.b8);
+            b9.set(data.b9);
+        }
+
+        std::vector<std::shared_ptr<IPreset>> getPresets() const override {
+            return {
+                std::make_shared<Preset<Equalizer9BandSettings, Equalizer9BandData>>
+                    ("Custom", Equalizer9BandData{ 2.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 2.0f }),
+
+                std::make_shared<Preset<Equalizer9BandSettings, Equalizer9BandData>>
+                    ("Flat", Equalizer9BandData{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }),
+
+                std::make_shared<Preset<Equalizer9BandSettings, Equalizer9BandData>>
+                    ("Bass Boost", Equalizer9BandData{ 5.5f, 4.0f, 2.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }),
+
+                std::make_shared<Preset<Equalizer9BandSettings, Equalizer9BandData>>
+                    ("Smile", Equalizer9BandData{4.5f, 3.0f, 0.0f, -2.0f, -3.5f, -2.0f, 0.0f, 3.0f, 4.5f }),
+
+                std::make_shared<Preset<Equalizer9BandSettings, Equalizer9BandData>>
+                    ("Radio", Equalizer9BandData{-12.0f, -12.0f, -6.0f, 3.0f, 6.0f, 3.0f, -6.0f, -12.0f, -12.0f }),
+
+                std::make_shared<Preset<Equalizer9BandSettings, Equalizer9BandData>>
+                    ("Clarify", Equalizer9BandData{-2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.5f, 3.0f, 4.5f, 6.0f }),
+
+            };
+        }
+    };
+    constexpr Equalizer9BandData DEFAULT_EQ9_DATA = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
+    // // Preset: Flat (No change)
+    // constexpr Equalizer9BandSettings FLAT_EQ = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    // // Preset: Bass Boost (Classic "V" shape but focused on low end)
+    // constexpr Equalizer9BandSettings BASS_BOOST_EQ =  ;
+    // // Preset: "Loudness" / Smile (Boosted lows and highs, dipped mids)
+    // constexpr Equalizer9BandSettings SMILE_EQ = {4.5f, 3.0f, 0.0f, -2.0f, -3.5f, -2.0f, 0.0f, 3.0f, 4.5f };
+    // // Preset: Radio / Telephone (Cuts lows and highs, boosts mids)
+    // constexpr Equalizer9BandSettings RADIO_EQ = {-12.0f, -12.0f, -6.0f, 3.0f, 6.0f, 3.0f, -6.0f, -12.0f, -12.0f };
+    // // Preset: Air / Clarity (Subtle low cut, boost in the presence and high frequencies)
+    // constexpr Equalizer9BandSettings CLARITY_EQ = {-2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.5f, 3.0f, 4.5f, 6.0f };
+    //
+    // constexpr Equalizer9BandSettings CUSTOM_EQ = FLAT_EQ; //DUMMY
+    //
+    //
+    // static const char* EQ9BAND_PRESET_NAMES[] = {
+    //     "Custom", "Flat", "Bass Boost", "Loudness", "Radio", "Clarity" };
+    //
     // static const char* EQ9BAND_LABELS[] = { "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k" };
-
-
-// TODO: i need to replace the array with single parameters for the new templates ..
-//       i dont want to add another template for arrays !
-//
-//     struct Equalizer9BandSettings : public ISettings {
-//         // 9 Bänder einzeln definiert
-//         AudioParam<float> b1 { "60 Hz",  0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b2 { "170 Hz", 0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b3 { "310 Hz", 0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b4 { "600 Hz", 0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b5 { "1 kHz",  0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b6 { "3 kHz",  0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b7 { "6 kHz",  0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b8 { "12 kHz", 0.f, -24.f, 24.f, "%.1f dB" };
-//         AudioParam<float> b9 { "16 kHz", 0.f, -24.f, 24.f, "%.1f dB" };
-//
-//         REGISTER_SETTINGS(Equalizer9BandSettings, &b1, &b2, &b3, &b4, &b5, &b6, &b7, &b8, &b9)
-//     .....
-//     float getGains(float* outArray) const {
-//         outArray[0] = b1.get(); outArray[1] = b2.get(); // ... etc
-//     }
-//
-//     void setData(const Equalizer9BandData& d) {
-//         b1.set(d.gains[0]); b2.set(d.gains[1]); // ... etc
-//     }
-// };
-
-
-    struct Equalizer9BandSettings {
-        std::array<float, 9> gains; // Gain for each band in dB
-
-        static const uint8_t CURRENT_VERSION = 1;
-        void getBinary(std::ostream& os) const {
-            uint8_t ver = CURRENT_VERSION;
-            DSP_STREAM_TOOLS::write_binary(os, ver);
-
-            DSP_STREAM_TOOLS::write_binary(os, gains);
-        }
-
-        bool  setBinary(std::istream& is) {
-            uint8_t fileVersion = 0;
-            DSP_STREAM_TOOLS::read_binary(is, fileVersion);
-            if (fileVersion != CURRENT_VERSION) return false;
-
-            DSP_STREAM_TOOLS::read_binary(is, gains);
-
-            return  is.good();
-        }
-
-        auto operator<=>(const Equalizer9BandSettings&) const = default; //C++20 lazy way
-
-    };
-
-    // Preset: Flat (No change)
-    constexpr Equalizer9BandSettings FLAT_EQ = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    // Preset: Bass Boost (Classic "V" shape but focused on low end)
-    constexpr Equalizer9BandSettings BASS_BOOST_EQ =  { 5.5f, 4.0f, 2.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    // Preset: "Loudness" / Smile (Boosted lows and highs, dipped mids)
-    constexpr Equalizer9BandSettings SMILE_EQ = {4.5f, 3.0f, 0.0f, -2.0f, -3.5f, -2.0f, 0.0f, 3.0f, 4.5f };
-    // Preset: Radio / Telephone (Cuts lows and highs, boosts mids)
-    constexpr Equalizer9BandSettings RADIO_EQ = {-12.0f, -12.0f, -6.0f, 3.0f, 6.0f, 3.0f, -6.0f, -12.0f, -12.0f };
-    // Preset: Air / Clarity (Subtle low cut, boost in the presence and high frequencies)
-    constexpr Equalizer9BandSettings CLARITY_EQ = {-2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.5f, 3.0f, 4.5f, 6.0f };
-
-    constexpr Equalizer9BandSettings CUSTOM_EQ = FLAT_EQ; //DUMMY
-
-
-    static const char* EQ9BAND_PRESET_NAMES[] = {
-        "Custom", "Flat", "Bass Boost", "Loudness", "Radio", "Clarity" };
-
-    static const char* EQ9BAND_LABELS[] = { "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k" };
-
-    static const std::array<DSP::Equalizer9BandSettings, 6> EQ9BAND_PRESETS = {
-        CUSTOM_EQ,
-        FLAT_EQ,
-        BASS_BOOST_EQ,
-        SMILE_EQ,
-        RADIO_EQ,
-        CLARITY_EQ
-    };
-
-
-
+    //
+    // static const std::array<DSP::Equalizer9BandSettings, 6> EQ9BAND_PRESETS = {
+    //     CUSTOM_EQ,
+    //     FLAT_EQ,
+    //     BASS_BOOST_EQ,
+    //     SMILE_EQ,
+    //     RADIO_EQ,
+    //     CLARITY_EQ
+    // };
+    //
 
 
 
@@ -121,10 +193,10 @@ namespace DSP {
         struct FilterState {
             float x1 = 0, x2 = 0, y1 = 0, y2 = 0;
         };
-
     private:
         Equalizer9BandSettings mSettings;
         static constexpr int NUM_BANDS = 9;
+
         // Standard ISO 9-band center frequencies
         const float mFrequencies[NUM_BANDS] = { 63.0f, 125.0f, 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f, 8000.0f, 16000.0f };
 
@@ -133,7 +205,8 @@ namespace DSP {
         std::vector<std::vector<FilterState>> mChannelStates;
 
         void calculateBand(int band) {
-            float A = pow(10.0f, mSettings.gains[band] / 40.0f);
+            // float A = pow(10.0f, mSettings.gains[band] / 40.0f);
+            float A = pow(10.0f, mSettings.getGain(band) / 40.0f);
             float omega = 2.0f * M_PI * mFrequencies[band] / mSampleRate;
             float sn = sin(omega);
             float cs = cos(omega);
@@ -157,54 +230,53 @@ namespace DSP {
 
         Equalizer9Band(bool switchOn = false, float sampleRate = DSP::SAMPLE_RATE)
         : Effect(DSP::EffectType::Equalizer9Band, switchOn)
+        , mSettings()
         {
             mSampleRate = sampleRate;
-            setSettings(FLAT_EQ);
             updateAllBands();
         }
-
-
-        float getSampleRate() const { return mSampleRate; }
-
-        void setSampleRate(float newRate) override {
-            if (newRate <= 0) return;
-            mSampleRate = newRate;
-            updateAllBands();
-        }
-
-
+        //----------------------------------------------------------------------
+        virtual std::string getName() const override { return "9-BAND EQUALIZER";}
+        //----------------------------------------------------------------------
         Equalizer9BandSettings getSettings() const { return mSettings; }
-
-        // Setter for loading
+        //----------------------------------------------------------------------
         void setSettings(const Equalizer9BandSettings& s) {
             mSettings = s;
             updateAllBands();
 
         }
-
+        //----------------------------------------------------------------------
+        void setSampleRate(float newRate) override {
+            if (newRate <= 0) return;
+            mSampleRate = newRate;
+            updateAllBands();
+        }
+        //----------------------------------------------------------------------
         // Update specific band
         void setGain(int band, float db) {
             if (band < 0 || band >= 9) return;
-            mSettings.gains[band] = db;
+            mSettings.setGain(band, db);
+            // mSettings.gains[band] = db;
             calculateBand(band);
         }
-
+        //----------------------------------------------------------------------
         float getGain(int band) const {
-            if (band >= 0 && band < 9) return mSettings.gains[band];
+            if (band >= 0 && band < 9) return mSettings.getGain(band);
             return 0.0f;
         }
-
+        //----------------------------------------------------------------------
         void save(std::ostream& os) const override {
             Effect::save(os);              // Save mEnabled
-            mSettings.getBinary(os);       // Save Settings
+            mSettings.save(os);       // Save Settings
         }
-
+        //----------------------------------------------------------------------
         bool load(std::istream& is) override {
             if (!Effect::load(is)) return false; // Load mEnabled
-            return mSettings.setBinary(is);      // Load Settings
+            return mSettings.load(is);      // Load Settings
         }
-
-
+        //----------------------------------------------------------------------
+        // process
+        //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled()) return;
 
@@ -272,140 +344,100 @@ namespace DSP {
             }
             return (float)totalMag;
         }
-
-
-        virtual std::string getName() const override { return "9-BAND EQUALIZER";}
+        //----------------------------------------------------------------------
+        //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
         virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.7f, 1.0f, 1.0f);}
 
-
+        virtual void renderPaddle() override {
+            DSP::Equalizer9BandSettings currentSettings = this->getSettings();
+            if (currentSettings.DrawPaddle(this)) {
+                this->setSettings(currentSettings);
+            }
+        }
 
         virtual void renderUIWide() override {
-            ImGui::PushID("EQ9BAND_Effect_Row_WIDE");
-            if (ImGui::BeginChild("EQ9BAND_W_BOX", ImVec2(-FLT_MIN,85.f) )) { //default if 65
-                auto* eq = this;
-                int currentIdx = 0; // Standard: "Custom"
-                DSP::Equalizer9BandSettings currentSettings = eq->getSettings();
-                ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-                ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-                ImGui::BeginGroup();
-                bool isEnabled = this->isEnabled();
-                if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
-                    this->setEnabled(isEnabled);
-                }
-                if (!isEnabled) ImGui::BeginDisabled();
-                ImGui::SameLine();
-                // -------- stepper >>>>
-                for (int i = 1; i < DSP::EQ9BAND_PRESETS.size(); ++i) {
-                    if (currentSettings == DSP::EQ9BAND_PRESETS[i]) {
-                        currentIdx = i;
-                        break;
-                    }
-                }
-                int displayIdx = currentIdx;  //<< keep currentIdx clean
-                ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
-
-                if (ImFlux::ValueStepper("##Preset", &displayIdx, EQ9BAND_PRESET_NAMES, IM_ARRAYSIZE(EQ9BAND_PRESET_NAMES))) {
-                    if (displayIdx > 0 && displayIdx < DSP::EQ9BAND_PRESETS.size()) {
-                        currentSettings =  DSP::EQ9BAND_PRESETS[displayIdx];
-                        eq->setSettings(currentSettings);
-                    }
-                }
-                ImGui::SameLine();
-                if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
-                    eq->setSettings(DSP::FLAT_EQ);
-                }
-                ImGui::Separator();
-                const float minGain = -12.0f;
-                const float maxGain = 12.0f;
-                const float sliderWidth = ImFlux::DARK_KNOB.radius * 2.f;
-                for (int i = 0; i < 9; i++) {
-                    ImGui::PushID(i);
-                    float currentGain = eq->getGain(i);
-                    ImGui::BeginGroup();
-                    if (ImFlux::MiniKnobF("##v", &currentGain, minGain, maxGain)) {
-                        eq->setGain(i, currentGain);
-                    }
-                    float textWidth = ImGui::CalcTextSize(EQ9BAND_LABELS[i]).x;
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
-                    ImGui::TextUnformatted(EQ9BAND_LABELS[i]);
-                    ImGui::EndGroup();
-                    if (i < 8) ImGui::SameLine();
-                    ImGui::PopID();
-                }
-                if (!isEnabled) ImGui::EndDisabled();
-                ImGui::EndGroup();
+            DSP::Equalizer9BandSettings currentSettings= this->getSettings();
+            if (currentSettings.DrawUIWide(this)) {
+                this->setSettings(currentSettings);
             }
-            ImGui::EndChild();
-            ImGui::PopID();
         }
 
         virtual void renderUI() override {
-            ImGui::PushID("EQ9_Effect_Row");
-            ImGui::BeginGroup();
-            auto* eq = this;
-            bool isEnabled = eq->isEnabled();
-            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) eq->setEnabled(isEnabled);
-
-            if (eq->isEnabled()) {
-                if (ImGui::BeginChild("EQ_Box", ImVec2(0, 180), ImGuiChildFlags_Borders)) {
-                    int currentIdx = 0;
-                    DSP::Equalizer9BandSettings currentSettings = eq->getSettings();
-                    for (int i = 1; i < DSP::EQ9BAND_PRESETS.size(); ++i) {
-                        if (currentSettings == DSP::EQ9BAND_PRESETS[i]) {
-                            currentIdx = i;
-                            break;
-                        }
-                    }
-                    int displayIdx = currentIdx;
-                    ImGui::SetNextItemWidth(150);
-                    if (ImFlux::ValueStepper("##Preset", &displayIdx, EQ9BAND_PRESET_NAMES, IM_ARRAYSIZE(EQ9BAND_PRESET_NAMES))) {
-                        if (displayIdx > 0 && displayIdx < DSP::EQ9BAND_PRESETS.size()) {
-                            currentSettings =  DSP::EQ9BAND_PRESETS[displayIdx];
-                            eq->setSettings(currentSettings);
-                        }
-                    }
-                    ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-                        eq->setSettings(DSP::FLAT_EQ);
-                    }
-                    ImGui::Separator();
-
-
-                    const float minGain = -12.0f;
-                    const float maxGain = 12.0f;
-
-                    float sliderWidth = 20.f; //35.0f;
-                    float sliderHeight = 80.f; //150.0f;
-                    float sliderSpaceing = 12.f ; //12.f;
-                    ImVec2 padding = ImVec2(10, 50);
-
-
-                    ImGui::SetCursorPos(padding);
-
-                    for (int i = 0; i < 9; i++) {
-                        ImGui::PushID(i);
-                        float currentGain = eq->getGain(i);
-                        ImGui::BeginGroup();
-                        if (ImFlux::FaderVertical("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain)) {
-                            eq->setGain(i, currentGain);
-                        }
-                        float textWidth = ImGui::CalcTextSize(EQ9BAND_LABELS[i]).x;
-                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
-                        ImGui::TextUnformatted(EQ9BAND_LABELS[i]);
-                        ImGui::EndGroup();
-                        if (i < 8) ImGui::SameLine(0, sliderSpaceing); // Spacing between sliders
-                        ImGui::PopID();
-                    }
-                }
-                ImGui::EndChild();
-            } else {
-                ImGui::Separator();
+            DSP::Equalizer9BandSettings currentSettings= this->getSettings();
+            if (currentSettings.DrawUI_FaderVertical(this)) {
+                this->setSettings(currentSettings);
             }
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing();
         }
+        //----------------------------------------------------------------------
+
+
+        // virtual void renderUI() override {
+        //     ImGui::PushID("EQ9_Effect_Row");
+        //     ImGui::BeginGroup();
+        //     auto* eq = this;
+        //     bool isEnabled = eq->isEnabled();
+        //     if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) eq->setEnabled(isEnabled);
+        //
+        //     if (eq->isEnabled()) {
+        //         if (ImGui::BeginChild("EQ_Box", ImVec2(0, 180), ImGuiChildFlags_Borders)) {
+        //             int currentIdx = 0;
+        //             DSP::Equalizer9BandSettings currentSettings = eq->getSettings();
+        //             for (int i = 1; i < DSP::EQ9BAND_PRESETS.size(); ++i) {
+        //                 if (currentSettings == DSP::EQ9BAND_PRESETS[i]) {
+        //                     currentIdx = i;
+        //                     break;
+        //                 }
+        //             }
+        //             int displayIdx = currentIdx;
+        //             ImGui::SetNextItemWidth(150);
+        //             if (ImFlux::ValueStepper("##Preset", &displayIdx, EQ9BAND_PRESET_NAMES, IM_ARRAYSIZE(EQ9BAND_PRESET_NAMES))) {
+        //                 if (displayIdx > 0 && displayIdx < DSP::EQ9BAND_PRESETS.size()) {
+        //                     currentSettings =  DSP::EQ9BAND_PRESETS[displayIdx];
+        //                     eq->setSettings(currentSettings);
+        //                 }
+        //             }
+        //             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+        //             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+        //                 eq->setSettings(DSP::FLAT_EQ);
+        //             }
+        //             ImGui::Separator();
+        //
+        //
+        //             const float minGain = -12.0f;
+        //             const float maxGain = 12.0f;
+        //
+        //             float sliderWidth = 20.f; //35.0f;
+        //             float sliderHeight = 80.f; //150.0f;
+        //             float sliderSpaceing = 12.f ; //12.f;
+        //             ImVec2 padding = ImVec2(10, 50);
+        //
+        //
+        //             ImGui::SetCursorPos(padding);
+        //
+        //             for (int i = 0; i < 9; i++) {
+        //                 ImGui::PushID(i);
+        //                 float currentGain = eq->getGain(i);
+        //                 ImGui::BeginGroup();
+        //                 if (ImFlux::FaderVertical("##v", ImVec2(sliderWidth, sliderHeight), &currentGain, minGain, maxGain)) {
+        //                     eq->setGain(i, currentGain);
+        //                 }
+        //                 float textWidth = ImGui::CalcTextSize(EQ9BAND_LABELS[i]).x;
+        //                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
+        //                 ImGui::TextUnformatted(EQ9BAND_LABELS[i]);
+        //                 ImGui::EndGroup();
+        //                 if (i < 8) ImGui::SameLine(0, sliderSpaceing); // Spacing between sliders
+        //                 ImGui::PopID();
+        //             }
+        //         }
+        //         ImGui::EndChild();
+        //     } else {
+        //         ImGui::Separator();
+        //     }
+        //     ImGui::EndGroup();
+        //     ImGui::PopID();
+        //     ImGui::Spacing();
+        // }
 
 
         //-----------------------------------------------------------------

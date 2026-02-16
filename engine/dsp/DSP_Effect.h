@@ -86,7 +86,7 @@ namespace DSP {
     X(Equalizer9Band     , 4,  EffectCatId::Tone)       \
     X(Limiter            , 5,  EffectCatId::Dynamics)   \
     X(Reverb             , 6,  EffectCatId::Space)      \
-    X(SoundCardEmulation , 7,  EffectCatId::Utility)    \
+    X(AnalogGlow         , 7,  EffectCatId::Tone)    \
     X(SpectrumAnalyzer   , 8,  EffectCatId::Analyzer)   \
     X(Warmth             , 9,  EffectCatId::Tone)       \
     X(VisualAnalyzer     , 10, EffectCatId::Analyzer)   \
@@ -161,9 +161,10 @@ namespace DSP {
 
 
         #ifdef FLUX_ENGINE
-        virtual bool  MiniKnobF() = 0;
+        virtual bool MiniKnobF() = 0;
         virtual bool FaderHWithText() = 0;
-        virtual bool  RackKnob() = 0;
+        virtual bool FaderVWithText( float sliderWidth = 20.f, float sliderHeight = 80.f ) = 0;
+        virtual bool RackKnob() = 0;
         #endif
 
     };
@@ -299,6 +300,21 @@ namespace DSP {
         return false;
     }
 
+    virtual bool FaderVWithText( float sliderWidth = 20.f, float sliderHeight = 80.f ) override {
+        float tmpValue = get();
+        bool changed = false;
+        ImGui::BeginGroup();
+        if (ImFlux::FaderVertical(std::format("##{}", name).c_str(), ImVec2(sliderWidth, sliderHeight), &tmpValue, minVal, maxVal)) {
+            set(tmpValue);
+            changed = true;
+        }
+        float textWidth = ImGui::CalcTextSize(name.c_str()).x;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
+        ImGui::TextUnformatted(name.c_str());
+        ImGui::EndGroup();
+        return changed;
+    }
+
     virtual bool RackKnob() override {
         float tmpValue = get();
 
@@ -334,11 +350,6 @@ namespace DSP {
 
         // process the samples and modify the buffer ... here is the beef :)
         virtual void process(float* buffer, int numSamples, int numChannels) {}
-
-        // added for single float processing ...
-        // you need to handle it manually since it's not supported on all
-        // classes !!! We simply return the input again by default
-        virtual float processFloat(float input) { return input; }
 
         // trigger when a effect add data to the stream like a drum
         virtual void trigger() {}
@@ -537,7 +548,7 @@ namespace DSP {
         #ifdef FLUX_ENGINE
         //----------------------------------------------------------------------
         bool DrawPaddle(Effect* effect)  {
-            ImGui::PushID(this); ImGui::PushID("UI_PADDLE");
+            ImGui::PushID(effect); ImGui::PushID("UI_PADDLE");
 
             bool isEnabled = effect->isEnabled();
             if (paddleHeader(effect->getName().c_str(), ImGui::ColorConvertFloat4ToU32(effect->getColor()), isEnabled)) {
@@ -598,6 +609,7 @@ namespace DSP {
         //--------------------------------
         // return Changed!
         bool DrawUI(Effect* effect, float boxHeight = 110.f, bool resetEffect = true) {
+            ImGui::PushID(effect);
             bool changed = false;
             effect->renderUIHeader();
             if (effect->isEnabled())
@@ -621,6 +633,43 @@ namespace DSP {
                 ImGui::EndChild();
             }
             effect->renderUIFooter();
+            ImGui::PopID();
+            return changed;
+        }
+        //--------------------------------
+        // return Changed!
+        bool DrawUI_FaderVertical(Effect* effect, float boxHeight = 145.f
+            , float sliderSpaceing = 12.f, bool resetEffect = true)
+        {
+            ImGui::PushID(effect);
+            bool changed = false;
+            effect->renderUIHeader();
+            if (effect->isEnabled())
+            {
+                if (ImGui::BeginChild("UI_Box", ImVec2(0, boxHeight), ImGuiChildFlags_Borders)) {
+                    ImGui::BeginGroup();
+                    changed |= this->drawStepper(*this);
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                        resetToDefaults();
+                        if (resetEffect) effect->reset();
+                        changed = true;
+                    }
+                    ImGui::Separator();
+                    // Control Sliders
+                    int count = getAll().size();
+                    int i = 0;
+                    for (auto* param :getAll() ) {
+                        changed |= param->FaderVWithText();
+                        if (i < count) ImGui::SameLine(0, sliderSpaceing);
+                        i++;
+                    }
+                    ImGui::EndGroup();
+                }
+                ImGui::EndChild();
+            }
+            effect->renderUIFooter();
+            ImGui::PopID();
             return changed;
         }
         //----------------------------------------------------------------------

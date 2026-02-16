@@ -139,7 +139,6 @@ private:
 public:
     virtual ImVec4 getColor() const  override { return ImVec4(0.1f, 0.4f, 0.5f, 1.0f);} //FIXME check color
 
-    // i'am so happy with this, before it was hell to add the gui's :D
     virtual void renderPaddle() override {
         DSP::KickSettings currentSettings = this->getSettings();
         if (currentSettings.DrawPaddle(this)) {

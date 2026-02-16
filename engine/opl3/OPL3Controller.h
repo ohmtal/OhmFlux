@@ -152,7 +152,7 @@ private:
     DSP::Chorus* mDSPChorus;
     DSP::Limiter* mLimiter;
     DSP::Equalizer9Band* mEquilzer9Band;
-    DSP::SoundCardEmulation* mSoundCardEmulation;
+    // DSP::SoundCardEmulation* mSoundCardEmulation;
 
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
 
@@ -304,7 +304,7 @@ public:
     DSP::Warmth* getDSPWarmth() { return mDSPWarmth; }
     DSP::Limiter* getDSPLimiter() { return mLimiter; }
     DSP::Equalizer9Band* getDSPEquilzer9Band() { return mEquilzer9Band; }
-    DSP::SoundCardEmulation* getSoundCardEmulation() { return mSoundCardEmulation; }
+    // DSP::SoundCardEmulation* getSoundCardEmulation() { return mSoundCardEmulation; }
 
 
     // ----- chords --------------

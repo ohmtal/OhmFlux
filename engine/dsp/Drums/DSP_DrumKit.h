@@ -204,7 +204,9 @@ namespace DSP {
                 float out = 0.f;
 
                 //using  default values here ...
-                out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, mSampleRate);
+
+                out +=  mKick.processSample_variant(50.f, 0.3f, 0.5f, 1.f, mSampleRate);
+                // out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, mSampleRate);
                 out +=  mSnare.processSample(180.f, 0.2f, 0.7f, mSampleRate);
                 out +=  mHiHat.processSample(0.05f, 3000.f, mSampleRate);
                 out +=  mTomTom.processSample(100.f,0.3f,0.4f, mSampleRate);
