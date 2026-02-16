@@ -21,8 +21,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#define _USE_MATH_DEFINES // Required for M_PI on some systems (like Windows/MSVC)
-#include <cmath>          // Provides pow, sin, cos, and math constants
+#include <cmath>
 
 #include <vector>
 #include <cstdint>

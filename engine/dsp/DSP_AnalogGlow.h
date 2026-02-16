@@ -158,7 +158,12 @@ public:
     //----------------------------------------------------------------------
     bool load(std::istream& is) override {
         if (!Effect::load(is)) return false; // Load mEnabled
-        return mSettings.load(is);      // Load Settings
+        if (mSettings.load(is)) {
+            updateAlpha();
+            return true;
+        }
+        return false;
+        
     }
     //----------------------------------------------------------------------
     //----------------------------------------------------------------------
