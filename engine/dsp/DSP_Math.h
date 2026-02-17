@@ -76,7 +76,7 @@ namespace DSP {
         return val;
     }
 
-    inline constexpr float clampFloat(float val, float min, float max) {
+    inline float clampFloat(float val, float min, float max) {
         return std::fmax(min, std::fmin(val, max));
     }
 
@@ -94,12 +94,12 @@ namespace DSP {
     }
 
     //
-    inline constexpr float gainToDb(float gain) {
+    inline float gainToDb(float gain) {
         return 20.0f * std::log10(gain + 1e-9f);
     }
 
     //
-    inline constexpr float dbToGain(float db) {
+    inline float dbToGain(float db) {
         return std::pow(10.0f, db * 0.05f);
     }
 

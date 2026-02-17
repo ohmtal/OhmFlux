@@ -58,7 +58,7 @@ namespace DSP {
         std::vector<std::shared_ptr<IPreset>> getPresets() const override {
             return {
                 std::make_shared<Preset<MetalSettings, MetalData>>(
-                    "Custom", MetalData{ 200.f, 0.5f, 0.5f}
+                    "Custom", MetalData{ 150.f, 0.5f, 0.5f}
                 ),
 
                 std::make_shared<Preset<MetalSettings, MetalData>>(

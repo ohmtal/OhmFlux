@@ -276,6 +276,7 @@ bool AppGui::Initialize()
 //------------------------------------------------------------------------------
 void AppGui::Deinitialize()
 {
+    SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!! 
     // getMain()->unQueueObject(mInputModule);
     getMain()->unQueueObject(mWaveModule);
     SAFE_DELETE(mWaveModule);

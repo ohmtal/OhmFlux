@@ -73,7 +73,7 @@ bool FluxMain::Initialize()
 		std::string lLogFileString = fluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
 #else 
 		std::string lLogFileString = mSettings.getPrefsPath() 
-				+ sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+				+ fluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
 #endif
 		InitErrorLog(lLogFileString.c_str(),this->mSettings.Caption,this->mSettings.Version);
 	}

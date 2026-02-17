@@ -252,14 +252,18 @@ target_compile_definitions(ohmFlux_engine PUBLIC
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:DEBUG>>:FLUX_DEBUG>
 )
 
-# so we know where we are
+# compile flags 
 target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE)
 target_compile_definitions(ohmFlux_engine PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
+target_compile_definitions(ohmFlux_engine PUBLIC _USE_MATH_DEFINES)
+
 
 
 if(WIN32 AND MSVC)
     target_compile_definitions(ohmFlux_engine PUBLIC NOMINMAX)
     set_target_properties(ohmFlux_engine PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	 add_compile_options(/MP)
+	# add_compile_options(/permissive- /Zc:__cplusplus)
     
 endif()
 
