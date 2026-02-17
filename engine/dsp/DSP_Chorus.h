@@ -65,7 +65,7 @@ namespace DSP {
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
                     ("Juno-60 Style", ChorusData{0.9f,  0.004f, 0.015f, 0.5f,  0.20f }),
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
-                    ("Vibrato", ChorusData{1.5f,  0.002f, 0.010f, 1.0f,  0.00f }),
+                    ("Vibrato", ChorusData{1.5f,  0.002f, 0.010f, 1.0f,  0.15f }),
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
                     ("Flanger", ChorusData{0.2f,  0.001f, 0.003f, 0.5f,  0.10f })
 

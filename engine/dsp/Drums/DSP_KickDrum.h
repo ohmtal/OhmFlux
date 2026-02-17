@@ -26,7 +26,6 @@
 namespace DSP {
 
 struct KickData {
-    uint8_t kicktype;
     float pitch;
     float decay;
     float click;
@@ -35,23 +34,21 @@ struct KickData {
 };
 
 struct KickSettings : public ISettings {
-    //types: normal, techno (with drive), normal varian
-    AudioParam<uint8_t> kicktype  { "Type" , 0, 0, 2, "%d" }; // kick or Techno or variant (like 0)
     AudioParam<float> pitch      { "Pitch", 50.0f, 30.0f, 100.0f, "%.1f Hz" };
     AudioParam<float> decay      { "Decay", 0.3f, 0.01f, 2.0f, "%.2f s" };
     AudioParam<float> click      { "Click", 0.5f, 0.0f, 1.0f, "%.2f" };
+    //should be intern but can be set for some reason, can change in every triggerVelo!
     AudioParam<float> velocity   { "Velocity", 1.f, 0.1f, 1.0f, "%.2f" };
     AudioParam<float> drive      { "Drive", 1.5f, 1.0f, 5.0f, "%.1f" };
 
     KickSettings() = default;
-    REGISTER_SETTINGS(KickSettings, &kicktype, &pitch, &decay, &click, &velocity,  &drive)
+    REGISTER_SETTINGS(KickSettings,  &pitch, &decay, &click, &velocity,  &drive)
 
     KickData getData() const {
-        return { kicktype.get(), pitch.get(), decay.get(), click.get(), velocity.get(), drive.get() };
+        return { pitch.get(), decay.get(), click.get(), velocity.get(), drive.get() };
     }
 
     void setData(const KickData& data) {
-        kicktype.set(data.kicktype);
         pitch.set(data.pitch);
         click.set(data.click);
         decay.set(data.decay);
@@ -60,7 +57,7 @@ struct KickSettings : public ISettings {
     }
     std::vector<std::shared_ptr<IPreset>> getPresets() const override {
         return {
-            std::make_shared<Preset<KickSettings, KickData>>("Default", KickData{ 0, 50.0f, 0.3f, 0.5f, 1.f, 1.5f})
+            std::make_shared<Preset<KickSettings, KickData>>("Default", KickData{ 50.0f, 0.3f, 0.5f, 1.f, 1.5f})
         };
     }
 };
@@ -73,6 +70,11 @@ public:
         , mSettings()
         {}
 
+    //----------------------------------------------------------------------
+    virtual void triggerVelo(float velocity) override{
+        mSettings.velocity.set(velocity);
+        mKickSynth.trigger();
+    }
     //----------------------------------------------------------------------
     virtual void trigger() override{
         mKickSynth.trigger();
@@ -101,25 +103,18 @@ public:
     virtual void process(float* buffer, int numSamples, int numChannels) override {
         if (!isEnabled() )  return;
 
-        const uint8_t kicktype = mSettings.kicktype.get();
         const float pitch = mSettings.pitch.get();
         const float click = mSettings.click.get();
         const float decay = mSettings.decay.get();
         const float velocity = mSettings.velocity.get();
         const float drive = mSettings.drive.get();
-        const float sampleRate = mSampleRate;
+        const float samplerate = mSampleRate;
 
 
-        //NOTE special handling. we add stuff here. => i += numChannels
         for (int i = 0; i < numSamples; i += numChannels) {
-
             // generate once
             float monoOut = 0;
-            switch (kicktype) {
-                case 1: monoOut = mKickSynth.processSampleDrive(pitch, decay, click, drive,velocity,  sampleRate); break;
-                case 2: monoOut = mKickSynth.processSample_variant(pitch, decay, click, velocity, sampleRate); break;
-                default: monoOut = mKickSynth.processSample(pitch, decay, click, velocity, sampleRate); break;
-            }
+            monoOut = mKickSynth.processSample(pitch, decay, click, drive, velocity,  samplerate);
 
             // put into channels
             for (int ch = 0; ch < numChannels; ch++) {
@@ -136,13 +131,32 @@ private:
     DrumSynth::KickSynth mKickSynth;
 
     #ifdef FLUX_ENGINE
+    bool mShowKnobs = true;
 public:
     virtual ImVec4 getColor() const  override { return ImVec4(0.1f, 0.4f, 0.5f, 1.0f);} //FIXME check color
 
+    virtual void renderCustomUI() override {
+        ImFlux::ShadowText(getName().c_str());
+        if (ImGui::CollapsingHeader("Settings", &mShowKnobs )){
+            DSP::KickSettings s = this->getSettings();
+            // if (s.DrawRackKnobs()) this->setSettings(s);
+            if (s.DrawMiniKnobs()) this->setSettings(s);
+
+        }
+
+
+        ImFlux::ButtonParams bp = ImFlux::SLATEDARK_BUTTON;
+        bp.size=ImVec2(100.f, 100.f);
+        if (ImFlux::ButtonFancy("Trigger", bp))
+            this->trigger();
+
+    }
+
+
     virtual void renderPaddle() override {
-        DSP::KickSettings currentSettings = this->getSettings();
-        if (currentSettings.DrawPaddle(this)) {
-            this->setSettings(currentSettings);
+        DSP::KickSettings s = this->getSettings();
+        if (s.DrawPaddle(this)) {
+            this->setSettings(s);
         }
     }
 

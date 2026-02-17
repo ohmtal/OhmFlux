@@ -18,6 +18,7 @@ private:
 
 
 
+
     bool mInitialized = false;
 
 public:
@@ -33,6 +34,8 @@ public:
 
     bool Initialize() override;
 
+    std::unique_ptr<DSP::EffectsManager> mDrumManager = nullptr;
+
     std::unique_ptr<DSP::DrumKit> mDrumKit = nullptr;
     std::unique_ptr<DSP::SpectrumAnalyzer> mSpectrumAnalyzer = nullptr;
     std::unique_ptr<DSP::VisualAnalyzer> mVisualAnalyzer = nullptr;
@@ -46,7 +49,8 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    void DrawRack();
+    void DrawRack(bool* p_enabled);
+    void DrawDrums(bool* p_enabled);
     //--------------------------------------------------------------------------
     void WriteWavHeader(SDL_IOStream *io, SDL_AudioSpec *spec, Uint32 dataSize) {
         SDL_SeekIO(io, 0, SDL_IO_SEEK_SET);

@@ -422,8 +422,7 @@ namespace DSP {
     }
 
     // Macros generate the to_json/from_json functions automatically
-    // old: NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BitcrusherSettings, bits, sampleRate, wet)
-    // FIXME all to data .....
+    // Warning: if you change something here the program crash !
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BitcrusherData, bits, sampleRate, wet)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ChorusData, rate, depth, delayBase, wet, phaseOffset)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Equalizer9BandData,

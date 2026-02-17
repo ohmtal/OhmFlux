@@ -354,6 +354,8 @@ void AppGui::ShowMenuBar()
             ImGui::MenuItem("Sound Effects Stereo", NULL, &mAppSettings.mShowSFXStereoModule);
             ImGui::MenuItem("Wave Files", NULL, &mAppSettings.mShowWaveModule);
             ImGui::MenuItem("Drum Kit", NULL, &mAppSettings.mShowDrumKit);
+            ImGui::MenuItem("Drum Pads", NULL, &mAppSettings.mShowDrumEffects);
+
 
 
 
@@ -417,7 +419,10 @@ void AppGui::DrawGui()
     mInputModule->DrawInputModuleUI();
 
 
-    mSoundMixModule->DrawRack();
+    mSoundMixModule->DrawRack( &mAppSettings.mShowEffectRack);
+    mSoundMixModule->DrawDrums(&mAppSettings.mShowDrumEffects /*&getMain()->getAppSettings()->mShowDrumEffects*/);
+    mSoundMixModule->mDrumKit->renderSequencerWindow(&mAppSettings.mShowDrumKit /*&getMain()->getAppSettings()->mShowDrumKit*/);
+
 
 
     DrawMsgBoxPopup();

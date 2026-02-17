@@ -36,6 +36,8 @@ public:
         bool mShowConsole;
         bool mShowWaveModule;
         bool mShowDrumKit;
+        bool mShowDrumEffects;
+        bool mShowEffectRack;
     };
 
     ImConsole mConsole;
@@ -96,5 +98,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
     mShowFileBrowser,
     mShowConsole,
     mShowWaveModule,
-    mShowDrumKit
+    mShowDrumKit,
+    mShowDrumEffects,
+    mShowEffectRack
 )

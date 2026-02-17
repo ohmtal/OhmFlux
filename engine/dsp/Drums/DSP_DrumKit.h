@@ -25,7 +25,8 @@ namespace DSP {
         uint16_t bpm;
         uint16_t kickPat;
         uint16_t snarePat;
-        uint16_t hiHatPat;
+        uint16_t hiHatClosedPat;
+        uint16_t hiHatOpenPat;
         uint16_t tomPat;
         uint16_t cymbalsPat;
     };
@@ -36,14 +37,15 @@ namespace DSP {
         AudioParam<uint16_t> bpm        { "Beats per Minute", 125, 15, 360, "%.0f bpm" };
         AudioParam<uint16_t> kickPat    { "Kick Drum pattern",    0x8282, 0, UINT16_MAX, "%.0f" };
         AudioParam<uint16_t> snarePat   { "Snare Drum pattern",   0x2222, 0, UINT16_MAX, "%.0f" };
-        AudioParam<uint16_t> hiHatPat   { "HiHat Drum pattern",   0xEEEE, 0, UINT16_MAX, "%.0f" };
+        AudioParam<uint16_t> hiHatClosedPat   { "HiHat Closed Drum pattern",   0xEEEE, 0, UINT16_MAX, "%.0f" };
+        AudioParam<uint16_t> hiHatOpenPat   { "HiHat Open Drum pattern",   0x0000, 0, UINT16_MAX, "%.0f" };
         AudioParam<uint16_t> tomPat     { "Tom Drum pattern",     0x0101, 0, UINT16_MAX, "%.0f" };
         AudioParam<uint16_t> cymbalsPat { "Cymbals Drum pattern", 0x0000, 0, UINT16_MAX, "%.0f" };
 
 
         DrumKitSettings() = default;
         //NOTE: IMPORTANT !!
-        REGISTER_SETTINGS(DrumKitSettings, &vol, &bpm, &kickPat, &snarePat, &hiHatPat, &tomPat, &cymbalsPat)
+        REGISTER_SETTINGS(DrumKitSettings, &vol, &bpm, &kickPat, &snarePat, &hiHatClosedPat, &hiHatOpenPat, &tomPat, &cymbalsPat)
 
         DrumKitData getData() const {
             return {
@@ -51,7 +53,8 @@ namespace DSP {
                 bpm.get(),
                 kickPat.get(),
                 snarePat.get(),
-                hiHatPat.get(),
+                hiHatClosedPat.get(),
+                hiHatOpenPat.get(),
                 tomPat.get(),
                 cymbalsPat.get(),
             };
@@ -62,7 +65,8 @@ namespace DSP {
             bpm.set(data.bpm);
             kickPat.set(data.kickPat);
             snarePat.set(data.snarePat);
-            hiHatPat.set(data.hiHatPat);
+            hiHatClosedPat.set(data.hiHatClosedPat);
+            hiHatOpenPat.set(data.hiHatOpenPat);
             tomPat.set(data.tomPat);
             cymbalsPat.set(data.cymbalsPat);
 
@@ -77,22 +81,22 @@ namespace DSP {
                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Custom", DrumKitData{}));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Standard Rock",
-                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0xAAAA, 0x0000, 0x8080 }));
+                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0x0000,0xAAAA, 0x0000, 0x8080 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Driving Rock",
-                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0xEEEE, 0x0101, 0x0000 }));
+                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0x0000,0xEEEE,  0x0101, 0x0000 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Heavy Half-Time",
-                    DrumKitData{ 0.8f,80, 0x8080, 0x0202, 0xAAAA, 0x0000, 0x8888 }));
+                    DrumKitData{ 0.8f,80, 0x8080, 0x0202, 0x0000,0xAAAA, 0x0000, 0x8888 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Punk",
-                    DrumKitData{ 0.8f,125, 34952, 0, 8738, 0x0000, 0x0000 }));
+                    DrumKitData{ 0.8f,125, 34952, 0, 0x0000, 8738, 0x0000, 0x0000 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Simple Rock",
-                    DrumKitData{ 0.8f,125, 34952, 0, 12850, 0x0000, 128 }));
+                    DrumKitData{ 0.8f,125, 34952, 0, 0x0000, 12850, 0x0000, 128 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Metronome",
-                    DrumKitData{ 0.8f,125, 0, 0, 34952, 0x0000, 0 }));
+                    DrumKitData{ 0.8f,125, 0, 0, 34952,0x0000,  0x0000, 0 }));
             return list;
         }
     };
@@ -178,13 +182,18 @@ namespace DSP {
             uint16_t bpm = mSettings.bpm.get();
             uint16_t kickPat = mSettings.kickPat.get();
             uint16_t snarePat = mSettings.snarePat.get();
-            uint16_t hiPat = mSettings.hiHatPat.get();
+
+            uint16_t hiHatClosedPat = mSettings.hiHatClosedPat.get();
+            uint16_t hiHatOpenPat = mSettings.hiHatOpenPat.get();
+
             uint16_t tomPat = mSettings.tomPat.get();
             uint16_t cymPat = mSettings.cymbalsPat.get();
+            float    sampleRate = mSampleRate;
 
 
             double samplesPerStep = (mSampleRate * 60.0) / (bpm * 4.0);
 
+            bool hihatOpenPlaying = false;
 
             for (int i = 0; i < numSamples; i += numChannels) {
                 // Phase-Accumulator
@@ -195,7 +204,10 @@ namespace DSP {
                     mCurrentStep = step;
                     if (kickPat & (1 << (15 - step))) { mKick.trigger(); }
                     if (snarePat & (1 << (15 - step))) { mSnare.trigger(); }
-                    if (hiPat & (1 << (15 - step))) { mHiHat.trigger(); }
+
+                    if (hiHatOpenPat & (1 << (15 - step))) {mHiHatOpen.trigger(); }
+                    if (hiHatClosedPat & (1 << (15 - step))) {mHiHatClosed.trigger(); mHiHatOpen.stop();}
+
                     if (tomPat & (1 << (15 - step))) { mTomTom.trigger(); }
                     if (cymPat & (1 << (15 - step))) { mCymbals.trigger(); }
 
@@ -205,12 +217,22 @@ namespace DSP {
 
                 //using  default values here ...
 
-                out +=  mKick.processSample_variant(50.f, 0.3f, 0.5f, 1.f, mSampleRate);
-                // out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, mSampleRate);
-                out +=  mSnare.processSample(180.f, 0.2f, 0.7f, mSampleRate);
-                out +=  mHiHat.processSample(0.05f, 3000.f, mSampleRate);
-                out +=  mTomTom.processSample(100.f,0.3f,0.4f, mSampleRate);
-                out +=  mCymbals.processSample(0.5f,4000.f, mSampleRate);
+                out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, 1.f, sampleRate);
+                out +=  mSnare.processSample(180.f, 0.2f, 0.7f, 1.5f, 1.f, sampleRate);
+
+                // Closed: processSample(14000.f, 0.05f, 5.f, velocity, sr) (Hell & kurz)
+                // Open: processSample(8000.f, 0.5f, 3.f, velocity, sr) (Tiefer & lang)
+                out +=  mHiHatClosed.processSample(14000.f, 0.05f, 5.f, 1.f, sampleRate);
+                out +=  mHiHatOpen.processSample(8000.f, 0.5f, 3.f, 1.f, sampleRate);
+
+                out +=  mTomTom.processSample(120.f,0.4f,0.50f,1.0f, sampleRate);
+
+                // Cymbals
+                // Pitch 300 - 600 Hz
+                // Decay 0.8 - 2.5 s
+                // Drive 1.5
+
+                out +=  mCymbals.processSample(450.f, 1.0f, 1.5f, 0.8f, sampleRate);
 
                 out *= vol;
 
@@ -235,7 +257,8 @@ namespace DSP {
         DrumKitSettings mSettings;
         DrumSynth::KickSynth mKick;
         DrumSynth::SnareSynth mSnare;
-        DrumSynth::HiHatSynth mHiHat;
+        DrumSynth::HiHatSynth mHiHatClosed;
+        DrumSynth::HiHatSynth mHiHatOpen;
         DrumSynth::TomSynth mTomTom;
         DrumSynth::CymbalsSynth mCymbals;
 
@@ -280,7 +303,8 @@ namespace DSP {
             static const DrumParamPtr patterns[] = {
                 &DrumKitSettings::kickPat,
                 &DrumKitSettings::snarePat,
-                &DrumKitSettings::hiHatPat,
+                &DrumKitSettings::hiHatClosedPat,
+                &DrumKitSettings::hiHatOpenPat,
                 &DrumKitSettings::tomPat,
                 &DrumKitSettings::cymbalsPat
             };

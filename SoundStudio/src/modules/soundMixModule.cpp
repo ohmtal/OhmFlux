@@ -47,8 +47,10 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
             int numSamples = buflen / sizeof(float);
 
             soundMix->getEffectsManager()->checkFrequence(spec->freq);
-
             soundMix->getEffectsManager()->process(buffer, numSamples, spec->channels);
+
+            soundMix->mDrumManager->checkFrequence(spec->freq);
+            soundMix->mDrumManager->process(buffer, numSamples, spec->channels);
 
 
             soundMix->mDrumKit->process(buffer, numSamples, spec->channels);
@@ -68,8 +70,21 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
     //     SDL_PutAudioStreamData(recording_stream, buffer, buflen);
     // }
 }
+
+void SoundMixModule::DrawDrums(bool* p_enabled) {
+    if (!mInitialized ||  mDrumManager == nullptr || !*p_enabled) return;
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Drum Pads", p_enabled);
+    mDrumManager->renderUI(3);
+    ImGui::End();
+
+
+
+
+}
 //------------------------------------------------------------------------------
-void SoundMixModule::DrawRack()
+void SoundMixModule::DrawRack(bool* p_enabled)
     {
         if (!mInitialized ||  mEffectsManager == nullptr) return;
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
@@ -118,7 +133,6 @@ void SoundMixModule::DrawRack()
 
         // getMain()->getAppSettings().mShowDrumKit = true;
 
-        mDrumKit->renderSequencerWindow(&getMain()->getAppSettings()->mShowDrumKit);
 
 
 
@@ -140,12 +154,7 @@ void SoundMixModule::DrawRack()
 bool SoundMixModule::Initialize() {
 
         mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
-        //TEST load em all i dont have the count do i want an extra variable?
-        // ... lets bruteforce for this test
-        // so we can also test addEffect :P
-        // for (S32 i = 0; i < 100; i++) {
-        //     mEffectsManager->addEffect(DSP::EffectFactory::Create((DSP::EffectType) i));
-        // }
+
         std::vector<DSP::EffectType> types = {
             DSP::EffectType::ToneControl, //pre controll maybe moved to input !!
             DSP::EffectType::NoiseGate,
@@ -179,6 +188,23 @@ bool SoundMixModule::Initialize() {
                 mEffectsManager->addEffect(std::move(fx));
             }
         }
+
+        mDrumManager = std::make_unique<DSP::EffectsManager>(true);
+
+        std::vector<DSP::EffectType> drumTypes = {
+            DSP::EffectType::KickDrum,
+        };
+        for (auto type : drumTypes) {
+            auto fx = DSP::EffectFactory::Create(type);
+            if (fx) {
+                fx->setEnabled(true); //drums on be default
+                mDrumManager->addEffect(std::move(fx));
+            }
+        }
+
+
+
+
 
         mDrumKit = cast_unique<DSP::DrumKit>(DSP::EffectFactory::Create(DSP::EffectType::DrumKit));
         //FIXME TEST !!

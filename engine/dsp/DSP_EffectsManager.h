@@ -328,7 +328,7 @@ public:
         return true;
     }
     //--------------------------------------------------------------------------
-    // modes:0 = renderUI,  1=  renderUIWide, 2 = renderPaddle
+    // modes:0 = renderUI,  1=  renderUIWide, 2 = renderPaddle, 3 = customUI
     void renderUI(int mode = 0 ) {
 
 #ifdef FLUX_ENGINE
@@ -340,6 +340,7 @@ public:
             {
                 case 1: effect->renderUIWide();break;
                 case 2: effect->renderPaddle();break;
+                case 3: effect->renderCustomUI();break;
                 default: effect->renderUI(); break;
             }
 

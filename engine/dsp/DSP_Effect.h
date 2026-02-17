@@ -137,6 +137,12 @@ namespace DSP {
         return copy; \
     }
 
+    //--------------------------------------------------------------------------
+    // IParameter
+    //--------------------------------------------------------------------------
+    // used for gui ... FIXME knobs and slider:, FloatLog ==> Logarythm
+    enum class AudioParamType { Float, Int, Bool, FloatLog };
+
 
     // Parameter Interface
     class IParameter {
@@ -159,9 +165,11 @@ namespace DSP {
 
         virtual void setFrom(const IParameter* other) = 0;
 
+        virtual AudioParamType getParamType() = 0;
 
         #ifdef FLUX_ENGINE
         virtual bool MiniKnobF() = 0;
+        virtual bool MiniKnobInt() = 0;
         virtual bool FaderHWithText() = 0;
         virtual bool FaderVWithText( float sliderWidth = 20.f, float sliderHeight = 80.f ) = 0;
         virtual bool RackKnob() = 0;
@@ -192,13 +200,16 @@ namespace DSP {
     };
 
     //--------------------------------------------------------------------------
+    //  ---------- A U D I O  P A R A M ---------------
     //--------------------------------------------------------------------------
     // Parameter Template-Class Thread safe
+
     template <typename T>
     class AudioParam : public IParameter {
+
     public:
-        AudioParam(std::string name, T def, T min, T max, std::string unit = "")
-        : name(name), minVal(min), maxVal(max), unit(unit) {
+        AudioParam(std::string name, T def, T min, T max, std::string unit = "", AudioParamType paramType = AudioParamType::Float )
+        : name(name), minVal(min), maxVal(max), unit(unit),paramType(paramType)  {
             value.store(def);
             defaultValue = def;
         }
@@ -263,6 +274,10 @@ namespace DSP {
             }
         }
 
+        virtual AudioParamType getParamType() override {
+            return paramType;
+        }
+
 #ifdef FLUX_ENGINE //hackfest
 #endif
 
@@ -272,7 +287,10 @@ namespace DSP {
         T defaultValue;
         T minVal, maxVal;
         std::string unit;
-#ifdef FLUX_ENGINE //hackfest
+        AudioParamType paramType;
+#ifdef FLUX_ENGINE
+        //hackfest  would add it to constructor but since it
+        //          require FLUX widgets ....
         ImFlux::KnobSettings knobSettings = ImFlux::ksBlack;
 #endif
 
@@ -291,6 +309,17 @@ namespace DSP {
         }
         return false;
     }
+    virtual bool MiniKnobInt() override {
+        int tmpValue = get();
+        // inline bool MiniKnobInt(const char* label, int* v, int v_min, int v_max, float radius = 12.f, int step = 1, int defaultValue = -4711) {
+
+        if (ImFlux::MiniKnobInt(name.c_str(), &tmpValue, minVal, maxVal, 12.f, 1, defaultValue)) {
+            set(tmpValue);
+            return true;
+        }
+        return false;
+    }
+
     virtual bool FaderHWithText() override {
         float tmpValue = get();
         if (ImFlux::FaderHWithText(name.c_str(), &tmpValue, minVal, maxVal, unit.c_str())) {
@@ -335,8 +364,6 @@ namespace DSP {
     protected:
         bool mEnabled = false;
         float mSampleRate = SAMPLE_RATE;
-
-    private:
         const EffectType mType;
     public:
         Effect(EffectType type, bool switchOn = false):
@@ -352,6 +379,7 @@ namespace DSP {
         virtual void process(float* buffer, int numSamples, int numChannels) {}
 
         // trigger when a effect add data to the stream like a drum
+        virtual void triggerVelo(float velocity) {}
         virtual void trigger() {}
 
 
@@ -408,8 +436,10 @@ namespace DSP {
     }
 
 
+    virtual void renderCustomUI() {
+    }
+
     virtual void renderPaddle(   ) {
-        // paddleHeader(getName().c_str(), ImGui::ColorConvertFloat4ToU32(getColor()), mEnabled);
     }
 
     // ----------------- renderUI -----------------------------
@@ -545,34 +575,60 @@ namespace DSP {
             }
         }
         //----------------------------------------------------------------------
+
+        //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
         //----------------------------------------------------------------------
-        bool DrawPaddle(Effect* effect)  {
+        void DrawPaddleHeader(Effect* effect, float height = 125.f)  {
             ImGui::PushID(effect); ImGui::PushID("UI_PADDLE");
 
             bool isEnabled = effect->isEnabled();
             if (paddleHeader(effect->getName().c_str(), ImGui::ColorConvertFloat4ToU32(effect->getColor()), isEnabled)) {
                 effect->setEnabled(isEnabled);
             }
+            ImFlux::GradientBox(ImVec2(0.f,height),ImFlux::DEFAULT_GRADIENPARAMS);
+        }
+        bool DrawRackKnobs() {
             bool changed = false;
-            ImFlux::GradientBox(ImVec2(0.f,125.f),ImFlux::DEFAULT_GRADIENPARAMS);
-
             std::vector<IParameter*> allParams = getAll();
             uint16_t count = allParams.size();
             for (uint16_t i = 0; i < count; i++ ) {
                 changed |= allParams[i]->RackKnob();
                 if ( i < count -1 ) ImGui::SameLine();
             }
-
+            return changed;
+        }
+        void DrawPaddleFooter() {
             ImGui::PopID();ImGui::PopID();
+        }
+        // ---- wrapper for paddle parts: ----
+        bool DrawPaddle(Effect* effect)  {
+            DrawPaddleHeader(effect, 125.f);
+            bool changed = DrawRackKnobs();
+            DrawPaddleFooter();
+            return changed;
+        }
+        //----------------------------------------------------------------------
+        // FIXME I NEED THIS FOR ALL CONTROLS !
+        //----------------------------------------------------------------------
+        bool DrawMiniKnobs(){
+            bool changed = false;
+            for (auto* param : getAll() ) {
+                auto pt = param->getParamType();
+                if (pt == AudioParamType::Int) {
+                    changed |= param->MiniKnobInt();
+                } else {
+                    changed |= param->MiniKnobF();
+                }
 
+                ImGui::SameLine();
+            }
             return changed;
         }
 
         //----------------------------------------------------------------------
         // return Changed!
         bool DrawUIWide(Effect* effect, bool resetEffect = true, float height = 65.f) {
-
             bool changed = false;
             ImGui::PushID(effect); ImGui::PushID("UI_WIDE");
             if (ImGui::BeginChild("WILDE_CHILD", ImVec2(-FLT_MIN,height) )) {
@@ -594,10 +650,7 @@ namespace DSP {
                     changed = true;
                 }
                 ImGui::Separator();
-                for (auto* param : getAll() ) {
-                    changed |= param->MiniKnobF();
-                    ImGui::SameLine();
-                }
+                changed |= DrawMiniKnobs();
                 if (!isEnabled) ImGui::EndDisabled();
                 ImGui::EndGroup();
 
