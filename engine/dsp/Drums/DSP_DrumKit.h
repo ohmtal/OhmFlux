@@ -81,19 +81,19 @@ namespace DSP {
                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Custom", DrumKitData{}));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Standard Rock",
-                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0x0000,0xAAAA, 0x0000, 0x8080 }));
+                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0xAAAA,0x0000, 0x0000, 0x8080 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Driving Rock",
-                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0x0000,0xEEEE,  0x0101, 0x0000 }));
+                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0xEEEE,0x0000,  0x0101, 0x0000 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Heavy Half-Time",
-                    DrumKitData{ 0.8f,80, 0x8080, 0x0202, 0x0000,0xAAAA, 0x0000, 0x8888 }));
+                    DrumKitData{ 0.8f,80, 0x8080, 0x0202,0xAAAA, 0x0000, 0x0000, 0x8888 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Punk",
                     DrumKitData{ 0.8f,125, 34952, 0, 0x0000, 8738, 0x0000, 0x0000 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Simple Rock",
-                    DrumKitData{ 0.8f,125, 34952, 0, 0x0000, 12850, 0x0000, 128 }));
+                    DrumKitData{ 0.8f,125, 34952, 0,12850, 0x0000,  0x0000, 128 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Metronome",
                     DrumKitData{ 0.8f,125, 0, 0, 34952,0x0000,  0x0000, 0 }));
@@ -193,7 +193,7 @@ namespace DSP {
 
             double samplesPerStep = (mSampleRate * 60.0) / (bpm * 4.0);
 
-            bool hihatOpenPlaying = false;
+            uint16_t stepper = 0;
 
             for (int i = 0; i < numSamples; i += numChannels) {
                 // Phase-Accumulator
@@ -202,41 +202,27 @@ namespace DSP {
 
                 if (step != mCurrentStep) {
                     mCurrentStep = step;
-                    if (kickPat & (1 << (15 - step))) { mKick.trigger(); }
-                    if (snarePat & (1 << (15 - step))) { mSnare.trigger(); }
+                    stepper = (1 << (15 - step));
 
-                    if (hiHatOpenPat & (1 << (15 - step))) {mHiHatOpen.trigger(); }
-                    if (hiHatClosedPat & (1 << (15 - step))) {mHiHatClosed.trigger(); mHiHatOpen.stop();}
+                    if (kickPat & stepper) { mKick.trigger(); }
+                    if (snarePat & stepper) { mSnare.trigger(); }
 
-                    if (tomPat & (1 << (15 - step))) { mTomTom.trigger(); }
-                    if (cymPat & (1 << (15 - step))) { mCymbals.trigger(); }
+                    if (hiHatOpenPat & stepper) {mHiHatOpen.trigger(); }
+                    if (hiHatClosedPat & stepper) {mHiHatClosed.trigger(); mHiHatOpen.stop();}
 
+                    if (tomPat & stepper) { mTomTom.trigger(); }
+                    if (cymPat & stepper) { mCymbals.trigger(); }
                 }
-
                 float out = 0.f;
 
                 //using  default values here ...
-
                 out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, 1.f, sampleRate);
                 out +=  mSnare.processSample(180.f, 0.2f, 0.7f, 1.5f, 1.f, sampleRate);
-
-                // Closed: processSample(14000.f, 0.05f, 5.f, velocity, sr) (Hell & kurz)
-                // Open: processSample(8000.f, 0.5f, 3.f, velocity, sr) (Tiefer & lang)
-                out +=  mHiHatClosed.processSample(14000.f, 0.05f, 5.f, 1.f, sampleRate);
-                out +=  mHiHatOpen.processSample(8000.f, 0.5f, 3.f, 1.f, sampleRate);
-
+                out +=  mHiHatClosed.processSample(14000.f, 0.2f, 5.f, 1.f, sampleRate);
+                out +=  mHiHatOpen.processSample(8000.f, 0.5f, 3.f, 0.5f, sampleRate);
                 out +=  mTomTom.processSample(120.f,0.4f,0.50f,1.0f, sampleRate);
-
-                // Cymbals
-                // Pitch 300 - 600 Hz
-                // Decay 0.8 - 2.5 s
-                // Drive 1.5
-
-                out +=  mCymbals.processSample(450.f, 1.0f, 1.5f, 0.8f, sampleRate);
-
+                out +=  mCymbals.processSample(450.f, 1.0f, 1.5f, 0.5f, sampleRate);
                 out *= vol;
-
-                // Und addieren es auf alle Kanäle
                 for (int ch = 0; ch < numChannels; ch++) {
                     if ((i + ch) < numSamples) {
                         buffer[i + ch] += out;
