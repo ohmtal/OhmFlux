@@ -115,7 +115,7 @@ namespace DSP {
 
             //  Init poles
             if (mChannelPoles.size() != static_cast<size_t>(numChannels)) {
-                mChannelPoles.assign(numChannels, {0.0f, 0.0f, 0.0f, 0.0f});
+                mChannelPoles.resize(numChannels, {0.0f, 0.0f, 0.0f, 0.0f});
             }
 
             // Alpha represents the cutoff frequency (0.01 to 0.99)

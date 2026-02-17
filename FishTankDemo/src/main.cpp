@@ -677,7 +677,8 @@ int main(int argc, char *argv[])
 	lDemoGame->mSettings.ScreenWidth=1152;
 	lDemoGame->mSettings.ScreenHeight=648;
 	lDemoGame->mSettings.ScaleScreen = true; //default true
-	lDemoGame->mSettings.IconFilename = "assets/icon.bmp";
+	std::string iconFileName = getGamePath() + "assets/icon.bmp";
+	lDemoGame->mSettings.IconFilename = iconFileName.c_str();
 	lDemoGame->mSettings.CursorFilename = "assets/fishnet.bmp";
 	lDemoGame->mSettings.cursorHotSpotX = 11;
 	lDemoGame->mSettings.cursorHotSpotY = 3;

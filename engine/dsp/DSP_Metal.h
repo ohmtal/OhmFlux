@@ -108,7 +108,7 @@ namespace DSP {
             if (!isEnabled() || level <= 0.001f) return;
 
             if (mStates.size() != static_cast<size_t>(numChannels)) {
-                mStates.assign(numChannels, FilterState());
+                mStates.resize(numChannels, FilterState());
             }
 
             float dt = 1.0f / mSampleRate;

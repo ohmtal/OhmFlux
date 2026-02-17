@@ -148,7 +148,7 @@ public:
 
         // Ensure we have a state object for every channel
         if (mStates.size() != static_cast<size_t>(numChannels)) {
-            mStates.assign(numChannels, FilterChannelState());
+            mStates.resize(numChannels, FilterChannelState());
         }
 
         int channel = 0;

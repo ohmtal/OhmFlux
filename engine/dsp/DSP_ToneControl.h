@@ -35,7 +35,7 @@ struct ToneControlData {
 };
 
 struct ToneControlSettings : public ISettings {
-    AudioParam<float> volume      { "Volume"   , 1.f, 0.0f,  2.0f, "%.2f" };
+    AudioParam<float> volume      { "Volume"   , 1.f, 0.0f,  6.0f, "%.2f" };
     AudioParam<float> bass        { "Bass"     , 0.f,-15.0f,15.0f, "%.2f db" };
     AudioParam<float> treble      { "Treble"   , 0.f,-15.0f,15.0f, "%.2f db" };
     AudioParam<float> presence    { "Presence" , 0.f,-15.0f,15.0f, "%.2f db" };
@@ -108,7 +108,7 @@ public:
         float in, out;
         // no channel handling needed here ...
         for (int i = 0; i < numSamples; i++) {
-            if ( buffer[i] != 0.f ) buffer[i] = mToneControl.process(buffer[i], volume,  bass, treble, presence, mSampleRate);
+             buffer[i] = mToneControl.process(buffer[i], volume,  bass, treble, presence, mSampleRate);
         }
     }
 

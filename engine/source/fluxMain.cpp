@@ -279,7 +279,7 @@ FluxTexture* FluxMain::loadTexture(std::string filename, int cols, int rows, boo
 	: result->loadTexture(filename.c_str(), setColorKeyAtZeroPixel);
 
 	if (!success) {
-		LogFMT("[error] Cannot load graphic: %s", filename);
+		LogFMT("[error] Cannot load graphic: {}", filename);
 		SAFE_DELETE(result);
 		return nullptr;
 	}

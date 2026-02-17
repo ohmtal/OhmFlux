@@ -61,13 +61,13 @@ namespace DSP {
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
                     ("Deep Ensemble", ChorusData{0.1f,  0.005f, 0.040f, 0.5f,  0.50f }),
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
-                    ("Fast Leslie", ChorusData{2.5f,  0.002f, 0.010f, 0.3f,  0.15f }),
+                    ("Fast Leslie", ChorusData{2.5f,  0.002f, 0.010f, 0.3f,  0.20f }),
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
-                    ("Juno-60 Style", ChorusData{0.9f,  0.004f, 0.015f, 0.5f,  0.20f }),
+                    ("Juno-60 Style", ChorusData{0.9f,  0.004f, 0.015f, 0.5f,  0.25f }),
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
-                    ("Vibrato", ChorusData{1.5f,  0.002f, 0.010f, 1.0f,  0.15f }),
+                    ("Vibrato", ChorusData{1.5f,  0.002f, 0.010f, 1.0f,  0.25f }),
                 std::make_shared<Preset<ChorusSettings, ChorusData>>
-                    ("Flanger", ChorusData{0.2f,  0.001f, 0.003f, 0.5f,  0.10f })
+                    ("Flanger", ChorusData{0.2f,  0.001f, 0.003f, 0.5f,  0.25f })
 
             };
         }
@@ -139,7 +139,8 @@ namespace DSP {
         virtual void setSampleRate(float sampleRate) override {
             mSampleRate = sampleRate;
             mMaxBufferSize = static_cast<int>(mSampleRate / 10);
-            mDelayBuffers.assign(2, std::vector<float>(mMaxBufferSize, 0.0f));
+            int curChannels = (int)mDelayBuffers.size();
+            mDelayBuffers.resize(curChannels, std::vector<float>(mMaxBufferSize, 0.0f));
         }
 
         //----------------------------------------------------------------------
@@ -165,7 +166,7 @@ namespace DSP {
 
             // Ensure we have enough delay buffers for the current channel count
             if (mDelayBuffers.size() != static_cast<size_t>(numChannels)) {
-                mDelayBuffers.assign(numChannels, std::vector<float>(mMaxBufferSize, 0.0f));
+                mDelayBuffers.resize(numChannels, std::vector<float>(mMaxBufferSize, 0.0f));
             }
 
 

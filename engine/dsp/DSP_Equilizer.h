@@ -143,7 +143,7 @@ namespace DSP {
 
             // Ensure we have a state object for every channel
             if (mStates.size() != static_cast<size_t>(numChannels)) {
-                mStates.assign(numChannels, BiquadState());
+                mStates.resize(numChannels, BiquadState());
             }
 
             int channel = 0;

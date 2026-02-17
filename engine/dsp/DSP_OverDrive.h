@@ -95,8 +95,8 @@ namespace DSP {
             if (!isEnabled() || wet <= 0.001f) return;
 
             if (mToneStates.size() != (size_t)numChannels) {
-                mToneStates.assign(numChannels, 0.0f);
-                mBassStates.assign(numChannels, 0.0f);
+                mToneStates.resize(numChannels, 0.0f);
+                mBassStates.resize(numChannels, 0.0f);
             }
 
             // Coefficients

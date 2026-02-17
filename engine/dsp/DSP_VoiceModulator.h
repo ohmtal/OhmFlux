@@ -119,8 +119,8 @@ public:
         if (!isEnabled() || wet <= 0.001f) return;
 
         if (mBuffers.size() != static_cast<size_t>(numChannels)) {
-            mBuffers.assign(numChannels, std::vector<float>(mBufSize, 0.0f));
-            mReadPositions.assign(numChannels, 0.0f);
+            mBuffers.resize(numChannels, std::vector<float>(mBufSize, 0.0f));
+            mReadPositions.resize(numChannels, 0.0f);
         }
 
 

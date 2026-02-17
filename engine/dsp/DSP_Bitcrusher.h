@@ -130,7 +130,7 @@ namespace DSP {
 
             // Resize state buffer if channel count changes dynamically
             if (mSteps.size() != (size_t)numChannels) {
-                mSteps.assign(numChannels, 0.0f);
+                mSteps.resize(numChannels, 0.0f);
             }
 
             float samplesToHold = mSampleRate / std::max(1.0f, currentSR);
@@ -173,57 +173,6 @@ namespace DSP {
         }
 
 
-        // virtual void process(float* buffer, int numSamples, int numChannels) override {
-        //
-        //     const float currentWet  = mSettings.wet.get();
-        //
-        //     if (!isEnabled() || currentWet  <= 0.001f) return;
-        //
-        //     // NOTE when you update all effects
-        //     //      do not forget to pre define the variables!! (keyword: atomic)
-        //     const float currentBits = mSettings.bits.get();
-        //     const float currentSR   = mSettings.sampleRate.get();
-        //
-        //
-        //     // Resize state buffer if channel count changes dynamically
-        //     if (mSteps.size() != (size_t)numChannels) {
-        //         mSteps.assign(numChannels, 0.0f);
-        //     }
-        //
-        //     float samplesToHold = mSampleRate / std::max(1.0f, currentSR);
-        //     float levels = std::pow(2.0f, std::clamp(currentBits, 1.0f, 16.0f));
-        //
-        //
-        //     for (int i = 0; i < numSamples; i++) {
-        //         int channel = i % numChannels;
-        //         float dry = buffer[i];
-        //
-        //         // Update sample-and-hold values at the start of a new multi-channel frame
-        //         if (channel == 0) {
-        //             mSampleCount++;
-        //             if (mSampleCount >= samplesToHold) {
-        //                 mSampleCount = 0;
-        //                 // Capture the current dry value for all channels in this frame
-        //                 // Note: This assumes interleaved data [C1, C2, ..., Cn, C1, C2...]
-        //                 for (int c = 0; c < numChannels; ++c) {
-        //                     mSteps[c] = buffer[i + c];
-        //                 }
-        //             }
-        //         }
-        //
-        //         float held = mSteps[channel];
-        //
-        //         // Bit Crushing
-        //         float shifted = (held + 1.0f) * 0.5f;
-        //         float quantized = std::round(shifted * (levels - 1.0f)) / (levels - 1.0f);
-        //         float crushed = (quantized * 2.0f) - 1.0f;
-        //
-        //         // Mix
-        //         buffer[i] = (dry * (1.0f - currentWet )) + (crushed * currentWet );
-        //
-        //     }
-        //
-        // }
 
         //----------------------------------------------------------------------
 #ifdef FLUX_ENGINE

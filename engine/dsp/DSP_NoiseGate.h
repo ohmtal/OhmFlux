@@ -93,7 +93,7 @@ namespace DSP {
             Effect(DSP::EffectType::NoiseGate, switchOn),
             mSettings()
             {
-                initVectors(2);
+                initVectors(2, false);
             }
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "NOISE GATE";}
@@ -115,16 +115,22 @@ namespace DSP {
             updateReleaseSamples();
         }
         //----------------------------------------------------------------------
-        void initVectors(int channel) {
-            mCurrentGains.assign(channel, 0.0f);
-            mLpfLastOut.assign(channel, 0.0f);
-            mHpfLastIn.assign(channel, 0.0f);
-            mHpfLastOut.assign(channel, 0.0f);
+        void initVectors(int numChannels, bool onlyIfChannelsChanged) {
+            if (onlyIfChannelsChanged && ((int)mCurrentGains.size() == numChannels)) {
+                return;
+            }
+
+            //!assign !!
+            mCurrentGains.resize(numChannels, 0.0f);
+            mLpfLastOut.resize(numChannels, 0.0f);
+            mHpfLastIn.resize(numChannels, 0.0f);
+            mHpfLastOut.resize(numChannels, 0.0f);
 
         }
+
         //----------------------------------------------------------------------
         void reset() override {
-            initVectors(2);
+
         }
         //----------------------------------------------------------------------
         void save(std::ostream& os) const override {
@@ -146,9 +152,7 @@ namespace DSP {
             float hpf = mSettings.hpfAlpha.get();
             float lpf = mSettings.lpfAlpha.get();
 
-            if (mCurrentGains.size() != (size_t)numChannels) {
-                initVectors(numChannels);
-            }
+            initVectors(numChannels, true);
 
             for (int i = 0; i < numSamples; i++) {
                 int ch = i % numChannels;

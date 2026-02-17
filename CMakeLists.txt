@@ -61,6 +61,7 @@ set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
 set(SOUNDSTUDIO_DIR "${CMAKE_CURRENT_LIST_DIR}/SoundStudio")
 set(FLUXTRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmFluxTracker")
+set(AXE_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalAxe")
 
 # =============================================================================
 # <<<< PROJECTS SECTION
@@ -432,6 +433,18 @@ if(BUILD_SOUNDSTUDIO)
         "${SOUNDSTUDIO_DIR}/src/modules/inputModule.cpp"
     )
     configure_demo_target(SoundStudio ${SOUNDSTUDIO_DIR} "${SOUNDSTUDIO_DIR}/assets@assets" "${APP_SOURCES}")
+endif()
+
+# --- Ohmtal Axe ---
+option(BUILD_SOUNDSTUDIO "Build Ohmtal Axe application" ON)
+if(BUILD_SOUNDSTUDIO)
+    set(APP_SOURCES
+        "${AXE_DIR}/src/main.cpp"
+        "${AXE_DIR}/src/appGui.cpp"
+        "${AXE_DIR}/src/modules/soundMixModule.cpp"
+        "${AXE_DIR}/src/modules/inputModule.cpp"
+    )
+    configure_demo_target(Axe ${AXE_DIR} "${AXE_DIR}/assets@assets" "${APP_SOURCES}")
 endif()
 
 

@@ -104,8 +104,8 @@ public:
     }
     //----------------------------------------------------------------------
     void updateBuffers( int numChannels) {
-        mBuffers.assign(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
-        mPositions.assign(numChannels, 0);
+        mBuffers.resize(numChannels, std::vector<float>(mMaxBufSize, 0.0f));
+        mPositions.resize(numChannels, 0);
 
         for (int i = 0; i < numChannels; ++i) {
             mChannelPtrs[i] = mBuffers[i].data();

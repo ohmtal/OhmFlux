@@ -60,9 +60,9 @@ namespace DSP {
 
             // 1. Initialize channel levels if count changed
             if (mChannelLevels.size() != static_cast<size_t>(numChannels)) {
-                mChannelLevels.assign(numChannels, 0.0f);
-                 mChannelRms.assign(numChannels, 0.0f);
-                 mSums.assign(numChannels, 0.0f);
+                mChannelLevels.resize(numChannels, 0.0f);
+                 mChannelRms.resize(numChannels, 0.0f);
+                 mSums.resize(numChannels, 0.0f);
             }
 
             {

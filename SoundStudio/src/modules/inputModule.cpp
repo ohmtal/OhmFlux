@@ -33,34 +33,25 @@ void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additiona
         bytesRead = SDL_GetAudioStreamData(stream, inMod->getBuffer(), to_read);
     }
     if (bytesRead > 0) {
-        // simple effect TEST >>>>
-        int channel = 0;
+
+
         int num_samples = bytesRead / sizeof(float);
-        // float gate_threshold  = inMod->mSimpleEffectConfig.gate_threshold.load();
-        // float gate_release_ms = inMod->mSimpleEffectConfig.gate_release_ms.load();
-        // bool gate_enabled     = inMod->mSimpleEffectConfig.gate_enabled.load();
-        // float release_samples = (gate_release_ms / 1000.0f) * inMod->mInputSpec.freq;
-        // if (release_samples < 1.0f) release_samples = 1.0f;
+
+        //preprocessed
+        inMod->mInputEffects->process(
+            inMod->getBuffer(),
+            num_samples,
+            inMod->mInputSpec.channels );
+
 
         for (int i = 0; i < num_samples; ++i) {
             float raw_in = inMod->getBuffer()[i];
             float out = raw_in;
-
-            channel = i % inMod->mInputSpec.channels;
-
-
+            // channel = i % inMod->mInputSpec.channels;
             inMod->mVisuallizer.add_sample(raw_in);
-
-            // if ( gate_enabled )
-            //     out = inMod->mNoiseGate.process(out, gate_threshold, release_samples, gate_enabled);
-            //
-            // out *= 0.1f;
-            // inMod->lastInputValue = (float) gate_enabled; // out; //DEBUG
-
             inMod->getBuffer()[i] = out;
         }
 
-        // <<<< TEST
 
         SDL_PutAudioStreamData(inMod->getStream(), inMod->getBuffer(), bytesRead);
     }
@@ -95,6 +86,7 @@ void InputModule::DrawInputModuleUI(){
                          ImVec2(-1, -1));
         //<<<<
         ImGui::EndChild();
+        mInputEffects->renderUI(2);
 
     }
     ImGui::End();

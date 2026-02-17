@@ -132,8 +132,8 @@ public:
         mMaxBufSize = static_cast<uint32_t>(mSampleRate);
         int curChannels = (int)mBuffers.size();
         if (curChannels == 0) curChannels = 2; //default stereo
-        mBuffers.assign(curChannels,  std::vector<float>(mMaxBufSize, 0.0f ));
-        mPositions.assign(curChannels, 0);
+        mBuffers.resize(curChannels,  std::vector<float>(mMaxBufSize, 0.0f ));
+        mPositions.resize(curChannels, 0);
         updateSizes(curChannels);
     }
     //----------------------------------------------------------------------

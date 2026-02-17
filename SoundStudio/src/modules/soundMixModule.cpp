@@ -157,8 +157,8 @@ bool SoundMixModule::Initialize() {
 
         std::vector<DSP::EffectType> types = {
             DSP::EffectType::ToneControl, //pre controll maybe moved to input !!
-            DSP::EffectType::NoiseGate,
-            DSP::EffectType::ChromaticTuner,
+            // DSP::EffectType::NoiseGate,
+            // DSP::EffectType::ChromaticTuner,
             DSP::EffectType::DistortionBasic,
             DSP::EffectType::OverDrive,
             DSP::EffectType::Metal,

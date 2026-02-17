@@ -282,7 +282,7 @@ namespace DSP {
             // 1. Ensure we have state vectors for every channel
             if (mChannelStates.size() != static_cast<size_t>(numChannels)) {
                 // Initialize numChannels vectors, each containing NUM_BANDS states
-                mChannelStates.assign(numChannels, std::vector<FilterState>(NUM_BANDS));
+                mChannelStates.resize(numChannels, std::vector<FilterState>(NUM_BANDS));
             }
 
             int channel = 0;

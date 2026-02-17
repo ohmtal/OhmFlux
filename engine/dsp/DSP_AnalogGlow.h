@@ -120,10 +120,9 @@ public:
         if (onlyIfChannelsChanged && (int)mStates.size() == numChannels) {
             return;
         }
-        if ((int)mStates.size() != numChannels) {
-            mStates.resize(numChannels, FilterChannelState());
-        }
-    }    //----------------------------------------------------------------------
+        mStates.resize(numChannels, FilterChannelState());
+    }
+    //----------------------------------------------------------------------
     void updateAlpha() {
         float cutOff = mSettings.cutoff.get();
 
