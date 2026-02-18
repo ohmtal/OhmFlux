@@ -25,7 +25,7 @@ public:
     SoundMixModule() = default;
     ~SoundMixModule() {
         //FIXME TEST !!
-        mEffectsManager->SaveRack("bla.rack");
+        mEffectsManager->SaveActiveRack("bla.rack");
         //FIXME TEST !!
         mDrumKit->saveToFile("bla.drum");
 

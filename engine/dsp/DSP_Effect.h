@@ -30,11 +30,9 @@ namespace DSP {
     inline static float SAMPLE_RATE = 48000.f; // 44100.f; // global setting for SampleRate
     inline static int SAMPLE_RATE_I = 48000;
 
-    // inline int getSampleRateI()  { return static_cast<int>(SAMPLE_RATE); }
-    // inline float getSampleRateF() { return SAMPLE_RATE; }
-
-    constexpr uint32_t DSP_RACK_MAGIC = 0x524F434B; // ASCII: 'R' 'O' 'C' 'K' -> 0x524F434B
+    constexpr uint32_t DSP_RACK_MAGIC =  DSP_STREAM_TOOLS::MakeMagic("ROCK");
     constexpr uint32_t DSP_RACK_VERSION = 1;
+
     //------------------------- EFFECT CATEGORIES  --------------------------------
 
     enum class EffectCatId : uint8_t {
@@ -223,7 +221,7 @@ namespace DSP {
         T get() const { return value.load(std::memory_order_relaxed); }
 
         void set(T newValue) {
-            value.store(std::clamp(newValue, minVal, maxVal));
+            value.store(DSP::clamp(newValue, minVal, maxVal));
         }
 
         void setDefaultValue() override { set(defaultValue);}

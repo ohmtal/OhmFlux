@@ -31,15 +31,50 @@
 
 namespace DSP {
 
-    constexpr uint16_t MAX_RACKS = 64;
 
-struct EffectsRack {
-    std::string mName;
+    // for presets file
+    constexpr uint16_t MAX_RACKS_IN_PRESET = 256;
+
+    constexpr uint32_t DSP_AXE_MAGIC    =  DSP_STREAM_TOOLS::MakeMagic("AXE!");
+    constexpr uint32_t DSP_AXE_VERSION  =  1;
+
+    //for rack file
+    constexpr uint16_t MAX_EFFECTS_IN_RACKS = 64;
+
+    // i use this in OPL too !
+    // constexpr uint32_t DSP_RACK_MAGIC =  DSP_STREAM_TOOLS::MakeMagic("ROCK");
+    // constexpr uint32_t DSP_RACK_VERSION = 1;
+
+
+//------------------------------ EffectsRack -----------------------------------
+class EffectsRack {
+private:
+    std::string mName = "";
     std::vector<std::unique_ptr<DSP::Effect>> mEffects;
+public:
+    EffectsRack() = default;
+
+    //mutable getter
+    std::vector<std::unique_ptr<DSP::Effect>>& getEffects() { return mEffects; }
+
+    const uint16_t getEffectsCount() {return (uint16_t) mEffects.size();}
+    const std::string getName() {return mName;}
+    void setName(std::string name) {mName = name;}
+
+    bool add(std::unique_ptr<DSP::Effect> fx) {
+        if (!fx) return false;
+        if ( getEffectsCount() >= MAX_EFFECTS_IN_RACKS ){
+            // addError(std::format("[error] We cant have more then {} Effects in one Rack", MAX_RACKS_IN_PRESET));
+            return false;
+        }
+        mEffects.push_back(std::move(fx));
+        return true;
+    }
+
 
     std::unique_ptr<EffectsRack> clone() const {
         auto newRack = std::make_unique<EffectsRack>();
-        newRack->mName = this->mName + " (copy)";
+        newRack->mName = this->mName + " *";
         for (const auto& fx : mEffects) {
             newRack->mEffects.push_back(fx->clone());
         }
@@ -65,8 +100,8 @@ struct EffectsRack {
         DSP_STREAM_TOOLS::write_string(os, mName);
         uint32_t count = static_cast<uint32_t>(mEffects.size());
 
-        if (count > MAX_RACKS) {
-            throw std::runtime_error(std::format("Too many effects in rack! count={} (max allowed: {})", count, MAX_RACKS));
+        if (count > MAX_EFFECTS_IN_RACKS) {
+            throw std::runtime_error(std::format("Too many effects in rack! count={} (max allowed: {})", count, MAX_EFFECTS_IN_RACKS));
         }
 
         DSP_STREAM_TOOLS::write_binary(os, count);
@@ -81,8 +116,8 @@ struct EffectsRack {
             DSP_STREAM_TOOLS::read_string(is, mName);
             uint32_t count = 0;
             DSP_STREAM_TOOLS::read_binary(is, count);
-            if (count > MAX_RACKS) {
-                throw std::runtime_error(std::format("Too many effects in rack! count={} (max allowed: {})", count, MAX_RACKS));
+            if (count > MAX_EFFECTS_IN_RACKS) {
+                throw std::runtime_error(std::format("Too many effects in rack! count={} (max allowed: {})", count, MAX_EFFECTS_IN_RACKS));
             }
 
             mEffects.clear();
@@ -104,6 +139,7 @@ struct EffectsRack {
     }
 };
 
+//------------------------------ EffectsManager --------------------------------
 class EffectsManager {
 private:
     std::vector<std::unique_ptr<EffectsRack>> mPresets;
@@ -118,9 +154,12 @@ private:
 
 
 public:
+    //--------------------------------------------------------------------------
     std::vector<std::unique_ptr<EffectsRack>>& getPresets()  {return  mPresets; }
     EffectsRack* getActiveRack() {return  mActiveRack; }
-    std::vector<std::unique_ptr<DSP::Effect>>& getActiveRackEffects() { return mActiveRack->mEffects;}
+    std::vector<std::unique_ptr<DSP::Effect>>& getActiveRackEffects() { return mActiveRack->getEffects();}
+
+    uint16_t getPresetsCount() const { return (uint16_t)mPresets.size(); };
 
     //--------------------------------------------------------------------------
     EffectsManager(bool switchOn = false) {
@@ -129,7 +168,7 @@ public:
 
 
         auto defaultRack = std::make_unique<EffectsRack>();
-        defaultRack->mName = "Rack n Roll";
+        defaultRack->setName("Rack n Roll");
         mPresets.push_back(std::move(defaultRack));
         mActiveRack = mPresets.front().get();
     }
@@ -151,10 +190,15 @@ public:
     }
     //--------------------------------------------------------------------------
     // return the new rack index
-    int addRack(std::string name = "Rack n Roll" )
+    int addRack(std::string name = "empty rack" )
     {
+        if (getPresetsCount() >= MAX_RACKS_IN_PRESET){
+            addError(std::format("[error] We cant have more then {} racks in a Preset", MAX_RACKS_IN_PRESET));
+            return -1;
+        }
+
         auto newRack = std::make_unique<EffectsRack>();
-        newRack->mName = name;
+        newRack->setName(name);
         mPresets.push_back(std::move(newRack));
         return (int)mPresets.size() - 1;
     }
@@ -165,12 +209,17 @@ public:
             addError(std::format("[error] Cant clone rack. index out of bounds! idx:{} max:{}", fromIndex, (int)mPresets.size()));
             return -1;
         }
+        if (getPresetsCount() >= MAX_RACKS_IN_PRESET){
+            addError(std::format("[error] We cant have more then {} racks in a Preset", MAX_RACKS_IN_PRESET));
+            return -1;
+        }
+
         auto newRack = mPresets[fromIndex]->clone();
         mPresets.push_back(std::move(newRack));
         return (int)mPresets.size() - 1;
     }
     //--------------------------------------------------------------------------
-    int getCurrentRackIndex()  {
+    int getActiveRackIndex()  {
         for (int i = 0; i < (int)mPresets.size(); ++i) {
             if (mPresets[i].get() == mActiveRack) {
                 return i;
@@ -181,7 +230,7 @@ public:
     }
     //--------------------------------------------------------------------------
     int cloneCurrent() {
-        int currentIndex = getCurrentRackIndex();
+        int currentIndex = getActiveRackIndex();
         if (currentIndex == -1) {
             addError("[error] No active rack to clone!");
             return -1;
@@ -202,7 +251,7 @@ public:
             addError("[warn] Cannot remove the last remaining rack.");
             return false;
         }
-        int currentIndex = getCurrentRackIndex();
+        int currentIndex = getActiveRackIndex();
         int nextActiveIndex = currentIndex;
 
         if (index == currentIndex) {
@@ -235,7 +284,7 @@ public:
     //--------------------------------------------------------------------------
     void setSampleRate(float sampleRate) {
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
-        for (auto& effect : this->mActiveRack->mEffects) {
+        for (auto& effect : this->mActiveRack->getEffects()) {
             effect->setSampleRate(sampleRate);
         }
 
@@ -256,9 +305,9 @@ public:
 
     bool isEnabled() const { return mEnabled; }
 
-    std::vector<std::unique_ptr<DSP::Effect>>& getEffects() { return mActiveRack->mEffects;    }
+    std::vector<std::unique_ptr<DSP::Effect>>& getEffects() { return mActiveRack->getEffects();    }
 
-    void clear() { mActiveRack->mEffects.clear();}
+    void clear() { mActiveRack->getEffects().clear();}
 
 
     //--------------------------------------------------------------------------
@@ -308,14 +357,19 @@ public:
     bool addEffect(std::unique_ptr<DSP::Effect> fx) {
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
         if (!fx) return false;
-        mActiveRack->mEffects.push_back(std::move(fx));
+        if ( mActiveRack->getEffectsCount() >= MAX_EFFECTS_IN_RACKS ){
+            addError(std::format("[error] We cant have more then {} Effects in one Rack", MAX_RACKS_IN_PRESET));
+            return false;
+        }
+        // mActiveRack->getEffects().push_back(std::move(fx));
+        mActiveRack->add(std::move(fx));
         return true;
     }
 
 
     DSP::Effect* getEffectByType(DSP::EffectType type) {
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
-        for (auto& fx : mActiveRack->mEffects) {
+        for (auto& fx : mActiveRack->getEffects()) {
             if (fx->getType() == type) return fx.get();
         }
         return nullptr;
@@ -323,12 +377,12 @@ public:
 
     //--------------------------------------------------------------------------
     bool removeEffect( size_t effectIndex  ) {
-        if (effectIndex >= mActiveRack->mEffects.size() )
+        if (effectIndex >= mActiveRack->getEffects().size() )
         {
             addError(std::format("Remove Effect failed index out of bounds! {}", effectIndex));
             return false;
         }
-        mActiveRack->mEffects.erase(mActiveRack->mEffects.begin() + effectIndex);
+        mActiveRack->getEffects().erase(mActiveRack->getEffects().begin() + effectIndex);
         return true;
     }
     //--------------------------------------------------------------------------
@@ -339,7 +393,7 @@ public:
         bool isEnabled = mEnabled;
 
         if (!isEnabled) ImGui::BeginDisabled();
-        for (auto& effect : this->mActiveRack->mEffects) {
+        for (auto& effect : this->mActiveRack->getEffects()) {
             switch ( mode )
             {
                 case 1: effect->renderUIWide();break;
@@ -353,21 +407,21 @@ public:
 #endif
     }
     //--------------------------------------------------------------------------
-    void SaveRackStream(std::ostream& ofs) const {
+    void SaveRackStream( EffectsRack* rack,   std::ostream& ofs) const {
         ofs.exceptions(std::ios::badbit | std::ios::failbit);
         DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_RACK_MAGIC);
         DSP_STREAM_TOOLS::write_binary(ofs, uint32_t(DSP_RACK_VERSION));
-        mActiveRack->save(ofs);
+        rack->save(ofs);
     }
     //--------------------------------------------------------------------------
-    bool SaveRack(std::string filePath) {
+    bool SaveActiveRack(std::string filePath) {
         if (!mActiveRack) return false;
 
         clearErrors();
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
         try {
             std::ofstream ofs(filePath, std::ios::binary);
-            SaveRackStream(ofs);
+            SaveRackStream(mActiveRack, ofs);
             ofs.close();
             return true;
         } catch (const std::exception& e) {
@@ -382,47 +436,60 @@ public:
         AppendToPresetsAndSetActive = 2,
         OnlyUpdateExistingSingularity = 3
     };
-    bool LoadRackStream(std::istream& ifs, RackLoadMode loadMode = RackLoadMode::ReplacePresets) {
+    bool LoadRackStream(std::istream& ifs, RackLoadMode loadMode = RackLoadMode::ReplacePresets, bool EOFcheck = true) {
         uint32_t magic = 0;
         DSP_STREAM_TOOLS::read_binary(ifs, magic);
         if (magic != DSP::DSP_RACK_MAGIC) {
-            addError("Invalid File Format (Magic mismatch)");
+            addError("LoadRackStream: Invalid File Format (Magic mismatch)");
             return false;
         }
 
         uint32_t version  = 0;
         DSP_STREAM_TOOLS::read_binary(ifs, version);
         if (version > DSP_RACK_VERSION) {
-            addError(std::format("RackLoad - INVALID VERSION NUMBER:{}", version));
+            addError(std::format("LoadRackStream - INVALID VERSION NUMBER:{}", version));
             return false;
         }
 
 
         auto loadedRack = std::make_unique<EffectsRack>();
         if (!loadedRack->load(ifs)) {
-            addError("Failed to parse Rack data.");
+            addError("LoadRackStream Failed to parse Rack data.");
             return false;
         }
 
         ifs.exceptions(std::ifstream::badbit);
-        ifs.get();
-        if (!ifs.eof()) {
-            addError("File too long (unexpected trailing data)!");
-            return false;
+        if (EOFcheck) {
+            ifs.get();
+            if (!ifs.eof()) {
+                addError("LoadRackStream File too long (unexpected trailing data)!");
+                return false;
+            }
         }
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
 
         switch (loadMode) {
             case RackLoadMode::AppendToPresets:
+                if (getPresetsCount() >= MAX_RACKS_IN_PRESET){
+                    addError(std::format("LoadRackStream: We cant have more then {} racks in a Preset", MAX_RACKS_IN_PRESET));
+                    return -1;
+                }
+
                 mPresets.push_back(std::move(loadedRack));
                 break;
             case AppendToPresetsAndSetActive:
+                if (getPresetsCount() >= MAX_RACKS_IN_PRESET){
+                    addError(std::format("LoadRackStream: We cant have more then {} racks in a Preset", MAX_RACKS_IN_PRESET));
+                    return -1;
+                }
+
                 mPresets.push_back(std::move(loadedRack));
                 mActiveRack = mPresets.back().get();
                 break;
 
             case OnlyUpdateExistingSingularity:
-                for (const auto& fx : loadedRack->mEffects) {
+                mActiveRack->setName(loadedRack->getName());
+                for (const auto& fx : loadedRack->getEffects()) {
                     EffectType type = fx->getType();
                     Effect* foundFX = getEffectByType(type);
                     if (foundFX) {
@@ -446,7 +513,7 @@ public:
     //--------------------------------------------------------------------------
     bool LoadRack(std::string filePath, RackLoadMode loadMode = RackLoadMode::ReplacePresets) {
         if (!std::filesystem::exists(filePath)) {
-            addError(std::format("File {} not found.", filePath));
+            addError(std::format("LoadRack: File {} not found.", filePath));
             return false;
         }
         clearErrors();
@@ -462,46 +529,152 @@ public:
             return true;
         } catch (const std::ios_base::failure& e) {
             if (ifs.eof()) {
-                addError("Unexpected End of File: The file is truncated.");
+                addError("LoadRack: Unexpected End of File: The file is truncated.");
             } else {
-                addError(std::format("I/O failure: {}", e.what()));
+                addError(std::format("LoadRack: I/O failure: {}", e.what()));
             }
             return false;
         } catch (const std::exception& e) {
-            addError(std::format("General error: {}", e.what()));
+            addError(std::format("LoadRack: General error: {}", e.what()));
             return false;
         }
     }
     //--------------------------------------------------------------------------
-    // FIXME IMPLEMENT AND TEST
-    bool scanAndLoadPresetsFromFolder(const std::string& folderPath, bool createIfMissing = true) {
-        namespace fs = std::filesystem;
-        if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
-            if ( createIfMissing ) {
-                if (!fs::create_directories(folderPath))
-                    addError(std::format("Failed to create preset directory:{}", folderPath));
-            }
-            // we have no folder
+    // SAVE Presets (AXE!)
+    //--------------------------------------------------------------------------
+    void SavePresetsStream(std::ostream& ofs) const {
+        ofs.exceptions(std::ios::badbit | std::ios::failbit);
+        DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_AXE_MAGIC);
+        DSP_STREAM_TOOLS::write_binary(ofs, uint32_t(DSP_AXE_VERSION));
+
+        int32_t presetCount = getPresetsCount();
+        DSP_STREAM_TOOLS::write_binary(ofs, presetCount);
+
+        for (int32_t rackIdx = 0; rackIdx < presetCount; rackIdx++) {
+            SaveRackStream(mPresets[rackIdx].get(), ofs );
+        }
+
+    }
+    //--------------------------------------------------------------------------
+    bool SavePresets(std::string filePath) {
+        if (getPresetsCount() < 1) return false;
+
+        clearErrors();
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
+        try {
+            std::ofstream ofs(filePath, std::ios::binary);
+            SavePresetsStream(ofs);
+            ofs.close();
             return true;
+        } catch (const std::exception& e) {
+            addError(std::format("SavePresets: Save failed for {}: {}", filePath, e.what()));
+            return false;
         }
-        for (const auto& entry : fs::directory_iterator(folderPath)) {
-            // let's rock ;)
-            if (entry.is_regular_file() && entry.path().extension() == ".rock") {
-                std::string path = entry.path().string();
-                if (LoadRack(path, RackLoadMode::AppendToPresets)) {
-                } else {
-                    addError(std::format("[error] Failed to auto-load: {}", path.c_str()));
-                    return false;
-                }
+    }
+    //--------------------------------------------------------------------------
+    // LOAD Presets (AXE!)
+    //--------------------------------------------------------------------------
+    bool LoadPresetStream(std::istream& ifs) {
+        uint32_t magic = 0;
+        DSP_STREAM_TOOLS::read_binary(ifs, magic);
+        if (magic != DSP::DSP_AXE_MAGIC) {
+            addError("LoadPresetStream: Invalid File Format (Magic mismatch)");
+            return false;
+        }
+
+        uint32_t version  = 0;
+        DSP_STREAM_TOOLS::read_binary(ifs, version);
+        if (version > DSP_AXE_VERSION) {
+            addError(std::format("LoadPresetStream: Preset load - INVALID VERSION NUMBER:{}", version));
+            return false;
+        }
+
+        int32_t presetCount = 0;
+        DSP_STREAM_TOOLS::read_binary(ifs, presetCount);
+        if ( presetCount < 1 || presetCount > MAX_EFFECTS_IN_RACKS) {
+            addError(std::format("LoadPresetStream: preset count out ouf bounds: {}! max:{}", presetCount, MAX_EFFECTS_IN_RACKS));
+            return false;
+        }
+
+        mPresets.clear();
+        mPresets.reserve(presetCount);
+
+        for (int32_t rackIdx = 0; rackIdx < presetCount; rackIdx++) {
+            if (!LoadRackStream(ifs, RackLoadMode::AppendToPresets , false)) {
+                addError(std::format("LoadPresetStream: preset load failed at rack {}! see previous error.", rackIdx));
+                return false;
             }
         }
+
+        ifs.exceptions(std::ifstream::badbit);
+        ifs.get();
+        if (!ifs.eof()) {
+            addError("LoadPresetStream: File too long (unexpected trailing data)!");
+            return false;
+        }
+
         return true;
     }
+    //--------------------------------------------------------------------------
+    bool LoadPresets(std::string filePath) {
+        if (!std::filesystem::exists(filePath)) {
+            addError(std::format("LoadPresets: File {} not found.", filePath));
+            return false;
+        }
+        clearErrors();
+        std::ifstream ifs;
+        ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+        //--------------------------------------------------------------------------
+
+        try {
+            ifs.open(filePath, std::ios::binary);
+
+            if (!LoadPresetStream(ifs))
+                return false;
+
+            return true;
+        } catch (const std::ios_base::failure& e) {
+            if (ifs.eof()) {
+                addError("LoadPresets: Unexpected End of File: The file is truncated.");
+            } else {
+                addError(std::format("LoadPresets: I/O failure: {}", e.what()));
+            }
+            return false;
+        } catch (const std::exception& e) {
+            addError(std::format("LoadPresets: General error: {}", e.what()));
+            return false;
+        }
+    }
+
+
+    // bool scanAndLoadPresetsFromFolder(const std::string& folderPath, bool createIfMissing = true) {
+    //     namespace fs = std::filesystem;
+    //     if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
+    //         if ( createIfMissing ) {
+    //             if (!fs::create_directories(folderPath))
+    //                 addError(std::format("Failed to create preset directory:{}", folderPath));
+    //         }
+    //         // we have no folder
+    //         return true;
+    //     }
+    //     for (const auto& entry : fs::directory_iterator(folderPath)) {
+    //         // let's rock ;)
+    //         if (entry.is_regular_file() && entry.path().extension() == ".axe") {
+    //             std::string path = entry.path().string();
+    //             if (LoadRack(path, RackLoadMode::AppendToPresets)) {
+    //             } else {
+    //                 addError(std::format("[error] Failed to auto-load: {}", path.c_str()));
+    //                 return false;
+    //             }
+    //         }
+    //     }
+    //     return true;
+    // }
     //--------------------------------------------------------------------------
     void process(float* buffer, int numSamples, int numChannels) {
         if (!mEnabled) return;
 
-        for (auto& effect : this->mActiveRack->mEffects) {
+        for (auto& effect : this->mActiveRack->getEffects()) {
             effect->process(buffer, numSamples, numChannels);
         }
 

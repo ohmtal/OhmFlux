@@ -34,7 +34,7 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
     if (!soundMix )
         return;
 
-
+    float vol = soundMix->getMasterVolume();
 
     //FIXME ALL EFFECTS NEED TO HANDLE CHANNELS spec->channels ....;
     //    ------- i added an example in limiter :D --------------
@@ -49,13 +49,19 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
             soundMix->getEffectsManager()->checkFrequence(spec->freq);
             soundMix->getEffectsManager()->process(buffer, numSamples, spec->channels);
 
-            soundMix->mDrumManager->checkFrequence(spec->freq);
-            soundMix->mDrumManager->process(buffer, numSamples, spec->channels);
+            soundMix->getDrumManager()->checkFrequence(spec->freq);
+            soundMix->getDrumManager()->process(buffer, numSamples, spec->channels);
 
 
             soundMix->mDrumKitLooper.process(buffer, numSamples, spec->channels);
 
 
+            // master Volume
+            for (int i = 0; i < numSamples; i++) {
+                buffer[i] *= vol;
+            }
+
+            // analyzer
             soundMix->mSpectrumAnalyzer->process(buffer, numSamples, spec->channels);
             soundMix->mVisualAnalyzer->process(buffer, numSamples, spec->channels);
 
@@ -63,8 +69,12 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
             // for (auto& effect : soundMix->getEffectsManager()->getEffects()) {
             //     effect->process(buffer, numSamples, spec->channels);
             // }
+
+
         }
         soundMix->getEffectsManager()->unlock();
+
+
     }
 
     // NOTE: EXAMPLE CODE:
@@ -72,6 +82,7 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
     //     SDL_PutAudioStreamData(recording_stream, buffer, buflen);
     // }
 }
+
 //------------------------------------------------------------------------------
 void SoundMixModule::DrawVisualAnalyzer(bool* p_enabled) {
     if (!mInitialized ||  mEffectsManager == nullptr || !*p_enabled) return;
@@ -126,6 +137,7 @@ void SoundMixModule::DrawRack(bool* p_enabled)
     if (!mInitialized ||  mEffectsManager == nullptr || !*p_enabled) return;
 
 
+
     // if (!ImGui::Begin("Rack", p_enabled))
     // {
     //     ImGui::End();
@@ -135,7 +147,72 @@ void SoundMixModule::DrawRack(bool* p_enabled)
     ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("Rack", p_enabled);
 
+    //FIXME move the rack managemane to taskbar
+    if (ImGui::BeginChild("RackManagement", ImVec2(0.f, 50.f))) {
+        DSP::EffectsManager* lManager = getEffectsManager();
 
+        int currentIdx = lManager->getActiveRackIndex();
+        int count = lManager->getPresetsCount();
+
+
+        ImGui::Text("Preset count: %d, Active Rack: [%d] %s (%d effects)",
+                    count,
+                    currentIdx,
+                    lManager->getActiveRack()->getName().c_str(),
+                    lManager->getActiveRack()->getEffectsCount()
+        );
+
+        if (count > 0)
+        {
+            if (ImFlux::ButtonFancy("<")) {
+                currentIdx--;
+                if (currentIdx < 0) currentIdx = count -1;
+                lManager->setActiveRack(currentIdx);
+            }
+            ImGui::SameLine();
+            ImFlux::LCDNumber(currentIdx , 3, 0, 24.0f);
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy(">")) {
+                currentIdx++;
+                if (currentIdx >= count) currentIdx = 0;
+                lManager->setActiveRack(currentIdx);
+            }
+            ImGui::SameLine();
+
+            char nameBuf[64];
+            strncpy(nameBuf, lManager->getActiveRack()->getName().c_str(), sizeof(nameBuf));
+            ImGui::Text("Name");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(200);
+            if (ImGui::InputText("##Rack Name", nameBuf, sizeof(nameBuf))) {
+                lManager->getActiveRack()->setName(nameBuf);
+            }
+
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy("New")) {
+                int newId = lManager->addRack();
+                lManager->setActiveRack(newId);
+                populateRack(lManager->getActiveRack());
+            }
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy("Clone")) {
+                int newId = lManager->cloneCurrent();
+                lManager->setActiveRack(newId);
+            }
+            ImGui::SameLine();
+            if (count < 2) ImGui::BeginDisabled();
+            if (ImFlux::ButtonFancy("Delete")) {
+                int newId = lManager->removeRack(currentIdx);
+                lManager->setActiveRack(newId);
+            }
+            if (count < 2) ImGui::EndDisabled();
+        } // count > 0
+
+
+
+    }
+    ImGui::EndChild();
+    //<<< rack management
     //FIXME save last selected in settings !
     if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None))
     {
@@ -162,12 +239,8 @@ void SoundMixModule::DrawRack(bool* p_enabled)
 
 }
 //------------------------------------------------------------------------------
-bool SoundMixModule::Initialize() {
-
-    mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
-
+void SoundMixModule::populateRack(DSP::EffectsRack* lRack){
     std::vector<DSP::EffectType> types = {
-        DSP::EffectType::ToneControl,
         // DSP::EffectType::NoiseGate,
         // DSP::EffectType::ChromaticTuner,
         DSP::EffectType::DistortionBasic,
@@ -184,6 +257,7 @@ bool SoundMixModule::Initialize() {
         DSP::EffectType::Reverb,
         DSP::EffectType::Delay,
         DSP::EffectType::Equalizer9Band,
+        DSP::EffectType::ToneControl,
         DSP::EffectType::Limiter,
     };
 
@@ -197,10 +271,39 @@ bool SoundMixModule::Initialize() {
     for (auto type : types) {
         auto fx = DSP::EffectFactory::Create(type);
         if (fx) {
-            // use defaults ! fx->setEnabled(false);
-            mEffectsManager->addEffect(std::move(fx));
+            lRack->getEffects().push_back(std::move(fx));
         }
     }
+
+
+}
+
+//------------------------------------------------------------------------------
+bool SoundMixModule::Initialize() {
+
+    mPresetsFile =
+    getGame()->mSettings.getPrefsPath()
+    .append(getGame()->mSettings.getSafeCaption())
+    .append(".rack.presets");
+
+    mDrumKitFile =
+    getGame()->mSettings.getPrefsPath()
+    .append(getGame()->mSettings.getSafeCaption())
+    .append(".drum");
+
+
+
+    mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
+    populateRack(mEffectsManager->getActiveRack());
+
+
+    // for (auto type : types) {
+    //     auto fx = DSP::EffectFactory::Create(type);
+    //     if (fx) {
+    //         // use defaults ! fx->setEnabled(false);
+    //         mEffectsManager->addEffect(std::move(fx));
+    //     }
+    // }
 
     mDrumManager = std::make_unique<DSP::EffectsManager>(true);
 
@@ -239,8 +342,7 @@ bool SoundMixModule::Initialize() {
     Log("[info] SoundMixModule init done.");
 
 
-    //FIXME TEST !!
-        mEffectsManager->LoadRack("bla.rack", DSP::EffectsManager::OnlyUpdateExistingSingularity); //only existing ...
+    if (!mEffectsManager->LoadPresets(mPresetsFile)) LogFMT(mEffectsManager->getErrors());
 
     mInitialized = true;
     return true;

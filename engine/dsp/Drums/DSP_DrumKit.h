@@ -33,7 +33,7 @@ namespace DSP {
 
     // DrumKitData{ 125, 0x8282, 0x2222, 0xEEEE, 0x0101, 0x0000 }),
     struct DrumKitSettings : public ISettings {
-        AudioParam<float> vol           { "Volume", 1.f, 0.1f, 1.f, "%.2f" };
+        AudioParam<float> vol           { "Volume", 0.5f, 0.1f, 1.f, "%.2f" };
         AudioParam<uint16_t> bpm        { "Beats per Minute", 125, 15, 360, "%.0f bpm" };
         AudioParam<uint16_t> kickPat    { "Kick Drum pattern",    0x8282, 0, UINT16_MAX, "%.0f" };
         AudioParam<uint16_t> snarePat   { "Snare Drum pattern",   0x2222, 0, UINT16_MAX, "%.0f" };
@@ -81,22 +81,22 @@ namespace DSP {
                list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Custom", DrumKitData{}));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Standard Rock",
-                    DrumKitData{ 0.8f, 110, 0x8888, 0x2222, 0xAAAA,0x0000, 0x0000, 0x8080 }));
+                    DrumKitData{ 0.5f, 110, 0x8888, 0x2222, 0xAAAA,0x0000, 0x0000, 0x8080 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Driving Rock",
-                    DrumKitData{ 0.8f,125, 0x8282, 0x2222, 0xEEEE,0x0000,  0x0101, 0x0000 }));
+                    DrumKitData{ 0.5f,125, 0x8282, 0x2222, 0xEEEE,0x0000,  0x0101, 0x0000 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Heavy Half-Time",
-                    DrumKitData{ 0.8f,80, 0x8080, 0x0202,0xAAAA, 0x0000, 0x0000, 0x8888 }));
+                    DrumKitData{ 0.5f,80, 0x8080, 0x0202,0xAAAA, 0x0000, 0x0000, 0x8888 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Punk",
-                    DrumKitData{ 0.8f,125, 34952, 0, 0x0000, 8738, 0x0000, 0x0000 }));
+                    DrumKitData{ 0.5f,125, 34952, 0, 0x0000, 8738, 0x0000, 0x0000 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Simple Rock",
-                    DrumKitData{ 0.8f,125, 34952, 0,12850, 0x0000,  0x0000, 128 }));
+                    DrumKitData{ 0.5f,125, 34952, 0,12850, 0x0000,  0x0000, 128 }));
 
                 list.push_back(std::make_shared<Preset<DrumKitSettings, DrumKitData>>("Metronome",
-                    DrumKitData{ 0.8f,125, 0, 0, 34952,0x0000,  0x0000, 0 }));
+                    DrumKitData{ 0.5f,125, 0, 0, 34952,0x0000,  0x0000, 0 }));
             return list;
         }
     };

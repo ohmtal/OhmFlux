@@ -60,7 +60,7 @@ set(TESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}/TestBed")
 set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
 set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
 set(SOUNDSTUDIO_DIR "${CMAKE_CURRENT_LIST_DIR}/SoundStudio")
-set(FLUXTRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmFluxTracker")
+set(TRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalTracker")
 set(AXE_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalAxe")
 
 # =============================================================================
@@ -448,21 +448,21 @@ if(BUILD_SOUNDSTUDIO)
 endif()
 
 
-# --- OhmFlux Tracker ---
-option(BUILD_FLUXTRACKER "Build OhmFlux Tracker" ON)
+# --- Ohmtal Tracker ---
+option(BUILD_FLUXTRACKER "Build Ohmtal Tracker" ON)
 if(BUILD_FLUXTRACKER)
     set(TRACKER_SOURCES
-        "${FLUXTRACKER_DIR}/src/main.cpp"
-        "${FLUXTRACKER_DIR}/src/otGui.cpp"
-        "${FLUXTRACKER_DIR}/src/dspGui.cpp"
-        "${FLUXTRACKER_DIR}/src/bankGui.cpp"
-        "${FLUXTRACKER_DIR}/src/songGui.cpp"
-        "${FLUXTRACKER_DIR}/src/songFunc.cpp"
-        "${FLUXTRACKER_DIR}/src/keyboardGui.cpp"
-        "${FLUXTRACKER_DIR}/src/fancyOverlays.cpp"
-        "${FLUXTRACKER_DIR}/src/ordersGui.cpp"
+        "${TRACKER_DIR}/src/main.cpp"
+        "${TRACKER_DIR}/src/otGui.cpp"
+        "${TRACKER_DIR}/src/dspGui.cpp"
+        "${TRACKER_DIR}/src/bankGui.cpp"
+        "${TRACKER_DIR}/src/songGui.cpp"
+        "${TRACKER_DIR}/src/songFunc.cpp"
+        "${TRACKER_DIR}/src/keyboardGui.cpp"
+        "${TRACKER_DIR}/src/fancyOverlays.cpp"
+        "${TRACKER_DIR}/src/ordersGui.cpp"
     )
-    configure_demo_target(OhmFluxTracker ${FLUXTRACKER_DIR} "${FLUXTRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
+    configure_demo_target(OhmFluxTracker ${TRACKER_DIR} "${TTRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
 endif()
 
 

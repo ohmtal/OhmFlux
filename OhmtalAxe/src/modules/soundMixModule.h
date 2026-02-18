@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <atomic>
 
 #include <SDL3/SDL.h>
 #include <DSP.h>
@@ -17,35 +18,46 @@
 class SoundMixModule : public FluxBaseObject {
 private:
     std::unique_ptr<DSP::EffectsManager> mEffectsManager = nullptr;
+    std::unique_ptr<DSP::EffectsManager> mDrumManager = nullptr;
 
-
-
-
+    std::atomic<float> mMasterVolume = 1.f;
     bool mInitialized = false;
+
+    std::string mPresetsFile = "";
+
+    //FIXME drumkit should be also a EffectsManager so save different custom pattern
+    std::string mDrumKitFile = "";
 
 public:
     SoundMixModule() = default;
     ~SoundMixModule() {
-        //FIXME TEST !!
-        mEffectsManager->SaveRack("bla.rack");
-
-
+        if (!mEffectsManager->SavePresets(mPresetsFile)) LogFMT(mEffectsManager->getErrors());
         SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), NULL, NULL);
     }
 
     bool Initialize() override;
 
+    void populateRack(DSP::EffectsRack* lRack);
+
+
     DrumKitLooper mDrumKitLooper;
 
-    std::unique_ptr<DSP::EffectsManager> mDrumManager = nullptr;
 
-
+    //lazy add to public:
     std::unique_ptr<DSP::SpectrumAnalyzer> mSpectrumAnalyzer = nullptr;
     std::unique_ptr<DSP::VisualAnalyzer> mVisualAnalyzer = nullptr;
+
+    // master volume
+    float getMasterVolume() { return mMasterVolume.load(std::memory_order_relaxed); }
+    void setMasterVolume(float vol) { mMasterVolume.store(DSP::clamp(vol, 0.f, 1.f));}
 
 
     //--------------------------------------------------------------------------
     // std::vector<std::unique_ptr<DSP::Effect>>& getEffects() const { return mEffectsManager->getEffects();    }
+
+    DSP::EffectsManager* getDrumManager() const {
+        return mDrumManager.get();
+    }
 
     DSP::EffectsManager* getEffectsManager() const {
         return mEffectsManager.get();

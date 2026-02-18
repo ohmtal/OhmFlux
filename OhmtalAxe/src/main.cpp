@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
     AppMain* app = new AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "Axe";
+    app->mSettings.Version = "0.260218";
     app->mSettings.enableLogFile = true;
     app->mSettings.WindowMaximized = true;
     app->mSettings.ScreenWidth  = 1920;

@@ -70,12 +70,14 @@ void AppGui::ApplyStudioTheme() {
     ImVec4* colors = style.Colors;
 
     // --- GRUNDFARBEN ( Cyan & Anthrazit) ---
-    const ImVec4 cyan_lower  = ImVec4(0.00f, 0.25f, 0.25f, 1.00f); // Cyan
-    const ImVec4 cyan_low    = ImVec4(0.00f, 0.45f, 0.45f, 1.00f); // Cyan
-    const ImVec4 cyan_mid    = ImVec4(0.00f, 0.60f, 0.60f, 1.00f); // Hover-Cyan
-    const ImVec4 cyan_high   = ImVec4(0.00f, 0.80f, 0.80f, 1.00f); // actice Cyan
+    const ImVec4 titles_col  = ImVec4(0.00f, 0.25f, 0.25f, 1.00f); // titles
+    const ImVec4 hooverActive_col    = ImVec4(0.00f, 0.45f, 0.45f, 1.00f); // hover/ active
+    const ImVec4 hoover2_col         = ImVec4(0.00f, 0.60f, 0.60f, 1.00f); // Hover-Cyan
+    const ImVec4 hoover3_col         = ImVec4(0.00f, 0.80f, 0.80f, 1.00f); // actice Cyan
     const ImVec4 dark_bg     = ImVec4(0.10f, 0.10f, 0.12f, 0.80f); // nearly black
     const ImVec4 dark_surface = ImVec4(0.16f, 0.16f, 0.18f, 1.00f); // panels
+
+    const ImVec4 meddark_surface = ImVec4(0.26f, 0.26f, 0.28f, 1.00f); // menu
 
 
 
@@ -89,26 +91,28 @@ void AppGui::ApplyStudioTheme() {
     colors[ImGuiCol_PopupBg]                = dark_surface;
     colors[ImGuiCol_Border]                 = ImVec4(0.30f, 0.30f, 0.30f, 0.50f);
 
+    // Menu:
+    colors[ImGuiCol_MenuBarBg]              = meddark_surface;
 
     // Header (CollapsingHeader, TreeNodes)
-    colors[ImGuiCol_Header]                 = dark_surface;  // cyan_low;
-    colors[ImGuiCol_HeaderHovered]          = cyan_mid;
-    colors[ImGuiCol_HeaderActive]           = cyan_high;
+    colors[ImGuiCol_Header]                 = dark_surface;
+    colors[ImGuiCol_HeaderHovered]          = hoover2_col;
+    colors[ImGuiCol_HeaderActive]           = hoover3_col;
 
     // Buttons
     colors[ImGuiCol_Button]                 = ImVec4(0.20f, 0.20f, 0.22f, 1.00f);
-    colors[ImGuiCol_ButtonHovered]          = cyan_low;
-    colors[ImGuiCol_ButtonActive]           = cyan_mid;
+    colors[ImGuiCol_ButtonHovered]          = hooverActive_col;
+    colors[ImGuiCol_ButtonActive]           = hoover2_col;
 
     // Frame (Checkbox, Input, Slider )
     colors[ImGuiCol_FrameBg]                = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
     colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.20f, 0.20f, 0.22f, 1.00f);
-    colors[ImGuiCol_FrameBgActive]          = cyan_low;
+    colors[ImGuiCol_FrameBgActive]          = hooverActive_col;
 
     // Tabs
-    colors[ImGuiCol_Tab]                    = cyan_lower;
-    colors[ImGuiCol_TabHovered]             = cyan_low;
-    colors[ImGuiCol_TabActive]              = cyan_mid;
+    colors[ImGuiCol_Tab]                    = titles_col;
+    colors[ImGuiCol_TabHovered]             = hooverActive_col;
+    colors[ImGuiCol_TabActive]              = hoover2_col;
 
     colors[ImGuiCol_TabDimmed]              = ImLerp(colors[ImGuiCol_Tab],          colors[ImGuiCol_TitleBg], 0.80f);
     colors[ImGuiCol_TabDimmedSelected]      = ImLerp(colors[ImGuiCol_TabSelected],  colors[ImGuiCol_TitleBg], 0.40f);
@@ -116,10 +120,10 @@ void AppGui::ApplyStudioTheme() {
 
 
     // Akzente
-    colors[ImGuiCol_CheckMark]              = cyan_high;
-    colors[ImGuiCol_SliderGrab]             = cyan_low;
-    colors[ImGuiCol_SliderGrabActive]       = cyan_high;
-    colors[ImGuiCol_TitleBgActive]          = cyan_low;
+    colors[ImGuiCol_CheckMark]              = hoover3_col;
+    colors[ImGuiCol_SliderGrab]             = hooverActive_col;
+    colors[ImGuiCol_SliderGrabActive]       = hoover3_col;
+    colors[ImGuiCol_TitleBgActive]          = hooverActive_col;
 
     style.WindowRounding = 6.0f;
     style.FrameRounding = 4.0f;
@@ -376,20 +380,46 @@ void AppGui::ShowMenuBar()
             if (ImGui::MenuItem("Classic")) {ImGui::StyleColorsClassic(); }
             ImGui::EndMenu();
         }
+
+        if (ImGui::BeginMenu("Help"))
+        {
+
+            if (ImGui::MenuItem("About")) {
+                showMessage ( "About",
+                 std::format(
+                        "Ohmtal Axe\n"
+                        "==========\n"
+                        "(c)2026 by Thomas Hühn (XXTH)\n"
+                        "Version {}\n"
+                        "https://ohmtal.com\n"
+                        "\n"
+                        "Settings are saved to:\n"
+                        "{}\n"
+                        , getGame()->mSettings.Version
+                        , getGame()->mSettings.getPrefsPath()
+                    )
+                );
+
+            }
+            ImGui::EndMenu();
+        }
+
+
+
         ImFlux::drawWindowMenu();
 
-        // ----------- Master Volume
+        // // ----------- Master Volume
         float rightOffset = 230.0f;
         ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
 
-        ImGui::SetNextItemWidth(100);
-        float currentVol = AudioManager.getMasterVolume();
-        if (ImGui::SliderFloat("##MasterVol", &currentVol, 0.0f, 2.0f, "Vol %.1f"))
+        // ImGui::SetNextItemWidth(100);
+        float currentVol = mSoundMixModule->getMasterVolume();
+        // if (ImGui::SliderFloat("##MasterVol", &currentVol, 0.0f, 1.0f, "Vol %.1f"))
+        if (ImFlux::FaderHWithText("Master Volume", &currentVol, 0.0f, 1.0f, "Vol %.1f"))
         {
-            if (!AudioManager.setMasterVolume(currentVol))
-                Log("Error: Failed to set SDL Master volume");
+            mSoundMixModule->setMasterVolume(currentVol);
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Master Volume");
+        // if (ImGui::IsItemHovered()) ImGui::SetTooltip("Master Volume");
 
         //................
 

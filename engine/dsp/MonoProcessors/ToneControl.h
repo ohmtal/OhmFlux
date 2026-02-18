@@ -231,7 +231,6 @@ struct Biquad {
 
             float curVol = out;
 
-            // out =  DSP::clamp(volume * curVol, -1.f, 1.f);
             out =  DSP::softClip(volume * curVol);
 
 

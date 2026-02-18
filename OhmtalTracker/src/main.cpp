@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// OhmFlux Tracker
+// Ohmtal Tracker
 //-----------------------------------------------------------------------------
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 #include "otMain.h"
@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     (void)argc; (void)argv;
     OTMain* app = new OTMain();
     app->mSettings.Company = "Ohmtal";
-    app->mSettings.Caption = "OhmFlux Tracker";
+    app->mSettings.Caption = "Tracker";
     app->mSettings.enableLogFile = true;
     app->mSettings.WindowMaximized = false;
     // app->mSettings.ScreenWidth  = 1920;
