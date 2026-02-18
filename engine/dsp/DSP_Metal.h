@@ -145,7 +145,7 @@ namespace DSP {
                 float out = s.last_out_lpf + alpha_lpf * (distorted - s.last_out_lpf);
                 s.last_out_lpf = out;
 
-                buffer[i] = out * level;
+                buffer[i] = DSP::softClip(out * level);
             }
         }
 

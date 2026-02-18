@@ -7,6 +7,8 @@
 #include <DSP_EffectsManager.h>
 #include <DSP_EffectFactory.h>
 
+#include "drumKitLooper.h"
+
 #include <imgui.h>
 #include <gui/ImFlux.h>
 
@@ -26,17 +28,18 @@ public:
     ~SoundMixModule() {
         //FIXME TEST !!
         mEffectsManager->SaveRack("bla.rack");
-        //FIXME TEST !!
-        mDrumKit->saveToFile("bla.drum");
+
 
         SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), NULL, NULL);
     }
 
     bool Initialize() override;
 
+    DrumKitLooper mDrumKitLooper;
+
     std::unique_ptr<DSP::EffectsManager> mDrumManager = nullptr;
 
-    std::unique_ptr<DSP::DrumKit> mDrumKit = nullptr;
+
     std::unique_ptr<DSP::SpectrumAnalyzer> mSpectrumAnalyzer = nullptr;
     std::unique_ptr<DSP::VisualAnalyzer> mVisualAnalyzer = nullptr;
 
@@ -50,6 +53,7 @@ public:
 
     //--------------------------------------------------------------------------
     void DrawRack(bool* p_enabled);
+    void DrawVisualAnalyzer(bool* p_enabled);
     void DrawDrums(bool* p_enabled);
     //--------------------------------------------------------------------------
     void WriteWavHeader(SDL_IOStream *io, SDL_AudioSpec *spec, Uint32 dataSize) {

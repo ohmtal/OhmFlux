@@ -85,71 +85,71 @@ void SoundMixModule::DrawDrums(bool* p_enabled) {
 }
 //------------------------------------------------------------------------------
 void SoundMixModule::DrawRack(bool* p_enabled)
+{
+    if (!mInitialized ||  mEffectsManager == nullptr) return;
+    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Post Digital Sound Effects Rack");
+    mEffectsManager->renderUI(1);
+    ImGui::End();
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Post Digital Sound Effects Visualizer");
+
     {
-        if (!mInitialized ||  mEffectsManager == nullptr) return;
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack");
-        mEffectsManager->renderUI(1);
-        ImGui::End();
-
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Visualizer");
-
-        {
-            ImGui::PushID("SpectrumAnalyzer_Effect_Row");
-            ImGui::BeginGroup();
-            bool isEnabled = mSpectrumAnalyzer->isEnabled();
-            if (ImFlux::LEDCheckBox(mSpectrumAnalyzer->getName(), &isEnabled, mSpectrumAnalyzer->getColor()))
-                mSpectrumAnalyzer->setEnabled(isEnabled);
-            float fullWidth = ImGui::GetContentRegionAvail().x;
-            mSpectrumAnalyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f));
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing();
-        }
-
-        {
-            ImGui::PushID("VisualAnalyzer_Effect_Row");
-            ImGui::BeginGroup();
-            bool isEnabled = mVisualAnalyzer->isEnabled();
-            if (ImFlux::LEDCheckBox(mVisualAnalyzer->getName(), &isEnabled, mVisualAnalyzer->getColor()))
-                mVisualAnalyzer->setEnabled(isEnabled);
-            float fullWidth = ImGui::GetContentRegionAvail().x;
-            mVisualAnalyzer->renderPeakTest(); //FIXME
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing();
-        }
-
-        ImGui::End();
-
-        // bool dummy = true;renderSequencerWindow(&dummy);
-
-        // AppGui::getAppSettings getAppSettings() {return mAppGui->getAppSettings();}
-
-
-        // bool showDrumKit = getMain()->getAppSettings().mShowDrumKit;
-        // mDrumKit->renderSequencerWindow(&showDrumKit);
-
-        // getMain()->getAppSettings().mShowDrumKit = true;
-
-
-
-
-        //  ~~~~~~~~~~~ TEST RENDERIU ~~~~~~~~~~~~~~~~~~~~~
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack Alternate Rendering");
-        mEffectsManager->renderUI(0);
-        ImGui::End();
-
-        //  ~~~~~~~~~~~ TEST RENDERPADDLE ~~~~~~~~~~~~~~~~~~~~~
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack Paddles TEST ");
-        mEffectsManager->renderUI(2);
-        ImGui::End();
-
-
+        ImGui::PushID("SpectrumAnalyzer_Effect_Row");
+        ImGui::BeginGroup();
+        bool isEnabled = mSpectrumAnalyzer->isEnabled();
+        if (ImFlux::LEDCheckBox(mSpectrumAnalyzer->getName(), &isEnabled, mSpectrumAnalyzer->getColor()))
+            mSpectrumAnalyzer->setEnabled(isEnabled);
+        float fullWidth = ImGui::GetContentRegionAvail().x;
+        mSpectrumAnalyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f));
+        ImGui::EndGroup();
+        ImGui::PopID();
+        ImGui::Spacing();
     }
+
+    {
+        ImGui::PushID("VisualAnalyzer_Effect_Row");
+        ImGui::BeginGroup();
+        bool isEnabled = mVisualAnalyzer->isEnabled();
+        if (ImFlux::LEDCheckBox(mVisualAnalyzer->getName(), &isEnabled, mVisualAnalyzer->getColor()))
+            mVisualAnalyzer->setEnabled(isEnabled);
+        float fullWidth = ImGui::GetContentRegionAvail().x;
+        mVisualAnalyzer->renderPeakTest(); //FIXME
+        ImGui::EndGroup();
+        ImGui::PopID();
+        ImGui::Spacing();
+    }
+
+    ImGui::End();
+
+    // bool dummy = true;renderSequencerWindow(&dummy);
+
+    // AppGui::getAppSettings getAppSettings() {return mAppGui->getAppSettings();}
+
+
+    // bool showDrumKit = getMain()->getAppSettings().mShowDrumKit;
+    // mDrumKit->renderSequencerWindow(&showDrumKit);
+
+    // getMain()->getAppSettings().mShowDrumKit = true;
+
+
+
+
+    //  ~~~~~~~~~~~ TEST RENDERIU ~~~~~~~~~~~~~~~~~~~~~
+    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Post Digital Sound Effects Rack Alternate Rendering");
+    mEffectsManager->renderUI(0);
+    ImGui::End();
+
+    //  ~~~~~~~~~~~ TEST RENDERPADDLE ~~~~~~~~~~~~~~~~~~~~~
+    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Post Digital Sound Effects Rack Paddles TEST ");
+    mEffectsManager->renderUI(2);
+    ImGui::End();
+
+
+}
 //------------------------------------------------------------------------------
 bool SoundMixModule::Initialize() {
 

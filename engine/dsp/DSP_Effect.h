@@ -5,7 +5,6 @@
 // Digital Sound Processing : Base class Effect
 //-----------------------------------------------------------------------------
 // TODO: move templates out to a not file
-// TODO: add color (U32) to params ( for buttons :D )
 //-----------------------------------------------------------------------------
 #pragma once
 #include <cstdint>
@@ -413,6 +412,7 @@ namespace DSP {
 
 
         virtual std::string getName() const { return "EFFECT # FIXME ";}
+        virtual std::string getDesc() const { return "";}
 
 
 #ifdef FLUX_ENGINE
@@ -427,7 +427,6 @@ namespace DSP {
 
         ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
         ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-
         bool isEnabled = this->isEnabled();
         if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
             this->setEnabled(isEnabled);
@@ -439,7 +438,7 @@ namespace DSP {
     virtual void renderCustomUI() {
     }
 
-    virtual void renderPaddle(   ) {
+    virtual void renderPaddle() {
     }
 
     // ----------------- renderUI -----------------------------
@@ -450,17 +449,36 @@ namespace DSP {
     // --------------------------------------------------------
     // helper to start the UI Header/Footer
     virtual void renderUIHeader(   ) {
+        bool isEnabled = this->isEnabled();
+
         ImGui::PushID(this); ImGui::PushID("UI");
         ImGui::BeginGroup();
 
-        bool isEnabled = this->isEnabled();
-        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
-            this->setEnabled(isEnabled);
+        // test with colored background:
+        const float lHeight = 20.f;
+        ImFlux::GradientParams gpHeader = ImFlux::DEFAULT_GRADIENPARAMS;
+        ImU32 baseColor = ImGui::ColorConvertFloat4ToU32( getColor() );
+        if (!isEnabled) baseColor = ImFlux::ModifyRGB(baseColor, 0.3f);
+
+
+        gpHeader.col_top = baseColor;
+        gpHeader.col_bot = ImFlux::ModifyRGB(baseColor, 0.8);
+        ImFlux::GradientBox(ImVec2(0.f,lHeight),gpHeader);
+
+        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor(),  ImVec4(1.f,1.f,1.f,1.f))){
+             this->setEnabled(isEnabled);
         }
+        ImGui::Dummy(ImVec2(0.f,4.f));
+        //<<<
+
+        // bool isEnabled = this->isEnabled();
+        // if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
+        //     this->setEnabled(isEnabled);
+        // }
 
     }
     virtual void renderUIFooter() {
-        if (!isEnabled()) ImGui::Separator();
+        /*if (!isEnabled()) */ImGui::Separator();
         ImGui::EndGroup();
         ImGui::PopID();ImGui::PopID();
         ImGui::Spacing();
@@ -473,7 +491,7 @@ namespace DSP {
 
 
 #endif
-    }; //class
+    }; //class Effect
 
 
 
@@ -579,15 +597,7 @@ namespace DSP {
         //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
         //----------------------------------------------------------------------
-        void DrawPaddleHeader(Effect* effect, float height = 125.f)  {
-            ImGui::PushID(effect); ImGui::PushID("UI_PADDLE");
 
-            bool isEnabled = effect->isEnabled();
-            if (paddleHeader(effect->getName().c_str(), ImGui::ColorConvertFloat4ToU32(effect->getColor()), isEnabled)) {
-                effect->setEnabled(isEnabled);
-            }
-            ImFlux::GradientBox(ImVec2(0.f,height),ImFlux::DEFAULT_GRADIENPARAMS);
-        }
         bool DrawRackKnobs() {
             bool changed = false;
             std::vector<IParameter*> allParams = getAll();
@@ -598,13 +608,33 @@ namespace DSP {
             }
             return changed;
         }
+
+
+        void DrawPaddleHeader(Effect* effect, float height = 125.f)  {
+            ImGui::PushID(effect); ImGui::PushID("UI_PADDLE");
+
+            bool isEnabled = effect->isEnabled();
+
+            if (paddleHeader(effect->getName().c_str(), ImGui::ColorConvertFloat4ToU32(effect->getColor()), isEnabled))
+            {
+                effect->setEnabled(isEnabled);
+            }
+            // ImFlux::GradientBox(ImVec2(0.f,height),ImFlux::DEFAULT_GRADIENPARAMS);
+        }
         void DrawPaddleFooter() {
             ImGui::PopID();ImGui::PopID();
         }
         // ---- wrapper for paddle parts: ----
         bool DrawPaddle(Effect* effect)  {
+            bool changed = false;
             DrawPaddleHeader(effect, 125.f);
-            bool changed = DrawRackKnobs();
+            ImFlux::Hint(effect->getName()+"\n"+effect->getDesc()+"\n"+"*right click for settings");
+            // changed |= SliderPopupMenu(*this);
+            changed |= RackKnobsPopupMenu(effect, *this);
+
+
+            // changed |= DrawRackKnobs();
+
             DrawPaddleFooter();
             return changed;
         }
@@ -665,12 +695,15 @@ namespace DSP {
             ImGui::PushID(effect);
             bool changed = false;
             effect->renderUIHeader();
-            if (effect->isEnabled())
-            {
-                if (ImGui::BeginChild("UI_Box", ImVec2(0, boxHeight), ImGuiChildFlags_Borders)) {
-                    ImGui::BeginGroup();
+
+            const bool lUseCollapsingHeader = false;
+
+            if (lUseCollapsingHeader ) {
+                ImGui::Dummy(ImVec2(6.f,0.f)); ImGui::SameLine();
+                ImGui::BeginGroup();
+                if (ImGui::CollapsingHeader(std::format("...##{} parameters", effect->getName()).c_str())) {
                     changed |= this->drawStepper(*this);
-                    ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 70); // Right-align reset button
                     if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                         resetToDefaults();
                         if (resetEffect) effect->reset();
@@ -681,10 +714,33 @@ namespace DSP {
                     for (auto* param :getAll() ) {
                         changed |= param->FaderHWithText();
                     }
-                    ImGui::EndGroup();
                 }
-                ImGui::EndChild();
+                ImGui::EndGroup();
+            } else {
+                if (effect->isEnabled())
+                {
+                    if (ImGui::BeginChild("UI_Box", ImVec2(0, boxHeight), ImGuiChildFlags_Borders)) {
+                        ImGui::BeginGroup();
+                        changed |= this->drawStepper(*this);
+                        ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+                        if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                            resetToDefaults();
+                            if (resetEffect) effect->reset();
+                            changed = true;
+                        }
+                        ImGui::Separator();
+                        // Control Sliders
+                        for (auto* param :getAll() ) {
+                            changed |= param->FaderHWithText();
+                        }
+                        ImGui::EndGroup();
+                    }
+                    ImGui::EndChild();
+                }
+
             }
+
+
             effect->renderUIFooter();
             ImGui::PopID();
             return changed;
@@ -725,6 +781,104 @@ namespace DSP {
             ImGui::PopID();
             return changed;
         }
+        //----------------------------------------------------------------------
+        bool DrawSliderPopupContent(Effect* effect, ISettings& settings) {
+            bool changed = false;
+            DrawFancyName(effect);
+
+            auto presets = settings.getPresets();
+            if (!presets.empty()) {
+                ImGui::SeparatorText("Presets");
+                changed |= drawStepper(settings);
+            }
+            ImGui::SeparatorText("Settings");
+
+            // Control Sliders
+            for (auto* param :settings.getAll() ) {
+                changed |= param->FaderHWithText();
+            }
+            return changed;
+        }
+        //----------------------------------------------------------------------
+        bool SliderPopupMenu(Effect* effect, ISettings& settings) {
+            bool changed = false;
+            if (ImGui::BeginPopupContextItem("##SliderContextMenu")) {
+                changed |= DrawSliderPopupContent(effect, settings);
+                ImGui::EndPopup();
+            }
+            return changed;
+        }
+
+        //----------------------------------------------------------------------
+        void DrawFancyName(Effect* effect) {
+            const float lHeight = 20.f;
+            bool isEnabled = effect->isEnabled();
+            ImFlux::GradientParams gpHeader = ImFlux::DEFAULT_GRADIENPARAMS;
+            ImU32 baseColor = ImGui::ColorConvertFloat4ToU32( effect->getColor() );
+            if (!isEnabled) baseColor = ImFlux::ModifyRGB(baseColor, 0.3f);
+
+
+            gpHeader.col_top = baseColor;
+            gpHeader.col_bot = ImFlux::ModifyRGB(baseColor, 0.8);
+            ImFlux::GradientBox(ImVec2(0.f,lHeight),gpHeader);
+
+            // ImFlux::ShadowText(effect->getName().c_str());
+            // ImGui::SetCursorPos(ImGui::GetCursorPos() + ImVec2(6.f,2.f));
+            ImFlux::ShiftCursor(ImVec2(6.f,2.f));
+
+            if (ImFlux::LEDCheckBox(
+                effect->getName(), &isEnabled, effect->getColor(), ImVec4(1.f,1.f,1.f,1.f))){
+                effect->setEnabled(isEnabled);
+            }
+
+        }
+        //----------------------------------------------------------------------
+        bool DrawRackKnobsContent(Effect* effect, ISettings& settings) {
+
+            bool changed = false;
+
+            DrawFancyName(effect);
+
+            auto presets = settings.getPresets();
+            if (!presets.empty()) {
+                ImGui::SeparatorText("Presets");
+                changed |= drawStepper(settings);
+            }
+            ImGui::SeparatorText("Settings");
+
+            // Knobs
+            std::vector<IParameter*> allParams = settings.getAll();
+            uint16_t count = allParams.size();
+            for (uint16_t i = 0; i < count; i++ ) {
+                changed |= allParams[i]->RackKnob();
+                if ( i < count -1 ) ImGui::SameLine();
+            }
+
+            return changed;
+        }
+        //----------------------------------------------------------------------
+        bool RackKnobsPopupMenu(Effect* effect, ISettings& settings) {
+            bool changed = false;
+            if (ImGui::BeginPopupContextItem("##SliderContextMenu")) {
+                changed |= DrawRackKnobsContent(effect,settings);
+                ImGui::EndPopup();
+            }
+            return changed;
+        }
+
+        //----------------------------------------------------------------------
+        bool PresetPopupMenu(ISettings& settings) {
+            bool changed = false;
+            auto presets = settings.getPresets();
+            if (presets.empty()) return changed;
+            if (ImGui::BeginPopupContextItem("##PresetContextMenu")) {
+                ImGui::SeparatorText("Presets");
+                changed |= drawStepper(settings);
+                ImGui::EndPopup();
+            }
+            return changed;
+        }
+
         //----------------------------------------------------------------------
         bool drawStepper(ISettings& settings, float leftAdjustment = 0.f) {
             bool changed = false;

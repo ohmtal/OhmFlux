@@ -179,7 +179,7 @@ namespace DSP {
     virtual ImVec4 getColor() const  override { return ImVec4(0.8f, 0.4f, 0.5f, 1.0f);}
 
 
-    virtual void renderPaddle( ) override {
+    virtual void renderPaddle() override {
         DSP::BitcrusherSettings currentSettings = this->getSettings();
         currentSettings.wet.setKnobSettings(ImFlux::ksPurple); // NOTE only works here !
         if (currentSettings.DrawPaddle(this)) {

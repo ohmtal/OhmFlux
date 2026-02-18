@@ -143,12 +143,16 @@ namespace DSP {
                 // Polynomial approximation of Tanh for "warm" analog saturation
                 // Note: This approximation is valid for x between -1 and 1.
                 // For higher drive, we clamp x before saturation or use a more robust function.
-                float x_limited = std::clamp(x, -1.0f, 1.0f);
+                // float x_limited = std::clamp(x, -1.0f, 1.0f);
+                float x_limited = DSP::softClip(x);
+
+
                 float saturated = x_limited * (1.5f - (0.5f * x_limited * x_limited));
 
                 // Final Mix and Clamp
                 float mixed = (dry * (1.0f - wet)) + (saturated * wet);
-                buffer[i] = std::clamp(mixed, -1.0f, 1.0f);
+                // buffer[i] = std::clamp(mixed, -1.0f, 1.0f);
+                buffer[i] = DSP::softClip(mixed);
 
                 if (++channel >= numChannels) channel = 0;
             }

@@ -15,7 +15,7 @@ namespace ImFlux {
 
     //--------------------------------------------------------------------------
     // TextColoredEllipsis a text with a limited width
-    inline void TextColoredEllipsis(ImVec4 color, std::string text, float maxWidth) {
+    inline void TextColoredEllipsis(ImVec4 color, std::string text, float maxWidth, bool shadow = true, ImU32 shadowColor = IM_COL32(30, 30, 30, 200)) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return;
 
@@ -28,18 +28,38 @@ namespace ImFlux {
         ImGui::ItemSize(bb);
         if (!ImGui::ItemAdd(bb, 0)) return;
 
+        if (shadow) {
+            ImRect bbShadow = bb;
+            bbShadow.Translate(ImVec2(1.f,1.f));
+
+            ImGui::PushStyleColor(ImGuiCol_Text, shadowColor);
+            ImGui::RenderTextEllipsis(
+                ImGui::GetWindowDrawList(),
+                bbShadow.Min,             // pos_min
+                bbShadow.Max,             // pos_max
+                bbShadow.Max.x,           // ellipsis_max_x
+                text_begin,         // text
+                text_end,           // text_end
+                NULL                // text_size_if_known
+            );
+            ImGui::PopStyleColor();
+        }
+
+
         ImGui::PushStyleColor(ImGuiCol_Text, color);
         // RenderTextEllipsis(ImDrawList* draw_list, const ImVec2& pos_min, const ImVec2& pos_max, float ellipsis_max_x, const char* text, const char* text_end, const ImVec2* text_size_if_known);
         ImGui::RenderTextEllipsis(
             ImGui::GetWindowDrawList(),
-                                  bb.Min,             // pos_min
-                                  bb.Max,             // pos_max
-                                  bb.Max.x,           // ellipsis_max_x
-                                  text_begin,         // text
-                                  text_end,           // text_end
-                                  NULL                // text_size_if_known
+            bb.Min,             // pos_min
+            bb.Max,             // pos_max
+            bb.Max.x,           // ellipsis_max_x
+            text_begin,         // text
+            text_end,           // text_end
+            NULL                // text_size_if_known
         );
         ImGui::PopStyleColor();
+
+
     }
 
     //--------------------------------------------------------------------------

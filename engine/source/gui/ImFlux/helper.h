@@ -13,9 +13,25 @@
 
 namespace ImFlux {
 
+    // ----------------- AutoLineBreak
+    inline void SameLineBreak(float nextItemWidth) {
+        float windowVisibleX2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
+        float lastItemX2 = ImGui::GetItemRectMax().x;
+        float nextItemX2 = lastItemX2 + ImGui::GetStyle().ItemSpacing.x + nextItemWidth;
+
+        if (nextItemX2 < windowVisibleX2) {
+            ImGui::SameLine();
+        }
+    }
+    // ----------------- shift cursor
+    inline void ShiftCursor(ImVec2 offset) {
+        ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
+    }
 
 
-    // NEON
+
+
+    // ---------------- Some Neon Colors
     constexpr ImU32 COL32_NEON_CYAN    = IM_COL32(0, 255, 255, 255);
     constexpr ImU32 COL32_NEON_GREEN   = IM_COL32(57, 255, 20, 255);  //
     constexpr ImU32 COL32_NEON_PINK    = IM_COL32(255, 0, 255, 255);  //

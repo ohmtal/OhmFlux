@@ -95,6 +95,11 @@ public:
         return mSettings.load(is);      // Load Settings
         return true;
     }
+
+    //----------------------------------------------------------------------
+    virtual void reset() override {
+        mToneControl.reset();
+    }
     //----------------------------------------------------------------------
     virtual void process(float* buffer, int numSamples, int numChannels) override {
         const float volume = mSettings.volume.get();
@@ -105,7 +110,7 @@ public:
         const float treble = mSettings.treble.get();
         const float presence = mSettings.presence.get();
 
-        float in, out;
+
         // no channel handling needed here ...
         for (int i = 0; i < numSamples; i++) {
              buffer[i] = mToneControl.process(buffer[i], volume,  bass, treble, presence, mSampleRate);
@@ -137,7 +142,7 @@ public:
     }
     virtual void renderUI() override {
         DSP::ToneControlSettings currentSettings = this->getSettings();
-        if (currentSettings.DrawUI(this)) {
+        if (currentSettings.DrawUI(this, 150.f)) {
             this->setSettings(currentSettings);
         }
     }

@@ -113,6 +113,10 @@ public:
     }
     //----------------------------------------------------------------------
     virtual std::string getName() const override { return "Analog Glow";}
+    virtual std::string getDesc() const override {
+        return "A Tube Amp Effect with softclipping.\n";
+
+    }
     //----------------------------------------------------------------------
     AnalogGlowSettings& getSettings() { return mSettings; }
     //----------------------------------------------------------------------

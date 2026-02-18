@@ -177,36 +177,62 @@ namespace DSP {
         ImGui::PushID(effect);
         bool changed = false;
         effect->renderUIHeader();
-        if (effect->isEnabled())
-        {
-            if (ImGui::BeginChild("UI_Box", ImVec2(0, boxHeight), ImGuiChildFlags_Borders)) {
-                ImGui::BeginGroup();
+
+        ImGui::SameLine();
+        ImGui::BeginGroup();
+                 float reduction = getGainReduction();
+                 // ImGui::TextDisabled("Reduction: %3.3f", reduction);
+                 ImFlux::PeakMeter(reduction,ImVec2(150.f, 7.f));
+                 ImGui::SameLine(); ImGui::TextDisabled("%3.3f%%", reduction);
+        ImGui::EndGroup();
+
+
+        // ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+        ImGui::Dummy(ImVec2(6.f,0.f)); ImGui::SameLine();
+        ImGui::BeginGroup();
+        if (ImGui::CollapsingHeader(std::format("{} parameters", effect->getName()).c_str())) {
                 changed |= mSettings.drawStepper(currentSettings);
-                ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+                ImGui::SameLine(ImGui::GetWindowWidth() - 70); // Right-align reset button
                 if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
                     currentSettings.resetToDefaults();
                     changed = true;
                 }
                 ImGui::Separator();
-                // Control Sliders
-                // for (auto* param :currentSettings.getAll() ) {
-                //     changed |= param->FaderHWithText();
-                // }
                 changed |= currentSettings.Threshold.FaderHWithText();
-
-
-                ImGui::Separator();
-                float reduction = getGainReduction();
-                ImGui::TextDisabled("Reduction: %3.3f", reduction);
-                ImFlux::PeakMeter(reduction,ImVec2(150.f, 7.f));
-
-
-                ImGui::EndGroup();
-
-
-            }
-            ImGui::EndChild();
         }
+        ImGui::EndGroup();
+
+
+        // if (effect->isEnabled())
+        // {
+        //     if (ImGui::BeginChild("UI_Box", ImVec2(0, boxHeight), ImGuiChildFlags_Borders)) {
+        //         ImGui::BeginGroup();
+        //         changed |= mSettings.drawStepper(currentSettings);
+        //         ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
+        //         if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+        //             currentSettings.resetToDefaults();
+        //             changed = true;
+        //         }
+        //         ImGui::Separator();
+        //         // Control Sliders
+        //         // for (auto* param :currentSettings.getAll() ) {
+        //         //     changed |= param->FaderHWithText();
+        //         // }
+        //         changed |= currentSettings.Threshold.FaderHWithText();
+        //
+        //
+        //         ImGui::Separator();
+        //         float reduction = getGainReduction();
+        //         ImGui::TextDisabled("Reduction: %3.3f", reduction);
+        //         ImFlux::PeakMeter(reduction,ImVec2(150.f, 7.f));
+        //
+        //
+        //         ImGui::EndGroup();
+        //
+        //
+        //     }
+        //     ImGui::EndChild();
+        // }
         effect->renderUIFooter();
         ImGui::PopID();
 

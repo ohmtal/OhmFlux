@@ -53,7 +53,9 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
             soundMix->mDrumManager->process(buffer, numSamples, spec->channels);
 
 
-            soundMix->mDrumKit->process(buffer, numSamples, spec->channels);
+            soundMix->mDrumKitLooper.process(buffer, numSamples, spec->channels);
+
+
             soundMix->mSpectrumAnalyzer->process(buffer, numSamples, spec->channels);
             soundMix->mVisualAnalyzer->process(buffer, numSamples, spec->channels);
 
@@ -70,30 +72,13 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
     //     SDL_PutAudioStreamData(recording_stream, buffer, buflen);
     // }
 }
-
-void SoundMixModule::DrawDrums(bool* p_enabled) {
-    if (!mInitialized ||  mDrumManager == nullptr || !*p_enabled) return;
-
-    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("Drum Pads", p_enabled);
-    mDrumManager->renderUI(3);
-    ImGui::End();
-
-
-
-
-}
 //------------------------------------------------------------------------------
-void SoundMixModule::DrawRack(bool* p_enabled)
-    {
-        if (!mInitialized ||  mEffectsManager == nullptr) return;
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack");
-        mEffectsManager->renderUI(1);
-        ImGui::End();
+void SoundMixModule::DrawVisualAnalyzer(bool* p_enabled) {
+    if (!mInitialized ||  mEffectsManager == nullptr || !*p_enabled) return;
+
 
         ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Visualizer");
+        ImGui::Begin("Visualizer", p_enabled);
 
         {
             ImGui::PushID("SpectrumAnalyzer_Effect_Row");
@@ -123,118 +108,142 @@ void SoundMixModule::DrawRack(bool* p_enabled)
 
         ImGui::End();
 
-        // bool dummy = true;renderSequencerWindow(&dummy);
-
-        // AppGui::getAppSettings getAppSettings() {return mAppGui->getAppSettings();}
-
-
-        // bool showDrumKit = getMain()->getAppSettings().mShowDrumKit;
-        // mDrumKit->renderSequencerWindow(&showDrumKit);
-
-        // getMain()->getAppSettings().mShowDrumKit = true;
-
-
-
-
-        //  ~~~~~~~~~~~ TEST RENDERIU ~~~~~~~~~~~~~~~~~~~~~
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack Alternate Rendering");
-        mEffectsManager->renderUI(0);
-        ImGui::End();
-
-        //  ~~~~~~~~~~~ TEST RENDERPADDLE ~~~~~~~~~~~~~~~~~~~~~
-        ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Post Digital Sound Effects Rack Paddles TEST ");
-        mEffectsManager->renderUI(2);
-        ImGui::End();
-
-
     }
+
+//------------------------------------------------------------------------------
+void SoundMixModule::DrawDrums(bool* p_enabled) {
+    if (!mInitialized ||  mDrumManager == nullptr || !*p_enabled) return;
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Drum Pads", p_enabled);
+    mDrumManager->renderUI(3);
+    ImGui::End();
+
+}
+//------------------------------------------------------------------------------
+void SoundMixModule::DrawRack(bool* p_enabled)
+{
+    if (!mInitialized ||  mEffectsManager == nullptr || !*p_enabled) return;
+
+
+    // if (!ImGui::Begin("Rack", p_enabled))
+    // {
+    //     ImGui::End();
+    //     return;
+    // }
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Rack", p_enabled);
+
+
+    //FIXME save last selected in settings !
+    if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None))
+    {
+        //  ~~~~~~~~~~~ RENDERIU ~~~~~~~~~~~~~~~~~~~~~
+        if (ImGui::BeginTabItem("Effects Rack 80th")){
+            mEffectsManager->renderUI(0);
+            ImGui::EndTabItem();
+        }
+        //  ~~~~~~~~~~~ RENDERIU_WIDE ~~~~~~~~~~~~~~~~~~~~~
+        if (ImGui::BeginTabItem("Effects Rack"))
+        {
+            mEffectsManager->renderUI(1);
+            ImGui::EndTabItem();
+        }
+        //  ~~~~~~~~~~~ RENDERPADDLE ~~~~~~~~~~~~~~~~~~~~~
+        if (ImGui::BeginTabItem("Effect Paddles")) {
+            mEffectsManager->renderUI(2);
+            ImGui::EndTabItem();
+        }
+    } //tabBar ....
+    ImGui::EndTabBar();
+    ImGui::End();
+
+
+}
 //------------------------------------------------------------------------------
 bool SoundMixModule::Initialize() {
 
-        mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
+    mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
 
-        std::vector<DSP::EffectType> types = {
-            DSP::EffectType::ToneControl, //pre controll maybe moved to input !!
-            // DSP::EffectType::NoiseGate,
-            // DSP::EffectType::ChromaticTuner,
-            DSP::EffectType::DistortionBasic,
-            DSP::EffectType::OverDrive,
-            DSP::EffectType::Metal,
-            DSP::EffectType::Bitcrusher,
-            DSP::EffectType::AnalogGlow,
-            DSP::EffectType::RingModulator,
-            DSP::EffectType::VoiceModulator,
-            DSP::EffectType::Warmth,
-            DSP::EffectType::Chorus,
-            DSP::EffectType::Reverb,
-            DSP::EffectType::Delay,
-            DSP::EffectType::Equalizer9Band,
-            DSP::EffectType::Limiter,
-        };
+    std::vector<DSP::EffectType> types = {
+        DSP::EffectType::ToneControl,
+        // DSP::EffectType::NoiseGate,
+        // DSP::EffectType::ChromaticTuner,
+        DSP::EffectType::DistortionBasic,
+        DSP::EffectType::OverDrive,
+        DSP::EffectType::Metal,
+        // DSP::EffectType::Bitcrusher,
+        DSP::EffectType::AnalogGlow,
 
+        // DSP::EffectType::RingModulator,
+        // DSP::EffectType::VoiceModulator,
+        // DSP::EffectType::Warmth,
 
-        // manually !!
-        // DSP::EffectType::DrumKit,
-        // DSP::EffectType::SpectrumAnalyzer,
-        // DSP::EffectType::VisualAnalyzer
+        DSP::EffectType::Chorus,
+        DSP::EffectType::Reverb,
+        DSP::EffectType::Delay,
+        DSP::EffectType::Equalizer9Band,
+        DSP::EffectType::Limiter,
+    };
 
 
-        for (auto type : types) {
-            auto fx = DSP::EffectFactory::Create(type);
-            if (fx) {
-                // use defaults ! fx->setEnabled(false);
-                mEffectsManager->addEffect(std::move(fx));
-            }
+    // manually !!
+    // DSP::EffectType::DrumKit,
+    // DSP::EffectType::SpectrumAnalyzer,
+    // DSP::EffectType::VisualAnalyzer
+
+
+    for (auto type : types) {
+        auto fx = DSP::EffectFactory::Create(type);
+        if (fx) {
+            // use defaults ! fx->setEnabled(false);
+            mEffectsManager->addEffect(std::move(fx));
         }
-
-        mDrumManager = std::make_unique<DSP::EffectsManager>(true);
-
-        std::vector<DSP::EffectType> drumTypes = {
-            DSP::EffectType::KickDrum,
-        };
-        for (auto type : drumTypes) {
-            auto fx = DSP::EffectFactory::Create(type);
-            if (fx) {
-                fx->setEnabled(true); //drums on be default
-                mDrumManager->addEffect(std::move(fx));
-            }
-        }
-
-
-
-
-
-        mDrumKit = cast_unique<DSP::DrumKit>(DSP::EffectFactory::Create(DSP::EffectType::DrumKit));
-        //FIXME TEST !!
-        mDrumKit->loadFromFile("bla.drum");
-
-        mSpectrumAnalyzer = cast_unique<DSP::SpectrumAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::SpectrumAnalyzer));
-        mVisualAnalyzer = cast_unique<DSP::VisualAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::VisualAnalyzer));
-
-
-
-        for (const auto& fx : mEffectsManager->getEffects()) {
-            Log("[info] Effect %s (Type: %d) is loaded.", fx->getName().c_str(), fx->getType());
-        }
-
-        // Setup PostMix
-        if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, this)) {
-            dLog("[error] can NOT open PostMix Device !!! %s", SDL_GetError());
-        } else {
-            Log("[info] SoundMixModule: PostMix Callback installed.");
-        }
-
-
-        Log("[info] SoundMixModule init done.");
-
-
-        //FIXME TEST !!
-         mEffectsManager->LoadRack("bla.rack", DSP::EffectsManager::OnlyUpdateExistingSingularity); //only existing ...
-
-        mInitialized = true;
-        return true;
-
     }
+
+    mDrumManager = std::make_unique<DSP::EffectsManager>(true);
+
+    std::vector<DSP::EffectType> drumTypes = {
+        DSP::EffectType::KickDrum,
+    };
+    for (auto type : drumTypes) {
+        auto fx = DSP::EffectFactory::Create(type);
+        if (fx) {
+            fx->setEnabled(true); //drums on be default
+            mDrumManager->addEffect(std::move(fx));
+        }
+    }
+
+
+
+
+
+    mSpectrumAnalyzer = cast_unique<DSP::SpectrumAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::SpectrumAnalyzer));
+    mVisualAnalyzer = cast_unique<DSP::VisualAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::VisualAnalyzer));
+
+
+
+    for (const auto& fx : mEffectsManager->getEffects()) {
+        Log("[info] Effect %s (Type: %d) is loaded.", fx->getName().c_str(), fx->getType());
+    }
+
+    // Setup PostMix
+    if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, this)) {
+        dLog("[error] can NOT open PostMix Device !!! %s", SDL_GetError());
+    } else {
+        Log("[info] SoundMixModule: PostMix Callback installed.");
+    }
+
+
+    Log("[info] SoundMixModule init done.");
+
+
+    //FIXME TEST !!
+        mEffectsManager->LoadRack("bla.rack", DSP::EffectsManager::OnlyUpdateExistingSingularity); //only existing ...
+
+    mInitialized = true;
+    return true;
+
+}
 //------------------------------------------------------------------------------

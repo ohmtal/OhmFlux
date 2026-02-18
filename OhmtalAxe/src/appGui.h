@@ -25,15 +25,17 @@ public:
     // a.) mDefaultEditorSettings
     // b.) on the bottom to the json macro!!! 
     struct AppSettings {
-        bool mShowDemo;
         bool mEditorGuiInitialized;
-        bool mShowImFluxWidgets;
+
         bool mShowFileBrowser;
         bool mShowConsole;
+
         bool mShowWaveModule;
         bool mShowDrumKit;
         bool mShowDrumEffects;
-        bool mShowEffectRack;
+
+        bool mShowVisualizer;
+        bool mShowRack;
     };
 
     ImConsole mConsole;
@@ -51,13 +53,14 @@ private:
 
     AppSettings mAppSettings;
     AppSettings mDefaultAppSettings = {
-        .mShowDemo = false,
-        .mEditorGuiInitialized = false,
-        .mShowImFluxWidgets = false,
+
         .mShowFileBrowser = false,
         .mShowConsole = false,
-        .mShowWaveModule = true,
-        .mShowDrumKit = true
+        .mShowWaveModule = false,
+        .mShowDrumKit = true,
+        .mShowVisualizer = true,
+        .mShowRack    = true,
+
     };
 
 public:
@@ -67,6 +70,10 @@ public:
     void onEvent(SDL_Event event);
     void DrawMsgBoxPopup();
     void ShowMenuBar();
+
+    void ShowToolbar();
+
+
     void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event);
     void InitDockSpace(); 
@@ -82,13 +89,12 @@ public:
 
 // macro for JSON support
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
-    mShowDemo,
     mEditorGuiInitialized,
-    mShowImFluxWidgets,
     mShowFileBrowser,
     mShowConsole,
     mShowWaveModule,
     mShowDrumKit,
     mShowDrumEffects,
-    mShowEffectRack
+    mShowRack,
+    mShowVisualizer
 )

@@ -277,9 +277,14 @@ namespace DSP {
 
             DSP::DrumKitSettings currentSettings = this->getSettings();
 
-            ImGui::SetNextWindowSize(ImVec2(280, 400), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
             ImGui::Begin("Drum Kit", showWindow ); //window start .........
-            renderUIHeader();
+            // renderUIHeader();
+            currentSettings.DrawPaddleHeader(this, 400);
+
+
+
+
             bool changed = false;
             bool presetChanged = false;
 
@@ -366,7 +371,7 @@ namespace DSP {
 
 
             ImGui::PopID();ImGui::PopID();
-            renderUIFooter();
+            //  renderUIFooter();
             if (changed)  {
                 //hackfest!!
                 if ( !presetChanged ) {
@@ -381,6 +386,7 @@ namespace DSP {
 
             }
 
+            currentSettings.DrawPaddleFooter();
             ImGui::End(); //window
         }
 

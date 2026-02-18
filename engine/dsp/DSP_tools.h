@@ -173,6 +173,8 @@ namespace DSP {
     {
         const float width = 70.f;
         const float heigth = 80.f;
+
+
         ImFlux::GradientBox(ImVec2(width,heigth),gp);
         ImGui::BeginGroup();
         // inline void TextColoredEllipsis(ImVec4 color, std::string text, float maxWidth) {
@@ -185,21 +187,29 @@ namespace DSP {
         return result;
     };
 
+
+
     inline bool paddleHeader(const char* caption, ImU32 baseColor, bool& enabled,
-                      ImFlux::LedParams lp = ImFlux::LED_GREEN_ANIMATED_GLOW,
-                      ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
+                             ImFlux::LedParams lp = ImFlux::LED_GREEN_ANIMATED_GLOW,
+                             ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
     ) {
+
+        if (ImGui::GetCurrentWindow()->SkipItems || ImGui::GetContentRegionAvail().x <= 1.f)
+            return false;
+
 
         bool changed = false;
 
+        float lHeight = 50;
+
         // FOR HEADER CLICK :
-        ImVec2 min = ImGui::GetCursorScreenPos();
-        ImVec2 max = ImVec2(min.x + ImGui::GetContentRegionAvail().x, min.y + 50.f);
+        ImVec2 startPos = ImGui::GetCursorPos();
 
         ImFlux::GradientParams gpHeader = gp;
+        if (!enabled) baseColor = ImFlux::ModifyRGB(baseColor, 0.3f);
         gpHeader.col_top = baseColor;
         gpHeader.col_bot = ImFlux::ModifyRGB(baseColor, 0.8);
-        ImFlux::GradientBox(ImVec2(0.f,50.f),gpHeader);
+        ImFlux::GradientBox(ImVec2(0.f,lHeight),gpHeader);
         ImGui::BeginGroup();
         ImGui::Dummy(ImVec2(0,8));ImGui::Dummy(ImVec2(4,0)); ImGui::SameLine();
         if (ImFlux::DrawLED("on/off",enabled, lp)) {
@@ -213,18 +223,110 @@ namespace DSP {
         ImGui::Dummy(ImVec2(0,8));
         ImGui::EndGroup();
 
-        // click magic:
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(min, max)) {
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                enabled = !enabled;
-                changed = true;
-            }
+        ImGui::SetCursorPos(startPos);
+        float availWidth = ImGui::GetContentRegionAvail().x;
+        if (ImGui::InvisibleButton("##header_btn", ImVec2(availWidth, lHeight))) {
+            enabled = !enabled;
+            changed = true;
         }
 
-        // Bad idea here : ImFlux::GradientBox(ImVec2(0.f,0.f),gp);
-        return changed;
+        ImGui::SetCursorPos(ImVec2(startPos.x, startPos.y + lHeight));
 
+        return changed;
     };
+
+
+    // inline bool paddleHeader(const char* caption, ImU32 baseColor, bool& enabled,
+    //                          ImFlux::LedParams lp = ImFlux::LED_GREEN_ANIMATED_GLOW,
+    //                          ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
+    // ) {
+    //
+    //     bool changed = false;
+    //
+    //     float lHeight = 50;
+    //
+    //     // FOR HEADER CLICK :
+    //     ImVec2 min = ImGui::GetCursorScreenPos();
+    //     ImVec2 max = ImVec2(min.x + ImGui::GetContentRegionAvail().x, min.y + lHeight);
+    //
+    //     ImFlux::GradientParams gpHeader = gp;
+    //     if (!enabled) baseColor = ImFlux::ModifyRGB(baseColor, 0.3f);
+    //     gpHeader.col_top = baseColor;
+    //     gpHeader.col_bot = ImFlux::ModifyRGB(baseColor, 0.8);
+    //     ImFlux::GradientBox(ImVec2(0.f,lHeight),gpHeader);
+    //     ImGui::BeginGroup();
+    //     ImGui::Dummy(ImVec2(0,8));ImGui::Dummy(ImVec2(4,0)); ImGui::SameLine();
+    //     if (ImFlux::DrawLED("on/off",enabled, lp)) {
+    //         enabled = !enabled;
+    //         changed = true;
+    //     }
+    //     ImGui::SameLine();
+    //     ImGui::SetWindowFontScale(2.f);
+    //     ImFlux::ShadowText(caption);
+    //     ImGui::SetWindowFontScale(1.f);
+    //     ImGui::Dummy(ImVec2(0,8));
+    //     ImGui::EndGroup();
+    //
+    //     // click magic:
+    //     if (ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(min, max)) {
+    //         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    //             enabled = !enabled;
+    //             changed = true;
+    //         }
+    //     }
+    //
+    //     // if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    //     //     ImGui::OpenPopup(popupTag.c_str());
+    //     // }
+    //
+    //
+    //
+    //     return changed;
+    // };
+
+
+    // inline bool paddleHeader(const char* caption, ImU32 baseColor, bool& enabled,
+    //                   ImFlux::LedParams lp = ImFlux::LED_GREEN_ANIMATED_GLOW,
+    //                   ImFlux::GradientParams gp = ImFlux::DEFAULT_GRADIENPARAMS
+    // ) {
+    //
+    //     bool changed = false;
+    //
+    //     // FOR HEADER CLICK :
+    //     ImVec2 min = ImGui::GetCursorScreenPos();
+    //     ImVec2 max = ImVec2(min.x + ImGui::GetContentRegionAvail().x, min.y + 50.f);
+    //
+    //     ImFlux::GradientParams gpHeader = gp;
+    //     gpHeader.col_top = baseColor;
+    //     gpHeader.col_bot = ImFlux::ModifyRGB(baseColor, 0.8);
+    //     ImFlux::GradientBox(ImVec2(0.f,50.f),gpHeader);
+    //     ImGui::BeginGroup();
+    //     ImGui::Dummy(ImVec2(0,8));ImGui::Dummy(ImVec2(4,0)); ImGui::SameLine();
+    //     if (ImFlux::DrawLED("on/off",enabled, lp)) {
+    //         enabled = !enabled;
+    //         changed = true;
+    //     }
+    //     ImGui::SameLine();
+    //     ImGui::SetWindowFontScale(2.f);
+    //     ImFlux::ShadowText(caption);
+    //     ImGui::SetWindowFontScale(1.f);
+    //     ImGui::Dummy(ImVec2(0,8));
+    //     ImGui::EndGroup();
+    //
+    //     // click magic:
+    //     if (ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(min, max)) {
+    //         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    //             enabled = !enabled;
+    //             changed = true;
+    //         }
+    //     }
+    //
+    //     // Bad idea here : ImFlux::GradientBox(ImVec2(0.f,0.f),gp);
+    //     return changed;
+    //
+    // };
+    //
+
 
 #endif
 

@@ -135,7 +135,7 @@ namespace ImFlux {
 
     //---------------- LEDCheckBox (default glow)
 
-    inline bool LEDCheckBox(const std::string& caption, bool* on, const ImVec4 color) {
+    inline bool LEDCheckBox(const std::string& caption, bool* on, const ImVec4 color, const ImVec4 fontColor = {-1.f, -1.f, -1.f, -1.f}) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
@@ -182,7 +182,10 @@ namespace ImFlux {
                 bb.Min.x + ledSize + spacing,
                 bb.Min.y + (size.y - text_size.y) * 0.5f
             );
-            window->DrawList->AddText(text_pos,ImGui::ColorConvertFloat4ToU32(color), caption.c_str());
+
+            ImU32 fcol = fontColor.x==-1.f ? ImGui::ColorConvertFloat4ToU32(color) : ImGui::ColorConvertFloat4ToU32(fontColor);
+            window->DrawList->AddText(text_pos + ImVec2(1.f,1.f),IM_COL32(32,32,32,255), caption.c_str());
+            window->DrawList->AddText(text_pos,fcol, caption.c_str());
         }
 
         window->DC.CursorPos = backup_pos;

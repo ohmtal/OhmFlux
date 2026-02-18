@@ -118,6 +118,10 @@ private:
 
 
 public:
+    std::vector<std::unique_ptr<EffectsRack>>& getPresets()  {return  mPresets; }
+    EffectsRack* getActiveRack() {return  mActiveRack; }
+    std::vector<std::unique_ptr<DSP::Effect>>& getActiveRackEffects() { return mActiveRack->mEffects;}
+
     //--------------------------------------------------------------------------
     EffectsManager(bool switchOn = false) {
         mEnabled = switchOn;

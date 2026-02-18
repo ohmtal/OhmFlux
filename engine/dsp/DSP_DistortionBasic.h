@@ -88,7 +88,7 @@ namespace DSP {
 
             // no channel handling needed here
             for (int i = 0; i < numSamples; i++) {
-                buffer[i] = DSP::fast_tanh(buffer[i] * gain) * level;
+                buffer[i] = DSP::softClip(DSP::fast_tanh(buffer[i] * gain) * level);
             }
         }
 

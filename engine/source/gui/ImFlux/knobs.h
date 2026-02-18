@@ -37,15 +37,19 @@ namespace ImFlux {
         ImU32 needle       = IM_COL32(255, 255, 255, 255); // Indicator color
 
         int  numLEDs       = 24; // for LEDKnob
+
+        KnobSettings WithRadius(float r) const { KnobSettings k = *this; k.radius = r; return k; }
+        KnobSettings WithSpeed(float s) const { KnobSettings k = *this; k.speed = s; return k; }
+        KnobSettings WithNumLeds(float n) const { KnobSettings k = *this; k.numLEDs = n; return k; }
     };
     constexpr KnobSettings DARK_KNOB;
 
-    inline ImFlux::KnobSettings ksBlack = {.radius=25.f, .active=IM_COL32(200,200,0,255)   };
-    inline ImFlux::KnobSettings ksRed   = {.radius=25.f, .bg_outer = IM_COL32(45, 5, 4, 255), .bg_inner = IM_COL32(65, 5, 4, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksBlue  = {.radius=25.f, .bg_outer = IM_COL32(4, 5, 45, 255), .bg_inner = IM_COL32(4, 5, 65, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksGreen = {.radius=25.f, .bg_outer = IM_COL32(4, 45, 5, 255), .bg_inner = IM_COL32(4, 65, 5, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksPurple = {.radius=25.f, .bg_outer = IM_COL32(45, 4, 45, 255), .bg_inner = IM_COL32(65, 4, 65, 255),.active=IM_COL32(200,200,0,255)  };
-    inline ImFlux::KnobSettings ksYellow = {.radius=25.f, .bg_outer = IM_COL32(45, 45, 4, 255), .bg_inner = IM_COL32(65, 65, 4, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksBlack = {.radius=24.f, .active=IM_COL32(200,200,0,255)   };
+    inline ImFlux::KnobSettings ksRed   = {.radius=24.f, .bg_outer = IM_COL32(45, 5, 4, 255), .bg_inner = IM_COL32(65, 5, 4, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksBlue  = {.radius=24.f, .bg_outer = IM_COL32(4, 5, 45, 255), .bg_inner = IM_COL32(4, 5, 65, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksGreen = {.radius=24.f, .bg_outer = IM_COL32(4, 45, 5, 255), .bg_inner = IM_COL32(4, 65, 5, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksPurple = {.radius=24.f, .bg_outer = IM_COL32(45, 4, 45, 255), .bg_inner = IM_COL32(65, 4, 65, 255),.active=IM_COL32(200,200,0,255)  };
+    inline ImFlux::KnobSettings ksYellow = {.radius=24.f, .bg_outer = IM_COL32(45, 45, 4, 255), .bg_inner = IM_COL32(65, 65, 4, 255),.active=IM_COL32(200,200,0,255)  };
 
 
     inline bool MiniKnobF(const char* label, float* v, float v_min, float v_max, KnobSettings ks = DARK_KNOB) {

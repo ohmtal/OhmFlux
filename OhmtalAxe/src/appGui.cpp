@@ -34,6 +34,33 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     gui->mConsole.AddLog("%s", message);
 }
+
+void AppGui::ShowToolbar() {
+
+        ImFlux::ButtonParams bpOn = ImFlux::SLATE_BUTTON.WithSize(ImVec2(60,32));
+        ImFlux::ButtonParams bpOff = bpOn;
+        bpOff.textColor = IM_COL32(120,120,120, 255);
+
+
+        ImGui::SetNextWindowSize(ImVec2(0.f, 32.f), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Toolbar");
+        if (ImFlux::ButtonFancy("Drums") ) { mAppSettings.mShowDrumKit = ! mAppSettings.mShowDrumKit; }
+        ImFlux::SameLineBreak(bpOn.size.x);
+        if (ImFlux::ButtonFancy("Rack") ) { mAppSettings.mShowRack = ! mAppSettings.mShowRack; }
+        ImFlux::SameLineBreak(bpOn.size.x);
+        if (ImFlux::ButtonFancy("Visualizer") ) { mAppSettings.mShowVisualizer = ! mAppSettings.mShowVisualizer; }
+        ImFlux::SameLineBreak(bpOn.size.x);
+
+
+
+        for (int i = 0; i<20; i++ ) {
+            ImFlux::ButtonFancy(std::format("Dummy {}", i));
+            ImFlux::SameLineBreak(bpOn.size.x);
+        }
+
+
+        ImGui::End();
+    }
 //------------------------------------------------------------------------------
 void AppGui::ApplyStudioTheme() {
 
@@ -47,7 +74,7 @@ void AppGui::ApplyStudioTheme() {
     const ImVec4 cyan_low    = ImVec4(0.00f, 0.45f, 0.45f, 1.00f); // Cyan
     const ImVec4 cyan_mid    = ImVec4(0.00f, 0.60f, 0.60f, 1.00f); // Hover-Cyan
     const ImVec4 cyan_high   = ImVec4(0.00f, 0.80f, 0.80f, 1.00f); // actice Cyan
-    const ImVec4 dark_bg     = ImVec4(0.10f, 0.10f, 0.12f, 1.00f); // nearly black
+    const ImVec4 dark_bg     = ImVec4(0.10f, 0.10f, 0.12f, 0.80f); // nearly black
     const ImVec4 dark_surface = ImVec4(0.16f, 0.16f, 0.18f, 1.00f); // panels
 
 
@@ -64,7 +91,7 @@ void AppGui::ApplyStudioTheme() {
 
 
     // Header (CollapsingHeader, TreeNodes)
-    colors[ImGuiCol_Header]                 = cyan_low;
+    colors[ImGuiCol_Header]                 = dark_surface;  // cyan_low;
     colors[ImGuiCol_HeaderHovered]          = cyan_mid;
     colors[ImGuiCol_HeaderActive]           = cyan_high;
 
@@ -251,19 +278,9 @@ bool AppGui::Initialize()
     mInputModule = new InputModule();
     if (!mInputModule->Initialize())
         return false;
-    // getMain()->queueObject(mInputModule);
 
 
-    // // not centered ?!?!?! i guess center is not in place yet ?
-    // mBackground = new FluxRenderObject(getGame()->loadTexture("assets/fluxeditorback.png"));
-    // if (mBackground) {
-    //     mBackground->setPos(getGame()->getScreen()->getCenterF());
-    //     mBackground->setSize(getGame()->getScreen()->getScreenSize());
-    //     getGame()->queueObject(mBackground);
-    // }
-
-
-    g_FileDialog.init( getGamePath(), { ".sfx", ".wav" });
+    g_FileDialog.init( getGamePath(), {".rack",".drum", ".wav" });
 
 
 
@@ -316,10 +333,14 @@ void AppGui::DrawMsgBoxPopup() {
     }
 }
 
+
+//------------------------------------------------------------------------------
+
 void AppGui::ShowMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
     {
+
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Exit")) { getGame()->TerminateApplication(); }
@@ -328,23 +349,18 @@ void AppGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            if (isDebugBuild())
-            {
-                ImGui::TextDisabled("Debug");
-                ImGui::MenuItem("IMGui Demo", NULL, &mAppSettings.mShowDemo);
-                ImGui::MenuItem("IMFlux Widgets ShowCase", NULL, &mAppSettings.mShowImFluxWidgets);
-                ImGui::Separator();
-            }
-            ImGui::TextDisabled("Main");
-            ImGui::MenuItem("File Browser", NULL, &mAppSettings.mShowFileBrowser);
-            ImGui::MenuItem("Console", NULL, &mAppSettings.mShowConsole);
-            ImGui::Separator();
             ImGui::TextDisabled("Modules");
-            ImGui::MenuItem("Wave Files", NULL, &mAppSettings.mShowWaveModule);
+            ImGui::MenuItem("Rack", NULL, &mAppSettings.mShowRack);
+            ImGui::MenuItem("Visualizer", NULL, &mAppSettings.mShowVisualizer);
+
             ImGui::MenuItem("Drum Kit", NULL, &mAppSettings.mShowDrumKit);
             ImGui::MenuItem("Drum Pads", NULL, &mAppSettings.mShowDrumEffects);
 
-
+            ImGui::Separator();
+            ImGui::TextDisabled("Tools");
+            ImGui::MenuItem("Wave Files", NULL, &mAppSettings.mShowWaveModule);
+            ImGui::MenuItem("File Browser", NULL, &mAppSettings.mShowFileBrowser);
+            ImGui::MenuItem("Console", NULL, &mAppSettings.mShowConsole);
 
 
             ImGui::Separator();
@@ -375,26 +391,22 @@ void AppGui::ShowMenuBar()
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Master Volume");
 
+        //................
+
 
         // -----------
         ImGui::EndMainMenuBar();
     }
-
+    ShowToolbar();
 }
 //------------------------------------------------------------------------------
 void AppGui::DrawGui()
 {
+
     mGuiGlue->DrawBegin();
 
 
     ShowMenuBar();
-
-    if (isDebugBuild())
-    {
-        if ( mAppSettings.mShowDemo ) ImGui::ShowDemoWindow();
-        if (mAppSettings.mShowImFluxWidgets) ImFlux::ShowCaseWidgets();
-    }
-
     if (mAppSettings.mShowFileBrowser) ShowFileBrowser();
     if (mAppSettings.mShowConsole) mConsole.Draw("Console", &mAppSettings.mShowConsole);
 
@@ -404,9 +416,11 @@ void AppGui::DrawGui()
     mInputModule->DrawInputModuleUI();
 
 
-    mSoundMixModule->DrawRack( &mAppSettings.mShowEffectRack);
+
+    mSoundMixModule->DrawVisualAnalyzer( &mAppSettings.mShowVisualizer);
+    mSoundMixModule->DrawRack( &mAppSettings.mShowRack);
     mSoundMixModule->DrawDrums(&mAppSettings.mShowDrumEffects /*&getMain()->getAppSettings()->mShowDrumEffects*/);
-    mSoundMixModule->mDrumKit->renderSequencerWindow(&mAppSettings.mShowDrumKit /*&getMain()->getAppSettings()->mShowDrumKit*/);
+    mSoundMixModule->mDrumKitLooper.DrawUI(&mAppSettings.mShowDrumKit);
 
 
 
@@ -435,19 +449,24 @@ void AppGui::InitDockSpace()
 
     // Replicate your splits (matches your ini data)
     ImGuiID dock_main_id = dockspace_id;
-    ImGuiID dock_id_left, dock_id_right, dock_id_central;
+    ImGuiID dock_id_left, dock_id_right, dock_id_central, dock_id_top;
 
     dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.215f, nullptr, &dock_main_id);
-
     dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.172f, nullptr, &dock_id_central);
 
+    // dock_id_top = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.215f, nullptr, &dock_main_id);
+
+
     // Dock the Windows to these IDs
-    // ImGui::DockBuilderDockWindow("FM Instrument Editor", dock_id_left);
+    ImGui::DockBuilderDockWindow("Toolbar", dock_id_right);
+
     ImGui::DockBuilderDockWindow("File Browser", dock_id_right);
-    ImGui::DockBuilderDockWindow("Sound Effects Generator", dock_id_central);
-    // ImGui::DockBuilderDockWindow("FM Song Composer", dock_id_central);
+    // ImGui::DockBuilderDockWindow("Sound Effects Generator", dock_id_central);
 
 
     ImGui::DockBuilderFinish(dockspace_id);
+
+    // we tile the rest ...
+    ImFlux::TileWindows();
 }
 //------------------------------------------------------------------------------

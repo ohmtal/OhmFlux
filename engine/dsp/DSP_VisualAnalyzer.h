@@ -82,10 +82,14 @@ namespace DSP {
 
             // 3. RMS Level Calculation per Channel
             int numFrames = numSamples / numChannels;
+            float numFramesF = static_cast<float>(numFrames);
             if (numFrames > 0) {
                 int channel = 0;
                 for (int i = 0; i < numSamples; i++) {
-                    float sample = buffer[i];
+                    //
+                    //NOTE * 0.55 with distortion it goes over 1.0 also if limiter is on
+                    // this match the limiter settings!
+                    float sample = buffer[i] * 0.85f;
 
                     // Safety check
                     if (!std::isfinite(sample)) sample = 0.0f;
@@ -97,7 +101,7 @@ namespace DSP {
 
                 for (int c = 0; c < numChannels; ++c) {
                     // Calculate RMS
-                    float rms = std::sqrt(std::max(0.0f, mSums[c] / static_cast<float>(numFrames)));
+                    float rms = std::sqrt(std::max(0.0f, mSums[c] / numFramesF));
 
                     // Visual Gain and Denormal Protection
                     float rawLevel = rms * 2.0f;

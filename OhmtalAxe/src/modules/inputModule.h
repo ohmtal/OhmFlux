@@ -62,8 +62,8 @@ public:
 
         std::vector<DSP::EffectType> effTypes = {
             DSP::EffectType::NoiseGate,
-            DSP::EffectType::ChromaticTuner,
             // DSP::EffectType::ToneControl,
+            DSP::EffectType::ChromaticTuner,
         };
 
         for (auto type : effTypes) {
