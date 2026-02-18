@@ -512,7 +512,7 @@ inline std::string getMusicPath()     { return getUserFolder( SDL_FOLDER_MUSIC )
 inline std::string getPicturesPath()  { return getUserFolder( SDL_FOLDER_PICTURES ) ; }
 inline std::string getVideosPath()    { return getUserFolder( SDL_FOLDER_VIDEOS ) ; }
 
-inline const std::string getGamePath() {
+inline std::string getGamePath() {
     static std::string cachedPath = "";
     if (!cachedPath.empty()) return cachedPath;
 

@@ -462,7 +462,7 @@ if(BUILD_FLUXTRACKER)
         "${TRACKER_DIR}/src/fancyOverlays.cpp"
         "${TRACKER_DIR}/src/ordersGui.cpp"
     )
-    configure_demo_target(OhmFluxTracker ${TRACKER_DIR} "${TTRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
+    configure_demo_target(Tracker ${TRACKER_DIR} "${TTRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
 endif()
 
 

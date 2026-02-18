@@ -28,6 +28,16 @@ namespace ImFlux {
         ImGui::SetCursorPos(ImGui::GetCursorPos() + offset);
     }
 
+    // ------- for lists where i want different colors per index
+    inline ImU32 getColorByIndex(uint16_t idx) {
+        const float golden_ratio_conjugate = 0.618033988749895f;
+        float hue = fmodf((float)idx * golden_ratio_conjugate, 1.0f);
+        ImVec4 colRGB;
+        ImGui::ColorConvertHSVtoRGB(hue, 0.7f, 0.9f, colRGB.x, colRGB.y, colRGB.z);
+        colRGB.w = 1.0f;
+        return ImGui::GetColorU32(colRGB);
+    }
+
 
 
 

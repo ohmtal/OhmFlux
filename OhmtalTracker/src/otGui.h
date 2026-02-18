@@ -366,17 +366,18 @@ public:
     bool Widget_InstrumentCombo(uint16_t& currentIdx, const std::vector<opl3::Instrument>& bank);
 
     ImU32 getInstrumentColor(uint16_t instrumentIndex) {
-        // Use the Golden Ratio conjugate to distribute hues evenly
-        // This prevents colors from repeating too early
-        const float golden_ratio_conjugate = 0.618033988749895f;
-        float hue = fmodf((float)instrumentIndex * golden_ratio_conjugate, 1.0f);
-
-        ImVec4 colRGB;
-        // Lower saturation or value slightly for better readability against white/dark backgrounds
-        ImGui::ColorConvertHSVtoRGB(hue, 0.7f, 0.9f, colRGB.x, colRGB.y, colRGB.z);
-        colRGB.w = 1.0f;
-
-        return ImGui::GetColorU32(colRGB);
+        return ImFlux::getColorByIndex(instrumentIndex);
+        // // Use the Golden Ratio conjugate to distribute hues evenly
+        // // This prevents colors from repeating too early
+        // const float golden_ratio_conjugate = 0.618033988749895f;
+        // float hue = fmodf((float)instrumentIndex * golden_ratio_conjugate, 1.0f);
+        //
+        // ImVec4 colRGB;
+        // // Lower saturation or value slightly for better readability against white/dark backgrounds
+        // ImGui::ColorConvertHSVtoRGB(hue, 0.7f, 0.9f, colRGB.x, colRGB.y, colRGB.z);
+        // colRGB.w = 1.0f;
+        //
+        // return ImGui::GetColorU32(colRGB);
     }
 
 

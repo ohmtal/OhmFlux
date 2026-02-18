@@ -156,10 +156,19 @@ private:
 public:
     //--------------------------------------------------------------------------
     std::vector<std::unique_ptr<EffectsRack>>& getPresets()  {return  mPresets; }
+
+
     EffectsRack* getActiveRack() {return  mActiveRack; }
-    std::vector<std::unique_ptr<DSP::Effect>>& getActiveRackEffects() { return mActiveRack->getEffects();}
+
+
 
     uint16_t getPresetsCount() const { return (uint16_t)mPresets.size(); };
+
+    EffectsRack* getRackByIndex(uint16_t idx) {
+        if (idx > getPresetsCount()) return nullptr;
+        return mPresets[idx].get();
+    }
+
 
     //--------------------------------------------------------------------------
     EffectsManager(bool switchOn = false) {
@@ -190,7 +199,7 @@ public:
     }
     //--------------------------------------------------------------------------
     // return the new rack index
-    int addRack(std::string name = "empty rack" )
+    int addRack(std::string name = "Rack*" )
     {
         if (getPresetsCount() >= MAX_RACKS_IN_PRESET){
             addError(std::format("[error] We cant have more then {} racks in a Preset", MAX_RACKS_IN_PRESET));
@@ -201,6 +210,13 @@ public:
         newRack->setName(name);
         mPresets.push_back(std::move(newRack));
         return (int)mPresets.size() - 1;
+    }
+    //--------------------------------------------------------------------------
+    int insertRackAbove( int fromIndex  ) {
+        int result = cloneRack(fromIndex);
+        if (result < 0) return result;
+        reorderRack(result, fromIndex);
+        return result;
     }
     //--------------------------------------------------------------------------
     int cloneRack( int fromIndex  )
@@ -220,6 +236,7 @@ public:
     }
     //--------------------------------------------------------------------------
     int getActiveRackIndex()  {
+        if ( mActiveRack == nullptr ) return -1;
         for (int i = 0; i < (int)mPresets.size(); ++i) {
             if (mPresets[i].get() == mActiveRack) {
                 return i;
@@ -283,6 +300,7 @@ public:
     }
     //--------------------------------------------------------------------------
     void setSampleRate(float sampleRate) {
+        if (mActiveRack == nullptr ) return;
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
         for (auto& effect : this->mActiveRack->getEffects()) {
             effect->setSampleRate(sampleRate);
@@ -299,13 +317,18 @@ public:
             setSampleRate(static_cast<float>(mFrequence));
         }
     }
-
-
+    //--------------------------------------------------------------------------
     void setEnabled(bool value) { mEnabled = value;}
-
+    //--------------------------------------------------------------------------
     bool isEnabled() const { return mEnabled; }
-
-    std::vector<std::unique_ptr<DSP::Effect>>& getEffects() { return mActiveRack->getEffects();    }
+    //--------------------------------------------------------------------------
+    std::vector<std::unique_ptr<DSP::Effect>>& getEffects() {
+        static std::vector<std::unique_ptr<DSP::Effect>> emptyVector;
+        if (!mActiveRack) {
+            return emptyVector;
+        }
+        return mActiveRack->getEffects();
+    }
 
     void clear() { mActiveRack->getEffects().clear();}
 
@@ -356,7 +379,7 @@ public:
     //--------------------------------------------------------------------------
     bool addEffect(std::unique_ptr<DSP::Effect> fx) {
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
-        if (!fx) return false;
+        if (!fx || !mActiveRack) return false;
         if ( mActiveRack->getEffectsCount() >= MAX_EFFECTS_IN_RACKS ){
             addError(std::format("[error] We cant have more then {} Effects in one Rack", MAX_RACKS_IN_PRESET));
             return false;
@@ -365,9 +388,9 @@ public:
         mActiveRack->add(std::move(fx));
         return true;
     }
-
-
+    //--------------------------------------------------------------------------
     DSP::Effect* getEffectByType(DSP::EffectType type) {
+        if ( !mActiveRack ) return nullptr;
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
         for (auto& fx : mActiveRack->getEffects()) {
             if (fx->getType() == type) return fx.get();
@@ -377,6 +400,7 @@ public:
 
     //--------------------------------------------------------------------------
     bool removeEffect( size_t effectIndex  ) {
+        if ( !mActiveRack ) return false;
         if (effectIndex >= mActiveRack->getEffects().size() )
         {
             addError(std::format("Remove Effect failed index out of bounds! {}", effectIndex));
@@ -389,19 +413,22 @@ public:
     // modes:0 = renderUI,  1=  renderUIWide, 2 = renderPaddle, 3 = customUI
     void renderUI(int mode = 0 ) {
 
+        if (mActiveRack == nullptr) return;
 #ifdef FLUX_ENGINE
         bool isEnabled = mEnabled;
 
         if (!isEnabled) ImGui::BeginDisabled();
         for (auto& effect : this->mActiveRack->getEffects()) {
-            switch ( mode )
+            if (effect)
             {
-                case 1: effect->renderUIWide();break;
-                case 2: effect->renderPaddle();break;
-                case 3: effect->renderCustomUI();break;
-                default: effect->renderUI(); break;
+                switch ( mode )
+                {
+                    case 1: effect->renderUIWide();break;
+                    case 2: effect->renderPaddle();break;
+                    case 3: effect->renderCustomUI();break;
+                    default: effect->renderUI(); break;
+                }
             }
-
         }
         if (!isEnabled) ImGui::EndDisabled();
 #endif
@@ -451,6 +478,7 @@ public:
             return false;
         }
 
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
 
         auto loadedRack = std::make_unique<EffectsRack>();
         if (!loadedRack->load(ifs)) {
@@ -466,7 +494,6 @@ public:
                 return false;
             }
         }
-        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
 
         switch (loadMode) {
             case RackLoadMode::AppendToPresets:
@@ -488,6 +515,7 @@ public:
                 break;
 
             case OnlyUpdateExistingSingularity:
+                if (!mActiveRack) return false;
                 mActiveRack->setName(loadedRack->getName());
                 for (const auto& fx : loadedRack->getEffects()) {
                     EffectType type = fx->getType();
@@ -575,6 +603,7 @@ public:
     // LOAD Presets (AXE!)
     //--------------------------------------------------------------------------
     bool LoadPresetStream(std::istream& ifs) {
+
         uint32_t magic = 0;
         DSP_STREAM_TOOLS::read_binary(ifs, magic);
         if (magic != DSP::DSP_AXE_MAGIC) {
@@ -595,6 +624,7 @@ public:
             addError(std::format("LoadPresetStream: preset count out ouf bounds: {}! max:{}", presetCount, MAX_EFFECTS_IN_RACKS));
             return false;
         }
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
 
         mPresets.clear();
         mPresets.reserve(presetCount);
@@ -605,6 +635,11 @@ public:
                 return false;
             }
         }
+        if (!mPresets.empty()) {
+            mActiveRack = mPresets.front().get();
+        } else {
+            mActiveRack = nullptr;
+        }
 
         ifs.exceptions(std::ifstream::badbit);
         ifs.get();
@@ -612,6 +647,7 @@ public:
             addError("LoadPresetStream: File too long (unexpected trailing data)!");
             return false;
         }
+
 
         return true;
     }
@@ -624,7 +660,6 @@ public:
         clearErrors();
         std::ifstream ifs;
         ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-        //--------------------------------------------------------------------------
 
         try {
             ifs.open(filePath, std::ios::binary);
@@ -672,15 +707,163 @@ public:
     // }
     //--------------------------------------------------------------------------
     void process(float* buffer, int numSamples, int numChannels) {
-        if (!mEnabled) return;
-
+        if (!mEnabled || !mActiveRack) return;
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
         for (auto& effect : this->mActiveRack->getEffects()) {
             effect->process(buffer, numSamples, numChannels);
         }
 
     }
     //--------------------------------------------------------------------------
+#ifdef FLUX_ENGINE
+    void DrawPresetList() {
+        // because i coded it in my project and moved it here when done:
+        DSP::EffectsManager* lManager = this;
 
+        // default size
+        ImVec2 controlSize = {0,0};
+        // magic pointer movement
+        static int move_from = -1, move_to = -1;
+        int delete_idx = -1, insert_idx = -1;
+        int clone_idx = -1;
+        // init pointers
+
+        // --- Compact Header ---
+
+        // Start a child region for scrolling if the list gets long
+        ImGui::BeginChild("PresetListScroll", controlSize, false);
+
+        int currentIdx = lManager->getActiveRackIndex();
+
+        for (int rackIdx = 0; rackIdx < lManager->getPresetsCount(); rackIdx++) {
+            const bool is_selected = (currentIdx == rackIdx);
+            ImGui::PushID(lManager);ImGui::PushID(rackIdx);
+
+            // 1. Draw Index
+            ImGui::AlignTextToFramePadding();
+            // ImGui::TextDisabled("%02d", rackIdx);
+            ImGui::TextDisabled("%02X", rackIdx);
+            ImGui::SameLine();
+
+            // 2. Button Dimensions & Interaction
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, ImGui::GetFrameHeight());
+
+
+            float coloredWidth = 30.0f;
+            ImVec2 coloredSize(coloredWidth, size.y);
+
+
+            // InvisibleButton acts as the interaction hit-box for DragDrop and Clicks
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+            bool pressed = ImGui::InvisibleButton("rack_btn", size);
+            if (pressed) lManager->setActiveRack(rackIdx);
+
+            bool is_hovered = ImGui::IsItemHovered();
+            bool is_active = ImGui::IsItemActive();
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+            // ----------- rendering
+
+            // 1. Logic for enhanced selection visibility
+            ImU32 col32 = ImFlux::getColorByIndex(rackIdx);
+            ImU32 colMiddle32 =  IM_COL32(20, 20, 20, 255);
+            ImU32 border_col = IM_COL32_WHITE;
+            float border_thickness = 1.0f;
+
+            if (is_selected) {
+                col32 = (col32 & 0x00FFFFFF) | 0xFF000000;
+                border_col = IM_COL32(255, 255, 0, 255); // Neon Yellow
+                border_thickness = 2.0f;
+                colMiddle32 = IM_COL32(40, 40, 40, 255);
+
+            } else {
+                col32 = (col32 & 0x00FFFFFF) | 0x66000000;
+            }
+
+            // left
+            draw_list->AddRectFilled(pos, pos + coloredSize, col32, 3.0f);
+
+            // Middle part: Starts after left bar, width is (total - 2 * side bars)
+            ImVec2 midPos = ImVec2(pos.x + coloredWidth, pos.y);
+            ImVec2 midSize = ImVec2(size.x - (2.0f * coloredWidth), size.y);
+            draw_list->AddRectFilled(midPos, midPos + midSize, colMiddle32, 0.0f); // No rounding for middle to avoid gaps
+
+            // Right part: Starts at the end minus the side bar width
+            ImVec2 rightPos = ImVec2(pos.x + size.x - coloredWidth, pos.y);
+            draw_list->AddRectFilled(rightPos, rightPos + coloredSize, col32, 3.0f);
+
+
+            // Selection "Glow" / Outline
+            if (is_selected) {
+                // Outer Glow Effect: Draw a slightly larger, transparent rect behind/around
+                // draw_list->AddRect(pos - ImVec2(2, 2), pos + size + ImVec2(2, 2),
+                //                    IM_COL32(255, 255, 0, 100), 3.0f, 0, 4.0f);
+
+
+
+                // Solid Inner Border
+                draw_list->AddRect(pos, pos + size, border_col, 3.0f, 0, border_thickness);
+
+                // OPTIONAL: Add a small white "active" indicator circle on the left
+                draw_list->AddCircleFilled(ImVec2(pos.x - 5, pos.y + size.y * 0.5f), 3.0f, border_col);
+            } else if (is_hovered) {
+                draw_list->AddRect(pos, pos + size, IM_COL32(255, 255, 255, 180), 3.0f);
+            }
+
+            // Text Contrast
+            // For the selected item, use Black text if the background is very bright
+            // (or stay with White+Shadow for consistency)
+            std::string rackNameStr = lManager->getRackByIndex(rackIdx)->getName();
+            const char* rackName = rackNameStr.c_str();
+            ImVec2 text_size = ImGui::CalcTextSize(rackName);
+            ImVec2 text_pos = ImVec2(pos.x + (size.x - text_size.x) * 0.5f, pos.y + (size.y - text_size.y) * 0.5f);
+
+            ImU32 text_col = is_selected ? IM_COL32_WHITE : IM_COL32(200, 200, 200, 255);
+            draw_list->AddText(text_pos + ImVec2(1, 1), IM_COL32(0, 0, 0, 255), rackName);
+            draw_list->AddText(text_pos, text_col, rackName);
+
+
+            // 6. Context Menu
+            if (ImGui::BeginPopupContextItem("row_menu")) {
+                if (ImGui::MenuItem("Clone")) clone_idx = rackIdx;
+                if (ImGui::MenuItem("Insert Above")) insert_idx = rackIdx;
+                if (ImGui::MenuItem("Remove")) delete_idx = rackIdx;
+                ImGui::EndPopup();
+            }
+
+            // 7. Drag and Drop (Attached to the InvisibleButton)
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                ImGui::SetDragDropPayload("DND_ORDER", &rackIdx, sizeof(int));
+            ImGui::Text("Moving %s", rackName);
+            ImGui::EndDragDropSource();
+            }
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_ORDER")) {
+                    move_from = *(const int*)payload->Data;
+                    move_to = rackIdx;
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            ImGui::PopStyleVar();
+            ImGui::PopID();ImGui::PopID();
+        }
+        ImGui::EndChild();
+
+        // Deferred move/delete
+        if (delete_idx != -1) lManager->removeRack(delete_idx);
+        if ( clone_idx != -1 ) lManager->cloneRack(clone_idx);
+        if (insert_idx != -1) lManager->insertRackAbove(insert_idx);
+        if (move_from != -1 && move_to != -1) {
+            dLog("[info] move rack from %d to %d", move_from, move_to) ;
+            lManager->reorderRack(move_from, move_to);
+            move_from = -1;
+            move_to = -1;
+        }
+    } //DrawPresetList
+
+#endif
 
 }; //class Effects
 }; //namespace

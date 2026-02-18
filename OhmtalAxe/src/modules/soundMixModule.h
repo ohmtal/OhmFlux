@@ -24,6 +24,7 @@ private:
     bool mInitialized = false;
 
     std::string mPresetsFile = "";
+    std::string mFactoryPresetFile = "";
 
     //FIXME drumkit should be also a EffectsManager so save different custom pattern
     std::string mDrumKitFile = "";
@@ -39,6 +40,10 @@ public:
 
     void populateRack(DSP::EffectsRack* lRack);
 
+
+    void DrawEffectManagerPresetListWindow( bool* p_enabled);
+    //FIXME to class
+    void DrawPresetList(DSP::EffectsManager* lManager );
 
     DrumKitLooper mDrumKitLooper;
 
