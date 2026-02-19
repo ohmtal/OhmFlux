@@ -55,7 +55,7 @@ namespace DSP {
         std::vector<std::shared_ptr<IPreset>> getPresets() const override {
             return {
                 std::make_shared<Preset<ReverbSettings, ReverbData>>
-                    ("Custom", ReverbData{0.0f, 0, 0, 0.0f }),
+                    ("Custom", ReverbData{0.5f, 8000, 7900, 0.25f }),
 
                 // Large, lush reflections Concert Hall
                 std::make_shared<Preset<ReverbSettings, ReverbData>>
@@ -116,9 +116,10 @@ public:
     //----------------------------------------------------------------------
     void setSettings(const ReverbSettings& s) {
         mSettings = s;
-        int curChannels = (int)mBuffers.size();
-        mPositions.assign(curChannels, 0);
-        updateSizes(curChannels);
+
+        // int curChannels = (int)mBuffers.size();
+        // mPositions.assign(curChannels, 0);
+        // updateSizes(curChannels);
     }
     //----------------------------------------------------------------------
     virtual void setSampleRate(float sampleRate) override {
@@ -136,6 +137,15 @@ public:
         mPositions.resize(curChannels, 0);
         updateSizes(curChannels);
     }
+    //----------------------------------------------------------------------
+    void reset() override {
+        // clear buffers
+        for (auto& channelBuffer : mBuffers) {
+            std::fill(channelBuffer.begin(), channelBuffer.end(), 0.0f);
+        }
+        std::fill(mPositions.begin(), mPositions.end(), 0);
+    }
+
     //----------------------------------------------------------------------
     void save(std::ostream& os) const override {
         Effect::save(os);              // Save mEnabled
@@ -214,131 +224,6 @@ public:
             this->setSettings(currentSettings);
         }
     }
-
-
-    // virtual void renderUIWide() override {
-    //     ImGui::PushID("Reverb_Effect_Row_WIDE");
-    //     if (ImGui::BeginChild("REVERB_W_BOX", ImVec2(-FLT_MIN,65.f) )) {
-    //         DSP::ReverbSettings currentSettings = this->getSettings();
-    //         int currentIdx = 0; // Standard: "Custom"
-    //         bool changed = false;
-    //
-    //         ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-    //         ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-    //         ImGui::BeginGroup();
-    //         bool isEnabled = this->isEnabled();
-    //         if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
-    //             this->setEnabled(isEnabled);
-    //         }
-    //         if (!isEnabled) ImGui::BeginDisabled();
-    //         ImGui::SameLine();
-    //         // -------- stepper >>>>
-    //         for (int i = 1; i < DSP::REVERB_PRESETS.size(); ++i) {
-    //             if (currentSettings == DSP::REVERB_PRESETS[i]) {
-    //                 currentIdx = i;
-    //                 break;
-    //             }
-    //         }
-    //         int displayIdx = currentIdx;  //<< keep currentIdx clean
-    //         ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
-    //
-    //         if (ImFlux::ValueStepper("##Preset", &displayIdx, REVERB_PRESET_NAMES
-    //             , IM_ARRAYSIZE(REVERB_PRESET_NAMES)))
-    //         {
-    //             if (displayIdx > 0 && displayIdx < DSP::REVERB_PRESETS.size()) {
-    //                 currentSettings =  DSP::REVERB_PRESETS[displayIdx];
-    //                 changed = true;
-    //             }
-    //         }
-    //         ImGui::SameLine();
-    //         // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-    //         if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
-    //             currentSettings = DSP::ROOM_REVERB; //DEFAULT
-    //             // this->reset();
-    //             changed = true;
-    //         }
-    //
-    //         ImGui::Separator();
-    //         // ImFlux::MiniKnobF(label, &value, min_v, max_v);
-    //         changed |= ImFlux::MiniKnobF("Decay", &currentSettings.decay, 0.1f, 0.98f ); ImGui::SameLine();
-    //         float sizeL = (float) currentSettings.sizeL;
-    //         float sizeR = (float) currentSettings.sizeR;
-    //         changed |= ImFlux::MiniKnobF("Size L", &sizeL, 500, 35000); ImGui::SameLine();
-    //         changed |= ImFlux::MiniKnobF("Size R", &sizeR, 500, 35000); ImGui::SameLine();
-    //         currentSettings.sizeL = (int) sizeL;
-    //         currentSettings.sizeR = (int) sizeR;
-    //         changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.0f, 1.0f); ImGui::SameLine();
-    //         // Engine Update
-    //         if (changed) {
-    //             if (isEnabled) {
-    //                 this->setSettings(currentSettings);
-    //             }
-    //         }
-    //
-    //         if (!isEnabled) ImGui::EndDisabled();
-    //
-    //         ImGui::EndGroup();
-    //     }
-    //     ImGui::EndChild();
-    //     ImGui::PopID();
-    //
-    // }
-    // //--------------------------------------------------------------------------
-    //
-    // virtual void renderUI() override {
-    //     ImGui::PushID("Reverb_Effect_Row");
-    //     ImGui::BeginGroup();
-    //     bool isEnabled = this->isEnabled();
-    //     if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())) this->setEnabled(isEnabled);
-    //     if (isEnabled)
-    //     {
-    //         if (ImGui::BeginChild("Reverb_Box", ImVec2(0, 140), ImGuiChildFlags_Borders)) {
-    //             DSP::ReverbSettings currentSettings = this->getSettings();
-    //             bool changed = false;
-    //             int currentIdx = 0; // Standard: "Custom"
-    //             for (int i = 1; i < DSP::REVERB_PRESETS.size(); ++i) {
-    //                 if (currentSettings == DSP::REVERB_PRESETS[i]) {
-    //                     currentIdx = i;
-    //                     break;
-    //                 }
-    //             }
-    //             int displayIdx = currentIdx;  //<< keep currentIdx clean
-    //             ImGui::SetNextItemWidth(150);
-    //             if (ImFlux::ValueStepper("##Preset", &displayIdx, DSP::REVERB_PRESET_NAMES, IM_ARRAYSIZE(DSP::REVERB_PRESET_NAMES))) {
-    //                 if (displayIdx > 0 && displayIdx < DSP::REVERB_PRESETS.size()) {
-    //                     currentSettings =  DSP::REVERB_PRESETS[displayIdx];
-    //                     changed = true;
-    //                 }
-    //             }
-    //             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-    //             if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-    //                 currentSettings = DSP::ROOM_REVERB;
-    //                 changed = true;
-    //             }
-    //             ImGui::Separator();
-    //             changed |= ImFlux::FaderHWithText("Decay", &currentSettings.decay, 0.1f, 0.98f, "%.2f");
-    //             float sizeL = (float) currentSettings.sizeL;
-    //             float sizeR = (float) currentSettings.sizeR;
-    //             changed |= ImFlux::FaderHWithText("Size L", &sizeL, 500, 35000, "%5.0f smp");
-    //             changed |= ImFlux::FaderHWithText("Size R", &sizeR, 500, 35000, "%5.0f smp");
-    //             currentSettings.sizeL = (int) sizeL;
-    //             currentSettings.sizeR = (int) sizeR;
-    //             changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.0f, 1.0f, "Wet %.2f");
-    //
-    //             if (changed) {
-    //                 if (isEnabled) {
-    //                     this->setSettings(currentSettings);
-    //                 }
-    //             }
-    //         }
-    //         ImGui::EndChild();
-    //     } else {
-    //         ImGui::Separator();
-    //     }
-    //     ImGui::EndGroup();
-    //     ImGui::PopID();
-    //     ImGui::Spacing();
-    // }
 #endif
 }; //CLASS
 }; //namespace

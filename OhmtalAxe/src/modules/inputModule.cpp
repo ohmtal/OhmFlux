@@ -110,7 +110,7 @@ bool InputModule::open(SDL_AudioSpec dstSpec) {
     // mInputSpec.freq = 44100 ; //<< test 44.1k
 
     //TEST: use mono !!
-    mInputSpec.channels = 1;
+    mInputSpec.channels = 2;
 
 
 

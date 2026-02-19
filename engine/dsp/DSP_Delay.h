@@ -51,13 +51,13 @@ struct DelaySettings : public ISettings {
     std::vector<std::shared_ptr<IPreset>> getPresets() const override {
         return {
             std::make_shared<Preset<DelaySettings, DelayData>>
-                ("Custom", DelayData{ 300.f, 0.4f, 0.3f }),
+                ("Custom", DelayData{ 400.f, 0.4f, 0.3f }),
 
             std::make_shared<Preset<DelaySettings, DelayData>>
                 ("Slapback", DelayData{ 50.f,  0.3f, 0.2f }),
 
             std::make_shared<Preset<DelaySettings, DelayData>>
-                ("Standard", DelayData{ 300.f, 0.4f, 0.3f }),
+                ("Short", DelayData{ 300.f, 0.4f, 0.3f }),
 
             std::make_shared<Preset<DelaySettings, DelayData>>
                 ("Spacey", DelayData{ 800.f, 0.5f, 0.4f })
@@ -101,6 +101,8 @@ public:
     //----------------------------------------------------------------------
     void setSettings(const DelaySettings& s) {
         mSettings = s;
+        reset();
+
     }
     //----------------------------------------------------------------------
     void updateBuffers( int numChannels) {
@@ -128,11 +130,19 @@ public:
     //----------------------------------------------------------------------
     void reset() override {
 
-        int curChannels = (int) mBuffers.size();
-        updateBuffers(curChannels);
+        // int curChannels = (int) mBuffers.size();
+        // updateBuffers(curChannels);
 
         mSmoothedDelaySamples = 0.f;
+
+        // clear buffers
+        for (auto& channelBuffer : mBuffers) {
+            std::fill(channelBuffer.begin(), channelBuffer.end(), 0.0f);
+        }
+        std::fill(mPositions.begin(), mPositions.end(), 0);
+
     }
+
     //----------------------------------------------------------------------
     void save(std::ostream& os) const override {
         Effect::save(os);              // Save mEnabled
@@ -239,145 +249,6 @@ public:
             this->setSettings(currentSettings);
         }
     }
-/*
-
-
-    virtual void renderUIWide() override {
-        ImGui::PushID("Delay_Effect_Row_WIDE");
-        if (ImGui::BeginChild("DELAY_BOX", ImVec2(-FLT_MIN,65.f) )) {
-
-            DSP::DelaySettings currentSettings = this->getSettings();
-            int currentIdx = 0; // Standard: "Custom"
-            bool changed = false;
-
-            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-            ImGui::BeginGroup();
-            bool isEnabled = this->isEnabled();
-            if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
-                this->setEnabled(isEnabled);
-            }
-
-            if (!isEnabled) ImGui::BeginDisabled();
-
-            ImGui::SameLine();
-            // -------- stepper >>>>
-            for (int i = 1; i < DSP::DELAY_PRESETS.size(); ++i) {
-                if (currentSettings == DSP::DELAY_PRESETS[i]) {
-                    currentIdx = i;
-                    break;
-                }
-            }
-            int displayIdx = currentIdx;  //<< keep currentIdx clean
-            ImGui::SameLine(ImGui::GetWindowWidth() - 260.f); // Right-align reset button
-
-            if (ImFlux::ValueStepper("##Preset", &displayIdx, DELAY_PRESET_NAMES
-                , IM_ARRAYSIZE(DELAY_PRESET_NAMES)))
-            {
-                if (displayIdx > 0 && displayIdx < DSP::DELAY_PRESETS.size()) {
-                    currentSettings =  DSP::DELAY_PRESETS[displayIdx];
-                    changed = true;
-                }
-            }
-            ImGui::SameLine();
-            // if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
-                currentSettings = DSP::MEDIUM_DELAY; //DEFAULT
-                this->reset();
-                changed = true;
-            }
-
-            ImGui::Separator();
-            // ImFlux::MiniKnobF(label, &value, min_v, max_v);
-            changed |= ImFlux::MiniKnobF("Time", &currentSettings.time, 10.0f, 2000.0f); ImGui::SameLine();
-            changed |= ImFlux::MiniKnobF("Feedback", &currentSettings.feedback, 0.1f, 0.95f); ImGui::SameLine();
-            changed |= ImFlux::MiniKnobF("Mix", &currentSettings.wet, 0.01f, 1.0f); ImGui::SameLine();
-
-            // Engine Update
-            if (changed) {
-                if (isEnabled) {
-                    this->setSettings(currentSettings);
-                }
-            }
-
-            if (!isEnabled) ImGui::EndDisabled();
-
-            ImGui::EndGroup();
-        }
-        ImGui::EndChild();
-        ImGui::PopID();
-
-    }
-
-
-    virtual void renderUI() override {
-        ImGui::PushID("Delay_Effect_Row");
-
-        ImGui::BeginGroup();
-
-        bool isEnabled = this->isEnabled();
-        if (ImFlux::LEDCheckBox(getName(), &isEnabled, getColor())){
-                this->setEnabled(isEnabled);
-        }
-            if (isEnabled)
-            {
-                if (ImGui::BeginChild("BC_Box", ImVec2(0, 110), ImGuiChildFlags_Borders)) {
-
-
-                    ImGui::BeginGroup();
-
-
-                    DSP::DelaySettings currentSettings = this->getSettings();
-                    bool changed = false;
-
-                    int currentIdx = 0; // Standard: "Custom"
-                    for (int i = 1; i < DSP::DELAY_PRESETS.size(); ++i) {
-                        if (currentSettings == DSP::DELAY_PRESETS[i]) {
-                            currentIdx = i;
-                            break;
-                        }
-                    }
-                    int displayIdx = currentIdx;  //<< keep currentIdx clean
-
-                    ImGui::SetNextItemWidth(150);
-                    if (ImFlux::ValueStepper("##Preset", &displayIdx, DELAY_PRESET_NAMES, IM_ARRAYSIZE(DELAY_PRESET_NAMES))) {
-                        if (displayIdx > 0 && displayIdx < DSP::DELAY_PRESETS.size()) {
-                            currentSettings =  DSP::DELAY_PRESETS[displayIdx];
-                            changed = true;
-                        }
-                    }
-                    ImGui::SameLine(ImGui::GetWindowWidth() - 60); // Right-align reset button
-
-                    if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
-                        currentSettings = DSP::MEDIUM_DELAY; //DEFAULT
-                        this->reset();
-                        changed = true;
-                    }
-                    ImGui::Separator();
-
-//
-                    // Control Sliders
-                    changed |= ImFlux::FaderHWithText("Time", &currentSettings.time, 10.0f, 2000.0f, "%.1f ms");
-                    changed |= ImFlux::FaderHWithText("Feedback", &currentSettings.feedback, 0.1f, 0.95f, "%.2f");
-                    changed |= ImFlux::FaderHWithText("Mix", &currentSettings.wet, 0.01f, 1.0f, "%.2f wet");
-
-                    // Engine Update
-                    if (changed) {
-                        if (isEnabled) {
-                            this->setSettings(currentSettings);
-                        }
-                    }
-                    ImGui::EndGroup();
-                }
-                ImGui::EndChild();
-            } else {
-                ImGui::Separator();
-            }
-
-            ImGui::EndGroup();
-            ImGui::PopID();
-            ImGui::Spacing(); // Add visual gap before the next effect
-    }*/
     #endif
 
 }; //CLASS
