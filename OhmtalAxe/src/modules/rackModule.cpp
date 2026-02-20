@@ -27,10 +27,10 @@ DSP::EffectsManager* RackModule::getManager() const {
 bool RackModule::Initialize() {
     mPresetsFile =
     getGame()->mSettings.getPrefsPath()
-    .append(getGame()->mSettings.getSafeCaption())
-    .append(".rack.presets");
+    .append("Save.axe");
 
-    mFactoryPresetFile = getGamePath().append("assets/Factory.rack.presets");
+
+    mFactoryPresetFile = getGamePath().append("assets/Factory.axe");
 
     mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
     getManager()->setName("Sound Effects");
@@ -155,6 +155,14 @@ void RackModule::DrawRack(bool* p_enabled)
                 lManager->setActiveRack(newId);
             }
             ImGui::SameLine();
+            if (ImFlux::ButtonFancy("Save")) {
+                callSavePresets();
+            }
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy("Load")) {
+                callLoadPresets();
+            }
+            ImGui::SameLine();
             if (count < 2) ImGui::BeginDisabled();
             if (ImFlux::ButtonFancy("Delete")) {
                 int newId = lManager->removeRack(currentIdx);
@@ -208,13 +216,37 @@ void RackModule::process(float* buffer, int numSamples, int numChannels) {
     getManager()->process(buffer, numSamples, numChannels);
 }
 //------------------------------------------------------------------------------
-
 void RackModule::DrawEffectManagerPresetListWindow(bool* p_enabled) {
-        if (!mInitialized ||  mEffectsManager == nullptr || !*p_enabled) return;
-        ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 400.f), ImVec2(FLT_MAX, FLT_MAX));
-        ImGui::Begin("Rack Presets", p_enabled);
-        DrawPresetList(mEffectsManager.get());
-        ImGui::End(/*"Rack Presets", p_enabled*/);
+    if (!mInitialized ||  mEffectsManager == nullptr || !*p_enabled) return;
+    ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 400.f), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::Begin("Rack Presets", p_enabled);
+    DrawPresetList(mEffectsManager.get());
+    ImGui::End(/*"Rack Presets", p_enabled*/);
 
-    }
+}
+//------------------------------------------------------------------------------
+void RackModule::callSavePresets() {
+    g_FileDialog.setFileName(fluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".axe");
+    g_FileDialog.mSaveMode = true;
+    g_FileDialog.mSaveExt = ".axe";
+    g_FileDialog.mFilters = {".axe"};
+    g_FileDialog.mLabel = "Save Rack Presets (.axe)";
+    g_FileDialog.mDirty = true;
+    g_FileDialog.mWasOpen = getMain()->getAppGui()->getAppSettings()->mShowFileBrowser;
+    getMain()->getAppGui()->getAppSettings()->mShowFileBrowser = true; //FIXME RESET ?!
+
+}
+void RackModule::callLoadPresets() {
+    g_FileDialog.setFileName(fluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".axe");
+    g_FileDialog.mSaveMode = false;
+    g_FileDialog.mSaveExt = ".axe";
+    g_FileDialog.mFilters = {".axe"};
+    g_FileDialog.mLabel = "Load Rack Presets (.axe)";
+    g_FileDialog.mDirty = true;
+
+    g_FileDialog.mWasOpen = getMain()->getAppGui()->getAppSettings()->mShowFileBrowser;
+    getMain()->getAppGui()->getAppSettings()->mShowFileBrowser = true; //FIXME RESET ?!
+
+}
+
 

@@ -201,14 +201,30 @@ void AppGui::ApplyStudioTheme() {
 //------------------------------------------------------------------------------
 void AppGui::ShowFileBrowser(){
     if (g_FileDialog.Draw()) {
-        // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+        LogFMT("[info] File:{} Ext:{} savemode:{} safeExt:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt, g_FileDialog.mSaveMode,  g_FileDialog.mSaveExt);
+        getAppSettings()->mShowFileBrowser = g_FileDialog.mWasOpen;
+        if (g_FileDialog.mCancelPressed )  {
+            g_FileDialog.reset();
+            return;
+        }
+
         if (g_FileDialog.mSaveMode)
         {
+            if (g_FileDialog.mSaveExt == ".axe") {
+                mRackModule->getManager()->SavePresets(g_FileDialog.selectedFile);
+            }
             g_FileDialog.reset();
         } else {
             if (g_FileDialog.selectedExt == ".wav" ) {
                 mWaveModule->loadWave(g_FileDialog.selectedFile);
             }
+            else
+            if (g_FileDialog.selectedExt == ".axe") {
+                mRackModule->getManager()->LoadPresets(g_FileDialog.selectedFile);
+            }
+
+            g_FileDialog.reset();
+
         }
     }
 }
@@ -302,7 +318,7 @@ bool AppGui::Initialize()
         return false;
 
 
-    g_FileDialog.init( getGamePath(), {".rack",".drum", ".wav" });
+    g_FileDialog.init( getGamePath(), {".axe",".drum", ".wav" });
 
 
 

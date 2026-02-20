@@ -41,4 +41,7 @@ public:
     void setSampleRate(float sampleRate);
     void process(float* buffer, int numSamples, int numChannels);
 
+    void callSavePresets();
+    void callLoadPresets();
+
 };

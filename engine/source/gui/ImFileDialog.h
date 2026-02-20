@@ -33,6 +33,7 @@
 //     g_FileDialog.mSaveMode = true;
 //     g_FileDialog.mSaveExt = ".fms";
 //     g_FileDialog.mLabel = "Save Song (.fms)";
+//     g_FileDialog.mFilters = {".fms"};
 //
 // }
 //
@@ -70,6 +71,9 @@ struct ImFileDialog {
     std::string mSaveExt = "";
     bool mCancelPressed = false;
     bool mInitDone = false;
+
+    bool mWasOpen = true;
+
     // //--------------------------------------------------------------------------
     // void setFileName(std::string filename)
     // {
