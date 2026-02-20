@@ -245,7 +245,6 @@ bool AppGui::Initialize()
     mAppSettings = SettingsManager().get("AppGui::mAppSettings", mDefaultAppSettings);
 
 
-
     mGuiGlue = new FluxGuiGlue(true, false, nullptr);
     if (!mGuiGlue->Initialize())
         return false;
@@ -271,6 +270,9 @@ bool AppGui::Initialize()
     mSoundMixModule  = new SoundMixModule();
     if (!mSoundMixModule ->Initialize())
         return false;
+    float vol = SettingsManager().get("SoundMix::MasterVolume", 1.f);
+    mSoundMixModule->setMasterVolume(vol);
+
 
 
     mWaveModule = new WaveModule();
@@ -283,6 +285,22 @@ bool AppGui::Initialize()
     if (!mInputModule->Initialize())
         return false;
 
+    std::string emptyStr = "";
+    std::string lInputRackSettings = SettingsManager().get("InputRackSettings", emptyStr);
+    if (!lInputRackSettings.empty()) mInputModule->setInputEffectsSettingsBase64(lInputRackSettings);
+
+    mRackModule = new RackModule();
+    if (!mRackModule->Initialize())
+        return false;
+
+    mKeyBoardModule = new KeyBoardModule();
+    if (!mKeyBoardModule->Initialize())
+        return false;
+
+    mDrumKitLooperModule = new DrumKitLooperModule();
+    if (!mDrumKitLooperModule->Initialize())
+        return false;
+
 
     g_FileDialog.init( getGamePath(), {".rack",".drum", ".wav" });
 
@@ -293,17 +311,25 @@ bool AppGui::Initialize()
 //------------------------------------------------------------------------------
 void AppGui::Deinitialize()
 {
-    SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!! 
-    // getMain()->unQueueObject(mInputModule);
-    getMain()->unQueueObject(mWaveModule);
-    SAFE_DELETE(mWaveModule);
-    SAFE_DELETE(mSoundMixModule);
-    SAFE_DELETE(mGuiGlue);
-
     if (SettingsManager().IsInitialized()) {
         SettingsManager().set("AppGui::mAppSettings", mAppSettings);
+        SettingsManager().set("InputRackSettings", mInputModule->getInputEffectsSettingsBase64());
+        SettingsManager().set("SoundMix::MasterVolume", mSoundMixModule->getMasterVolume());
         SettingsManager().save();
     }
+
+    SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!! 
+    getMain()->unQueueObject(mWaveModule);
+    SAFE_DELETE(mWaveModule);
+
+    SAFE_DELETE(mKeyBoardModule);
+    SAFE_DELETE(mDrumKitLooperModule);
+    SAFE_DELETE(mInputModule);
+    SAFE_DELETE(mRackModule);
+    SAFE_DELETE(mSoundMixModule);
+
+    SAFE_DELETE(mGuiGlue);
+
 
 }
 //------------------------------------------------------------------------------
@@ -353,7 +379,7 @@ void AppGui::ShowMenuBar()
 
         if (ImGui::BeginMenu("Window"))
         {
-            ImGui::TextDisabled("Modules");
+            ImGui::SeparatorText("Modules");
             ImGui::MenuItem("Rack", NULL, &mAppSettings.mShowRack);
             ImGui::MenuItem("Rack Presets", NULL, &mAppSettings.mShowRackPresets);
 
@@ -362,14 +388,28 @@ void AppGui::ShowMenuBar()
             ImGui::MenuItem("Drum Kit", NULL, &mAppSettings.mShowDrumKit);
             ImGui::MenuItem("Drum Pads", NULL, &mAppSettings.mShowDrumEffects);
 
-            ImGui::Separator();
-            ImGui::TextDisabled("Tools");
+
+            ImGui::SeparatorText("Tools");
             ImGui::MenuItem("Wave Files", NULL, &mAppSettings.mShowWaveModule);
             ImGui::MenuItem("File Browser", NULL, &mAppSettings.mShowFileBrowser);
             ImGui::MenuItem("Console", NULL, &mAppSettings.mShowConsole);
 
 
             ImGui::Separator();
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Actions"))
+        {
+            ImGui::SeparatorText("Rack");
+            if (ImGui::MenuItem("Switch Rack", "SPACE")) getMain()->getAppGui()->getRackModule()->getManager()->switchRack();
+
+            ImGui::SeparatorText("Input Line");
+            if (ImGui::MenuItem("Open Input", "F1")) getMain()->getAppGui()->getInputModule()->open();
+            if (ImGui::MenuItem("Close Input", "ESC")) getMain()->getAppGui()->getInputModule()->close();
+
+            ImGui::SeparatorText("Drums");
+            if (ImGui::MenuItem("Toggle Active", "F5")) getMain()->getAppGui()->getDrumKitLooperModule()->toogleDrumKit();
+
             ImGui::EndMenu();
         }
 
@@ -454,11 +494,11 @@ void AppGui::DrawGui()
 
     mSoundMixModule->DrawVisualAnalyzer( &mAppSettings.mShowVisualizer);
 
+    getDrumKitLooperModule()->DrawUI(&mAppSettings.mShowDrumKit); //before soundmix!
     mSoundMixModule->DrawDrums(&mAppSettings.mShowDrumEffects /*&getMain()->getAppSettings()->mShowDrumEffects*/);
-    mSoundMixModule->mDrumKitLooper.DrawUI(&mAppSettings.mShowDrumKit);
 
-    mSoundMixModule->DrawEffectManagerPresetListWindow(&mAppSettings.mShowRackPresets);
-    mSoundMixModule->DrawRack( &mAppSettings.mShowRack);
+    mRackModule->DrawEffectManagerPresetListWindow(&mAppSettings.mShowRackPresets);
+    mRackModule->DrawRack( &mAppSettings.mShowRack);
 
 
     DrawMsgBoxPopup();
@@ -468,6 +508,7 @@ void AppGui::DrawGui()
 //------------------------------------------------------------------------------
 void AppGui::onKeyEvent(SDL_KeyboardEvent event)
 {
+    mKeyBoardModule->onKeyEvent(event);
 }
 //------------------------------------------------------------------------------
 void AppGui::InitDockSpace()

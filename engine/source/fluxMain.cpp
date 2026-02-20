@@ -14,6 +14,7 @@
 #include <vector>
 #include <time.h>
 #include <algorithm>
+#include <filesystem>
 
 #include "fluxMain.h"
 #include "core/fluxMath.h"
@@ -273,6 +274,15 @@ FluxTexture* FluxMain::loadTexture(std::string filename, int cols, int rows, boo
 	// --- Cache Miss: Now we proceed with loading ---
 	FluxTexture* result = new FluxTexture();
 	if (!usePixelPerfect) result->setUseTrilinearFiltering();
+
+
+	bool exits = std::filesystem::exists(filename);
+	if (!exits)  filename = getGamePath() + filename;
+	if (!std::filesystem::exists(filename)) {
+		LogFMT("[error]Unable to load Texture: File {} does not exists.", filename );
+		return nullptr;
+	}
+
 
 	bool success = (!setColorKeyAtZeroPixel)
 	? result->loadTextureDirect(filename.c_str())

@@ -13,28 +13,29 @@
 
 #include <core/fluxBaseObject.h>
 
-class DrumKitLooper : public FluxBaseObject {
+class DrumKitLooperModule : public FluxBaseObject {
 private:
-    std::unique_ptr<DSP::DrumKit> mDrumKit = nullptr;
+    std::unique_ptr<DSP::EffectsManager> mDrumKitManager = nullptr;
+
+    std::string mDrumKitFile = "";
+
+    bool mInitialized = false;
+
 public:
-    DrumKitLooper() {
-        dLog("DrumKitLooper construct ...");
-        mDrumKit = cast_unique<DSP::DrumKit>(DSP::EffectFactory::Create(DSP::EffectType::DrumKit));
-    }
+    DrumKitLooperModule() = default;
+    ~DrumKitLooperModule();
 
-    //----------------------------------------------------------------------
-    void process(float* buffer, int numSamples, int numChannels) {
-        mDrumKit->process(buffer, numSamples, numChannels);
-    }
+    bool Initialize() override;
 
-    void DrawUI(bool *p_open) {
-            mDrumKit->renderSequencerWindow(p_open);
-    }
+    DSP::DrumKit* getDrumKit();
+    void process(float* buffer, int numSamples, int numChannels);
+
+    void toogleDrumKit();
+    void DrawUI(bool *p_open);
+
+    DSP::EffectsManager* getManager() const;
 
 
-    //FIXME
-    // mDrumKit->loadFromFile("bla.drum");
-    // mDrumKit->saveToFile("bla.drum");
 
 
 }; //class

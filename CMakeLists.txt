@@ -338,6 +338,11 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
             RUNTIME_OUTPUT_DIRECTORY "${ABS_OUT_DIR}"
             OUTPUT_NAME "$<$<CONFIG:Release>:${TARGET_NAME}.x86_64>$<$<NOT:$<CONFIG:Release>>:${TARGET_NAME}_$<CONFIG>.x86_64>"
         )
+
+        # # build for speed
+        # if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        #     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+        # endif()
     endif()
 endmacro()
 
@@ -424,7 +429,7 @@ endif()
 
 
 # --- SOUNDSTUDIO ---
-option(BUILD_SOUNDSTUDIO "Build SoundStudio application" ON)
+option(BUILD_SOUNDSTUDIO "Build SoundStudio application" OFF)
 if(BUILD_SOUNDSTUDIO)
     set(APP_SOURCES
         "${SOUNDSTUDIO_DIR}/src/main.cpp"
@@ -436,13 +441,16 @@ if(BUILD_SOUNDSTUDIO)
 endif()
 
 # --- Ohmtal Axe ---
-option(BUILD_SOUNDSTUDIO "Build Ohmtal Axe application" ON)
-if(BUILD_SOUNDSTUDIO)
+option(BUILD_AXE "Build Ohmtal Axe application" ON)
+if(BUILD_AXE)
     set(APP_SOURCES
         "${AXE_DIR}/src/main.cpp"
         "${AXE_DIR}/src/appGui.cpp"
         "${AXE_DIR}/src/modules/soundMixModule.cpp"
         "${AXE_DIR}/src/modules/inputModule.cpp"
+        "${AXE_DIR}/src/modules/rackModule.cpp"
+        "${AXE_DIR}/src/modules/keyboardModule.cpp"
+        "${AXE_DIR}/src/modules/drumKitLooper.cpp"
     )
     configure_demo_target(Axe ${AXE_DIR} "${AXE_DIR}/assets@assets" "${APP_SOURCES}")
 endif()

@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// FluxEditorMain
+// Main App
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -66,7 +66,7 @@ public:
         mAppGui->DrawGui();
     }
     //--------------------------------------------------------------------------------------
-    AppGui* getAppGui() {return mAppGui; }
+    AppGui* getAppGui() const {return mAppGui; }
     AppGui::AppSettings* getAppSettings() {return mAppGui->getAppSettings();}
 
 

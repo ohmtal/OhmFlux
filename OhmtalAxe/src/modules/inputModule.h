@@ -4,7 +4,9 @@
 #include <string>
 #include <imgui.h>
 
+#include <utils/byteEncoder.h>
 #include <core/fluxBaseObject.h>
+
 #include <DSP.h>
 #include <DSP_EffectsManager.h>
 #include <DSP_EffectFactory.h>
@@ -94,9 +96,46 @@ public:
     bool open(SDL_AudioSpec dstSpec = { SDL_AUDIO_F32, 2, 44100});
     bool close();
 
-
     virtual void Update(const double& dt) override {}
-
-
     void DrawInputModuleUI();
+
+
+    std::string getInputEffectsSettingsBase64( ) {
+        if (mInputEffects->getActiveRack()) {
+            std::stringstream oss;
+            mInputEffects->SaveRackStream(mInputEffects->getActiveRack(), oss);
+            ByteEncoder::Base64 lEncoder;
+            return lEncoder.encode(oss);
+        }
+        return "";
+    }
+    bool setInputEffectsSettingsBase64( std::string settingsBase64) {
+
+        if (settingsBase64.empty()) {
+            LogFMT("[error] setInputEffectsSettings failed! Empty INPUT Stream!");
+            return false;
+        }
+
+        if (mInputEffects->getActiveRack()) {
+            ByteEncoder::Base64 lEncoder;
+            std::stringstream iss;
+            if (!lEncoder.decode(settingsBase64, iss)) {
+                LogFMT("[error] setInputEffectsSettings failed! Invalid Stream!");
+                return false;
+            }
+
+
+
+            if (!mInputEffects->LoadRackStream(iss, DSP::EffectsManager::OnlyUpdateExistingSingularity, true)) {
+                LogFMT("[error] setInputEffectsSettings failed!\n{}", mInputEffects->getErrors());
+                return false;
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+
+
 }; //CLASS

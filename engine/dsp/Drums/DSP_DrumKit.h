@@ -216,7 +216,7 @@ namespace DSP {
                 float out = 0.f;
 
                 //using  default values here ...
-                out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, 1.5f, sampleRate);
+                out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, 1.f, sampleRate);
                 out +=  mSnare.processSample(180.f, 0.2f, 0.7f, 1.5f, 1.f, sampleRate);
                 out +=  mHiHatClosed.processSample(14000.f, 0.2f, 5.f, 1.f, sampleRate);
                 out +=  mHiHatOpen.processSample(8000.f, 0.5f, 3.f, 0.5f, sampleRate);
@@ -282,9 +282,6 @@ namespace DSP {
             // renderUIHeader();
             currentSettings.DrawPaddleHeader(this, 400);
 
-
-
-
             bool changed = false;
             bool presetChanged = false;
 
@@ -320,8 +317,8 @@ namespace DSP {
             ImGui::Separator();
 
             changed |= currentSettings.vol.RackKnob();
-            ImGui::SameLine();
-            changed |= currentSettings.bpm.RackKnob();
+            // ImGui::SameLine();
+            // changed |= currentSettings.bpm.RackKnob();
 
 
             ImGui::SameLine();
@@ -333,9 +330,14 @@ namespace DSP {
                 }
                 return false;
             };
-            changed |= bpmButton(60); ImGui::SameLine(); changed |= bpmButton(90);
-            changed |= bpmButton(120); ImGui::SameLine(); changed |= bpmButton(144);
-            ImGui::SetNextItemWidth(80.f);
+            changed |= bpmButton(60); ImGui::SameLine(); changed |= bpmButton(72);
+            changed |= bpmButton(118); ImGui::SameLine(); changed |= bpmButton(125);
+            changed |= bpmButton(144); ImGui::SameLine(); changed |= bpmButton(160);
+            ImGui::EndGroup();
+
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            ImGui::SetNextItemWidth(120.f);
             int bpmInt = (int)currentSettings.bpm.get();
             if (ImGui::InputInt("Bmp##manual", &bpmInt,1,15)) {
                 bpmInt = DSP::clamp((uint16_t)bpmInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
@@ -345,12 +347,12 @@ namespace DSP {
             }
 
             // changed |= bpmButton(120); ImGui::SameLine() changed |= bpmButton(144);
+            // ImGui::SameLine();
+            ImFlux::LCDNumber(currentSettings.bpm.get(), 3, 0, 40.0f);
             ImGui::EndGroup();
-            ImGui::SameLine();
-            ImFlux::LCDNumber(currentSettings.bpm.get(), 3, 0, 24.0f);
 
 
-            ImGui::Dummy(ImVec2(0.f, 30.f));
+            ImGui::Dummy(ImVec2(0.f, 10.f));
 
 
             ImGui::BeginGroup();

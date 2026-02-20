@@ -454,6 +454,8 @@ struct FluxSettings
     const char* Company = "Ohmtal";
     const char* Caption;
     const char* Version;
+
+    // 2026-02-19 : automaticly try to load in subdirectory
     const char* IconFilename;     // must be an .bmp image!
     const char* CursorFilename;   // must be an .bmp image!
     S32 cursorHotSpotX = 0;       // offset for mousepointer click position X

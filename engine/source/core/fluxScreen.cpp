@@ -16,6 +16,7 @@
 
 #include "audio/fluxAudio.h"
 
+#include <filesystem>
 
 //-------------------------------------------------------------------------------
 // Howto:
@@ -335,9 +336,16 @@ bool FluxScreen::setIcon(const char* lFilename)
 
 	SDL_Surface *Icon;
 
-	if( (Icon = SDL_LoadBMP(lFilename)) == nullptr)
+	bool exits = std::filesystem::exists(lFilename);
+	std::string lIconFilename = exits ? lFilename : std::format("{}{}",getGamePath(),lFilename).c_str();
+	if (!std::filesystem::exists(lIconFilename)) {
+		Log("[error]Unable to load icon: File %s or %s does not exists.", lFilename, lIconFilename.c_str() );
+		return false;
+	}
+
+	if( (Icon = SDL_LoadBMP(lIconFilename.c_str())) == nullptr)
 	{
-		Log("Unable to load icon: %s", SDL_GetError() );
+		Log("[error]Unable to load icon: %s", SDL_GetError() );
 		return false;
 	}
 
@@ -364,8 +372,16 @@ bool FluxScreen::setCursor(const char* lFilename,  int hot_x, int hot_y)
 		return false;
 	}
 
+	bool exits = std::filesystem::exists(lFilename);
+	std::string lCursorFilename = exits ? lFilename : std::format("{}{}",getGamePath(),lFilename).c_str();
+	if (!std::filesystem::exists(lCursorFilename)) {
+		Log("[error]Unable to load cursor: File %s or %s does not exists.", lFilename, lCursorFilename.c_str() );
+		return false;
+	}
+
+
 	SDL_Surface *myCursor;
-	if( (myCursor = SDL_LoadBMP(lFilename)) == nullptr)
+	if( (myCursor = SDL_LoadBMP(lCursorFilename.c_str())) == nullptr)
 	{
 		Log("Unable to load cursor: %s", SDL_GetError() );
 		return false;

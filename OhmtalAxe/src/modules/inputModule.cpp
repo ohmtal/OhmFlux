@@ -1,15 +1,13 @@
-
-
-// #include <mutex>
-// #include <fstream>
-// #include <vector>
-// #include <string>
-// #include <stdexcept>
-// #include <type_traits>
 #include <atomic>
 
 #include <audio/fluxAudio.h>
+#include "src/appMain.h"
 #include "inputModule.h"
+#include "rackModule.h"
+
+
+//------------------------------------------------------------------------------
+static int INPUT_MODULE_CHANNELS = 2;
 //------------------------------------------------------------------------------
 
 void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
@@ -52,6 +50,9 @@ void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additiona
             inMod->getBuffer()[i] = out;
         }
 
+        // run effects !!
+        getMain()->getAppGui()->getRackModule()->process(inMod->getBuffer(), num_samples, INPUT_MODULE_CHANNELS);
+
 
         SDL_PutAudioStreamData(inMod->getStream(), inMod->getBuffer(), bytesRead);
     }
@@ -88,6 +89,9 @@ void InputModule::DrawInputModuleUI(){
         ImGui::EndChild();
         mInputEffects->renderUI(2);
 
+
+
+
     }
     ImGui::End();
 }
@@ -109,10 +113,8 @@ bool InputModule::open(SDL_AudioSpec dstSpec) {
 
     // mInputSpec.freq = 44100 ; //<< test 44.1k
 
-    //TEST: use mono !!
-    mInputSpec.channels = 2;
-
-
+    // nailed it to stereo !!
+    mInputSpec.channels = INPUT_MODULE_CHANNELS;
 
     mInStream  = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &mInputSpec, nullptr, nullptr);
     mOutStream = SDL_CreateAudioStream(&mInputSpec, &dstSpec);
@@ -136,12 +138,17 @@ bool InputModule::open(SDL_AudioSpec dstSpec) {
     } else {
         Log("[error] Input Module: Failed to open audio devices: %s", SDL_GetError());
     }
+
+
+    //setup sample rate
+    getMain()->getAppGui()->getRackModule()->setSampleRate(mInputSpec.freq);
+
     return mOpen;
 }
 //------------------------------------------------------------------------------
 bool InputModule::close() {
     if (!mOpen) {
-        Log("[error] Imput Module. cant close device not marked as open!");
+        // silent Log("[error] Imput Module. cant close device not marked as open!");
         return false;
     }
     AudioManager.unBindStream(mOutStream);

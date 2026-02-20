@@ -14,38 +14,28 @@
 #include <gui/ImFlux.h>
 
 #include <core/fluxBaseObject.h>
+#include <audio/fluxAudio.h>
 
 class SoundMixModule : public FluxBaseObject {
 private:
-    std::unique_ptr<DSP::EffectsManager> mEffectsManager = nullptr;
     std::unique_ptr<DSP::EffectsManager> mDrumManager = nullptr;
 
     std::atomic<float> mMasterVolume = 1.f;
     bool mInitialized = false;
 
-    std::string mPresetsFile = "";
-    std::string mFactoryPresetFile = "";
 
-    //FIXME drumkit should be also a EffectsManager so save different custom pattern
-    std::string mDrumKitFile = "";
 
 public:
     SoundMixModule() = default;
     ~SoundMixModule() {
-        if (!mEffectsManager->SavePresets(mPresetsFile)) LogFMT(mEffectsManager->getErrors());
         SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), NULL, NULL);
     }
 
     bool Initialize() override;
 
-    void populateRack(DSP::EffectsRack* lRack);
 
-
-    void DrawEffectManagerPresetListWindow( bool* p_enabled);
-    //FIXME to class
-    void DrawPresetList(DSP::EffectsManager* lManager );
-
-    DrumKitLooper mDrumKitLooper;
+    void DrawVisualAnalyzer(bool* p_enabled);
+    void DrawDrums(bool* p_enabled);
 
 
     //lazy add to public:
@@ -64,14 +54,7 @@ public:
         return mDrumManager.get();
     }
 
-    DSP::EffectsManager* getEffectsManager() const {
-        return mEffectsManager.get();
-    }
 
-    //--------------------------------------------------------------------------
-    void DrawRack(bool* p_enabled);
-    void DrawVisualAnalyzer(bool* p_enabled);
-    void DrawDrums(bool* p_enabled);
     //--------------------------------------------------------------------------
     void WriteWavHeader(SDL_IOStream *io, SDL_AudioSpec *spec, Uint32 dataSize) {
         SDL_SeekIO(io, 0, SDL_IO_SEEK_SET);

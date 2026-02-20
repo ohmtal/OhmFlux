@@ -416,6 +416,13 @@ namespace DSP {
 
 
         void renderFancyTuner( ){
+                if ( !isEnabled() ) {
+                    ImGui::SetWindowFontScale(2.f);
+                    ImGui::TextColored(ImVec4(0.2f, 0.2f, 0.2f, 1.0f), "--- DISABLED ---");
+                    ImGui::SetWindowFontScale(1.0f);
+                    ImGui::Dummy(ImVec2(0.f, 89.f)); //96??
+                    return;
+                }
 
                 float freq = 0.f;
                 float cents = 0.f; int note_idx = 0;

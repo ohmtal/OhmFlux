@@ -17,6 +17,9 @@
 #include "modules/soundMixModule.h"
 #include "modules/waveModule.h"
 #include "modules/inputModule.h"
+#include "modules/rackModule.h"
+#include "modules/keyboardModule.h"
+#include "modules/drumKitLooper.h"
 
 class AppGui: public FluxBaseObject
 {
@@ -44,9 +47,15 @@ public:
 private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
-    SoundMixModule* mSoundMixModule = nullptr;
-    WaveModule* mWaveModule = nullptr;
-    InputModule* mInputModule = nullptr;
+
+    // ... Modules
+    SoundMixModule*     mSoundMixModule = nullptr;
+    WaveModule*         mWaveModule = nullptr;
+    InputModule*        mInputModule = nullptr;
+    RackModule*         mRackModule = nullptr;
+    KeyBoardModule*     mKeyBoardModule = nullptr;
+    DrumKitLooperModule*      mDrumKitLooperModule = nullptr;
+
 
 
     void OnConsoleCommand(ImConsole* console, const char* cmdline);
@@ -75,6 +84,13 @@ public:
 
     void ShowToolbar();
 
+    //... Modules getter
+    SoundMixModule* getSoundMixModule() const {return mSoundMixModule; }
+    WaveModule* getWaveModule() const { return mWaveModule;}
+    InputModule* getInputModule() const { return mInputModule;}
+    RackModule* getRackModule() const { return mRackModule;}
+    KeyBoardModule* getKeyBoardModule() const { return  mKeyBoardModule;}
+    DrumKitLooperModule* getDrumKitLooperModule() const { return mDrumKitLooperModule; }
 
     void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event);

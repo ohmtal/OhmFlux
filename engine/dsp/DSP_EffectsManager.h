@@ -26,6 +26,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <gui/ImFlux.h>
+#include <utils/errorlog.h>
 #endif
 
 
@@ -36,7 +37,7 @@ namespace DSP {
     constexpr uint16_t MAX_RACKS_IN_PRESET = 256;
 
     constexpr uint32_t DSP_AXE_MAGIC    =  DSP_STREAM_TOOLS::MakeMagic("AXE!");
-    constexpr uint32_t DSP_AXE_VERSION  =  1;
+    constexpr uint32_t DSP_AXE_VERSION  =  3;
 
     //for rack file
     constexpr uint16_t MAX_EFFECTS_IN_RACKS = 64;
@@ -59,7 +60,8 @@ public:
 
     const uint16_t getEffectsCount() {return (uint16_t) mEffects.size();}
     const std::string getName() {return mName;}
-    void setName(std::string name) {mName = name;}
+    void setName(std::string name) {   mName = name.substr(0,255);}  //LIMIT 255 chars
+    // void setName(std::string name) {mName = name;}
 
     bool add(std::unique_ptr<DSP::Effect> fx) {
         if (!fx) return false;
@@ -144,16 +146,22 @@ class EffectsManager {
 private:
     std::vector<std::unique_ptr<EffectsRack>> mPresets;
     EffectsRack* mActiveRack = nullptr;
+    int mSwitchRack = -1; //VERSION 2
+    std::string mName = ""; //VERSION 3
+
 
     bool mEnabled = true;
     std::string mErrors = "";
-    // std::vector<std::unique_ptr<DSP::Effect>> mEffects; replaced by mActiveRack->mEffects
     std::recursive_mutex mEffectMutex;
 
     int mFrequence = 0;
 
 
 public:
+    //--------------------------------------------------------------------------
+    const std::string getName() {return mName;}
+    // no long stories :P limited to 64 chars!
+    void setName(std::string name) {   mName = name.substr(0,255);}
     //--------------------------------------------------------------------------
     std::vector<std::unique_ptr<EffectsRack>>& getPresets()  {return  mPresets; }
 
@@ -175,6 +183,7 @@ public:
         mEnabled = switchOn;
         mFrequence = SAMPLE_RATE_I;
 
+        setName("Presets");
 
         auto defaultRack = std::make_unique<EffectsRack>();
         defaultRack->setName("Rack n Roll");
@@ -255,11 +264,13 @@ public:
         return cloneRack(currentIndex);
     }
     //--------------------------------------------------------------------------
-    void setActiveRack(int index) {
+    bool setActiveRack(int index) {
         if (index >= 0 && index < (int)mPresets.size()) {
             std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
             mActiveRack = mPresets[index].get();
+            return true;
         }
+        return false;
     }
     //--------------------------------------------------------------------------
     bool removeRack(int index) {
@@ -569,7 +580,6 @@ public:
     }
     //--------------------------------------------------------------------------
     // SAVE Presets (AXE!)
-    //--------------------------------------------------------------------------
     void SavePresetsStream(std::ostream& ofs) const {
         ofs.exceptions(std::ios::badbit | std::ios::failbit);
         DSP_STREAM_TOOLS::write_binary(ofs, DSP::DSP_AXE_MAGIC);
@@ -581,6 +591,13 @@ public:
         for (int32_t rackIdx = 0; rackIdx < presetCount; rackIdx++) {
             SaveRackStream(mPresets[rackIdx].get(), ofs );
         }
+
+        // version 2 ...
+        DSP_STREAM_TOOLS::write_binary(ofs, mSwitchRack);
+
+        // version 3 ( 3 days 3 version ^^ )
+        DSP_STREAM_TOOLS::write_string(ofs, mName);
+
 
     }
     //--------------------------------------------------------------------------
@@ -601,7 +618,6 @@ public:
     }
     //--------------------------------------------------------------------------
     // LOAD Presets (AXE!)
-    //--------------------------------------------------------------------------
     bool LoadPresetStream(std::istream& ifs) {
 
         uint32_t magic = 0;
@@ -640,7 +656,18 @@ public:
         } else {
             mActiveRack = nullptr;
         }
+        //... version 2
+        if (version > 1) {
+            DSP_STREAM_TOOLS::read_binary(ifs, mSwitchRack);
+        }
 
+        //... version 3
+        if (version > 2) {
+             DSP_STREAM_TOOLS::read_string(ifs, mName);
+        }
+
+
+        //... final check
         ifs.exceptions(std::ifstream::badbit);
         ifs.get();
         if (!ifs.eof()) {
@@ -706,6 +733,7 @@ public:
     //     return true;
     // }
     //--------------------------------------------------------------------------
+    // --------- process -------------
     void process(float* buffer, int numSamples, int numChannels) {
         if (!mEnabled || !mActiveRack) return;
         std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
@@ -715,8 +743,26 @@ public:
 
     }
     //--------------------------------------------------------------------------
-#ifdef FLUX_ENGINE
-    void DrawPresetList() {
+    // Preset switch
+    void setSwitchRack(int idx) {
+        if (idx >= (int)mPresets.size()) idx = -1; //reset
+        mSwitchRack = idx;
+    }
+    int getSwitchRack() const { return mSwitchRack; }
+    bool switchRack() {
+        if (mSwitchRack < 0 || mSwitchRack >= (int)mPresets.size()) return false;
+        int lastRack = getActiveRackIndex();
+        if (setActiveRack(mSwitchRack)) {
+            mSwitchRack = lastRack;
+            return true;
+        }
+        return false;
+    }
+
+
+    //--------------------------------------------------------------------------
+    #ifdef FLUX_ENGINE
+    void DrawPresetList(float colorSeed = 0.f) {
         // because i coded it in my project and moved it here when done:
         DSP::EffectsManager* lManager = this;
 
@@ -733,10 +779,24 @@ public:
         // Start a child region for scrolling if the list gets long
         ImGui::BeginChild("PresetListScroll", controlSize, false);
 
+        ImFlux::LEDCheckBox("Active",&mEnabled, ImVec4(0.2f,0.8f,0.2f,1.f));
+
+        ImFlux::SameLineBreak(140.f);
+        ImGui::SetNextItemWidth(140.f);
+        char presetNameBuff[64];
+        strncpy(presetNameBuff, getName().c_str(), sizeof(presetNameBuff));
+
+        if (ImGui::InputText("##preset Name", presetNameBuff, sizeof(presetNameBuff))) {
+            lManager->setName(presetNameBuff);
+        }
+        ImFlux::Hint("Presets List Name");
+
+
         int currentIdx = lManager->getActiveRackIndex();
 
         for (int rackIdx = 0; rackIdx < lManager->getPresetsCount(); rackIdx++) {
             const bool is_selected = (currentIdx == rackIdx);
+            const bool is_switchRack = ( mSwitchRack >=0 ) && (mSwitchRack == rackIdx);
             ImGui::PushID(lManager);ImGui::PushID(rackIdx);
 
             // 1. Draw Index
@@ -766,16 +826,16 @@ public:
             // ----------- rendering
 
             // 1. Logic for enhanced selection visibility
-            ImU32 col32 = ImFlux::getColorByIndex(rackIdx);
+            ImU32 col32 = ImFlux::getColorByIndex(rackIdx, colorSeed);
             ImU32 colMiddle32 =  IM_COL32(20, 20, 20, 255);
             ImU32 border_col = IM_COL32_WHITE;
             float border_thickness = 1.0f;
 
-            if (is_selected) {
+            if (is_selected || is_switchRack) {
                 col32 = (col32 & 0x00FFFFFF) | 0xFF000000;
-                border_col = IM_COL32(255, 255, 0, 255); // Neon Yellow
+                border_col = ImFlux::COL32_NEON_YELLOW;
                 border_thickness = 2.0f;
-                colMiddle32 = IM_COL32(40, 40, 40, 255);
+                colMiddle32 = is_switchRack ? IM_COL32(60, 40, 60, 255) : IM_COL32(40, 40, 40, 255);
 
             } else {
                 col32 = (col32 & 0x00FFFFFF) | 0x66000000;
@@ -815,7 +875,11 @@ public:
             // For the selected item, use Black text if the background is very bright
             // (or stay with White+Shadow for consistency)
             std::string rackNameStr = lManager->getRackByIndex(rackIdx)->getName();
-            const char* rackName = rackNameStr.c_str();
+
+            char rackName[64];
+            strncpy(rackName, rackNameStr.c_str(), sizeof(rackName));
+
+
             ImVec2 text_size = ImGui::CalcTextSize(rackName);
             ImVec2 text_pos = ImVec2(pos.x + (size.x - text_size.x) * 0.5f, pos.y + (size.y - text_size.y) * 0.5f);
 
@@ -826,9 +890,17 @@ public:
 
             // 6. Context Menu
             if (ImGui::BeginPopupContextItem("row_menu")) {
+                ImGui::SeparatorText(rackName);
+                if (ImGui::MenuItem("Set as Switch Rack")) setSwitchRack(rackIdx);
                 if (ImGui::MenuItem("Clone")) clone_idx = rackIdx;
                 if (ImGui::MenuItem("Insert Above")) insert_idx = rackIdx;
                 if (ImGui::MenuItem("Remove")) delete_idx = rackIdx;
+                ImGui::SeparatorText("rename:");
+                ImGui::SetNextItemWidth(150.f);
+                if (ImGui::InputText("##Rack Name", rackName, sizeof(rackName))) {
+                    lManager->getRackByIndex(rackIdx)->setName(rackName);
+                }
+
                 ImGui::EndPopup();
             }
 

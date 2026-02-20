@@ -207,9 +207,6 @@ bool OTGui::playNote(uint8_t softwareChannel,  SongStep step)
 void OTGui::onKeyEventKeyBoard(SDL_KeyboardEvent event) {
     // Ignore OS key repeats to prevent re-triggering FM envelopes
     if (event.repeat) return;
-
-
-
     ImGuiIO& io = ImGui::GetIO();
     if (io.WantTextInput /*FIXME console does ? || io.WantCaptureKeyboard*/) {
         return;

@@ -22,6 +22,9 @@ public:
     bool Initialize() override  {
         return true;
     }
+    void Deinitialize() override {
+
+    }
 
     virtual void Update(const double& dt) override {
         // for (auto& effect : soundMix->getEffectsManager()->getEffects()) {
