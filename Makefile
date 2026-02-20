@@ -19,7 +19,10 @@ ANDROID_PLATFORM := android-24
 
 # Parallel Build Detection
 # Uses all available cores on Linux/FreeBSD, defaults to 4 if detection fails
-JOBS := -j $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+# JOBS := -j $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+# fix for bsd make:
+JOBS != nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4
+JOBS := -j $(JOBS)
 
 # Tool Detection
 BROTLI := $(shell command -v brotli 2> /dev/null)
@@ -49,7 +52,7 @@ usage:
 	@echo "make clean      : Remove $(BASE_BUILD_DIR)/ directory"
 	@echo "make distclean  : Remove all build artifacts, binaries, and $(WEBDIST_DIR)"
 	@echo "-----------------------------------------------------------------"
-	@echo ""
+	@echo "Jobs detected: $(JOBS)"
 
 build-info:
 	@echo "--- [ Arch Linux Setup ] ---"
