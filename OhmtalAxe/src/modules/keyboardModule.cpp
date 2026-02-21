@@ -25,12 +25,24 @@ void KeyBoardModule::onKeyEvent(SDL_KeyboardEvent event)
                 case SDLK_SPACE:
                     getMain()->getAppGui()->getRackModule()->getManager()->switchRack();
                     break;
+                case SDLK_F2:
+                    getMain()->getAppGui()->getRackModule()->getManager()->prevRack();
+                    break;
+                case SDLK_F3:
+                    getMain()->getAppGui()->getRackModule()->getManager()->nextRack();
+                    break;
+
                 // ... INPUT LINE
                 case SDLK_F1:
-                    getMain()->getAppGui()->getInputModule()->open();
+                    getMain()->getAppGui()->getInputModule()->toggle();
                     break;
+
+
+
                 case SDLK_ESCAPE:
+                    //panic key!
                     getMain()->getAppGui()->getInputModule()->close();
+                    getMain()->getAppGui()->getDrumKitLooperModule()->stop();
                     break;
 
                 // ... DRUMKIT

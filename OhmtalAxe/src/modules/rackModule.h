@@ -20,6 +20,7 @@ private:
     std::string mFactoryPresetFile = "";
 
 
+
 public:
     RackModule() = default;
 

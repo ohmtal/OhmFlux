@@ -30,6 +30,8 @@ public:
     DSP::DrumKit* getDrumKit();
     void process(float* buffer, int numSamples, int numChannels);
 
+    void start();
+    void stop();
     void toogleDrumKit();
     void DrawUI(bool *p_open);
 

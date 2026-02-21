@@ -255,13 +255,29 @@ public:
         return -1; // should not happen!
     }
     //--------------------------------------------------------------------------
-    int cloneCurrent() {
+    int cloneCurrent()  {
         int currentIndex = getActiveRackIndex();
         if (currentIndex == -1) {
             addError("[error] No active rack to clone!");
             return -1;
         }
         return cloneRack(currentIndex);
+    }
+    //--------------------------------------------------------------------------
+    bool prevRack() {
+        int currentIdx = getActiveRackIndex();
+        int count = getPresetsCount();
+        currentIdx--;
+        if (currentIdx < 0) currentIdx = count -1;
+        return setActiveRack(currentIdx);
+    }
+    //--------------------------------------------------------------------------
+    bool nextRack() {
+        int currentIdx = getActiveRackIndex();
+        int count = getPresetsCount();
+        currentIdx++;
+        if (currentIdx >= count) currentIdx = 0;
+        return setActiveRack(currentIdx);
     }
     //--------------------------------------------------------------------------
     bool setActiveRack(int index) {
@@ -662,6 +678,7 @@ public:
         }
 
         //... version 3
+        mName = "no name";
         if (version > 2) {
              DSP_STREAM_TOOLS::read_string(ifs, mName);
         }
@@ -776,9 +793,6 @@ public:
 
         // --- Compact Header ---
 
-        // Start a child region for scrolling if the list gets long
-        ImGui::BeginChild("PresetListScroll", controlSize, false);
-
         ImFlux::LEDCheckBox("Active",&mEnabled, ImVec4(0.2f,0.8f,0.2f,1.f));
 
         ImFlux::SameLineBreak(140.f);
@@ -790,6 +804,11 @@ public:
             lManager->setName(presetNameBuff);
         }
         ImFlux::Hint("Presets List Name");
+
+
+        // Start a child region for scrolling if the list gets long
+        ImGui::BeginChild("PresetListScroll", controlSize, false);
+
 
 
         int currentIdx = lManager->getActiveRackIndex();
@@ -892,10 +911,11 @@ public:
             if (ImGui::BeginPopupContextItem("row_menu")) {
                 ImGui::SeparatorText(rackName);
                 if (ImGui::MenuItem("Set as Switch Rack")) setSwitchRack(rackIdx);
+                ImGui::SeparatorText("Actions");
                 if (ImGui::MenuItem("Clone")) clone_idx = rackIdx;
-                if (ImGui::MenuItem("Insert Above")) insert_idx = rackIdx;
+                if (ImGui::MenuItem("Clone Above")) insert_idx = rackIdx;
                 if (ImGui::MenuItem("Remove")) delete_idx = rackIdx;
-                ImGui::SeparatorText("rename:");
+                ImGui::SeparatorText("Name:");
                 ImGui::SetNextItemWidth(150.f);
                 if (ImGui::InputText("##Rack Name", rackName, sizeof(rackName))) {
                     lManager->getRackByIndex(rackIdx)->setName(rackName);
@@ -923,12 +943,18 @@ public:
         }
         ImGui::EndChild();
 
-        // Deferred move/delete
+        // Deferred move/delete/add
         if (delete_idx != -1) lManager->removeRack(delete_idx);
-        if ( clone_idx != -1 ) lManager->cloneRack(clone_idx);
-        if (insert_idx != -1) lManager->insertRackAbove(insert_idx);
+        if ( clone_idx != -1 ) {
+            int newId = lManager->cloneRack(clone_idx);
+            if (newId >=0) lManager->setActiveRack(newId);
+        }
+        if (insert_idx != -1) {
+            int newId = lManager->insertRackAbove(insert_idx);
+            if (newId >=0) lManager->setActiveRack(newId);
+        }
         if (move_from != -1 && move_to != -1) {
-            dLog("[info] move rack from %d to %d", move_from, move_to) ;
+            // dLog("[info] move rack from %d to %d", move_from, move_to) ;
             lManager->reorderRack(move_from, move_to);
             move_from = -1;
             move_to = -1;

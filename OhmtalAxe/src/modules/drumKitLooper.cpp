@@ -54,10 +54,19 @@ void DrumKitLooperModule::process(float* buffer, int numSamples, int numChannels
     getManager()->process(buffer, numSamples, numChannels);
 }
 //------------------------------------------------------------------------------
+void DrumKitLooperModule::start() {
+    bool isEnabled = getDrumKit()->isEnabled();
+    if (!isEnabled) getDrumKit()->setEnabled(true);
+}
+void DrumKitLooperModule::stop() {
+    bool isEnabled = getDrumKit()->isEnabled();
+    if (isEnabled) getDrumKit()->setEnabled(false);
+}
+
 void DrumKitLooperModule::toogleDrumKit(){
     if (!mInitialized) return ;
     bool isEnabled = getDrumKit()->isEnabled();
-    dLog("[info] toogle DrumKit to %d", !isEnabled);
+    // dLog("[info] toogle DrumKit to %d", !isEnabled);
     getDrumKit()->setEnabled(!isEnabled);
 }
 //------------------------------------------------------------------------------

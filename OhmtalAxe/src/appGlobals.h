@@ -9,7 +9,18 @@
 #include <imgui.h>
 #include <string>
 #include <gui/ImFileDialog.h>
+#include <gui/ImFlux.h>
 
+
+// ... Fonts
+inline ImFont* gDefaultFont = nullptr;
+inline ImFont* gIconFont = nullptr; //<< font
+inline ImFont* gTinyFont = nullptr;
+
+
+// ToolButton Params
+inline ImFlux::ButtonParams gTBParams = ImFlux::DEFAULT_BUTTON;
+inline ImFlux::ButtonParams gTextButtonParams = ImFlux::DEFAULT_BUTTON;
 
 //File Dialog
 inline ImFileDialog g_FileDialog;

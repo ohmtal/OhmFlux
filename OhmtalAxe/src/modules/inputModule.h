@@ -93,8 +93,9 @@ public:
 
 
     bool isOpen() const { return mOpen; }
-    bool open(SDL_AudioSpec dstSpec = { SDL_AUDIO_F32, 2, 44100});
+    bool open(SDL_AudioSpec dstSpec = { SDL_AUDIO_F32, 2, 48000});
     bool close();
+    bool toggle();
 
     virtual void Update(const double& dt) override {}
     void DrawInputModuleUI();

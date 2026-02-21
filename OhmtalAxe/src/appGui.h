@@ -48,6 +48,8 @@ private:
     FluxRenderObject* mBackground = nullptr;
     FluxGuiGlue* mGuiGlue = nullptr;
 
+
+
     // ... Modules
     SoundMixModule*     mSoundMixModule = nullptr;
     WaveModule*         mWaveModule = nullptr;
@@ -99,6 +101,7 @@ public:
     void ShowFileBrowser();
 
     void ApplyStudioTheme();
+    void setupFonts();
 
     AppSettings* getAppSettings() {return &mAppSettings;}
 

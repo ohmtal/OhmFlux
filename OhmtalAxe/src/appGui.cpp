@@ -5,8 +5,11 @@
 #include <utils/fluxSettingsManager.h>
 #include "appGlobals.h"
 
-#include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
+// #include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
 #include <gui/ImConsole.h>
+// ... Fonts
+#include "fonts/fa.h"
+#include <src/fonts/IconsFontAwesome6.h>
 
 //------------------------------------------------------------------------------
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
@@ -198,6 +201,36 @@ void AppGui::ApplyStudioTheme() {
     // colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
 }
+
+
+void AppGui::setupFonts()
+{
+    // fonts >>>>
+    // NOTE: Example from: https://github.com/caiocinel/imgui-fontawesome-example/tree/master
+    ImGuiIO& io = ImGui::GetIO();
+    // --- 1. DEFAULT FONT (Proggy + Small Icons merged) ---
+    gDefaultFont =  io.Fonts->AddFontDefault();
+
+    ImFontConfig merge_config;
+    merge_config.MergeMode = true;
+
+    merge_config.OversampleH = merge_config.OversampleV = 1;
+    merge_config.PixelSnapH = true;
+
+    static const ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+    // 13 ? io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 13.0f, &merge_config, ranges);
+    io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 13.0f, &merge_config, ranges);
+
+    // --- 2. BIG ICON FONT (Standalone) ---
+    ImFontConfig icon_config;
+    icon_config.MergeMode = false; // <--- IMPORTANT: DO NOT MERGE
+    // Store this pointer in your class or a global variable
+    gIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 24.0f, &icon_config, ranges);
+    gTinyFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size,  7.0f, &icon_config, ranges);
+    //<<<<<<<<<< fonts
+
+}
+
 //------------------------------------------------------------------------------
 void AppGui::ShowFileBrowser(){
     if (g_FileDialog.Draw()) {
@@ -269,9 +302,19 @@ bool AppGui::Initialize()
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, this);
 
-
     // apply custom Theme
     ApplyStudioTheme();
+
+    setupFonts();
+
+    //Default Toolbar Button (global)
+    gTBParams.color = Color4FImU32(cl_Slate);
+    gTBParams.rounding = 4.f;
+    gTBParams.size = ImVec2(32,32);
+    gTBParams.mouseOverEffect = ImFlux::BUTTON_MO_GLOW;
+
+    gTextButtonParams = gTBParams.WithSize(ImVec2(120.f, 32.f));
+
 
     mBackground = new FluxRenderObject(getMain()->loadTexture(getGamePath()+"assets/back.bmp"));
     if (mBackground) {
@@ -416,15 +459,20 @@ void AppGui::ShowMenuBar()
         }
         if (ImGui::BeginMenu("Actions"))
         {
+            ImGui::SeparatorText("Input Line");
+            if (ImGui::MenuItem("Toggle Input", "F1")) getMain()->getAppGui()->getInputModule()->open();
+
             ImGui::SeparatorText("Rack");
             if (ImGui::MenuItem("Switch Rack", "SPACE")) getMain()->getAppGui()->getRackModule()->getManager()->switchRack();
-
-            ImGui::SeparatorText("Input Line");
-            if (ImGui::MenuItem("Open Input", "F1")) getMain()->getAppGui()->getInputModule()->open();
-            if (ImGui::MenuItem("Close Input", "ESC")) getMain()->getAppGui()->getInputModule()->close();
+            if (ImGui::MenuItem("Prev. Rack", "F2")) getMain()->getAppGui()->getRackModule()->getManager()->prevRack();
+            if (ImGui::MenuItem("Next Rack", "F3")) getMain()->getAppGui()->getRackModule()->getManager()->nextRack();
 
             ImGui::SeparatorText("Drums");
-            if (ImGui::MenuItem("Toggle Active", "F5")) getMain()->getAppGui()->getDrumKitLooperModule()->toogleDrumKit();
+            if (ImGui::MenuItem("Toggle Drums", "F5")) getMain()->getAppGui()->getDrumKitLooperModule()->toogleDrumKit();
+
+            ImGui::SeparatorText("Misc");
+            if (ImGui::MenuItem("Panic Key", "ESC")) getMain()->getAppGui()->getInputModule()->close();
+            ImFlux::Hint("Close Input and stop Drums.");
 
             ImGui::EndMenu();
         }

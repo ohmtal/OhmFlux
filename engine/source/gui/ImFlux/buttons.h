@@ -35,6 +35,8 @@ namespace ImFlux {
         // love this lazy way : example ImFlux::RED_BUTTON.WithSize(ImVec2(tmpWidth, 24.f )).WithRounding(12.f))
         ButtonParams WithSize(ImVec2 s) const { ButtonParams p = *this; p.size = s; return p; }
         ButtonParams WithRounding(float r) const { ButtonParams p = *this; p.rounding = r; return p; }
+
+        ButtonParams WithColor(ImU32 c) const { ButtonParams p = *this; p.color = c; return p; }
     };
 
     constexpr ButtonParams DEFAULT_BUTTON;

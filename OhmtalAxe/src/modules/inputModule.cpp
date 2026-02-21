@@ -1,9 +1,12 @@
 #include <atomic>
 
 #include <audio/fluxAudio.h>
-#include "src/appMain.h"
+#include <src/appMain.h>
+#include <src/appGlobals.h>
+
 #include "inputModule.h"
 #include "rackModule.h"
+#include <src/fonts/IconsFontAwesome6.h>
 
 
 //------------------------------------------------------------------------------
@@ -65,11 +68,17 @@ void InputModule::DrawInputModuleUI(){
     ImGui::Text("Audio Status: %s", (isOpen()) ? "Running" : "Closed");
     ImGui::Separator();
     if (!mOpen) {
-        if (ImGui::Button("OPEN!")) open();
+        // if (ImGui::Button("OPEN!")) open();
+        if (ImFlux::ButtonFancy(ICON_FA_ROCKET "##Open", gTBParams)) open();
+        ImFlux::Hint("Open Input line (plug in). [F1]");
 
     } else {
-        if (ImGui::Button("CLOSE")) close();
+        // if (ImGui::Button("CLOSE")) close();
+        if (ImFlux::ButtonFancy(ICON_FA_POWER_OFF "##Close", gTBParams)) close();
+        ImFlux::Hint("Close Input line (plug out). [F1]");
 
+
+        ImGui::SameLine();
         // ImGui::TextDisabled("%f", lastInputValue.load());
         ImGui::TextDisabled("%d Hz channels:%d", mInputSpec.freq, mInputSpec.channels);
 
@@ -94,6 +103,11 @@ void InputModule::DrawInputModuleUI(){
 
     }
     ImGui::End();
+}
+//------------------------------------------------------------------------------
+bool InputModule::toggle() {
+    if (mOpen) return close();
+    else return open();
 }
 //------------------------------------------------------------------------------
 bool InputModule::open(SDL_AudioSpec dstSpec) {
