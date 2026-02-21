@@ -188,9 +188,15 @@ void OTGui::RenderPatternUI(bool standAlone)
     ImFlux::SeparatorVertical(0.f);
     ImGui::BeginGroup( /* KNOBS */);
 
+
+    // float lBpm = (float)mCurrentSong.bpm;
+    // if ( ImFlux::LEDMiniKnob("BPM", &lBpm, 15, 360) ) {
+    //     mCurrentSong.bpm = (int)lBpm;
+    // }
+
     int lBpm = mCurrentSong.bpm;
-    if (ImFlux::MiniKnobInt("BPM##BPM", &lBpm, 15, 360, 12.f, 15, 120))
-        mCurrentSong.bpm = lBpm;
+    if (ImFlux::MiniKnobInt("BPM##BPM", &lBpm, 15, 360, 12.f, 1, 120)) mCurrentSong.bpm = lBpm;
+
     ImGui::SameLine(0.f,3.f);
     ImFlux::LCDDisplay("BPM", (float)lBpm, 3,0,12.f, IM_COL32(240,240,0,255)); //green
 
