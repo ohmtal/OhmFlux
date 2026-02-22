@@ -37,7 +37,7 @@ bool DrumKitLooperModule::Initialize() {
 //------------------------------------------------------------------------------
 DrumKitLooperModule::~DrumKitLooperModule(){
     if (mInitialized) {
-        getManager->setEnabled(false);
+        getManager()->setEnabled(false);
         if (!getManager()->SavePresets(mDrumKitFile)) LogFMT(getManager()->getErrors());
     }
 }
