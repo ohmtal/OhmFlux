@@ -193,6 +193,7 @@ namespace DSP {
             float x1 = 0, x2 = 0, y1 = 0, y2 = 0;
         };
     private:
+        bool mDiry = true;
         Equalizer9BandSettings mSettings;
         static constexpr int NUM_BANDS = 9;
 
@@ -232,23 +233,27 @@ namespace DSP {
         , mSettings()
         {
             mSampleRate = sampleRate;
-            updateAllBands();
+            mDiry = true;
         }
         //----------------------------------------------------------------------
         virtual std::string getName() const override { return "9-BAND EQUALIZER";}
         //----------------------------------------------------------------------
         Equalizer9BandSettings getSettings() const { return mSettings; }
         //----------------------------------------------------------------------
+        virtual void reset() override {
+            updateAllBands();
+        }
+        //----------------------------------------------------------------------
         void setSettings(const Equalizer9BandSettings& s) {
             mSettings = s;
-            updateAllBands();
+            reset();
 
         }
         //----------------------------------------------------------------------
         void setSampleRate(float newRate) override {
             if (newRate <= 0) return;
             mSampleRate = newRate;
-            updateAllBands();
+            mDiry = true;
         }
         //----------------------------------------------------------------------
         // Update specific band
@@ -256,7 +261,7 @@ namespace DSP {
             if (band < 0 || band >= 9) return;
             mSettings.setGain(band, db);
             // mSettings.gains[band] = db;
-            calculateBand(band);
+            mDiry = true;
         }
         //----------------------------------------------------------------------
         float getGain(int band) const {
@@ -271,7 +276,9 @@ namespace DSP {
         //----------------------------------------------------------------------
         bool load(std::istream& is) override {
             if (!Effect::load(is)) return false; // Load mEnabled
-            return mSettings.load(is);      // Load Settings
+            if (!mSettings.load(is) ) return false;
+            mDiry = true;
+            return true;
         }
         //----------------------------------------------------------------------
         // process
@@ -279,6 +286,7 @@ namespace DSP {
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled()) return;
 
+            if (mDiry) { mDiry = false; reset();}
             // 1. Ensure we have state vectors for every channel
             if (mChannelStates.size() != static_cast<size_t>(numChannels)) {
                 // Initialize numChannels vectors, each containing NUM_BANDS states

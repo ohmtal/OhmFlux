@@ -132,56 +132,61 @@ namespace DSP {
         }
         //----------------------------------------------------------------------
         // FIXME DEFINE A "MAGIC" SYSTEM and move this to settings!!
-        bool saveToFile( std::string filePath )
-        {
-            try {
-                std::ofstream ofs(filePath, std::ios::binary);
-                DSP_STREAM_TOOLS::write_binary(ofs, DSP_STREAM_TOOLS::MakeMagic("DRUM"));
-                mSettings.save(ofs);
-                ofs.close();
-                return true;
-            } catch (const std::exception& e) {
-                 std::cerr << e.what() << std::endl;
-                return false;
-            }
-        }
-        bool loadFromFile(std::string filePath) {
-            if (!std::filesystem::exists(filePath)) {
-                return false;
-            }
-            std::ifstream ifs;
-            ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-            try {
-                ifs.open(filePath, std::ios::binary);
-                uint32_t magic = 0;
-                DSP::DSP_STREAM_TOOLS::read_binary(ifs,magic);
-                if (magic != DSP_STREAM_TOOLS::MakeMagic("DRUM")) return false;
-                if (!mSettings.load(ifs)) return false;
-
-                // customdata hackfest
-                // i dont check if it's not custom better than empty!
-                // i dont save the customdata as a clone ... bsss
-                mSettings.customData = mSettings.getData();
-
-                return true;
-            } catch (const std::ios_base::failure& e) {
-                std::cerr << e.what() << std::endl;
-                return false;
-            } catch (const std::exception& e) {
-                std::cerr << e.what() << std::endl;
-                return false;
-            }
-        }
+        // NOTE WHY DID I DO THAT ?? i can save the customdata in save!!!
+        // bool saveToFile( std::string filePath )
+        // {
+        //     try {
+        //         std::ofstream ofs(filePath, std::ios::binary);
+        //         DSP_STREAM_TOOLS::write_binary(ofs, DSP_STREAM_TOOLS::MakeMagic("DRUM"));
+        //         mSettings.save(ofs);
+        //         ofs.close();
+        //         return true;
+        //     } catch (const std::exception& e) {
+        //          std::cerr << e.what() << std::endl;
+        //         return false;
+        //     }
+        // }
+        // bool loadFromFile(std::string filePath) {
+        //     if (!std::filesystem::exists(filePath)) {
+        //         return false;
+        //     }
+        //     std::ifstream ifs;
+        //     ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+        //     try {
+        //         ifs.open(filePath, std::ios::binary);
+        //         uint32_t magic = 0;
+        //         DSP::DSP_STREAM_TOOLS::read_binary(ifs,magic);
+        //         if (magic != DSP_STREAM_TOOLS::MakeMagic("DRUM")) return false;
+        //         if (!mSettings.load(ifs)) return false;
+        //
+        //         // customdata hackfest
+        //         // i dont check if it's not custom better than empty!
+        //         // i dont save the customdata as a clone ... bsss
+        //         mSettings.customData = mSettings.getData();
+        //
+        //         return true;
+        //     } catch (const std::ios_base::failure& e) {
+        //         std::cerr << e.what() << std::endl;
+        //         return false;
+        //     } catch (const std::exception& e) {
+        //         std::cerr << e.what() << std::endl;
+        //         return false;
+        //     }
+        // }
      //----------------------------------------------------------------------
 
         void save(std::ostream& os) const override {
             Effect::save(os);              // Save mEnabled
             mSettings.save(os);       // Save Settings
+
+            //FIXME SAVE PAYLOAD LOOPER DATA
         }
         //----------------------------------------------------------------------
         bool load(std::istream& is) override {
             if (!Effect::load(is)) return false; // Load mEnabled
-            return mSettings.load(is);      // Load Settings
+            if (! mSettings.load(is) ) return false;
+
+            //FIXME SAVE PAYLOAD LOOPER DATA
             return true;
         }
 
@@ -244,7 +249,7 @@ namespace DSP {
                     // restore drums
                     mSettings.setData(mLooperSavCurrent.getData());
                     // init the looper ...
-                    mLooper.init(mLooperSeconds, mSettings.bpm.get() , mSampleRate, numChannels );
+                    mLooper.initWithSec(mLooperSeconds, mSettings.bpm.get() , mSampleRate, numChannels, 4 );
                     // start the looper
                     mLooper.setMode(mLooperMode);
                     // pray ... :P
@@ -270,8 +275,8 @@ namespace DSP {
             uint16_t cymPat = mSettings.cymbalsPat.get();
             float    sampleRate = mSampleRate;
 
-
-            double samplesPerStep = (mSampleRate * 60.0) / (bpm * 4.0);
+            const float beatsPerBar = 4.f;
+            double samplesPerStep = (mSampleRate * 60.0) / (bpm * beatsPerBar);
 
             uint16_t stepper = 0;
 
@@ -289,7 +294,7 @@ namespace DSP {
                 int step = static_cast<int>(mPhase / samplesPerStep) % 16;
                 if (step != mCurrentStep) {
 
-                    //we call the init looper state check
+                    //NOTE: looper => we call the init looper state check
                     if (onLooperStep(numChannels)) {
                         // we need to update here !!
                         kickPat = mSettings.kickPat.get();
@@ -408,6 +413,30 @@ namespace DSP {
             ImFlux::DrawLED("Recording", isRecording, ImFlux::LED_RED_ALERT);
             ImGui::SameLine();
             ImFlux::PeakMeter(mLooper.getPosition(),ImVec2(150.f, 7.f));
+
+            ImGui::SeparatorText("LIVE INFORMATION");
+            Processors::LooperPositionInfo info = mLooper.getPositionInfo();
+            // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
+            ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(200,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
+            ImFlux::LCDNumber(info.beat, 2, 0, 24.f, IM_COL32(20,200,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+            ImFlux::LCDNumber(info.step, 3, 0, 24.f, IM_COL32(200,20,200,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+
+            ImFlux::LCDNumber(info.seconds, 4, 1, 24.f, IM_COL32(20,200,200,255)); ImFlux::Hint("Seconds");
+
+            {
+                ImGui::SeparatorText("BUFFER INFORMATION:");
+                Processors::LooperPositionInfo info = mLooper.getInfo();
+                // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
+                ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(100,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
+                ImFlux::LCDNumber(info.beat, 2, 0, 24.f, IM_COL32(20,100,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+                ImFlux::LCDNumber(info.step, 3, 0, 24.f, IM_COL32(100,20,100,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+
+                ImFlux::LCDNumber(info.seconds, 4, 1, 24.f, IM_COL32(20,100,100,255)); ImFlux::Hint("Seconds");
+
+
+            }
+
+
 
 
 
