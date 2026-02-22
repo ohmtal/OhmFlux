@@ -100,6 +100,11 @@ namespace DSP {
                     DrumKitData{ 0.5f,125, 0, 0, 34952,0x0000,  0x0000, 0 }));
             return list;
         }
+
+
+        virtual uint8_t getDataVersion() const  override { return 2; };
+
+
     };
 
     //========================== CLASS ============================
@@ -179,14 +184,20 @@ namespace DSP {
             Effect::save(os);              // Save mEnabled
             mSettings.save(os);       // Save Settings
 
-            //FIXME SAVE PAYLOAD LOOPER DATA
+            //... VERSION 2
+            mLooper.save(os);
+
         }
         //----------------------------------------------------------------------
         bool load(std::istream& is) override {
             if (!Effect::load(is)) return false; // Load mEnabled
             if (! mSettings.load(is) ) return false;
 
-            //FIXME SAVE PAYLOAD LOOPER DATA
+            if ( mSettings.mReadVersion >=2 )
+            {
+                if (!mLooper.load(is)) return false;
+            }
+
             return true;
         }
 

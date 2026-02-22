@@ -58,6 +58,67 @@ namespace Processors {
         double mSamplesPerStep = 0.f;
 
     public:
+
+        //----------------------------------------------------------------------
+        void save(std::ostream& os)  const {
+            size_t buflen = mBufferLength;
+            if ( mLoopBuffers.size() == 0 && buflen > 0 ) {
+                //assert ?!
+                buflen = 0;
+            }
+            if ( buflen > 0 && mLoopBuffers[0].size() != buflen ) {
+                //assert=!
+                buflen= 0;
+            }
+            DSP_STREAM_TOOLS::write_binary(os, buflen);
+            if (buflen == 0) return ;
+
+
+            DSP_STREAM_TOOLS::write_binary(os, mBeatsPerBar);
+            DSP_STREAM_TOOLS::write_binary(os, mSampleRate);
+            DSP_STREAM_TOOLS::write_binary(os, mBeatsPerMinute);
+            DSP_STREAM_TOOLS::write_binary(os, mBeatsPerSecond);
+            DSP_STREAM_TOOLS::write_binary(os, mSecondsPerBeat);
+            DSP_STREAM_TOOLS::write_binary(os, mSamplesPerBar);
+            DSP_STREAM_TOOLS::write_binary(os, mSamplesPerBeat);
+            DSP_STREAM_TOOLS::write_binary(os, mSamplesPerStep);
+
+
+            uint8_t channels = static_cast<uint8_t>(mLoopBuffers.size());
+            DSP_STREAM_TOOLS::write_binary(os, channels);
+
+
+            for (uint8_t ch = 0; ch < channels; ch++)
+            {
+                for (size_t i =0; i < mBufferLength; i++)
+                    DSP_STREAM_TOOLS::write_binary(os, mLoopBuffers[ch][i]);
+            }
+
+        }
+        bool load(std::istream& is) {
+            DSP_STREAM_TOOLS::read_binary(is, mBufferLength);
+            if (mBufferLength == 0) return true; //empty one
+
+            DSP_STREAM_TOOLS::read_binary(is, mBeatsPerBar);
+            DSP_STREAM_TOOLS::read_binary(is, mSampleRate);
+            DSP_STREAM_TOOLS::read_binary(is, mBeatsPerMinute);
+            DSP_STREAM_TOOLS::read_binary(is, mBeatsPerSecond);
+            DSP_STREAM_TOOLS::read_binary(is, mSecondsPerBeat);
+            DSP_STREAM_TOOLS::read_binary(is, mSamplesPerBar);
+            DSP_STREAM_TOOLS::read_binary(is, mSamplesPerBeat);
+            DSP_STREAM_TOOLS::read_binary(is, mSamplesPerStep);
+
+            uint8_t channels = 0;
+            DSP_STREAM_TOOLS::read_binary(is, channels);
+            //FIXME sanity bufferlen?!
+            mLoopBuffers.assign(channels, std::vector<float>(mBufferLength, 0.0f));
+            for (uint8_t ch = 0; ch < channels; ch++)
+            {
+                for (size_t i =0; i < mBufferLength; i++)
+                    DSP_STREAM_TOOLS::read_binary(is, mLoopBuffers[ch][i]);
+            }
+            return is.good();
+        }
         //----------------------------------------------------------------------
         void reset() {
             mBufferPos = 0;

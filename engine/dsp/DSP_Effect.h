@@ -502,6 +502,7 @@ namespace DSP {
     struct ISettings {
         virtual ~ISettings() = default;
 
+
         virtual std::vector<IParameter*> getAll() = 0;
         virtual std::vector<const IParameter*> getAll() const = 0;
 
@@ -517,8 +518,11 @@ namespace DSP {
             return {}; // defaults to none
         }
         //----------------------------------------------------------------------
+        uint8_t mReadVersion = 0;
+        virtual uint8_t getDataVersion() const { return 1; };
+        //----------------------------------------------------------------------
         void save(std::ostream& os) const {
-            uint8_t ver = 1; //fake version and sanity check on load
+            uint8_t ver = getDataVersion();
             auto params = getAll();
             uint8_t count = static_cast<uint8_t>(params.size());
 
@@ -534,7 +538,9 @@ namespace DSP {
             uint8_t fileParamCount = 0;
 
             DSP_STREAM_TOOLS::read_binary(is, ver);
-            if (ver != 1) return false;
+            if (ver > getDataVersion()) return false;
+            mReadVersion = ver;
+
             DSP_STREAM_TOOLS::read_binary(is, fileParamCount);
             auto currentParams = getAll();
             size_t paramsToLoad = std::min((size_t)fileParamCount, currentParams.size());
