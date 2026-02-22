@@ -10,23 +10,8 @@
 #include <DSP.h>
 #include <DSP_EffectsManager.h>
 #include <DSP_EffectFactory.h>
+#include <MonoProcessors/Visualizer.h>
 
-
-namespace SimpleDSP {
-
-struct Visualizer {
-    static constexpr int scope_size = 512;
-    float scope_buffer[scope_size] = {0};
-    std::atomic<int> scope_pos{0};
-
-    void add_sample(float s) {
-        int pos = scope_pos.load();
-        scope_buffer[pos] = s;
-        scope_pos = (pos + 1) % scope_size;
-    }
-};
-
-} //namespace
 
 
 class InputModule : public FluxBaseObject {
@@ -81,7 +66,7 @@ public:
         return true;
     }
 
-    SimpleDSP::Visualizer mVisuallizer;
+    DSP::MonoProcessors::BasicVisualizer mVisuallizer;
     std::unique_ptr<DSP::EffectsManager> mInputEffects = nullptr;
 
 

@@ -19,8 +19,6 @@ private:
     std::string mPresetsFile = "";
     std::string mFactoryPresetFile = "";
 
-
-
 public:
     RackModule() = default;
 
@@ -31,6 +29,10 @@ public:
     DSP::EffectsManager* getManager() const;
 
     void populateRack(DSP::EffectsRack* lRack);
+
+
+    int mRackTabCurId = -1;
+    int mRackTabNewId = -1;
     void DrawRack(bool* p_enabled);
 
     void DrawPresetList(DSP::EffectsManager* lManager) {

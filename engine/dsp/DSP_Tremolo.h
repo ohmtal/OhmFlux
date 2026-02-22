@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Ohmtal Game Studio
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Digital Sound Processing : ToneControl
+// Digital Sound Processing : Tremolo
 //-----------------------------------------------------------------------------
 // * using ISettings
 //-----------------------------------------------------------------------------
@@ -16,7 +16,7 @@
 #include <algorithm>
 
 #include "DSP_Effect.h"
-#include "MonoProcessors/ToneControl.h"
+#include "MonoProcessors/Tremolo.h"
 
 #ifdef FLUX_ENGINE
 #include <imgui.h>
@@ -26,61 +26,50 @@
 
 namespace DSP {
 
-struct ToneControlData {
-    float volume;
-    float bass;
-    float treble;
-    float presence;
+struct TremoloData {
+    float rate;
+    float depth;
 };
 
-struct ToneControlSettings : public ISettings {
-    AudioParam<float> volume      { "Volume"   , 1.f, 0.0f, 30.0f, "%.2f" };
-    AudioParam<float> bass        { "Bass"     , 0.f,-15.0f,15.0f, "%.2f db" };
-    AudioParam<float> treble      { "Treble"   , 0.f,-15.0f,15.0f, "%.2f db" };
-    AudioParam<float> presence    { "Presence" , 0.f,-15.0f,15.0f, "%.2f db" };
+struct TremoloSettings : public ISettings {
+    AudioParam<float> rate      { "Rate"   , 5.0f, 0.0f, 20.0f, "%.2f Hz" };
+    AudioParam<float> depth     { "Depth"  , 0.5f, 0.0f,  1.0f, "%.1f" };
 
 
 
-    ToneControlSettings() = default;
-    REGISTER_SETTINGS(ToneControlSettings, &volume, &bass, &treble, &presence)
+    TremoloSettings() = default;
+    REGISTER_SETTINGS(TremoloSettings, &rate, &depth)
 
-    ToneControlData getData() const {
-        return { volume.get(), bass.get(), treble.get(), presence.get()};
+    TremoloData getData() const {
+        return { rate.get(), depth.get()};
     }
 
-    void setData(const ToneControlData& data) {
-        volume.set(data.volume);
-        bass.set(data.bass);
-        treble.set(data.treble);
-        presence.set(data.presence);
+    void setData(const TremoloData& data) {
+        rate.set(data.rate);
+        depth.set(data.depth);
     }
+    //FIXME
     std::vector<std::shared_ptr<IPreset>> getPresets() const override {
         return {
-            std::make_shared<Preset<ToneControlSettings, ToneControlData>>("Default", ToneControlData{ 1.f, 0.0f, 0.0f, 0.0f})
+            // std::make_shared<Preset<TremoloSettings, TremoloData>>("Default", ToneControlData{ 1.f, 0.0f, 0.0f, 0.0f})
         };
     }
 };
-class ToneControl: public Effect {
+class Tremolo: public Effect {
 public:
-    IMPLEMENT_EFF_CLONE(ToneControl)
-    ToneControl(bool switchOn = false) :
-        Effect(DSP::EffectType::ToneControl, switchOn)
+    IMPLEMENT_EFF_CLONE(Tremolo)
+    Tremolo(bool switchOn = false) :
+        Effect(DSP::EffectType::Tremolo, switchOn)
         , mSettings()
-        {
-
-            #ifdef FLUX_ENGINE
-            mSettings.volume.setKnobSettings(ImFlux::ksBlue);
-            #endif
-
-        }
+        { }
 
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "Volume and Tone";}
+    virtual std::string getName() const override { return "Tremolo";}
 
     // //----------------------------------------------------------------------
-    ToneControlSettings& getSettings() { return mSettings; }
+    TremoloSettings& getSettings() { return mSettings; }
     // //----------------------------------------------------------------------
-    void setSettings(const ToneControlSettings& s) {
+    void setSettings(const TremoloSettings& s) {
         mSettings = s;
     }
     //----------------------------------------------------------------------
@@ -97,50 +86,51 @@ public:
 
     //----------------------------------------------------------------------
     virtual void reset() override {
-        mToneControl.reset();
     }
     //----------------------------------------------------------------------
     virtual void process(float* buffer, int numSamples, int numChannels) override {
-        const float volume = mSettings.volume.get();
+        const float depth = mSettings.depth.get();
+        if (!isEnabled() || depth <= 0.001f) return;
 
-        if (!isEnabled() || volume <= 0.001f) return;
-
-        const float bass = mSettings.bass.get();
-        const float treble = mSettings.treble.get();
-        const float presence = mSettings.presence.get();
+        if (mTremolos.size() != (size_t) numChannels ) {
+            mTremolos.resize(numChannels, DSP::MonoProcessors::Tremolo());
+        }
 
 
-        // no channel handling needed here ...
+        const float rate = mSettings.rate.get();
+
         for (int i = 0; i < numSamples; i++) {
-             buffer[i] = mToneControl.process(buffer[i], volume,  bass, treble, presence, mSampleRate);
+            for ( int ch = 0; ch < numChannels; ch++) {
+                buffer[i] = mTremolos[ch].process(buffer[i], rate,depth, mSampleRate);
+            }
         }
     }
 
 private:
-    ToneControlSettings mSettings;
-    MonoProcessors::ToneControl mToneControl;
+    TremoloSettings mSettings;
+    std::vector<MonoProcessors::Tremolo> mTremolos;
 
     #ifdef FLUX_ENGINE
 public:
-    virtual ImVec4 getColor() const  override { return ImVec4(0.1f, 0.4f, 0.5f, 1.0f);} //FIXME check color
+    virtual ImVec4 getColor() const  override { return ImVec4(0.4f, 0.4f, 0.1f, 1.0f);}
 
     // i'am so happy with this, before it was hell to add the gui's :D
     virtual void renderPaddle() override {
-        DSP::ToneControlSettings currentSettings = this->getSettings();
-        currentSettings.volume.setKnobSettings(ImFlux::ksBlue); // NOTE only works here !
+        DSP::TremoloSettings currentSettings = this->getSettings();
+        // currentSettings.volume.setKnobSettings(ImFlux::ksBlue); // NOTE only works here !
         if (currentSettings.DrawPaddle(this)) {
             this->setSettings(currentSettings);
         }
     }
 
     virtual void renderUIWide() override {
-        DSP::ToneControlSettings currentSettings = this->getSettings();
+        DSP::TremoloSettings currentSettings = this->getSettings();
         if (currentSettings.DrawUIWide(this)) {
             this->setSettings(currentSettings);
         }
     }
     virtual void renderUI() override {
-        DSP::ToneControlSettings currentSettings = this->getSettings();
+        DSP::TremoloSettings currentSettings = this->getSettings();
         if (currentSettings.DrawUI(this, 150.f)) {
             this->setSettings(currentSettings);
         }

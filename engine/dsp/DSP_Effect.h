@@ -98,6 +98,8 @@ namespace DSP {
     X(DrumKit            , 19, EffectCatId::Locked)     \
     X(KickDrum           , 20, EffectCatId::Generator)  \
     X(ToneControl        , 21, EffectCatId::Tone)       \
+    X(AutoWah            , 22, EffectCatId::Modulation) \
+    X(Tremolo            , 23, EffectCatId::Modulation) \
 
 
 

@@ -352,6 +352,13 @@ bool AppGui::Initialize()
     if (!mRackModule->Initialize())
         return false;
 
+    int rackIdx = SettingsManager().get("Rack::curIdx",  0);
+    mRackModule->getManager()->setActiveRack(rackIdx);
+
+    mRackModule->mRackTabNewId = SettingsManager().get("Rack::tabIdx",  -1);
+
+
+
     mKeyBoardModule = new KeyBoardModule();
     if (!mKeyBoardModule->Initialize())
         return false;
@@ -359,6 +366,9 @@ bool AppGui::Initialize()
     mDrumKitLooperModule = new DrumKitLooperModule();
     if (!mDrumKitLooperModule->Initialize())
         return false;
+
+    int dkIdx = SettingsManager().get("DrumKit::curIdx",  0);
+    mDrumKitLooperModule->getManager()->setActiveRack(dkIdx);
 
 
     g_FileDialog.init( getGamePath(), {".axe",".drum", ".wav" });
@@ -374,6 +384,10 @@ void AppGui::Deinitialize()
         SettingsManager().set("AppGui::mAppSettings", mAppSettings);
         SettingsManager().set("InputRackSettings", mInputModule->getInputEffectsSettingsBase64());
         SettingsManager().set("SoundMix::MasterVolume", mSoundMixModule->getMasterVolume());
+        SettingsManager().set("Rack::curIdx",  mRackModule->getManager()->getActiveRackIndex());
+        SettingsManager().set("Rack::tabIdx",  mRackModule->mRackTabCurId);
+        SettingsManager().set("DrumKit::curIdx",  mDrumKitLooperModule->getManager()->getActiveRackIndex());
+
         SettingsManager().save();
     }
 
@@ -464,8 +478,8 @@ void AppGui::ShowMenuBar()
 
             ImGui::SeparatorText("Rack");
             if (ImGui::MenuItem("Switch Rack", "SPACE")) getMain()->getAppGui()->getRackModule()->getManager()->switchRack();
-            if (ImGui::MenuItem("Prev. Rack", "F2")) getMain()->getAppGui()->getRackModule()->getManager()->prevRack();
-            if (ImGui::MenuItem("Next Rack", "F3")) getMain()->getAppGui()->getRackModule()->getManager()->nextRack();
+            if (ImGui::MenuItem("Prev. Rack", "F2, left")) getMain()->getAppGui()->getRackModule()->getManager()->prevRack();
+            if (ImGui::MenuItem("Next Rack", "F3, right")) getMain()->getAppGui()->getRackModule()->getManager()->nextRack();
 
             ImGui::SeparatorText("Drums");
             if (ImGui::MenuItem("Toggle Drums", "F5")) getMain()->getAppGui()->getDrumKitLooperModule()->toogleDrumKit();

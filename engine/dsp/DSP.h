@@ -19,7 +19,7 @@
 #include "DSP_Equilizer.h"
 #include "DSP_Equilizer9Band.h"
 #include "DSP_SpectrumAnalyzer.h"
-#include "DSP_AnalogGlow.h" //replaced SoundCardEmulation
+#include "DSP_AnalogGlow.h"
 #include "DSP_VisualAnalyzer.h"
 #include "DSP_Delay.h"
 #include "DSP_VoiceModulator.h"
@@ -29,7 +29,9 @@
 #include "DSP_DistortionBasic.h"
 #include "DSP_Metal.h"
 #include "DSP_ChromaticTuner.h"
-#include "DSP_ToneControl.h" //<<<  copy for new template based effects!
+#include "DSP_ToneControl.h"
+#include "DSP_AutoWah.h"
+#include "DSP_Tremolo.h"
 
 #include "Drums/DSP_DrumKit.h" //(Wip)
 #include "Drums/DSP_KickDrum.h"

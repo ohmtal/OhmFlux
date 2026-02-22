@@ -49,7 +49,7 @@ void SDLCALL PipeCallback(void* userdata, SDL_AudioStream* stream, int additiona
             float raw_in = inMod->getBuffer()[i];
             float out = raw_in;
             // channel = i % inMod->mInputSpec.channels;
-            inMod->mVisuallizer.add_sample(raw_in);
+            inMod->mVisuallizer.process(raw_in);
             inMod->getBuffer()[i] = out;
         }
 
@@ -69,7 +69,7 @@ void InputModule::DrawInputModuleUI(){
     ImGui::Separator();
     if (!mOpen) {
         // if (ImGui::Button("OPEN!")) open();
-        if (ImFlux::ButtonFancy(ICON_FA_ROCKET "##Open", gTBParams)) open();
+        if (ImFlux::ButtonFancy(ICON_FA_PLAY "##Open", gTBParams)) open();
         ImFlux::Hint("Open Input line (plug in). [F1]");
 
     } else {
@@ -83,19 +83,7 @@ void InputModule::DrawInputModuleUI(){
         ImGui::TextDisabled("%d Hz channels:%d", mInputSpec.freq, mInputSpec.channels);
 
         ImGui::Spacing();
-        // input Osci::
-        ImGui::BeginChild("InputOsci", ImVec2(0.f,140.f));
-        static float scope_zoom = 1.0f;
-        ImGui::SliderFloat("Zoom", &scope_zoom, 0.1f, 10.0f);
-        ImGui::PlotLines("##Scope", mVisuallizer.scope_buffer,
-                         SimpleDSP::Visualizer::scope_size,
-                         mVisuallizer.scope_pos.load(),
-                         NULL,
-                         -1.0f/scope_zoom,
-                         1.0f/scope_zoom,
-                         ImVec2(-1, -1));
-        //<<<<
-        ImGui::EndChild();
+        mVisuallizer.DrawOsci();
         mInputEffects->renderUI(2);
 
 

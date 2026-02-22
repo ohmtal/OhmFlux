@@ -190,7 +190,7 @@ namespace DSP {
         // ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
         ImGui::Dummy(ImVec2(6.f,0.f)); ImGui::SameLine();
         ImGui::BeginGroup();
-        if (ImGui::CollapsingHeader(std::format("{} parameters", effect->getName()).c_str())) {
+        // if (ImGui::CollapsingHeader(std::format("{} parameters", effect->getName()).c_str())) {
                 changed |= mSettings.drawStepper(currentSettings);
                 ImGui::SameLine(ImGui::GetWindowWidth() - 70); // Right-align reset button
                 if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
@@ -199,7 +199,7 @@ namespace DSP {
                 }
                 ImGui::Separator();
                 changed |= currentSettings.Threshold.FaderHWithText();
-        }
+        // }
         ImGui::EndGroup();
 
 

@@ -16,6 +16,7 @@
 
 #include "../DSP_Effect.h"
 #include "DrumSynth.h"
+#include "Processors/Looper.h"
 
 
 namespace DSP {
@@ -104,6 +105,15 @@ namespace DSP {
     //========================== CLASS ============================
 
     class DrumKit: public Effect {
+    private:
+        DrumKitData mLooperStartTicks = DrumKitData{ 0.5f,125, 0, 0, 34952,0x0000,  0x0000, 0 };
+        DrumKitSettings mLooperSavCurrent;
+        Processors::LooperMode mLooperMode = Processors::LooperMode::Off;
+        float mLooperSeconds = 30.f;
+        bool mLooperInitDone = false;
+        int mLooperInitSteps = -1;
+        Processors::Looper mLooper;
+
     public:
         IMPLEMENT_EFF_CLONE(DrumKit)
 
@@ -174,9 +184,79 @@ namespace DSP {
             return mSettings.load(is);      // Load Settings
             return true;
         }
+
+        //----------------------------------------------------------------------
+        void stopLooper() {
+
+            // we stopped im init restore drum data
+            if (!mLooperInitDone) {
+               mSettings.setData(mLooperSavCurrent.getData());
+            }
+
+            mLooperMode = Processors::LooperMode::Off;
+            mLooper.setMode(mLooperMode);
+        }
+        //----------------------------------------------------------------------
+        void startLooperRecording(float seconds = 30.f, bool doOverDup = false) {
+            setEnabled(false); //stop if we are playing
+
+            // update vol + bpm of looper start ticks
+            mLooperStartTicks.vol = mSettings.vol.get();
+            mLooperStartTicks.bpm = mSettings.bpm.get();
+            // save current settings
+            mLooperSavCurrent.setData(mSettings.getData());
+            // set ticks as new loop
+            mSettings.setData(mLooperStartTicks);
+            mLooperInitDone = false;
+            mLooperInitSteps = -1;
+            if ( doOverDup ) mLooperMode = Processors::LooperMode::RecordingOverDup;
+            else mLooperMode = Processors::LooperMode::Recording;
+
+            mLooperSeconds = seconds;
+
+            // now we need to start the ticker, on the 5th tick we
+            // restore the  mLooperSavCurrent and really start the looper
+            // recording
+
+            setEnabled(true);
+
+        }
+        //----------------------------------------------------------------------
+        void startLooperPlaying() {
+            setEnabled(false); //stop if we are playing
+            mLooperInitDone = true;  // we have no init here
+            mLooperMode = Processors::LooperMode::Playing;
+            mLooper.setMode(mLooperMode);
+            setEnabled(true);
+        }
+        //----------------------------------------------------------------------
+        bool onLooperStep(int numChannels) {
+            //Looper before drums are mixed in
+            // handle looper init phase:
+            // handle the steps
+            if ( !mLooperInitDone  && (mLooperMode == Processors::LooperMode::Recording
+                || mLooperMode == Processors::LooperMode::RecordingOverDup))
+            {
+                mLooperInitSteps++;
+                if ( mLooperInitSteps == 16)
+                {
+                    mLooperInitDone = true;
+                    // restore drums
+                    mSettings.setData(mLooperSavCurrent.getData());
+                    // init the looper ...
+                    mLooper.init(mLooperSeconds, mSettings.bpm.get() , mSampleRate, numChannels );
+                    // start the looper
+                    mLooper.setMode(mLooperMode);
+                    // pray ... :P
+                    return true;
+                }
+            }
+            return false;
+        }
         //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!isEnabled() )  return;
+
 
             float    vol = mSettings.vol.get();
             uint16_t bpm = mSettings.bpm.get();
@@ -195,12 +275,32 @@ namespace DSP {
 
             uint16_t stepper = 0;
 
+            //Looper >>>
+            if (mLooperMode != Processors::LooperMode::Off && mLooperInitDone) {
+                mLooper.process(buffer, numSamples, numChannels);
+            }
+            //<<<<<
+
+
             for (int i = 0; i < numSamples; i += numChannels) {
+                float out = 0.f;
                 // Phase-Accumulator
                 mPhase += 1.0;
                 int step = static_cast<int>(mPhase / samplesPerStep) % 16;
-
                 if (step != mCurrentStep) {
+
+                    //we call the init looper state check
+                    if (onLooperStep(numChannels)) {
+                        // we need to update here !!
+                        kickPat = mSettings.kickPat.get();
+                        snarePat = mSettings.snarePat.get();
+
+                        hiHatClosedPat = mSettings.hiHatClosedPat.get();
+                        hiHatOpenPat = mSettings.hiHatOpenPat.get();
+
+                        tomPat = mSettings.tomPat.get();
+                        cymPat = mSettings.cymbalsPat.get();
+                    }
                     mCurrentStep = step;
                     stepper = (1 << (15 - step));
 
@@ -213,7 +313,6 @@ namespace DSP {
                     if (tomPat & stepper) { mTomTom.trigger(); }
                     if (cymPat & stepper) { mCymbals.trigger(); }
                 }
-                float out = 0.f;
 
                 //using  default values here ...
                 out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, 1.f, sampleRate);
@@ -279,6 +378,39 @@ namespace DSP {
 
             ImGui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
             ImGui::Begin("Drum Kit", showWindow ); //window start .........
+
+
+            // LOOPER TEST , FIXME Gui!
+            // handle mMode ...
+
+            if ( mLooperMode == Processors::LooperMode::Off)
+            {
+                if (ImGui::Button(" START Recording 1sec")) {
+                    startLooperRecording(1.f);
+                }
+                if (ImGui::Button(" START Recording 30sec")) {
+                    startLooperRecording();
+                }
+                if (!mLooper.bufferFilled()) ImGui::BeginDisabled();
+                if (ImGui::Button(" START Playing")) {
+                    startLooperPlaying();
+                }
+                if (!mLooper.bufferFilled())ImGui::EndDisabled();
+
+            } else {
+                if (ImGui::Button(" STOP LOOPER")) {
+                    stopLooper();
+                }
+
+            }
+            ImGui::TextDisabled("LOOPER STATE = %d (initdone = %d, initsteps = %d)", mLooperMode,mLooperInitDone, mLooperInitSteps);
+            bool isRecording = ( mLooper.getMode() == Processors::LooperMode::Recording || mLooper.getMode() == Processors::LooperMode::RecordingOverDup);
+            ImFlux::DrawLED("Recording", isRecording, ImFlux::LED_RED_ALERT);
+            ImGui::SameLine();
+            ImFlux::PeakMeter(mLooper.getPosition(),ImVec2(150.f, 7.f));
+
+
+
             // renderUIHeader();
             currentSettings.DrawPaddleHeader(this, 400);
 
@@ -382,14 +514,14 @@ namespace DSP {
                     if (currentSettings.isMatchingPreset(currentSettings.getPresets()[0].get())) {
                         currentSettings.setData(mSettings.customData);
                     }
-
                 }
                 this->setSettings(currentSettings);
-
             }
-
             currentSettings.DrawPaddleFooter();
             ImGui::End(); //window
+
+
+
         }
 
         #endif

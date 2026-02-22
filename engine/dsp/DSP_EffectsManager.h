@@ -225,7 +225,7 @@ public:
         int result = cloneRack(fromIndex);
         if (result < 0) return result;
         reorderRack(result, fromIndex);
-        return result;
+        return fromIndex;
     }
     //--------------------------------------------------------------------------
     int cloneRack( int fromIndex  )
@@ -951,6 +951,7 @@ public:
         }
         if (insert_idx != -1) {
             int newId = lManager->insertRackAbove(insert_idx);
+            Log("[info] clone above:NEW ID = %d", newId);
             if (newId >=0) lManager->setActiveRack(newId);
         }
         if (move_from != -1 && move_to != -1) {

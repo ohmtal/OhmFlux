@@ -26,9 +26,11 @@ void KeyBoardModule::onKeyEvent(SDL_KeyboardEvent event)
                     getMain()->getAppGui()->getRackModule()->getManager()->switchRack();
                     break;
                 case SDLK_F2:
+                case SDLK_LEFT:
                     getMain()->getAppGui()->getRackModule()->getManager()->prevRack();
                     break;
                 case SDLK_F3:
+                case SDLK_RIGHT:
                     getMain()->getAppGui()->getRackModule()->getManager()->nextRack();
                     break;
 
