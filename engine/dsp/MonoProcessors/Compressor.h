@@ -17,30 +17,16 @@
 namespace DSP {
 namespace MonoProcessors {
 
-    // Sustain Compressor
-    // std::atomic<float> compressor_threshold{0.1f};
-    // std::atomic<float> compressor_ratio{4.0f};
-    // std::atomic<float> compressor_attack_ms{5.0f};
-    // std::atomic<float> compressor_release_ms{100.0f};
-    // std::atomic<float> compressor_gain{1.0f};
 
-    // rackKnob("SENSE", sConfig.autowah_sensitivity, {0.0f, 1.0f}, ksGreen);
-    // ImGui::SameLine();
-    // rackKnob("RES", sConfig.autowah_resonance, {0.0f, 1.0f}, ksBlack);
-    // ImGui::SameLine();
-    // rackKnob("RANGE", sConfig.autowah_range, {0.0f, 1.0f}, ksYellow);
-    // ImGui::SameLine();
-    // rackKnob("MIX", sConfig.autowah_mix, {0.0f, 1.0f}, ksBlue);
-
-
-    class SustainCompressor {
-    private:
+    // Threshold : -30.f .. -40.f
+    // Ratio : 4.f .. 10.f
+    // Release:  100.f .. 200.f
+    struct SustainCompressor {
         float envelope = 0.0f;
-    public:
-        float process(float input, float threshold, float ratio, float attack_ms, float release_ms, float output_gain, int sample_rate) {
+
+        float process(float input, float threshold_db, float ratio, float attack_ms, float release_ms, float makeup_gain_db, int sample_rate) {
             float abs_in = std::abs(input);
 
-            // 1. Envelope follower (detect peak)
             float attack_alpha = 1.0f - std::exp(-1.0f / (attack_ms * 0.001f * sample_rate));
             float release_alpha = 1.0f - std::exp(-1.0f / (release_ms * 0.001f * sample_rate));
 
@@ -50,18 +36,16 @@ namespace MonoProcessors {
                 envelope += release_alpha * (abs_in - envelope);
             }
 
-            // 2. Gain calculation
-            float gain = 1.0f;
-            if (envelope > threshold && threshold > 0.0f) {
-                // Compression in linear domain:
-                // out = threshold + (envelope - threshold) / ratio
-                // target_envelope = threshold + (envelope - threshold) / ratio
-                // gain = target_envelope / envelope
-                gain = (threshold + (envelope - threshold) / ratio) / envelope;
-            }
+            float env_db = 20.0f * std::log10(envelope + 1e-6f);
 
-            // 3. Apply gain and output makeup
-            return input * gain * output_gain;
+            float reduction_db = 0.0f;
+            if (env_db > threshold_db) {
+                float over_db = env_db - threshold_db;
+                reduction_db = over_db * (1.0f - 1.0f / ratio);
+            }
+            float total_gain = std::pow(10.0f, (makeup_gain_db - reduction_db) / 20.0f);
+
+            return input * total_gain;
         }
     };
 

@@ -35,7 +35,7 @@ namespace DSP {
         int mWriteIdx = 0;
 
     public:
-        IMPLEMENT_EFF_CLONE(SpectrumAnalyzer)
+        IMPLEMENT_EFF_CLONE_NO_SETTINGS(SpectrumAnalyzer)
 
         SpectrumAnalyzer(bool switchOn = false) : Effect(DSP::EffectType::SpectrumAnalyzer, switchOn) {
             mCaptureBuffer.resize(FFT_SIZE, 0.0f);

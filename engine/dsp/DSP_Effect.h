@@ -111,9 +111,20 @@ namespace DSP {
     };
 
 
+    // #define IMPLEMENT_EFF_CLONE(ClassName) \
+    // std::unique_ptr<Effect> clone() const override { \
+    //     return std::make_unique<ClassName>(*this); \
+    // }
     #define IMPLEMENT_EFF_CLONE(ClassName) \
     std::unique_ptr<Effect> clone() const override { \
-        return std::make_unique<ClassName>(*this); \
+        auto newCopy = std::make_unique<ClassName>(); \
+        newCopy->mSettings = this->mSettings;   \
+        return newCopy;                               \
+    }
+
+    #define IMPLEMENT_EFF_CLONE_NO_SETTINGS(ClassName) \
+    std::unique_ptr<Effect> clone() const override { \
+        return std::make_unique<ClassName>(); \
     }
     //---------------------- PARAMETER DEFINITION --------------------------
     #define REGISTER_SETTINGS(ClassName, ...) \

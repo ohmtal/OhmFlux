@@ -119,6 +119,8 @@ namespace DSP {
         // bool mLooperInitDone = false;
         int mLooperInitSteps = -1;
         Processors::Looper mLooper;
+        int mChannels = -1;
+        bool mDeferredRecoding = false;
 
     public:
         IMPLEMENT_EFF_CLONE(DrumKit)
@@ -220,6 +222,15 @@ namespace DSP {
         }
         //----------------------------------------------------------------------
         void startLooperRecording(bool doOverDup = false) {
+
+            if (mDeferredRecoding) return;
+            //hack get the channels !!
+            if ( mChannels < 1 ) {
+                setEnabled(true);
+                mDeferredRecoding = true;
+                return;
+            }
+
             setEnabled(false); //stop if we are playing
 
             // update vol + bpm of looper start ticks
@@ -236,6 +247,10 @@ namespace DSP {
             } else {
                 mLooper.setMode(Processors::LooperMode::RecordingCountDown);
             }
+
+            // init the looper ...
+            mLooper.init(mLooperBars,  mSettings.bpm.get() , mSampleRate, mChannels, 4 );
+
 
             setEnabled(true);
 
@@ -264,8 +279,6 @@ namespace DSP {
                 {
                     // restore drums
                     mSettings.setData(mLooperSavCurrent.getData());
-                    // init the looper ...
-                    mLooper.init(mLooperBars,  mSettings.bpm.get() , mSampleRate, numChannels, 4 );
                     // start the looper
                     if (curMode == Processors::LooperMode::RecordingCountDown)
                         mLooper.setMode(Processors::LooperMode::Recording);
@@ -282,6 +295,12 @@ namespace DSP {
             if (!isEnabled() )  return;
 
 
+            if (mChannels != numChannels) mChannels = numChannels;
+            if ( mDeferredRecoding ) {
+                mDeferredRecoding = false;
+                startLooperRecording();
+                return;
+            }
             float    vol = mSettings.vol.get();
             uint16_t bpm = mSettings.bpm.get();
             uint16_t kickPat = mSettings.kickPat.get();
@@ -301,7 +320,7 @@ namespace DSP {
             uint16_t stepper = 0;
 
             //Looper >>>
-            mLooper.process(buffer, numSamples, numChannels);
+            mLooper.process(buffer, numSamples, numChannels, vol);
             //<<<<<
 
 
@@ -432,6 +451,7 @@ namespace DSP {
                 }
                 ImGui::SameLine();
                 if (!mLooper.bufferFilled()) ImGui::BeginDisabled();
+
                 if (ImGui::Button(" START Playing")) {
                     startLooperPlaying();
                 }
@@ -488,8 +508,8 @@ namespace DSP {
             Processors::LooperPositionInfo info = mLooper.getPositionInfo();
             // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
             ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(200,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
-            ImFlux::LCDNumber(info.beat, 2, 0, 24.f, IM_COL32(20,200,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
-            ImFlux::LCDNumber(info.step, 3, 0, 24.f, IM_COL32(200,20,200,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+            ImFlux::LCDNumber(info.beat, 3, 0, 24.f, IM_COL32(20,200,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+            ImFlux::LCDNumber(info.step, 4, 0, 24.f, IM_COL32(200,20,200,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
 
             ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,200,200,255)); ImFlux::Hint("Seconds");
 
@@ -498,11 +518,14 @@ namespace DSP {
                 Processors::LooperPositionInfo info = mLooper.getInfo();
                 // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
                 ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(100,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
-                ImFlux::LCDNumber(info.beat, 2, 0, 24.f, IM_COL32(20,100,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
-                ImFlux::LCDNumber(info.step, 3, 0, 24.f, IM_COL32(100,20,100,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+                ImFlux::LCDNumber(info.beat, 3, 0, 24.f, IM_COL32(20,100,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+                ImFlux::LCDNumber(info.step, 4, 0, 24.f, IM_COL32(100,20,100,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
 
                 ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,100,100,255)); ImFlux::Hint("Seconds");
 
+                if (mLooper.bufferFilled() && mLooper.getBPM() != mSettings.bpm.get() )
+                    ImGui::TextColored(ImVec4(1.0f,0.f,0.f,1.f), "BPM different! looper:%d, drumkit:%d",
+                                       mLooper.getBPM(),mSettings.bpm.get());
             }
             ImGui::SameLine();
             if (ImGui::Button(" RESET LOOPER")) {

@@ -99,7 +99,7 @@ void SoundMixModule::DrawDrums(bool* p_enabled) {
 bool SoundMixModule::close() {
 
     bool result = false;
-    if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, this)) {
+    if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), nullptr, nullptr)) {
         Log("[error] can NOT unbind PostMix Device !!! %s", SDL_GetError());
         result |= false;
     } else {

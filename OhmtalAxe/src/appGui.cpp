@@ -40,26 +40,30 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 
 void AppGui::ShowToolbar() {
 
-        ImFlux::ButtonParams bpOn = ImFlux::SLATE_BUTTON.WithSize(ImVec2(60,32));
+        ImFlux::ButtonParams bpOn = ImFlux::SLATE_BUTTON.WithSize(ImVec2(120,32));
         ImFlux::ButtonParams bpOff = bpOn;
         bpOff.textColor = IM_COL32(120,120,120, 255);
 
 
         ImGui::SetNextWindowSize(ImVec2(0.f, 32.f), ImGuiCond_FirstUseEver);
         ImGui::Begin("Toolbar");
-        if (ImFlux::ButtonFancy("Drums") ) { mAppSettings.mShowDrumKit = ! mAppSettings.mShowDrumKit; }
+        if (ImFlux::ButtonFancy("Drums", bpOn) ) { mAppSettings.mShowDrumKit = ! mAppSettings.mShowDrumKit; }
         ImFlux::SameLineBreak(bpOn.size.x);
-        if (ImFlux::ButtonFancy("Rack") ) { mAppSettings.mShowRack = ! mAppSettings.mShowRack; }
-        if (ImFlux::ButtonFancy("Rack Presets") ) { mAppSettings.mShowRackPresets = ! mAppSettings.mShowRackPresets; }
+        if (ImFlux::ButtonFancy("Rack", bpOn) ) { mAppSettings.mShowRack = ! mAppSettings.mShowRack; }
+        if (ImFlux::ButtonFancy("Rack Presets", bpOn) ) { mAppSettings.mShowRackPresets = ! mAppSettings.mShowRackPresets; }
 
         ImFlux::SameLineBreak(bpOn.size.x);
-        if (ImFlux::ButtonFancy("Visualizer") ) { mAppSettings.mShowVisualizer = ! mAppSettings.mShowVisualizer; }
+        if (ImFlux::ButtonFancy("Visualizer", bpOn) ) { mAppSettings.mShowVisualizer = ! mAppSettings.mShowVisualizer; }
         ImFlux::SameLineBreak(bpOn.size.x);
 
 
+        if (ImFlux::ButtonFancy("Close Final Mix", bpOn)) {
+            mSoundMixModule->close();
+        }
+        ImFlux::SameLineBreak(bpOn.size.x);
 
         for (int i = 0; i<20; i++ ) {
-            ImFlux::ButtonFancy(std::format("Dummy {}", i));
+            ImFlux::ButtonFancy(std::format("Dummy {}", i), bpOn);
             ImFlux::SameLineBreak(bpOn.size.x);
         }
 

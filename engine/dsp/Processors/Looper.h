@@ -59,6 +59,7 @@ namespace Processors {
         uint32_t mBufferLength = 0;
         LooperMode mMode = LooperMode::Off;
 
+
         // ---- statistics:
         int mBeatsPerBar = 4;
         float mSampleRate = 48000;
@@ -266,6 +267,7 @@ namespace Processors {
         //----------------------------------------------------------------------
         //dont know if it's filled .... but init done we can play something
         bool bufferFilled() { return mBufferLength > 0 && !mLoopBuffers.empty();}
+        int  getBPM() const { return mBeatsPerMinute;};
         //----------------------------------------------------------------------
         LooperMode  getMode() { return mMode;}
         bool setMode(LooperMode mode) {
@@ -281,7 +283,7 @@ namespace Processors {
             return static_cast<float>(mBufferPos) / static_cast<float>(mBufferLength);
         }
         //----------------------------------------------------------------------
-        void process(float* buffer, int numSamples, int numChannels) {
+        void process(float* buffer, int numSamples, int numChannels, float playBackVolume = 1.f) {
             // Basic checks
             if ( mLoopBuffers.empty()
                 || mMode == LooperMode::Off
@@ -311,7 +313,7 @@ namespace Processors {
                             break;
 
                         case LooperMode::Playing:
-                            inputSample += bufferSample; // Add loop content to output
+                            inputSample += bufferSample * playBackVolume; // Add loop content to output
                             break;
 
                         default:
