@@ -452,7 +452,7 @@ if(BUILD_AXE)
         "${AXE_DIR}/src/modules/keyboardModule.cpp"
         "${AXE_DIR}/src/modules/drumKitLooper.cpp"
     )
-    configure_demo_target(Axe ${AXE_DIR} "${AXE_DIR}/assets@assets" "${APP_SOURCES}")
+    configure_demo_target(OhmtalAxe ${AXE_DIR} "${AXE_DIR}/assets@assets" "${APP_SOURCES}")
 endif()
 
 
@@ -470,7 +470,7 @@ if(BUILD_FLUXTRACKER)
         "${TRACKER_DIR}/src/fancyOverlays.cpp"
         "${TRACKER_DIR}/src/ordersGui.cpp"
     )
-    configure_demo_target(Tracker ${TRACKER_DIR} "${TRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
+    configure_demo_target(OhmtalTracker ${TRACKER_DIR} "${TRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
 endif()
 
 
