@@ -107,15 +107,16 @@ namespace DSP {
 
     };
 
+
     //========================== CLASS ============================
 
     class DrumKit: public Effect {
     private:
         DrumKitData mLooperStartTicks = DrumKitData{ 0.5f,125, 0, 0, 34952,0x0000,  0x0000, 0 };
         DrumKitSettings mLooperSavCurrent;
-        Processors::LooperMode mLooperMode = Processors::LooperMode::Off;
+        //NO SHADOW !! Processors::LooperMode mLooperMode = Processors::LooperMode::Off;
         float mLooperSeconds = 30.f;
-        bool mLooperInitDone = false;
+        // bool mLooperInitDone = false;
         int mLooperInitSteps = -1;
         Processors::Looper mLooper;
 
@@ -137,47 +138,46 @@ namespace DSP {
         }
         //----------------------------------------------------------------------
         // FIXME DEFINE A "MAGIC" SYSTEM and move this to settings!!
-        // NOTE WHY DID I DO THAT ?? i can save the customdata in save!!!
-        // bool saveToFile( std::string filePath )
-        // {
-        //     try {
-        //         std::ofstream ofs(filePath, std::ios::binary);
-        //         DSP_STREAM_TOOLS::write_binary(ofs, DSP_STREAM_TOOLS::MakeMagic("DRUM"));
-        //         mSettings.save(ofs);
-        //         ofs.close();
-        //         return true;
-        //     } catch (const std::exception& e) {
-        //          std::cerr << e.what() << std::endl;
-        //         return false;
-        //     }
-        // }
-        // bool loadFromFile(std::string filePath) {
-        //     if (!std::filesystem::exists(filePath)) {
-        //         return false;
-        //     }
-        //     std::ifstream ifs;
-        //     ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-        //     try {
-        //         ifs.open(filePath, std::ios::binary);
-        //         uint32_t magic = 0;
-        //         DSP::DSP_STREAM_TOOLS::read_binary(ifs,magic);
-        //         if (magic != DSP_STREAM_TOOLS::MakeMagic("DRUM")) return false;
-        //         if (!mSettings.load(ifs)) return false;
-        //
-        //         // customdata hackfest
-        //         // i dont check if it's not custom better than empty!
-        //         // i dont save the customdata as a clone ... bsss
-        //         mSettings.customData = mSettings.getData();
-        //
-        //         return true;
-        //     } catch (const std::ios_base::failure& e) {
-        //         std::cerr << e.what() << std::endl;
-        //         return false;
-        //     } catch (const std::exception& e) {
-        //         std::cerr << e.what() << std::endl;
-        //         return false;
-        //     }
-        // }
+        bool saveToFile( std::string filePath )
+        {
+            try {
+                std::ofstream ofs(filePath, std::ios::binary);
+                DSP_STREAM_TOOLS::write_binary(ofs, DSP_STREAM_TOOLS::MakeMagic("DRUM"));
+                save(ofs);
+                ofs.close();
+                return true;
+            } catch (const std::exception& e) {
+                 std::cerr << e.what() << std::endl;
+                return false;
+            }
+        }
+        bool loadFromFile(std::string filePath) {
+            if (!std::filesystem::exists(filePath)) {
+                return false;
+            }
+            std::ifstream ifs;
+            ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+            try {
+                ifs.open(filePath, std::ios::binary);
+                uint32_t magic = 0;
+                DSP::DSP_STREAM_TOOLS::read_binary(ifs,magic);
+                if (magic != DSP_STREAM_TOOLS::MakeMagic("DRUM")) return false;
+                if (!load(ifs)) return false;
+
+                // customdata hackfest
+                // i dont check if it's not custom better than empty!
+                // i dont save the customdata as a clone ... bsss
+                mSettings.customData = mSettings.getData();
+
+                return true;
+            } catch (const std::ios_base::failure& e) {
+                std::cerr << e.what() << std::endl;
+                return false;
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+                return false;
+            }
+        }
      //----------------------------------------------------------------------
 
         void save(std::ostream& os) const override {
@@ -204,16 +204,22 @@ namespace DSP {
         //----------------------------------------------------------------------
         void stopLooper() {
 
+            if (mLooper.getMode() == Processors::LooperMode::Off)
+                return ;
+
             // we stopped im init restore drum data
-            if (!mLooperInitDone) {
+            Processors::LooperMode curMode = mLooper.getMode();
+            if (
+                curMode == Processors::LooperMode::RecordingCountDown
+                || curMode == Processors::LooperMode::RecordingOverDupCountDown
+            ) {
                mSettings.setData(mLooperSavCurrent.getData());
             }
 
-            mLooperMode = Processors::LooperMode::Off;
-            mLooper.setMode(mLooperMode);
+            mLooper.setMode(Processors::LooperMode::Off);
         }
         //----------------------------------------------------------------------
-        void startLooperRecording(float seconds = 30.f, bool doOverDup = false) {
+        void startLooperRecording(/*float seconds = 30.f,*/ bool doOverDup = false) {
             setEnabled(false); //stop if we are playing
 
             // update vol + bpm of looper start ticks
@@ -223,16 +229,13 @@ namespace DSP {
             mLooperSavCurrent.setData(mSettings.getData());
             // set ticks as new loop
             mSettings.setData(mLooperStartTicks);
-            mLooperInitDone = false;
+
             mLooperInitSteps = -1;
-            if ( doOverDup ) mLooperMode = Processors::LooperMode::RecordingOverDup;
-            else mLooperMode = Processors::LooperMode::Recording;
-
-            mLooperSeconds = seconds;
-
-            // now we need to start the ticker, on the 5th tick we
-            // restore the  mLooperSavCurrent and really start the looper
-            // recording
+            if ( doOverDup ) {
+                mLooper.setMode(Processors::LooperMode::RecordingOverDupCountDown);
+            } else {
+                mLooper.setMode(Processors::LooperMode::RecordingCountDown);
+            }
 
             setEnabled(true);
 
@@ -240,9 +243,7 @@ namespace DSP {
         //----------------------------------------------------------------------
         void startLooperPlaying() {
             setEnabled(false); //stop if we are playing
-            mLooperInitDone = true;  // we have no init here
-            mLooperMode = Processors::LooperMode::Playing;
-            mLooper.setMode(mLooperMode);
+            mLooper.setMode(Processors::LooperMode::Playing);
             setEnabled(true);
         }
         //----------------------------------------------------------------------
@@ -250,19 +251,26 @@ namespace DSP {
             //Looper before drums are mixed in
             // handle looper init phase:
             // handle the steps
-            if ( !mLooperInitDone  && (mLooperMode == Processors::LooperMode::Recording
-                || mLooperMode == Processors::LooperMode::RecordingOverDup))
-            {
+            // if ( !mLooperInitDone  && (mLooperMode == Processors::LooperMode::Recording
+            //     || mLooperMode == Processors::LooperMode::RecordingOverDup))
+
+            Processors::LooperMode curMode = mLooper.getMode();
+            if (
+                curMode == Processors::LooperMode::RecordingCountDown
+                || curMode == Processors::LooperMode::RecordingOverDupCountDown
+            ) {
                 mLooperInitSteps++;
                 if ( mLooperInitSteps == 16)
                 {
-                    mLooperInitDone = true;
                     // restore drums
                     mSettings.setData(mLooperSavCurrent.getData());
                     // init the looper ...
                     mLooper.initWithSec(mLooperSeconds, mSettings.bpm.get() , mSampleRate, numChannels, 4 );
                     // start the looper
-                    mLooper.setMode(mLooperMode);
+                    if (curMode == Processors::LooperMode::RecordingCountDown)
+                        mLooper.setMode(Processors::LooperMode::Recording);
+                    else
+                        mLooper.setMode(Processors::LooperMode::RecordingOverDup);
                     // pray ... :P
                     return true;
                 }
@@ -288,13 +296,12 @@ namespace DSP {
 
             const float beatsPerBar = 4.f;
             double samplesPerStep = (mSampleRate * 60.0) / (bpm * beatsPerBar);
+            float samplesPerBeat = samplesPerStep * beatsPerBar;
 
             uint16_t stepper = 0;
 
             //Looper >>>
-            if (mLooperMode != Processors::LooperMode::Off && mLooperInitDone) {
-                mLooper.process(buffer, numSamples, numChannels);
-            }
+            mLooper.process(buffer, numSamples, numChannels);
             //<<<<<
 
 
@@ -302,6 +309,7 @@ namespace DSP {
                 float out = 0.f;
                 // Phase-Accumulator
                 mPhase += 1.0;
+
                 int step = static_cast<int>(mPhase / samplesPerStep) % 16;
                 if (step != mCurrentStep) {
 
@@ -343,7 +351,9 @@ namespace DSP {
                         buffer[i + ch] += out;
                     }
                 }
-            }
+            } //for ....
+            // Normalized beatPhase
+            maBeatPhase = fmodf(mPhase, samplesPerBeat) / samplesPerBeat;
         }
         //----------------------------------------------------------------------
         // void Trigger() {
@@ -365,6 +375,8 @@ namespace DSP {
 
         double mPhase = 0.0;    // position
         int mCurrentStep = -1;  // triggered step
+
+        float maBeatPhase = 0.f;
 
         #ifdef FLUX_ENGINE
     public:
@@ -398,15 +410,22 @@ namespace DSP {
 
             // LOOPER TEST , FIXME Gui!
             // handle mMode ...
-
-            if ( mLooperMode == Processors::LooperMode::Off)
+            ImGui::SeparatorText("Looper");
+            if ( mLooper.getMode() == Processors::LooperMode::Off)
             {
-                if (ImGui::Button(" START Recording 1sec")) {
-                    startLooperRecording(1.f);
+                ImGui::SetNextItemWidth(120.f);
+                if (ImGui::InputFloat("Seconds", &mLooperSeconds)) {
+                    mLooperSeconds = DSP::clamp(mLooperSeconds, 1.f, 120.f);
                 }
-                if (ImGui::Button(" START Recording 30sec")) {
+                ImGui::SameLine();
+                uint16_t bars = mLooper.getBarsBySeconds(mLooperSeconds, mSettings.bpm.get(), 4);
+                float sec = mLooper.getSecondsByBars(bars, mSettings.bpm.get(), 4);
+                ImGui::TextDisabled("%d Bars => %.2f sec. ", bars, sec);
+                ImGui::SameLine();
+                if (ImGui::Button(" START Recording")) {
                     startLooperRecording();
                 }
+                ImGui::SameLine();
                 if (!mLooper.bufferFilled()) ImGui::BeginDisabled();
                 if (ImGui::Button(" START Playing")) {
                     startLooperPlaying();
@@ -419,9 +438,44 @@ namespace DSP {
                 }
 
             }
-            ImGui::TextDisabled("LOOPER STATE = %d (initdone = %d, initsteps = %d)", mLooperMode,mLooperInitDone, mLooperInitSteps);
-            bool isRecording = ( mLooper.getMode() == Processors::LooperMode::Recording || mLooper.getMode() == Processors::LooperMode::RecordingOverDup);
-            ImFlux::DrawLED("Recording", isRecording, ImFlux::LED_RED_ALERT);
+
+
+            int intMode = (int)mLooper.getMode();
+            const char* modeName = Processors::LooperModeNames[intMode];
+            ImGui::TextDisabled("LOOPER MODE = %s (initsteps = %d)", modeName, mLooperInitSteps);
+
+            ImFlux::LedParams ledParams;
+            bool ledOn = false;
+
+            switch (mLooper.getMode()) {
+                case Processors::LooperMode::RecordingCountDown:
+                case Processors::LooperMode::RecordingOverDupCountDown:
+                    ledOn = true;
+                    ledParams = ImFlux::LED_YELLOW_BEAT;
+                    ledParams.aniPhase = maBeatPhase;
+                    break;
+
+                case Processors::LooperMode::Recording:
+                case Processors::LooperMode::RecordingOverDup:
+                    ledOn = true;
+                    ledParams = ImFlux::LED_RED_BEAT;
+                    ledParams.aniPhase = maBeatPhase;
+                    break;
+
+                case Processors::LooperMode::Playing:
+                    ledOn = true;
+                    ledParams = ImFlux::LED_BLUE_GLOW;
+                    // ledParams.aniPhase = maBeatPhase;
+                    break;
+
+
+                default:
+                    ledOn = false;
+            }
+
+            ImFlux::DrawLED(modeName, ledOn, ledParams);
+
+
             ImGui::SameLine();
             ImFlux::PeakMeter(mLooper.getPosition(),ImVec2(150.f, 7.f));
 
@@ -432,7 +486,7 @@ namespace DSP {
             ImFlux::LCDNumber(info.beat, 2, 0, 24.f, IM_COL32(20,200,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
             ImFlux::LCDNumber(info.step, 3, 0, 24.f, IM_COL32(200,20,200,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
 
-            ImFlux::LCDNumber(info.seconds, 4, 1, 24.f, IM_COL32(20,200,200,255)); ImFlux::Hint("Seconds");
+            ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,200,200,255)); ImFlux::Hint("Seconds");
 
             {
                 ImGui::SeparatorText("BUFFER INFORMATION:");
@@ -442,13 +496,14 @@ namespace DSP {
                 ImFlux::LCDNumber(info.beat, 2, 0, 24.f, IM_COL32(20,100,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
                 ImFlux::LCDNumber(info.step, 3, 0, 24.f, IM_COL32(100,20,100,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
 
-                ImFlux::LCDNumber(info.seconds, 4, 1, 24.f, IM_COL32(20,100,100,255)); ImFlux::Hint("Seconds");
-
+                ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,100,100,255)); ImFlux::Hint("Seconds");
 
             }
-
-
-
+            ImGui::SameLine();
+            if (ImGui::Button(" RESET LOOPER")) {
+                stopLooper();
+                mLooper.reset();
+            }
 
 
             // renderUIHeader();

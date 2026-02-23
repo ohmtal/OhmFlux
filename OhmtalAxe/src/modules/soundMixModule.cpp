@@ -96,6 +96,21 @@ void SoundMixModule::DrawDrums(bool* p_enabled) {
 
 }
 //------------------------------------------------------------------------------
+bool SoundMixModule::close() {
+
+    bool result = false;
+    if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, this)) {
+        Log("[error] can NOT unbind PostMix Device !!! %s", SDL_GetError());
+        result |= false;
+    } else {
+        Log("[info] SoundMixModule: PostMix callback uninstalled.");
+        result |= true;
+
+    }
+
+    return result;
+}
+//------------------------------------------------------------------------------
 bool SoundMixModule::Initialize() {
 
 
@@ -118,7 +133,7 @@ bool SoundMixModule::Initialize() {
 
     // Setup PostMix
     if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, this)) {
-        dLog("[error] can NOT open PostMix Device !!! %s", SDL_GetError());
+        Log("[error] can NOT open PostMix Device !!! %s", SDL_GetError());
     } else {
         Log("[info] SoundMixModule: PostMix Callback installed.");
     }

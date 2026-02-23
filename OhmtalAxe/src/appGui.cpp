@@ -393,6 +393,11 @@ void AppGui::Deinitialize()
 
     SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!! 
     getMain()->unQueueObject(mWaveModule);
+
+    // close Audio Call cacks (threads)
+    mSoundMixModule->close();
+    mInputModule->close();
+
     SAFE_DELETE(mWaveModule);
 
     SAFE_DELETE(mKeyBoardModule);

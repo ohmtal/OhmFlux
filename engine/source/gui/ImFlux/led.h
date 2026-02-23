@@ -11,6 +11,8 @@
 
 #include "helper.h"
 
+
+
 namespace ImFlux {
 
 
@@ -25,7 +27,12 @@ namespace ImFlux {
     enum LedAnimationTypes {
         LED_Ani_Linear,
         LED_Ani_FADE,
-        LED_Ani_PULSE
+        LED_Ani_PULSE,
+        // params.aniPhase must be used !
+        // can also be uses for other things with normalized 0.f .. 1.f
+        LED_Ani_BEAT,
+        // also fro anyPhase but uses the value directly !
+        LED_Ani_PHASE,
     };
 
     struct LedParams {
@@ -37,6 +44,11 @@ namespace ImFlux {
         float aniRadius  = 2.f;
         LedAnimationTypes animationType = LED_Ani_FADE;
         bool renderMouseEvents  = false;
+        float aniPhase   = 0.f; //for LED_Ani_BEAT to 0..1f to sync the beat or other normalized data
+
+        LedParams WithAniType(LedAnimationTypes at) const { LedParams p = *this; p.animationType = at; return p; }
+        LedParams WithAniPhase(float phase) const { LedParams p = *this; p.aniPhase = phase; return p; }
+        LedParams WithColorOn(ImU32 c) const { LedParams p = *this; p.colorOn = c; return p; }
 
     };
 
@@ -54,6 +66,13 @@ namespace ImFlux {
     constexpr LedParams LED_RED_ANIMATED_GLOW   = { 8.f, true, true, ImColor(255,0, 0)};
 
     constexpr LedParams LED_RED_ALERT = { 8.f, true, true, ImColor(255,0, 0), 8.f, 2.f, LED_Ani_PULSE};
+    constexpr LedParams LED_YELLOW_ALERT = { 8.f, true, true, ImColor(255,255, 0), 8.f, 2.f, LED_Ani_PULSE};
+
+    constexpr ImFlux::LedParams LED_RED_BEAT = { 8.f, true, true, ImColor(255,0, 0), 8.f, 2.f, ImFlux::LED_Ani_BEAT};
+    constexpr ImFlux::LedParams LED_YELLOW_BEAT = { 8.f, true, true, ImColor(255,255,0), 8.f, 2.f, ImFlux::LED_Ani_BEAT};
+    constexpr ImFlux::LedParams LED_BLUE_BEAT = { 8.f, true, true, ImColor(0,0, 255), 8.f, 2.f, ImFlux::LED_Ani_BEAT};
+
+    constexpr ImFlux::LedParams LED_RED_PHASE = { 8.f, true, true, ImColor(255,0, 0), 8.f, 2.f, ImFlux::LED_Ani_PHASE};
 
 
 
@@ -92,6 +111,16 @@ namespace ImFlux {
                     case LED_Ani_Linear: pulse = (sinf(t) * 0.5f) + 0.5f; break;
                     case LED_Ani_FADE:   pulse = expf(sinf(t)) / 2.71828f; break;
                     case LED_Ani_PULSE:  pulse = powf(std::max(0.0f, sinf(t)), 8.0f); break;
+                    case LED_Ani_BEAT:
+                        //too blinky pulse = powf(std::max(0.0f, cosf(params.aniPhase * M_2PI)), 8.0f);
+                        //still too blinky pulse = powf(std::max(0.0f, cosf(params.aniPhase * M_2PI)), 3.0f);
+                        // best so far
+                        pulse = (cosf(params.aniPhase * M_2PI) * 0.4f) + 0.6f;
+
+                        // also good but more to calculate
+                        // float c = cosf(params.aniPhase * M_2PI);pulse = expf(c - 1.0f);
+                        break;
+                    case LED_Ani_PHASE: pulse = std::clamp(params.aniPhase, 0.0f, 1.0f); break;
                 }
             }
 

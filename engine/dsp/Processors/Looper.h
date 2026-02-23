@@ -26,9 +26,20 @@ namespace Processors {
 
     enum class LooperMode {
         Off,
+        RecordingCountDown, //not really a countdown 10 to 0
+        RecordingOverDupCountDown,
         Recording,
         RecordingOverDup,
         Playing
+    };
+
+    static const char* LooperModeNames[] = {
+      "off",
+      "Recording countdown",
+      "Recording overdup countdown",
+      "Recording",
+      "Recording overdup",
+      "Playing",
     };
 
     struct LooperPositionInfo {
@@ -42,11 +53,12 @@ namespace Processors {
 
     class Looper {
     private:
+        //FIXME atomic
         std::vector<std::vector<float>> mLoopBuffers;
         uint32_t mBufferPos = 0;
         uint32_t mBufferLength = 0;
         LooperMode mMode = LooperMode::Off;
-        std::function<void(LooperMode)> mOnModeChanged = nullptr;
+
         // ---- statistics:
         int mBeatsPerBar = 4;
         float mSampleRate = 48000;
@@ -128,14 +140,13 @@ namespace Processors {
             mSampleRate = 48000;
             mBeatsPerMinute = 60;
             mBeatsPerSecond = 1.f;
+            mSecondsPerBeat = 1.f;
             mSamplesPerStep = 0.f;
             mSamplesPerBar = 0.f;
             mSamplesPerBeat = 0.f;
 
-        }
-        //----------------------------------------------------------------------
-        void setModeChangedCallback(std::function<void(LooperMode)> callback) {
-            mOnModeChanged = callback;
+            setMode(LooperMode::Off);
+
         }
         //----------------------------------------------------------------------
 
@@ -163,7 +174,7 @@ namespace Processors {
 
             return result;
         }
-
+        //----------------------------------------------------------------------
         // info of the complete buffer with running position
         LooperPositionInfo getInfo() {
             LooperPositionInfo result = {};
@@ -181,18 +192,8 @@ namespace Processors {
 
             return result;
         }
-
-
-
-        /*
-         * Calculation:
-         * SampleRate 48000 ==> 48000 Samples per second
-         * BPM 60 = 1 beat per second
-         * Bar (measure) beats per Bar usually 4 (in our drumkit)
-         * 1 Bar = 4 steps !!!
-         */
-        void initWithSec(float requestedSeconds, uint16_t beatsPerMinute, float sampleRate, int numChannels, uint8_t beatsPerBar = 4 ) {
-
+        //----------------------------------------------------------------------
+        uint16_t getBarsBySeconds(float requestedSeconds, uint16_t beatsPerMinute, uint8_t beatsPerBar = 4 ) {
             // 60 sec / 60 bpm = 1 beat / sec
             // 60 sec / 120 bpm = 0.5 beat / sec
             double secondsPerBeat = 60.0 / beatsPerMinute;
@@ -202,10 +203,40 @@ namespace Processors {
             // bars  = numBeats / beatsPerBar => 60 / 4.f = 15
             uint16_t numBars = static_cast<int>(std::ceil(numBeats / (float)beatsPerBar));
 
-            // dLog("beatsPerSecond:%f, numBeats:%f, numBars:%d", beatsPerSecond, numBeats, numBars);
-
             if (numBars < 1) numBars = 1;
 
+            return numBars;
+        }
+        //----------------------------------------------------------------------
+        float getSecondsByBars(uint16_t numBars, uint16_t beatsPerMinute, uint8_t beatsPerBar = 4) {
+            double secondsPerBeat = 60.0 / beatsPerMinute;
+            uint32_t totalBeats = static_cast<uint32_t>(numBars) * beatsPerBar;
+            return static_cast<float>(totalBeats * secondsPerBeat);
+        }
+        //----------------------------------------------------------------------
+        /*
+         * Calculation:
+         * SampleRate 48000 ==> 48000 Samples per second
+         * BPM 60 = 1 beat per second
+         * Bar (measure) beats per Bar usually 4 (in our drumkit)
+         * 1 Bar = 4 steps !!!
+         */
+        void initWithSec(float requestedSeconds, uint16_t beatsPerMinute, float sampleRate, int numChannels, uint8_t beatsPerBar = 4 ) {
+
+            // // 60 sec / 60 bpm = 1 beat / sec
+            // // 60 sec / 120 bpm = 0.5 beat / sec
+            // double secondsPerBeat = 60.0 / beatsPerMinute;
+            // // numBeats = sek / beatsPerSecond ==> 60 / 1 = 60
+            // double numBeats = requestedSeconds / secondsPerBeat;
+            //
+            // // bars  = numBeats / beatsPerBar => 60 / 4.f = 15
+            // uint16_t numBars = static_cast<int>(std::ceil(numBeats / (float)beatsPerBar));
+            //
+            // // dLog("beatsPerSecond:%f, numBeats:%f, numBars:%d", beatsPerSecond, numBeats, numBars);
+            //
+            // if (numBars < 1) numBars = 1;
+
+            uint16_t numBars =  getBarsBySeconds(requestedSeconds, beatsPerMinute, beatsPerBar);
             init(numBars, beatsPerBar, beatsPerMinute, sampleRate, numChannels);
         }
         //----------------------------------------------------------------------
@@ -238,9 +269,10 @@ namespace Processors {
         //----------------------------------------------------------------------
         LooperMode  getMode() { return mMode;}
         bool setMode(LooperMode mode) {
-            if (mBufferLength == 0) return false;
+            // why ? if (mBufferLength == 0) return false;
             mMode = mode;
             mBufferPos = 0;
+
             return true;
         }
         //----------------------------------------------------------------------
@@ -251,7 +283,11 @@ namespace Processors {
         //----------------------------------------------------------------------
         void process(float* buffer, int numSamples, int numChannels) {
             // Basic checks
-            if (mLoopBuffers.empty() || mMode == LooperMode::Off) return;
+            if ( mLoopBuffers.empty()
+                || mMode == LooperMode::Off
+                || mMode == LooperMode::RecordingCountDown
+                || mMode == LooperMode::RecordingOverDupCountDown
+            )  return;
             if (numChannels != static_cast<int>(mLoopBuffers.size())) return;
 
             // Outer loop: iterate through time frames (interleaved)
@@ -288,10 +324,7 @@ namespace Processors {
                 if (mBufferPos >= mBufferLength) {
                     mBufferPos = 0;
                     if (mMode == LooperMode::Recording) {
-                        mMode = LooperMode::Playing;
-                        if (mOnModeChanged) {
-                            mOnModeChanged(mMode);
-                        }
+                        setMode(LooperMode::Playing);
                     }
                 }
             } //outer loop

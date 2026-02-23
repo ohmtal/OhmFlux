@@ -181,7 +181,9 @@ namespace DSP {
         ImGui::SameLine();
         ImGui::BeginGroup();
                  float reduction = getGainReduction();
-                 // ImGui::TextDisabled("Reduction: %3.3f", reduction);
+                 //TEST LED ...
+                 ImFlux::DrawLED(std::format("{:.3f}% reduction", reduction).c_str(), reduction > 0.005f, ImFlux::LED_RED_PHASE.WithAniPhase(reduction));
+                 ImGui::SameLine();
                  ImFlux::PeakMeter(reduction,ImVec2(150.f, 7.f));
                  ImGui::SameLine(); ImGui::TextDisabled("%3.3f%%", reduction);
         ImGui::EndGroup();

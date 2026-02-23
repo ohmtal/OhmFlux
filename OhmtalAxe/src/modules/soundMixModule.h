@@ -32,6 +32,7 @@ public:
     }
 
     bool Initialize() override;
+    bool close();
 
 
     void DrawVisualAnalyzer(bool* p_enabled);

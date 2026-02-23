@@ -94,6 +94,15 @@ inline void SAFE_FREE(T*& ptr) {
 #define FLUX_PI 3.14159265358979323846f
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+#ifndef M_2PI
+#define M_2PI (2.0f * M_PI)
+#endif
+
+
+
 #if defined(_WIN32) || defined(__CYGWIN__)
 #define FN_CDECL __cdecl
 #else
