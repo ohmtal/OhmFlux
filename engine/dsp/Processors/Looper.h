@@ -237,11 +237,11 @@ namespace Processors {
             // if (numBars < 1) numBars = 1;
 
             uint16_t numBars =  getBarsBySeconds(requestedSeconds, beatsPerMinute, beatsPerBar);
-            init(numBars, beatsPerBar, beatsPerMinute, sampleRate, numChannels);
+            init(numBars,  beatsPerMinute, sampleRate, numChannels, beatsPerBar);
         }
         //----------------------------------------------------------------------
-        void init(uint16_t bars, uint8_t beatsPerBar, uint16_t beatsPerMinute
-                , float sampleRate, int numChannels) {
+        void init(uint16_t bars,  uint16_t beatsPerMinute
+                , float sampleRate, int numChannels, uint8_t beatsPerBar = 4) {
 
             if (bars < 1 ) bars = 1;
 

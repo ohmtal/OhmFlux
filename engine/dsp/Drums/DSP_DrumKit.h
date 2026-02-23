@@ -115,7 +115,7 @@ namespace DSP {
         DrumKitData mLooperStartTicks = DrumKitData{ 0.5f,125, 0, 0, 34952,0x0000,  0x0000, 0 };
         DrumKitSettings mLooperSavCurrent;
         //NO SHADOW !! Processors::LooperMode mLooperMode = Processors::LooperMode::Off;
-        float mLooperSeconds = 30.f;
+        uint16_t mLooperBars = 16;
         // bool mLooperInitDone = false;
         int mLooperInitSteps = -1;
         Processors::Looper mLooper;
@@ -219,7 +219,7 @@ namespace DSP {
             mLooper.setMode(Processors::LooperMode::Off);
         }
         //----------------------------------------------------------------------
-        void startLooperRecording(/*float seconds = 30.f,*/ bool doOverDup = false) {
+        void startLooperRecording(bool doOverDup = false) {
             setEnabled(false); //stop if we are playing
 
             // update vol + bpm of looper start ticks
@@ -265,7 +265,7 @@ namespace DSP {
                     // restore drums
                     mSettings.setData(mLooperSavCurrent.getData());
                     // init the looper ...
-                    mLooper.initWithSec(mLooperSeconds, mSettings.bpm.get() , mSampleRate, numChannels, 4 );
+                    mLooper.init(mLooperBars,  mSettings.bpm.get() , mSampleRate, numChannels, 4 );
                     // start the looper
                     if (curMode == Processors::LooperMode::RecordingCountDown)
                         mLooper.setMode(Processors::LooperMode::Recording);
@@ -414,15 +414,20 @@ namespace DSP {
             if ( mLooper.getMode() == Processors::LooperMode::Off)
             {
                 ImGui::SetNextItemWidth(120.f);
-                if (ImGui::InputFloat("Seconds", &mLooperSeconds)) {
-                    mLooperSeconds = DSP::clamp(mLooperSeconds, 1.f, 120.f);
+                int barsInt = mLooperBars;
+                int maxBars = mLooper.getBarsBySeconds(180,  mSettings.bpm.get(), 4);
+                if (ImGui::InputInt("Bars", &barsInt)) {
+                    // bpm maybe changed i update always !
+                    mLooperBars = std::clamp(barsInt, 1, maxBars);
                 }
+
                 ImGui::SameLine();
-                uint16_t bars = mLooper.getBarsBySeconds(mLooperSeconds, mSettings.bpm.get(), 4);
-                float sec = mLooper.getSecondsByBars(bars, mSettings.bpm.get(), 4);
-                ImGui::TextDisabled("%d Bars => %.2f sec. ", bars, sec);
+                float sec = mLooper.getSecondsByBars(mLooperBars, mSettings.bpm.get(), 4);
+                ImGui::TextDisabled("%.2f sec. ", sec);
                 ImGui::SameLine();
                 if (ImGui::Button(" START Recording")) {
+                    // bpm maybe changed i update here again!
+                    mLooperBars = std::clamp(barsInt, 1, maxBars);
                     startLooperRecording();
                 }
                 ImGui::SameLine();
