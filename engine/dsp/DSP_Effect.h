@@ -118,13 +118,16 @@ namespace DSP {
     #define IMPLEMENT_EFF_CLONE(ClassName) \
     std::unique_ptr<Effect> clone() const override { \
         auto newCopy = std::make_unique<ClassName>(); \
-        newCopy->mSettings = this->mSettings;   \
+        newCopy->mSettings = this->mSettings;          \
+        newCopy->mEnabled = this->mEnabled;            \
         return newCopy;                               \
     }
 
     #define IMPLEMENT_EFF_CLONE_NO_SETTINGS(ClassName) \
     std::unique_ptr<Effect> clone() const override { \
-        return std::make_unique<ClassName>(); \
+        auto newCopy = std::make_unique<ClassName>(); \
+        newCopy->mEnabled = this->mEnabled;            \
+        return newCopy;                               \
     }
     //---------------------- PARAMETER DEFINITION --------------------------
     #define REGISTER_SETTINGS(ClassName, ...) \
@@ -288,9 +291,6 @@ namespace DSP {
             return paramType;
         }
 
-#ifdef FLUX_ENGINE //hackfest
-#endif
-
     private:
         std::string name;
         std::atomic<T> value;
@@ -302,11 +302,8 @@ namespace DSP {
         //hackfest  would add it to constructor but since it
         //          require FLUX widgets ....
         ImFlux::KnobSettings knobSettings = ImFlux::ksBlack;
-#endif
-
 
     public:
-#ifdef FLUX_ENGINE
     // dont want to do this in constuctor !!
     void setKnobSettings (ImFlux::KnobSettings s)  {knobSettings = s;}
     ImFlux::KnobSettings getKnobSettings() {return knobSettings;}

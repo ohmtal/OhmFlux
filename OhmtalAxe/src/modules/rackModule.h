@@ -47,4 +47,10 @@ public:
     void callSavePresets();
     void callLoadPresets();
 
+    float getLimiterReduction() {
+        auto lLimiter = getManager()->getEffectByType(DSP::EffectType::Limiter);
+        if (lLimiter) return static_cast<DSP::Limiter*>(lLimiter)->getGainReduction();
+        return 0.f;
+    }
+
 };

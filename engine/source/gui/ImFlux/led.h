@@ -49,15 +49,21 @@ namespace ImFlux {
         LedParams WithAniType(LedAnimationTypes at) const { LedParams p = *this; p.animationType = at; return p; }
         LedParams WithAniPhase(float phase) const { LedParams p = *this; p.aniPhase = phase; return p; }
         LedParams WithColorOn(ImU32 c) const { LedParams p = *this; p.colorOn = c; return p; }
+        LedParams WithRadius(float r) const { LedParams p = *this; p.radius = r; return p; }
 
     };
 
 
-    constexpr LedParams LED_WHITE               = { 8.f, false, false, ImColor(255,255,255)};
+    constexpr LedParams LED_WHITE               = { 8.f, false, false, ImColor(200,200,200)};
 
-    constexpr LedParams LED_GREEN               = { 8.f, false, false, ImColor(0, 255, 0)};
-    constexpr LedParams LED_GREEN_GLOW          = { 8.f, false, true, ImColor(0, 255, 0), 4.f, 2.f};
-    constexpr LedParams LED_GREEN_ANIMATED_GLOW = { 8.f, true, true, ImColor(0, 255, 0), 4.f, 2.f};
+    constexpr LedParams LED_GREEN               = { 8.f, false, false, ImColor(0, 200, 0)};
+    constexpr LedParams LED_GREEN_GLOW          = { 8.f, false, true, ImColor(0, 200, 0), 4.f, 2.f};
+    constexpr LedParams LED_GREEN_ANIMATED_GLOW = { 8.f, true, true, ImColor(0, 200, 0), 4.f, 2.f};
+
+    constexpr LedParams LED_YELLOW               = { 8.f, false, false, ImColor(200, 200, 0)};
+    constexpr LedParams LED_YELLOW_GLOW          = { 8.f, false, true, ImColor(200, 200, 0), 4.f, 2.f};
+    constexpr LedParams LED_YELLOW_ANIMATED_GLOW = { 8.f, true, true, ImColor(200, 200, 0), 4.f, 2.f};
+
 
     constexpr LedParams LED_BLUE_GLOW          = { 8.f, false, true, ImColor(128, 128, 255), 4.f, 2.f}; //not really blue
     constexpr LedParams LED_BLUE_ANIMATED_GLOW = { 8.f, true, true, ImColor(128, 128, 255), 4.f, 2.f}; //not really blue
@@ -84,6 +90,7 @@ namespace ImFlux {
 
         const ImGuiID id = window->GetID((std::string("##Tooltip") + tooltip).c_str()); // Use tooltip or a unique string as ID
         ImVec2 pos = ImGui::GetCursorScreenPos();
+        // looks stupid if animated and non animated in a row, but ....
         float maxRadius = params.radius + (params.animated ? params.aniRadius : 0.0f);
         ImVec2 size(maxRadius * 2.0f, maxRadius * 2.0f);
         ImRect bb(pos, pos + size);

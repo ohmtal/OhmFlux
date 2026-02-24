@@ -541,8 +541,19 @@ void AppGui::ShowMenuBar()
         ImFlux::drawWindowMenu();
 
         // // ----------- Master Volume
-        float rightOffset = 230.0f;
+        float rightOffset = 270.f; //230.0f;
         ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
+
+
+
+        ImFlux::DrawLED("Input line"
+        , mInputModule->isOpen(), ImFlux::LED_GREEN_ANIMATED_GLOW.WithRadius(6.0f));
+        ImGui::SameLine();
+
+        float reduction =  mRackModule->getLimiterReduction() * 100.f;
+        ImFlux::DrawLED(std::format("Limiter: {:.1f}% reduction", reduction).c_str()
+        , reduction > 0.5f, ImFlux::LED_RED_PHASE.WithAniPhase(reduction).WithRadius(6.0f));
+        ImGui::SameLine();
 
         // ImGui::SetNextItemWidth(100);
         float currentVol = mSoundMixModule->getMasterVolume();
@@ -551,6 +562,7 @@ void AppGui::ShowMenuBar()
         {
             mSoundMixModule->setMasterVolume(currentVol);
         }
+
         // if (ImGui::IsItemHovered()) ImGui::SetTooltip("Master Volume");
 
         //................
