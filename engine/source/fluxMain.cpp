@@ -82,10 +82,10 @@ bool FluxMain::Initialize()
 #endif
 	LogFMT("{} running on SDL3", mSettings.Caption);
 
-	mAppStatus.Visible		 = true;
-	mAppStatus.Paused		 = false;
-	mAppStatus.MouseFocus	 = true;
-	mAppStatus.KeyboardFocus = true;
+	gAppStatus.Visible		 = true;
+	gAppStatus.Paused		 = false;
+	gAppStatus.MouseFocus	 = true;
+	gAppStatus.KeyboardFocus = true;
 
 	mLastTick = SDL_GetPerformanceCounter(); //SDL_GetTicks64();
 
@@ -276,12 +276,14 @@ FluxTexture* FluxMain::loadTexture(std::string filename, int cols, int rows, boo
 	if (!usePixelPerfect) result->setUseTrilinearFiltering();
 
 
+	#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 	bool exits = std::filesystem::exists(filename);
 	if (!exits)  filename = getGamePath() + filename;
 	if (!std::filesystem::exists(filename)) {
 		LogFMT("[error]Unable to load Texture: File {} does not exists.", filename );
 		return nullptr;
 	}
+	#endif
 
 
 	bool success = (!setColorKeyAtZeroPixel)
@@ -331,9 +333,9 @@ FluxTexture* FluxMain::loadTexture(std::string filename, int cols, int rows, boo
 //--------------------------------------------------------------------------------------
 bool FluxMain::toggleFullScreen()
 {
-  mAppStatus.Visible = false;
+  gAppStatus.Visible = false;
   bool result = getScreen()->toggleFullScreen();
-  mAppStatus.Visible = true; 
+  gAppStatus.Visible = true;
   return result;
 }
 //--------------------------------------------------------------------------------------
@@ -458,8 +460,8 @@ void FluxMain::Execute() {
 void FluxMain::setupMousePositions( F32 lX, F32 lY ) //SDL2 compat  SDL_MouseMotionEvent lMouseMotionEvent )
 {
 
-	mAppStatus.RealMousePos = { lX, lY };
-	mAppStatus.MousePos 	= { lX / getScreen()->getScaleX() , lY / getScreen()->getScaleY() };
+	gAppStatus.RealMousePos = { lX, lY };
+	gAppStatus.MousePos 	= { lX / getScreen()->getScaleX() , lY / getScreen()->getScaleY() };
 	setupWorldMousePositions( );
 
 }
@@ -473,7 +475,7 @@ void FluxMain::setupWorldMousePositions(  )
 	Point2F screenCenter = screenSize / 2.0f;
 
 	// 2. Shift click to be relative to screen center (0, 0)
-	Point2F relativeClick = mAppStatus.MousePos - screenCenter;
+	Point2F relativeClick = gAppStatus.MousePos - screenCenter;
 
 	// 3. Apply inverse zoom
 	// If zoom > 1 means "zoomed in", you divide. If zoom > 1 means "larger area", you multiply.
@@ -481,7 +483,7 @@ void FluxMain::setupWorldMousePositions(  )
 	Point2F worldOffset = relativeClick / zoom;
 
 	// 4. Final World Position
-	mAppStatus.WorldMousePos = cameraPos + worldOffset;
+	gAppStatus.WorldMousePos = cameraPos + worldOffset;
 
 }
 //--------------------------------------------------------------------------------------
@@ -496,17 +498,17 @@ void FluxMain::IterateFrame()
 				mRunning = false;
 				break;
 			case SDL_EVENT_WINDOW_SHOWN:
-				mAppStatus.Visible = true;
+				gAppStatus.Visible = true;
 				getScreen()->updateWindowSize(getScreen()->getWidth(), getScreen()->getHeight());
 				break;
 			case SDL_EVENT_WINDOW_HIDDEN:
-				mAppStatus.Visible = false;
+				gAppStatus.Visible = false;
 				break;
 			case SDL_EVENT_WINDOW_FOCUS_GAINED:
-				mAppStatus.KeyboardFocus = true;
+				gAppStatus.KeyboardFocus = true;
 				break;
 			case SDL_EVENT_WINDOW_FOCUS_LOST:
-				mAppStatus.KeyboardFocus = false;
+				gAppStatus.KeyboardFocus = false;
 				break;
 			case SDL_EVENT_WINDOW_RESIZED:
 				getScreen()->updateWindowSize((int)E.window.data1, (int)E.window.data2);
@@ -543,7 +545,7 @@ void FluxMain::IterateFrame()
 	}
 
 	// Handle Visibility/Pause
-	if (!mAppStatus.Visible || mAppStatus.Paused) {
+	if (!gAppStatus.Visible || gAppStatus.Paused) {
 		#ifndef __EMSCRIPTEN__
 		// Only block on native desktop; Web must never block
 		SDL_WaitEventTimeout(nullptr, 100);

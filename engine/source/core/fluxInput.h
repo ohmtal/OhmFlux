@@ -47,6 +47,10 @@ public:
         float msX, msY;
         Uint32 mState = SDL_GetMouseState(&msX, &msY);
 
+        //FIXME scaled pos ?!
+        // if (g_CurrentScreen)
+        // g_CurrentScreen.MousePos
+
         auto it = mBindings.find(action);
         if (it == mBindings.end()) return false;
 

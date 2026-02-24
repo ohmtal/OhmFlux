@@ -169,10 +169,18 @@ bool  FluxScreen::prepareMode(const FluxSettings& lSettings )
 //-------------------------------------------------------------------------------
 bool FluxScreen::init()
 {
+	#if defined(__ANDROID__)
+	// set to Landscape
+	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+	// force FullScreen
+	mFullScreen = true;
+	#endif
+
 	S32 sdlflags = mScreenFlags;
 	if (mFullScreen) {
 		sdlflags |= SDL_WINDOW_FULLSCREEN;
 	}
+
 
 
 	mWindow = SDL_CreateWindow(mCaption,  getWidth(), getHeight(), sdlflags );
@@ -329,6 +337,10 @@ bool FluxScreen::setCaption(const char* lCaption)
 //-------------------------------------------------------------------------------
 bool FluxScreen::setIcon(const char* lFilename)
 {
+	#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+		return true;
+	#endif
+
 	if (!mWindow){
 		Log("Cant set Icon, init Window first!");
 		return false;

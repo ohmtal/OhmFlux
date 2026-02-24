@@ -55,7 +55,7 @@ private:
 	std::vector<FluxBaseObject*> mDeletedObjects;
 
 
-	FluxAppStatus mAppStatus;
+	// FluxAppStatus gAppStatus;
 
 	bool mRunning;
 
@@ -89,7 +89,7 @@ public:
 
 	void TerminateApplication();
 
-	FluxAppStatus getStatus() { return mAppStatus; }
+	FluxAppStatus getStatus() { return gAppStatus; }
 
 	// SDL_AudioDeviceID getAudioDevice() { return mAudioDevice; }
 
@@ -122,9 +122,9 @@ public:
 
 	S32 getFPS() const {return mFPS;}
 
-	void  setPause(bool value) {mAppStatus.Paused=value;}
-	bool  togglePause()  { mAppStatus.Paused = !mAppStatus.Paused; return mAppStatus.Paused;}
-	bool getPause() const { return mAppStatus.Paused;}
+	void  setPause(bool value) {gAppStatus.Paused=value;}
+	bool  togglePause()  { gAppStatus.Paused = !gAppStatus.Paused; return gAppStatus.Paused;}
+	bool getPause() const { return gAppStatus.Paused;}
 
 	void setupMousePositions( F32 lX, F32 lY ); //SDL2 compat SDL_MouseMotionEvent lMouseMotionEvent );
 	void setupWorldMousePositions( );

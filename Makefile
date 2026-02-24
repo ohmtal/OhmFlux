@@ -130,7 +130,7 @@ android:
 		ASSET_DIR=$(ANDROID_PROJ_DIR)/app/src/main/assets/; \
 		rm -rf $$ASSET_DIR; \
 		mkdir -p $$ASSET_DIR; \
-		cp -r $$target/assets p $$ASSET_DIR; \
+		cp -r $$target/assets $$ASSET_DIR; \
 		echo "----- copy SDL ----"; \
 		find $(BASE_BUILD_DIR)/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/ \; ; \
 		sed -i "s/<string name=\"SDL_DEFAULT_LIBRARY\">.*<\/string>/<string name=\"SDL_DEFAULT_LIBRARY\">main<\/string>/g" \
@@ -143,6 +143,9 @@ android:
 
 	@echo "---------------------------------------------------------------------------------"
 	@echo "Finished! hopefully"
+	@echo "---------------------------------------------------------------------------------"
+	@echo "This is only a basic build based on SDL3 Template for testing. You need to" "
+	@echo "change the Manifest,gradle, the res/icon and so on."
 	@echo "---------------------------------------------------------------------------------"
 	@echo "# 1. Install it to your phone example:"
 	@echo "    adb install ./_build/apks/FishTankDemo.apk"

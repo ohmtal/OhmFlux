@@ -36,6 +36,13 @@ inline bool isDebugBuild() { return true; }
 inline bool isDebugBuild() { return false; }
 #endif
 
+#ifdef __ANDROID__
+inline bool isAndroidBuild() { return true; }
+#else
+inline bool isAndroidBuild() { return false; }
+#endif
+
+
 
 
 
@@ -442,6 +449,8 @@ struct FluxAppStatus
     Point2I getWorldMousePosI() const  { return static_cast<Point2I>(WorldMousePos); }
 
 };
+
+inline FluxAppStatus gAppStatus; //moved to global!
 
 const U32 DEFAULT_MAX_SPRITES = 4000;
 

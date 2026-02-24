@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <map>
 
+#include "core/fluxGlue.h"
 #include "core/fluxRenderObject.h"
 
 struct FluxGuiEvent {
@@ -82,9 +83,19 @@ public:
 
                 // Handle SDL3 float coordinates
                 if (e.type >= SDL_EVENT_MOUSE_MOTION && e.type <= SDL_EVENT_MOUSE_WHEEL) {
-                    float mx, my;
-                    SDL_GetMouseState(&mx, &my);
-                    hit = listener.target->getRectI().pointInRect({(int)mx, (int)my});
+
+                    // if (g_CurrentScreen)
+                    // g_CurrentScreen.MousePos
+
+                    // float mx, my;
+                    // SDL_GetMouseState(&mx, &my);
+                    // hit = listener.target->getRectI().pointInRect({(int)mx, (int)my});
+
+                    int mx, my;
+                    mx = (int)gAppStatus.MousePos.x;
+                    my = (int)gAppStatus.MousePos.y;
+
+                    hit = listener.target->getRectI().pointInRect({mx, my});
                 }
 
                 if (hit)

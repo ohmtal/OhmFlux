@@ -423,7 +423,7 @@ if(BUILD_AMANA)
         "${AMANA_DIR}/src/amanaGame.cpp"
         "${AMANA_DIR}/src/globalResources.cpp"
     )
-    configure_demo_target(AmanaGame ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
+    configure_demo_target(Amana ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 
