@@ -617,10 +617,11 @@ void AppGui::InitDockSpace()
     if (mAppSettings.mEditorGuiInitialized)
         return; 
 
+    mAppSettings.mEditorGuiInitialized = true;
     restoreLayout();
 
 
-    // mAppSettings.mEditorGuiInitialized = true;
+
     //
     // ImGuiID dockspace_id = mGuiGlue->getDockSpaceId();
     //
