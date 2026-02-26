@@ -783,6 +783,8 @@ public:
         // because i coded it in my project and moved it here when done:
         DSP::EffectsManager* lManager = this;
 
+        if (ImGui::GetContentRegionAvail().x  <= 10.f) return;
+
         // default size
         ImVec2 controlSize = {0,0};
         // magic pointer movement
@@ -827,6 +829,7 @@ public:
             // 2. Button Dimensions & Interaction
             ImVec2 pos = ImGui::GetCursorScreenPos();
             ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x - 10.0f, ImGui::GetFrameHeight());
+            if (size.x < 1.f) size.x = 1.f;
 
 
             float coloredWidth = 30.0f;

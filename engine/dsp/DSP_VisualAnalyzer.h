@@ -69,7 +69,7 @@ namespace DSP {
             {
                 std::lock_guard<std::mutex> lock(mDataMutex);
 
-                // 2. Mirror Buffer (Oscilloscope View)
+                // Mirror Buffer (Oscilloscope View)
                 // For visual clarity, we often mirror the "Mono Sum" or "Main Left"
                 // to avoid a messy overlapping waveform. Here we mirror the interleaved data.
                 int toCopy = std::min(numSamples, (int)mMirrorBuffer.size());
@@ -90,7 +90,7 @@ namespace DSP {
                     //
                     //NOTE * 0.55 with distortion it goes over 1.0 also if limiter is on
                     // this match the limiter settings!
-                    float sample = buffer[i] * 0.85f;
+                    float sample = buffer[i];// * 0.85f;
 
                     // Safety check
                     if (!std::isfinite(sample)) sample = 0.0f;

@@ -46,6 +46,8 @@ namespace ImFlux {
     constexpr ButtonParams SLATE_BUTTON { .color = IM_COL32(46, 61, 79, 255) };
     constexpr ButtonParams SLATEDARK_BUTTON { .color = IM_COL32(23, 30, 40, 255) };
 
+    constexpr ButtonParams YELLOW_BUTTON { .color = IM_COL32(180,180,0,255)};
+
 
 
     inline bool ButtonFancy(std::string label, ButtonParams params = DEFAULT_BUTTON)

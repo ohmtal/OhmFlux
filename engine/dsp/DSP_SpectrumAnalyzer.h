@@ -53,7 +53,7 @@ namespace DSP {
                 // 1. Sum all channels in the current frame
                 for (int c = 0; c < numChannels; ++c) {
                     //NOTE: Added * 0.85f to match limiter
-                    monoSum += buffer[i + c] * 0.85f;
+                    monoSum += buffer[i + c];// * 0.85f;
                 }
                 // 2. Average the sum to keep the level consistent
                 monoSum /= static_cast<float>(numChannels);

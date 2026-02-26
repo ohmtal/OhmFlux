@@ -136,8 +136,6 @@ void RackModule::DrawRack(bool* p_enabled)
         mRackTabNewId = -1;
     } //tabBar ....
 
-    static int foo = -1;
-    if (mRackTabCurId != foo) {foo = mRackTabCurId; Log("Tab index is %d", mRackTabCurId);}
 
     ImGui::EndTabBar();
     ImGui::End();

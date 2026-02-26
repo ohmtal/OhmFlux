@@ -37,7 +37,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     gui->mConsole.AddLog("%s", message);
 }
-
+//------------------------------------------------------------------------------
 void AppGui::ShowToolbar() {
 
         ImFlux::ButtonParams bpOn = ImFlux::SLATE_BUTTON.WithSize(ImVec2(120,32));
@@ -205,8 +205,7 @@ void AppGui::ApplyStudioTheme() {
     // colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
 }
-
-
+//------------------------------------------------------------------------------
 void AppGui::setupFonts()
 {
     // fonts >>>>
@@ -232,9 +231,7 @@ void AppGui::setupFonts()
     gIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 24.0f, &icon_config, ranges);
     gTinyFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size,  7.0f, &icon_config, ranges);
     //<<<<<<<<<< fonts
-
 }
-
 //------------------------------------------------------------------------------
 void AppGui::ShowFileBrowser(){
     if (g_FileDialog.Draw()) {
@@ -271,19 +268,15 @@ void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
 
     //if i want to add "help" and autocomplete  mConsole.Commands.push_back("/spam");
 
-    if (cmd == "/spam") {
-        for (S32 i = 0; i < 1000; i++) {
-            dLog("[info] SPAM %i", i);
-        }
-    }
-
+    // if (cmd == "/spam") {
+    //     for (S32 i = 0; i < 1000; i++) {
+    //         dLog("[info] SPAM %i", i);
+    //     }
+    // }
 }
-
 //------------------------------------------------------------------------------
 bool AppGui::Initialize()
 {
-
-
     std::string lSettingsFile =
         getGame()->mSettings.getPrefsPath()
         .append(getGame()->mSettings.getSafeCaption())
@@ -444,10 +437,7 @@ void AppGui::DrawMsgBoxPopup() {
         ImGui::EndPopup();
     }
 }
-
-
 //------------------------------------------------------------------------------
-
 void AppGui::ShowMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
@@ -468,7 +458,7 @@ void AppGui::ShowMenuBar()
             ImGui::MenuItem("Visualizer", NULL, &mAppSettings.mShowVisualizer);
 
             ImGui::MenuItem("Drum Kit", NULL, &mAppSettings.mShowDrumKit);
-            ImGui::MenuItem("Drum Pads", NULL, &mAppSettings.mShowDrumEffects);
+            if (isDebugBuild()) ImGui::MenuItem("Drum Pads", NULL, &mAppSettings.mShowDrumEffects);
 
 
             ImGui::SeparatorText("Tools");
@@ -571,15 +561,12 @@ void AppGui::ShowMenuBar()
         // -----------
         ImGui::EndMainMenuBar();
     }
-    ShowToolbar();
+    // FIXME ?! disabled ... ShowToolbar();
 }
 //------------------------------------------------------------------------------
 void AppGui::DrawGui()
 {
-
     mGuiGlue->DrawBegin();
-
-
     ShowMenuBar();
     if (mAppSettings.mShowFileBrowser) ShowFileBrowser();
     if (mAppSettings.mShowConsole) mConsole.Draw("Console", &mAppSettings.mShowConsole);
@@ -610,42 +597,58 @@ void AppGui::onKeyEvent(SDL_KeyboardEvent event)
     mKeyBoardModule->onKeyEvent(event);
 }
 //------------------------------------------------------------------------------
+void AppGui::restoreLayout() {
+    //copied from json :P
+    static const std::string layout = "[Window][File Browser]\nCollapsed=0\nDockId=0x00000002\n\n[Window][WindowOverViewport_11111111]\nPos=0,19\nSize=1920,996\nCollapsed=0\n\n[Window][Toolbar]\nPos=0,19\nSize=334,373\nCollapsed=0\nDockId=0x00000003,0\n\n[Window][Debug##Default]\nPos=60,60\nSize=400,400\nCollapsed=0\n\n[Window][Drum Kit]\nPos=1359,19\nSize=561,523\nCollapsed=0\nDockId=0x0000001B,0\n\n[Window][Visualizer]\nPos=818,19\nSize=545,996\nCollapsed=0\nDockId=0x0000001A,0\n\n[Window][Rack]\nPos=336,19\nSize=1021,996\nCollapsed=0\nDockId=0x00000011,0\n\n[Window][Input Stream]\nPos=0,394\nSize=334,621\nCollapsed=0\nDockId=0x00000004,0\n\n[Window][Rack Presets]\nPos=0,19\nSize=334,373\nCollapsed=0\nDockId=0x00000003,1\n\n[Window][Distortion]\nPos=431,19\nSize=412,170\nCollapsed=0\nDockId=0x0000000F,0\n\n[Window][OverDrive]\nPos=431,191\nSize=412,180\nCollapsed=0\nDockId=0x00000012,0\n\n[Window][Metal Distortion]\nPos=431,373\nSize=412,177\nCollapsed=0\nDockId=0x00000013,0\n\n[Window][Analog Glow]\nPos=431,552\nSize=412,241\nCollapsed=0\nDockId=0x00000009,0\n\n[Window][CHORUS / ENSEMBLE]\nPos=431,795\nSize=412,220\nCollapsed=0\nDockId=0x0000000A,0\n\n[Window][REVERB / SPACE]\nPos=845,19\nSize=307,220\nCollapsed=0\nDockId=0x00000018,0\n\n[Window][DELAY]\nPos=845,241\nSize=307,774\nCollapsed=0\nDockId=0x00000019,0\n\n[Window][9-BAND EQUALIZER]\nPos=0,19\nSize=429,251\nCollapsed=0\nDockId=0x00000003,1\n\n[Window][Post Digital Sound Effects Visualizer]\nPos=1049,420\nSize=871,595\nCollapsed=0\nDockId=0x00000008,0\n\n[Window][Post Digital Sound Effects Rack]\nPos=1188,340\nSize=732,675\nCollapsed=0\nDockId=0x00000008,1\n\n[Window][Effects Rack]\nPos=431,19\nSize=616,996\nCollapsed=0\nDockId=0x00000011,2\n\n[Window][Effects Rack 80th]\nPos=431,19\nSize=616,996\nCollapsed=0\nDockId=0x00000011,1\n\n[Window][Effect Paddles]\nPos=431,19\nSize=616,996\nCollapsed=0\nDockId=0x00000011,0\n\n[Window][Console]\nPos=1064,19\nSize=565,996\nCollapsed=0\nDockId=0x0000001C,0\n\n[Window][About]\nPos=833,424\nSize=254,166\nCollapsed=0\n\n[Window][File Browser##FileBrowser]\nPos=1306,393\nSize=614,401\nCollapsed=0\n\n[Window][Wave Streams]\nPos=0,248\nSize=359,767\nCollapsed=0\n\n[Window][DrumKit Presets]\nPos=1359,544\nSize=561,471\nCollapsed=0\nDockId=0x0000001C,0\n\n[Window][Load Rack Presets (.axe)##FileBrowser]\nPos=373,169\nSize=520,600\nCollapsed=0\n\n[Window][Save Rack Presets (.axe)##FileBrowser]\nPos=339,187\nSize=732,331\nCollapsed=0\n\n[Table][0xBA5C672C,3]\nRefScale=13\nColumn 0  Weight=1.0000 Sort=0v\nColumn 1  Width=90\nColumn 2  Width=90\n\n[Table][0xEAF5151A,3]\nRefScale=13\nColumn 0  Weight=1.0000 Sort=0^\nColumn 1  Width=90\nColumn 2  Width=90\n\n[Table][0x06909D1F,3]\nRefScale=13\nColumn 0  Weight=1.0000 Sort=0v\nColumn 1  Width=90\nColumn 2  Width=90\n\n[Docking][Data]\nDockSpace               ID=0x08BD597D Window=0x1BBC0F80 Pos=0,19 Size=1920,996 Split=X\n  DockNode              ID=0x0000000B Parent=0x08BD597D SizeRef=334,996 Split=Y Selected=0x5FDD3067\n    DockNode            ID=0x00000003 Parent=0x0000000B SizeRef=276,373 Selected=0x2923CCED\n    DockNode            ID=0x00000004 Parent=0x0000000B SizeRef=276,621 Selected=0x5FDD3067\n  DockNode              ID=0x0000000C Parent=0x08BD597D SizeRef=1293,996 Split=X\n    DockNode            ID=0x00000001 Parent=0x0000000C SizeRef=412,990\n    DockNode            ID=0x00000002 Parent=0x0000000C SizeRef=1506,990 Split=X\n      DockNode          ID=0x00000005 Parent=0x00000002 SizeRef=1021,996 Split=X\n        DockNode        ID=0x0000000D Parent=0x00000005 SizeRef=412,996 Split=Y Selected=0xA2258052\n          DockNode      ID=0x0000000F Parent=0x0000000D SizeRef=319,170 Selected=0xA2258052\n          DockNode      ID=0x00000010 Parent=0x0000000D SizeRef=319,824 Split=Y Selected=0x1423D8F6\n            DockNode    ID=0x00000014 Parent=0x00000010 SizeRef=319,359 Split=Y Selected=0x1F6C469F\n              DockNode  ID=0x00000012 Parent=0x00000014 SizeRef=319,180 Selected=0x1423D8F6\n              DockNode  ID=0x00000013 Parent=0x00000014 SizeRef=319,177 Selected=0x1F6C469F\n            DockNode    ID=0x00000015 Parent=0x00000010 SizeRef=319,463 Split=Y Selected=0xFD30D3DD\n              DockNode  ID=0x00000009 Parent=0x00000015 SizeRef=412,241 Selected=0xFD30D3DD\n              DockNode  ID=0x0000000A Parent=0x00000015 SizeRef=412,220 Selected=0xDAC16BBC\n        DockNode        ID=0x0000000E Parent=0x00000005 SizeRef=341,996 Split=X\n          DockNode      ID=0x00000016 Parent=0x0000000E SizeRef=307,996 Split=Y Selected=0x236930EC\n            DockNode    ID=0x00000018 Parent=0x00000016 SizeRef=319,220 Selected=0x53D4BCAC\n            DockNode    ID=0x00000019 Parent=0x00000016 SizeRef=319,774 Selected=0x236930EC\n          DockNode      ID=0x00000017 Parent=0x0000000E SizeRef=32,996 Split=X Selected=0x61C337AE\n            DockNode    ID=0x00000011 Parent=0x00000017 SizeRef=480,996 CentralNode=1 Selected=0x61C337AE\n            DockNode    ID=0x0000001A Parent=0x00000017 SizeRef=545,996 Selected=0x5C1B5396\n      DockNode          ID=0x00000006 Parent=0x00000002 SizeRef=561,996 Split=Y Selected=0xCD6D3427\n        DockNode        ID=0x00000007 Parent=0x00000006 SizeRef=550,399 Split=Y Selected=0xCCF29AD1\n          DockNode      ID=0x0000001B Parent=0x00000007 SizeRef=430,523 Selected=0xCD6D3427\n          DockNode      ID=0x0000001C Parent=0x00000007 SizeRef=430,471 Selected=0xCCF29AD1\n        DockNode        ID=0x00000008 Parent=0x00000006 SizeRef=550,595 Selected=0x8ECB2A60\n\n";
+
+    // must be scheduled !!
+    static FluxScheduler::TaskID loadFactorySchedule = 0;
+    if (!FluxSchedule.isPending(loadFactorySchedule))
+    {
+        std::string tmpLayout = layout;
+        loadFactorySchedule = FluxSchedule.add(0.0f, nullptr, [tmpLayout]() {
+            ImGui::LoadIniSettingsFromMemory(tmpLayout.c_str(), tmpLayout.size());
+        });
+    }
+}
+//------------------------------------------------------------------------------
 void AppGui::InitDockSpace()
 {
     if (mAppSettings.mEditorGuiInitialized)
         return; 
 
-    // "[Window][File Browser]\nCollapsed=0\nDockId=0x00000002\n\n[Window][WindowOverViewport_11111111]\nPos=0,19\nSize=1920,996\nCollapsed=0\n\n[Window][Toolbar]\nPos=0,19\nSize=429,251\nCollapsed=0\nDockId=0x00000003,0\n\n[Window][Input Stream]\nPos=0,272\nSize=429,743\nCollapsed=0\nDockId=0x00000004,0\n\n[Window][Distortion]\nPos=431,19\nSize=412,170\nCollapsed=0\nDockId=0x0000000F,0\n\n[Window][OverDrive]\nPos=431,191\nSize=412,180\nCollapsed=0\nDockId=0x00000012,0\n\n[Window][Metal Distortion]\nPos=431,373\nSize=412,177\nCollapsed=0\nDockId=0x00000013,0\n\n[Window][Analog Glow]\nPos=431,552\nSize=412,241\nCollapsed=0\nDockId=0x00000009,0\n\n[Window][CHORUS / ENSEMBLE]\nPos=431,795\nSize=412,220\nCollapsed=0\nDockId=0x0000000A,0\n\n[Window][REVERB / SPACE]\nPos=845,19\nSize=307,220\nCollapsed=0\nDockId=0x00000018,0\n\n[Window][DELAY]\nPos=845,241\nSize=307,774\nCollapsed=0\nDockId=0x00000019,0\n\n[Window][9-BAND EQUALIZER]\nPos=0,19\nSize=429,251\nCollapsed=0\nDockId=0x00000003,1\n\n[Window][Post Digital Sound Effects Visualizer]\nPos=1049,420\nSize=871,595\nCollapsed=0\nDockId=0x00000008,0\n\n[Window][Drum Kit]\nPos=1355,19\nSize=565,533\nCollapsed=0\nDockId=0x00000011,0\n\n[Window][Debug##Default]\nPos=60,60\nSize=400,400\nCollapsed=0\n\n[Window][Post Digital Sound Effects Rack]\nPos=1188,340\nSize=732,675\nCollapsed=0\nDockId=0x00000008,1\n\n[Window][Effects Rack]\nPos=431,19\nSize=616,996\nCollapsed=0\nDockId=0x00000017,2\n\n[Window][Effects Rack 80th]\nPos=431,19\nSize=616,996\nCollapsed=0\nDockId=0x00000017,1\n\n[Window][Effect Paddles]\nPos=431,19\nSize=616,996\nCollapsed=0\nDockId=0x00000017,0\n\n[Window][Visualizer]\nPos=1355,554\nSize=565,461\nCollapsed=0\nDockId=0x0000001A,1\n\n[Window][Rack]\nPos=431,19\nSize=922,996\nCollapsed=0\nDockId=0x00000017,0\n\n[Window][Console]\nPos=1355,554\nSize=565,461\nCollapsed=0\nDockId=0x0000001A,0\n\n[Window][About]\nPos=833,424\nSize=254,166\nCollapsed=0\n\n[Docking][Data]\nDockSpace               ID=0x08BD597D Window=0x1BBC0F80 Pos=0,19 Size=1920,996 Split=X\n  DockNode              ID=0x0000000B Parent=0x08BD597D SizeRef=429,996 Split=Y Selected=0x5FDD3067\n    DockNode            ID=0x00000003 Parent=0x0000000B SizeRef=276,251 Selected=0x0C01D6D5\n    DockNode            ID=0x00000004 Parent=0x0000000B SizeRef=276,743 Selected=0x5FDD3067\n  DockNode              ID=0x0000000C Parent=0x08BD597D SizeRef=1489,996 Split=X\n    DockNode            ID=0x00000001 Parent=0x0000000C SizeRef=412,990\n    DockNode            ID=0x00000002 Parent=0x0000000C SizeRef=1506,990 Split=X\n      DockNode          ID=0x00000005 Parent=0x00000002 SizeRef=922,996 Split=X\n        DockNode        ID=0x0000000D Parent=0x00000005 SizeRef=412,996 Split=Y Selected=0xA2258052\n          DockNode      ID=0x0000000F Parent=0x0000000D SizeRef=319,170 Selected=0xA2258052\n          DockNode      ID=0x00000010 Parent=0x0000000D SizeRef=319,824 Split=Y Selected=0x1423D8F6\n            DockNode    ID=0x00000014 Parent=0x00000010 SizeRef=319,359 Split=Y Selected=0x1F6C469F\n              DockNode  ID=0x00000012 Parent=0x00000014 SizeRef=319,180 Selected=0x1423D8F6\n              DockNode  ID=0x00000013 Parent=0x00000014 SizeRef=319,177 Selected=0x1F6C469F\n            DockNode    ID=0x00000015 Parent=0x00000010 SizeRef=319,463 Split=Y Selected=0xFD30D3DD\n              DockNode  ID=0x00000009 Parent=0x00000015 SizeRef=412,241 Selected=0xFD30D3DD\n              DockNode  ID=0x0000000A Parent=0x00000015 SizeRef=412,220 Selected=0xDAC16BBC\n        DockNode        ID=0x0000000E Parent=0x00000005 SizeRef=341,996 Split=X\n          DockNode      ID=0x00000016 Parent=0x0000000E SizeRef=307,996 Split=Y Selected=0x236930EC\n            DockNode    ID=0x00000018 Parent=0x00000016 SizeRef=319,220 Selected=0x53D4BCAC\n            DockNode    ID=0x00000019 Parent=0x00000016 SizeRef=319,774 Selected=0x236930EC\n          DockNode      ID=0x00000017 Parent=0x0000000E SizeRef=32,996 CentralNode=1 Selected=0x61C337AE\n      DockNode          ID=0x00000006 Parent=0x00000002 SizeRef=565,996 Split=Y Selected=0xCD6D3427\n        DockNode        ID=0x00000007 Parent=0x00000006 SizeRef=550,399 Split=Y Selected=0xCD6D3427\n          DockNode      ID=0x00000011 Parent=0x00000007 SizeRef=871,362 Selected=0xCD6D3427\n          DockNode      ID=0x0000001A Parent=0x00000007 SizeRef=871,313 Selected=0x5C1B5396\n        DockNode        ID=0x00000008 Parent=0x00000006 SizeRef=550,595 Selected=0x8ECB2A60\n\n"
-
-    mAppSettings.mEditorGuiInitialized = true;
-
-    ImGuiID dockspace_id = mGuiGlue->getDockSpaceId();
-
-    // Clear any existing layout
-    ImGui::DockBuilderRemoveNode(dockspace_id);
-    ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-    ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1920, 990));
-
-    // Replicate your splits (matches your ini data)
-    ImGuiID dock_main_id = dockspace_id;
-    ImGuiID dock_id_left, dock_id_right, dock_id_central, dock_id_top;
-
-    dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.215f, nullptr, &dock_main_id);
-    dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.172f, nullptr, &dock_id_central);
-
-    // dock_id_top = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.215f, nullptr, &dock_main_id);
+    restoreLayout();
 
 
-    // Dock the Windows to these IDs
-    ImGui::DockBuilderDockWindow("Toolbar", dock_id_right);
-
-    ImGui::DockBuilderDockWindow("File Browser", dock_id_right);
-    // ImGui::DockBuilderDockWindow("Sound Effects Generator", dock_id_central);
-
-
-    ImGui::DockBuilderFinish(dockspace_id);
-
-    // we tile the rest ...
-    ImFlux::TileWindows();
+    // mAppSettings.mEditorGuiInitialized = true;
+    //
+    // ImGuiID dockspace_id = mGuiGlue->getDockSpaceId();
+    //
+    // // Clear any existing layout
+    // ImGui::DockBuilderRemoveNode(dockspace_id);
+    // ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    // ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1920, 990));
+    //
+    // // Replicate your splits (matches your ini data)
+    // ImGuiID dock_main_id = dockspace_id;
+    // ImGuiID dock_id_left, dock_id_right, dock_id_central, dock_id_top;
+    //
+    // dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.215f, nullptr, &dock_main_id);
+    // dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.172f, nullptr, &dock_id_central);
+    //
+    // // dock_id_top = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.215f, nullptr, &dock_main_id);
+    //
+    //
+    // // Dock the Windows to these IDs
+    // ImGui::DockBuilderDockWindow("Toolbar", dock_id_right);
+    //
+    // ImGui::DockBuilderDockWindow("File Browser", dock_id_right);
+    // // ImGui::DockBuilderDockWindow("Sound Effects Generator", dock_id_central);
+    //
+    //
+    // ImGui::DockBuilderFinish(dockspace_id);
+    //
+    // // we tile the rest ...
+    // ImFlux::TileWindows();
 }
 //------------------------------------------------------------------------------

@@ -130,7 +130,7 @@ namespace DSP {
             ,mSettings()
         {}
 
-        virtual std::string getName() const override { return "Drum Kit / Metronome";}
+        virtual std::string getName() const override { return "Drum Kit / Looper";}
 
         // //----------------------------------------------------------------------
         DrumKitSettings& getSettings() { return mSettings; }
@@ -421,53 +421,181 @@ namespace DSP {
         virtual void renderSequencerWindow(bool* showWindow)  {
             if (!*showWindow) return;
 
-            DSP::DrumKitSettings currentSettings = this->getSettings();
+            ImGui::PushID(this);
+            bool changed = false;
+            bool presetChanged = false;
 
-            ImGui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
+
+            DSP::DrumKitSettings currentSettings = this->getSettings();
+            ImGui::SetNextWindowSize(ImVec2(600, 500), ImGuiCond_FirstUseEver);
             ImGui::Begin("Drum Kit", showWindow ); //window start .........
 
+            currentSettings.DrawPaddleHeader(this, 400);
 
-            // LOOPER TEST , FIXME Gui!
-            // handle mMode ...
+
+
+
+            //------------ DrumKit
+
+
+
+            // NOTE tricky access the AudioParams:
+            using DrumParamPtr = AudioParam<uint16_t> DrumKitSettings::*;
+            static const DrumParamPtr patterns[] = {
+                &DrumKitSettings::kickPat,
+                &DrumKitSettings::snarePat,
+                &DrumKitSettings::hiHatClosedPat,
+                &DrumKitSettings::hiHatOpenPat,
+                &DrumKitSettings::tomPat,
+                &DrumKitSettings::cymbalsPat
+            };
+
+            ImGui::PushID(this); ImGui::PushID("UI_WIDE");
+            // bool isEnabled = this->isEnabled();
+            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+
+            ImGui::SameLine();
+
+            changed |= currentSettings.vol.FaderHWithText();
+            ImGui::SameLine();
+            // -------- stepper >>>>
+            presetChanged |= mSettings.drawStepper(currentSettings, 260.f);
+            changed |= presetChanged;
+
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+                mSettings.resetToDefaults();
+                this->reset();
+                presetChanged = true;
+                changed = true;
+            }
+
+            ImGui::Separator();
+
+
+
+            // ImGui::SameLine();
+            ImGui::BeginGroup();
+            ImGui::Spacing();
+            auto bpmButton = [&](uint16_t bpm) {
+                if (ImFlux::ButtonFancy(std::format("{} bpm", bpm))) {
+                    currentSettings.bpm.set(bpm);
+                    return true;
+                }
+                return false;
+            };
+            changed |= bpmButton(60); ImGui::SameLine(); changed |= bpmButton(72);
+            changed |= bpmButton(118); ImGui::SameLine(); changed |= bpmButton(125);
+            changed |= bpmButton(144); ImGui::SameLine(); changed |= bpmButton(160);
+            ImGui::EndGroup();
+
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            ImGui::SetNextItemWidth(80.f);
+            int bpmInt = (int)currentSettings.bpm.get();
+            if (ImGui::InputInt("Bmp##manual", &bpmInt,1,15)) {
+                bpmInt = DSP::clamp((uint16_t)bpmInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
+                currentSettings.bpm.set(bpmInt);
+                changed = true;
+
+            }
+            ImFlux::LCDNumber(currentSettings.bpm.get(), 3, 0, 40.0f);
+            ImGui::EndGroup();
+
+            ImFlux::SeparatorVertical();
+            ImGui::BeginGroup();
             ImGui::SeparatorText("Looper");
+            bool bufferFilled = mLooper.bufferFilled();
+
+
+            ImGui::SetNextItemWidth(80.f);
+            if (bufferFilled) ImGui::BeginDisabled();
+
+            int barsInt = mLooperBars;
+            int maxBars = mLooper.getBarsBySeconds(180,  mSettings.bpm.get(), 4);
+            if (ImGui::InputInt("Bars", &barsInt)) {
+                // bpm maybe changed i update always !
+                mLooperBars = std::clamp(barsInt, 1, maxBars);
+            }
+
+            ImGui::SameLine();
+            float sec = mLooper.getSecondsByBars(mLooperBars, mSettings.bpm.get(), 4);
+            ImGui::TextDisabled("%.2f sec. ", sec);
+            if (bufferFilled) ImGui::EndDisabled();
+            ImGui::Spacing();
+
             if ( mLooper.getMode() == Processors::LooperMode::Off)
             {
-                ImGui::SetNextItemWidth(120.f);
-                int barsInt = mLooperBars;
-                int maxBars = mLooper.getBarsBySeconds(180,  mSettings.bpm.get(), 4);
-                if (ImGui::InputInt("Bars", &barsInt)) {
-                    // bpm maybe changed i update always !
-                    mLooperBars = std::clamp(barsInt, 1, maxBars);
+
+                if (!bufferFilled)  {
+                    if (ImFlux::ButtonFancy("RECORD", ImFlux::RED_BUTTON.WithSize(ImVec2(180.f,20.f)))) {
+                        // bpm maybe changed i update here again!
+                        mLooperBars = std::clamp(barsInt, 1, maxBars);
+                        startLooperRecording();
+                    }
+                } else {
+
+                    if (ImFlux::ButtonFancy("PLAY", ImFlux::GREEN_BUTTON.WithSize(ImVec2(150.f,20.f)))) {
+                        startLooperPlaying();
+                    }
+                    ImGui::SameLine();
+                    if (ImFlux::ButtonFancy("[R]", ImFlux::YELLOW_BUTTON.WithSize(ImVec2(20.f,20.f)))) {
+                        stopLooper();
+                        mLooper.reset();
+                    }
+                    ImFlux::Hint("Reset Lopper Buffer");
+
                 }
 
-                ImGui::SameLine();
-                float sec = mLooper.getSecondsByBars(mLooperBars, mSettings.bpm.get(), 4);
-                ImGui::TextDisabled("%.2f sec. ", sec);
-                ImGui::SameLine();
-                if (ImGui::Button(" START Recording")) {
-                    // bpm maybe changed i update here again!
-                    mLooperBars = std::clamp(barsInt, 1, maxBars);
-                    startLooperRecording();
-                }
-                ImGui::SameLine();
-                if (!mLooper.bufferFilled()) ImGui::BeginDisabled();
-
-                if (ImGui::Button(" START Playing")) {
-                    startLooperPlaying();
-                }
-                if (!mLooper.bufferFilled())ImGui::EndDisabled();
 
             } else {
-                if (ImGui::Button(" STOP LOOPER")) {
+                if (ImFlux::ButtonFancy("STOP", ImFlux::BLUE_BUTTON.WithSize(ImVec2(180.f,20.f)))) {
                     stopLooper();
                 }
 
             }
 
 
+            ImGui::EndGroup();
+            // ------------ LOOPER >>>>>>>>>>>>>>><
+
+            const float lcdHeight = 20.f; 24.f;
+            ImGui::BeginGroup();
+            ImGui::SeparatorText("LIVE INFORMATION");
+            Processors::LooperPositionInfo info = mLooper.getPositionInfo();
+            // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
+            ImFlux::LCDNumber(info.bar, 2, 0, lcdHeight, IM_COL32(200,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
+            ImFlux::LCDNumber(info.beat, 3, 0, lcdHeight, IM_COL32(20,200,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+            ImFlux::LCDNumber(info.step, 4, 0, lcdHeight, IM_COL32(200,20,200,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+
+            ImFlux::LCDNumber(info.seconds, 5, 2, lcdHeight, IM_COL32(20,200,200,255)); ImFlux::Hint("Seconds");
+            ImGui::EndGroup();
+
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            {
+                ImGui::SeparatorText("BUFFER INFORMATION:");
+                Processors::LooperPositionInfo info = mLooper.getInfo();
+                // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
+                ImFlux::LCDNumber(info.bar, 2, 0, lcdHeight, IM_COL32(100,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
+                ImFlux::LCDNumber(info.beat, 3, 0, lcdHeight, IM_COL32(20,100,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+                ImFlux::LCDNumber(info.step, 4, 0, lcdHeight, IM_COL32(100,20,100,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+
+                ImFlux::LCDNumber(info.seconds, 5, 2, lcdHeight, IM_COL32(20,100,100,255)); ImFlux::Hint("Seconds");
+
+
+
+            }
+
+            ImGui::EndGroup();
+
+
+            ImGui::SeparatorText("LOOPER STATUS");
+
             int intMode = (int)mLooper.getMode();
             const char* modeName = Processors::LooperModeNames[intMode];
-            ImGui::TextDisabled("LOOPER MODE = %s (initsteps = %d)", modeName, mLooperInitSteps);
+            // ImGui::TextDisabled("LOOPER MODE = %s (initsteps = %d)", modeName, mLooperInitSteps);
 
             ImFlux::LedParams ledParams;
             bool ledOn = false;
@@ -502,113 +630,23 @@ namespace DSP {
 
 
             ImGui::SameLine();
-            ImFlux::PeakMeter(mLooper.getPosition(),ImVec2(150.f, 7.f));
-
-            ImGui::SeparatorText("LIVE INFORMATION");
-            Processors::LooperPositionInfo info = mLooper.getPositionInfo();
-            // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
-            ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(200,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
-            ImFlux::LCDNumber(info.beat, 3, 0, 24.f, IM_COL32(20,200,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
-            ImFlux::LCDNumber(info.step, 4, 0, 24.f, IM_COL32(200,20,200,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
-
-            ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,200,200,255)); ImFlux::Hint("Seconds");
-
-            {
-                ImGui::SeparatorText("BUFFER INFORMATION:");
-                Processors::LooperPositionInfo info = mLooper.getInfo();
-                // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
-                ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(100,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
-                ImFlux::LCDNumber(info.beat, 3, 0, 24.f, IM_COL32(20,100,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
-                ImFlux::LCDNumber(info.step, 4, 0, 24.f, IM_COL32(100,20,100,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
-
-                ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,100,100,255)); ImFlux::Hint("Seconds");
-
-                if (mLooper.bufferFilled() && mLooper.getBPM() != mSettings.bpm.get() )
-                    ImGui::TextColored(ImVec4(1.0f,0.f,0.f,1.f), "BPM different! looper:%d, drumkit:%d",
-                                       mLooper.getBPM(),mSettings.bpm.get());
-            }
-            ImGui::SameLine();
-            if (ImGui::Button(" RESET LOOPER")) {
-                stopLooper();
-                mLooper.reset();
-            }
-
-
-            // renderUIHeader();
-            currentSettings.DrawPaddleHeader(this, 400);
-
-            bool changed = false;
-            bool presetChanged = false;
-
-
-            // NOTE tricky access the AudioParams:
-            using DrumParamPtr = AudioParam<uint16_t> DrumKitSettings::*;
-            static const DrumParamPtr patterns[] = {
-                &DrumKitSettings::kickPat,
-                &DrumKitSettings::snarePat,
-                &DrumKitSettings::hiHatClosedPat,
-                &DrumKitSettings::hiHatOpenPat,
-                &DrumKitSettings::tomPat,
-                &DrumKitSettings::cymbalsPat
-            };
-
-            ImGui::PushID(this); ImGui::PushID("UI_WIDE");
-            // bool isEnabled = this->isEnabled();
-            ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
-            ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
-
-            ImGui::SameLine();
-            // -------- stepper >>>>
-            presetChanged |= mSettings.drawStepper(currentSettings, 260.f);
-            changed |= presetChanged;
-
-            ImGui::SameLine();
-            if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
-                mSettings.resetToDefaults();
-                this->reset();
-                presetChanged = true;
-                changed = true;
-            }
-            ImGui::Separator();
-
-            changed |= currentSettings.vol.RackKnob();
-            // ImGui::SameLine();
-            // changed |= currentSettings.bpm.RackKnob();
+            ImFlux::PeakMeter(mLooper.getPosition(),ImVec2(250.f, 16.f));
 
 
             ImGui::SameLine();
-            ImGui::BeginGroup();
-            auto bpmButton = [&](uint16_t bpm) {
-                if (ImFlux::ButtonFancy(std::format("{} bpm", bpm))) {
-                    currentSettings.bpm.set(bpm);
-                    return true;
+            if (!bufferFilled) {
+                ImGui::TextColored(ImVec4(0.3f,0.3f,03.f,1.f), "looper buffer empty");
+            } else {
+                if ( mLooper.getBPM() != mSettings.bpm.get() ) {
+                    ImGui::TextColored(ImVec4(1.0f,0.f,0.f,1.f), "BPM missmatch: %d bpm",mLooper.getBPM());
+                } else {
+                    ImGui::TextColored(ImVec4(0.6f,0.6f,0.6f,1.f), "BPM %d bpm",mLooper.getBPM());
                 }
-                return false;
-            };
-            changed |= bpmButton(60); ImGui::SameLine(); changed |= bpmButton(72);
-            changed |= bpmButton(118); ImGui::SameLine(); changed |= bpmButton(125);
-            changed |= bpmButton(144); ImGui::SameLine(); changed |= bpmButton(160);
-            ImGui::EndGroup();
-
-            ImGui::SameLine();
-            ImGui::BeginGroup();
-            ImGui::SetNextItemWidth(120.f);
-            int bpmInt = (int)currentSettings.bpm.get();
-            if (ImGui::InputInt("Bmp##manual", &bpmInt,1,15)) {
-                bpmInt = DSP::clamp((uint16_t)bpmInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
-                currentSettings.bpm.set(bpmInt);
-                changed = true;
-
             }
 
-            // changed |= bpmButton(120); ImGui::SameLine() changed |= bpmButton(144);
-            // ImGui::SameLine();
-            ImFlux::LCDNumber(currentSettings.bpm.get(), 3, 0, 40.0f);
-            ImGui::EndGroup();
+            //<<<<<<<<<<<< LOOPER
 
-
-            ImGui::Dummy(ImVec2(0.f, 10.f));
-
+            ImGui::SeparatorText("4/4 PATTERN BAR ");
 
             ImGui::BeginGroup();
 
@@ -643,9 +681,240 @@ namespace DSP {
             currentSettings.DrawPaddleFooter();
             ImGui::End(); //window
 
-
+            ImGui::PopID();
 
         }
+
+
+        // virtual void renderSequencerWindow(bool* showWindow)  {
+        //     if (!*showWindow) return;
+        //
+        //     ImGui::PushID(this);
+        //     DSP::DrumKitSettings currentSettings = this->getSettings();
+        //
+        //     ImGui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
+        //     ImGui::Begin("Drum Kit", showWindow ); //window start .........
+        //
+        //
+        //     // LOOPER TEST , FIXME Gui!
+        //     // handle mMode ...
+        //     ImGui::SeparatorText("Looper");
+        //     if ( mLooper.getMode() == Processors::LooperMode::Off)
+        //     {
+        //         ImGui::SetNextItemWidth(120.f);
+        //         int barsInt = mLooperBars;
+        //         int maxBars = mLooper.getBarsBySeconds(180,  mSettings.bpm.get(), 4);
+        //         if (ImGui::InputInt("Bars", &barsInt)) {
+        //             // bpm maybe changed i update always !
+        //             mLooperBars = std::clamp(barsInt, 1, maxBars);
+        //         }
+        //
+        //         ImGui::SameLine();
+        //         float sec = mLooper.getSecondsByBars(mLooperBars, mSettings.bpm.get(), 4);
+        //         ImGui::TextDisabled("%.2f sec. ", sec);
+        //         ImGui::SameLine();
+        //         if (ImGui::Button(" START Recording")) {
+        //             // bpm maybe changed i update here again!
+        //             mLooperBars = std::clamp(barsInt, 1, maxBars);
+        //             startLooperRecording();
+        //         }
+        //         ImGui::SameLine();
+        //         if (!mLooper.bufferFilled()) ImGui::BeginDisabled();
+        //
+        //         if (ImGui::Button(" START Playing")) {
+        //             startLooperPlaying();
+        //         }
+        //         if (!mLooper.bufferFilled())ImGui::EndDisabled();
+        //
+        //     } else {
+        //         if (ImGui::Button(" STOP LOOPER")) {
+        //             stopLooper();
+        //         }
+        //
+        //     }
+        //
+        //
+        //     int intMode = (int)mLooper.getMode();
+        //     const char* modeName = Processors::LooperModeNames[intMode];
+        //     ImGui::TextDisabled("LOOPER MODE = %s (initsteps = %d)", modeName, mLooperInitSteps);
+        //
+        //     ImFlux::LedParams ledParams;
+        //     bool ledOn = false;
+        //
+        //     switch (mLooper.getMode()) {
+        //         case Processors::LooperMode::RecordingCountDown:
+        //         case Processors::LooperMode::RecordingOverDupCountDown:
+        //             ledOn = true;
+        //             ledParams = ImFlux::LED_YELLOW_BEAT;
+        //             ledParams.aniPhase = maBeatPhase;
+        //             break;
+        //
+        //         case Processors::LooperMode::Recording:
+        //         case Processors::LooperMode::RecordingOverDup:
+        //             ledOn = true;
+        //             ledParams = ImFlux::LED_RED_BEAT;
+        //             ledParams.aniPhase = maBeatPhase;
+        //             break;
+        //
+        //         case Processors::LooperMode::Playing:
+        //             ledOn = true;
+        //             ledParams = ImFlux::LED_BLUE_GLOW;
+        //             // ledParams.aniPhase = maBeatPhase;
+        //             break;
+        //
+        //
+        //         default:
+        //             ledOn = false;
+        //     }
+        //
+        //     ImFlux::DrawLED(modeName, ledOn, ledParams);
+        //
+        //
+        //     ImGui::SameLine();
+        //     ImFlux::PeakMeter(mLooper.getPosition(),ImVec2(150.f, 7.f));
+        //
+        //     ImGui::SeparatorText("LIVE INFORMATION");
+        //     Processors::LooperPositionInfo info = mLooper.getPositionInfo();
+        //     // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
+        //     ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(200,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
+        //     ImFlux::LCDNumber(info.beat, 3, 0, 24.f, IM_COL32(20,200,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+        //     ImFlux::LCDNumber(info.step, 4, 0, 24.f, IM_COL32(200,20,200,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+        //
+        //     ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,200,200,255)); ImFlux::Hint("Seconds");
+        //
+        //     {
+        //         ImGui::SeparatorText("BUFFER INFORMATION:");
+        //         Processors::LooperPositionInfo info = mLooper.getInfo();
+        //         // ImGui::TextDisabled("BAR/BEAT/ %03d/%02d/%d", info.step, info.beat, info.bar);
+        //         ImFlux::LCDNumber(info.bar, 2, 0, 24.f, IM_COL32(100,20,20,255)); ImFlux::Hint("BAR (measure)"); ImGui::SameLine();
+        //         ImFlux::LCDNumber(info.beat, 3, 0, 24.f, IM_COL32(20,100,20,255)); ImFlux::Hint("BEAT"); ImGui::SameLine();
+        //         ImFlux::LCDNumber(info.step, 4, 0, 24.f, IM_COL32(100,20,100,255)); ImFlux::Hint("STEP"); ImGui::SameLine();
+        //
+        //         ImFlux::LCDNumber(info.seconds, 5, 2, 24.f, IM_COL32(20,100,100,255)); ImFlux::Hint("Seconds");
+        //
+        //         if (mLooper.bufferFilled() && mLooper.getBPM() != mSettings.bpm.get() )
+        //             ImGui::TextColored(ImVec4(1.0f,0.f,0.f,1.f), "BPM different! looper:%d, drumkit:%d",
+        //                                mLooper.getBPM(),mSettings.bpm.get());
+        //     }
+        //     ImGui::SameLine();
+        //     if (ImGui::Button(" RESET LOOPER")) {
+        //         stopLooper();
+        //         mLooper.reset();
+        //     }
+        //
+        //
+        //     // renderUIHeader();
+        //     currentSettings.DrawPaddleHeader(this, 400);
+        //
+        //     bool changed = false;
+        //     bool presetChanged = false;
+        //
+        //
+        //     // NOTE tricky access the AudioParams:
+        //     using DrumParamPtr = AudioParam<uint16_t> DrumKitSettings::*;
+        //     static const DrumParamPtr patterns[] = {
+        //         &DrumKitSettings::kickPat,
+        //         &DrumKitSettings::snarePat,
+        //         &DrumKitSettings::hiHatClosedPat,
+        //         &DrumKitSettings::hiHatOpenPat,
+        //         &DrumKitSettings::tomPat,
+        //         &DrumKitSettings::cymbalsPat
+        //     };
+        //
+        //     ImGui::PushID(this); ImGui::PushID("UI_WIDE");
+        //     // bool isEnabled = this->isEnabled();
+        //     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
+        //     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
+        //
+        //     ImGui::SameLine();
+        //     // -------- stepper >>>>
+        //     presetChanged |= mSettings.drawStepper(currentSettings, 260.f);
+        //     changed |= presetChanged;
+        //
+        //     ImGui::SameLine();
+        //     if (ImFlux::ButtonFancy("RESET", ImFlux::SLATEDARK_BUTTON.WithSize(ImVec2(40.f, 20.f)) ))  {
+        //         mSettings.resetToDefaults();
+        //         this->reset();
+        //         presetChanged = true;
+        //         changed = true;
+        //     }
+        //     ImGui::Separator();
+        //
+        //     changed |= currentSettings.vol.RackKnob();
+        //     // ImGui::SameLine();
+        //     // changed |= currentSettings.bpm.RackKnob();
+        //
+        //
+        //     ImGui::SameLine();
+        //     ImGui::BeginGroup();
+        //     auto bpmButton = [&](uint16_t bpm) {
+        //         if (ImFlux::ButtonFancy(std::format("{} bpm", bpm))) {
+        //             currentSettings.bpm.set(bpm);
+        //             return true;
+        //         }
+        //         return false;
+        //     };
+        //     changed |= bpmButton(60); ImGui::SameLine(); changed |= bpmButton(72);
+        //     changed |= bpmButton(118); ImGui::SameLine(); changed |= bpmButton(125);
+        //     changed |= bpmButton(144); ImGui::SameLine(); changed |= bpmButton(160);
+        //     ImGui::EndGroup();
+        //
+        //     ImGui::SameLine();
+        //     ImGui::BeginGroup();
+        //     ImGui::SetNextItemWidth(120.f);
+        //     int bpmInt = (int)currentSettings.bpm.get();
+        //     if (ImGui::InputInt("Bmp##manual", &bpmInt,1,15)) {
+        //         bpmInt = DSP::clamp((uint16_t)bpmInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
+        //         currentSettings.bpm.set(bpmInt);
+        //         changed = true;
+        //
+        //     }
+        //
+        //     // changed |= bpmButton(120); ImGui::SameLine() changed |= bpmButton(144);
+        //     // ImGui::SameLine();
+        //     ImFlux::LCDNumber(currentSettings.bpm.get(), 3, 0, 40.0f);
+        //     ImGui::EndGroup();
+        //
+        //
+        //     ImGui::Dummy(ImVec2(0.f, 10.f));
+        //
+        //
+        //     ImGui::BeginGroup();
+        //
+        //     for (auto ptr : patterns) {
+        //         auto& param = currentSettings.*ptr;
+        //
+        //         uint16_t bits = param.get();
+        //
+        //         if (ImFlux::PatternEditor16Bit(param.getName().c_str(), &bits, mCurrentStep)) {
+        //             // dLog("Bits: %d", bits); //FIXME REMOVE THIS AGAIN
+        //             param.set(bits);
+        //             changed = true;
+        //         }
+        //     }
+        //     ImGui::EndGroup();
+        //     ImGui::NewLine();
+        //
+        //
+        //     ImGui::PopID();ImGui::PopID();
+        //     //  renderUIFooter();
+        //     if (changed)  {
+        //         //hackfest!!
+        //         if ( !presetChanged ) {
+        //             mSettings.customData = currentSettings.getData();
+        //         } else {
+        //             if (currentSettings.isMatchingPreset(currentSettings.getPresets()[0].get())) {
+        //                 currentSettings.setData(mSettings.customData);
+        //             }
+        //         }
+        //         this->setSettings(currentSettings);
+        //     }
+        //     currentSettings.DrawPaddleFooter();
+        //     ImGui::End(); //window
+        //
+        //     ImGui::PopID();
+        //
+        // }
 
         #endif
 
