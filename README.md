@@ -9,7 +9,7 @@
 ---
 
 ## Started as "just another game engine". It's a comfortable jump start for: 
-- Cross Platform Software using the Unified CMake configuration. 
+- Cross Platform Software 
 - fast and easy ImGui implementation using ImFlux and GuiGlue
 
 ---
