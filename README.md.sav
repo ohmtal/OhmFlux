@@ -1,28 +1,15 @@
-# OhmFlux a Cross Platform Game Engine, Sound Machine and more. 
+# OhmFlux Game Engine
 
-- 🎸 Digital Sound Effects (engine/dsp) [DSP](./engine/dsp/README.md) see also [Ohmtal Axe](./OhmtalAxe/README.md)
-- 🎵 OPL3 Controller (engine/opl3) with wopl instrument import/export and it's own format. see also [Ohmtal Tracker](./OhmtalTracker/README.md)
-- 〰️ SFXGenerator(Stereo) a modern implementation of Tomas Pettersson SXFR (engine/sfx)
-- 🗂️ ImFlux a collection of Tools and Widgets for ImGui (engine/source/gui/ImFlux)
-- 🕹 A lightweight, high-performance,  modern C++ game engine. Built around **SDL3**, it provides a streamlined pipeline for 2D graphics, particle simulations, and cross-platform deployment.
-
----
-
-## Started as "just another game engine". It's a comfortable jump start for: 
-- Cross Platform Software using the Unified CMake configuration. 
-- fast and easy ImGui implementation using ImFlux and GuiGlue
-
----
+A lightweight, high-performance,  modern C++ game engine With ongoing optimizations for current development standards. Built around **SDL3**, it provides a streamlined pipeline for 2D graphics, particle simulations, and cross-platform deployment.
 
 ## 💻 Platforms
 - **Desktop**: tested on Linux. FreeBSD and Windows 
 - **WebAssembly**: using Emscripten
-- **Android**: Experimental
 
 ---
 
 ## 🚀 Features
-- **SDL3 and OpenGL**
+- **Strict SDL3 Architecture**: Fully migrated from SDL2 for modern memory management and advanced pixel handling.
 - **Rendering**: inline shaders for Primitives and Sprites using batch rendering.
 - **Tilemap**: methods for loading and saving tilemaps from filesystem.
 - **Header-Only Loaders**: Native PNG, JPG, and TGA support via `stb_image` and TrueType font support via `stb_truetype`. 
@@ -30,7 +17,8 @@
 - **Hybrid Build System**: Unified CMake configuration for Native Desktop (OpenGL/GLEW) and WebAssembly (WebGL 2.0).
 - **TrueType fonts**:  High-performance text rendering via stb_truetype with dynamic atlas baking, proportional kerning, and batch-optimized UV mapping.
 - **Audio**: High-performance SDL3 streaming with OGG/WAV support, 2D spatial attenuation, and distance-based CPU culling.
-- **Lights**
+- **Lights**: on the TODO list.
+- **Posteffects**:on the TODO list.
 
 ---
 
