@@ -39,7 +39,11 @@ inline ImU32 Color4FImU32(const Color4F& c) {
     return ImGui::ColorConvertFloat4ToU32(ImVec4(c.r, c.g, c.b, c.a));
 }
 
-
+struct FluxFingerTouchData {
+    Uint64 touchStartTime = 0;
+    float touchX, touchY;
+    bool isLongPress = false;
+} ;
 
 class FluxGuiGlue : public FluxBaseObject
 {
@@ -54,13 +58,21 @@ private:
 
     const char* mIniFileName;
 
+    FluxFingerTouchData mTouchData;
+
 public:
+    bool mSimulateRightClick = false;
+
     FluxGuiGlue( bool lEnableDockSpace , bool lScaleGui = false, const char* IniFileName = nullptr )
+    : mTouchData()
     {
         mEnableDockSpace = lEnableDockSpace;
         mScaleImGui = lScaleGui;
 
         mIniFileName = IniFileName;
+
+        mSimulateRightClick = isAndroidBuild();
+
     }
 
     ~FluxGuiGlue() { Deinitialize(); }
@@ -68,6 +80,7 @@ public:
     FluxScreen* getScreen()  { return getScreenObject(); }
 
     ImGuiIO* getGuiIO() { return mGuiIO; }
+    ImGuiStyle getBaseStyle()  const { return  mBaseStyle; }
 
     void setEnableDockSpace( bool value ) { mEnableDockSpace = value; }
     bool getEnableDockSpace() { return mEnableDockSpace; }
@@ -143,12 +156,42 @@ public:
             ImGui::GetStyle().FontScaleDpi = lMasterScale;
         }
     }
+
+
     void onEvent(SDL_Event event)
     {
         if (event.type ==  FLUX_EVENT_SCALE_CHANGED)
         {
             OnScaleChanged();
         }
+
+        if (mSimulateRightClick)
+        {
+            // Android simulate right mouse button with long touch
+            if (event.type == SDL_EVENT_FINGER_DOWN) {
+                mTouchData.touchStartTime = SDL_GetTicks();
+                mTouchData.touchX = event.tfinger.x;
+                mTouchData.touchY = event.tfinger.y;
+                Log("[info]touch down...");
+
+            }
+            else if (event.type == SDL_EVENT_FINGER_UP) {
+                if (SDL_GetTicks() - mTouchData.touchStartTime > 500) {
+                    float xDiff = std::abs(mTouchData.touchX - event.tfinger.x );
+                    float yDiff = std::abs( mTouchData.touchY - event.tfinger.y );
+
+                    if ( xDiff < 0.1f && yDiff < 0.1f ) {
+                        mGuiIO->AddMouseButtonEvent(ImGuiMouseButton_Right, true);
+                        mGuiIO->AddMouseButtonEvent(ImGuiMouseButton_Right, false);
+                        Log("[info]Fire Right mouse button press..... (diffs: %f, %f)", xDiff, yDiff);
+                        return;
+                    }
+                }
+                // mTouchData.touchStartTime = 0;
+            }
+        }
+
+
 
         ImGui_ImplSDL3_ProcessEvent(&event);
     }
@@ -164,6 +207,7 @@ public:
             ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode; //<< this makes it transparent
             mDockSpaceId = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), dockspace_flags);
         }
+
     }
 
     void DrawEnd()

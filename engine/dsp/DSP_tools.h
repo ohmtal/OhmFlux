@@ -200,7 +200,7 @@ namespace DSP {
 
         bool changed = false;
 
-        float lHeight = 50;
+        float lHeight = 50 * ImGui::GetStyle()._MainScale; //FIXME Internal ?!
 
         // FOR HEADER CLICK :
         ImVec2 startPos = ImGui::GetCursorPos();

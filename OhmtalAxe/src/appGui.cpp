@@ -11,6 +11,7 @@
 #include "fonts/fa.h"
 #include <src/fonts/IconsFontAwesome6.h>
 
+
 //------------------------------------------------------------------------------
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
 {
@@ -37,6 +38,13 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     gui->mConsole.AddLog("%s", message);
 }
+//------------------------------------------------------------------------------
+void AppGui::setImGuiScale(float factor){
+       mGuiGlue->getGuiIO()->DisplaySize = ImVec2(getMain()->getScreen()->getHeight(), getMain()->getScreen()->getWidth());
+       ImGui::GetStyle() = mGuiGlue->getBaseStyle();
+       ImGui::GetStyle().ScaleAllSizes(factor);
+       ImGui::GetStyle().FontScaleDpi = factor;
+   }
 //------------------------------------------------------------------------------
 void AppGui::ShowToolbar() {
 
@@ -294,6 +302,11 @@ bool AppGui::Initialize()
     mGuiGlue = new FluxGuiGlue(true, false, nullptr);
     if (!mGuiGlue->Initialize())
         return false;
+    if ( isAndroidBuild()) {
+        setImGuiScale(2.f);
+    }
+
+
 
     // Console right after GuiGlue
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
@@ -371,6 +384,15 @@ bool AppGui::Initialize()
     g_FileDialog.init( getGamePath(), {".axe",".drum", ".wav" });
 
 
+    // if (isAndroidBuild()) {
+    //     mGuiGlue->getGuiIO()->DisplaySize = ImVec2(getMain()->getScreen()->getHeight(), getMain()->getScreen()->getWidth());
+    //     float lMasterScale = 3.f; //getScreen()->getScaleX(); // Usually better to scale UI based on height
+    //     ImGui::GetStyle() = mGuiGlue->getBaseStyle();
+    //     ImGui::GetStyle().ScaleAllSizes(lMasterScale);
+    //     ImGui::GetStyle().FontScaleDpi = lMasterScale;
+    // }
+
+
 
     return true;
 }
@@ -421,7 +443,7 @@ void AppGui::DrawMsgBoxPopup() {
         ImGui::OpenPopup(POPUP_MSGBOX_CAPTION.c_str());
         POPUP_MSGBOX_ACTIVE = false;
     }
-
+//
     // 2. Always attempt to begin the modal
     // (ImGui only returns true here if the popup is actually open)
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -500,6 +522,15 @@ void AppGui::ShowMenuBar()
             ImGui::SeparatorText("Layout");
             if (ImGui::MenuItem("Restore Factory Layout")) { restoreLayout(); }
 
+            if (ImGui::BeginMenu("UI Scale")) {
+                if (ImGui::MenuItem("1x"))  setImGuiScale(1.f);
+                if (ImGui::MenuItem("1.5x"))  setImGuiScale(1.5f);
+                if (ImGui::MenuItem("2x"))  setImGuiScale(2.f);
+                if (ImGui::MenuItem("3x"))  setImGuiScale(3.f);
+                ImGui::EndMenu();
+            }
+
+
             ImGui::EndMenu();
         }
 
@@ -567,6 +598,9 @@ void AppGui::ShowMenuBar()
 void AppGui::DrawGui()
 {
     mGuiGlue->DrawBegin();
+
+
+
     ShowMenuBar();
     if (mAppSettings.mShowFileBrowser) ShowFileBrowser();
     if (mAppSettings.mShowConsole) mConsole.Draw("Console", &mAppSettings.mShowConsole);

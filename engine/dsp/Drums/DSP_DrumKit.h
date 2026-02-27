@@ -481,7 +481,7 @@ namespace DSP {
             ImGui::BeginGroup();
             ImGui::Spacing();
             auto bpmButton = [&](uint16_t bpm) {
-                if (ImFlux::ButtonFancy(std::format("{} bpm", bpm))) {
+                if (ImFlux::ButtonFancy(std::format("{}", bpm))) {
                     currentSettings.bpm.set(bpm);
                     return true;
                 }
@@ -562,7 +562,7 @@ namespace DSP {
             ImGui::EndGroup();
             // ------------ LOOPER >>>>>>>>>>>>>>><
 
-            const float lcdHeight = 20.f; 24.f;
+            const float lcdHeight = 20.f; // 24.f;
             ImGui::BeginGroup();
             ImGui::SeparatorText("LIVE INFORMATION");
             Processors::LooperPositionInfo info = mLooper.getPositionInfo();

@@ -108,6 +108,9 @@ public:
 
     void restoreLayout( );
 
+    void setImGuiScale(float factor);
+
+
 
 }; //class
 

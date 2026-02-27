@@ -27,7 +27,9 @@ int main(int argc, char* argv[])
     app->mSettings.WindowMaximized = true;
     app->mSettings.ScreenWidth  = 1920;
     app->mSettings.ScreenHeight = 1080;
+
     app->mSettings.IconFilename = "assets/icon.bmp";
+
 
     //FIXME Guitar Cursor
     // app->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";
