@@ -110,9 +110,10 @@ public:
         , mSettings()
     {
         initStates(2,false);
+        mEffectName = "Analog Glow";
     }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "Analog Glow";}
+    // virtual std::string getName() const override { return "Analog Glow";}
     virtual std::string getDesc() const override {
         return "A Tube Amp Effect with softclipping.\n";
 
@@ -381,7 +382,7 @@ public:
     //----------------------------------------------------------------------
     //----------------------------------------------------------------------
     #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.9f, 0.2f, 0.2f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.9f, 0.2f, 0.2f, 1.0f);}
 
     virtual void renderPaddle() override {
         DSP::AnalogGlowSettings currentSettings = this->getSettings();

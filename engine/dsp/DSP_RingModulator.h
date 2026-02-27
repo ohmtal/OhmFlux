@@ -62,10 +62,11 @@ public:
         DSP::Effect(DSP::EffectType::RingModulator, switchOn)
         ,mSettings()
     {
+        mEffectName = "Ring Modulator";
         reset();
     }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "Ring Modulator"; }
+    // virtual std::string getName() const override { return "Ring Modulator"; }
     //----------------------------------------------------------------------
     void setSettings(const RingModSettings& s) { mSettings = s; }
     //----------------------------------------------------------------------
@@ -111,7 +112,7 @@ public:
 
     //--------------------------------------------------------------------------
 #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const override { return ImVec4(0.1f, 0.2f, 0.7f, 1.0f); } // blueish
+    virtual ImVec4 getDefaultColor() const override { return ImVec4(0.1f, 0.2f, 0.7f, 1.0f); } // blueish
 
     virtual void renderPaddle() override {
         DSP::RingModSettings currentSettings = this->getSettings();

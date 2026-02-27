@@ -33,8 +33,12 @@
 #include "DSP_AutoWah.h"
 #include "DSP_Tremolo.h"
 
-#include "Drums/DSP_DrumKit.h" //(Wip)
+#include "Drums/DSP_DrumKit.h"
 #include "Drums/DSP_KickDrum.h"
+#include "Drums/DSP_Cymbals.h"
+#include "Drums/DSP_Snare.h"
+#include "Drums/DSP_HiHat.h"
+#include "Drums/DSP_TomDrum.h"
 
 
 namespace DSP {

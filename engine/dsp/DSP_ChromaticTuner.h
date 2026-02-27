@@ -73,9 +73,11 @@ namespace DSP {
 
         ChromaticTuner(bool switchOn = false) :
             DSP::Effect(DSP::EffectType::ChromaticTuner, switchOn),
-            mSettings() {}
+            mSettings() {
+                mEffectName = "Chromatic Tuner";
+            }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "Chromatic Tuner"; }
+        // virtual std::string getName() const override { return "Chromatic Tuner"; }
         //----------------------------------------------------------------------
         void setSettings(const ChromaticTunerSettings& s) {mSettings = s;}
         //----------------------------------------------------------------------
@@ -233,7 +235,7 @@ namespace DSP {
         }
         //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return  ImVec4(0.5f, 0.7f, 0.7f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return  ImVec4(0.5f, 0.7f, 0.7f, 1.0f);}
 
         virtual void renderPaddle() override {
             ImGui::PushID("ChromaticTuner_Effect_PADDLE");

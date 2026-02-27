@@ -61,10 +61,12 @@ public:
     Tremolo(bool switchOn = false) :
         Effect(DSP::EffectType::Tremolo, switchOn)
         , mSettings()
-        { }
+        {
+            mEffectName = "Tremolo";
+        }
 
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "Tremolo";}
+    // virtual std::string getName() const override { return "Tremolo";}
 
     // //----------------------------------------------------------------------
     TremoloSettings& getSettings() { return mSettings; }
@@ -112,7 +114,7 @@ private:
 
     #ifdef FLUX_ENGINE
 public:
-    virtual ImVec4 getColor() const  override { return ImVec4(0.4f, 0.4f, 0.1f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.4f, 0.4f, 0.1f, 1.0f);}
 
     // i'am so happy with this, before it was hell to add the gui's :D
     virtual void renderPaddle() override {

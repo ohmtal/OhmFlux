@@ -91,11 +91,12 @@ public:
     Effect(DSP::EffectType::Delay, switchOn)
     ,mSettings()
     {
+        mEffectName = "DELAY";
         setSampleRate(mSampleRate);
         mSmoothedDelaySamples = 0.f;
     }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "DELAY";}
+    // virtual std::string getName() const override { return "DELAY";}
     //----------------------------------------------------------------------
     DelaySettings& getSettings() { return mSettings; }
     //----------------------------------------------------------------------
@@ -227,7 +228,7 @@ public:
 
 
 #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.3f, 0.8f, 0.6f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.3f, 0.8f, 0.6f, 1.0f);}
 
     virtual void renderPaddle() override {
         DSP::DelaySettings currentSettings = this->getSettings();

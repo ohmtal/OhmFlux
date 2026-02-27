@@ -425,6 +425,25 @@ public:
         return nullptr;
     }
 
+    DSP::Effect* getEffectByCustomName(const std::string& name) {
+        if (!mActiveRack) return nullptr;
+        std::lock_guard<std::recursive_mutex> lock(mEffectMutex);
+
+        for (auto& fx : mActiveRack->getEffects()) {
+            if (fx->getCustomName() == name) return fx.get();
+        }
+        return nullptr;
+    }
+
+    std::vector<DSP::Effect*> getAllEffectsByType(DSP::EffectType type) {
+        std::vector<DSP::Effect*> found;
+        if (!mActiveRack) return found;
+        for (auto& fx : mActiveRack->getEffects()) {
+            if (fx->getType() == type) found.push_back(fx.get());
+        }
+        return found;
+    }
+
     //--------------------------------------------------------------------------
     bool removeEffect( size_t effectIndex  ) {
         if ( !mActiveRack ) return false;

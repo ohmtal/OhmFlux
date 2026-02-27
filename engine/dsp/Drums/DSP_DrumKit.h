@@ -128,9 +128,11 @@ namespace DSP {
         DrumKit(bool switchOn = false) :
             Effect(DSP::EffectType::DrumKit, switchOn)
             ,mSettings()
-        {}
+        {
+            mEffectName = "Drum Kit / Looper";
+        }
 
-        virtual std::string getName() const override { return "Drum Kit / Looper";}
+        // virtual std::string getName() const override { return "Drum Kit / Looper";}
 
         // //----------------------------------------------------------------------
         DrumKitSettings& getSettings() { return mSettings; }
@@ -399,7 +401,7 @@ namespace DSP {
 
         #ifdef FLUX_ENGINE
     public:
-        virtual ImVec4 getColor() const  override { return ImVec4(0.1f, 0.4f, 0.8f, 1.0f);} //FIXME check color
+        virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.1f, 0.4f, 0.8f, 1.0f);} //FIXME check color
 
         // i'am so happy with this, before it was hell to add the gui's :D
         virtual void renderPaddle( ) override {

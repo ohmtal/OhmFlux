@@ -92,9 +92,11 @@ public:
 
     VoiceModulator(bool switchOn = false) :
         DSP::Effect(DSP::EffectType::VoiceModulator, switchOn)
-        , mSettings() {}
+        , mSettings() {
+            mEffectName = "Voice Modulator";
+        }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "Voice Modulator"; }
+    // virtual std::string getName() const override { return "Voice Modulator"; }
     //----------------------------------------------------------------------
     VoiceSettings& getSettings() { return mSettings; }
     void setSettings(const VoiceSettings& s) { mSettings = s; }
@@ -180,7 +182,7 @@ public:
     }
     //--------------------------------------------------------------------------
     #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const override { return ImVec4(0.8f, 0.4f, 0.2f, 1.0f); } // Darth Vader Orange/Red
+    virtual ImVec4 getDefaultColor() const override { return ImVec4(0.8f, 0.4f, 0.2f, 1.0f); } // Darth Vader Orange/Red
 
     virtual void renderPaddle() override {
         DSP::VoiceSettings currentSettings = this->getSettings();

@@ -61,10 +61,12 @@ namespace DSP {
         DistortionBasic(bool switchOn = false) :
             DSP::Effect(DSP::EffectType::DistortionBasic, switchOn)
             , mSettings()
-            {}
+            {
+                mEffectName = "Distortion";
+            }
 
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "Distortion"; }
+        // virtual std::string getName() const override { return "Distortion"; }
         //----------------------------------------------------------------------
         void setSettings(const DistortionBasicSettings& s) {mSettings = s;}
         //----------------------------------------------------------------------
@@ -94,7 +96,7 @@ namespace DSP {
 
         //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return  ImVec4(0.6f, 0.6f, 0.0f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return  ImVec4(0.6f, 0.6f, 0.0f, 1.0f);}
 
         virtual void renderPaddle() override {
             DSP::DistortionBasicSettings currentSettings = this->getSettings();

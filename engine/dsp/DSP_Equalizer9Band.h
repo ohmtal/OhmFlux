@@ -231,11 +231,12 @@ namespace DSP {
         : Effect(DSP::EffectType::Equalizer9Band, switchOn)
         , mSettings()
         {
+            mEffectName = "9-BAND EQUALIZER";
             mSampleRate = sampleRate;
             mDiry = true;
         }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "9-BAND EQUALIZER";}
+        // virtual std::string getName() const override { return "9-BAND EQUALIZER";}
         //----------------------------------------------------------------------
         Equalizer9BandSettings getSettings() const { return mSettings; }
         //----------------------------------------------------------------------
@@ -353,7 +354,7 @@ namespace DSP {
         //----------------------------------------------------------------------
         //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.7f, 1.0f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.2f, 0.7f, 1.0f, 1.0f);}
 
         virtual void renderPaddle() override {
             DSP::Equalizer9BandSettings currentSettings = this->getSettings();

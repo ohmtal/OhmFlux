@@ -84,10 +84,11 @@ namespace DSP {
 
         Metal(bool switchOn = false) : DSP::Effect(DSP::EffectType::Metal, switchOn) {
 
+            mEffectName = "Metal Distortion";
             mStates.assign(2, FilterState()); // Default to stereo
 
         }
-        virtual std::string getName() const override { return "Metal Distortion"; }
+        // virtual std::string getName() const override { return "Metal Distortion"; }
         //----------------------------------------------------------------------
         const MetalSettings& getSettings() { return mSettings; }
         void setSettings(const MetalSettings& s) { mSettings = s; }
@@ -162,7 +163,7 @@ namespace DSP {
 
     #ifdef FLUX_ENGINE
     public:
-        virtual ImVec4 getColor() const override { return ImVec4(0.7f, 0.0f, 0.0f, 1.0f); }
+        virtual ImVec4 getDefaultColor() const override { return ImVec4(0.7f, 0.0f, 0.0f, 1.0f); }
 
         virtual void renderPaddle() override {
             DSP::MetalSettings currentSettings = this->getSettings();

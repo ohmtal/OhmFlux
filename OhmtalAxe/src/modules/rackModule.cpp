@@ -63,7 +63,7 @@ void RackModule::populateRack(DSP::EffectsRack* lRack) {
         DSP::EffectType::DistortionBasic,
         DSP::EffectType::OverDrive,
         DSP::EffectType::Metal,
-        // DSP::EffectType::Bitcrusher,
+        //  DSP::EffectType::Bitcrusher,
         DSP::EffectType::AnalogGlow,
 
         // FIXME rack editor

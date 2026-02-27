@@ -84,9 +84,11 @@ namespace DSP {
         Warmth(bool switchOn = false) :
             Effect(DSP::EffectType::Warmth, switchOn),
             mSettings()
-        {}
+        {
+            mEffectName = "ANALOG WARMTH / SATURATION";
+        }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "ANALOG WARMTH / SATURATION";}
+        // virtual std::string getName() const override { return "ANALOG WARMTH / SATURATION";}
         //----------------------------------------------------------------------
         WarmthSettings& getSettings() { return mSettings; }
         //----------------------------------------------------------------------
@@ -159,7 +161,7 @@ namespace DSP {
         }
         //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return  ImVec4(1.0f, 0.6f, 0.77f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return  ImVec4(1.0f, 0.6f, 0.77f, 1.0f);}
 
         virtual void renderPaddle() override {
             DSP::WarmthSettings currentSettings = this->getSettings();

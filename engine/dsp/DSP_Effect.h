@@ -20,6 +20,7 @@
 #include <imgui_internal.h>
 #include <gui/ImFlux.h>
 #include "DSP_tools.h"
+#include "errorlog.h"
 #endif
 
 #include "DSP_Math.h"
@@ -45,6 +46,7 @@ namespace DSP {
         Analyzer,
         Utility,
         Locked, //not for selection
+        Drums,
         COUNT
     };
 
@@ -63,6 +65,7 @@ namespace DSP {
         { EffectCatId::Analyzer,   "Analyzer" },
         { EffectCatId::Utility,    "Utility" },
         { EffectCatId::Locked,     "Locked not for selection" },
+        { EffectCatId::Drums,      "Drums" },
     };
 
     // Generator	KickDrum, DrumKit (ersetzt durch Synth?), VoiceModulator
@@ -96,10 +99,14 @@ namespace DSP {
     X(Metal              , 17, EffectCatId::Distortion) \
     X(ChromaticTuner     , 18, EffectCatId::Analyzer)   \
     X(DrumKit            , 19, EffectCatId::Locked)     \
-    X(KickDrum           , 20, EffectCatId::Generator)  \
+    X(KickDrum           , 20, EffectCatId::Drums)      \
     X(ToneControl        , 21, EffectCatId::Tone)       \
     X(AutoWah            , 22, EffectCatId::Modulation) \
     X(Tremolo            , 23, EffectCatId::Modulation) \
+    X(Cymbals            , 24, EffectCatId::Drums)      \
+    X(SnareDrum          , 25, EffectCatId::Drums)      \
+    X(HiHat              , 26, EffectCatId::Drums)      \
+    X(TomDrum            , 27, EffectCatId::Drums)      \
 
 
 
@@ -163,6 +170,7 @@ namespace DSP {
         virtual ~IParameter() = default;
         virtual std::string getName() const = 0;
         virtual float getNormalized() const = 0;
+        virtual void setNormalizedValue( const float value ) = 0;
 
         virtual std::string getDisplayValue() const = 0;
 
@@ -257,6 +265,13 @@ namespace DSP {
         float getNormalized() const override {
             return static_cast<float>(get() - minVal) / static_cast<float>(maxVal - minVal);
         }
+        void setNormalizedValue( const float value ) override {
+            T newValue = minVal + (maxVal-minVal) * value;
+            set(newValue);
+        }
+
+
+
         std::string getDisplayValue() const override {
             return std::to_string(get()) + " " + unit;
         }
@@ -265,6 +280,8 @@ namespace DSP {
         T getMax() const { return maxVal; }
         void setMin( T value ) { minVal = value; }
         void setMax( T value ) { maxVal = value; }
+
+
         std::string getUnit() const { return unit; }
 
         bool isEqual(const IParameter* other) const override {
@@ -370,8 +387,14 @@ namespace DSP {
     class Effect {
     protected:
         bool mEnabled = false;
+        std::string mEffectName = "~ BASE EFFECT ~";
+        uint32_t mCustomColor  = 0; // in ImGui Style !! BGRA i think
+        std::string mCustomName = ""; //64 chars!!
         float mSampleRate = SAMPLE_RATE;
         const EffectType mType;
+
+
+
     public:
         Effect(EffectType type, bool switchOn = false):
             mEnabled(switchOn),
@@ -394,16 +417,52 @@ namespace DSP {
 
 
         // Interface for serialization
+        // ---------------------------------------------------------------------
+        const uint32_t magic =  DSP_STREAM_TOOLS::MakeMagic("HEAD");
+        const uint8_t  version = 2;
+        // ---------------------------------------------------------------------
         virtual void save(std::ostream& os) const {
-            // os.write(reinterpret_cast<const char*>(&mEnabled), sizeof(mEnabled));
             DSP_STREAM_TOOLS::write_binary(os,mEnabled);
-        }
+            // added later!!
 
+            DSP_STREAM_TOOLS::write_binary(os,magic);
+            DSP_STREAM_TOOLS::write_binary(os,version);
+            DSP_STREAM_TOOLS::write_string(os,mCustomName);
+            // VERSION 2!
+            DSP_STREAM_TOOLS::write_binary(os,mCustomColor);
+        }
+        // ---------------------------------------------------------------------
         virtual bool load(std::istream& is) {
-            // is.read(reinterpret_cast<char*>(&mEnabled), sizeof(mEnabled));
             DSP_STREAM_TOOLS::read_binary(is, mEnabled);
+
+            // added later!!
+            // we do not need to check EOF? since
+            uint32_t readMagic;
+            uint8_t  readVersion = 0;
+            std::streampos currentPos = is.tellg();
+            DSP_STREAM_TOOLS::read_binary(is, readMagic);
+            if ( readMagic == magic ) {
+                DSP_STREAM_TOOLS::read_binary(is,readVersion);
+                if (readVersion > version) {
+                    #ifdef FLUX_ENGINE
+                    Log("[error] Effect Head Version missmatch! read:%d (max:%d)", readVersion, version);
+                    #endif
+                    return false;
+                }
+                DSP_STREAM_TOOLS::read_string(is,mCustomName);
+                //... now we can do version handling !! later
+                if (readVersion >= 2) {
+                    DSP_STREAM_TOOLS::read_binary(is, mCustomColor);
+                }
+            } else {
+                //walk back we have no magic
+                is.clear();
+                is.seekg(currentPos);
+            }
+
             return is.good();
         }
+        // ---------------------------------------------------------------------
 
         virtual void reset() {}
 
@@ -419,12 +478,32 @@ namespace DSP {
         virtual float getTailLengthSeconds() const { return 0.f; }
 
 
-        virtual std::string getName() const { return "EFFECT # FIXME ";}
+        void setCustomName( const std::string lName ) { mCustomName = lName.substr(0,64); }
+        std::string getCustomName( ) const { return mCustomName; }
+        std::string getEffectName( ) const { return mEffectName; }
+        // virtual std::string getName() const { return "EFFECT # FIXME ";}
+        std::string getName() const {
+            if (mCustomName != "") return mCustomName;
+            return mEffectName;
+        }
         virtual std::string getDesc() const { return "";}
 
 
 #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const { return ImVec4(0.5f,0.5f,0.5f,1.f);}
+    private:
+        ImU32 mColorCacheU32 = 0;
+    public:
+    virtual ImVec4 getDefaultColor() const { return ImVec4(0.5f,0.5f,0.5f,1.f);}
+
+    void setCustomColor( ImVec4 color  ) { mCustomColor = ImGui::ColorConvertFloat4ToU32(color);mColorCacheU32 = mCustomColor ;}
+    void setCustomColor32( ImU32 color  ) { mCustomColor = color;mColorCacheU32 = mCustomColor ;}
+    void setCustomColor( uint8_t r, uint8_t g, uint8_t b, uint8_t a  ) { setCustomColor32(IM_COL32(r,g,b,a));}
+    ImVec4 getColor() const {  return ( mCustomColor != 0 ) ? ImGui::ColorConvertU32ToFloat4(mCustomColor) : getDefaultColor(); }
+
+    ImU32 getColorU32()  {
+        if ( mColorCacheU32 == 0 ) mColorCacheU32 = ImGui::ColorConvertFloat4ToU32(getColor());
+        return mColorCacheU32;
+    }
 
 
 
@@ -443,8 +522,8 @@ namespace DSP {
     }
 
 
-    virtual void renderCustomUI() {
-    }
+    virtual void renderCustomUI() {}
+    virtual void renderDrumPad( ImVec2 size = { 80.f, 80.f}) {}
 
     virtual void renderPaddle() {
     }
@@ -529,6 +608,14 @@ namespace DSP {
         uint8_t mReadVersion = 0;
         virtual uint8_t getDataVersion() const { return 1; };
         //----------------------------------------------------------------------
+        std::shared_ptr<DSP::IPreset> findPresetByName(const std::string& name) {
+            // const std::vector<std::shared_ptr<DSP::IPreset>>& presets = getPresets();
+            for (auto& p : getPresets()) {
+                if (p && std::string(p->getName()) == name) return p;
+            }
+            return nullptr;
+        }
+        //----------------------------------------------------------------------
         void save(std::ostream& os) const {
             uint8_t ver = getDataVersion();
             auto params = getAll();
@@ -612,17 +699,6 @@ namespace DSP {
         #ifdef FLUX_ENGINE
         //----------------------------------------------------------------------
 
-        bool DrawRackKnobs() {
-            bool changed = false;
-            std::vector<IParameter*> allParams = getAll();
-            uint16_t count = allParams.size();
-            for (uint16_t i = 0; i < count; i++ ) {
-                changed |= allParams[i]->RackKnob();
-                if ( i < count -1 ) ImGui::SameLine();
-            }
-            return changed;
-        }
-
 
         void DrawPaddleHeader(Effect* effect, float height = 125.f)  {
             ImGui::PushID(effect); ImGui::PushID("UI_PADDLE");
@@ -669,6 +745,29 @@ namespace DSP {
             }
             return changed;
         }
+
+        bool DrawRackKnobs() {
+            bool changed = false;
+            std::vector<IParameter*> allParams = getAll();
+            uint16_t count = allParams.size();
+            for (uint16_t i = 0; i < count; i++ ) {
+                changed |= allParams[i]->RackKnob();
+                if ( i < count -1 ) ImGui::SameLine();
+            }
+            return changed;
+        }
+
+        bool DrawFaderH() {
+            bool changed = false;
+            // Control Sliders
+            ImGui::BeginGroup();
+            for (auto* param :getAll() ) {
+                changed |= param->FaderHWithText();
+            }
+            ImGui::EndGroup();
+            return changed;
+        }
+
 
         //----------------------------------------------------------------------
         // return Changed!
@@ -724,10 +823,9 @@ namespace DSP {
                         changed = true;
                     }
                     ImGui::Separator();
-                    // Control Sliders
-                    for (auto* param :getAll() ) {
-                        changed |= param->FaderHWithText();
-                    }
+
+                    changed |= DrawFaderH();
+
                 }
                 ImGui::EndGroup();
             } else {

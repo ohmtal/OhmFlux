@@ -38,6 +38,8 @@ namespace DSP {
         IMPLEMENT_EFF_CLONE_NO_SETTINGS(SpectrumAnalyzer)
 
         SpectrumAnalyzer(bool switchOn = false) : Effect(DSP::EffectType::SpectrumAnalyzer, switchOn) {
+            mEffectName = "SPECTRUM ANALYSER";
+
             mCaptureBuffer.resize(FFT_SIZE, 0.0f);
             mDisplayMagnitudes.resize(FFT_SIZE / 2, 0.0f);
         }
@@ -199,11 +201,11 @@ namespace DSP {
             return mDisplayMagnitudes;
         }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "SPECTRUM ANALYSER";}
+        // virtual std::string getName() const override { return "SPECTRUM ANALYSER";}
         //----------------------------------------------------------------------
         //----------------------------------------------------------------------
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return ImVec4(0.73f, 0.8f, 0.73f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.73f, 0.8f, 0.73f, 1.0f);}
         // i dont want to render UI here !
         virtual void renderUIWide() override {};
         virtual void renderUI() override {};

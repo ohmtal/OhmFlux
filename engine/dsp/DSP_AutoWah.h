@@ -65,9 +65,11 @@ public:
     AutoWah(bool switchOn = false) :
         Effect(DSP::EffectType::AutoWah, switchOn)
         , mSettings()
-        {}
+        {
+            mEffectName = "AutoWah";
+        }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "AutoWah";}
+    // virtual std::string getName() const override { return "AutoWah";}
 
     // //----------------------------------------------------------------------
     AutoWahSettings& getSettings() { return mSettings; }
@@ -118,7 +120,7 @@ private:
 
     #ifdef FLUX_ENGINE
 public:
-    virtual ImVec4 getColor() const  override { return ImVec4(0.6f, 0.1f, 0.4f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.6f, 0.1f, 0.4f, 1.0f);}
 
     // i'am so happy with this, before it was hell to add the gui's :D
     virtual void renderPaddle() override {

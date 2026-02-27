@@ -87,10 +87,11 @@ public:
     IMPLEMENT_EFF_CLONE(SoundCardEmulation)
 
     SoundCardEmulation(bool switchOn = false) : DSP::Effect(DSP::EffectType::SoundCardEmulation, switchOn) {
+        mEffectName = "SOUND RENDERING";
         mSettings.renderMode = RenderMode::BLENDED;
     }
 
-    virtual std::string getName() const override { return "SOUND RENDERING";}
+    // virtual std::string getName() const override { return "SOUND RENDERING";}
 
     SoundCardEmulationSettings& getSettings() { return mSettings; }
 
@@ -185,7 +186,7 @@ public:
     }
 
     #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.62f, 0.42f, 0.5f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.62f, 0.42f, 0.5f, 1.0f);}
 
     virtual void renderUIWide() override {
         ImGui::PushID("RenderSoundCardEmu_Effect_Row_WIDE");

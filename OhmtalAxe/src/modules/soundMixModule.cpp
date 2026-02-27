@@ -92,6 +92,17 @@ void SoundMixModule::DrawDrums(bool* p_enabled) {
     ImGui::SetNextWindowSizeConstraints(ImVec2(600.0f, 650.f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("Drum Pads", p_enabled);
     mDrumManager->renderUI(3);
+
+    ImGui::PushID(this);
+    ImGui::SeparatorText("Pads");
+    ImVec2 padSize = ImVec2(100.f,100.f);
+    for (auto& drum : mDrumManager->getActiveRack()->getEffects()) {
+        drum->renderDrumPad(padSize);
+        ImFlux::SameLineBreak(padSize.x);
+    }
+    ImGui::PopID();
+
+
     ImGui::End();
 
 }
@@ -111,21 +122,49 @@ bool SoundMixModule::close() {
     return result;
 }
 //------------------------------------------------------------------------------
+struct DrumCreateConfig {
+    const DSP::EffectType Type = DSP::EffectType::KickDrum;
+    const std::string customName = "";
+    const uint32_t customColor = 0;
+};
+
 bool SoundMixModule::Initialize() {
 
 
     mDrumManager = std::make_unique<DSP::EffectsManager>(true);
-
-    std::vector<DSP::EffectType> drumTypes = {
-        DSP::EffectType::KickDrum,
+    std::vector<DrumCreateConfig> drumList = {
+        { DSP::EffectType::KickDrum},
+        { DSP::EffectType::SnareDrum},
+        { DSP::EffectType::HiHat, "Open Hat"},
+        { DSP::EffectType::HiHat, "Closed Hat", IM_COL32(10,100,10,255)},
+        { DSP::EffectType::TomDrum},
+        { DSP::EffectType::Cymbals},
     };
-    for (auto type : drumTypes) {
-        auto fx = DSP::EffectFactory::Create(type);
+    for (auto drum : drumList) {
+        auto fx = DSP::EffectFactory::Create(drum.Type);
         if (fx) {
             fx->setEnabled(true); //drums on be default
+            fx->setCustomName(drum.customName);
+            fx->setCustomColor32(drum.customColor);
+            if ( drum.Type == DSP::EffectType::HiHat ) {
+                if (drum.customName == "Closed Hat") {
+                    auto* hat = static_cast<DSP::HiHat*>(fx.get());
+                    auto s = hat->getSettings();
+                    if (auto p = s.findPresetByName("Closed")) {
+                        p->apply(s);
+                        hat->setSettings(s);
+                    } else {
+                        Log("[error] Can NOT find preset for closed HiHat!");
+                    }
+                }
+            }
             mDrumManager->addEffect(std::move(fx));
         }
     }
+
+
+
+
 
     mSpectrumAnalyzer = cast_unique<DSP::SpectrumAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::SpectrumAnalyzer));
     mVisualAnalyzer = cast_unique<DSP::VisualAnalyzer>(DSP::EffectFactory::Create(DSP::EffectType::VisualAnalyzer));

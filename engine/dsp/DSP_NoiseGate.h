@@ -93,10 +93,11 @@ namespace DSP {
             Effect(DSP::EffectType::NoiseGate, switchOn),
             mSettings()
             {
+                mEffectName = "NOISE GATE";
                 initVectors(2, false);
             }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "NOISE GATE";}
+        // virtual std::string getName() const override { return "NOISE GATE";}
         //----------------------------------------------------------------------
         NoiseGateSettings& getSettings() { return mSettings; }
         //----------------------------------------------------------------------
@@ -194,7 +195,7 @@ namespace DSP {
         }
 
 #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.6f, 0.4f, 0.6f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.6f, 0.4f, 0.6f, 1.0f);}
 
 
     virtual void renderPaddle() override {

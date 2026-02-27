@@ -79,9 +79,11 @@ namespace DSP {
         Limiter(bool switchOn = true) :
             Effect(DSP::EffectType::Limiter, switchOn),
             mSettings()
-            {}
+            {
+                mEffectName = "LIMITER";
+            }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "LIMITER";}
+        // virtual std::string getName() const override { return "LIMITER";}
         //----------------------------------------------------------------------
         void setSettings(const LimiterSettings& s) {
                 mSettings = s;
@@ -159,7 +161,7 @@ namespace DSP {
 
     //----------------------------------------------------------------------
 #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.6f, 0.4f, 0.6f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.6f, 0.4f, 0.6f, 1.0f);}
 
     // ImGui::Separator();
     // float reduction = getGainReduction();

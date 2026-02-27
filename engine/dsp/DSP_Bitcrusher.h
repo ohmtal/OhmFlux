@@ -87,10 +87,11 @@ namespace DSP {
 
             {
                 std::vector<float> mSteps{0.0f, 0.0f}; //default 2 channel
+                mEffectName = "BITCRUSHER";
 
             }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "BITCRUSHER";}
+        // virtual std::string getName() const override { return "BITCRUSHER";}
         //----------------------------------------------------------------------
         //NOTE  for porting  remove CONST !!!!!!!!
         BitcrusherSettings& getSettings() { return mSettings; }
@@ -176,7 +177,7 @@ namespace DSP {
 
         //----------------------------------------------------------------------
 #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.8f, 0.4f, 0.5f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.8f, 0.4f, 0.5f, 1.0f);}
 
 
     virtual void renderPaddle() override {

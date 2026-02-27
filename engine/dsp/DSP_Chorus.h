@@ -126,9 +126,11 @@ namespace DSP {
         Chorus(bool switchOn = false) :
             Effect(DSP::EffectType::Chorus, switchOn)
             , mSettings()
-        { }
+        {
+            mEffectName = "CHORUS / ENSEMBLE";
+        }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "CHORUS / ENSEMBLE";}
+        // virtual std::string getName() const override { return "CHORUS / ENSEMBLE";}
         //----------------------------------------------------------------------
         ChorusSettings& getSettings() { return mSettings; }
         //----------------------------------------------------------------------
@@ -278,7 +280,7 @@ namespace DSP {
         // }
         //----------------------------------------------------------------------
 #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return ImVec4(0.6f, 0.4f, 1.0f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.6f, 0.4f, 1.0f, 1.0f);}
 
         virtual void renderPaddle() override {
             DSP::ChorusSettings currentSettings = this->getSettings();

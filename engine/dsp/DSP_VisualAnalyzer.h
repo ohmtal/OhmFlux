@@ -51,8 +51,9 @@ namespace DSP {
         //     return std::make_unique<VisualAnalyzer>();
         // }
 
-
         VisualAnalyzer( bool switchOn = true) : Effect(DSP::EffectType::VisualAnalyzer, switchOn) {
+            mEffectName = "VISUAL ANALYSER";
+
             mMirrorBuffer.resize(2048, 0.0f); // Size for the oscilloscope display
         }
         //----------------------------------------------------------------------
@@ -200,9 +201,9 @@ namespace DSP {
         //----------------------------------------------------------------------
 
 
-        virtual std::string getName() const override { return "VISUAL ANALYSER";}
+        // virtual std::string getName() const override { return "VISUAL ANALYSER";}
 #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return ImVec4(0.93f, 0.8f, 0.93f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.93f, 0.8f, 0.93f, 1.0f);}
         // i dont want to render UI here !
         virtual void renderUIWide() override {};
         virtual void renderUI() override {};

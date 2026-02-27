@@ -107,12 +107,15 @@ namespace DSP {
 
         Equalizer(bool switchOn = true) : Effect(DSP::EffectType::Equalizer, switchOn)
                 , mSettings() {
+
+            mEffectName = "Equalizer Band";
+
             //default stereo
             mStates = { {0.f,0.f,0.f,0.f} , {0.f,0.f,0.f,0.f} };
             calculateCoefficients();
         }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "Equalizer Band";}
+        // virtual std::string getName() const override { return "Equalizer Band";}
         //----------------------------------------------------------------------
         EQBandSettings& getSettings() { return mSettings; }
         //----------------------------------------------------------------------
@@ -172,7 +175,7 @@ namespace DSP {
         }
 
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.2f, 0.2f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.2f, 0.2f, 0.2f, 1.0f);}
         // we have not extra gui here it must be added manually since it's a single band !
         virtual void renderUIWide() override {};
         virtual void renderUI() override {};

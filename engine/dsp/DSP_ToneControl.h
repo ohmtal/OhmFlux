@@ -67,6 +67,7 @@ public:
         Effect(DSP::EffectType::ToneControl, switchOn)
         , mSettings()
         {
+            mEffectName = "Volume and Tone";
 
             #ifdef FLUX_ENGINE
             mSettings.volume.setKnobSettings(ImFlux::ksBlue);
@@ -75,7 +76,7 @@ public:
         }
 
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "Volume and Tone";}
+    // virtual std::string getName() const override { return "Volume and Tone";}
 
     // //----------------------------------------------------------------------
     ToneControlSettings& getSettings() { return mSettings; }
@@ -122,7 +123,7 @@ private:
 
     #ifdef FLUX_ENGINE
 public:
-    virtual ImVec4 getColor() const  override { return ImVec4(0.1f, 0.4f, 0.5f, 1.0f);} //FIXME check color
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.1f, 0.4f, 0.5f, 1.0f);} //FIXME check color
 
     // i'am so happy with this, before it was hell to add the gui's :D
     virtual void renderPaddle() override {

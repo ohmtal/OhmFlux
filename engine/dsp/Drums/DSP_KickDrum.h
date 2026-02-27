@@ -29,20 +29,20 @@ struct KickData {
     float pitch;
     float decay;
     float click;
-    float velocity;
     float drive;
+    float velocity;
 };
 
 struct KickSettings : public ISettings {
     AudioParam<float> pitch      { "Pitch", 50.0f, 30.0f, 100.0f, "%.1f Hz" };
     AudioParam<float> decay      { "Decay", 0.3f, 0.01f, 2.0f, "%.2f s" };
     AudioParam<float> click      { "Click", 0.5f, 0.0f, 1.0f, "%.2f" };
+    AudioParam<float> drive      { "Drive", 1.5f, 1.0f, 5.0f, "%.1f" };
     //should be intern but can be set for some reason, can change in every triggerVelo!
     AudioParam<float> velocity   { "Velocity", 1.f, 0.1f, 1.0f, "%.2f" };
-    AudioParam<float> drive      { "Drive", 1.5f, 1.0f, 5.0f, "%.1f" };
 
     KickSettings() = default;
-    REGISTER_SETTINGS(KickSettings,  &pitch, &decay, &click, &velocity,  &drive)
+    REGISTER_SETTINGS(KickSettings,  &pitch, &decay, &click, &drive, &velocity)
 
     KickData getData() const {
         return { pitch.get(), decay.get(), click.get(), velocity.get(), drive.get() };
@@ -57,7 +57,7 @@ struct KickSettings : public ISettings {
     }
     std::vector<std::shared_ptr<IPreset>> getPresets() const override {
         return {
-            std::make_shared<Preset<KickSettings, KickData>>("Default", KickData{ 50.0f, 0.3f, 0.5f, 1.f, 1.5f})
+            std::make_shared<Preset<KickSettings, KickData>>("Default", KickData{ 50.0f, 0.3f, 0.5f, 1.f, 1.0f})
         };
     }
 };
@@ -68,7 +68,9 @@ public:
     KickDrum(bool switchOn = false) :
         Effect(DSP::EffectType::KickDrum, switchOn)
         , mSettings()
-        {}
+        {
+            mEffectName = "Kick Drum";
+        }
 
     //----------------------------------------------------------------------
     virtual void triggerVelo(float velocity) override{
@@ -80,7 +82,7 @@ public:
         mKickSynth.trigger();
     }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "Kick Drum";}
+    // virtual std::string getName() const override { return "Kick Drum";}
 
     // //----------------------------------------------------------------------
     KickSettings& getSettings() { return mSettings; }
@@ -133,23 +135,33 @@ private:
     #ifdef FLUX_ENGINE
     bool mShowKnobs = true;
 public:
-    virtual ImVec4 getColor() const  override { return ImVec4(0.1f, 0.4f, 0.5f, 1.0f);} //FIXME check color
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.8f, 0.2f, 0.2f, 1.0f);} //FIXME check color
+
+    virtual void renderDrumPad(ImVec2 size = { 80.f, 80.f}) override {
+        float velo = 0.f;
+        if (ImFlux::VelocityPad(getName().c_str(), size, getColorU32(), &velo)) {
+            this->triggerVelo(velo);
+        }
+    }
+
+
 
     virtual void renderCustomUI() override {
         ImFlux::ShadowText(getName().c_str());
-        if (ImGui::CollapsingHeader("Settings", &mShowKnobs )){
-            DSP::KickSettings s = this->getSettings();
-            // if (s.DrawRackKnobs()) this->setSettings(s);
-            if (s.DrawMiniKnobs()) this->setSettings(s);
-
-        }
-
+        DSP::KickSettings s = this->getSettings();
+        if (s.DrawFaderH() ) this->setSettings(s);
 
         ImFlux::ButtonParams bp = ImFlux::SLATEDARK_BUTTON;
-        bp.size=ImVec2(100.f, 100.f);
-        if (ImFlux::ButtonFancy("Trigger", bp))
-            this->trigger();
+        bp.size=ImVec2(100.f, 80.f);
+        ImFlux::SameLineCentered(bp.size.y + 20.f) ;
+        ImGui::BeginGroup();
+        renderDrumPad(bp.size);
 
+
+        if (ImFlux::ButtonFancy("Reset", ImFlux::YELLOW_BUTTON.WithSize(ImVec2(bp.size.x,20.f)))) {
+            this->setSettings(DSP::KickSettings());
+        }
+        ImGui::EndGroup();
     }
 
 

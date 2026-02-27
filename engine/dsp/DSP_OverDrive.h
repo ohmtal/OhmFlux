@@ -67,9 +67,11 @@ namespace DSP {
 
         OverDrive(bool switchOn = false) : DSP::Effect(DSP::EffectType::OverDrive, switchOn)
             ,mSettings()
-            { }
+            {
+                mEffectName = "OverDrive";
+            }
         //----------------------------------------------------------------------
-        virtual std::string getName() const override { return "OverDrive"; }
+        // virtual std::string getName() const override { return "OverDrive"; }
         //----------------------------------------------------------------------
         void setSettings(const OverDriveSettings& s) { mSettings = s; }
         //----------------------------------------------------------------------
@@ -138,7 +140,7 @@ namespace DSP {
 
         //--------------------------------------------------------------------------
         #ifdef FLUX_ENGINE
-        virtual ImVec4 getColor() const  override { return  ImVec4(0.827f, 0.521f, 0.329f, 1.0f);}
+        virtual ImVec4 getDefaultColor() const  override { return  ImVec4(0.827f, 0.521f, 0.329f, 1.0f);}
 
         virtual void renderPaddle() override {
             DSP::OverDriveSettings currentSettings = this->getSettings();

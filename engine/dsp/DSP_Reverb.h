@@ -107,10 +107,11 @@ public:
         Effect(DSP::EffectType::Reverb, switchOn)
         , mSettings()
     {
-        updateBufferSize(); //should be all do what we need
+       mEffectName = "REVERB / SPACE";
+       updateBufferSize(); //should be all do what we need
     }
     //----------------------------------------------------------------------
-    virtual std::string getName() const override { return "REVERB / SPACE";}
+    // virtual std::string getName() const override { return "REVERB / SPACE";}
     //----------------------------------------------------------------------
     ReverbSettings& getSettings() { return mSettings; }
     //----------------------------------------------------------------------
@@ -202,7 +203,7 @@ public:
 
 
 #ifdef FLUX_ENGINE
-    virtual ImVec4 getColor() const  override { return ImVec4(0.2f, 0.9f, 0.5f, 1.0f);}
+    virtual ImVec4 getDefaultColor() const  override { return ImVec4(0.2f, 0.9f, 0.5f, 1.0f);}
 
     virtual void renderPaddle() override {
         DSP::ReverbSettings currentSettings = this->getSettings();
