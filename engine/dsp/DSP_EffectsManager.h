@@ -868,7 +868,7 @@ public:
 
             // 1. Logic for enhanced selection visibility
             ImU32 col32 = ImFlux::getColorByIndex(rackIdx, colorSeed);
-            ImU32 colMiddle32 =  IM_COL32(20, 20, 20, 255);
+            ImU32 colMiddle32 =  IM_COL32(20, 20, 20, 155);
             ImU32 border_col = IM_COL32_WHITE;
             float border_thickness = 1.0f;
 

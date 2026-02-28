@@ -39,5 +39,10 @@ public:
 
 
 
+    bool addDrumKit();;
+    void callSavePresets();
+    void callLoadPresets();
+
+
 
 }; //class

@@ -361,8 +361,8 @@ namespace DSP {
 
                 //using  default values here ...
                 out +=  mKick.processSample(50.f, 0.3f, 0.5f, 1.f, 1.f, sampleRate);
-                out +=  mSnare.processSample(180.f, 0.2f, 0.7f, 1.5f, 1.f, sampleRate);
-                out +=  mHiHatClosed.processSample(14000.f, 0.2f, 5.f, 1.f, sampleRate);
+                out +=  mSnare.processSample(180.f, 0.2f, 0.7f, 1.5f, 0.8f, sampleRate);
+                out +=  mHiHatClosed.processSample(14000.f, 0.2f, 5.f, 0.8f, sampleRate);
                 out +=  mHiHatOpen.processSample(8000.f, 0.5f, 3.f, 0.5f, sampleRate);
                 out +=  mTomTom.processSample(120.f,0.4f,0.50f,1.0f, sampleRate);
                 out +=  mCymbals.processSample(450.f, 1.0f, 1.5f, 0.5f, sampleRate);
@@ -496,7 +496,7 @@ namespace DSP {
             ImGui::BeginGroup();
             ImGui::SetNextItemWidth(80.f);
             int bpmInt = (int)currentSettings.bpm.get();
-            if (ImGui::InputInt("Bmp##manual", &bpmInt,1,15)) {
+            if (ImGui::InputInt("BPM##manual", &bpmInt,1,15)) {
                 bpmInt = DSP::clamp((uint16_t)bpmInt, currentSettings.bpm.getMin(), currentSettings.bpm.getMax());
                 currentSettings.bpm.set(bpmInt);
                 changed = true;

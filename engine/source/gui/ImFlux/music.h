@@ -203,5 +203,125 @@ namespace ImFlux {
         return pressed;
     }
 
+    //--------------------------------------------------------------------------
+    // angle is Radiant !!!!!
+    inline void DrawGuitarSymbol(ImVec2 p, float width =  30.f, float height = 135.f, float angle = 0.75f) {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+
+        // --- Configuration ---
+        float halfW = width / 2.0f;
+        float neckHalfWidth = width * 0.15f;
+        float neckHeight = height * 0.6f;
+
+        // Define the rotation center (roughly the middle of the body)
+        ImVec2 center = p + ImVec2(halfW, height * 0.7f);
+
+        // Colors with transparency for background effect
+        const ImU32 colorWood   = IM_COL32(45, 30, 20, 240);
+        const ImU32 colorBody   = IM_COL32(145, 145, 145, 240);
+        const ImU32 colorFret   = IM_COL32(180, 180, 180, 240);
+        const ImU32 colorString = IM_COL32(200, 200, 200, 100); // Subtle silver strings
+
+        // --- Body (Two Circles) ---
+        float upperRadius = width * 0.6f;
+        ImVec2 upperCenter = Rotate(ImVec2(p.x + halfW, p.y + neckHeight + upperRadius * 0.5f), center, angle);
+        dl->AddCircleFilled(upperCenter, upperRadius, colorBody);
+
+        float lowerRadius = width * 0.8f;
+        ImVec2 lowerCenter = Rotate(ImVec2(p.x + halfW, p.y + neckHeight + upperRadius + lowerRadius * 0.8f), center, angle);
+        dl->AddCircleFilled(lowerCenter, lowerRadius, colorBody);
+
+        // --- Neck (Rotated Quad) ---
+        ImVec2 n1 = Rotate(ImVec2(p.x + halfW - neckHalfWidth, p.y), center, angle);
+        ImVec2 n2 = Rotate(ImVec2(p.x + halfW + neckHalfWidth, p.y), center, angle);
+        ImVec2 n3 = Rotate(ImVec2(p.x + halfW + neckHalfWidth, p.y + neckHeight + upperRadius), center, angle);
+        ImVec2 n4 = Rotate(ImVec2(p.x + halfW - neckHalfWidth, p.y + neckHeight + upperRadius), center, angle);
+        dl->AddQuadFilled(n1, n2, n3, n4, colorWood);
+
+        // --- Strings (6 Lines) ---
+        for (int i = 0; i < 6; i++) {
+            // Distribute strings across neck width
+            float xOff = -neckHalfWidth + (i * (neckHalfWidth * 2.0f / 5.0f));
+            ImVec2 start = Rotate(ImVec2(p.x + halfW + xOff, p.y), center, angle);
+            ImVec2 end   = Rotate(ImVec2(p.x + halfW + xOff, p.y + neckHeight + upperRadius * 1.5f), center, angle);
+            dl->AddLine(start, end, colorString, 1.0f);
+        }
+
+        // --- Pickups (Simple Rects as Quads) ---
+        float pickupH = 4.0f;
+        auto drawPickup = [&](float yPos) {
+            ImVec2 p1 = Rotate(ImVec2(p.x + halfW - neckHalfWidth, yPos - pickupH), center, angle);
+            ImVec2 p2 = Rotate(ImVec2(p.x + halfW + neckHalfWidth, yPos - pickupH), center, angle);
+            ImVec2 p3 = Rotate(ImVec2(p.x + halfW + neckHalfWidth, yPos + pickupH), center, angle);
+            ImVec2 p4 = Rotate(ImVec2(p.x + halfW - neckHalfWidth, yPos + pickupH), center, angle);
+            dl->AddQuadFilled(p1, p2, p3, p4, colorFret);
+        };
+
+        drawPickup(p.y + neckHeight + upperRadius * 0.6f);
+        drawPickup(p.y + neckHeight + upperRadius * 1.1f);
+    }
+    //--------------------------------------------------------------------------
+    // angle is Radiant !!!!!
+    inline void DrawDrumKitSymbol(ImVec2 p, float sizeLen = 135.f, float angle = 0.f) {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+
+        // --- Configuration ---
+        const ImU32 colorWood   = IM_COL32(45, 30, 20, 240);
+
+        const ImU32 colorDrum     = IM_COL32(145, 145, 145, 240);
+        const ImU32 colorRim      = IM_COL32(180, 180, 180, 255);
+        const ImU32 colorCymbal   = IM_COL32(218, 165, 32, 240);  // Golden/Brass color
+        const ImU32 colorHardware = IM_COL32(100, 100, 100, 255);
+
+        // Center of the kit for overall rotation
+        ImVec2 center = p + ImVec2(sizeLen * 0.5f, sizeLen * 0.5f);
+
+        // Lambda to draw a single drum with a rim
+        auto drawDrum = [&](ImVec2 localPos, float radius) {
+            ImVec2 rotatedPos = Rotate(p + localPos, center, angle);
+            dl->AddCircleFilled(rotatedPos, radius, colorDrum);
+            dl->AddCircle(rotatedPos, radius, colorRim, 0, 1.5f); // Hardware rim
+        };
+
+        // Helper for rotated rectangles (Quads)
+        auto drawRotatedRect = [&](ImVec2 pos, ImVec2 rectSize, ImU32 col) {
+            ImVec2 half = { rectSize.x * 0.5f, rectSize.y * 0.5f };
+            ImVec2 q1 = Rotate(pos + ImVec2(-half.x, -half.y), center, angle);
+            ImVec2 q2 = Rotate(pos + ImVec2( half.x, -half.y), center, angle);
+            ImVec2 q3 = Rotate(pos + ImVec2( half.x,  half.y), center, angle);
+            ImVec2 q4 = Rotate(pos + ImVec2(-half.x,  half.y), center, angle);
+            dl->AddQuadFilled(q1, q2, q3, q4, col);
+            dl->AddQuad(q1, q2, q3, q4, colorRim, 1.5f); // Hardware outline
+        };
+
+        // Lambda for cymbals (thinner, more transparent)
+        auto drawCymbal = [&](ImVec2 localPos, float radius) {
+            ImVec2 rotatedPos = Rotate(p + localPos, center, angle);
+            dl->AddCircleFilled(rotatedPos, radius, colorCymbal);
+            dl->AddCircle(rotatedPos, radius * 0.1f, colorHardware, 0, 1.0f); // Center hole
+        };
+
+        // --- Bass Drum (The big one in the middle/back) ---
+        // drawRotatedRect(p + ImVec2(sizeLen * 0.5f, sizeLen * 0.5f), ImVec2(sizeLen * 0.4f, sizeLen * 0.6f),colorWood /*colorDrum*/);
+        drawRotatedRect(p + ImVec2(sizeLen * 0.5f, sizeLen * 0.5f), ImVec2(sizeLen * 0.4f, sizeLen * 0.25f),colorWood /*colorDrum*/);
+
+        // --- Snare Drum (Bottom left) ---
+        drawDrum(ImVec2(sizeLen * 0.25f, sizeLen * 0.45f), sizeLen * 0.18f);
+
+        // --- Toms (Top) ---
+        drawDrum(ImVec2(sizeLen * 0.35f, sizeLen * 0.25f), sizeLen * 0.15f); // High Tom
+        drawDrum(ImVec2(sizeLen * 0.65f, sizeLen * 0.25f), sizeLen * 0.16f); // Mid Tom
+        drawDrum(ImVec2(sizeLen * 0.80f, sizeLen * 0.55f), sizeLen * 0.22f); // Floor Tom
+
+        // --- Cymbals ---
+        drawCymbal(ImVec2(sizeLen * 0.10f, sizeLen * 0.20f), sizeLen * 0.20f); // Hi-Hat / Crash
+        drawCymbal(ImVec2(sizeLen * 0.90f, sizeLen * 0.15f), sizeLen * 0.25f); // Ride
+
+        // --- Hardware/Sticks  ---
+        ImVec2 stickStart = Rotate(p + ImVec2(sizeLen * 0.2f, sizeLen * 0.4f), center, angle);
+        ImVec2 stickEnd   = Rotate(p + ImVec2(sizeLen * 0.4f, sizeLen * 0.5f), center, angle);
+        dl->AddLine(stickStart, stickEnd, colorWood, 2.0f);
+    }
+
 
 }

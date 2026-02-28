@@ -21,6 +21,15 @@
 
 namespace ImFlux {
 
+    // -----------------  Rotate
+    // rotate arround center (angle in radiants)
+    inline ImVec2 Rotate(const ImVec2& v, const ImVec2& center, float angle) {
+        float s = sinf(angle), c = cosf(angle);
+        ImVec2 p = v - center;
+        return ImVec2(p.x * c - p.y * s + center.x, p.x * s + p.y * c + center.y);
+    }
+
+
     // ----------------- AutoLineBreak
     inline void SameLineBreak(float nextItemWidth) {
         float windowVisibleX2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;

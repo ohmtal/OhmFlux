@@ -38,6 +38,7 @@ public:
     void DrawPresetList(DSP::EffectsManager* lManager) {
         lManager->DrawPresetList();
     }
+    void DrawGuitar( );
     void DrawEffectManagerPresetListWindow(bool* p_enabled);
 
 

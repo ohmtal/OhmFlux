@@ -236,7 +236,7 @@ void AppGui::setupFonts()
     ImFontConfig icon_config;
     icon_config.MergeMode = false; // <--- IMPORTANT: DO NOT MERGE
     // Store this pointer in your class or a global variable
-    gIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 24.0f, &icon_config, ranges);
+    gIconFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size, 22.0f, &icon_config, ranges);
     gTinyFont = io.Fonts->AddFontFromMemoryCompressedTTF(FA_compressed_data, FA_compressed_size,  7.0f, &icon_config, ranges);
     //<<<<<<<<<< fonts
 }
@@ -255,6 +255,9 @@ void AppGui::ShowFileBrowser(){
             if (g_FileDialog.mSaveExt == ".axe") {
                 mRackModule->getManager()->SavePresets(g_FileDialog.selectedFile);
             }
+            if (g_FileDialog.mSaveExt == ".drum") {
+                mDrumKitLooperModule->getManager()->SavePresets(g_FileDialog.selectedFile);
+            }
             g_FileDialog.reset();
         } else {
             if (g_FileDialog.selectedExt == ".wav" ) {
@@ -263,6 +266,10 @@ void AppGui::ShowFileBrowser(){
             else
             if (g_FileDialog.selectedExt == ".axe") {
                 mRackModule->getManager()->LoadPresets(g_FileDialog.selectedFile);
+            }
+            else
+            if (g_FileDialog.selectedExt == ".drum") {
+                mDrumKitLooperModule->getManager()->LoadPresets(g_FileDialog.selectedFile);
             }
 
             g_FileDialog.reset();

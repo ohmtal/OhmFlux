@@ -14,9 +14,10 @@
 
 #include <src/appMain.h>
 #include "src/appGlobals.h"
-#include <src/fonts/IconsFontAwesome6.h>
+
 
 #include "soundMixModule.h"
+#include <src/fonts/IconsFontAwesome6.h>
 
 //------------------------------------------------------------------------------
 RackModule::~RackModule(){
@@ -152,6 +153,93 @@ void RackModule::process(float* buffer, int numSamples, int numChannels) {
     getManager()->process(buffer, numSamples, numChannels);
 }
 //------------------------------------------------------------------------------
+
+
+// void RackModule::DrawGuitar( )
+// {
+//
+//
+//     ImDrawList* dl = ImGui::GetWindowDrawList();
+//     ImVec2 p = ImGui::GetCursorScreenPos();
+//
+//     //Fixme adjust
+//     float width = 30.f;
+//     float height = 135.f;
+//
+//     p += ImGui::GetContentRegionAvail() - ImVec2(width * 2.f ,height);
+//
+//     const ImU32 colorWood = IM_COL32(45, 30, 20, 255);
+//     const ImU32 colorFret = IM_COL32(180, 180, 180, 255);
+//     const ImU32 colorString = IM_COL32(120, 120, 120, 255); //IM_COL32(220, 220, 220, 255);
+//
+//     const ImU32 colorBody = IM_COL32(145, 145, 145, 255);
+//
+//     //-----
+//     float halfW = width / 2.f;
+//
+//     ImVec2 offset = { p.x + halfW,  p.y};
+//
+//
+//     // we need the neck params here
+//     float neckHalfWidth = width * 0.15f;
+//     //neck 60% of height ?
+//     float neckHeight  = height * 0.6f;
+//
+//     // ------ Body -------
+//     // Two Circles
+//     float upperRadius = width * 0.6f;
+//     float lowerRadius = width * 0.8f;
+//     float upperY = offset.y + neckHeight * 0.85f + upperRadius;
+//     dl->AddCircleFilled(
+//         ImVec2(offset.x + halfW, upperY)
+//         ,upperRadius
+//         ,colorBody
+//     );
+//
+//     float lowerY = upperY + /*upperRadius * 0.5f +*/ lowerRadius;
+//     dl->AddCircleFilled(
+//         ImVec2(offset.x + halfW, lowerY)
+//         ,lowerRadius
+//         ,colorBody
+//     );
+//
+//     // ------ NECK -------
+//     //
+//     dl->AddRectFilled(
+//         ImVec2(offset.x + halfW - neckHalfWidth, offset.y )
+//         , ImVec2(offset.x + halfW + neckHalfWidth, offset.y + neckHeight)
+//         , colorWood
+//     );
+//
+//     // ------ PICKUPS -------
+//     //
+//
+//     float pickupHalfHeight = neckHalfWidth / 2.f;
+//     dl->AddRectFilled(
+//         ImVec2(offset.x + halfW - neckHalfWidth, upperY - pickupHalfHeight  )
+//         , ImVec2(offset.x + halfW + neckHalfWidth, upperY + pickupHalfHeight)
+//         , colorFret
+//     );
+//
+//     float pickupOffsetY = height * 0.1f;
+//     dl->AddRectFilled(
+//         ImVec2(offset.x + halfW - neckHalfWidth, upperY + pickupOffsetY - pickupHalfHeight )
+//         , ImVec2(offset.x + halfW + neckHalfWidth, upperY + pickupOffsetY + pickupHalfHeight)
+//         , colorFret
+//     );
+// }
+//
+//
+// // Helper function to rotate a point around a center
+// ImVec2 Rotate(const ImVec2& v, const ImVec2& center, float angle) {
+//     float s = sinf(angle), c = cosf(angle);
+//     ImVec2 p = v - center;
+//     return ImVec2(p.x * c - p.y * s + center.x, p.x * s + p.y * c + center.y);
+// }
+
+
+
+
 void RackModule::DrawEffectManagerPresetListWindow(bool* p_enabled) {
     if (!mInitialized ||  mEffectsManager == nullptr || !*p_enabled) return;
 
@@ -161,6 +249,17 @@ void RackModule::DrawEffectManagerPresetListWindow(bool* p_enabled) {
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 400.f), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("Rack Presets", p_enabled);
+
+    // DrawGuitar();
+
+    float width = 30.f;
+    float height = 135.f;
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    p += ImGui::GetContentRegionAvail() - ImVec2(width * 2.f ,height);
+    ImFlux::DrawGuitarSymbol(p, width, height, -1.2f); // -90° (half PI) -1.41f ... not ?
+
+    // ImGui::End(); return;
+
 
     ImGui::PushFont(gIconFont);
 
