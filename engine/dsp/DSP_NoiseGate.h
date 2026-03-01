@@ -94,7 +94,7 @@ namespace DSP {
             mSettings()
             {
                 mEffectName = "NOISE GATE";
-                initVectors(2, false);
+                // let the loop init it! initVectors(2, false);
             }
         //----------------------------------------------------------------------
         // virtual std::string getName() const override { return "NOISE GATE";}
@@ -127,11 +127,13 @@ namespace DSP {
             mHpfLastIn.resize(numChannels, 0.0f);
             mHpfLastOut.resize(numChannels, 0.0f);
 
+            updateReleaseSamples();
+
         }
 
         //----------------------------------------------------------------------
         void reset() override {
-
+            updateReleaseSamples();
         }
         //----------------------------------------------------------------------
         void save(std::ostream& os) const override {

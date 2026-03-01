@@ -108,7 +108,7 @@ public:
         , mSettings()
     {
        mEffectName = "REVERB / SPACE";
-       updateBufferSize(); //should be all do what we need
+       // updateBufferSize(); //should be all do what we need
     }
     //----------------------------------------------------------------------
     // virtual std::string getName() const override { return "REVERB / SPACE";}
@@ -117,10 +117,8 @@ public:
     //----------------------------------------------------------------------
     void setSettings(const ReverbSettings& s) {
         mSettings = s;
+        reset();
 
-        // int curChannels = (int)mBuffers.size();
-        // mPositions.assign(curChannels, 0);
-        // updateSizes(curChannels);
     }
     //----------------------------------------------------------------------
     virtual void setSampleRate(float sampleRate) override {
@@ -140,11 +138,13 @@ public:
     }
     //----------------------------------------------------------------------
     void reset() override {
-        // clear buffers
-        for (auto& channelBuffer : mBuffers) {
-            std::fill(channelBuffer.begin(), channelBuffer.end(), 0.0f);
-        }
-        std::fill(mPositions.begin(), mPositions.end(), 0);
+        updateBufferSize();
+
+        // // clear buffers
+        // for (auto& channelBuffer : mBuffers) {
+        //     std::fill(channelBuffer.begin(), channelBuffer.end(), 0.0f);
+        // }
+        // std::fill(mPositions.begin(), mPositions.end(), 0);
     }
 
     //----------------------------------------------------------------------
