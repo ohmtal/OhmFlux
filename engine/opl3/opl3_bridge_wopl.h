@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2026 Ohmtal Game Studio
+// Copyright (c) 2026 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // !! FIXME precussion added on bottom with redundant import code !!

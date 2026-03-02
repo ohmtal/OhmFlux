@@ -549,7 +549,7 @@ void AppGui::ShowMenuBar()
                  std::format(
                         "Ohmtal Axe\n"
                         "==========\n"
-                        "(c)2026 by Thomas Hühn (XXTH)\n"
+                        "(c)2026 by Thomas Hühn \n"
                         "Version {}\n"
                         "https://ohmtal.com\n"
                         "\n"

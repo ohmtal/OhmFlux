@@ -1,5 +1,6 @@
+#ifdef FALSE // disabled 2026-03-02
 //-----------------------------------------------------------------------------
-// Copyright (c) 2024 Ohmtal Game Studio
+// Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #pragma once
@@ -86,3 +87,4 @@ public:
 
 }; //class FluxBitmapFont
 
+#endif

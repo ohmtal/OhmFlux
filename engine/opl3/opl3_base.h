@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2026 Ohmtal Game Studio
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #pragma once
@@ -10,9 +10,6 @@
 #include <errorlog.h>
 
 namespace opl3 {
-
-
-
     // Standard OPL3 has 18 channels (0-17)
     // 0-8  = Bank 1 ($000)
     // 9-17 = Bank 2 ($100)

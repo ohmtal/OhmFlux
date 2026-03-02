@@ -46,7 +46,7 @@ private:
     FluxParticleEmitter* mFireEmitter;
     FluxParticleEmitter* mSparkEmitter;
 
-    FluxTrueTypeFont* mMonoFont;
+    // FluxTrueTypeFont* mMonoFont;
 
     FluxAudioStream* mTomsGuitarSample = nullptr;
     // FluxAudioStream* mClickSound = nullptr;
@@ -175,15 +175,15 @@ public:
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         // FluxTrueTypeFont
 
-         mMonoFont = new FluxTrueTypeFont("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 20);
-         if (mMonoFont)
-         {
-             mMonoFont->set("Alder Babsack", { 0.f,(F32)getScreen()->getHeight()-20.f }, cl_Crimson, 2.f);
-
-             // mMonoFont->setPos(200,200);
-             // mMonoFont->setCaption("Alder Babsack!");
-             queueObject(mMonoFont);
-         }
+         // mMonoFont = new FluxTrueTypeFont("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 20);
+         // if (mMonoFont)
+         // {
+         //     mMonoFont->set("Alder Babsack", { 0.f,(F32)getScreen()->getHeight()-20.f }, cl_Crimson, 2.f);
+         //
+         //     // mMonoFont->setPos(200,200);
+         //     // mMonoFont->setCaption("Alder Babsack!");
+         //     queueObject(mMonoFont);
+         // }
 
          // FluxAudioStream (ogg)
          mTomsGuitarSample  = new FluxAudioStream("assets/music/sample1_loop.ogg");
@@ -402,7 +402,7 @@ public:
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
-        mMonoFont->setCaption("%d fps, mouse grabbed:%d (toogle with right mouse button)", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()));
+        // mMonoFont->setCaption("%d fps, mouse grabbed:%d (toogle with right mouse button)", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()));
 
         const float camSpeed  = 0.1f * getFrameTime();
         const float zoomSpeed = 0.0001f  * getFrameTime();

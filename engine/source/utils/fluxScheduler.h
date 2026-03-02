@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2025 Ohmtal Game Studio
+// Copyright (c) 2025 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 //  << dangling pointer >> when object is deleted before action is fired ==>

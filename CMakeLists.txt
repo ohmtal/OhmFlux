@@ -257,6 +257,7 @@ target_compile_definitions(ohmFlux_engine PUBLIC
 target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE)
 target_compile_definitions(ohmFlux_engine PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
 target_compile_definitions(ohmFlux_engine PUBLIC _USE_MATH_DEFINES)
+target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE_OPENGL)
 
 
 

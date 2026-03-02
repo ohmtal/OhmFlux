@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2024 Ohmtal Game Studio
+// Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "fluxBitmapFont.h"

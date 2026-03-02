@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Ohmtal Game Studio
+// Copyright (c) 2012 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 //  FluxTexture
@@ -8,10 +8,11 @@
 #include "core/fluxGlobals.h"
 #include "platform/fluxGL.h"
 
-#ifdef __EMSCRIPTEN__
-	#include <emscripten.h>
-	#include <emscripten/em_js.h>
-#endif
+//2026-03-03 why was this here ??
+// #ifdef __EMSCRIPTEN__
+// 	#include <emscripten.h>
+// 	#include <emscripten/em_js.h>
+// #endif
 
 #include <SDL3/SDL.h>
 
@@ -102,44 +103,6 @@ SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
   return finalSurface;
 }
 
-// SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
-//   int width, height, channels;
-//   // Force RGBA (4 channels)
-//
-//   // Android:
-//   size_t fileSize;
-//   void* buffer = SDL_LoadFile(filename, &fileSize);
-//   if (!buffer) { /* Handle error: SDL_GetError() */ }
-//
-//   unsigned char* data = stbi_load_from_memory((unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4);
-//
-//   SDL_free(buffer); // Free the temporary file buffer
-//
-//   // prior Android :
-//   // unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
-//
-//
-//   if (!data) return nullptr;
-//
-//   // SDL3: Wrap the pointer in a temporary surface
-//   SDL_Surface* tempSurface = SDL_CreateSurfaceFrom(
-//     width, height, SDL_PIXELFORMAT_RGBA32, data, width * 4
-//   );
-//
-//   if (!tempSurface) {
-//     stbi_image_free(data);
-//     return nullptr;
-//   }
-//
-//   // SDL3: Duplicate to create a surface that OWNS its own memory
-//   SDL_Surface* finalSurface = SDL_DuplicateSurface(tempSurface);
-//
-//   // Clean up the stb buffer and the wrapper
-//   SDL_DestroySurface(tempSurface);
-//   stbi_image_free(data);
-//
-//   return finalSurface;
-// }
 
 //------------------------------------------------------------------------------
 // Load a Texture and bind it directly

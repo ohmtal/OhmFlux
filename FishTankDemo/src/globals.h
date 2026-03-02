@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012..2024 Ohmtal Game Studio
+// Copyright (c) 2012..2024 Thomas Hühn (XXTH) 
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to

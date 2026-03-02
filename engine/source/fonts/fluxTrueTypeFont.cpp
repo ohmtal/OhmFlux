@@ -1,5 +1,6 @@
+#ifdef FALSE
 //-----------------------------------------------------------------------------
-// Copyright (c) 2024 Ohmtal Game Studio
+// Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "fluxTrueTypeFont.h"
@@ -75,7 +76,7 @@ void FluxTrueTypeFont::Draw()
     float currentX = startX;
     float currentY = startY;
 
-    // 1. PRE-PASS: Calculate scaled total width for alignment
+    // PRE-PASS: Calculate scaled total width for alignment
     // eats fps because calculated ecery time
     // but need it for object width
     /*if (mAlign != FontAlign_Left)*/ {
@@ -160,3 +161,4 @@ RectI FluxTrueTypeFont::getRectI() const
     return lResult;
 }
 
+#endif
