@@ -63,6 +63,7 @@
 //
 // //  Mapping Macro (MUST be in the same namespace as the struct!)
 // // This generates the hidden from_json / to_json functions needed
+// WARNING: do not place this in a header !!!
 // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(WindowConfig, width, height, maximized)
 //
 // Usage

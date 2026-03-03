@@ -9,6 +9,22 @@
 #include <gui/ImConsole.h>
 
 //------------------------------------------------------------------------------
+// macro for JSON support NOTE NOT IN HEADER!!!
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
+                                                mShowDemo,
+                                                mShowSFXStereoModule,
+                                                mShowSFXModule,
+                                                mEditorGuiInitialized,
+                                                mShowImFluxWidgets,
+                                                mShowFileBrowser,
+                                                mShowConsole,
+                                                mShowWaveModule,
+                                                mShowDrumKit,
+                                                mShowDrumEffects,
+                                                mShowEffectRack
+)
+
+//------------------------------------------------------------------------------
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
 {
     if (!userdata) return;

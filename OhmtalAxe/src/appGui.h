@@ -114,15 +114,3 @@ public:
 
 }; //class
 
-// macro for JSON support
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
-    mEditorGuiInitialized,
-    mShowFileBrowser,
-    mShowConsole,
-    mShowWaveModule,
-    mShowDrumKit,
-    mShowDrumEffects,
-    mShowRack,
-    mShowVisualizer,
-    mShowRackPresets
-)

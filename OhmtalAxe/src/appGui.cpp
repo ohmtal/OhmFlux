@@ -11,6 +11,19 @@
 #include "fonts/fa.h"
 #include <src/fonts/IconsFontAwesome6.h>
 
+//------------------------------------------------------------------------------
+// macro for JSON support not NOT in HEADER !!
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(AppGui::AppSettings,
+                                                mEditorGuiInitialized,
+                                                mShowFileBrowser,
+                                                mShowConsole,
+                                                mShowWaveModule,
+                                                mShowDrumKit,
+                                                mShowDrumEffects,
+                                                mShowRack,
+                                                mShowVisualizer,
+                                                mShowRackPresets
+)
 
 //------------------------------------------------------------------------------
 void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
