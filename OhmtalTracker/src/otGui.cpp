@@ -412,6 +412,7 @@ bool OTGui::Initialize()
     //<<<<<<<<<< fonts
 
 
+
     // not centered ?!?!?! i guess center is not in place yet ?
     mBackground = new FluxRenderObject(getMain()->loadTexture(getGamePath()+"assets/background.png"));
     if (mBackground) {
@@ -628,8 +629,7 @@ void OTGui::DrawGui()
     }
 
 
-
-    InitDockSpace();  
+    InitDockSpace();
 
     mGuiGlue->DrawEnd();
 }

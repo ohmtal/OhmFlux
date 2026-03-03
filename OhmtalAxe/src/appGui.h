@@ -28,19 +28,21 @@ public:
     // a.) mDefaultEditorSettings
     // b.) on the bottom to the json macro!!! 
     struct AppSettings {
-        bool mEditorGuiInitialized;
+        bool mEditorGuiInitialized = false;
 
-        bool mShowFileBrowser;
-        bool mShowConsole;
+        bool mShowFileBrowser      = false;
+        bool mShowConsole          = false;
 
-        bool mShowWaveModule;
-        bool mShowDrumKit;
-        bool mShowDrumEffects;
+        bool mShowWaveModule       = false;
+        bool mShowDrumKit          = true;
+        bool mShowDrumEffects      = false;
 
-        bool mShowVisualizer;
-        bool mShowRack;
-        bool mShowRackPresets;
+        bool mShowVisualizer       = false;
+        bool mShowRack             = true;
+        bool mShowRackPresets      = true;
     };
+
+
 
     ImConsole mConsole;
 

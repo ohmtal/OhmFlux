@@ -316,7 +316,7 @@ bool AppGui::Initialize()
         LogFMT("Error: Can not open setting file: {}", lSettingsFile);
     }
 
-    mAppSettings = SettingsManager().get("AppGui::mAppSettings", mDefaultAppSettings);
+    mAppSettings = SettingsManager().get("AppGui::mAppSettings", AppSettings());
 
 
     mGuiGlue = new FluxGuiGlue(true, false, nullptr);
@@ -334,6 +334,8 @@ bool AppGui::Initialize()
 
     // apply custom Theme
     ApplyStudioTheme();
+
+    InitDockSpace();
 
     setupFonts();
 
@@ -642,7 +644,7 @@ void AppGui::DrawGui()
 
 
     DrawMsgBoxPopup();
-    InitDockSpace();
+
     mGuiGlue->DrawEnd();
 }
 //------------------------------------------------------------------------------

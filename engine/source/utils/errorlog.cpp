@@ -108,3 +108,12 @@ void CloseErrorLog(void)
 		ErrorLog = nullptr; // Safety: prevent further write attempts
 	}
 }
+//-----------------------------------------------------------------------------
+int _LogFMT(std::string_view fmt, std::format_args args) {
+	try {
+		std::string s = std::vformat(fmt, args);
+		return Log("%s", s.c_str());
+	} catch (const std::format_error& e) {
+		return Log("LogFMT Error: %s", e.what());
+	}
+}

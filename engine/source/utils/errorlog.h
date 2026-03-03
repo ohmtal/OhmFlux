@@ -26,19 +26,25 @@
 bool InitErrorLog(const char* log_file, const char* app_name, const char* app_version) ;	// Initializes The Error Log
 void CloseErrorLog(void);									// Closes The Error Log
 int  Log(const char *, ...) PRINTF_CHECK(1, 2);										// Uses The Error Log :)
+int _LogFMT(std::string_view fmt, std::format_args args);
 
 template<typename... Args>
 int LogFMT(std::string_view fmt, Args&&... args) {
-    try {
-        // Modern C++20 formatting
-        std::string s = std::vformat(fmt, std::make_format_args(args...));
-
-        // Pass the already-formatted string to your existing C-style Log
-        // This avoids duplicating the file/console logging logic
-        return Log("%s", s.c_str());
-    } catch (const std::format_error& e) {
-        return Log("LogFMT Error: %s", e.what());
-    }
+    return _LogFMT(fmt, std::make_format_args(args...));
 }
+
+// template<typename... Args>
+// int LogFMT(std::string_view fmt, Args&&... args) {
+//     try {
+//         // Modern C++20 formatting
+//         std::string s = std::vformat(fmt, std::make_format_args(args...));
+//
+//         // Pass the already-formatted string to your existing C-style Log
+//         // This avoids duplicating the file/console logging logic
+//         return Log("%s", s.c_str());
+//     } catch (const std::format_error& e) {
+//         return Log("LogFMT Error: %s", e.what());
+//     }
+// }
 
 #endif //_ERRORLOG_H
