@@ -5,7 +5,6 @@
 
 #include "drumKitLooper.h"
 #include <src/fonts/IconsFontAwesome6.h>
-
 //------------------------------------------------------------------------------
 DSP::EffectsManager* DrumKitLooperModule::getManager() const{
     return mDrumKitManager.get();

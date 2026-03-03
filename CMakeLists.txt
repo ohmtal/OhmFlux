@@ -83,6 +83,7 @@ set(ENGINE_SOURCES
 
     ${ENGINE_DIR}/audio/fluxAudioStream.cpp
 
+    ${ENGINE_DIR}/core/fluxGlobals.h
     ${ENGINE_DIR}/core/fluxGlue.cpp
     ${ENGINE_DIR}/core/fluxScreen.cpp
     ${ENGINE_DIR}/core/fluxTexture.cpp
@@ -103,6 +104,7 @@ set(ENGINE_SOURCES
     ${ENGINE_DIR}/render/fluxShader.cpp
 
     ${ENGINE_DIR}/utils/fluxScheduler.cpp
+    ${ENGINE_DIR}/utils/errorlog.h
     ${ENGINE_DIR}/utils/errorlog.cpp
 
     #  --- stb ---
@@ -133,6 +135,11 @@ set(ENGINE_SOURCES
     ${IMGGUI_DIR}/backends/imgui_impl_sdl3.cpp
     ${IMGGUI_DIR}/backends/imgui_impl_opengl3.cpp
 
+)
+
+set(ENGINE_PRECOMPILED_HEADER
+    ${ENGINE_DIR}/core/fluxGlobals.h
+    ${ENGINE_DIR}/utils/errorlog.h
 )
 
 
@@ -253,6 +260,7 @@ endif()
 # --- Engine Target ---
 add_library(ohmFlux_engine STATIC ${ENGINE_SOURCES})
 
+
 target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${ENGINE_DIR}>
     $<BUILD_INTERFACE:${ENGINE_DIR}/utils>
@@ -288,6 +296,8 @@ target_compile_definitions(ohmFlux_engine PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
 target_compile_definitions(ohmFlux_engine PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE_OPENGL)
 
+# speed up build
+target_precompile_headers(ohmFlux_engine PRIVATE ${ENGINE_PRECOMPILED_HEADER})
 
 
 if(WIN32 AND MSVC)

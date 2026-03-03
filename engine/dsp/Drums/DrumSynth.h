@@ -186,58 +186,6 @@ namespace DrumSynth {
 
 
     //-----------------------------------------------------------------------------
-    //  Variant 1
-    //   Default Values:
-    //       std::atomic<float> snare_pitch{180.f};
-    //       std::atomic<float> snare_decay{0.2f};
-    //       std::atomic<float> snare_snappy{0.7f};
-    //   Ranges:
-    //       rackKnob("Pitch", sConfig.snare_pitch, {100.f, 400.0f}, ksGreen);
-    //       rackKnob("Decay", sConfig.snare_decay, {0.01f, 1.0f}, ksGreen);
-    //       rackKnob("Snappy", sConfig.snare_snappy, {0.0f, 1.0f}, ksYellow);
-    //-----------------------------------------------------------------------------
-    // class SnareSynth_Variant1 {
-    // public:
-    //     void trigger() {
-    //         mEnvelope = 1.0f;
-    //         mActive = true;
-    //         mPhase = 0.0f;
-    //     }
-    //
-    //     float processSample(float pitch, float decay, float snappy, float sampleRate) {
-    //         if (!mActive) return 0.0f;
-    //
-    //         // 1. Noise part (snappy)
-    //         float noise = ((float)rand() / (float)RAND_MAX) * 2.0f - 1.0f;
-    //
-    //         float phaseIncrement = pitch / sampleRate;
-    //         mPhase += phaseIncrement;
-    //         if (mPhase >= 1.0f) mPhase -= 1.0f;
-    //         float body = DSP::FastMath::fastSin(mPhase);
-    //
-    //
-    //         // 3. Envelope
-    //         float tau = std::max(0.001f, decay);
-    //         float multiplier = std::exp(-1.0f / (tau * sampleRate));
-    //         mEnvelope *= multiplier;
-    //
-    //         if (mEnvelope < 0.0001f) {
-    //             mEnvelope = 0.0f;
-    //             mActive = false;
-    //         }
-    //
-    //         // Mix body and noise
-    //         float signal = (body * (1.0f - snappy) + noise * snappy) * mEnvelope;
-    //         return signal * 0.5f;
-    //     }
-    //
-    // private:
-    //     float mEnvelope = 0.0f;
-    //     float mPhase = 0.0f;
-    //     bool mActive = false;
-    // };
-
-    //-----------------------------------------------------------------------------
     // HiHat
 
     // Parameter	Function Argument	Typical Range	Note
