@@ -169,6 +169,7 @@ bool  FluxScreen::prepareMode(const FluxSettings& lSettings )
 //-------------------------------------------------------------------------------
 bool FluxScreen::init()
 {
+	Log("[info] init Screen....");
 	#if defined(__ANDROID__)
 	// set to Landscape
 	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
@@ -206,7 +207,10 @@ bool FluxScreen::init()
 
 #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 	glewExperimental = GL_TRUE;
-	glewInit();
+	GLenum err = glewInit();
+	if (GLEW_OK != err) {
+		Log("CRITICAL: Failed to init glew!! (%s)", glewGetErrorString(err));
+	}
 
 	#ifdef FLUX_DEBUG
 		// catch OpenGL Errors - Enable it after glewInit()

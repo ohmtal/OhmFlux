@@ -1,12 +1,21 @@
 cmake_minimum_required(VERSION 3.16)
 project(ohmFlux LANGUAGES C CXX)
 
-# set(CMAKE_CXX_STANDARD 17)
-# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# MinGW creash release build
+if(MINGW)
+    add_compile_options("-mno-avx" "-mno-avx2")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mstackrealign" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstackrealign" CACHE STRING "" FORCE)
+    set(SDL_AVX OFF CACHE BOOL "" FORCE)
+    set(SDL_AVX2 OFF CACHE BOOL "" FORCE)
+    set(SDL_SSE41 OFF CACHE BOOL "" FORCE)
+endif()
+
 
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -142,28 +151,35 @@ if(WITH_BOX2D)
 endif()
 # <<<
 
-# -- SDL3
+
 include(FetchContent)
 
-FetchContent_Declare(
-  SDL3
-  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-  GIT_TAG        release-3.4.2
-)
 
-set(SDL_TESTS OFF CACHE BOOL "" FORCE)
-set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
-if(ANDROID)
-    set(SDL_SHARED ON CACHE BOOL "" FORCE)
-    set(SDL_STATIC OFF CACHE BOOL "" FORCE)
-    set(SDL_ANDROID_APK ON CACHE BOOL "" FORCE)
+# -- SDL3
+if(MSVC)
+    find_package(SDL3 REQUIRED)
+    find_package(GLEW REQUIRED)
 else()
-    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-    set(SDL_STATIC ON CACHE BOOL "" FORCE)
-    set(BUILD_SHARED_LIBS OFF)
-endif()
+    FetchContent_Declare(
+    SDL3
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG        release-3.4.2
+    )
 
-FetchContent_MakeAvailable(SDL3)
+    set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+    set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+    if(ANDROID)
+        set(SDL_SHARED ON CACHE BOOL "" FORCE)
+        set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+        set(SDL_ANDROID_APK ON CACHE BOOL "" FORCE)
+    else()
+        set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+        set(SDL_STATIC ON CACHE BOOL "" FORCE)
+        set(BUILD_SHARED_LIBS OFF)
+    endif()
+
+    FetchContent_MakeAvailable(SDL3)
+endif()
 
 
 if(EMSCRIPTEN)
@@ -184,21 +200,46 @@ elseif(ANDROID)
     list(APPEND FLUX_LIBS SDL3::SDL3-shared GLESv3 EGL log android)
 
 elseif(WIN32 AND NOT MSVC)
-    add_link_options("-static-libgcc" "-static-libstdc++")
+    add_link_options("-static-libgcc" "-static-libstdc++" "-static" "-mwindows" )
+
+
+    # This is the "Magic" for suppressing the console window in Release
+    # but keeping it in Debug so you can see your logs.
+    link_libraries("-Wl,--subsystem,windows") # Global for MinGW
+
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
 
     add_definitions(-DGLEW_STATIC)
-    find_library(GLEW_STATIC_LIB NAMES glew32s glew32)
+    # find_library(GLEW_STATIC_LIB NAMES glew32s glew32 glew32.a)
+    find_library(GLEW_STATIC_LIB
+        NAMES libglew32s.a glew32s glew32s.lib libglew32.a glew32.lib
+    )
+
+    if(NOT GLEW_STATIC_LIB)
+        message(FATAL_ERROR "GLEW not found! Build-Typ: ${CMAKE_BUILD_TYPE}")
+    endif()
+
 
     list(APPEND FLUX_LIBS
         SDL3::SDL3-static
         ${GLEW_STATIC_LIB}
         opengl32
         glu32
+        dinput8
+        dxguid
+        dxerr8
+        user32
         winmm
         imm32
         version
         setupapi
         shlwapi
+        gdi32
+        ole32
+        oleaut32
+        shell32
+        uuid
     )
 
 else()
@@ -230,6 +271,7 @@ target_include_directories(ohmFlux_engine PUBLIC
 if(WIN32 AND NOT MSVC AND NOT EMSCRIPTEN AND NOT ANDROID)
     set_property(TARGET ohmFlux_engine PROPERTY INTERFACE_SDL3_SHARED FALSE)
     target_compile_definitions(ohmFlux_engine PUBLIC GLEW_STATIC)
+    target_link_libraries(ohmFlux_engine PRIVATE ${GLEW_STATIC_LIB})
 endif()
 
 target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile)
