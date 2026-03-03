@@ -142,6 +142,22 @@ if(WITH_BOX2D)
 endif()
 # <<<
 
+# -- SDL3
+include(FetchContent)
+
+FetchContent_Declare(
+  SDL3
+  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+  GIT_TAG        release-3.4.2
+)
+
+set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(SDL3)
+
+
+
 
 if(EMSCRIPTEN)
     add_compile_options("-sUSE_SDL=3")
@@ -157,21 +173,21 @@ if(EMSCRIPTEN)
         "-sEXIT_RUNTIME=1"
     )
 elseif(ANDROID)
-    include(FetchContent)
+    # include(FetchContent)
 
-    FetchContent_Declare(
-        SDL3
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        # fixme set a stable tag like release-3.2.28
-        GIT_TAG main
-    )
+    # FetchContent_Declare(
+    #     SDL3
+    #     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    #     # fixme set a stable tag like release-3.2.28
+    #     GIT_TAG release-3.4.2
+    # )
 
     # --- Android Specific Configuration ---
     # SDL3 MUST be SHARED for Android to work with the Java/Kotlin wrapper
     set(SDL_STATIC OFF CACHE BOOL "" FORCE)
     set(SDL_SHARED ON CACHE BOOL "" FORCE)
-    set(SDL_TESTS OFF CACHE BOOL "" FORCE)
-    set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
+    # set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+    # set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
 
     # Enable the SDL3 target for APK generation
     set(SDL_ANDROID_APK ON CACHE BOOL "" FORCE)
@@ -195,7 +211,10 @@ elseif(WIN32 AND NOT MSVC)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 
     # SDL3 Static
-    set(SDL3_SHARED FALSE CACHE BOOL "" FORCE)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON CACHE BOOL "" FORCE)
+
+    # set(SDL3_SHARED FALSE CACHE BOOL "" FORCE)
     find_package(SDL3 REQUIRED CONFIG COMPONENTS SDL3-static)
 
     # GLEW Static - Manual Search to avoid DLL import libs
@@ -214,7 +233,10 @@ elseif(WIN32 AND NOT MSVC)
 
 else()
     # Default Desktop (Linux)
-    find_package(SDL3 REQUIRED CONFIG)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON CACHE BOOL "" FORCE)
+
+    # find_package(SDL3 REQUIRED CONFIG)
     list(APPEND FLUX_LIBS SDL3::SDL3)
     find_package(OpenGL REQUIRED)
     list(APPEND FLUX_LIBS OpenGL::GL)

@@ -47,14 +47,14 @@ usage:
 	@echo "make webrelease : Build WebGL (Release via Emscripten)"
 	@echo "make webdist    : Build WebGL Release and deploy to $(WEBDIST_DIR)"
 	@echo ""
-	@echo "make build-info : Show packages to install on Arch and FreeBSD "
+	@echo "make info       : Show packages to install on Arch and FreeBSD "
 	@echo ""
 	@echo "make clean      : Remove $(BASE_BUILD_DIR)/ directory"
 	@echo "make distclean  : Remove all build artifacts, binaries, and $(WEBDIST_DIR)"
 	@echo "-----------------------------------------------------------------"
 	@echo "Jobs detected: $(JOBS)"
 
-build-info:
+info:
 	@echo "--- [ Arch Linux Setup ] ---"
 	@echo "Nativ:      sudo pacman -S sdl3 glew opengl-headers"
 	@echo "Windows:    yay -S mingw-w64-sdl3 mingw-w64-glew"

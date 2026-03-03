@@ -106,10 +106,14 @@ bool InputModule::open(SDL_AudioSpec dstSpec) {
     }
 
     SDL_AudioSpec hardwareSpec;
-    if (SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &hardwareSpec, nullptr)) {
+    int actual_samples;
+    if (SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &hardwareSpec,  &actual_samples)) {
         mInputSpec = hardwareSpec;
-        Log("[info] Input Module Hardware: %d Hz, %d channels formatid: %d", hardwareSpec.freq, hardwareSpec.channels, hardwareSpec.format);
+        Log("[info] Input Module Hardware: %d Hz, %d channels samples: %d", hardwareSpec.freq, hardwareSpec.channels, actual_samples);
     }
+
+
+    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "128"); //TEST (default 1024)!
 
     mInputSpec.format=SDL_AUDIO_F32; //<< THIS!! override to float!!
 

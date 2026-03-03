@@ -3,7 +3,7 @@
 - 2026-03-02 
   - replaced in headers: Ohmtal Game Studio with my name (testing utf8)
   - removed/disabled  fluxTrueTypeFont
-  - Added compile flag FLUX_ENGINE_OPENGL but unused at the moment ;)
+  - ~~Added compile flag FLUX_ENGINE_OPENGL but unused at the moment ;)~~
 
 
 - evaluation to make opengl and glew optionaly in flavour of SDL Renderer only:
@@ -45,7 +45,8 @@
 |Creation    |glGenTextures|SDL_CreateTexture |vkCreateImage           |
 |Binding     |glBindTexture|SDL_RenderTexture |vkCmdBindDescriptorSets |
   
-
+## I think it's not worth to do it OpenGL is fine.## 
+  
       
 ---      
 
