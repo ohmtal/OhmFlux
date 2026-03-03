@@ -153,10 +153,17 @@ FetchContent_Declare(
 
 set(SDL_TESTS OFF CACHE BOOL "" FORCE)
 set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+if(ANDROID)
+    set(SDL_SHARED ON CACHE BOOL "" FORCE)
+    set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+    set(SDL_ANDROID_APK ON CACHE BOOL "" FORCE)
+else()
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF)
+endif()
 
 FetchContent_MakeAvailable(SDL3)
-
-
 
 
 if(EMSCRIPTEN)
@@ -173,70 +180,28 @@ if(EMSCRIPTEN)
         "-sEXIT_RUNTIME=1"
     )
 elseif(ANDROID)
-    # include(FetchContent)
-
-    # FetchContent_Declare(
-    #     SDL3
-    #     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    #     # fixme set a stable tag like release-3.2.28
-    #     GIT_TAG release-3.4.2
-    # )
-
-    # --- Android Specific Configuration ---
-    # SDL3 MUST be SHARED for Android to work with the Java/Kotlin wrapper
-    set(SDL_STATIC OFF CACHE BOOL "" FORCE)
-    set(SDL_SHARED ON CACHE BOOL "" FORCE)
-    # set(SDL_TESTS OFF CACHE BOOL "" FORCE)
-    # set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
-
-    # Enable the SDL3 target for APK generation
-    set(SDL_ANDROID_APK ON CACHE BOOL "" FORCE)
-
-
-    FetchContent_MakeAvailable(SDL3)
-
     # Link against the SHARED target and required NDK system libs
     list(APPEND FLUX_LIBS SDL3::SDL3-shared GLESv3 EGL log android)
 
-
 elseif(WIN32 AND NOT MSVC)
-    # Force Static C++ Runtime (Fixes previous libstdc++ errors)
-    add_link_options("-static-libgcc" "-static-libstdc++" "-static")
+    add_link_options("-static-libgcc" "-static-libstdc++")
 
-    # This is the "Magic" for suppressing the console window in Release
-    # but keeping it in Debug so you can see your logs.
-    link_libraries("-Wl,--subsystem,windows") # Global for MinGW
+    add_definitions(-DGLEW_STATIC)
+    find_library(GLEW_STATIC_LIB NAMES glew32s glew32)
 
-    #  Force CMake to find .a files only
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-
-    # SDL3 Static
-    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-    set(SDL_STATIC ON CACHE BOOL "" FORCE)
-
-    # set(SDL3_SHARED FALSE CACHE BOOL "" FORCE)
-    find_package(SDL3 REQUIRED CONFIG COMPONENTS SDL3-static)
-
-    # GLEW Static - Manual Search to avoid DLL import libs
-    # On Arch MinGW, the static lib is usually named 'glew32' or 'glew32s'
-    find_library(GLEW_STATIC_LIB NAMES glew32s glew32 glew32.a)
-
-    # Collection of Windows libs
     list(APPEND FLUX_LIBS
         SDL3::SDL3-static
         ${GLEW_STATIC_LIB}
-        opengl32 glu32 m dinput8 dxguid dxerr8
-        user32 gdi32 winmm imm32 ole32 oleaut32
-        shell32 setupapi version uuid
+        opengl32
+        glu32
+        winmm
+        imm32
+        version
+        setupapi
+        shlwapi
     )
 
-
 else()
-    # Default Desktop (Linux)
-    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-    set(SDL_STATIC ON CACHE BOOL "" FORCE)
-
-    # find_package(SDL3 REQUIRED CONFIG)
     list(APPEND FLUX_LIBS SDL3::SDL3)
     find_package(OpenGL REQUIRED)
     list(APPEND FLUX_LIBS OpenGL::GL)
