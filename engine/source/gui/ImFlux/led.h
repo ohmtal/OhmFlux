@@ -65,10 +65,12 @@ namespace ImFlux {
     constexpr LedParams LED_YELLOW_ANIMATED_GLOW = { 8.f, true, true, ImColor(200, 200, 0), 4.f, 2.f};
 
 
+    constexpr LedParams LED_BLUE               = { 8.f, false, false, ImColor(64,64, 255)};
     constexpr LedParams LED_BLUE_GLOW          = { 8.f, false, true, ImColor(128, 128, 255), 4.f, 2.f}; //not really blue
     constexpr LedParams LED_BLUE_ANIMATED_GLOW = { 8.f, true, true, ImColor(128, 128, 255), 4.f, 2.f}; //not really blue
 
     constexpr LedParams LED_RED                 = { 8.f, false, false, ImColor(255,0, 0)};
+    constexpr LedParams LED_RED_GLOW            = { 8.f, false, true, ImColor(255, 0, 0), 4.f, 2.f};
     constexpr LedParams LED_RED_ANIMATED_GLOW   = { 8.f, true, true, ImColor(255,0, 0)};
 
     constexpr LedParams LED_RED_ALERT = { 8.f, true, true, ImColor(255,0, 0), 8.f, 2.f, LED_Ani_PULSE};
