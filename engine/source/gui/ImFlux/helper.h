@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <cmath>
+#include <stdint.h>
 #include <algorithm>
 #include <string>
 
