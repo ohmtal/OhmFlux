@@ -105,11 +105,11 @@ inline void ShowCase_MISC()
 
     ImGui::Separator();
     ImGui::TextDisabled("LCDDisplay");
-    ImFlux::LCDDisplay("##FooBit4711", (float)foobit, 3, 0, 16.0f, Color4FIm(cl_Red));
+    ImFlux::LCDDisplay("##FooBit4711", (float)foobit, 3, 0, 16.0f, /*Color4FIm(cl_Red) */IM_COL32(200,0,0,255));
 
     ImGui::Separator();
     ImGui::TextDisabled("LCDNumber");
-    ImFlux::LCDNumber((float)foobit, 3, 0, 24.0f, Color4FIm(cl_Yellow));
+    ImFlux::LCDNumber((float)foobit, 3, 0, 24.0f, /*Color4FIm(cl_Yellow)*/ IM_COL32(200,200,0,255));
 
     ImGui::Separator();
     float value = foobit / 255.f;
@@ -169,11 +169,11 @@ inline void ShowCase_MISC()
     ImGui::SameLine();
     ImFlux::MiniKnobFloat("MiniKnobFloat20", &barFloat, 0.f, 1.f, 20.f); // float radius = 12.f,  float speed = 0.01f) {
     ImGui::SameLine();
-    ImFlux::LCDNumber(barFloat, 5, 2, 32.0f, Color4FIm(cl_Lime));
+    ImFlux::LCDNumber(barFloat, 5, 2, 32.0f, /*Color4FIm(cl_Lime)*/ IM_COL32(180,255,0,255));
     ImFlux::SeparatorVertical(4.f);
     ImFlux::MiniKnobInt("MiniKnobInt", &barInt, 0,255);
     ImGui::SameLine();
-    ImFlux::LCDDisplay("##BarInt1", (float)barInt, 3, 0, 10.0f, Color4FIm(cl_Yellow));
+    ImFlux::LCDDisplay("##BarInt1", (float)barInt, 3, 0, 10.0f, /*Color4FIm(cl_Yellow)*/ IM_COL32(200,200,0,255));
 
 }
 //---------------------------------------------------------------------------------------
@@ -312,7 +312,7 @@ inline void ShowCase_LCD_Full()
 {
     // ImGui::Begin("LCD Display Showcase");
 
-    ImU32 lcdColor = Color4FImU32(cl_Coral);
+    ImU32 lcdColor =  IM_COL32(255,128,75,255); // Color4FImU32(cl_Coral);
     float lcdHeight = 26.0f;
 
     // --- Row 1: The Full Alphabet ---
@@ -348,9 +348,9 @@ inline void ShowCaseWidgets()
 {
    ImGui::Begin("ImFlux ShowCase Widgets");
    //inline void LCDText(std::string text, int display_chars, float height, ImU32 color_on, bool scroll = true, float scroll_speed = 2.0f) {
-   ImFlux::LCDText("OhmFlux Engine ImFlux Widgets Showcase :)", 12, 22.f, Color4FImU32(cl_Coral), true, 2.f);
+   ImFlux::LCDText("OhmFlux Engine ImFlux Widgets Showcase :)", 12, 22.f,IM_COL32(255,128,75,255), true, 2.f);
 
-   ImFlux::LCDText("OhmFlux Engine ImFlux Widgets Showcase :)", 12, 22.f, Color4FImU32(cl_Coral), true, 2.f);
+   ImFlux::LCDText("OhmFlux Engine ImFlux Widgets Showcase :)", 12, 22.f, IM_COL32(255,128,75,255), true, 2.f);
 
    if (ImGui::BeginTabBar("ShowCaseTabs", ImGuiTabBarFlags_AutoSelectNewTabs /*| ImGuiTabBarFlags_Reorderable*/)) {
 
