@@ -19,6 +19,7 @@
 #include "box2d/box2d.h"
 #include <OPL3Controller.h>
 #include <SFXGenerator.h>
+#include <utils/FileSearcher.h>
 
 #include <SDL3/SDL_main.h> //<<< Android! and Windows
 

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <atomic>
 #include <mutex>
 #include <fstream>
 #include <algorithm>
@@ -20,20 +21,27 @@ class FileSearcher {
 public:
     std::vector<SearchResult> results;
     std::mutex resultsMutex;
+    std::string lastSearchTerm = "";
+    bool open = false;
     bool isSearching = false;
+    std::atomic<bool> stopRequested{false};
 
     void startSearch(const std::vector<std::string>& files, std::string term, bool ignoreCase) {
-        if (isSearching) return;
-
+        open = true;
+        if (isSearching) {
+            stopRequested = true;
+            if (mSearchThread.joinable()) mSearchThread.join();
+        }
+        lastSearchTerm = term;
         results.clear();
         isSearching = true;
 
-        mSearchThread = std::jthread([this, files, term, ignoreCase](std::stop_token st) {
+        mSearchThread = std::thread([this, files, term, ignoreCase]() {
             std::string termLower = term;
             if (ignoreCase) std::transform(termLower.begin(), termLower.end(), termLower.begin(), ::tolower);
 
             for (const auto& path : files) {
-                if (st.stop_requested()) break; // Abbruch-Check
+                if (stopRequested) break;
 
                 std::ifstream file(path);
                 std::string line;
@@ -48,12 +56,18 @@ public:
                         results.push_back({path, lineNum, line});
                     }
                     lineNum++;
+                    if (stopRequested) break;
                 }
             }
             isSearching = false;
         });
     }
 
+    ~FileSearcher() {
+        stopRequested = true;
+        if (mSearchThread.joinable()) mSearchThread.join();
+    }
+
 private:
-    std::jthread mSearchThread;
+    std::thread mSearchThread;
 };
