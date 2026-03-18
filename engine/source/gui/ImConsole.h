@@ -285,7 +285,7 @@ public:
                         ImGui::PopStyleColor();
                 }
             }
-
+            clipper.End();
             ImGui::PopStyleVar();
 
             if (loDoCopyToClipboard ) {
