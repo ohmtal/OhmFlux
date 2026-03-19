@@ -317,19 +317,19 @@ inline void ShowCase_LCD_Full()
 
     // --- Row 1: The Full Alphabet ---
     ImGui::TextDisabled("ALPHABET");
-    ImFlux::LCDText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26, lcdHeight, lcdColor, false);
+    ImFlux::LCDText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 30, lcdHeight, lcdColor, false);
 
     ImGui::Spacing();
 
     // --- Row 2: Numbers & Symbols ---
     ImGui::TextDisabled("NUMBERS & SYMBOLS");
-    ImFlux::LCDText("0123456789 +-/*=\\|<> !?_[]", 26, lcdHeight, lcdColor, false);
+    ImFlux::LCDText("0123456789 +-/*=\\|<> !?_[]'", 30, lcdHeight, lcdColor, false);
 
     ImGui::Spacing();
 
     // --- Row 3: Your Test Case (Scrolling) ---
     ImGui::TextDisabled("SCROLLING TEST");
-    ImFlux::LCDText("OhmFlux Engine ImFlux Widgets Showcase :)", 15, 32.0f, lcdColor, true, 3.0f);
+    ImFlux::LCDText("You're watching OhmFlux Engine ImFlux Widgets Showcase :)", 15, 32.0f, lcdColor, true, 3.0f);
 
     ImGui::Spacing();
 

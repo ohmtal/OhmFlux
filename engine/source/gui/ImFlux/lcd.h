@@ -186,7 +186,7 @@ namespace ImFlux {
         float thickness = h * 0.08f;
         float pad = h * 0.03f;
 
-        // Standard C++ approach: Initialize with 0 and fill
+
         static uint16_t charTable[128] = { 0 };
         static bool initialized = false;
         if (!initialized) {
@@ -243,6 +243,7 @@ namespace ImFlux {
             charTable[']'] = 0x000F;
             charTable['='] = 0x00C8; // Mid-cross + Bot
             charTable['!'] = 0x0200; // Top-center (8)
+            charTable['\''] = 0x0002;
 
             initialized = true;
         }
