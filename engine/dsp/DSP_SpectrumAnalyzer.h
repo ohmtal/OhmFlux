@@ -29,7 +29,7 @@
 namespace DSP {
     class SpectrumAnalyzer : public Effect {
     private:
-        static constexpr int FFT_SIZE = 2048; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
+        static constexpr int FFT_SIZE = 512; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
         std::vector<float> mCaptureBuffer;
         std::vector<float> mDisplayMagnitudes;
         int mWriteIdx = 0;
