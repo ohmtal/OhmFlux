@@ -520,6 +520,12 @@ endif()
 # --- RadioWana ---
 option(BUILD_RADIOWANA "Build RadioWana" ON)
 if(BUILD_RADIOWANA)
+    #append curl here if project is not enabled
+    if (NOT WITH_CURL)
+        find_package(CURL REQUIRED)
+        list(APPEND FLUX_LIBS CURL::libcurl)
+    endif()
+
     set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")
     set(RADIOWANA_SOURCES
         "${RADIOWANA_DIR}/src/main.cpp"
