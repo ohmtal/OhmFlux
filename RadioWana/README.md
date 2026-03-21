@@ -35,6 +35,7 @@ Limitation:
     - [X] switch to OhmFlux agian with it's build system 
     - [X] setup Project (cmake)
     - [X] copy code from Prototype and make it basicly run 
+    - [ ] callback for https errors 
     - [ ] add delay to switch file name, this should be saved for each station 
         - rock antenne sends meta data too early for example 3 sec or so 
         - i can use OhmFlux Scheduler :) 
