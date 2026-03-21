@@ -61,6 +61,7 @@ set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/lib/box2d")
 set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/ymfm/src")
 set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/lib/imgui")
 set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/json/single_include")
+set(MINIAUDIO_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/miniaudio")
 
 
 # =============================================================================
@@ -272,6 +273,7 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${SFX_DIR}>
     $<BUILD_INTERFACE:${IMGGUI_DIR}>
     $<BUILD_INTERFACE:${JSON_DIR}>
+    $<BUILD_INTERFACE:${MINIAUDIO_DIR}>
 )
 
 # Apply Static Interface Properties for Windows/MinGW
@@ -323,7 +325,8 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
     endif()
 
     target_include_directories(${TARGET_NAME} PRIVATE ${ABS_OUT_DIR})
-    target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine)
+    target_link_libraries(${TARGET_NAME} PRIVATE ohmFlux_engine ${PROJECT_LIBS})
+    set(PROJECT_LIBS  "")
 
     if(EMSCRIPTEN)
         set_target_properties(${TARGET_NAME} PROPERTIES
@@ -385,7 +388,7 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
     endif()
 endmacro()
 
-macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH )
+macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
     if(NOT DISABLE_DEMOS)  
        configure_project_target(${TARGET_NAME} "${SOURCE_DIR}" "${PRELOAD_PATH}" ${ARGN})
     endif() 
@@ -395,6 +398,9 @@ endmacro()
 # =============================================================================
 # PROJECTS SECTION >>>>>
 # =============================================================================
+# Project libs can be used to add a lib for a project
+# example list(APPEND PROJECT_LIBS CURL::libcurl)
+set(PROJECT_LIBS  "")
 
 option(DISABLE_DEMOS "Disable all Demos" OFF)
 
@@ -523,14 +529,21 @@ if(BUILD_RADIOWANA)
     #append curl here if project is not enabled
     if (NOT WITH_CURL)
         find_package(CURL REQUIRED)
-        list(APPEND FLUX_LIBS CURL::libcurl)
+        list(APPEND PROJECT_LIBS CURL::libcurl)
+        message(STATUS "Added Curl .....")
     endif()
 
     set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")
     set(RADIOWANA_SOURCES
         "${RADIOWANA_DIR}/src/main.cpp"
+        "${RADIOWANA_DIR}/src/RadioWana.cpp"
+        "${RADIOWANA_DIR}/src/AudioHandler.cpp"
+        "${RADIOWANA_DIR}/src/StreamHandler.cpp"
+
     )
-    configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}")
+    configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}" )
+
+
 endif()
 
 

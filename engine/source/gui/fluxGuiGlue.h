@@ -39,11 +39,7 @@ inline ImU32 Color4FImU32(const Color4F& c) {
     return ImGui::ColorConvertFloat4ToU32(ImVec4(c.r, c.g, c.b, c.a));
 }
 
-struct FluxFingerTouchData {
-    Uint64 touchStartTime = 0;
-    float touchX, touchY;
-    bool isLongPress = false;
-} ;
+
 
 class FluxGuiGlue : public FluxBaseObject
 {
@@ -58,9 +54,24 @@ private:
 
     const char* mIniFileName;
 
+
+    struct FluxFingerTouchData {
+        Uint64 touchStartTime = 0;
+        float touchX, touchY;
+        bool isLongPress = false;
+    } ;
     FluxFingerTouchData mTouchData;
 
+    struct MessageBoxData {
+        bool active = false;
+        std::string caption = "MessageBox";
+        std::string text    = "Hello World";
+    };
+    MessageBoxData mMessageBoxData;
+
 public:
+
+
     bool mSimulateRightClick = false;
 
     FluxGuiGlue( bool lEnableDockSpace , bool lScaleGui = false, const char* IniFileName = nullptr )
@@ -212,6 +223,7 @@ public:
 
     void DrawEnd()
     {
+        DrawMsgBoxPopup();
         ImGui::Render();
 
         ImDrawData* drawData = ImGui::GetDrawData();
@@ -220,5 +232,40 @@ public:
             ImGui_ImplOpenGL3_RenderDrawData(drawData);
         }
     }
+
+
+    //------------------------------------------------------------------------------
+    // Modal Message Box
+    //------------------------------------------------------------------------------
+
+    void showMessage(std::string caption, std::string text)
+    {
+        mMessageBoxData.caption = caption;
+        mMessageBoxData.text    = text;
+        mMessageBoxData.active  = true;
+    }
+
+private:
+    // a modal message box
+    void DrawMsgBoxPopup() {
+
+        if (mMessageBoxData.active) {
+            ImGui::OpenPopup(mMessageBoxData.caption.c_str());
+            mMessageBoxData.active = false;
+        }
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        if (ImGui::BeginPopupModal(mMessageBoxData.caption.c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("%s",mMessageBoxData.text.c_str());
+            ImGui::Separator();
+
+            if (ImGui::Button("OK", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
+
 
 }; //class

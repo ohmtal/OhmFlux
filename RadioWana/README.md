@@ -1,12 +1,14 @@
 # RadioWana II
 
+##Status: WiP 
+
 A cross platform Internet Radio. 
 
 I created RadioWana back in the early 2000th as a Internet Radio Recorder.
 It is written in Object Pascal using Delphi 5. 
 It still works fine but i wanted to create a cross platform version with C++ and OhmFlux. 
 
-[RadioWana Prototype](https://github.com/ohmtal/RadioWana/tree/main/eval)
+[RadioWana Prototype](https://github.com/ohmtal/RadioWana/tree/main/prototype)
 
 --- 
 
@@ -30,10 +32,15 @@ Limitation:
 ## Todos
 
 - [ ] Final Version 
-    - [ ] switch to OhmFlux agian with it's build system 
+    - [X] switch to OhmFlux agian with it's build system 
+    - [X] setup Project (cmake)
+    - [X] copy code from Prototype and make it basicly run 
     - [ ] add delay to switch file name, this should be saved for each station 
         - rock antenne sends meta data too early for example 3 sec or so 
         - i can use OhmFlux Scheduler :) 
+    - [ ] mixTape like in the good old days :D << auto switch does not work so good anyway 
+        - [ ] do not switch the file name it like MixTape_DATE or let the user name it 
+        - [ ] append to stream 
     - [ ] Gui enhancements 
         - [ ] design like an old 70th/80th radio recorder 
         - [ ] keep android GUI in mind (no context menus)
