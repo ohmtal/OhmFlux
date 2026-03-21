@@ -35,7 +35,7 @@ private:
 
 
     // main
-    std::string mUrl = ""; //<< current Stream URL
+    std::string mUrl = "https://stream.rockantenne.de/rockantenne/stream/mp3"; //<< current Stream URL
 
     // Recordings
     bool mRecording = false;

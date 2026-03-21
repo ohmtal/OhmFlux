@@ -53,6 +53,7 @@ void RadioWana::DrawRadioBrowserWindow() {
 
             if (ImGui::InputText("Name:", strBuff, sizeof(strBuff), ImGuiInputTextFlags_EnterReturnsTrue)) {
                 mRadioBrowser->searchStationsByNameAndTag(strBuff, "");
+                mQueryString = strBuff;
                 dLog("query for %s", strBuff);
             }
 
@@ -185,6 +186,7 @@ void RadioWana::Deinitialize(){
         SettingsManager().save();
     }
     SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!!
+    if (mAudioHandler.get()) mAudioHandler->shutDown();
 }
 // -----------------------------------------------------------------------------
 bool RadioWana::Initialize(){
