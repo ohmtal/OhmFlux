@@ -49,6 +49,7 @@
 - nlohmann json 
 - stb
 - ymfm
+- miniaudio
 
 ---
 

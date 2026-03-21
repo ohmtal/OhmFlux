@@ -61,16 +61,7 @@ set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/lib/box2d")
 set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/ymfm/src")
 set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/lib/imgui")
 set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/json/single_include")
-# =============================================================================
-# PROJECTS SECTION >>>>
-# =============================================================================
-set(DEMO_DIR    "${CMAKE_CURRENT_LIST_DIR}/FishTankDemo")
-set(TESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}/TestBed")
-set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
-set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
-set(SOUNDSTUDIO_DIR "${CMAKE_CURRENT_LIST_DIR}/SoundStudio")
-set(TRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalTracker")
-set(AXE_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalAxe")
+
 
 # =============================================================================
 # <<<< PROJECTS SECTION
@@ -147,7 +138,7 @@ set(ENGINE_PRECOMPILED_HEADER
 set(FLUX_LIBS "")
 
 # -- box2D
-option(WITH_BOX2D "with BOX2D Library" ON)
+option(WITH_BOX2D "with BOX2D Library" OFF)
 if(WITH_BOX2D)
     set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
     set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
@@ -157,6 +148,14 @@ if(WITH_BOX2D)
     list(APPEND FLUX_LIBS box2d)
 endif()
 # <<<
+
+# -- Curl
+option(WITH_CURL "with Curl Library" OFF)
+if (WITH_CURL)
+    find_package(CURL REQUIRED)
+    list(APPEND FLUX_LIBS CURL::libcurl)
+endif()
+
 
 
 include(FetchContent)
@@ -403,14 +402,16 @@ option(DISABLE_DEMOS "Disable all Demos" OFF)
 # --- FishTank ---
 option(BUILD_FISHTANK "Build FishTank demo" ON)
 if(BUILD_FISHTANK)
-    set(GAME_SOURCES "${DEMO_DIR}/src/main.cpp")
-    configure_demo_target(FishTankDemo ${DEMO_DIR} "${DEMO_DIR}/assets@assets" "${GAME_SOURCES}")
+    set(FISHTANK_DIR    "${CMAKE_CURRENT_LIST_DIR}/FishTankDemo")
+    set(GAME_SOURCES "${FISHTANK_DIR}/src/main.cpp")
+    configure_demo_target(FishTankDemo ${FISHTANK_DIR} "${FISHTANK_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
 
 # --- TestBed ---
 option(BUILD_TESTBED "Build TestBed application" ON)
 if(BUILD_TESTBED)
+    set(TESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}/TestBed")
     set(GAME_SOURCES "${TESTBED_DIR}/src/main.cpp")
     configure_demo_target(TestBed ${TESTBED_DIR} "${TESTBED_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
@@ -420,6 +421,7 @@ endif()
 option(BUILD_LUATEST "Build LuaTest application" OFF)
 
 if(BUILD_LUATEST)
+    set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
     # Fetch dependencies
     include(FetchContent)
 
@@ -458,6 +460,7 @@ endif()
 # --- Amana ---
 option(BUILD_AMANA "Build Amana Game" ON)
 if(BUILD_AMANA)
+    set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
     set(GAME_SOURCES
         "${AMANA_DIR}/src/main.cpp"
         "${AMANA_DIR}/src/amanaGame.cpp"
@@ -466,11 +469,10 @@ if(BUILD_AMANA)
     configure_demo_target(Amana ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
-
-
 # --- SOUNDSTUDIO ---
 option(BUILD_SOUNDSTUDIO "Build SoundStudio application" OFF)
 if(BUILD_SOUNDSTUDIO)
+    set(SOUNDSTUDIO_DIR "${CMAKE_CURRENT_LIST_DIR}/SoundStudio")
     set(APP_SOURCES
         "${SOUNDSTUDIO_DIR}/src/main.cpp"
         "${SOUNDSTUDIO_DIR}/src/appGui.cpp"
@@ -483,6 +485,7 @@ endif()
 # --- Ohmtal Axe ---
 option(BUILD_AXE "Build Ohmtal Axe application" ON)
 if(BUILD_AXE)
+    set(AXE_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalAxe")
     set(APP_SOURCES
         "${AXE_DIR}/src/main.cpp"
         "${AXE_DIR}/src/appGui.cpp"
@@ -499,6 +502,7 @@ endif()
 # --- Ohmtal Tracker ---
 option(BUILD_FLUXTRACKER "Build Ohmtal Tracker" ON)
 if(BUILD_FLUXTRACKER)
+    set(TRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalTracker")
     set(TRACKER_SOURCES
         "${TRACKER_DIR}/src/main.cpp"
         "${TRACKER_DIR}/src/otGui.cpp"
@@ -511,6 +515,16 @@ if(BUILD_FLUXTRACKER)
         "${TRACKER_DIR}/src/ordersGui.cpp"
     )
     configure_demo_target(OhmtalTracker ${TRACKER_DIR} "${TRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
+endif()
+
+# --- RadioWana ---
+option(BUILD_RADIOWANA "Build RadioWana" ON)
+if(BUILD_RADIOWANA)
+    set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")
+    set(RADIOWANA_SOURCES
+        "${RADIOWANA_DIR}/src/main.cpp"
+    )
+    configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}")
 endif()
 
 
