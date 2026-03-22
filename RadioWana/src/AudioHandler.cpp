@@ -293,6 +293,8 @@ namespace FluxRadio {
             mInitialized = false;
         }
         mPendingStreamTitles.clear();
+        mCurrentTitle = "";
+
     }
     // -----------------------------------------------------------------------------
     void AudioHandler::OnStreamTitleUpdate(const std::string streamTitle, const size_t streamPosition){

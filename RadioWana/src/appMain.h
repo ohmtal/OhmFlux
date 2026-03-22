@@ -17,6 +17,11 @@ public:
     AppMain() {}
     ~AppMain() {}
 
+    inline static ImFont* mHackNerdFont16 = nullptr;
+    inline static ImFont* mHackNerdFont20 = nullptr;
+    inline static ImFont* mHackNerdFont26 = nullptr;
+
+
     bool Initialize() override
     {
         if (!Parent::Initialize()) return false;

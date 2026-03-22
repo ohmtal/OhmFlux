@@ -539,6 +539,7 @@ if(BUILD_RADIOWANA)
         "${RADIOWANA_DIR}/src/RadioWana.cpp"
         "${RADIOWANA_DIR}/src/AudioHandler.cpp"
         "${RADIOWANA_DIR}/src/StreamHandler.cpp"
+        "${RADIOWANA_DIR}/src/RadioBrowser.cpp"
 
     )
     configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}" )

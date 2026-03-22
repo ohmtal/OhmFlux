@@ -20,6 +20,36 @@
 #include "RadioBrowser.h"
 
 
+
+// -----------------------------------------------------------------------------
+constexpr  ImFlux::ButtonParams gRadioButtonParams {
+    .color = IM_COL32(20, 20, 30, 255),
+    .size  = { 40.f, 40.f },
+    .gloss = true, //<< does not work so good with round buttons
+    .rounding = 6.f,
+
+};
+
+constexpr  ImFlux::GradientParams gRadioDisplayBox {
+    // ImVec2 pos  = ImVec2(0, 0);
+    // size = ImVec2(0, 0);
+    .rounding = 0.f,
+    // bool   inset    = true;
+
+    // Background Colors
+    .col_top   = IM_COL32(30, 30, 30, 255),
+    .col_bot   = IM_COL32(15, 15, 15, 255),
+
+    // Decoration Colors
+    // ImU32 col_shadow = IM_COL32(0, 0, 0, 200);      // Inner shadow
+    // ImU32 col_rim    = IM_COL32(255, 255, 255, 50); // Light edge
+    // ImU32 col_raised = IM_COL32(55, 55, 65, 255);   // Base for !inset
+};
+
+
+// -----------------------------------------------------------------------------
+
+
 class RadioWana: public FluxBaseObject {
 private:
     //FIXME FluxRenderObject* mBackground = nullptr;
@@ -35,7 +65,28 @@ private:
 
 
     // main
-    std::string mUrl = "https://stream.rockantenne.de/rockantenne/stream/mp3"; //<< current Stream URL
+   //moved to AppSettings std::string mUrl = ""; //<< current Stream URL
+
+
+
+    // {"ok":true,"message":"retrieved station url","stationuuid":"960594a6-0601-11e8-ae97-52543be04c81","name":"Rock Antenne",
+    // "url":"http://mp3channels.webradio.rockantenne.de/rockantenne"}
+    const std::vector<FluxRadio::RadioStation> mDefaultFavo = {
+        {
+            .stationuuid = "960594a6-0601-11e8-ae97-52543be04c81",
+            .name= "Rock Antenne",
+            .url = "http://mp3channels.webradio.rockantenne.de/rockantenne",
+            .countrycode = "DE"
+        },
+        // {"ok":true,"message":"retrieved station url","stationuuid":"92556f58-20d3-44ae-8faa-322ce5f256c0",
+        // "name":"Radio BOB!","url":"http://streams.radiobob.de/bob-national/mp3-192/mediaplayer"},
+        {
+            .stationuuid = "92556f58-20d3-44ae-8faa-322ce5f256c0",
+            .name= "BOB! - Radio Bob",
+            .url = "http://streams.radiobob.de/bob-national/mp3-192/mediaplayer",
+            .countrycode = "DE"
+        }
+    };
 
     // Recordings
     bool mRecording = false;
@@ -52,11 +103,15 @@ private:
 
 public:
     struct AppSettings {
-        bool mDockSpaceInitialized = false;
-        bool mShowFileBrowser      = false;
-        bool mShowConsole          = false;
-        bool mShowRadioBrowser     = true;
-        bool mShowRadio            = true;
+        std::string mUrl = "http://mp3channels.webradio.rockantenne.de/rockantenne";
+        float Volume = 1.f;
+        bool DockSpaceInitialized = false;
+        bool ShowFileBrowser      = false;
+        bool ShowConsole          = false;
+        bool ShowRadioBrowser     = true;
+        bool ShowRadio            = true;
+        bool ShowRecorder         = true;
+        bool ShowFavo             = true;
     };
 
 
@@ -65,6 +120,7 @@ public:
 
     bool Initialize() override;
     void Deinitialize() override;
+    void SaveSettings();
     void onEvent(SDL_Event event);
     // void DrawMsgBoxPopup();
     void ShowMenuBar();
@@ -75,105 +131,20 @@ public:
     void InitDockSpace() {}
     void ShowFileBrowser() {}
     void ApplyStudioTheme() {}
-    void setupFonts() {}
+    void setupFonts();
     AppSettings* getAppSettings() {return &mAppSettings;}
     void restoreLayout( ) {}
     void setImGuiScale(float factor) {}
 
     //-----
+    void DrawFavo();
+
+    void DrawStationsList(std::vector<FluxRadio::RadioStation> stations, bool isFavoList );
     void DrawRadioBrowserWindow();
-    void DrawRadio() {
-        //FIXME only a copy from the prototype !!!
+    void DrawRadio();
+    void DrawRecorder();
 
-        if (ImGui::Begin("RadioWana")) {
-            float fullWidth = ImGui::GetContentRegionAvail().x;
+    bool isFavoStation(std::string searchUuid);
 
-            // ImGui::SetNextItemWidth(450.f);
-            char strBuff[256];
-            strncpy(strBuff, mUrl.c_str(), sizeof(strBuff));
-            if (ImGui::InputText("URL", strBuff, sizeof(strBuff))) {
-                mUrl = strBuff;
-            }
-            if ( mStreamHandler->isRunning() ) {
-                if (ImFlux::ButtonFancy("close")) {
-                    mStreamHandler->stop();
-                }
-                FluxRadio::StreamInfo* info = mStreamHandler->getStreamInfo();
-                if (info)
-                {
-                    // inline void LCDText(std::string text, int display_chars, float height, ImU32 color_on, bool scroll = true, float scroll_speed = 2.0f) {
-
-                    ImFlux::LCDText(mAudioHandler->getCurrentTitle(), 20, 36.f, ImFlux::COL32_NEON_ORANGE);
-                    ImGui::SeparatorText(info->streamUrl.c_str());
-                    ImGui::SeparatorText(info->name.c_str());
-                    ImGui::TextColored(ImVec4(0.3f, 0.3f,0.7f,1.f), "%s", mAudioHandler->getCurrentTitle().c_str());
-                    ImGui::TextDisabled("Next: %s", mAudioHandler->getNextTitle().c_str());
-                    ImGui::Separator();
-                    ImGui::Text("Description: %s", info->description.c_str());
-                    ImGui::Text("Audio: %d Hz, %d kbps, %d Channels", info->samplerate, info->bitrate, info->channels);
-                    ImGui::Text("Url: %s", info->url.c_str());
-                }
-
-                float vol = mAudioHandler->getVolume();
-                if (ImFlux::LEDMiniKnob("Volume", &vol, 0.f, 1.f)) {
-                    mAudioHandler->setVolume(vol);
-                }
-                ImFlux::SameLineBreak(200);
-
-                if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
-                    mAudioHandler->getManager()->getVisualAnalyzer()->renderVU(ImVec2(200,60), 70);
-
-                    //FIXME separate VU's:
-                    //                         float dbL, dbR;
-                    //                         dbL = this->getDecible(0);
-                    //                         dbR = this->getDecible(1);
-                    //
-                    //                         // this->getDecible(dbL, dbR);
-                    //
-                    //                         auto mapDB = [](float db) {
-                    //                             float minDB = -20.0f;
-                    //                             return (db < minDB) ? 0.0f : (db - minDB) / (0.0f - minDB);
-                    //                         };
-                    //
-                    //                         ImFlux::VUMeter70th(halfSize, mapDB(dbL));
-                    //                         ImGui::SameLine();
-                    //                         ImFlux::VUMeter70th(halfSize, mapDB(dbR));
-
-
-                }
-                if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getSpectrumAnalyzer()) {
-
-                    mAudioHandler->getManager()->getSpectrumAnalyzer()->DrawSpectrumAnalyzer(ImVec2(fullWidth,60), true);
-                }
-
-                mAudioHandler->RenderRack(1);
-
-                ImGui::SeparatorText("Recording");
-
-                ImGui::Checkbox("Recording starts on when new stream title is triggered", &mRecordingStartsOnNewTile);
-                if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
-                    if (mRecording && !mRecordingStartsOnNewTile && !mAudioHandler->getCurrentTitle().empty()) {
-                        mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
-                    }
-                    if (!mRecording)
-                        mAudioRecorder->closeFile();
-                }
-                if (mRecording) {
-                    ImFlux::DrawLED("Recording", mAudioRecorder->isFileOpen(), ImFlux::LED_GREEN_ANIMATED_GLOW);
-                    ImGui::SameLine();
-                    ImGui::Text("File: %s", mAudioRecorder->getCurrentFilename().c_str());
-                }
-
-            } else {
-                if (ImFlux::ButtonFancy("open URL")) {
-                    mStreamHandler->Execute(mUrl);
-                }
-            }
-        }
-        ImGui::End();
-    }
-
-
-//
 }; //class
 

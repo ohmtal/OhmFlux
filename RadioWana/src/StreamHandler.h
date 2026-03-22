@@ -25,6 +25,7 @@ namespace FluxRadio {
         std::atomic<bool> mStopRequested{false}; // remember : .store .load  :P
         std::thread mThread;
         std::atomic<bool> mRunning = false;
+        std::atomic<bool> mConnected = false;
         StreamInfo mStreamInfo;
 
         std::string mFullHeader;
@@ -52,7 +53,9 @@ namespace FluxRadio {
 
     public:
         std::function<void()> OnConnected = nullptr;
+        std::function<void()> OnConnecting = nullptr;
         std::function<void()> onDisConnected = nullptr;
+        std::function<void(const std::string)> OnError = nullptr;
 
         std::function<void(const std::string, const size_t)> OnStreamTitleUpdate = nullptr;
         std::function<void(const void*, const size_t)> OnAudioChunk = nullptr;
@@ -66,6 +69,7 @@ namespace FluxRadio {
         }
 
         bool isRunning() {return mRunning.load();}
+        bool isConnected() {return mConnected.load();}
         StreamInfo* getStreamInfo() { return &mStreamInfo; };
         void dumpInfo() { mStreamInfo.dump(); }
 
@@ -76,7 +80,7 @@ namespace FluxRadio {
         };
 
 
-    private:
+    protected:
         static size_t HeaderCallback(char* buffer, size_t size, size_t nitems, void* userdata);
         void parseMeta();
         static size_t WriteCallback(void* buffer, size_t size, size_t nmemb, void* userdata);

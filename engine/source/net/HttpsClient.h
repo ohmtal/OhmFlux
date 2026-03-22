@@ -35,8 +35,13 @@ namespace FluxNet {
 
     public:
         //--------------------------------------------------------------------------
+        std::function<void()> OnConnecting = nullptr;
         std::function<void()> OnConnected = nullptr;
         std::function<void()> onDisConnected = nullptr;
+        std::function<void(const std::string)> OnError = nullptr;
+
+        long mConnectTimeOut = 10;
+        long mBufferSize = 16384;
         //--------------------------------------------------------------------------
         std::string getHeaderData() const { return mHeaderData;}
         std::string getContentData() const { return mContentData;}
@@ -105,6 +110,7 @@ namespace FluxNet {
             FluxNet::initCurl();
 
             mThread = std::thread([this]() {
+                if (OnConnecting) OnConnecting();
                 mRunning.store(true);
 
                 struct curl_slist *headers = nullptr;
@@ -138,21 +144,22 @@ namespace FluxNet {
                     curl_easy_setopt(mCurlHandle, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
                     curl_easy_setopt(mCurlHandle, CURLOPT_XFERINFODATA, &mStopRequested);
                     curl_easy_setopt(mCurlHandle, CURLOPT_NOSIGNAL, 1L);
-                    curl_easy_setopt(mCurlHandle, CURLOPT_CONNECTTIMEOUT, 10L);
+                    curl_easy_setopt(mCurlHandle, CURLOPT_CONNECTTIMEOUT, mConnectTimeOut);
 
                     // SSL-Verify
                     curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYPEER, 1L);
                     curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYHOST, 2L);
 
-                    // disable buffering
-                    curl_easy_setopt(mCurlHandle, CURLOPT_BUFFERSIZE, 16384L);
-                    curl_easy_setopt(mCurlHandle, CURLOPT_UPLOAD_BUFFERSIZE, 16384L);
+                    // buffering
+                    curl_easy_setopt(mCurlHandle, CURLOPT_BUFFERSIZE, mBufferSize);
+                    curl_easy_setopt(mCurlHandle, CURLOPT_UPLOAD_BUFFERSIZE, mBufferSize);
 
 
                     res = curl_easy_perform(mCurlHandle);
 
                     if(res != CURLE_OK && res != CURLE_ABORTED_BY_CALLBACK) {
                         Log("[error] HttpStream error: %s", curl_easy_strerror(res));
+                        if (OnError) OnError(curl_easy_strerror(res));
                     }
                     curl_easy_cleanup(mCurlHandle);
                      mCurlHandle = nullptr;

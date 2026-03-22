@@ -15,6 +15,7 @@
 #include "DSP.h"
 #include "DSP_EffectsManager.h"
 #include "dsp/MonoProcessors/Volume.h"
+#include "utils/byteEncoder.h"
 
 namespace FluxRadio {
 
@@ -112,6 +113,42 @@ namespace FluxRadio {
         static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
         static ma_result OnReadFromRawBuffer(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead, size_t* pBytesRead);
         static ma_result OnSeekDummy(ma_decoder* pDecoder, ma_int64 byteOffset, ma_seek_origin origin);
+
+
+    public:
+        std::string getEffectsSettingsBase64( ) {
+            if (mEffectsManager->getActiveRack()) {
+                std::stringstream oss;
+                mEffectsManager->SaveRackStream(mEffectsManager->getActiveRack(), oss);
+                ByteEncoder::Base64 lEncoder;
+                return lEncoder.encode(oss);
+            }
+            return "";
+        }
+        bool setEffectsSettingsBase64( std::string settingsBase64) {
+
+            if (settingsBase64.empty()) {
+                LogFMT("[error] setInputEffectsSettings failed! Empty INPUT Stream!");
+                return false;
+            }
+
+            if (mEffectsManager->getActiveRack()) {
+                ByteEncoder::Base64 lEncoder;
+                std::stringstream iss;
+                if (!lEncoder.decode(settingsBase64, iss)) {
+                    LogFMT("[error] setInputEffectsSettings failed! Invalid Stream!");
+                    return false;
+                }
+                if (!mEffectsManager->LoadRackStream(iss, DSP::EffectsManager::OnlyUpdateExistingSingularity, true)) {
+                    LogFMT("[error] setInputEffectsSettings failed!\n{}", mEffectsManager->getErrors());
+                    return false;
+                }
+
+                return true;
+            }
+            return false;
+        }
+
 
 
     };

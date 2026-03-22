@@ -49,7 +49,10 @@ namespace FluxRadio {
                     self->mState = StreamState::AUDIO;
                     self->mBytesToRead = self->mMetaInt;
 
-                    if (self->OnConnected) self->OnConnected();
+                    if (self->OnConnected) {
+                        self->OnConnected();
+                    }
+                    self->mConnected.store(true);
                 }
             }
             dLog("[info] https got header: %s (metaint:%d) HTTP CODE: %d", header.c_str(), self->mMetaInt, (int)http_code);
@@ -179,6 +182,7 @@ namespace FluxRadio {
         FluxNet::initCurl();
 
         mThread = std::thread([this]() {
+            if (OnConnecting) OnConnecting();
             mRunning.store(true);
             struct curl_slist *headers = nullptr;
             headers = curl_slist_append(headers, "Icy-MetaData: 1");
@@ -209,7 +213,7 @@ namespace FluxRadio {
                 curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYPEER, 1L);
                 curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYHOST, 2L);
 
-                // disable buffering
+                // buffering
                 curl_easy_setopt(mCurlHandle, CURLOPT_BUFFERSIZE, 16384L);
                 curl_easy_setopt(mCurlHandle, CURLOPT_UPLOAD_BUFFERSIZE, 16384L);
 
@@ -217,6 +221,7 @@ namespace FluxRadio {
 
                 if(res != CURLE_OK && res != CURLE_ABORTED_BY_CALLBACK) {
                     Log("[error] HttpStream error: %s", curl_easy_strerror(res));
+                    if (OnError) OnError(curl_easy_strerror(res));
                 }
                 curl_easy_cleanup(mCurlHandle);
                 mCurlHandle = nullptr;
@@ -224,7 +229,11 @@ namespace FluxRadio {
             if (headers) curl_slist_free_all(headers);
             stop();
             mRunning.store(false);
-            if (onDisConnected) onDisConnected();
+            mConnected.store(false);
+            if (onDisConnected) {
+                onDisConnected();
+            }
+            reset();
         });
     }
     //--------------------------------------------------------------------------

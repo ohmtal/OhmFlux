@@ -15,6 +15,59 @@
 
 namespace ImFlux {
     //--------------------------------------------------------------------------
+    // Favorite Star
+    //--------------------------------------------------------------------------
+    inline bool FavoriteStar(std::string tooltip, bool on, float radius = 8.f, ImU32 color_on = ImColor(200, 200, 0), bool embed = false)
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) return false;
+
+        const ImGuiID id = window->GetID(tooltip.c_str());
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+
+        float maxRadius = radius;
+        ImVec2 size(maxRadius * 2.0f, maxRadius * 2.0f);
+        ImRect bb(pos, pos + size);
+
+        if (!embed) {
+            ImGui::ItemSize(bb);
+            if (!ImGui::ItemAdd(bb, id)) return false;
+        }
+
+        bool hovered, held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+
+        // --- DRAWING LOGIC ---
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImVec2 center = pos + ImVec2(maxRadius, maxRadius);
+
+        const int num_points = 5;
+        const float inner_radius = radius * 0.45f;
+        const float angle_step = IM_PI / num_points;
+
+        float start_angle = -IM_PI / 2.0f;
+
+        ImVec2 points[10];
+        for (int i = 0; i < 10; i++) {
+            float r = (i % 2 == 0) ? radius : inner_radius;
+            float angle = start_angle + (i * angle_step);
+            points[i] = ImVec2(center.x + cosf(angle) * r, center.y + sinf(angle) * r);
+        }
+
+        if (on) {
+            draw_list->AddConvexPolyFilled(points, 10, color_on);
+            draw_list->AddPolyline(points, 10, ImGui::GetColorU32(ImGuiCol_Border), ImDrawFlags_Closed, 1.0f);
+        } else {
+            ImU32 col_outline = hovered ? ImGui::GetColorU32(ImGuiCol_Text) : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            draw_list->AddPolyline(points, 10, col_outline, ImDrawFlags_Closed, 1.5f);
+        }
+
+        if (!tooltip.empty() && hovered) ImGui::SetTooltip("%s", tooltip.c_str());
+        return pressed;
+    }
+
+
+    //--------------------------------------------------------------------------
     // Basic 16Bit 4/4 one bank pattern
     //--------------------------------------------------------------------------
     inline bool PatternEditor16Bit(const char* label,

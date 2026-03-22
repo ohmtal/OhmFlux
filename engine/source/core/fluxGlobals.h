@@ -602,6 +602,11 @@ namespace fluxStr {
         return s;
     }
     //--------------------------------------------------------------------------
+    inline std::string toLower(std::string s) {
+        std::ranges::transform(s, s.begin(), [](unsigned char c){ return std::tolower(c); });
+        return s;
+    }
+    //--------------------------------------------------------------------------
     // Returns the number of words separated by spaces
     inline int getWordCount(std::string_view str) {
         int count = 0;

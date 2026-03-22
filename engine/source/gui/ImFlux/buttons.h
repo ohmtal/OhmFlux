@@ -32,6 +32,7 @@ namespace ImFlux {
         float  animationSpeed = 1.0f; //NOTE: unused
         ImU32  textColor = IM_COL32(240,240,240, 255);
         ButtonMouseOverEffects mouseOverEffect = BUTTON_MO_HIGHLIGHT;
+
         // love this lazy way : example ImFlux::RED_BUTTON.WithSize(ImVec2(tmpWidth, 24.f )).WithRounding(12.f))
         ButtonParams WithSize(ImVec2 s) const { ButtonParams p = *this; p.size = s; return p; }
         ButtonParams WithRounding(float r) const { ButtonParams p = *this; p.rounding = r; return p; }
@@ -150,7 +151,6 @@ namespace ImFlux {
             dl->AddRect(rbb.Min, rbb.Max, IM_COL32(255, 255, 255, 40), rounding);
             dl->AddRect(rbb.Min + ImVec2(1,1), rbb.Max - ImVec2(1,1), IM_COL32(0, 0, 0, 40), rounding);
         }
-
 
 
         if (params.gloss) {

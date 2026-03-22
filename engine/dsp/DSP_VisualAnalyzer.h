@@ -256,9 +256,9 @@ namespace DSP {
                 return (db < minDB) ? 0.0f : (db - minDB) / (0.0f - minDB);
             };
 
-            ImFlux::VUMeter70th(halfSize, mapDB(dbL));
+            ImFlux::VUMeter70th(halfSize, mapDB(dbL), "L");
             ImGui::SameLine();
-            ImFlux::VUMeter70th(halfSize, mapDB(dbR));
+            ImFlux::VUMeter70th(halfSize, mapDB(dbR), "R");
         }
     }
 
