@@ -39,12 +39,16 @@ Limitation:
     - [X] Gui enhancements 
         - [X] base design Decision: rack style 90th 
         - [X] define and save settings 
-        - [ ] Move Info button 
+        - [ ] only one LCD display .. bottom is for station except there is a "next"
+        - [ ] info popup: cut url when to long, desc double
+        - [ ] Favo add manual dialog 
         - [ ] add Tune Button => Favo popup or stepper ? 
+        - [ ] Eq9 and volume as slider ? 
         - [ ] Add Recorder to "Rack"
         - [ ] Add SDL3 Icon
         - [ ] Add Background Image 
-        
+    
+    - [ ] Bug in header parser: icy-decription when empty
     - [ ] Test on windows 
     
 - [ ] Version 1.1
@@ -62,7 +66,7 @@ Limitation:
             
     - [ ] radio-browser.info
         - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
-        - [ ] Update Favo on  "Click Responce" / RequestType::CLICK
+        - [ ] Update Favo on  "Click Responce" / RequestType::CLICK - if stationuuid is set
     
     - [ ] Build
         - [ ] Windows 
