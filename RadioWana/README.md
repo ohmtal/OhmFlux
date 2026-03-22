@@ -31,24 +31,43 @@ Limitation:
 
 ## Todos
 
-- [ ] Final Version 
+- [ ] Version 1
     - [X] switch to OhmFlux agian with it's build system 
     - [X] setup Project (cmake)
     - [X] copy code from Prototype and make it basicly run 
-    - [ ] callback for https errors 
-    - [ ] add delay to switch file name, this should be saved for each station 
-        - rock antenne sends meta data too early for example 3 sec or so 
-        - i can use OhmFlux Scheduler :) 
-    - [ ] mixTape like in the good old days :D << auto switch does not work so good anyway 
-        - [ ] do not switch the file name it like MixTape_DATE or let the user name it 
-        - [ ] append to stream 
-    - [ ] Gui enhancements 
-        - [ ] design like an old 70th/80th radio recorder 
-        - [ ] keep android GUI in mind (no context menus)
-        - [ ] define and save settings 
-        - [ ] ...fixme write todos ;) ...
+    - [X] callback for https errors 
+    - [X] Gui enhancements 
+        - [X] base design Decision: rack style 90th 
+        - [X] define and save settings 
+        - [ ] Move Info button 
+        - [ ] add Tune Button => Favo popup or stepper ? 
+        - [ ] Add Recorder to "Rack"
+        - [ ] Add SDL3 Icon
+        - [ ] Add Background Image 
         
     - [ ] Test on windows 
-        - write docu like https://github.com/ohmtal/OhmFlux/blob/main/README_BUILD_WINDOWS.md but add curl 
-        - i may add curl to OhmFlux so simple add this there 
     
+- [ ] Version 1.1
+    - [ ] Move Back to RadioWana github ... stop creating new widgets ;)
+    - [ ] Cleanup Design (Windows) for Android 
+    - [ ] Connect
+        - Instead of URL - Favo only ? => save current stationuuid
+    - [ ] Recorder
+        - [ ] add delay to switch file name, this should be saved for each station 
+            - rock antenne sends meta data too early for example 3 sec or so 
+            - i can use OhmFlux Scheduler :) 
+        - [ ] mixTape like in the good old days :D << auto switch does not work so good anyway 
+            - [ ] do not switch the file name it like MixTape_DATE or let the user name it 
+            - [ ] append to stream
+            
+    - [ ] radio-browser.info
+        - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
+        - [ ] Update Favo on  "Click Responce" / RequestType::CLICK
+    
+    - [ ] Build
+        - [ ] Windows 
+            - Add Icon 
+            - write docu like https://github.com/ohmtal/OhmFlux/blob/main/README_BUILD_WINDOWS.md but add curl 
+        - [ ] Android 
+            - Create Android Studio Project 
+

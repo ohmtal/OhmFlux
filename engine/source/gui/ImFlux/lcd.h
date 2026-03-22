@@ -244,6 +244,7 @@ namespace ImFlux {
             charTable['='] = 0x00C8; // Mid-cross + Bot
             charTable['!'] = 0x0200; // Top-center (8)
             charTable['\''] = 0x0002;
+            charTable['.'] = 0x0008; //same as _
 
             initialized = true;
         }
@@ -290,33 +291,78 @@ namespace ImFlux {
         float spacing = height * 0.15f;
         ImU32 color_off = (color_on & 0x00FFFFFF) | 0x15000000;
 
-        // 1. Convert the entire input to Upper Case for the LCD Table
-        std::string processedText = text;
-        for (auto & c: processedText) c = (char)toupper((unsigned char)c);
 
+        // UTF-8 to Codepoints
+        std::vector<uint32_t> codepoints;
+        const char* p = text.c_str();
+        const char* end = p + text.size();
+        while (p < end) {
+            unsigned int c;
+            int len = ImTextCharFromUtf8(&c, p, end);
+            if (len <= 0) break;
+            // to upper
+            if (c >= 'a' && c <= 'z') c -= 32;
+            codepoints.push_back(c);
+            p += len;
+        }
+
+        int num_chars = (int)codepoints.size();
         int offset = 0;
-        if (scroll && (int)processedText.length() > display_chars) {
-            // Add 4 spaces of padding for a cleaner loop
-            std::string loopedText = processedText + "    ";
 
-            // Use double/fmod for smooth, long-running scrolling
+        if (scroll && num_chars > display_chars) {
+            // Padding
+            for(int i=0; i<4; i++) codepoints.push_back(' ');
+
             double time = ImGui::GetTime() * scroll_speed;
-            offset = (int)fmod(time, (double)loopedText.length());
+            offset = (int)fmod(time, (double)codepoints.size());
 
-            // Render the visible window
             for (int i = 0; i < display_chars; i++) {
-                char c = loopedText[(offset + i) % loopedText.length()];
-                DrawLCD14Segment(draw_list, pos, c, height, color_on, color_off);
+                uint32_t c = codepoints[(offset + i) % codepoints.size()];
+
+                char draw_c = (c >= 32 && c <= 126) ? (char)c : '*';
+
+                DrawLCD14Segment(draw_list, pos, draw_c, height, color_on, color_off);
                 pos.x += digit_width + spacing;
             }
         } else {
-            // Static rendering (centered or left-aligned)
             for (int i = 0; i < display_chars; i++) {
-                char c = (i < (int)processedText.length()) ? processedText[i] : ' ';
-                DrawLCD14Segment(draw_list, pos, c, height, color_on, color_off);
+                char draw_c = ' ';
+                if (i < num_chars) {
+                    uint32_t c = codepoints[i];
+                    draw_c = (c >= 32 && c <= 126) ? (char)c : '*';
+                }
+                DrawLCD14Segment(draw_list, pos, draw_c, height, color_on, color_off);
                 pos.x += digit_width + spacing;
             }
         }
+
+        // Convert the entire input to Upper Case for the LCD Table
+        // std::string processedText = text;
+        // for (auto & c: processedText) c = (char)toupper((unsigned char)c);
+        //
+        // int offset = 0;
+        // if (scroll && (int)processedText.length() > display_chars) {
+        //     // Add 4 spaces of padding for a cleaner loop
+        //     std::string loopedText = processedText + "    ";
+        //
+        //     // Use double/fmod for smooth, long-running scrolling
+        //     double time = ImGui::GetTime() * scroll_speed;
+        //     offset = (int)fmod(time, (double)loopedText.length());
+        //
+        //     // Render the visible window
+        //     for (int i = 0; i < display_chars; i++) {
+        //         char c = loopedText[(offset + i) % loopedText.length()];
+        //         DrawLCD14Segment(draw_list, pos, c, height, color_on, color_off);
+        //         pos.x += digit_width + spacing;
+        //     }
+        // } else {
+        //     // Static rendering (centered or left-aligned)
+        //     for (int i = 0; i < display_chars; i++) {
+        //         char c = (i < (int)processedText.length()) ? processedText[i] : ' ';
+        //         DrawLCD14Segment(draw_list, pos, c, height, color_on, color_off);
+        //         pos.x += digit_width + spacing;
+        //     }
+        // }
 
         // Advance Cursor
         ImGui::Dummy(ImVec2((digit_width + spacing) * display_chars, height));

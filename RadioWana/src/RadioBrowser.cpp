@@ -73,7 +73,7 @@ namespace FluxRadio {
                 if (mLastRequestType == RequestType::SEARCH &&  cType == "application/json") {
                     processResponse(mContentData);
                 }
-                if (mLastRequestType == RequestType::SEARCH &&  cType == "application/json") {
+                if (mLastRequestType == RequestType::CLICK &&  cType == "application/json") {
                     //FIXME click ... but what todo with it ?
                 }
 

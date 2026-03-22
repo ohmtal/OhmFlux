@@ -126,19 +126,19 @@ public:
     void ShowMenuBar();
     // void ShowToolbar();
 
-    void DrawGui( );
     void onKeyEvent(SDL_KeyboardEvent event) {};
     void InitDockSpace() {}
     void ShowFileBrowser() {}
-    void ApplyStudioTheme() {}
+    void ApplyStudioTheme();
     void setupFonts();
     AppSettings* getAppSettings() {return &mAppSettings;}
     void restoreLayout( ) {}
     void setImGuiScale(float factor) {}
 
     //-----
-    void DrawFavo();
+    void DrawGui( );
 
+    void DrawFavo();
     void DrawStationsList(std::vector<FluxRadio::RadioStation> stations, bool isFavoList );
     void DrawRadioBrowserWindow();
     void DrawRadio();

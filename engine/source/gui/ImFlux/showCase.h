@@ -323,7 +323,7 @@ inline void ShowCase_LCD_Full()
 
     // --- Row 2: Numbers & Symbols ---
     ImGui::TextDisabled("NUMBERS & SYMBOLS");
-    ImFlux::LCDText("0123456789 +-/*=\\|<> !?_[]'", 30, lcdHeight, lcdColor, false);
+    ImFlux::LCDText("0123456789 +-/*=\\|<> !?_[]'.", 30, lcdHeight, lcdColor, false);
 
     ImGui::Spacing();
 
