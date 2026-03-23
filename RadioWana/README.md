@@ -42,20 +42,22 @@ Limitation:
         - [X] only one LCD display .. bottom is for station except there is a "next"
         - [X] info popup: cut url when to long, desc double
         - [X] Favo add/edit manual 
-        - [ ] edit popup auto size again
-        - [ ] add Tune Button => Favo popup or stepper ? 
-            - [ ] detect favo by url not favid ! mCurrentFavid is useless , display custom or the current name ? 
+        - [X] edit popup auto size again
+        - [ ] replace lcd with a new scrolling text widget 
+        - [ ] remove stepper again and add a BIG menu list for tune 
         - [ ] Add Recorder to "Rack"
         - [ ] left menubar for window toggle - windows in fullscreen (not console)
         - [ ] final touch 
             
-    - [ ] reset fullheader if redirect 3xx else content-type is not detected correctly. 
+    - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 
+    - [X] add lowspeed timeout << 
     - [ ] add error message on http 4xx 5xx
     - [ ] Add SDL3 Icon
     - [ ] Add Background Image 
     - [X] Bug in header parser: icy-decription when empty
     
 - [ ] Version 1.x
+    - [ ] lowspeed time out optional reconnect 
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;)
     - [ ] Cleanup Design (Windows) for Android 
     - [ ] Connect

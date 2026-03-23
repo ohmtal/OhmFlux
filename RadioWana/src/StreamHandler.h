@@ -52,10 +52,11 @@ namespace FluxRadio {
 
 
     public:
+        uint16_t mLowSpeedTimeOut = 10; //sec.
         std::function<void()> OnConnected = nullptr;
         std::function<void()> OnConnecting = nullptr;
         std::function<void()> onDisConnected = nullptr;
-        std::function<void(const std::string)> OnError = nullptr;
+        std::function<void(const uint16_t, const std::string)> OnError = nullptr;
 
         std::function<void(const std::string, const size_t)> OnStreamTitleUpdate = nullptr;
         std::function<void(const void*, const size_t)> OnAudioChunk = nullptr;

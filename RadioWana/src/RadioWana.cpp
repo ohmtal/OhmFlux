@@ -407,7 +407,7 @@ void RadioWana::DrawFavo() {
     if (showDialog ) {
         ImGui::OpenPopup("Favorite Dialog");
 
-        if (ImGui::BeginPopupModal("Favorite Dialog", &showDialog/*, ImGuiWindowFlags_AlwaysAutoResize*/) ) {
+        if (ImGui::BeginPopupModal("Favorite Dialog", &showDialog, ImGuiWindowFlags_AlwaysAutoResize) ) {
             ImGui::SeparatorText(isEdit ? "Edit" : "New");
             //mhh what to use as
             char strBuff[256];
@@ -419,7 +419,7 @@ void RadioWana::DrawFavo() {
             if (ImGui::InputText("URL", strBuff, sizeof(strBuff))) {
                 workStation.url = strBuff;
             }
-            ImGui::Separator();
+            ImFlux::SeparatorFancy();
 
             if (ImGui::Button("Save")) {
                 bool validated = false;
@@ -786,8 +786,8 @@ bool RadioWana::Initialize(){
         //FIXME Display connecting .....
     };
 
-    mStreamHandler->OnError = [&](const std::string mErrorMsg) {
-        mGuiGlue->showMessage("HTTP Errror", mErrorMsg);
+    mStreamHandler->OnError = [&](const uint16_t errorCode, const std::string errorMsg) {
+        mGuiGlue->showMessage("Stream Errror "+std::to_string(errorCode), errorMsg);
     };
 
     mStreamHandler->OnConnected = [&]() {

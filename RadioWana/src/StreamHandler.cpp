@@ -54,6 +54,8 @@ namespace FluxRadio {
                         self->OnConnected();
                     }
                     self->mConnected.store(true);
+                } else if (http_code >= 300 && http_code < 400) {
+                    self->mFullHeader.clear();
                 }
             }
             dLog("[info] HTTP COMPLETE: %s (metaint:%d) HTTP CODE: %d", header.c_str(), self->mMetaInt, (int)http_code);
@@ -217,6 +219,11 @@ namespace FluxRadio {
                 curl_easy_setopt(mCurlHandle, CURLOPT_NOSIGNAL, 1L);
                 curl_easy_setopt(mCurlHandle, CURLOPT_CONNECTTIMEOUT, 10L);
 
+                // Low speed limit to detect connection is lost
+                curl_easy_setopt(mCurlHandle, CURLOPT_LOW_SPEED_LIMIT, 1L);
+                curl_easy_setopt(mCurlHandle, CURLOPT_LOW_SPEED_TIME, (long)mLowSpeedTimeOut);
+                // curl_easy_setopt(mCurlHandle, CURLOPT_LOW_SPEED_TIME, 2L);
+
                 // SSL-Verify
                 curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYPEER, 1L);
                 curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYHOST, 2L);
@@ -229,7 +236,7 @@ namespace FluxRadio {
 
                 if(res != CURLE_OK && res != CURLE_ABORTED_BY_CALLBACK) {
                     Log("[error] HttpStream error: %s", curl_easy_strerror(res));
-                    if (OnError) OnError(curl_easy_strerror(res));
+                    if (OnError) OnError(res, curl_easy_strerror(res));
                 }
                 curl_easy_cleanup(mCurlHandle);
                 mCurlHandle = nullptr;
