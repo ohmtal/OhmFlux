@@ -31,7 +31,7 @@ Limitation:
 
 ## Todos
 
-- [ ] Version 1
+- [ ] Version 1.0
     - [X] switch to OhmFlux agian with it's build system 
     - [X] setup Project (cmake)
     - [X] copy code from Prototype and make it basicly run 
@@ -39,20 +39,23 @@ Limitation:
     - [X] Gui enhancements 
         - [X] base design Decision: rack style 90th 
         - [X] define and save settings 
-        - [ ] only one LCD display .. bottom is for station except there is a "next"
+        - [X] only one LCD display .. bottom is for station except there is a "next"
         - [X] info popup: cut url when to long, desc double
         - [X] Favo add/edit manual 
+        - [ ] edit popup auto size again
         - [ ] add Tune Button => Favo popup or stepper ? 
-            - [ ] mAppSettings.CurrentFavId gets out of sync when list is changed
-        - [~] Eq9 and volume as slider ? 
+            - [ ] detect favo by url not favid ! mCurrentFavid is useless , display custom or the current name ? 
         - [ ] Add Recorder to "Rack"
+        - [ ] left menubar for window toggle - windows in fullscreen (not console)
         - [ ] final touch 
-        
+            
+    - [ ] reset fullheader if redirect 3xx else content-type is not detected correctly. 
+    - [ ] add error message on http 4xx 5xx
     - [ ] Add SDL3 Icon
     - [ ] Add Background Image 
     - [X] Bug in header parser: icy-decription when empty
     
-- [ ] Version 1.1
+- [ ] Version 1.x
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;)
     - [ ] Cleanup Design (Windows) for Android 
     - [ ] Connect
@@ -68,6 +71,7 @@ Limitation:
     - [ ] radio-browser.info
         - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
         - [ ] Update Favo on  "Click Responce" / RequestType::CLICK - if stationuuid is set
+        - [ ] add favicon support 
     
     - [ ] Build
         - [ ] Windows 
@@ -75,4 +79,5 @@ Limitation:
             - write docu like https://github.com/ohmtal/OhmFlux/blob/main/README_BUILD_WINDOWS.md but add curl 
         - [ ] Android 
             - Create Android Studio Project 
+            - firetv
 
