@@ -15,8 +15,8 @@
 #include "net/CurlGlue.h"
 #include "net/HttpsClient.h"
 
-#include <imgui.h> //<< only for dump !
 #include <functional>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -52,9 +52,10 @@ namespace FluxRadio {
                                        homepage, favicon, countrycode, languages, clickcount, clicktrend)
 
 
-        void dump(bool useLog = true) {
+        std::vector<std::string> dump(bool useLog = true) {
+            std::vector<std::string> result ;
 
-            auto output = [useLog](const char* fmt, ...) {
+            auto output = [&](const char* fmt, ...) {
                 char buf[512];
                 va_list args;
                 va_start(args, fmt);
@@ -63,12 +64,13 @@ namespace FluxRadio {
 
                 if (useLog) {
                     Log("%s", buf);
-                } else {
+                } /*else {
                     ImGui::Text("%s", buf);
-                }
+                }*/
+                result.push_back(buf);
             };
 
-            output("----------- STATION DUMP -----------");
+            if (useLog) output("------------- STATION --------------");
             output("UUID     :%s", stationuuid.c_str());
             output("Name     :%s", name.c_str());
             output("URL      :%s", url.c_str());
@@ -80,9 +82,10 @@ namespace FluxRadio {
             output("CLICKS   :%d / %d", clickcount, clicktrend);
             //FIXME TAGS
             //FIXME languages
-            output("------------------------------------");
-            output("FAVID    :%d", favId);
-            output("------------------------------------");
+            if (useLog) output("------------------------------------");
+            if (useLog) output("FAVID    :%d", favId);
+            if (useLog) output("------------------------------------");
+            return result;
         }
     };
 

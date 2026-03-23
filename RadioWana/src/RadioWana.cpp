@@ -166,11 +166,9 @@ void RadioWana::DrawRadio() {
         // float fullWidth = ImGui::GetContentRegionAvail().x;
 
         const int lcdDigits    = 30;
-        const float lcdHeight1 = 24.f;
-        const int lcdDigits2   = 40;
-        const float lcdHeight2 = 18.f;
+        const int lcdDigits2   = 38; //40;
 
-        const float displayWidth =  lcdDigits * 16.5f; // 20 ==> 320.f; //lcdDigits * lcdHeight1 * 0.5f;
+        const float displayWidth =  lcdDigits * 16.9f; //* 16.5f; // 20 ==> 320.f; //lcdDigits * lcdHeight1 * 0.5f;
         const float displayHeight = 60.f; //(2 * lcdHeight1) + ( 3 * lcdHeight1 * 0.5f);
 
 
@@ -192,43 +190,45 @@ void RadioWana::DrawRadio() {
         ImGui::SameLine();
 
         ImGui::BeginGroup();
-        // STEPPER
-        static int displayIdx = -1;// FIXME replace mURL !! currentIdx;
-        std::vector<const char*> names;
-        int i = 0;
-        for (const auto& s : mFavoStationData) {
-            if (displayIdx < 0 && mAppSettings.CurrentFavId == s.favId) {
-                displayIdx = i;
-            }
 
-            names.push_back(s.name.c_str());
-            i++;
-        }
-
-        ImGui::PushFont(getMain()->mHackNerdFont26);
-        if (ImFlux::ValueStepper("##StationStepper", &displayIdx, names.data(), (int)names.size(), 600.f))
-        {
-            i = 0;
-            for (const auto& s : mFavoStationData) {
-                if (displayIdx == i) {
-                    mAppSettings.CurrentFavId = s.favId;
-                    break;
-                }
-                i++;
-            }
-        }
-        ImGui::PopFont();
-        ImGui::SameLine();
-        if (ImFlux::ButtonFancy("TUNE", gRadioButtonParams)) {
-            FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mAppSettings.CurrentFavId);
-            if (pStation) {
-                mAppSettings.mUrl = pStation->url;
-                mStreamHandler->Execute(mAppSettings.mUrl);
-                if (!pStation->stationuuid.empty()) mRadioBrowser->clickStation(pStation->stationuuid);
-            } else {
-                mGuiGlue->showMessage("ERROR","FIXME station not found mAppSettings.CurrentFavId is out of sync ? ");
-            }
-        }
+        // dont like it
+        // // STEPPER
+        // static int displayIdx = -1;// FIXME replace mURL !! currentIdx;
+        // std::vector<const char*> names;
+        // int i = 0;
+        // for (const auto& s : mFavoStationData) {
+        //     if (displayIdx < 0 && mAppSettings.CurrentFavId == s.favId) {
+        //         displayIdx = i;
+        //     }
+        //
+        //     names.push_back(s.name.c_str());
+        //     i++;
+        // }
+        //
+        // ImGui::PushFont(getMain()->mHackNerdFont26);
+        // if (ImFlux::ValueStepper("##StationStepper", &displayIdx, names.data(), (int)names.size(), 600.f))
+        // {
+        //     i = 0;
+        //     for (const auto& s : mFavoStationData) {
+        //         if (displayIdx == i) {
+        //             mAppSettings.CurrentFavId = s.favId;
+        //             break;
+        //         }
+        //         i++;
+        //     }
+        // }
+        // ImGui::PopFont();
+        // ImGui::SameLine();
+        // if (ImFlux::ButtonFancy("TUNE", gRadioButtonParams)) {
+        //     FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mAppSettings.CurrentFavId);
+        //     if (pStation) {
+        //         mAppSettings.mUrl = pStation->url;
+        //         mStreamHandler->Execute(mAppSettings.mUrl);
+        //         if (!pStation->stationuuid.empty()) mRadioBrowser->clickStation(pStation->stationuuid);
+        //     } else {
+        //         mGuiGlue->showMessage("ERROR","FIXME station not found mAppSettings.CurrentFavId is out of sync ? ");
+        //     }
+        // }
 
 
 
@@ -261,53 +261,28 @@ void RadioWana::DrawRadio() {
         ImGui::SameLine();
         // ImFlux::ShiftCursor(ImVec2(0.f,10.f));
 
-        if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth,displayHeight))) {
+        if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth  ,displayHeight ))) {
             ImFlux::GradientBoxDL(gRadioDisplayBox );
             ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(5.f,6.f));
             ImGui::BeginGroup();
-            ImFlux::LCDText(mAudioHandler->getCurrentTitle(), lcdDigits, lcdHeight1, ImFlux::COL32_NEON_ORANGE);
-            ImGui::Spacing();
+            ImGui::PushFont(getMain()->mHackNerdFont26);
+            ImFlux::LCDTextScroller(mAudioHandler->getCurrentTitle(), lcdDigits, ImFlux::COL32_NEON_ORANGE);
+            ImGui::PopFont();
 
+            // ImGui::Spacing();
+            ImGui::PushFont(getMain()->mHackNerdFont20);
             if ( mAudioHandler->getNextTitle().empty() ) {
-                ImFlux::LCDText(info.name, lcdDigits2, lcdHeight2, ImFlux::COL32_NEON_ELECTRIC);
+                ImFlux::LCDTextScroller(info.name, lcdDigits2, ImFlux::COL32_NEON_ELECTRIC);
             } else {
-                ImFlux::LCDText(mAudioHandler->getNextTitle(), lcdDigits2, lcdHeight2, ImFlux::COL32_NEON_GREEN);
+                ImFlux::LCDTextScroller(mAudioHandler->getNextTitle(), lcdDigits2, ImFlux::COL32_NEON_GREEN);
             }
+            ImGui::PopFont();
 
 
             ImGui::EndGroup();
         }
         ImGui::EndChild();
 
-        // if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth,displayHeight))) {
-        //     ImFlux::GradientBoxDL(gRadioDisplayBox );
-        //     ImGui::BeginGroup();
-        //     ImFlux::LCDText(info.name, 20, 24.f, ImFlux::COL32_NEON_ELECTRIC);
-        //     ImGui::Spacing();
-        //     std::string longInfo ;
-        //     if (isConnected ) longInfo = std::format( "DESC {} ADDR {} WEB {} Audio {} Hz, {} kbps, {} Channels",
-        //         info.description, info.streamUrl, info.url, info.samplerate, info.bitrate, info.channels);
-        //     else longInfo = "";
-        //     ImFlux::LCDText(longInfo, lcdDigits*2, lcdHeight1 * 0.5f, ImFlux::COL32_NEON_ELECTRIC);
-        //
-        //     ImGui::EndGroup();
-        // }
-        // ImGui::EndChild();
-        //
-        // ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(10.f,10.f));
-        //
-        // if (ImGui::BeginChild("##RadioDisplayTitle", ImVec2(displayWidth,displayHeight))) {
-        //     ImFlux::GradientBoxDL(gRadioDisplayBox );
-        //     ImGui::BeginGroup();
-        //     ImFlux::LCDText(mAudioHandler->getCurrentTitle(), 20, 24.f, ImFlux::COL32_NEON_ORANGE);
-        //     ImGui::Spacing();
-        //     ImFlux::LCDText(mAudioHandler->getNextTitle(), lcdDigits*2, lcdHeight1 * 0.5f, ImFlux::COL32_NEON_ORANGE);
-        //     ImGui::EndGroup();
-        // }
-        // ImGui::EndChild();
-        //
-
-        // ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(20.f,0.f));
         //----------------------------
 
         ImGui::Separator();
@@ -349,6 +324,8 @@ void RadioWana::DrawRadio() {
 
         mAudioHandler->RenderRack(1);
 
+
+
     }
     ImGui::End();
 }
@@ -363,14 +340,13 @@ void RadioWana::DrawFavo() {
     if (ImGui::Begin("Favorites", &mAppSettings.ShowFavo)){
 
         // ~~~ BUTTONS ~~~
-        if (mSelectedFavId == 0) ImGui::BeginDisabled();
         if (ImFlux::ButtonFancy("NEW")) {
             showDialog = true;
             isEdit = false;
             workStation = FluxRadio::RadioStation();
             workStation.url = "https://";
         }
-
+        if (mSelectedFavId == 0) ImGui::BeginDisabled();
         ImGui::SameLine();
         if (ImFlux::ButtonFancy("EDIT") ) {
             FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mSelectedFavId);
@@ -385,15 +361,22 @@ void RadioWana::DrawFavo() {
         }
         ImGui::SameLine();
         if (ImFlux::ButtonFancy("INFO") ) {
+            ImGui::OpenPopup("Station Info");
+        }
+
+        if (ImGui::BeginPopup("Station Info")) {
             FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mSelectedFavId);
             if (pStation) {
-                //FIXME DIALOG
-                showInfo = true;
-                pStation->dump();
+                for (auto& line: pStation->dump(false)) {
+                    ImGui::TextUnformatted(line.c_str());
+                }
             } else {
                 Log("[error] FAV_INFO: station is null pointer!!");
+
             }
+            ImGui::EndPopup();
         }
+
 
         if (mSelectedFavId == 0) ImGui::EndDisabled();
 

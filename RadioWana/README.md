@@ -14,15 +14,17 @@ It still works fine but i wanted to create a cross platform version with C++ and
 
 In this Project I use: 
 
-- Framework: OhmFlux
-- Backend: SDL3
-- Gui: ImGui 
-- Https handling: libCurl 
-- MP3 Decoder: miniaudio 
+- Framework: [OhmFlux](https://github.com/ohmtal/OhmFlux)
+- Backend: [SDL3](https://www.libsdl.org/)
+- Gui: [Dear ImGui](https://github.com/ocornut/imgui)
+- Https handling: [libCurl](https://curl.se/libcurl/)
+- MP3 Decoder: [miniaudio](https://github.com/mackron/miniaudio)
 - Development
-    - IDE: KDevelop 
-    - OS: Arch Linux
+    - IDE/Text: [KDevelop](https://kdevelop.org/), [Kate](https://apps.kde.org/kate/)
+    - Devel/Testing OS: [Arch Linux](https://archlinux.org/), [FreeBSD](https://freebsd.org/)
 
+- Database [RadioBrowser](https://www.radio-browser.info/)
+    
 
 Limitation: 
 - Only MP3 streams. 
@@ -43,10 +45,11 @@ Limitation:
         - [X] info popup: cut url when to long, desc double
         - [X] Favo add/edit manual 
         - [X] edit popup auto size again
-        - [ ] replace lcd with a new scrolling text widget 
-        - [ ] remove stepper again and add a BIG menu list for tune 
+        - [X] replace lcd with a new scrolling text widget 
+        - [X] remove stepper again 
         - [ ] Add Recorder to "Rack"
         - [ ] left menubar for window toggle - windows in fullscreen (not console)
+        - [ ] add a BIG menu list for tune 
         - [ ] final touch 
             
     - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 

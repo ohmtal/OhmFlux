@@ -31,6 +31,18 @@ namespace ImFlux {
     }
 
 
+    //------------------  GetUtf8Pos
+    inline const char* GetUtf8Pos(const char* text, const char* text_end, int char_index) {
+        const char* p = text;
+        while (char_index > 0 && p < text_end) {
+            unsigned int unused_c;
+            p += ImTextCharFromUtf8(&unused_c, p, text_end); // Springt um x Bytes weiter
+            char_index--;
+        }
+        return p;
+    }
+
+
     // ----------------- AutoLineBreak
     inline void SameLineBreak(float nextItemWidth) {
         float windowVisibleX2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;

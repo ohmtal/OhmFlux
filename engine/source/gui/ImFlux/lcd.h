@@ -13,6 +13,103 @@
 
 namespace ImFlux {
 
+
+    //--------------------------------------------------------------------------
+    // LCD Text like scroller background
+    inline void DrawLCDField(ImDrawList* dl, ImVec2 pos, ImVec2 size, ImU32 color, float dot_size = 2.0f, float gap = 1.f) {
+
+        float step = dot_size + gap;
+
+        for (float y = 0; y < size.y; y += step) {
+            for (float x = 0; x < size.x; x += step) {
+                // Ein kleiner Punkt pro "LCD-Pixel"
+                dl->AddRectFilled(
+                    ImVec2(pos.x + x, pos.y + y),
+                                  ImVec2(pos.x + x + dot_size, pos.y + y + dot_size),
+                                  color
+                );
+            }
+        }
+    }
+    //--------------------------------------------------------------------------
+    // LCD Text like scroller
+    inline void LCDTextScroller(const std::string text, int display_chars, ImU32 color_on, float scroll_speed = 2.0f, bool embeded = false)
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        if (window->SkipItems) return;
+
+        ImDrawList* dl = window->DrawList;
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        float digit_width = ImGui::CalcTextSize("W").x;
+        float spacing = digit_width * 0.15f;
+        float char_height = ImGui::GetFontSize();
+        ImU32 color_off = (color_on & 0x00FFFFFF) | 0x30000000;
+
+        const char* text_start = text.c_str();
+        const char* text_end_ptr = text_start + text.length();
+
+        int actual_chars = ImTextCountCharsFromUtf8(text_start, text_end_ptr);
+
+        int padding = 4;
+        int virtual_total = (actual_chars > display_chars) ? (actual_chars + padding) : actual_chars;
+
+        int scroll_offset = 0;
+        if (actual_chars > display_chars) {
+            scroll_offset = (int)fmod(ImGui::GetTime() * scroll_speed, (double)virtual_total);
+        }
+
+        float width = (digit_width + spacing) * display_chars;
+        ImVec2 fieldSize = ImVec2(width, char_height);
+
+        //LCD fake background
+        DrawLCDField(dl, pos, fieldSize, color_off);
+
+        for (int i = 0; i < display_chars; i++) {
+            int char_idx = -1;
+            if (actual_chars > display_chars) {
+                char_idx = (scroll_offset + i) % (virtual_total > 0 ? virtual_total : 1);
+            } else {
+                if (i < actual_chars) {
+                    char_idx = i;
+                }
+            }
+            if (char_idx != -1 && char_idx < actual_chars) {
+                const char* char_ptr = text_start;
+                for (int n = 0; n < char_idx; n++) {
+                    unsigned int unused;
+                    char_ptr += ImTextCharFromUtf8(&unused, char_ptr, text_end_ptr);
+                }
+                unsigned int c;
+                int len = ImTextCharFromUtf8(&c, char_ptr, text_end_ptr);
+                if (c != ' ' && c != 0) {
+                    dl->AddText(pos, color_on, char_ptr, char_ptr + len);
+                }
+            }
+            pos.x += digit_width + spacing;
+        }
+
+        // for (int i = 0; i < display_chars; i++) {
+        //     int char_idx = (scroll_offset + i) % (virtual_total > 0 ? virtual_total : 1);
+        //     if (char_idx < actual_chars) {
+        //         const char* char_ptr = text_start;
+        //         for (int n = 0; n < char_idx; n++) {
+        //             unsigned int unused;
+        //             char_ptr += ImTextCharFromUtf8(&unused, char_ptr, text_end_ptr);
+        //         }
+        //
+        //         unsigned int c;
+        //         int len = ImTextCharFromUtf8(&c, char_ptr, text_end_ptr);
+        //         if (c != ' ' && c != 0) {
+        //             dl->AddText(pos, color_on, char_ptr, char_ptr + len);
+        //         }
+        //     }
+        //     pos.x += digit_width + spacing;
+        // }
+
+        if (!embeded) ImGui::Dummy(fieldSize);
+    }
+
+    //--------------------------------------------------------------------------
     //---------------- LCD Segments
     inline void DrawLCDDigitDelayed(ImDrawList* draw_list, ImVec2 pos, int digit, float height, ImU32 color_on) {
         float width = height * 0.5f;
@@ -336,38 +433,11 @@ namespace ImFlux {
             }
         }
 
-        // Convert the entire input to Upper Case for the LCD Table
-        // std::string processedText = text;
-        // for (auto & c: processedText) c = (char)toupper((unsigned char)c);
-        //
-        // int offset = 0;
-        // if (scroll && (int)processedText.length() > display_chars) {
-        //     // Add 4 spaces of padding for a cleaner loop
-        //     std::string loopedText = processedText + "    ";
-        //
-        //     // Use double/fmod for smooth, long-running scrolling
-        //     double time = ImGui::GetTime() * scroll_speed;
-        //     offset = (int)fmod(time, (double)loopedText.length());
-        //
-        //     // Render the visible window
-        //     for (int i = 0; i < display_chars; i++) {
-        //         char c = loopedText[(offset + i) % loopedText.length()];
-        //         DrawLCD14Segment(draw_list, pos, c, height, color_on, color_off);
-        //         pos.x += digit_width + spacing;
-        //     }
-        // } else {
-        //     // Static rendering (centered or left-aligned)
-        //     for (int i = 0; i < display_chars; i++) {
-        //         char c = (i < (int)processedText.length()) ? processedText[i] : ' ';
-        //         DrawLCD14Segment(draw_list, pos, c, height, color_on, color_off);
-        //         pos.x += digit_width + spacing;
-        //     }
-        // }
 
         // Advance Cursor
         ImGui::Dummy(ImVec2((digit_width + spacing) * display_chars, height));
     }
-
+    //--------------------------------------------------------------------------
 
 
 } //namespace
