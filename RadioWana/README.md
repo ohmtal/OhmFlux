@@ -40,16 +40,17 @@ Limitation:
         - [X] base design Decision: rack style 90th 
         - [X] define and save settings 
         - [ ] only one LCD display .. bottom is for station except there is a "next"
-        - [ ] info popup: cut url when to long, desc double
-        - [ ] Favo add manual dialog 
+        - [X] info popup: cut url when to long, desc double
+        - [X] Favo add/edit manual 
         - [ ] add Tune Button => Favo popup or stepper ? 
-        - [ ] Eq9 and volume as slider ? 
+            - [ ] mAppSettings.CurrentFavId gets out of sync when list is changed
+        - [~] Eq9 and volume as slider ? 
         - [ ] Add Recorder to "Rack"
-        - [ ] Add SDL3 Icon
-        - [ ] Add Background Image 
-    
-    - [ ] Bug in header parser: icy-decription when empty
-    - [ ] Test on windows 
+        - [ ] final touch 
+        
+    - [ ] Add SDL3 Icon
+    - [ ] Add Background Image 
+    - [X] Bug in header parser: icy-decription when empty
     
 - [ ] Version 1.1
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;)

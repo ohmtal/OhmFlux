@@ -89,9 +89,12 @@ namespace FluxRadio {
             return false;
         }
 
+        // audio/mpeg
         if (info->content_type != "audio/mpeg") {
             //FIXME
             Log("[error] Sorry only mp3 supported at the moment");
+            if (isDebugBuild()) info->dump();
+
         }
 
 

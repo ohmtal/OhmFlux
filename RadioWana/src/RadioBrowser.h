@@ -15,6 +15,7 @@
 #include "net/CurlGlue.h"
 #include "net/HttpsClient.h"
 
+#include <imgui.h> //<< only for dump !
 #include <functional>
 
 #include <nlohmann/json.hpp>
@@ -40,14 +41,77 @@ namespace FluxRadio {
         int clickcount = 0;
         int clicktrend = 0;
 
+        // internal fav id
+        uint32_t    favId = 0;
+
+
+
         // maybe longer compiletime because of header but i ve a fast machine ;)
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(RadioStation,
                                        stationuuid, name, url, codec, bitrate, country, tags,
                                        homepage, favicon, countrycode, languages, clickcount, clicktrend)
 
 
+        void dump(bool useLog = true) {
+
+            auto output = [useLog](const char* fmt, ...) {
+                char buf[512];
+                va_list args;
+                va_start(args, fmt);
+                vsnprintf(buf, sizeof(buf), fmt, args);
+                va_end(args);
+
+                if (useLog) {
+                    Log("%s", buf);
+                } else {
+                    ImGui::Text("%s", buf);
+                }
+            };
+
+            output("----------- STATION DUMP -----------");
+            output("UUID     :%s", stationuuid.c_str());
+            output("Name     :%s", name.c_str());
+            output("URL      :%s", url.c_str());
+            output("CODEC    :%s", codec.c_str());
+            output("BITRATE  :%d", bitrate);
+            output("COUNTRY  :%s / %s", country.c_str(), countrycode.c_str());
+            output("HOMEPAGE :%s", homepage.c_str());
+            output("FAVICON  :%s", favicon.c_str());
+            output("CLICKS   :%d / %d", clickcount, clicktrend);
+            //FIXME TAGS
+            //FIXME languages
+            output("------------------------------------");
+            output("FAVID    :%d", favId);
+            output("------------------------------------");
+        }
     };
 
+
+    // -----------------------------------------------------------------------------
+    inline RadioStation* getStationByFavId(std::vector<FluxRadio::RadioStation>* mFavList, uint32_t id){
+        for (auto& fav : *mFavList) {
+            if (fav.favId == id) {
+                return &fav;
+            }
+        }
+        return nullptr;
+    }
+
+
+    inline void updateFavIds(std::vector<FluxRadio::RadioStation>* mFavList) {
+        if (!mFavList) return;
+
+        uint32_t maxId = 0;
+        for (const auto& fav : *mFavList) {
+            if (fav.favId > maxId) maxId = fav.favId;
+        }
+
+        for (auto& fav : *mFavList) {
+            if (fav.favId == 0) {
+                fav.favId = ++maxId;
+            }
+        }
+    }
 
 
 

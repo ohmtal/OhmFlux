@@ -34,7 +34,7 @@ namespace FluxRadio {
 
         enum class StreamState { AUDIO, META_LENGTH, META_DATA };
         uint32_t mMetaInt = 0;
-        uint32_t mMetaCounter = 0;
+        // uint32_t mMetaCounter = 0;
         std::string mMetaString = "";
 
         std::string mStreamTitle = "";
@@ -61,7 +61,6 @@ namespace FluxRadio {
         std::function<void(const void*, const size_t)> OnAudioChunk = nullptr;
 
 
-
         StreamHandler() = default;
         ~StreamHandler() {
             stop();
@@ -73,6 +72,7 @@ namespace FluxRadio {
         StreamInfo* getStreamInfo() { return &mStreamInfo; };
         void dumpInfo() { mStreamInfo.dump(); }
 
+        std::string getHeader() const { return mFullHeader; }
 
 
         void stop() {

@@ -54,7 +54,7 @@ class RadioWana: public FluxBaseObject {
 private:
     //FIXME FluxRenderObject* mBackground = nullptr;
 
-    void OnConsoleCommand(ImConsole* console, const char* cmdline) {}
+    void OnConsoleCommand(ImConsole* console, const char* cmdline);
 
     std::unique_ptr<FluxGuiGlue>  mGuiGlue;
 
@@ -76,7 +76,8 @@ private:
             .stationuuid = "960594a6-0601-11e8-ae97-52543be04c81",
             .name= "Rock Antenne",
             .url = "http://mp3channels.webradio.rockantenne.de/rockantenne",
-            .countrycode = "DE"
+            .countrycode = "DE",
+            .favId = 1
         },
         // {"ok":true,"message":"retrieved station url","stationuuid":"92556f58-20d3-44ae-8faa-322ce5f256c0",
         // "name":"Radio BOB!","url":"http://streams.radiobob.de/bob-national/mp3-192/mediaplayer"},
@@ -84,7 +85,8 @@ private:
             .stationuuid = "92556f58-20d3-44ae-8faa-322ce5f256c0",
             .name= "BOB! - Radio Bob",
             .url = "http://streams.radiobob.de/bob-national/mp3-192/mediaplayer",
-            .countrycode = "DE"
+            .countrycode = "DE",
+            .favId = 2
         }
     };
 
@@ -97,13 +99,16 @@ private:
     std::vector<FluxRadio::RadioStation> mQueryStationData;
     std::string mQueryString = "";
     std::string mSelectedStationUuid = "";
+    uint32_t mSelectedFavId = 0;
 
     std::vector<FluxRadio::RadioStation> mFavoStationData;
+
 
 
 public:
     struct AppSettings {
         std::string mUrl = "http://mp3channels.webradio.rockantenne.de/rockantenne";
+        uint32_t CurrentFavId = 1;
         float Volume = 1.f;
         bool DockSpaceInitialized = false;
         bool ShowFileBrowser      = false;
@@ -141,6 +146,8 @@ public:
     void DrawFavo();
     void DrawStationsList(std::vector<FluxRadio::RadioStation> stations, bool isFavoList );
     void DrawRadioBrowserWindow();
+    void DrawInfoPopup(FluxRadio::StreamInfo* info);
+
     void DrawRadio();
     void DrawRecorder();
 

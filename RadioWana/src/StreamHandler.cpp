@@ -38,7 +38,7 @@ namespace FluxRadio {
             size_t pos = header.find(":");
             self->mMetaInt = std::atol(header.substr(pos + 1).c_str());
             // self->mBytesToRead = self->mMetaInt;
-            dLog("[info] https got header: %s (metaint:%d)", header.c_str(), self->mMetaInt);
+            dLog("[info] METAINT: %s (metaint:%d)", header.c_str(), self->mMetaInt);
 
         } else if (header == "\r\n" || header == "\n") {
 
@@ -48,6 +48,7 @@ namespace FluxRadio {
                 if (http_code == 200) {
                     self->mState = StreamState::AUDIO;
                     self->mBytesToRead = self->mMetaInt;
+                    self->mStreamInfo.parseHeader(self->mFullHeader);
 
                     if (self->OnConnected) {
                         self->OnConnected();
@@ -55,12 +56,10 @@ namespace FluxRadio {
                     self->mConnected.store(true);
                 }
             }
-            dLog("[info] https got header: %s (metaint:%d) HTTP CODE: %d", header.c_str(), self->mMetaInt, (int)http_code);
+            dLog("[info] HTTP COMPLETE: %s (metaint:%d) HTTP CODE: %d", header.c_str(), self->mMetaInt, (int)http_code);
 
         } else {
-            dLog("[info] https got header: %s", header.c_str());
-            self->mStreamInfo.parseHeader(header);
-
+            dLog("[info] header: %s", header.c_str());
         }
         return totalSize;
     }
@@ -78,7 +77,7 @@ namespace FluxRadio {
                 //only update if it's different
                 if (mStreamTitle.compare(mMetaString) != 0) {
                     mStreamTitle = mMetaString.substr(start, end - start);
-                    Log("New StreamTitle: %s", mStreamTitle.c_str());
+                    // dLog("New StreamTitle: %s", mStreamTitle.c_str());
                     mStreamTitleAudioByteNeedle = mTotalAudioBytesSent;
                     if (OnStreamTitleUpdate) OnStreamTitleUpdate( mStreamTitle, mStreamTitleAudioByteNeedle);
                 }
@@ -152,14 +151,23 @@ namespace FluxRadio {
     }
     //--------------------------------------------------------------------------
     void StreamHandler::reset(){
-        mMetaInt  = 0;
+        mRunning.store( false );
+        mConnected.store( false );
         mStreamInfo = StreamInfo();
-        mCurlHandle = nullptr;
         mFullHeader = "";
-        mTotalAudioBytesSent = 0;
+
+        mMetaInt    = 0;
+        mMetaString = "";
+
         mStreamTitle = "";
         mStreamTitleAudioByteNeedle = 0;
 
+        mState = StreamState::AUDIO;
+        mBytesToRead = 0;
+        mCurrentMetaSize = 0;
+
+        mTotalAudioBytesSent = 0;
+        mCurlHandle = nullptr;
 
     }
     //--------------------------------------------------------------------------

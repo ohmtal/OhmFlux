@@ -2,7 +2,6 @@
 // Copyright (c) 2012 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// FIXME Headers
 #pragma once
 
 #include <curl/curl.h>
@@ -13,6 +12,9 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <string>
+#include <algorithm>
+#include "NetTools.h"
 
 namespace FluxNet {
     class HttpsClient {
@@ -45,36 +47,34 @@ namespace FluxNet {
         //--------------------------------------------------------------------------
         std::string getHeaderData() const { return mHeaderData;}
         std::string getContentData() const { return mContentData;}
-
-        #include <algorithm>
-
+        //--------------------------------------------------------------------------
         std::string getHeaderValue(std::string key) const {
-            if (!key.empty() && key.back() == ':') key.pop_back();
-            std::string lowerKey = key;
-            std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
 
-            std::string headerBlock = mHeaderData;
-            std::transform(headerBlock.begin(), headerBlock.end(), headerBlock.begin(), ::tolower);
+            return NetTools::getHeaderValue(mHeaderData, key);
 
-            size_t keyPos = headerBlock.find(lowerKey + ":");
-            if (keyPos != std::string::npos) {
-                size_t valueStart = keyPos + lowerKey.length() + 1;
-                while (valueStart < mHeaderData.length() && std::isspace(mHeaderData[valueStart])) {
-                    valueStart++;
-                }
-                size_t valueEnd = mHeaderData.find("\r\n", valueStart);
-                if (valueEnd == std::string::npos) valueEnd = mHeaderData.length();
-                return mHeaderData.substr(valueStart, valueEnd - valueStart);
-            }
-            return "";
+            // if (!key.empty() && key.back() == ':') key.pop_back();
+            // std::string lowerKey = key;
+            // std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
+            //
+            // std::string headerBlock = mHeaderData;
+            // std::transform(headerBlock.begin(), headerBlock.end(), headerBlock.begin(), ::tolower);
+            //
+            // size_t keyPos = headerBlock.find(lowerKey + ":");
+            // if (keyPos != std::string::npos) {
+            //     size_t valueStart = keyPos + lowerKey.length() + 1;
+            //     while (valueStart < mHeaderData.length() && std::isspace(mHeaderData[valueStart])) {
+            //         valueStart++;
+            //     }
+            //     size_t valueEnd = mHeaderData.find("\r\n", valueStart);
+            //     if (valueEnd == std::string::npos) valueEnd = mHeaderData.length();
+            //     return mHeaderData.substr(valueStart, valueEnd - valueStart);
+            // }
+            // return "";
         }
-
-
+        //--------------------------------------------------------------------------
         std::string getContentType() const {
             return getHeaderValue("Content-Type");
         }
-
-
         //--------------------------------------------------------------------------
         HttpsClient() = default;
         ~HttpsClient() {

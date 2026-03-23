@@ -21,6 +21,7 @@
 // macro for JSON support not NOT in HEADER !!
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::AppSettings,
                                                 mUrl,
+                                                CurrentFavId,
                                                 Volume,
                                                 DockSpaceInitialized,
                                                 ShowFileBrowser,
@@ -68,139 +69,26 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     gui->mConsole.AddLog("%s", fluxStr::removePart(message,"\r\n").c_str());
 }
 // -----------------------------------------------------------------------------
+void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
+    std::string cmd = fluxStr::getWord(cmdline,0);
+
+    if (cmd == "contenttype") {
+       Log("%s", FluxNet::NetTools::getHeaderValue(mStreamHandler->getHeader(), "Content-Type").c_str());
+    }
+    if (cmd == "desc") {
+        Log("%s", FluxNet::NetTools::getHeaderValue(mStreamHandler->getHeader(), "icy-description").c_str());
+    }
+
+}
+// -----------------------------------------------------------------------------
 void RadioWana::ApplyStudioTheme(){
 
     // cyan but i think the Title/Tabs are too light
 
     ImGuiStyle& style = ImGui::GetStyle();
-    ImVec4* colors = style.Colors;
-
-    // --- GRUNDFARBEN ( Cyan & Anthrazit) ---
-    const ImVec4 titles_col  = ImVec4(0.00f, 0.25f, 0.25f, 1.00f); // titles
-    const ImVec4 hooverActive_col    = ImVec4(0.00f, 0.45f, 0.45f, 1.00f); // hover/ active
-    const ImVec4 hoover2_col         = ImVec4(0.00f, 0.60f, 0.60f, 1.00f); // Hover-Cyan
-    const ImVec4 hoover3_col         = ImVec4(0.00f, 0.80f, 0.80f, 1.00f); // actice Cyan
-    const ImVec4 dark_bg     = ImVec4(0.10f, 0.10f, 0.12f, 0.80f); // nearly black => window background
-    const ImVec4 dark_surface = ImVec4(0.26f, 0.26f, 0.28f, 1.00f); // panels
-
-    const ImVec4 meddark_surface = ImVec4(0.26f, 0.26f, 0.28f, 1.00f); // menu
-
-
-
-    // --- UI  ---
-    colors[ImGuiCol_TitleBg]                = dark_surface; //cyan_lower;
-
-
-    colors[ImGuiCol_Text]                   = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    colors[ImGuiCol_WindowBg]               = dark_bg;
-    colors[ImGuiCol_ChildBg]                = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    colors[ImGuiCol_PopupBg]                = dark_surface;
-    colors[ImGuiCol_Border]                 = ImVec4(0.30f, 0.30f, 0.30f, 0.50f);
-
-    // Menu:
-    colors[ImGuiCol_MenuBarBg]              = meddark_surface;
-
-    // Header (CollapsingHeader, TreeNodes)
-    colors[ImGuiCol_Header]                 = dark_surface;
-    colors[ImGuiCol_HeaderHovered]          = hoover2_col;
-    colors[ImGuiCol_HeaderActive]           = hoover3_col;
-
-    // Buttons
-    colors[ImGuiCol_Button]                 = ImVec4(0.20f, 0.20f, 0.22f, 1.00f);
-    colors[ImGuiCol_ButtonHovered]          = hooverActive_col;
-    colors[ImGuiCol_ButtonActive]           = hoover2_col;
-
-    // Frame (Checkbox, Input, Slider )
-    colors[ImGuiCol_FrameBg]                = ImVec4(0.25f, 0.35f, 0.35f, 1.00f);
-    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.20f, 0.20f, 0.22f, 1.00f);
-    colors[ImGuiCol_FrameBgActive]          = hooverActive_col;
-
-    // Tabs
-    colors[ImGuiCol_Tab]                    = titles_col;
-    colors[ImGuiCol_TabHovered]             = hooverActive_col;
-    colors[ImGuiCol_TabActive]              = hoover2_col;
-
-    colors[ImGuiCol_TabDimmed]              = ImLerp(colors[ImGuiCol_Tab],          colors[ImGuiCol_TitleBg], 0.80f);
-    colors[ImGuiCol_TabDimmedSelected]      = ImLerp(colors[ImGuiCol_TabSelected],  colors[ImGuiCol_TitleBg], 0.40f);
-    colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.53f, 0.53f, 0.87f, 0.00f);
-
-
-    // Akzente
-    colors[ImGuiCol_CheckMark]              = hoover3_col;
-    colors[ImGuiCol_SliderGrab]             = hooverActive_col;
-    colors[ImGuiCol_SliderGrabActive]       = hoover3_col;
-    colors[ImGuiCol_TitleBgActive]          = hooverActive_col;
 
     style.WindowRounding = 6.0f;
     style.FrameRounding = 4.0f;
-
-    // classic theme
-    // ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
-    // ImVec4* colors = style->Colors;
-    //
-    // colors[ImGuiCol_Text]                   = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    // colors[ImGuiCol_TextDisabled]           = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-    // colors[ImGuiCol_WindowBg]               = ImVec4(0.00f, 0.00f, 0.00f, 0.85f);
-    // colors[ImGuiCol_ChildBg]                = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    // colors[ImGuiCol_PopupBg]                = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
-    // colors[ImGuiCol_Border]                 = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
-    // colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    // colors[ImGuiCol_FrameBg]                = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
-    // colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.47f, 0.47f, 0.69f, 0.40f);
-    // colors[ImGuiCol_FrameBgActive]          = ImVec4(0.42f, 0.41f, 0.64f, 0.69f);
-    // colors[ImGuiCol_TitleBg]                = ImVec4(0.27f, 0.27f, 0.54f, 0.83f);
-    // colors[ImGuiCol_TitleBgActive]          = ImVec4(0.32f, 0.32f, 0.63f, 0.87f);
-    // colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.40f, 0.40f, 0.80f, 0.20f);
-    // colors[ImGuiCol_MenuBarBg]              = ImVec4(0.40f, 0.40f, 0.55f, 0.80f);
-    // colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.20f, 0.25f, 0.30f, 0.60f);
-    // colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.40f, 0.40f, 0.80f, 0.30f);
-    // colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.40f, 0.40f, 0.80f, 0.40f);
-    // colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.41f, 0.39f, 0.80f, 0.60f);
-    // colors[ImGuiCol_CheckMark]              = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
-    // colors[ImGuiCol_SliderGrab]             = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-    // colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.41f, 0.39f, 0.80f, 0.60f);
-    // colors[ImGuiCol_Button]                 = ImVec4(0.35f, 0.40f, 0.61f, 0.62f);
-    // colors[ImGuiCol_ButtonHovered]          = ImVec4(0.40f, 0.48f, 0.71f, 0.79f);
-    // colors[ImGuiCol_ButtonActive]           = ImVec4(0.46f, 0.54f, 0.80f, 1.00f);
-    // colors[ImGuiCol_Header]                 = ImVec4(0.40f, 0.40f, 0.90f, 0.45f);
-    // colors[ImGuiCol_HeaderHovered]          = ImVec4(0.45f, 0.45f, 0.90f, 0.80f);
-    // colors[ImGuiCol_HeaderActive]           = ImVec4(0.53f, 0.53f, 0.87f, 0.80f);
-    // colors[ImGuiCol_Separator]              = ImVec4(0.50f, 0.50f, 0.50f, 0.60f);
-    // colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.60f, 0.60f, 0.70f, 1.00f);
-    // colors[ImGuiCol_SeparatorActive]        = ImVec4(0.70f, 0.70f, 0.90f, 1.00f);
-    // colors[ImGuiCol_ResizeGrip]             = ImVec4(1.00f, 1.00f, 1.00f, 0.10f);
-    // colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.78f, 0.82f, 1.00f, 0.60f);
-    // colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.78f, 0.82f, 1.00f, 0.90f);
-    // colors[ImGuiCol_InputTextCursor]        = colors[ImGuiCol_Text];
-    // colors[ImGuiCol_TabHovered]             = colors[ImGuiCol_HeaderHovered];
-    // colors[ImGuiCol_Tab]                    = ImLerp(colors[ImGuiCol_Header],       colors[ImGuiCol_TitleBgActive], 0.80f);
-    // colors[ImGuiCol_TabSelected]            = ImLerp(colors[ImGuiCol_HeaderActive], colors[ImGuiCol_TitleBgActive], 0.60f);
-    // colors[ImGuiCol_TabSelectedOverline]    = colors[ImGuiCol_HeaderActive];
-    // colors[ImGuiCol_TabDimmed]              = ImLerp(colors[ImGuiCol_Tab],          colors[ImGuiCol_TitleBg], 0.80f);
-    // colors[ImGuiCol_TabDimmedSelected]      = ImLerp(colors[ImGuiCol_TabSelected],  colors[ImGuiCol_TitleBg], 0.40f);
-    // colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.53f, 0.53f, 0.87f, 0.00f);
-    // colors[ImGuiCol_DockingPreview]         = colors[ImGuiCol_Header] * ImVec4(1.0f, 1.0f, 1.0f, 0.7f);
-    // colors[ImGuiCol_DockingEmptyBg]         = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-    // colors[ImGuiCol_PlotLines]              = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    // colors[ImGuiCol_PlotLinesHovered]       = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    // colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    // colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-    // colors[ImGuiCol_TableHeaderBg]          = ImVec4(0.27f, 0.27f, 0.38f, 1.00f);
-    // colors[ImGuiCol_TableBorderStrong]      = ImVec4(0.31f, 0.31f, 0.45f, 1.00f);   // Prefer using Alpha=1.0 here
-    // colors[ImGuiCol_TableBorderLight]       = ImVec4(0.26f, 0.26f, 0.28f, 1.00f);   // Prefer using Alpha=1.0 here
-    // colors[ImGuiCol_TableRowBg]             = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    // colors[ImGuiCol_TableRowBgAlt]          = ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
-    // colors[ImGuiCol_TextLink]               = colors[ImGuiCol_HeaderActive];
-    // colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
-    // colors[ImGuiCol_TreeLines]              = colors[ImGuiCol_Border];
-    // colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-    // colors[ImGuiCol_DragDropTargetBg]       = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    // colors[ImGuiCol_UnsavedMarker]          = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    // colors[ImGuiCol_NavCursor]              = colors[ImGuiCol_HeaderHovered];
-    // colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
-    // colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
-    // colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
-
 
 }
 // -----------------------------------------------------------------------------
@@ -215,7 +103,7 @@ bool RadioWana::isFavoStation(std::string searchUuid){
 void RadioWana::DrawRecorder(){
 
     if (ImGui::Begin("Recorder", &mAppSettings.ShowRecorder)) {
-        float fullWidth = ImGui::GetContentRegionAvail().x;
+        // float fullWidth = ImGui::GetContentRegionAvail().x;
         bool isConnected = mStreamHandler->isConnected();
         ImGui::SeparatorText("Recording");
 
@@ -241,6 +129,23 @@ void RadioWana::DrawRecorder(){
 
 }
 // -----------------------------------------------------------------------------
+void RadioWana::DrawInfoPopup(FluxRadio::StreamInfo* info) {
+    if (ImGui::BeginPopup("##StationInfo")) {
+        ImGui::PushFont(getMain()->mHackNerdFont20);
+        ImGui::SeparatorText(info->name.c_str());
+        ImGui::PopFont();
+        ImFlux::TextColoredEllipsis(ImVec4(0.6f,0.6f,0.6f,1.f), info->streamUrl, 550.f);
+        ImGui::Text("Description: %s", info->description.c_str());
+        ImGui::Separator();
+        ImFlux::ShadowText(mAudioHandler->getCurrentTitle().c_str(), ImColor(240,240,20));
+        ImGui::TextDisabled("Next: %s", mAudioHandler->getNextTitle().c_str());
+        ImGui::Separator();
+        ImGui::Text("Audio: %d Hz, %d kbps, %d Channels", info->samplerate, info->bitrate, info->channels);
+        if (!info->url.empty()) ImGui::Text("Url: %s", info->url.c_str());
+        ImGui::EndPopup();
+    }
+}
+// -----------------------------------------------------------------------------
 void RadioWana::DrawRadio() {
 
     if (!mStreamHandler.get() || !mAudioHandler.get()) return;
@@ -251,32 +156,27 @@ void RadioWana::DrawRadio() {
     FluxRadio::StreamInfo info = FluxRadio::StreamInfo();
     if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
     else {
-        if (isRunning) info.name = " * * * conecting * * *          ";
+        if (isRunning) info.name = " * * * connecting * * *          ";
         else if (isConnected) info.name = " * * *          ";
         else info.name = " * * * offline * * *          ";
     }
 
 
     if (ImGui::Begin("RadioWana", &mAppSettings.ShowRadio)) {
-        float fullWidth = ImGui::GetContentRegionAvail().x;
+        // float fullWidth = ImGui::GetContentRegionAvail().x;
 
-        // ImGui::SetNextItemWidth(450.f);
-        char strBuff[256];
-        strncpy(strBuff, mAppSettings.mUrl.c_str(), sizeof(strBuff));
-        if (ImGui::InputText("URL", strBuff, sizeof(strBuff))) {
-            mAppSettings.mUrl = strBuff;
-        }
-
-        const int lcdDigits = 20;
+        const int lcdDigits    = 30;
         const float lcdHeight1 = 24.f;
-        const float displayWidth = 320.f; //lcdDigits * lcdHeight1 * 0.5f;
+        const int lcdDigits2   = 40;
+        const float lcdHeight2 = 18.f;
+
+        const float displayWidth =  lcdDigits * 16.5f; // 20 ==> 320.f; //lcdDigits * lcdHeight1 * 0.5f;
         const float displayHeight = 60.f; //(2 * lcdHeight1) + ( 3 * lcdHeight1 * 0.5f);
 
-        ImFlux::GradientBox(ImVec2(0.f, displayHeight + 30.f));
 
+        // -------- 1. TUNE -----------
+        ImFlux::GradientBox(ImVec2(0.f, displayHeight + 20));
         ImFlux::ShiftCursor(ImVec2(5.f,5.f));
-
-        ImGui::BeginGroup();
 
         //connect button
         if (isConnected) {
@@ -289,79 +189,138 @@ void RadioWana::DrawRadio() {
             }
         }
 
-        // static bool showInfo = false;
+        ImGui::SameLine();
+
+        ImGui::BeginGroup();
+        // STEPPER
+        static int displayIdx = -1;// FIXME replace mURL !! currentIdx;
+        std::vector<const char*> names;
+        int i = 0;
+        for (const auto& s : mFavoStationData) {
+            if (displayIdx < 0 && mAppSettings.CurrentFavId == s.favId) {
+                displayIdx = i;
+            }
+
+            names.push_back(s.name.c_str());
+            i++;
+        }
+
+        ImGui::PushFont(getMain()->mHackNerdFont26);
+        if (ImFlux::ValueStepper("##StationStepper", &displayIdx, names.data(), (int)names.size(), 600.f))
+        {
+            i = 0;
+            for (const auto& s : mFavoStationData) {
+                if (displayIdx == i) {
+                    mAppSettings.CurrentFavId = s.favId;
+                    break;
+                }
+                i++;
+            }
+        }
+        ImGui::PopFont();
+        ImGui::SameLine();
+        if (ImFlux::ButtonFancy("TUNE", gRadioButtonParams)) {
+            FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mAppSettings.CurrentFavId);
+            if (pStation) {
+                mAppSettings.mUrl = pStation->url;
+                mStreamHandler->Execute(mAppSettings.mUrl);
+                if (!pStation->stationuuid.empty()) mRadioBrowser->clickStation(pStation->stationuuid);
+            } else {
+                mGuiGlue->showMessage("ERROR","FIXME station not found mAppSettings.CurrentFavId is out of sync ? ");
+            }
+        }
+
+
+
+        // ImGui::SetNextItemWidth(450.f);
+        char strBuff[256];
+        strncpy(strBuff, mAppSettings.mUrl.c_str(), sizeof(strBuff));
+        if (ImGui::InputText("URL", strBuff, sizeof(strBuff))) {
+            mAppSettings.mUrl = strBuff;
+        }
+        ImGui::EndGroup();
+        ImGui::Separator();
+
+
+        // -------- 2. INFO -----------
+
+        ImFlux::GradientBox(ImVec2(0.f, displayHeight + 10.f));
+        ImFlux::ShiftCursor(ImVec2(10.f,5.f));
+        ImGui::BeginGroup();
         if (!isConnected) ImGui::BeginDisabled();
         if (ImFlux::ButtonFancy("Info", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88) ))) {
             ImGui::OpenPopup("##StationInfo");
         }
         if (!isConnected) ImGui::EndDisabled();
-        if (ImGui::BeginPopup("##StationInfo")) {
-            ImGui::PushFont(getMain()->mHackNerdFont20);
-            ImGui::SeparatorText(info.name.c_str());
-            ImGui::PopFont();
-            ImGui::Text("Address: %s", info.streamUrl.c_str());
-            ImGui::Text("Description: %s", info.description.c_str());
-            ImGui::Separator();
-            ImGui::TextColored(ImVec4(0.3f, 0.3f,0.7f,1.f), "%s", mAudioHandler->getCurrentTitle().c_str());
-            ImGui::TextDisabled("Next: %s", mAudioHandler->getNextTitle().c_str());
-            ImGui::Separator();
-            ImGui::Text("Description: %s", info.description.c_str());
-            ImGui::Text("Audio: %d Hz, %d kbps, %d Channels", info.samplerate, info.bitrate, info.channels);
-            ImGui::Text("Url: %s", info.url.c_str());
-
-            ImGui::EndPopup();
-        }
-
+        DrawInfoPopup(&info);
 
         ImGui::EndGroup();
 
-        ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(20.f,0.f));
+        // ?? ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(20.f,0.f));
 
-
-
-        ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(20.f,10.f));
+        ImGui::SameLine();
+        // ImFlux::ShiftCursor(ImVec2(0.f,10.f));
 
         if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth,displayHeight))) {
             ImFlux::GradientBoxDL(gRadioDisplayBox );
+            ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(5.f,6.f));
             ImGui::BeginGroup();
-            ImFlux::LCDText(info.name, 20, 24.f, ImFlux::COL32_NEON_ELECTRIC);
+            ImFlux::LCDText(mAudioHandler->getCurrentTitle(), lcdDigits, lcdHeight1, ImFlux::COL32_NEON_ORANGE);
             ImGui::Spacing();
-            std::string longInfo ;
-            if (isConnected ) longInfo = std::format( "DESC {} ADDR {} WEB {} Audio {} Hz, {} kbps, {} Channels",
-                info.description, info.streamUrl, info.url, info.samplerate, info.bitrate, info.channels);
-            else longInfo = "";
-            ImFlux::LCDText(longInfo, lcdDigits*2, lcdHeight1 * 0.5f, ImFlux::COL32_NEON_ELECTRIC);
+
+            if ( mAudioHandler->getNextTitle().empty() ) {
+                ImFlux::LCDText(info.name, lcdDigits2, lcdHeight2, ImFlux::COL32_NEON_ELECTRIC);
+            } else {
+                ImFlux::LCDText(mAudioHandler->getNextTitle(), lcdDigits2, lcdHeight2, ImFlux::COL32_NEON_GREEN);
+            }
+
 
             ImGui::EndGroup();
         }
         ImGui::EndChild();
 
-        ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(10.f,10.f));
-
-        if (ImGui::BeginChild("##RadioDisplayTitle", ImVec2(displayWidth,displayHeight))) {
-            ImFlux::GradientBoxDL(gRadioDisplayBox );
-            ImGui::BeginGroup();
-            ImFlux::LCDText(mAudioHandler->getCurrentTitle(), 20, 24.f, ImFlux::COL32_NEON_ORANGE);
-            ImGui::Spacing();
-            ImFlux::LCDText(mAudioHandler->getNextTitle(), lcdDigits*2, lcdHeight1 * 0.5f, ImFlux::COL32_NEON_ORANGE);
-            ImGui::EndGroup();
-        }
-        ImGui::EndChild();
-
+        // if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth,displayHeight))) {
+        //     ImFlux::GradientBoxDL(gRadioDisplayBox );
+        //     ImGui::BeginGroup();
+        //     ImFlux::LCDText(info.name, 20, 24.f, ImFlux::COL32_NEON_ELECTRIC);
+        //     ImGui::Spacing();
+        //     std::string longInfo ;
+        //     if (isConnected ) longInfo = std::format( "DESC {} ADDR {} WEB {} Audio {} Hz, {} kbps, {} Channels",
+        //         info.description, info.streamUrl, info.url, info.samplerate, info.bitrate, info.channels);
+        //     else longInfo = "";
+        //     ImFlux::LCDText(longInfo, lcdDigits*2, lcdHeight1 * 0.5f, ImFlux::COL32_NEON_ELECTRIC);
+        //
+        //     ImGui::EndGroup();
+        // }
+        // ImGui::EndChild();
+        //
+        // ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(10.f,10.f));
+        //
+        // if (ImGui::BeginChild("##RadioDisplayTitle", ImVec2(displayWidth,displayHeight))) {
+        //     ImFlux::GradientBoxDL(gRadioDisplayBox );
+        //     ImGui::BeginGroup();
+        //     ImFlux::LCDText(mAudioHandler->getCurrentTitle(), 20, 24.f, ImFlux::COL32_NEON_ORANGE);
+        //     ImGui::Spacing();
+        //     ImFlux::LCDText(mAudioHandler->getNextTitle(), lcdDigits*2, lcdHeight1 * 0.5f, ImFlux::COL32_NEON_ORANGE);
+        //     ImGui::EndGroup();
+        // }
+        // ImGui::EndChild();
+        //
 
         // ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(20.f,0.f));
         //----------------------------
 
         ImGui::Separator();
 
-        ImFlux::GradientBox(ImVec2(0.f, displayHeight + 20.f));
-        ImFlux::ShiftCursor(ImVec2(70.f,5.f));
+        // -------- 3. VOL + VU -----------
 
 
+        ImFlux::GradientBox(ImVec2(0.f, displayHeight + 10.f));
+        ImFlux::ShiftCursor(ImVec2(5.f,5.f));
 
         // ~~~ Volume Button ~~~
         ImGui::BeginGroup();
-        ImFlux::ShiftCursor(ImVec2(10.f,0.f));
+        // ImFlux::ShiftCursor(ImVec2(10.f,0.f));
         ImFlux::GradientBoxDL(gRadioDisplayBox.WithPosSize(ImVec2(0.f,0.f),ImVec2(65.f,60.f)) );
         ImFlux::ShiftCursor(ImVec2(5.f,2.f));
         float vol = mAudioHandler->getVolume();
@@ -371,12 +330,13 @@ void RadioWana::DrawRadio() {
         }
         ImGui::EndGroup();
 
+
         // ~~~ VU Meter ~~~
         ImGui::SameLine();
         if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
-            mAudioHandler->getManager()->getVisualAnalyzer()->renderVU(ImVec2(350,60), 70);
+            mAudioHandler->getManager()->getVisualAnalyzer()->renderVU(ImVec2(320,60), 70);
         }
-        // ImFlux::ShiftCursor(ImVec2(0.f,10.f));
+        ImFlux::ShiftCursor(ImVec2(0.f,10.f));
 
         //----------------------------
 
@@ -385,6 +345,8 @@ void RadioWana::DrawRadio() {
         //     mAudioHandler->getManager()->getSpectrumAnalyzer()->DrawSpectrumAnalyzer(ImVec2(fullWidth,60), true);
         // }
 
+        // -------- 4. Rack / 9BandEQ -----------
+
         mAudioHandler->RenderRack(1);
 
     }
@@ -392,10 +354,102 @@ void RadioWana::DrawRadio() {
 }
 // -----------------------------------------------------------------------------
 void RadioWana::DrawFavo() {
+    static bool showDialog = false;
+    static bool isEdit = false;
+    static FluxRadio::RadioStation workStation;
+    static uint32_t editId = 0;
+    static bool showInfo = false;
+
     if (ImGui::Begin("Favorites", &mAppSettings.ShowFavo)){
-            DrawStationsList(mFavoStationData, true);
+
+        // ~~~ BUTTONS ~~~
+        if (mSelectedFavId == 0) ImGui::BeginDisabled();
+        if (ImFlux::ButtonFancy("NEW")) {
+            showDialog = true;
+            isEdit = false;
+            workStation = FluxRadio::RadioStation();
+            workStation.url = "https://";
+        }
+
+        ImGui::SameLine();
+        if (ImFlux::ButtonFancy("EDIT") ) {
+            FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mSelectedFavId);
+            if (pStation) {
+                editId = pStation->favId;
+                workStation = *pStation;
+                showDialog = true;
+                isEdit = true;
+            } else {
+                Log("[error] FAV_EDIT: station is null pointer!!");
+            }
+        }
+        ImGui::SameLine();
+        if (ImFlux::ButtonFancy("INFO") ) {
+            FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mSelectedFavId);
+            if (pStation) {
+                //FIXME DIALOG
+                showInfo = true;
+                pStation->dump();
+            } else {
+                Log("[error] FAV_INFO: station is null pointer!!");
+            }
+        }
+
+        if (mSelectedFavId == 0) ImGui::EndDisabled();
+
+        // ~~~ LIST ~~~
+
+        DrawStationsList(mFavoStationData, true);
     }
     ImGui::End();
+
+
+    if (showDialog ) {
+        ImGui::OpenPopup("Favorite Dialog");
+
+        if (ImGui::BeginPopupModal("Favorite Dialog", &showDialog/*, ImGuiWindowFlags_AlwaysAutoResize*/) ) {
+            ImGui::SeparatorText(isEdit ? "Edit" : "New");
+            //mhh what to use as
+            char strBuff[256];
+            strncpy(strBuff, workStation.name.c_str(), sizeof(strBuff));
+            if (ImGui::InputText("Station Name",strBuff, sizeof(strBuff))) {
+                    workStation.name = strBuff;
+            }
+            strncpy(strBuff, workStation.url.c_str(), sizeof(strBuff));
+            if (ImGui::InputText("URL", strBuff, sizeof(strBuff))) {
+                workStation.url = strBuff;
+            }
+            ImGui::Separator();
+
+            if (ImGui::Button("Save")) {
+                bool validated = false;
+                validated = !workStation.name.empty() && FluxNet::NetTools::isValidURL(workStation.url);
+                // FIXME display error message or display in dialog
+                if (validated)
+                {
+                    if (isEdit) {
+                        FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, editId);
+                        if (pStation) {
+                            *pStation = workStation;
+                        } else {
+                            Log("[error] FAV_EDIT::SAVE => station is null pointer!!");
+                        }
+                    } else {
+                        mFavoStationData.push_back(workStation);
+                        FluxRadio::updateFavIds(&mFavoStationData);
+                    }
+                    showDialog = false;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                showDialog = false;
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+
 }
 // -----------------------------------------------------------------------------
 void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, bool isFavoList ) {
@@ -410,9 +464,13 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
     ImGui::EndGroup();
     //---------------
     static ImGuiTableFlags flags =
-    ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH
-    | ImGuiTableFlags_ScrollY  | ImGuiTableFlags_ScrollX
-    | ImGuiTableFlags_RowBg | ImGuiTableFlags_Sortable
+    ImGuiTableFlags_None
+    | ImGuiTableFlags_BordersV
+    | ImGuiTableFlags_BordersOuterH
+    | ImGuiTableFlags_ScrollY
+    // | ImGuiTableFlags_ScrollX
+    | ImGuiTableFlags_RowBg
+    | ImGuiTableFlags_Sortable
     | ImGuiTableFlags_Resizable
     ;
 
@@ -471,7 +529,10 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, 20.f);
                 ImGui::PushID(station->stationuuid.c_str());
 
-                bool isSelected = (mSelectedStationUuid == station->stationuuid);
+                bool isSelected =false;
+                if (!isFavoList) isSelected = (mSelectedStationUuid == station->stationuuid);
+                else isSelected  = (mSelectedFavId == station->favId);
+
 
                 // ~~~~~~~~~ FAVO ~~~~~~~~~~~~~~
                 ImGui::TableNextColumn();
@@ -482,11 +543,13 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
                 if (ImFlux::FavoriteStar("Favorite", isFavo)) {
                     if (isFavoList) {
                         std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
-                            return s.stationuuid == station->stationuuid;
+                            // return s.stationuuid == station->stationuuid;
+                            return s.favId == station->favId;
                         });
                     } else {
                         if (!isFavo) {
                             mFavoStationData.push_back(*station);
+                            FluxRadio::updateFavIds(&mFavoStationData);
                         } else {
                             std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
                                 return s.stationuuid == station->stationuuid;
@@ -500,12 +563,13 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
                 ImGui::TableNextColumn();
                 ImGui::PushFont(getMain()->mHackNerdFont20);
                 if (ImGui::Selectable(station->name.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick)) {
-                    mSelectedStationUuid = station->stationuuid;
+                    if (!isFavoList)  mSelectedStationUuid = station->stationuuid;
+                    else mSelectedFavId = station->favId;
 
                     if (ImGui::IsMouseDoubleClicked(0)) {
                         mAppSettings.mUrl = station->url;
                         mStreamHandler->Execute(mAppSettings.mUrl);
-                        mRadioBrowser->clickStation(station->stationuuid);
+                        if (!station->stationuuid.empty()) mRadioBrowser->clickStation(station->stationuuid);
                     }
                 }
                 ImGui::PopFont();
@@ -684,6 +748,7 @@ bool RadioWana::Initialize(){
 
     mAppSettings = SettingsManager().get("AppGui::mAppSettings", AppSettings());
     mFavoStationData = SettingsManager().get("Radio::Favo", mDefaultFavo);
+    FluxRadio::updateFavIds(&mFavoStationData);
 
 
     // ~~~~~ GuiGlue ~~~~~
@@ -727,8 +792,7 @@ bool RadioWana::Initialize(){
 
     mStreamHandler->OnConnected = [&]() {
         if (mAudioHandler.get())  mAudioHandler->init(mStreamHandler->getStreamInfo());
-        mStreamHandler->dumpInfo();
-
+        if (isDebugBuild()) mStreamHandler->dumpInfo();
     };
     mStreamHandler->OnStreamTitleUpdate = [&](std::string title, size_t streamPosition) {
         if (mAudioHandler.get()) mAudioHandler->OnStreamTitleUpdate(title, streamPosition);
