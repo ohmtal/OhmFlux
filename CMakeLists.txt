@@ -151,16 +151,14 @@ endif()
 # <<<
 
 # -- Curl
-option(WITH_CURL "with Curl Library" OFF)
-if (WITH_CURL)
-    find_package(CURL REQUIRED)
-    list(APPEND FLUX_LIBS CURL::libcurl)
-endif()
+# WARNING: did not get it to work with android so far..
+# NOTE: do this in the project part like this:
+    # find_package(CURL REQUIRED)
+    # list(APPEND PROJECT_LIBS CURL::libcurl)
 
 
-
+#---------------------
 include(FetchContent)
-
 
 # -- SDL3
 if(MSVC)
@@ -525,12 +523,37 @@ endif()
 
 # --- RadioWana ---
 option(BUILD_RADIOWANA "Build RadioWana" ON)
-if(BUILD_RADIOWANA)
-    #append curl here if project is not enabled
-    if (NOT WITH_CURL)
-        find_package(CURL REQUIRED)
-        list(APPEND PROJECT_LIBS CURL::libcurl)
-        message(STATUS "Added Curl .....")
+# CURL AND ANDROID IS NO FUN! ... test it later
+
+if (ANDROID)
+    message(WARNING "ANDROID AND CURL IS NOT FIXED SO FAR!!")
+endif()
+
+if(BUILD_RADIOWANA AND NOT ANDROID)
+    #append curl if not already included
+    # FETCH IT for Andoid !
+    # ANDROID: then openssl is missing
+    # set(BUILD_CURL_EXE OFF CACHE INTERNAL "")
+    # set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+    # set(CURL_USE_LIBPSL OFF CACHE INTERNAL "")
+    # set(CURL_DISABLE_LDAP ON CACHE INTERNAL "")
+    # set(CURL_DISABLE_LDAPS ON CACHE INTERNAL "")
+    # set(HTTP_ONLY ON CACHE INTERNAL "") # i only need https at the moment !
+    # FetchContent_Declare(
+    #     curl
+    #     GIT_REPOSITORY https://github.com/curl/curl.git
+    #     GIT_TAG curl-8_19_0
+    # )
+    # FetchContent_MakeAvailable(curl)
+    # list(APPEND PROJECT_LIBS libcurl)
+
+    # desktop
+    find_package(CURL REQUIRED)
+    list(APPEND PROJECT_LIBS CURL::libcurl)
+    message(STATUS "Added Curl .....")
+
+    if(ANDROID)
+        list(APPEND PROJECT_LIBS openssl z log)
     endif()
 
     set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")

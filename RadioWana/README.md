@@ -27,7 +27,7 @@ In this Project I use:
     
 
 Limitation: 
-- Only MP3 streams. 
+- Only MP3 streams.
 
 --- 
 
