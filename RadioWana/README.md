@@ -72,7 +72,6 @@ Limitation:
         - [ ] mixTape like in the good old days :D << auto switch does not work so good anyway 
             - [ ] do not switch the file name it like MixTape_DATE or let the user name it 
             - [ ] append to stream
-            
     - [ ] radio-browser.info
         - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
         - [ ] Update Favo on  "Click Responce" / RequestType::CLICK - if stationuuid is set
@@ -82,7 +81,9 @@ Limitation:
         - [ ] Windows 
             - Add Icon 
             - write docu like https://github.com/ohmtal/OhmFlux/blob/main/README_BUILD_WINDOWS.md but add curl 
+        - [ ] Emscripten
+            - FIX Curl build - need also openssl if you add it via fetchcontent 
         - [ ] Android 
+            - FIX Curl build - need also openssl if you add it via fetchcontent 
             - Create Android Studio Project 
-            - firetv
-
+            - firetv 

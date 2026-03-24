@@ -525,11 +525,8 @@ endif()
 option(BUILD_RADIOWANA "Build RadioWana" ON)
 # CURL AND ANDROID IS NO FUN! ... test it later
 
-if (ANDROID)
-    message(WARNING "ANDROID AND CURL IS NOT FIXED SO FAR!!")
-endif()
 
-if(BUILD_RADIOWANA AND NOT ANDROID)
+if(BUILD_RADIOWANA AND NOT ANDROID AND NOT EMSCRIPTEN)
     #append curl if not already included
     # FETCH IT for Andoid !
     # ANDROID: then openssl is missing
@@ -567,7 +564,8 @@ if(BUILD_RADIOWANA AND NOT ANDROID)
     )
     configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}" )
 
-
+elseif(BUILD_RADIOWANA)
+    message(WARNING "CURL: ANDROID AND EMSCRIPTEN BUILD IS NOT FIXED SO FAR!!")
 endif()
 
 
