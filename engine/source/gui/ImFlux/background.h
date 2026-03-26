@@ -126,10 +126,43 @@ namespace ImFlux {
 
 
         gp.pos = pos;
-        gp.size = size;
+        gp.size = lSize;
 
         GradientBoxDL(gp);
     }
 
 //------------------------------------------------------------------------------
+    inline void TextureBox(ImVec2 size, ImTextureRef texRef, GradientParams gp = DEFAULT_GRADIENPARAMS)
+    {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        if (!dl) return;
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+
+        if (size.x <= 0.0f) size.x = avail.x + size.x;
+        if (size.y <= 0.0f) size.y = avail.y + size.y;
+
+        ImVec2 start_p = pos;
+        ImVec2 max_p = ImVec2(start_p.x + size.x, start_p.y + size.y);
+
+
+        dl->AddImage(
+            texRef,
+            start_p,
+            max_p,
+            ImVec2(0, 0), ImVec2(1, 1)
+        );
+
+
+        // Inner shadow stroke
+        dl->AddRect(start_p, max_p, gp.col_shadow, gp.rounding);
+
+        // Bottom-Right Rim Light (Ambient occlusion)
+        dl->AddLine(ImVec2(start_p.x + gp.rounding, max_p.y),
+                    ImVec2(max_p.x - gp.rounding, max_p.y), gp.col_rim);
+        dl->AddLine(ImVec2(max_p.x, start_p.y + gp.rounding),
+                    ImVec2(max_p.x, max_p.y - gp.rounding), gp.col_rim);
+    }
+
 };

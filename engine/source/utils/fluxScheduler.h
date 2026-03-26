@@ -68,6 +68,9 @@ public:
     // TaskID add(double lDelaySeconds, void* lOwner, std::function<void()> lAction);
     TaskID add(double lDelaySeconds, FluxBaseObject* lOwner, std::function<void()> lAction);
 
+    // extend the time of a running schedule, if not found false is returned
+    bool extend(TaskID id, double lDelaySeconds);
+
     // Check if a task is still waiting
     bool isPending(TaskID id);
 

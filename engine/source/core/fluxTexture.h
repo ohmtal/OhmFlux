@@ -2,10 +2,7 @@
 // Copyright (c) 2012 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Flux Game Engine
-//
-// Author: T.Huehn (XXTH)
-// Desc  : Texture Class
+// Texture OpenGL
 //-----------------------------------------------------------------------------
 #pragma once
 #ifndef _FLUXTEXTURE_H_

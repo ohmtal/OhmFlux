@@ -12,7 +12,7 @@
 #include <algorithm>
 
 // #include <gui/ImFlux/showCase.h>
-
+#include <gui/ImFlux/widets/VirtualTapePlayer.h>
 
 
 
@@ -20,8 +20,7 @@
 //------------------------------------------------------------------------------
 // macro for JSON support not NOT in HEADER !!
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::AppSettings,
-                                                mUrl,
-                                                CurrentFavId,
+                                                // CurrentStation,
                                                 Volume,
                                                 DockSpaceInitialized,
                                                 ShowFileBrowser,
@@ -101,6 +100,7 @@ bool RadioWana::isFavoStation(std::string searchUuid){
    }
 // -----------------------------------------------------------------------------
 void RadioWana::DrawRecorder(){
+return ;
 
     if (ImGui::Begin("Recorder", &mAppSettings.ShowRecorder)) {
         // float fullWidth = ImGui::GetContentRegionAvail().x;
@@ -152,6 +152,7 @@ void RadioWana::DrawRadio() {
 
     bool isConnected = mStreamHandler->isConnected();
     bool isRunning   = mStreamHandler->isRunning();
+    bool isConnecting =  isRunning && !isConnected;
 
     FluxRadio::StreamInfo info = FluxRadio::StreamInfo();
     if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
@@ -173,79 +174,22 @@ void RadioWana::DrawRadio() {
 
 
         // -------- 1. TUNE -----------
-        ImFlux::GradientBox(ImVec2(0.f, displayHeight + 20));
-        ImFlux::ShiftCursor(ImVec2(5.f,5.f));
-
-        //connect button
-        if (isConnected) {
-            if (ImFlux::ButtonFancy("OFF", gRadioButtonParams)) {
-                mStreamHandler->stop();
-            }
-        } else {
-            if (ImFlux::ButtonFancy("ON", gRadioButtonParams)) {
-                mStreamHandler->Execute(mAppSettings.mUrl);
-            }
-        }
-
-        ImGui::SameLine();
-
-        ImGui::BeginGroup();
-
-        // dont like it
-        // // STEPPER
-        // static int displayIdx = -1;// FIXME replace mURL !! currentIdx;
-        // std::vector<const char*> names;
-        // int i = 0;
-        // for (const auto& s : mFavoStationData) {
-        //     if (displayIdx < 0 && mAppSettings.CurrentFavId == s.favId) {
-        //         displayIdx = i;
-        //     }
-        //
-        //     names.push_back(s.name.c_str());
-        //     i++;
+        // ImFlux::GradientBox(ImVec2(0.f, 30.f));
+        // if (mBrushedMetalTex) {
+        //     ImFlux::TextureBox(ImVec2(0.f, 60.f), (ImTextureID)(intptr_t)mBrushedMetalTex->getHandle());
         // }
         //
-        // ImGui::PushFont(getMain()->mHackNerdFont26);
-        // if (ImFlux::ValueStepper("##StationStepper", &displayIdx, names.data(), (int)names.size(), 600.f))
-        // {
-        //     i = 0;
-        //     for (const auto& s : mFavoStationData) {
-        //         if (displayIdx == i) {
-        //             mAppSettings.CurrentFavId = s.favId;
-        //             break;
-        //         }
-        //         i++;
-        //     }
-        // }
-        // ImGui::PopFont();
-        // ImGui::SameLine();
-        // if (ImFlux::ButtonFancy("TUNE", gRadioButtonParams)) {
-        //     FluxRadio::RadioStation* pStation = getStationByFavId(&mFavoStationData, mAppSettings.CurrentFavId);
-        //     if (pStation) {
-        //         mAppSettings.mUrl = pStation->url;
-        //         mStreamHandler->Execute(mAppSettings.mUrl);
-        //         if (!pStation->stationuuid.empty()) mRadioBrowser->clickStation(pStation->stationuuid);
-        //     } else {
-        //         mGuiGlue->showMessage("ERROR","FIXME station not found mAppSettings.CurrentFavId is out of sync ? ");
-        //     }
-        // }
+        //
+        // ImFlux::ShiftCursor(ImVec2(5.f,5.f));
+        //
 
 
 
-        // ImGui::SetNextItemWidth(450.f);
-        char strBuff[256];
-        strncpy(strBuff, mAppSettings.mUrl.c_str(), sizeof(strBuff));
-        if (ImGui::InputText("URL", strBuff, sizeof(strBuff))) {
-            mAppSettings.mUrl = strBuff;
-        }
-        ImGui::EndGroup();
-        ImGui::Separator();
 
-
-        // -------- 2. INFO -----------
+        // --------  INFO -----------
 
         ImFlux::GradientBox(ImVec2(0.f, displayHeight + 10.f));
-        ImFlux::ShiftCursor(ImVec2(10.f,5.f));
+        ImFlux::ShiftCursor(ImVec2(5.f,5.f));
         ImGui::BeginGroup();
         if (!isConnected) ImGui::BeginDisabled();
         if (ImFlux::ButtonFancy("Info", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88) ))) {
@@ -282,6 +226,12 @@ void RadioWana::DrawRadio() {
             ImGui::EndGroup();
         }
         ImGui::EndChild();
+
+        ImGui::SameLine();
+        //FIXME wanted to display the selection in LCDTEXT !!!!
+        TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(30.f));
+
+
 
         //----------------------------
 
@@ -324,7 +274,62 @@ void RadioWana::DrawRadio() {
 
         mAudioHandler->RenderRack(1);
 
+        if (mAppSettings.ShowRecorder) {
+            // -------- 5. Recorder ----------
+            ImFlux::GradientBox(ImVec2(0.f, 180.f));
 
+            ImGui::PushFont(getMain()->mHackNerdFont16);
+            ImFlux::ShadowText("RECORDER");
+            ImGui::PopFont();
+            ImGui::Separator();
+
+            ImFlux::ShiftCursor(ImVec2(5.f,5.f));
+
+            bool recordAndWrite = mRecording && mAudioRecorder->isFileOpen();
+
+            // 5.1
+            static ImFlux::VirtualTapePlayer tapePlayer;
+            tapePlayer.type = ImFlux::CassetteType::Chrome;
+            tapePlayer.size.x = 220;
+            tapePlayer.mode = recordAndWrite ? ImFlux::CassetteMode::Record : ImFlux::CassetteMode::Stop;
+            if (recordAndWrite) {
+                tapePlayer.label = mAudioHandler->getCurrentTitle();
+            } else {
+                tapePlayer.label = "";
+            }
+            tapePlayer.Draw();
+
+
+            ImGui::SameLine();
+
+            // 5.2
+            //FIXME
+            if (ImGui::BeginChild("RECORDSETTINGS", ImVec2(0.f,110.f))) {
+                float fullWidth = ImGui::GetContentRegionAvail().x;
+                bool isConnected = mStreamHandler->isConnected();
+                ImGui::SeparatorText("Recording");
+
+                ImGui::Checkbox("Recording starts on when new stream title is triggered", &mRecordingStartsOnNewTile);
+                if (!isConnected) ImGui::BeginDisabled();
+
+                if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
+                    if (mRecording && !mRecordingStartsOnNewTile && !mAudioHandler->getCurrentTitle().empty()) {
+                        mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
+                    }
+                    if (!mRecording)
+                        mAudioRecorder->closeFile();
+                }
+                if (!isConnected) ImGui::EndDisabled();
+
+                if (mRecording) {
+                    ImFlux::DrawLED("Recording", mAudioRecorder->isFileOpen(), ImFlux::LED_GREEN_ANIMATED_GLOW);
+                    ImGui::SameLine();
+                    ImGui::Text("File: %s", mAudioRecorder->getCurrentFilename().c_str());
+                }
+            }
+            ImGui::EndChild();
+
+        } //mAppSettings.ShowRecorder
 
     }
     ImGui::End();
@@ -550,9 +555,7 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
                     else mSelectedFavId = station->favId;
 
                     if (ImGui::IsMouseDoubleClicked(0)) {
-                        mAppSettings.mUrl = station->url;
-                        mStreamHandler->Execute(mAppSettings.mUrl);
-                        if (!station->stationuuid.empty()) mRadioBrowser->clickStation(station->stationuuid);
+                        Tune(*station);
                     }
                 }
                 ImGui::PopFont();
@@ -701,6 +704,7 @@ void RadioWana::SaveSettings() {
     if (SettingsManager().IsInitialized()) {
         SettingsManager().set("AppGui::mAppSettings", mAppSettings);
         SettingsManager().set("Radio::Favo", mFavoStationData);
+        SettingsManager().set("Radio::CurrentStation", mAppSettings.CurrentStation);
 
         if (mAudioHandler.get()) SettingsManager().set("Audio::Effects", mAudioHandler->getEffectsSettingsBase64());
 
@@ -718,6 +722,8 @@ void RadioWana::Deinitialize(){
 // -----------------------------------------------------------------------------
 bool RadioWana::Initialize(){
 
+
+
     std::string lSettingsFile =
     getGame()->mSettings.getPrefsPath()
     .append(getGame()->mSettings.getSafeCaption())
@@ -729,8 +735,10 @@ bool RadioWana::Initialize(){
         LogFMT("Error: Can not open setting file: {}", lSettingsFile);
     }
 
+
     mAppSettings = SettingsManager().get("AppGui::mAppSettings", AppSettings());
     mFavoStationData = SettingsManager().get("Radio::Favo", mDefaultFavo);
+    mAppSettings.CurrentStation = SettingsManager().get("Radio::CurrentStation", mDefaultFavo[0]);
     FluxRadio::updateFavIds(&mFavoStationData);
 
 
@@ -807,6 +815,11 @@ bool RadioWana::Initialize(){
         mQueryStationData.clear();
     };
 
+    std::string texPath = std::format("{}assets/brushed_black_metal_linear.png", getGamePath());
+    mBrushedMetalTex = getMain()->loadTexture(texPath);
+    // texPath = std::format("{}assets/metal_round_brush.png", getGamePath());
+    // mBackgroundTex = getMain()->loadTexture(texPath);
+
     return true;
 }
 // -----------------------------------------------------------------------------
@@ -820,7 +833,6 @@ void RadioWana::DrawGui(){
     }
 
     if (mAppSettings.ShowRadio) DrawRadio();
-    if (mAppSettings.ShowRecorder) DrawRecorder();
     if (mAppSettings.ShowFavo) DrawFavo();
 
     // if (isDebugBuild()) ImFlux::ShowCaseWidgets();

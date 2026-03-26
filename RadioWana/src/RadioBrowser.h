@@ -46,11 +46,6 @@ namespace FluxRadio {
 
 
 
-        // maybe longer compiletime because of header but i ve a fast machine ;)
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(RadioStation,
-                                       stationuuid, name, url, codec, bitrate, country, tags,
-                                       homepage, favicon, countrycode, languages, clickcount, clicktrend)
-
 
         std::vector<std::string> dump(bool useLog = true) {
             std::vector<std::string> result ;
@@ -88,6 +83,44 @@ namespace FluxRadio {
             return result;
         }
     };
+
+    inline void to_json(nlohmann::json& j, const RadioStation& s) {
+        j = nlohmann::json{
+            {"stationuuid", s.stationuuid},
+            {"name",        s.name},
+            {"url",         s.url},
+            {"codec",       s.codec},
+            {"bitrate",     s.bitrate},
+            {"country",     s.country},
+            {"tags",        s.tags},
+            {"homepage",    s.homepage},
+            {"favicon",     s.favicon},
+            {"countrycode", s.countrycode},
+            {"languages",   s.languages},
+            {"clickcount",  s.clickcount},
+            {"clicktrend",  s.clicktrend},
+            {"favId",       s.favId}
+        };
+    }
+
+    inline void from_json(const nlohmann::json& j, RadioStation& s) {
+        // .value() nimmt den Wert aus dem JSON, oder den Default (2. Parameter), falls der Key fehlt
+        s.stationuuid = j.value("stationuuid", "");
+        s.name        = j.value("name", "");
+        s.url         = j.value("url", "");
+        s.codec       = j.value("codec", "");
+        s.bitrate     = j.value("bitrate", 0);
+        s.country     = j.value("country", "");
+        s.tags        = j.value("tags", std::vector<std::string>{});
+        s.homepage    = j.value("homepage", "");
+        s.favicon     = j.value("favicon", "");
+        s.countrycode = j.value("countrycode", "");
+        s.languages   = j.value("languages", std::vector<std::string>{});
+        s.clickcount  = j.value("clickcount", 0);
+        s.clicktrend  = j.value("clicktrend", 0);
+        s.favId       = j.value("favId", (uint32_t)0);
+    }
+
 
 
     // -----------------------------------------------------------------------------

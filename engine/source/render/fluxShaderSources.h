@@ -84,7 +84,8 @@ void main() {
         FragColor = texColor * TintColor;
     } else if ( uNumLights == 0)
     {
-        texColor.rgb = pow(texColor.rgb, vec3(2.2));
+        //2026-03-25 disabled much too dark without lights!
+        //      texColor.rgb = pow(texColor.rgb, vec3(2.2));
         FragColor = texColor * TintColor;
 
     } else {

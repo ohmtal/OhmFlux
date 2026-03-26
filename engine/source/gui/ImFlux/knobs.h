@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <string>
 #include <format>
+#include <functional>
 
 #include "helper.h"
 
@@ -395,8 +396,6 @@ namespace ImFlux {
                 }
             }
         } else {
-            // Reset accumulator when not active
-            // (Note: for a production app, use a per-item ID storage if possible)
         }
 
         // --- DRAWING ---
@@ -456,6 +455,9 @@ namespace ImFlux {
 
         return value_changed;
     }
+
+
+
 
 
 

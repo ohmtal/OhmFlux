@@ -34,6 +34,18 @@ FluxScheduler::TaskID FluxScheduler::add(double lDelaySeconds, FluxBaseObject* l
     return lNewId;
 }
 //-------------------------------------------------------------------------
+bool FluxScheduler::extend(TaskID id, double lDelaySeconds) {
+    if ( id == 0 ) return false;
+    std::lock_guard<std::recursive_mutex> lock(mMutex);
+    for (auto it = mTasks.begin(); it != mTasks.end(); it++ ) {
+        if (it->id == id) {
+                it->timeRemaining = lDelaySeconds;
+                return true;
+        }
+    }
+    return false;
+}
+//-------------------------------------------------------------------------
 
 bool FluxScheduler::isPending(TaskID id){
     if (id == 0) return false;

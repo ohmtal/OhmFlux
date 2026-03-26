@@ -47,10 +47,22 @@ Limitation:
         - [X] edit popup auto size again
         - [X] replace lcd with a new scrolling text widget 
         - [X] remove stepper again 
-        - [ ] Add Recorder to "Rack"
         - [ ] left menubar for window toggle - windows in fullscreen (not console)
         - [ ] add a BIG menu list for tune 
         - [ ] final touch 
+            
+            
+    - [ ] Connect
+        - Instead of URL - Favo only ? => save current stationuuid
+    - [ ] Recorder
+        - [X] Add recorder to Rack 
+        - [ ] add Modes: 
+            - split by Meta Data - save a song with the name of the meta data information 
+                - Delay in ms to switch 
+                - start recording on new song ( meta data )
+            - Mix-Tape - append to tape bei manually start stop recoring
+                - Tape name
+            - Manual - save a new stream be station name (or record if no name) - DATETIME.mp3
             
     - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 
     - [X] add lowspeed timeout << 
@@ -63,15 +75,6 @@ Limitation:
     - [ ] lowspeed time out optional reconnect 
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;)
     - [ ] Cleanup Design (Windows) for Android 
-    - [ ] Connect
-        - Instead of URL - Favo only ? => save current stationuuid
-    - [ ] Recorder
-        - [ ] add delay to switch file name, this should be saved for each station 
-            - rock antenne sends meta data too early for example 3 sec or so 
-            - i can use OhmFlux Scheduler :) 
-        - [ ] mixTape like in the good old days :D << auto switch does not work so good anyway 
-            - [ ] do not switch the file name it like MixTape_DATE or let the user name it 
-            - [ ] append to stream
     - [ ] radio-browser.info
         - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
         - [ ] Update Favo on  "Click Responce" / RequestType::CLICK - if stationuuid is set
