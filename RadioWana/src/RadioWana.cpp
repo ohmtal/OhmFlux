@@ -153,13 +153,19 @@ void RadioWana::DrawRadio() {
     bool isConnected = mStreamHandler->isConnected();
     bool isRunning   = mStreamHandler->isRunning();
     bool isConnecting =  isRunning && !isConnected;
+    bool isOffline = !isConnected && !isRunning;
 
     FluxRadio::StreamInfo info = FluxRadio::StreamInfo();
-    if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
-    else {
-        if (isRunning) info.name = " * * * connecting * * *          ";
-        else if (isConnected) info.name = " * * *          ";
-        else info.name = " * * * offline * * *          ";
+    if ( mTuningMode ) {
+        info.name = " * * * tuning * * * ";
+    } else {
+        if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
+        else {
+            if (isRunning) info.name = " * * * connecting * * *          ";
+            else if (isConnected) info.name = " * * *          ";
+            else info.name = " * * * offline * * *          ";
+        }
+
     }
 
 
@@ -210,7 +216,17 @@ void RadioWana::DrawRadio() {
             ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(5.f,6.f));
             ImGui::BeginGroup();
             ImGui::PushFont(getMain()->mHackNerdFont26);
-            ImFlux::LCDTextScroller(mAudioHandler->getCurrentTitle(), lcdDigits, ImFlux::COL32_NEON_ORANGE);
+            if (mTuningMode || isOffline) {
+                if (mFavoStationData.size() > mSelectedFavIndex && mSelectedFavIndex >= 0) {
+                    ImFlux::LCDTextScroller(mFavoStationData[mSelectedFavIndex].name, lcdDigits, ImFlux::COL32_NEON_PURPLE);
+                }  else {
+                    ImFlux::LCDTextScroller("*** failed to get station name ***", lcdDigits, ImFlux::COL32_NEON_RED);
+                }
+            } else {
+                ImFlux::LCDTextScroller(mAudioHandler->getCurrentTitle(), lcdDigits, ImFlux::COL32_NEON_ORANGE);
+            }
+
+
             ImGui::PopFont();
 
             // ImGui::Spacing();
@@ -229,7 +245,7 @@ void RadioWana::DrawRadio() {
 
         ImGui::SameLine();
         //FIXME wanted to display the selection in LCDTEXT !!!!
-        TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(30.f));
+        TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(48.f));
 
 
 
@@ -817,8 +833,20 @@ bool RadioWana::Initialize(){
 
     std::string texPath = std::format("{}assets/brushed_black_metal_linear.png", getGamePath());
     mBrushedMetalTex = getMain()->loadTexture(texPath);
+
     // texPath = std::format("{}assets/metal_round_brush.png", getGamePath());
     // mBackgroundTex = getMain()->loadTexture(texPath);
+
+    texPath = std::format("{}assets/knobs/silber256.png", getGamePath());
+    mKnobSilverTex = getMain()->loadTexture(texPath);
+
+    texPath = std::format("{}assets/knobs/roterrand.png", getGamePath());
+    mKnobOffTex = getMain()->loadTexture(texPath);
+
+    texPath = std::format("{}assets/knobs/gruenerrand.png", getGamePath());
+    mKnobOnTex =  getMain()->loadTexture(texPath);
+
+
 
     return true;
 }

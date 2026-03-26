@@ -14,6 +14,7 @@
 #include "net/CurlGlue.h"
 #include "net/NetTools.h"
 #include "core/fluxTexture.h"
+#include "utils/fluxScheduler.h"
 
 #include "StreamHandler.h"
 #include "AudioHandler.h"
@@ -107,9 +108,15 @@ private:
 
 
     int mSelectedFavIndex = -1; //not the id the index in the list
+    bool mTuningMode = false;
+    FluxScheduler::TaskID mTuningResetTaskID = 0;
+    const double mTuningResetSec = 3.0f;
 
 public:
     FluxTexture* mBrushedMetalTex = nullptr;
+    FluxTexture* mKnobSilverTex = nullptr;
+    FluxTexture* mKnobOffTex = nullptr;
+    FluxTexture* mKnobOnTex = nullptr;
     // FluxTexture* mBackgroundTex = nullptr;
 
     struct AppSettings {
@@ -170,17 +177,20 @@ public:
         if (!mAppSettings.CurrentStation.stationuuid.empty()) mRadioBrowser->clickStation(mAppSettings.CurrentStation.stationuuid);
         return true;
     }
+    void Disconnect() {
+        mStreamHandler->stop();
+    }
 
     void Tune(FluxRadio::RadioStation station) {
         mAppSettings.CurrentStation = station;
         ConnectCurrent();
+        mSelectedFavId = -1; //Reset
+        mTuningMode = false;
 
     }
 
     //-------------------- TuneKnob Interger with overflow ---------------------------
-    void TuneKnob(
-        std::string caption,
-        const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB)
+    void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB)
     {
         ImGui::PushID((caption + "knob").c_str());
         ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -196,6 +206,7 @@ public:
             }
         }
 
+        float delta = 0.f;
         int step = 1;
         int* v = &mSelectedFavIndex;
         int v_min = 0;
@@ -212,40 +223,43 @@ public:
         ImGui::InvisibleButton(caption.c_str(), size);
 
         bool value_changed = false;
+        bool isConnected = mStreamHandler->isConnected();
         bool is_active = ImGui::IsItemActive();
         bool is_hovered = ImGui::IsItemHovered();
         bool is_clicked = ImGui::IsItemClicked();
+        static bool is_Pressed = false;
+        bool is_mouseRelease = ImGui::IsItemDeactivated();
 
+        if (is_clicked) is_Pressed = true;
 
         ImGuiIO& io = ImGui::GetIO();
 
         int new_v = *v;
         // --- INTERACTION ---
         if (is_hovered && io.MouseWheel != 0) {
-            new_v = *v + (int)ImGui::GetIO().MouseWheel * step;
-            // int new_v = std::clamp(*v + (int)ImGui::GetIO().MouseWheel * step, v_min, v_max);
-            // if (new_v != *v) {
-            //     *v = new_v ;
-            //     value_changed = true;
-            // }
+            delta = ImGui::GetIO().MouseWheel;
+            new_v = *v + (int)delta * step;
+            if (new_v != *v) value_changed = true;
         }
 
         //FIXME THIS DOES IS CLICKED ?!?!?!?
 
-        // if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-        //     float delta = ImGui::GetIO().MouseDelta.y;
-        //     if (std::abs(delta) > 0.0f) {
-        //         static float accumulator = 0.0f;
-        //         accumulator -= delta;
-        //         if (std::abs(accumulator) >= 5.0f) {
-        //             int steps = (int)(accumulator / 5.0f) * step;
-        //             new_v = *v + steps;
-        //             accumulator -= (float)steps * 5.0f; // keep the remainder
-        //         }
-        //     }
-        // } else {
-        // }
-        //
+        if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+            delta = ImGui::GetIO().MouseDelta.y;
+            if (std::abs(delta) > 0.0f) {
+                static float accumulator = 0.0f;
+                accumulator -= delta;
+                if (std::abs(accumulator) >= 5.0f) {
+                    int steps = (int)(accumulator / 5.0f) * step;
+                    new_v = *v + steps;
+                    accumulator -= (float)steps * 5.0f; // keep the remainder
+                    value_changed = true;
+                }
+            }
+        } else {
+
+        }
+
 
         // clamp
         if (new_v < v_min) new_v = v_max;
@@ -256,7 +270,6 @@ public:
         // --- DRAWING ---
         ImDrawList* dl = ImGui::GetWindowDrawList();
         ImVec2 center = ImVec2(pos.x + ks.radius, pos.y + ks.radius);
-        float fraction = (float)(*v - v_min) / (float)(v_max - v_min);
 
         // Outer Border / Housing (Integration of bg_outer)
         dl->AddCircle(center, ks.radius, ks.bg_inner, 32, 1.5f);
@@ -264,38 +277,48 @@ public:
         dl->AddCircleFilled(center, ks.radius, ks.bg_outer);
 
         // Main Knob Body
-        float knob_radius = ks.radius * 0.95f; // 0.65f;
-        if (is_clicked) {
-            float p_radius = knob_radius * 0.98f;
-            ImVec2 p_center = center + ImVec2(0, 0.5f);
+        float knob_radius = ks.radius * 0.90f; // 0.65f;
+        //seamless movement
+        static float visual_value = 0.0f;
+        visual_value += delta * 0.01f;
+        float needle_ang = visual_value  * M_2PI;
+        // ImGui::SameLine(); ImGui::Text("%.3f", visual_value);
 
-            ImU32 active_glow = (ks.active & IM_COL32_A_MASK) | (IM_COL32(0,0,0,80));
-            dl->AddCircleFilled(p_center, p_radius + 1.0f, active_glow);
 
-            dl->AddCircleFilled(p_center, p_radius, ks.bg_outer);
-            dl->AddCircleFilled(p_center, p_radius - 1.5f, ks.bg_inner);
+        if (mKnobSilverTex) {
+            float r = knob_radius;
+            GLuint handle = 0;
 
-            dl->AddCircleFilled(p_center - ImVec2(0, p_radius * 0.2f), p_radius * 0.4f, ks.glare);
+            if ( !isConnected ) handle = mKnobOffTex->getHandle();
+            else if (mTuningMode) handle = mKnobSilverTex->getHandle();
+            else handle = mKnobOnTex->getHandle();
+            ImTextureID texID = (ImTextureID)(intptr_t)handle;
 
-            dl->AddCircle(p_center, p_radius - 1.5f, ks.shadow, 0, 2.0f);
-        } else {
-            dl->AddCircleFilled(center, knob_radius, ks.bg_outer);
-            dl->AddCircleFilled(center, knob_radius - 1.5f, ks.bg_inner);
-            dl->AddCircleFilled(center - ImVec2(0, knob_radius * 0.3f), knob_radius * 0.5f, ks.glare);
+            // Die 4 Eckpunkte des Bildes (ungerotiert)
+            ImVec2 p0 = center + ImVec2(-r, -r); // Oben Links
+            ImVec2 p1 = center + ImVec2( r, -r); // Oben Rechts
+            ImVec2 p2 = center + ImVec2( r,  r); // Unten Rechts
+            ImVec2 p3 = center + ImVec2(-r,  r); // Unten Links
+
+            // Mit deiner Funktion rotieren
+            dl->AddImageQuad(
+                texID,
+                ImFlux::Rotate(p0, center, needle_ang),
+                ImFlux::Rotate(p1, center, needle_ang),
+                ImFlux::Rotate(p2, center, needle_ang),
+                ImFlux::Rotate(p3, center, needle_ang),
+                ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1)
+            );
         }
 
 
-        // bevel
+        //bevel
         dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
 
         // 4. Indicator Needle (On the knob body)
-        const float start_angle = 0.75f * IM_PI;
-        const float end_angle   = 2.25f * IM_PI;
-
-        float needle_ang = start_angle + fraction * (end_angle - start_angle);
-        ImVec2 n_start = center + ImVec2(cosf(needle_ang) * (knob_radius * 0.3f), sinf(needle_ang) * (knob_radius * 0.3f));
-        ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (knob_radius - 2.0f), sinf(needle_ang) * (knob_radius - 2.0f));
-        dl->AddLine(n_start, n_end, ks.needle, 2.0f);
+        // ImVec2 n_start = center + ImVec2(cosf(needle_ang) * (knob_radius * 0.3f), sinf(needle_ang) * (knob_radius * 0.3f));
+        // ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (knob_radius - 2.0f), sinf(needle_ang) * (knob_radius - 2.0f));
+        // dl->AddLine(n_start, n_end, ks.needle, 2.0f);
 
 
         if (is_hovered) ImGui::SetTooltip("%s: #%d %s", caption.c_str(), *v + 1, mFavoStationData[*v].name.c_str());
@@ -305,14 +328,40 @@ public:
         static double last_click_time = 0.0;
         const double cooldown_duration = 1.f;  //sec cooldown
 
-        if (is_clicked ) {
+        if (value_changed) {
+            dLog("TuneKnob: value changed: %d", mSelectedFavIndex);
+            mTuningMode = true;
+            if (FluxSchedule.isPending(mTuningResetTaskID)) {
+                FluxSchedule.extend(mTuningResetTaskID,mTuningResetSec );
+            } else {
+                mTuningResetTaskID = FluxSchedule.add(mTuningResetSec, nullptr,[&]() { mTuningMode = false; });
+            }
+
+            is_Pressed = false;
+        }
+        // ImGui::SameLine();  ImFlux::DrawLED("clicki",is_clicked, ImFlux::LED_RED);
+        // ImGui::SameLine(); ImFlux::DrawLED("pressed",is_Pressed, ImFlux::LED_BLUE);
+        // ImGui::SameLine(); ImFlux::DrawLED("connected",isConnected, ImFlux::LED_GREEN);
+
+        if (is_mouseRelease && is_Pressed ) {
+            is_Pressed = false;
             if (ImGui::GetTime() - last_click_time > cooldown_duration) {
-                Tune(mFavoStationData[*v]);
+
+                if (isConnected && !mTuningMode) {
+                    Log("[error] GO OFFLINE");
+                    Disconnect();
+
+                } else {
+                   Tune(mFavoStationData[*v]);
+                   Log("[error] TuneKnob: TUNE Selected Station: %s", mFavoStationData[*v].name.c_str());
+                }
+
+
                 // mAppSettings.CurrentFavId = mFavoStationData[*v].favId;
             } else {
-                is_clicked = false;
-                Log("[warn] Click ignored ... too fast!");
+                Log("[warn] TuneKnob: Click ignored ... too fast!");
             }
+            last_click_time = ImGui::GetTime();
         }
     }
 
