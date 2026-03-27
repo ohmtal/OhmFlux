@@ -109,6 +109,8 @@ namespace FluxRadio {
         void OnAudioChunk(const void* buffer, const size_t size);
         void onDisConnected(bool doLock = true);
 
+        void reset(bool doLock = true);
+
     private:
         static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
         static ma_result OnReadFromRawBuffer(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead, size_t* pBytesRead);

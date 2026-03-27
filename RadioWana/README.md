@@ -48,14 +48,41 @@ Limitation:
         - [X] replace lcd with a new scrolling text widget 
         - [X] remove stepper again 
         - [ ] left menubar for window toggle - windows in fullscreen (not console)
-        - [ ] add a BIG menu list for tune 
-        - [ ] final touch 
+            - [ ] Radio
+                - info 
+                - connect / disconnect 
+                - favorites as shortcuts 
+            - [ ] Favorites
+            - [ ] Radio Browser 
+            - [ ] Windows
+            - [ ] About 
+            - [ ] Help 
+        
+        - [X] deny station when no meta-int is set !!  => Invalid station detected...
+        
+        - [X] add a BIG Knob list for tune 
+            - [X] seamless/endless toggle favo station  / Tune-Modes
+            - [X] click connects or disconnects
+            - [X] Enhance Hint: Disconnect or station name only 
             
+        - [ ] Options
+            - [X] Window Save States << look at console command "window"
+                - [X] add a struct for this with json stuff
+                    - [X] Maximized
+                    - [X] Size and Position 
+                    
+                - [X] set better min size  => 720 x 320
+            - [ ] Autoconnect on start 
             
-    - [ ] Connect
+        - [ ] About / Help dialogs
+        
+            
+        
+    - [X] Connect
         - Instead of URL - Favo only ? => save current stationuuid
     - [ ] Recorder
         - [X] Add recorder to Rack 
+        - Enable recording controls without connected 
         - [ ] add Modes: 
             - split by Meta Data - save a song with the name of the meta data information 
                 - Delay in ms to switch 
@@ -63,7 +90,8 @@ Limitation:
             - Mix-Tape - append to tape bei manually start stop recoring
                 - Tape name
             - Manual - save a new stream be station name (or record if no name) - DATETIME.mp3
-            
+    
+    
     - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 
     - [X] add lowspeed timeout << 
     - [ ] add error message on http 4xx 5xx
@@ -72,6 +100,12 @@ Limitation:
     - [X] Bug in header parser: icy-decription when empty
     
 - [ ] Version 1.x
+    - [ ] RSS Podcast/Feeds
+        - [ ] Handle mp3 stream without header data ! Take a url from a rss feed - handle empty meta-int and play the stream - visual feedback 
+            - [X] fixed meta-int not set so stream with audio continue
+            - [ ] Problem: when stream complete it calles disconnect, which close the audiostream and kick the buffer away . 
+            - THIS NEEDS an extra object - it's an download only !
+    
     - [ ] lowspeed time out optional reconnect 
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;)
     - [ ] Cleanup Design (Windows) for Android 

@@ -84,6 +84,7 @@ namespace FluxRadio {
 
     // -----------------------------------------------------------------------------
     bool AudioHandler::init(StreamInfo* info) {
+
         if (!info) {
             Log("[error] init StreamInfo in NULL!!");
             return false;
@@ -280,8 +281,10 @@ namespace FluxRadio {
     ma_result AudioHandler::OnSeekDummy(ma_decoder* pDecoder, ma_int64 byteOffset, ma_seek_origin origin){
         return MA_SUCCESS;
     }
+
+
     // -----------------------------------------------------------------------------
-    void AudioHandler::onDisConnected ( bool doLock ){
+    void AudioHandler::reset ( bool doLock ){
         if (!mDecoderInitialized) return;
         //FIXME on exit: Fatal glibc error: pthread_mutex_lock.c:426 (__pthread_mutex_lock_full): assertion failed: e != ESRCH || !robust
         if (doLock) std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
@@ -298,6 +301,10 @@ namespace FluxRadio {
         mPendingStreamTitles.clear();
         mCurrentTitle = "";
 
+    }
+    // -----------------------------------------------------------------------------
+    void AudioHandler::onDisConnected ( bool doLock ){
+        reset(doLock);
     }
     // -----------------------------------------------------------------------------
     void AudioHandler::OnStreamTitleUpdate(const std::string streamTitle, const size_t streamPosition){

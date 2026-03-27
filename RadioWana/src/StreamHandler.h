@@ -51,8 +51,12 @@ namespace FluxRadio {
         CURL* mCurlHandle = nullptr;
 
 
+        long mLowSpeedTimeOut = 20L; //sec.
+        long mBufferSize = 16384L;
+
+
     public:
-        uint16_t mLowSpeedTimeOut = 10; //sec.
+
         std::function<void()> OnConnected = nullptr;
         std::function<void()> OnConnecting = nullptr;
         std::function<void()> onDisConnected = nullptr;

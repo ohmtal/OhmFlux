@@ -47,13 +47,20 @@ namespace FluxRadio {
                 curl_easy_getinfo(self->mCurlHandle, CURLINFO_RESPONSE_CODE, &http_code);
                 if (http_code == 200) {
                     self->mState = StreamState::AUDIO;
+
                     self->mBytesToRead = self->mMetaInt;
                     self->mStreamInfo.parseHeader(self->mFullHeader);
 
-                    if (self->OnConnected) {
-                        self->OnConnected();
+                    if (self->mMetaInt == 0) {
+                        Log("[error] Invalid station detected!!");
+                        self->stop();
+                        if (self->OnError) self->OnError(0,"Invalid Radio Station detected!");
+                    } else {
+                        if (self->OnConnected) {
+                            self->OnConnected();
+                        }
+                        self->mConnected.store(true);
                     }
-                    self->mConnected.store(true);
                 } else if (http_code >= 300 && http_code < 400) {
                     self->mFullHeader.clear();
                 }
@@ -106,8 +113,14 @@ namespace FluxRadio {
                 self->mBytesToRead -= canRead;
                 handled += canRead;
                 if (self->mBytesToRead == 0) {
-                    self->mMetaString.clear();
-                    self->mState = StreamState::META_LENGTH;
+                    if (self->mMetaInt == 0 ) {
+                        // we have no meta int maybe a mp3 stream only ?
+                        self->mBytesToRead = (size_t)self->mBufferSize;
+                        // dLog("[warn] MP3 Stream: buffsize: %d",(int)self->mBytesToRead );
+                    } else {
+                        self->mMetaString.clear();
+                        self->mState = StreamState::META_LENGTH;
+                    }
                 }
             }
             // ~~~~~~~~~~~~ META_LENGTH ~~~~~~~~~~~~~~~
@@ -221,16 +234,15 @@ namespace FluxRadio {
 
                 // Low speed limit to detect connection is lost
                 curl_easy_setopt(mCurlHandle, CURLOPT_LOW_SPEED_LIMIT, 1L);
-                curl_easy_setopt(mCurlHandle, CURLOPT_LOW_SPEED_TIME, (long)mLowSpeedTimeOut);
-                // curl_easy_setopt(mCurlHandle, CURLOPT_LOW_SPEED_TIME, 2L);
+                curl_easy_setopt(mCurlHandle, CURLOPT_LOW_SPEED_TIME, mLowSpeedTimeOut);
 
                 // SSL-Verify
                 curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYPEER, 1L);
                 curl_easy_setopt(mCurlHandle, CURLOPT_SSL_VERIFYHOST, 2L);
 
                 // buffering
-                curl_easy_setopt(mCurlHandle, CURLOPT_BUFFERSIZE, 16384L);
-                curl_easy_setopt(mCurlHandle, CURLOPT_UPLOAD_BUFFERSIZE, 16384L);
+                curl_easy_setopt(mCurlHandle, CURLOPT_BUFFERSIZE, mBufferSize);
+                curl_easy_setopt(mCurlHandle, CURLOPT_UPLOAD_BUFFERSIZE, mBufferSize);
 
                 res = curl_easy_perform(mCurlHandle);
 

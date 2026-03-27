@@ -14,7 +14,7 @@
 namespace ImFlux {
 
     //---------------------------------------------------------------------------
-    inline bool FaderVertical(const char* label, ImVec2 size, float* v, float v_min, float v_max) {
+    inline bool FaderVertical(const char* label, ImVec2 size, float* v, float v_min, float v_max, const char* format = "%.2f") {
         ImGui::PushID(label);
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -63,6 +63,13 @@ namespace ImFlux {
         ImU32 cap_col = is_active ? IM_COL32(180, 180, 180, 255) : (is_hovered ? IM_COL32(140, 140, 140, 255) : IM_COL32(110, 110, 110, 255));
         dl->AddRectFilled({pos.x, cap_y}, {pos.x + size.x, cap_y + cap_h}, cap_col, 2.0f);
         dl->AddLine({pos.x + 2, cap_y + cap_h * 0.5f}, {pos.x + size.x - 2, cap_y + cap_h * 0.5f}, IM_COL32(0, 0, 0, 200), 2.0f); // Center line on cap
+
+        if (is_hovered || is_active) {
+            char val_buf[64];
+            ImFormatString(val_buf, IM_ARRAYSIZE(val_buf), format, *v);
+            ImGui::SetTooltip("%s: %s", label, val_buf);
+        }
+
 
         ImGui::PopID();
         return is_active;

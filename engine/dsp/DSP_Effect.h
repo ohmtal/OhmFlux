@@ -357,7 +357,8 @@ namespace DSP {
         float tmpValue = get();
         bool changed = false;
         ImGui::BeginGroup();
-        if (ImFlux::FaderVertical(std::format("##{}", name).c_str(), ImVec2(sliderWidth, sliderHeight), &tmpValue, minVal, maxVal)) {
+        // if (ImFlux::FaderVertical(std::format("##{}", name).c_str(), ImVec2(sliderWidth, sliderHeight), &tmpValue, minVal, maxVal)) {
+        if (ImFlux::FaderVertical(name.c_str(), ImVec2(sliderWidth, sliderHeight), &tmpValue, minVal, maxVal)) {
             set(tmpValue);
             changed = true;
         }

@@ -27,6 +27,7 @@ int main(int argc, char* argv[])
     app->mSettings.WindowMaximized = true;
     app->mSettings.ScreenWidth  = 1152; // 1920;
     app->mSettings.ScreenHeight =  648; //1080;
+    app->mSettings.minWindowSize = {720,320};
 
     //FIXME app->mSettings.IconFilename = "assets/icon.bmp";
 

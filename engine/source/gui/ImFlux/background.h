@@ -32,6 +32,7 @@ namespace ImFlux {
 
         // Fluent interface helpers
         GradientParams WithPosSize(ImVec2 p, ImVec2 s) const { GradientParams gp = *this; gp.pos = p; gp.size = s; return gp; }
+        GradientParams WithSize(ImVec2 s) const { GradientParams gp = *this; gp.size = s; return gp; }
         GradientParams WithRounding(float r) const { GradientParams gp = *this; gp.rounding = r; return gp; }
         GradientParams WithInset(bool i) const { GradientParams gp = *this; gp.inset = i; return gp; }
     };

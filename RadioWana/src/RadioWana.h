@@ -130,12 +130,39 @@ public:
         bool ShowRadio            = true;
         bool ShowRecorder         = true;
         bool ShowFavo             = true;
+        bool ShowEquilizer        = true;
+    };
 
+    struct WindowState {
+        int width    = 1152;
+        int height   = 648;
+        int posX     = 0;
+        int posY     = 0;
+        bool  maximized   = true;
+
+        void sync() {
+            SDL_Window* window = getScreenObject()->getWindow();
+            if (!window) return;
+            maximized = getScreenObject()->getWindowMaximized();
+            // Window size
+            SDL_GetWindowSize(window, &width, &height);
+            // Window position
+            SDL_GetWindowPosition(window, &posX, &posY);
+        }
+
+        void updateWindow() {
+            SDL_Window* window = getScreenObject()->getWindow();
+            if (!window) return;
+            getScreenObject()->setWindowMaximized(maximized);
+            SDL_SetWindowSize(window, width, height);
+            if (posX != 0.f && posY != 0.f) SDL_SetWindowPosition(window, posX, posY);
+        }
     };
 
 
     ImConsole mConsole;
     AppSettings mAppSettings;
+    WindowState mWindowState;
 
     bool Initialize() override;
     void Deinitialize() override;
@@ -164,6 +191,7 @@ public:
 
     void DrawRadio();
     void DrawRecorder();
+    void DrawEquilizer();
 
     bool isFavoStation(std::string searchUuid);
 
@@ -320,8 +348,11 @@ public:
         // ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (knob_radius - 2.0f), sinf(needle_ang) * (knob_radius - 2.0f));
         // dl->AddLine(n_start, n_end, ks.needle, 2.0f);
 
-
-        if (is_hovered) ImGui::SetTooltip("%s: #%d %s", caption.c_str(), *v + 1, mFavoStationData[*v].name.c_str());
+        // mouse over hint
+        if (is_hovered) {
+            if (isConnected && !mTuningMode) ImGui::SetTooltip("%s", "Disconnect");
+            else ImGui::SetTooltip("%s", mFavoStationData[*v].name.c_str());
+        }
 
         ImGui::PopID();
 
@@ -329,7 +360,7 @@ public:
         const double cooldown_duration = 1.f;  //sec cooldown
 
         if (value_changed) {
-            dLog("TuneKnob: value changed: %d", mSelectedFavIndex);
+            // dLog("TuneKnob: value changed: %d", mSelectedFavIndex);
             mTuningMode = true;
             if (FluxSchedule.isPending(mTuningResetTaskID)) {
                 FluxSchedule.extend(mTuningResetTaskID,mTuningResetSec );
@@ -348,12 +379,12 @@ public:
             if (ImGui::GetTime() - last_click_time > cooldown_duration) {
 
                 if (isConnected && !mTuningMode) {
-                    Log("[error] GO OFFLINE");
+                    dLog("[info] TuneKnow:: Disconnecting...");
                     Disconnect();
 
                 } else {
                    Tune(mFavoStationData[*v]);
-                   Log("[error] TuneKnob: TUNE Selected Station: %s", mFavoStationData[*v].name.c_str());
+                   dLog("[info] TuneKnob: TUNE Selected Station: %s", mFavoStationData[*v].name.c_str());
                 }
 
 

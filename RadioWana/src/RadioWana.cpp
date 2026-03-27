@@ -28,8 +28,18 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::AppSettings,
                                                 ShowRadioBrowser,
                                                 ShowRadio,
                                                 ShowRecorder,
-                                                ShowFavo
+                                                ShowFavo,
+                                                ShowEquilizer
 )
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::WindowState,
+                                                width,
+                                                height,
+                                                posX,
+                                                posY,
+                                                maximized
+)
+
 
 // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FluxRadio::RadioStation,
 //                                                 stationuuid, name, url,
@@ -67,6 +77,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     gui->mConsole.AddLog("%s", fluxStr::removePart(message,"\r\n").c_str());
 }
+
 // -----------------------------------------------------------------------------
 void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
     std::string cmd = fluxStr::getWord(cmdline,0);
@@ -76,6 +87,26 @@ void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
     }
     if (cmd == "desc") {
         Log("%s", FluxNet::NetTools::getHeaderValue(mStreamHandler->getHeader(), "icy-description").c_str());
+    }
+    // window information
+    if (cmd == "window") {
+        SDL_Window* window = getScreenObject()->getWindow();
+
+        bool maximized = getScreenObject()->getWindowMaximized();
+        // setWindowMaximized
+
+        // Window size
+        int w, h;
+        SDL_GetWindowSize(window, &w, &h);
+
+        // Window position
+        int posX, posY;
+        SDL_GetWindowPosition(window, &posX, &posY);
+
+        //----
+        Log("Window size:%d,%d. maximized:%d, position:%d,%d",
+            w,h,maximized,posX,posY);
+
     }
 
 }
@@ -100,34 +131,90 @@ bool RadioWana::isFavoStation(std::string searchUuid){
    }
 // -----------------------------------------------------------------------------
 void RadioWana::DrawRecorder(){
-return ;
+//FIXME move recorder here
+}
+// -----------------------------------------------------------------------------
+void RadioWana::DrawEquilizer(){
+    if (!mAudioHandler.get() || !mAudioHandler->getManager()) return;
+    DSP::Equalizer9Band* effect = static_cast<DSP::Equalizer9Band*>(mAudioHandler->getManager()->getEffectByType(DSP::EffectType::Equalizer9Band));
+    if (!effect) return;
+    const float boxHeight = 110.f;
+    const float boxWidth = 400.f; //340.f;
+    const float sliderSpaceing = 12.f;
+    DSP::Equalizer9BandSettings currentSettings = effect->getSettings();
 
-    if (ImGui::Begin("Recorder", &mAppSettings.ShowRecorder)) {
-        // float fullWidth = ImGui::GetContentRegionAvail().x;
-        bool isConnected = mStreamHandler->isConnected();
-        ImGui::SeparatorText("Recording");
+    const float sliderWidth = 25.f;
+    const float sliderHeight = 70.f;
+    const std::string volStr = "VOL";
 
-        ImGui::Checkbox("Recording starts on when new stream title is triggered", &mRecordingStartsOnNewTile);
-        if (!isConnected) ImGui::BeginDisabled();
+    ImGui::PushID(effect);
+        bool changed = false;
+        // effect->renderUIHeader();
+        // if (effect->isEnabled())
+        {
+            if (ImGui::BeginChild("UI_Box", ImVec2(boxWidth, boxHeight)/*, ImGuiChildFlags_Borders*/)) {
+                ImFlux::GradientBoxDL(gRadioDisplayBox.WithSize(ImVec2(boxWidth, boxHeight)) );
+                ImFlux::ShiftCursor(ImVec2(5.f,5.f));
 
-        if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
-            if (mRecording && !mRecordingStartsOnNewTile && !mAudioHandler->getCurrentTitle().empty()) {
-                mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
+                //Volume
+                // inline bool FaderVertical2(const char* label, ImVec2 size, float* v, float v_min, float v_max, const char* format = "%.2f") {
+                ImGui::BeginGroup();
+                float vol = mAudioHandler->getVolume();
+                if (ImFlux::FaderVertical(volStr.c_str(), ImVec2(sliderWidth,sliderHeight), &vol,0.f,1.f )) {
+                    mAudioHandler->setVolume(vol);
+                    mAppSettings.Volume = vol;
+                }
+                float textWidth = ImGui::CalcTextSize(volStr.c_str()).x;
+
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
+                ImGui::TextUnformatted(volStr.c_str());
+                ImGui::EndGroup();
+                ImGui::SameLine(0, 0);
+
+                ImFlux::SeparatorFancy(ImGuiSeparatorFlags_Vertical, 2.f,  0.f, sliderSpaceing / 1.5f);
+
+
+                ImGui::BeginGroup();
+                // Control Sliders
+                int count = currentSettings.getAll().size();
+                int i = 0;
+                for (auto* param :currentSettings.getAll() ) {
+
+                    // virtual bool FaderVWithText( float sliderWidth = 20.f, float sliderHeight = 80.f ) = 0;
+
+                    changed |= param->FaderVWithText(sliderWidth,sliderHeight);
+                    if (i < count) ImGui::SameLine(0, sliderSpaceing);
+                    i++;
+                }
+                ImGui::EndGroup();
             }
-            if (!mRecording)
-                mAudioRecorder->closeFile();
+            ImGui::EndChild();
         }
-        if (!isConnected) ImGui::EndDisabled();
+        if (ImGui::BeginPopupContextItem()) {
+            ImGui::SeparatorText("Equilizer");
+            changed |= currentSettings.drawStepper(currentSettings);
+            if (ImFlux::FaderButton("Reset", ImVec2(40.f, 20.f)))  {
+                 currentSettings.resetToDefaults();
+                 effect->reset();
+                 changed = true;
+            }
 
-        if (mRecording) {
-            ImFlux::DrawLED("Recording", mAudioRecorder->isFileOpen(), ImFlux::LED_GREEN_ANIMATED_GLOW);
-            ImGui::SameLine();
-            ImGui::Text("File: %s", mAudioRecorder->getCurrentFilename().c_str());
+
+            ImGui::EndPopup();
         }
-    }
-    ImGui::End();
+
+
+
+        // effect->renderUIFooter();
+        ImGui::PopID();
+        // return changed;
+
+        if (changed) {
+            effect->setSettings(currentSettings);
+        }
 
 }
+
 // -----------------------------------------------------------------------------
 void RadioWana::DrawInfoPopup(FluxRadio::StreamInfo* info) {
     if (ImGui::BeginPopup("##StationInfo")) {
@@ -151,9 +238,11 @@ void RadioWana::DrawRadio() {
     if (!mStreamHandler.get() || !mAudioHandler.get()) return;
 
     bool isConnected = mStreamHandler->isConnected();
+
     bool isRunning   = mStreamHandler->isRunning();
     bool isConnecting =  isRunning && !isConnected;
     bool isOffline = !isConnected && !isRunning;
+
 
     FluxRadio::StreamInfo info = FluxRadio::StreamInfo();
     if ( mTuningMode ) {
@@ -196,20 +285,6 @@ void RadioWana::DrawRadio() {
 
         ImFlux::GradientBox(ImVec2(0.f, displayHeight + 10.f));
         ImFlux::ShiftCursor(ImVec2(5.f,5.f));
-        ImGui::BeginGroup();
-        if (!isConnected) ImGui::BeginDisabled();
-        if (ImFlux::ButtonFancy("Info", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88) ))) {
-            ImGui::OpenPopup("##StationInfo");
-        }
-        if (!isConnected) ImGui::EndDisabled();
-        DrawInfoPopup(&info);
-
-        ImGui::EndGroup();
-
-        // ?? ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(20.f,0.f));
-
-        ImGui::SameLine();
-        // ImFlux::ShiftCursor(ImVec2(0.f,10.f));
 
         if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth  ,displayHeight ))) {
             ImFlux::GradientBoxDL(gRadioDisplayBox );
@@ -244,9 +319,20 @@ void RadioWana::DrawRadio() {
         ImGui::EndChild();
 
         ImGui::SameLine();
-        //FIXME wanted to display the selection in LCDTEXT !!!!
         TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(48.f));
 
+
+        //FIXME INFO MUST BE SOMEWHERE ELSE
+        ImGui::SameLine();
+        ImGui::BeginGroup();
+        if (!isConnected) ImGui::BeginDisabled();
+        if (ImFlux::ButtonFancy("Info", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88) ))) {
+            ImGui::OpenPopup("##StationInfo");
+        }
+        if (!isConnected) ImGui::EndDisabled();
+        DrawInfoPopup(&info);
+
+        ImGui::EndGroup();
 
 
         //----------------------------
@@ -256,42 +342,78 @@ void RadioWana::DrawRadio() {
         // -------- 3. VOL + VU -----------
 
 
-        ImFlux::GradientBox(ImVec2(0.f, displayHeight + 10.f));
+        ImFlux::GradientBox(ImVec2(0.f, 140.f));
         ImFlux::ShiftCursor(ImVec2(5.f,5.f));
 
-        // ~~~ Volume Button ~~~
-        ImGui::BeginGroup();
-        // ImFlux::ShiftCursor(ImVec2(10.f,0.f));
-        ImFlux::GradientBoxDL(gRadioDisplayBox.WithPosSize(ImVec2(0.f,0.f),ImVec2(65.f,60.f)) );
-        ImFlux::ShiftCursor(ImVec2(5.f,2.f));
-        float vol = mAudioHandler->getVolume();
-        if (ImFlux::LEDMiniKnob("Volume", &vol, 0.f, 1.f, ImFlux::DARK_KNOB.WithRadius(28.f))) {
-            mAudioHandler->setVolume(vol);
-            mAppSettings.Volume = vol;
+        // // ~~~ Volume Button ~~~
+        // ImGui::BeginGroup();
+        // // ImFlux::ShiftCursor(ImVec2(10.f,0.f));
+        // ImFlux::GradientBoxDL(gRadioDisplayBox.WithPosSize(ImVec2(0.f,0.f),ImVec2(65.f,60.f)) );
+        // float vol = mAudioHandler->getVolume();
+        // if (ImFlux::LEDMiniKnob("Volume", &vol, 0.f, 1.f, ImFlux::DARK_KNOB.WithRadius(28.f))) {
+        //     mAudioHandler->setVolume(vol);
+        //     mAppSettings.Volume = vol;
+        // }
+        // ImGui::EndGroup();
+        //
+        // ImGui::SameLine();
+
+        // ~~~ VU Meter ~~~
+
+        const ImVec2 vuSize = {140,70};
+        float dbL, dbR;
+        auto mapDB = [](float db) {
+            float minDB = -20.0f;
+            return (db < minDB) ? 0.0f : (db - minDB) / (0.0f - minDB);
+        };
+        // ~~~ VU Meter LEFT ~~~
+
+        if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
+            dbL = mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(0);
+            ImFlux::VUMeter70th(vuSize,mapDB(dbL), "L",  gRadioDisplayBox.col_top, gRadioDisplayBox.col_bot);
+
         }
-        ImGui::EndGroup();
+        ImGui::SameLine();
+
+
+        // ~~~ 9BandEQ ~~~
+        if (mAppSettings.ShowEquilizer) {
+            DrawEquilizer();
+        } //show Equilizer
+
+
+        ImGui::SameLine();
+        if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
+            dbR = mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(0);
+            ImFlux::VUMeter70th(vuSize,mapDB(dbR), "R", gRadioDisplayBox.col_top, gRadioDisplayBox.col_bot);
+        }
+
+
+        // dbR = mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(1);
+        // ImFlux::VUMeter70th(halfSize, mapDB(dbR), "R");
 
 
         // ~~~ VU Meter ~~~
-        ImGui::SameLine();
-        if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
-            mAudioHandler->getManager()->getVisualAnalyzer()->renderVU(ImVec2(320,60), 70);
-        }
-        ImFlux::ShiftCursor(ImVec2(0.f,10.f));
+        // ImGui::SameLine();
+        // if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
+        //     mAudioHandler->getManager()->getVisualAnalyzer()->renderVU(ImVec2(280,90), 70);
+        // }
+
 
         //----------------------------
 
         // if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getSpectrumAnalyzer()) {
         //
+        //     ImFlux::ShiftCursor(ImVec2(0.f,10.f));
         //     mAudioHandler->getManager()->getSpectrumAnalyzer()->DrawSpectrumAnalyzer(ImVec2(fullWidth,60), true);
         // }
 
-        // -------- 4. Rack / 9BandEQ -----------
 
-        mAudioHandler->RenderRack(1);
 
+
+        // -------- 5. Recorder ----------
         if (mAppSettings.ShowRecorder) {
-            // -------- 5. Recorder ----------
+
             ImFlux::GradientBox(ImVec2(0.f, 180.f));
 
             ImGui::PushFont(getMain()->mHackNerdFont16);
@@ -322,7 +444,7 @@ void RadioWana::DrawRadio() {
             //FIXME
             if (ImGui::BeginChild("RECORDSETTINGS", ImVec2(0.f,110.f))) {
                 float fullWidth = ImGui::GetContentRegionAvail().x;
-                bool isConnected = mStreamHandler->isConnected();
+
                 ImGui::SeparatorText("Recording");
 
                 ImGui::Checkbox("Recording starts on when new stream title is triggered", &mRecordingStartsOnNewTile);
@@ -649,6 +771,7 @@ void RadioWana::onEvent(SDL_Event event){
    }
 // -----------------------------------------------------------------------------
 void RadioWana::ShowMenuBar(){
+    ImGui::PushFont(getMain()->mHackNerdFont20);
     if (ImGui::BeginMainMenuBar())
     {
 
@@ -663,6 +786,7 @@ void RadioWana::ShowMenuBar(){
             ImGui::MenuItem("Radio", NULL, &mAppSettings.ShowRadio);
             ImGui::MenuItem("Favorites", NULL, &mAppSettings.ShowFavo);
             ImGui::MenuItem("Recorder", NULL, &mAppSettings.ShowRecorder);
+            ImGui::MenuItem("Equilizer", NULL, &mAppSettings.ShowEquilizer);
 
             ImGui::MenuItem("Radio Browser", NULL, &mAppSettings.ShowRadioBrowser);
             ImGui::Separator();
@@ -697,6 +821,7 @@ void RadioWana::ShowMenuBar(){
         }
         ImGui::EndMainMenuBar();
     }
+    ImGui::PopFont();
 
 
 }
@@ -721,6 +846,10 @@ void RadioWana::SaveSettings() {
         SettingsManager().set("AppGui::mAppSettings", mAppSettings);
         SettingsManager().set("Radio::Favo", mFavoStationData);
         SettingsManager().set("Radio::CurrentStation", mAppSettings.CurrentStation);
+
+        mWindowState.sync();
+        SettingsManager().set("Windows::State", mWindowState);
+
 
         if (mAudioHandler.get()) SettingsManager().set("Audio::Effects", mAudioHandler->getEffectsSettingsBase64());
 
@@ -756,6 +885,11 @@ bool RadioWana::Initialize(){
     mFavoStationData = SettingsManager().get("Radio::Favo", mDefaultFavo);
     mAppSettings.CurrentStation = SettingsManager().get("Radio::CurrentStation", mDefaultFavo[0]);
     FluxRadio::updateFavIds(&mFavoStationData);
+
+
+    mWindowState = SettingsManager().get("Windows::State", WindowState());
+    mWindowState.updateWindow();
+
 
 
     // ~~~~~ GuiGlue ~~~~~
@@ -809,6 +943,7 @@ bool RadioWana::Initialize(){
         if (mAudioHandler.get()) mAudioHandler->onDisConnected();
         if (mAudioRecorder.get()) mAudioRecorder->closeFile();
         mRecording = false;
+        Log("[info] Stream disconncted.");
     };
 
     mAudioHandler->OnTitleTrigger = [&]() {
