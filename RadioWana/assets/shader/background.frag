@@ -28,14 +28,6 @@ void main() {
     vec3 colorR = hsv2rgb(vec3(hueR, 0.6, 0.5));
 
 
-    // points ---->
-    vec2 gridUv = uv;
-    gridUv.y = 1.0 / (gridUv.y + 1.1);
-    float grid = sin(gridUv.x * 20.0) * sin(gridUv.y * 20.0 + u_time);
-    colorL += smoothstep(0.98, 1.0, grid) * vec3(0.2, 0.4, 0.8) * (u_rmsL + 0.2);
-    colorR += smoothstep(0.98, 1.0, grid) * vec3(0.8, 0.4, 0.2) * (u_rmsR + 0.2);
-
-
     // Distance from glow centers
     float distL = length(uv + vec2(0.6, 0.0));
     float distR = length(uv - vec2(0.6, 0.0));
