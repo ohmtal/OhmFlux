@@ -28,9 +28,9 @@ namespace FluxRadio {
         ma_uint64 framesRead;
         ma_result result = ma_decoder_read_pcm_frames(self->mDecoder, pcmBuffer.data(), framesToRead, &framesRead);
 
-        if (framesRead > 0) {
+        if (framesRead > 0)
+        {
             size_t totalSamplesRead = framesRead * channels;
-
 
             float vol = self->mVolume.load();
             for (uint32_t i = 0; i < totalSamplesRead; i++)
@@ -39,7 +39,6 @@ namespace FluxRadio {
             if (self->mEffectsManager) {
                 self->mEffectsManager->process(pcmBuffer.data(), (int)totalSamplesRead, channels);
             }
-
 
             int bytesToWrite = (int)(totalSamplesRead * sizeof(float));
             SDL_PutAudioStreamData(stream, pcmBuffer.data(), bytesToWrite);
