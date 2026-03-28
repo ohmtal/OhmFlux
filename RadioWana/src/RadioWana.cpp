@@ -874,11 +874,18 @@ void RadioWana::onEvent(SDL_Event event){
 void RadioWana::ShowMenuBar(){
     ImGui::PushFont(getMain()->mHackNerdFont20);
 
-    static float sideBarWidth = 0.f;
-    constexpr float targetSideBarWidth = 350.f;
+    static float sideBarWidth = 1.f;
+    static float targetWidth = 0.f;
+    static std::string savStr = "";
+
     if (mAppSettings.SideBarOpen) {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
-        sideBarWidth = ImLerp(sideBarWidth, targetSideBarWidth, ImGui::GetIO().DeltaTime * 10.0f);
+
+        if (targetWidth > 0.f ) {
+            sideBarWidth = ImLerp(sideBarWidth,
+                                  targetWidth,
+                                  ImGui::GetIO().DeltaTime * 8.0f);
+        }
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(ImVec2(sideBarWidth, viewport->WorkSize.y));
 
@@ -889,8 +896,8 @@ void RadioWana::ShowMenuBar(){
                     ImGuiWindowFlags_NoSavedSettings;
 
         if (ImGui::Begin("Menu##SidebarOverlay", &mAppSettings.SideBarOpen, window_flags)) {
-            // if (ImGui::Button("Schließen", ImVec2(-1, 0))) mAppSettings.SideBarOpen = false;
-            // ImGui::Separator();
+
+
 
             ImGui::SeparatorText("Radio");
             // if (ImGui::Selectable("Dummy 1")) {
@@ -899,7 +906,14 @@ void RadioWana::ShowMenuBar(){
             // }
 
             if (mAppSettings.CurrentStation.name != "") {
-                //FIXME WHEN TOO LONG THE WINDOW SIZE IS BROKEN !!!
+
+                if (savStr != mAppSettings.CurrentStation.name) {
+                    savStr = mAppSettings.CurrentStation.name;
+                    targetWidth = ImGui::CalcTextSize(mAppSettings.CurrentStation.name.c_str()).x + 50.f;
+                    if (targetWidth < 250.f) targetWidth=250.f;
+                }
+
+
                 if (ImGui::MenuItem(mAppSettings.CurrentStation.name.c_str())) {
                     Tune(mAppSettings.CurrentStation);
                     mAppSettings.SideBarOpen = false;
@@ -964,12 +978,19 @@ void RadioWana::ShowMenuBar(){
             // if i want to close it when somewhere else is clicked ==>
             // if (!ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0)) mAppSettings.SideBarOpen = false;
             // if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) mAppSettings.SideBarOpen = false;
-            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) mAppSettings.SideBarOpen = false;
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                 mAppSettings.SideBarOpen = false;
+
+            }
+
+
 
         }
         ImGui::End();
     } else {
-        sideBarWidth = 0.f;
+        targetWidth = 0.f;
+        sideBarWidth = 1.f;
+        savStr = "";
         if (ImGui::IsKeyPressed(ImGuiKey_Escape)) mAppSettings.SideBarOpen = true;
 
     }

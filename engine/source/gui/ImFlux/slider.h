@@ -44,10 +44,10 @@ namespace ImFlux {
 
             // --- INCREASE (Up, Right, Keypad +, Keypad 8) ---
             if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)    ||
-                ImGui::IsKeyPressed(ImGuiKey_RightArrow) ||
-                ImGui::IsKeyPressed(ImGuiKey_Keypad8)    ||
+                // ImGui::IsKeyPressed(ImGuiKey_RightArrow) ||
+                // ImGui::IsKeyPressed(ImGuiKey_Keypad8)    ||
                 ImGui::IsKeyPressed(ImGuiKey_KeypadAdd) ||
-                ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp) ||
+                // ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp) ||
                 ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp))
             {
                 *v = std::clamp(*v + step, v_min, v_max);
@@ -55,10 +55,10 @@ namespace ImFlux {
             }
             // --- DECREASE (Down, Left, Keypad -, Keypad 2) ---
             if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)  ||
-                ImGui::IsKeyPressed(ImGuiKey_LeftArrow)  ||
-                ImGui::IsKeyPressed(ImGuiKey_Keypad2)    ||
+                // ImGui::IsKeyPressed(ImGuiKey_LeftArrow)  ||
+                // ImGui::IsKeyPressed(ImGuiKey_Keypad2)    ||
                 ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
-                ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown) ||
+                // ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown) ||
                 ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown))
             {
                 *v = std::clamp(*v - step, v_min, v_max);

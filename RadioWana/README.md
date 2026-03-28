@@ -53,10 +53,10 @@ Limitation:
                 - info 
                 - connect / disconnect 
                 - favorites as shortcuts 
-            - [ ] Favorites
-            - [ ] Radio Browser 
-            - [ ] Windows
-            - [ ] About 
+            - [X] Favorites
+            - [X] Radio Browser 
+            - [X] Windows
+            - [X] About 
             - [ ] Help 
         
         - [X] deny station when no meta-int is set !!  => Invalid station detected...
