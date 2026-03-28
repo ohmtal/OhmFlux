@@ -134,10 +134,10 @@ namespace FluxRadio {
     }
 
 
-    inline void updateFavIds(std::vector<FluxRadio::RadioStation>* mFavList) {
-        if (!mFavList) return;
+    inline int updateFavIds(std::vector<FluxRadio::RadioStation>* mFavList) {
+        if (!mFavList) return -1;
 
-        uint32_t maxId = 0;
+        int maxId = 0;
         for (const auto& fav : *mFavList) {
             if (fav.favId > maxId) maxId = fav.favId;
         }
@@ -147,6 +147,7 @@ namespace FluxRadio {
                 fav.favId = ++maxId;
             }
         }
+        return maxId;
     }
 
 
@@ -182,7 +183,7 @@ namespace FluxRadio {
         void searchStationsByNameAndTag(
             std::string name,
             std::string tag = "",
-            uint8_t limit = 100,
+            uint8_t limit = 200,
             bool onlyMP3 = true
         );
         //----------------------------------------------------------------------

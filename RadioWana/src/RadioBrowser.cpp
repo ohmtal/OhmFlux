@@ -91,7 +91,7 @@ namespace FluxRadio {
         std::string url = "https://" + mHostname + "/json/stations/search";
         std::string postData = "name=" + name;
         if (!tag.empty() ) postData += "&tag=" + tag;
-        postData += std::format ("&limit={}&hidebroken=true", limit);
+        postData += std::format ("&limit={}&hidebroken=true&order=clickcount", limit);
         if (onlyMP3) postData += "&codec=mp3";
         Execute(url, postData, RequestType::SEARCH);
     }

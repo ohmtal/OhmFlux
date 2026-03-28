@@ -28,7 +28,7 @@ In this Project I use:
 
 Limitation: 
 - Only MP3 streams.
-
+- Played station from RadioBrowser is added to Favorites automaticly 
 --- 
 
 ## Todos
@@ -48,6 +48,7 @@ Limitation:
         - [X] replace lcd with a new scrolling text widget 
         - [X] remove stepper again 
         - [ ] left menubar for window toggle - windows in fullscreen (not console)
+            - [X] Initial window implemented 
             - [ ] Radio
                 - info 
                 - connect / disconnect 
@@ -80,6 +81,26 @@ Limitation:
         
     - [X] Connect
         - Instead of URL - Favo only ? => save current stationuuid
+    
+    - [X] Overwrite stream station name with database station name if empty 
+    - [X] When not in favo list current station from AppSettings is not used after restart
+        - add current station to favo automaticly .. 
+        - FIXME ?! 
+    - [~] Radio as internal fullscreen window 
+        - Tested was bad :P 
+    - [ ] ImGui current Tab is not restored 
+    - [X] fix wrong mouse over hint on tune button - should be show station name and not disconnect when it's not the current station
+    - [X] Keyboard and GamePad: 
+        - [X] Equalizer Fader
+        - [X] Tune Button 
+    - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 
+    - [X] add lowspeed timeout << 
+    - [ ] add error message on http 4xx 5xx
+    - [ ] Add SDL3 Icon
+    - [ ] Add Background Image 
+    - [X] Bug in header parser: icy-decription when empty
+    
+- [ ] Version 1.x
     - [ ] Recorder
         - [X] Add recorder to Rack 
         - Enable recording controls without connected 
@@ -90,26 +111,14 @@ Limitation:
             - Mix-Tape - append to tape bei manually start stop recoring
                 - Tape name
             - Manual - save a new stream be station name (or record if no name) - DATETIME.mp3
-    
-    
-    - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 
-    - [X] add lowspeed timeout << 
-    - [ ] add error message on http 4xx 5xx
-    - [ ] Add SDL3 Icon
-    - [ ] Add Background Image 
-    - [X] Bug in header parser: icy-decription when empty
-    
-- [ ] Version 1.x
-    - [ ] RSS Podcast/Feeds
-        - [ ] Handle mp3 stream without header data ! Take a url from a rss feed - handle empty meta-int and play the stream - visual feedback 
-            - [X] fixed meta-int not set so stream with audio continue
-            - [ ] Problem: when stream complete it calles disconnect, which close the audiostream and kick the buffer away . 
-            - THIS NEEDS an extra object - it's an download only !
-    
+
+
     - [ ] lowspeed time out optional reconnect 
-    - [ ] Move Back to RadioWana github ... stop creating new widgets ;)
+    - [ ] Move Back to RadioWana github ... stop creating new widgets ;) **New Name?** 
+            
     - [ ] Cleanup Design (Windows) for Android 
     - [ ] radio-browser.info
+        - [ ] search by highest click count and tag 
         - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
         - [ ] Update Favo on  "Click Responce" / RequestType::CLICK - if stationuuid is set
         - [ ] add favicon support 
@@ -124,3 +133,11 @@ Limitation:
             - FIX Curl build - need also openssl if you add it via fetchcontent 
             - Create Android Studio Project 
             - firetv 
+
+- TBD
+    - [ ] RSS Podcast/Feeds
+        - [ ] Handle mp3 stream without header data ! Take a url from a rss feed - handle empty meta-int and play the stream - visual feedback 
+            - [X] fixed meta-int not set so stream with audio continue
+            - [ ] Problem: when stream complete it calles disconnect, which close the audiostream and kick the buffer away . 
+            - THIS NEEDS an extra object - it's an download only !
+            

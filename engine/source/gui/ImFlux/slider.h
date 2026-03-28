@@ -14,66 +14,170 @@
 namespace ImFlux {
 
     //---------------------------------------------------------------------------
+    // NOTE: keyboard READY!!
     inline bool FaderVertical(const char* label, ImVec2 size, float* v, float v_min, float v_max, const char* format = "%.2f") {
         ImGui::PushID(label);
         ImVec2 pos = ImGui::GetCursorScreenPos();
         ImDrawList* dl = ImGui::GetWindowDrawList();
         ImGuiIO& io = ImGui::GetIO();
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
 
-        // 1. Interaction
-        ImGui::InvisibleButton("##fader", size);
+        // 1. Interaction & Navigation
+        const ImRect bb(pos, pos + size);
+        ImGuiID id = window->GetID("##fader");
 
-        if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
+        // REGISTER FOR NAVIGATION: This makes it a tab-stop!
+        ImGui::ItemSize(size);
+        if (!ImGui::ItemAdd(bb, id)) { ImGui::PopID(); return false; }
 
+        // Use ButtonBehavior to handle Mouse AND Nav-Focus
+        bool hovered, held;
+        bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held, ImGuiButtonFlags_None);
 
-        bool is_active = ImGui::IsItemActive();
-        bool is_hovered = ImGui::IsItemHovered();
+        bool is_active = held;
+        bool is_focused = ImGui::IsItemFocused(); // Now this works!
 
-        // ScrollWheel
-        if (is_hovered && io.MouseWheel != 0) {
-            float wheel_speed = (v_max - v_min) * 0.05f; // 5% of range per notch
-            if (io.KeyShift) wheel_speed *= 0.1f;        // 0.5% if Shift is held
+        // 2. Keyboard / Gamepad Input
+        if (is_focused) {
+            float step = (v_max - v_min) * 0.05f; // 5% step
+            if (io.KeyShift) step *= 0.1f;
 
+            // --- INCREASE (Up, Right, Keypad +, Keypad 8) ---
+            if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)    ||
+                ImGui::IsKeyPressed(ImGuiKey_RightArrow) ||
+                ImGui::IsKeyPressed(ImGuiKey_Keypad8)    ||
+                ImGui::IsKeyPressed(ImGuiKey_KeypadAdd) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp))
+            {
+                *v = std::clamp(*v + step, v_min, v_max);
+                is_active = true;
+            }
+            // --- DECREASE (Down, Left, Keypad -, Keypad 2) ---
+            if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)  ||
+                ImGui::IsKeyPressed(ImGuiKey_LeftArrow)  ||
+                ImGui::IsKeyPressed(ImGuiKey_Keypad2)    ||
+                ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown))
+            {
+                *v = std::clamp(*v - step, v_min, v_max);
+                is_active = true;
+            }
+        }
+
+        // 3. Mouse Wheel (Existing logic)
+        if (hovered && io.MouseWheel != 0) {
+            float wheel_speed = (v_max - v_min) * 0.05f;
+            if (io.KeyShift) wheel_speed *= 0.1f;
             *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
             is_active = true;
         }
 
-
+        // 4. Mouse Dragging
         if (is_active && io.MouseDown[0]) {
             float mouse_y = io.MousePos.y - pos.y;
             float fraction = 1.0f - std::clamp(mouse_y / size.y, 0.0f, 1.0f);
             *v = v_min + fraction * (v_max - v_min);
         }
 
-        // 2. Drawing the "Track" (The slot)
+        // 5. Drawing (Track & Ticks ...)
         float mid_x = pos.x + size.x * 0.5f;
         dl->AddRectFilled({mid_x - 2, pos.y}, {mid_x + 2, pos.y + size.y}, IM_COL32(20, 20, 20, 255), 2.0f);
 
-        // 3. Drawing Tick Marks (Every 25%)
-        for (int i = 0; i <= 4; i++) {
-            float ty = pos.y + (size.y * i * 0.25f);
-            dl->AddLine({mid_x - 8, ty}, {mid_x - 4, ty}, IM_COL32(80, 80, 80, 255));
+        //  Drawing Tick Marks (Every 25%)
+        for (int i = 0; i <= 10; i++) {
+            float ty = pos.y + (size.y * i * 0.1f);
+            float length = (i % 5 == 0) ? 8.0f : 4.0f; // Longer lines for 0%, 50%, 100%
+            dl->AddLine({mid_x - length - 4, ty}, {mid_x - 4, ty}, IM_COL32(90, 90, 90, 255));
         }
 
-        // 4. Drawing the "Cap" (The plastic handle)
+        // DRAW NAV HIGHLIGHT: Shows the user where the "Focus" is
+        if (is_focused) {
+            ImGui::RenderNavHighlight(bb, id);
+        }
+
+        // Drawing the "Cap"
         float cap_h = 20.0f;
         float fraction = (*v - v_min) / (v_max - v_min);
         float cap_y = pos.y + (1.0f - fraction) * (size.y - cap_h);
-
-        ImU32 cap_col = is_active ? IM_COL32(180, 180, 180, 255) : (is_hovered ? IM_COL32(140, 140, 140, 255) : IM_COL32(110, 110, 110, 255));
+        ImU32 cap_col = is_active ? IM_COL32(180, 180, 180, 200) : (hovered ? IM_COL32(140, 140, 140, 200) : IM_COL32(110, 110, 110, 200));
         dl->AddRectFilled({pos.x, cap_y}, {pos.x + size.x, cap_y + cap_h}, cap_col, 2.0f);
         dl->AddLine({pos.x + 2, cap_y + cap_h * 0.5f}, {pos.x + size.x - 2, cap_y + cap_h * 0.5f}, IM_COL32(0, 0, 0, 200), 2.0f); // Center line on cap
 
-        if (is_hovered || is_active) {
+
+        if (hovered || is_focused) {
             char val_buf[64];
             ImFormatString(val_buf, IM_ARRAYSIZE(val_buf), format, *v);
             ImGui::SetTooltip("%s: %s", label, val_buf);
         }
 
-
         ImGui::PopID();
         return is_active;
     }
+
+
+
+    // inline bool FaderVertical(const char* label, ImVec2 size, float* v, float v_min, float v_max, const char* format = "%.2f") {
+    //     ImGui::PushID(label);
+    //     ImVec2 pos = ImGui::GetCursorScreenPos();
+    //     ImDrawList* dl = ImGui::GetWindowDrawList();
+    //     ImGuiIO& io = ImGui::GetIO();
+    //
+    //     // 1. Interaction
+    //     ImGui::InvisibleButton("##fader", size);
+    //
+    //     if (!ImGui::IsItemVisible()) { ImGui::PopID(); return false; }
+    //
+    //
+    //     bool is_active = ImGui::IsItemActive();
+    //     bool is_hovered = ImGui::IsItemHovered();
+    //
+    //     // ScrollWheel
+    //     if (is_hovered && io.MouseWheel != 0) {
+    //         float wheel_speed = (v_max - v_min) * 0.05f; // 5% of range per notch
+    //         if (io.KeyShift) wheel_speed *= 0.1f;        // 0.5% if Shift is held
+    //
+    //         *v = std::clamp(*v + (io.MouseWheel * wheel_speed), v_min, v_max);
+    //         is_active = true;
+    //     }
+    //
+    //
+    //     if (is_active && io.MouseDown[0]) {
+    //         float mouse_y = io.MousePos.y - pos.y;
+    //         float fraction = 1.0f - std::clamp(mouse_y / size.y, 0.0f, 1.0f);
+    //         *v = v_min + fraction * (v_max - v_min);
+    //     }
+    //
+    //     // 2. Drawing the "Track" (The slot)
+    //     float mid_x = pos.x + size.x * 0.5f;
+    //     dl->AddRectFilled({mid_x - 2, pos.y}, {mid_x + 2, pos.y + size.y}, IM_COL32(20, 20, 20, 255), 2.0f);
+    //
+    //     // 3. Drawing Tick Marks (Every 25%)
+    //     for (int i = 0; i <= 4; i++) {
+    //         float ty = pos.y + (size.y * i * 0.25f);
+    //         dl->AddLine({mid_x - 8, ty}, {mid_x - 4, ty}, IM_COL32(80, 80, 80, 255));
+    //     }
+    //
+    //     // 4. Drawing the "Cap" (The plastic handle)
+    //     float cap_h = 20.0f;
+    //     float fraction = (*v - v_min) / (v_max - v_min);
+    //     float cap_y = pos.y + (1.0f - fraction) * (size.y - cap_h);
+    //
+    //     ImU32 cap_col = is_active ? IM_COL32(180, 180, 180, 255) : (is_hovered ? IM_COL32(140, 140, 140, 255) : IM_COL32(110, 110, 110, 255));
+    //     dl->AddRectFilled({pos.x, cap_y}, {pos.x + size.x, cap_y + cap_h}, cap_col, 2.0f);
+    //     dl->AddLine({pos.x + 2, cap_y + cap_h * 0.5f}, {pos.x + size.x - 2, cap_y + cap_h * 0.5f}, IM_COL32(0, 0, 0, 200), 2.0f); // Center line on cap
+    //
+    //     if (is_hovered || is_active) {
+    //         char val_buf[64];
+    //         ImFormatString(val_buf, IM_ARRAYSIZE(val_buf), format, *v);
+    //         ImGui::SetTooltip("%s: %s", label, val_buf);
+    //     }
+    //
+    //
+    //     ImGui::PopID();
+    //     return is_active;
+    // }
 
 
     // ------------- vertical FaderVertical2

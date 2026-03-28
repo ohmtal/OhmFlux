@@ -39,7 +39,7 @@ namespace ImFlux {
 
             float cassette_w = size.x;
             float cassette_h = size.x / 1.58f;
-            size.y = cassette_h + 100.0f; // Space for controls
+            size.y = cassette_h ;
 
             // Update head position (animation)
             float target_head = (mode != CassetteMode::Stop) ? 1.0f : 0.0f;
@@ -169,6 +169,7 @@ namespace ImFlux {
 
             ImGui::EndChild();
         }
+        //--------------------------------------------------------------------------
 
     };
 }; //namespace

@@ -15,6 +15,7 @@
 #include "net/NetTools.h"
 #include "core/fluxTexture.h"
 #include "utils/fluxScheduler.h"
+#include "utils/errorlog.h"
 
 #include "StreamHandler.h"
 #include "AudioHandler.h"
@@ -112,6 +113,7 @@ private:
     FluxScheduler::TaskID mTuningResetTaskID = 0;
     const double mTuningResetSec = 3.0f;
 
+
 public:
     FluxTexture* mBrushedMetalTex = nullptr;
     FluxTexture* mKnobSilverTex = nullptr;
@@ -128,9 +130,10 @@ public:
         bool ShowConsole          = false;
         bool ShowRadioBrowser     = true;
         bool ShowRadio            = true;
-        bool ShowRecorder         = true;
+        bool ShowRecorder         = false;
         bool ShowFavo             = true;
-        bool ShowEquilizer        = true;
+        bool ShowEqualizer        = true;
+        bool SideBarOpen          = false;
     };
 
     struct WindowState {
@@ -138,7 +141,7 @@ public:
         int height   = 648;
         int posX     = 0;
         int posY     = 0;
-        bool  maximized   = true;
+        bool  maximized   = false;
 
         void sync() {
             SDL_Window* window = getScreenObject()->getWindow();
@@ -173,12 +176,12 @@ public:
     // void ShowToolbar();
 
     void onKeyEvent(SDL_KeyboardEvent event) {};
-    void InitDockSpace() {}
+    void InitDockSpace();
     void ShowFileBrowser() {}
     void ApplyStudioTheme();
     void setupFonts();
     AppSettings* getAppSettings() {return &mAppSettings;}
-    void restoreLayout( ) {}
+    void restoreLayout( );
     void setImGuiScale(float factor) {}
 
     //-----
@@ -191,7 +194,7 @@ public:
 
     void DrawRadio();
     void DrawRecorder();
-    void DrawEquilizer();
+    void DrawEqualizer();
 
     bool isFavoStation(std::string searchUuid);
 
@@ -212,26 +215,43 @@ public:
     void Tune(FluxRadio::RadioStation station) {
         mAppSettings.CurrentStation = station;
         ConnectCurrent();
-        mSelectedFavId = -1; //Reset
+        // mSelectedFavId = -1; //Reset
+        setSelectedFavIndex();
         mTuningMode = false;
-
     }
 
     //-------------------- TuneKnob Interger with overflow ---------------------------
+    void setSelectedFavIndex() {
+        for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
+            if ( mFavoStationData[i].favId == mAppSettings.CurrentStation.favId ) {
+                mSelectedFavIndex = i;
+                return;
+            }
+        }
+        mSelectedFavIndex = -1; //nothing found!
+    }
+
     void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB)
     {
         ImGui::PushID((caption + "knob").c_str());
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) { ImGui::PopID(); return ; }
 
+        // set current favIndex ...
         if (mSelectedFavIndex < 0) {
-            mSelectedFavIndex = 0; //<< fallback
-            for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
-                if ( mFavoStationData[i].favId == mAppSettings.CurrentStation.favId ) {
-                   mSelectedFavIndex = i;
-                   break;
-                }
+            // mSelectedFavIndex = 0; //<< fallback
+            setSelectedFavIndex();
+
+            // i guess current station is not a favorit
+            // can NOT add it to favo list mhhhhh
+            // should i add it to favorites ? << painless way
+            if (mSelectedFavIndex < 0) {
+                mFavoStationData.push_back(mAppSettings.CurrentStation);
+                // we need to set mSelectedFavIndex
+                mSelectedFavIndex = (int)FluxRadio::updateFavIds(&mFavoStationData);
+                mAppSettings.CurrentStation.favId = mSelectedFavIndex;
             }
+
         }
 
         float delta = 0.f;
@@ -248,21 +268,80 @@ public:
         ImVec2 size = ImVec2(ks.radius * 2, ks.radius * 2);
         ImRect bb(pos, pos + size);
 
-        ImGui::InvisibleButton(caption.c_str(), size);
+        // NOTE: keyboard:
+        // ImGui::InvisibleButton(caption.c_str(), size);
+        ImGui::ItemSize(size);
+        ImGuiID id = window->GetID(caption.c_str());
+        if (!ImGui::ItemAdd(bb, id)) { ImGui::PopID(); return; }
+        //<<< keyboard
+
+
 
         bool value_changed = false;
         bool isConnected = mStreamHandler->isConnected();
-        bool is_active = ImGui::IsItemActive();
-        bool is_hovered = ImGui::IsItemHovered();
-        bool is_clicked = ImGui::IsItemClicked();
-        static bool is_Pressed = false;
-        bool is_mouseRelease = ImGui::IsItemDeactivated();
 
+
+
+        //NOTE: keyboard ~~~~~~
+        ImGuiIO& io = ImGui::GetIO();
+        bool is_hovered, is_held;
+
+        ImGui::ButtonBehavior(bb, id, &is_hovered, &is_held, ImGuiButtonFlags_None);
+        bool is_clicked = ImGui::IsItemClicked();
+        bool is_active = is_held;
+        bool is_focused = ImGui::IsItemFocused(); // Now this works!
+
+        bool is_mouseRelease = ImGui::IsItemDeactivated();
+        static bool is_Pressed = false;
         if (is_clicked) is_Pressed = true;
 
-        ImGuiIO& io = ImGui::GetIO();
-
+        //.......
         int new_v = *v;
+
+        // if (is_Pressed) dLog("PRESSED!");
+        // if (is_mouseRelease) dLog("RELEASED! pressed is: %d", is_Pressed);
+
+
+        if (is_focused) {
+            bool plus =  (
+                ImGui::IsKeyPressed(ImGuiKey_RightArrow) ||
+                ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight));
+
+
+            bool minus = (
+            ImGui::IsKeyPressed(ImGuiKey_LeftArrow)  ||
+            ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft));
+            static float keyboardDelta = 0.f;
+            if (plus || minus) {
+                float multi = 0.f;
+                // TELL IMGUI: "I am using the navigation keys, don't move focus!"
+                // ImGui::SetNavCursorVisible(true);
+
+                if (plus) {new_v = *v + (int)keyboardDelta;multi = 0.05f;}
+                if (minus) {new_v = *v + (int)keyboardDelta;multi = -0.05f;}
+
+                delta = (v_max - v_min) * multi; // only for visual
+                keyboardDelta += delta;
+
+                if (new_v != *v) {
+                    value_changed = true;
+                    keyboardDelta = 0.f;
+                }
+            }
+
+            if   (
+                ImGui::IsKeyPressed(ImGuiKey_Space)
+                || ImGui::IsKeyPressed(ImGuiKey_Enter)
+                || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
+            ) {
+                is_Pressed  = true;
+                is_mouseRelease = true;
+            }
+        }
+
+        //NOTE <<< KEYBOARD ~~~~~
         // --- INTERACTION ---
         if (is_hovered && io.MouseWheel != 0) {
             delta = ImGui::GetIO().MouseWheel;
@@ -270,7 +349,6 @@ public:
             if (new_v != *v) value_changed = true;
         }
 
-        //FIXME THIS DOES IS CLICKED ?!?!?!?
 
         if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             delta = ImGui::GetIO().MouseDelta.y;
@@ -343,15 +421,19 @@ public:
         //bevel
         dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
 
-        // 4. Indicator Needle (On the knob body)
-        // ImVec2 n_start = center + ImVec2(cosf(needle_ang) * (knob_radius * 0.3f), sinf(needle_ang) * (knob_radius * 0.3f));
-        // ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (knob_radius - 2.0f), sinf(needle_ang) * (knob_radius - 2.0f));
-        // dl->AddLine(n_start, n_end, ks.needle, 2.0f);
+
+        // NOTE: keyboard
+        if (is_focused) {
+            ImGui::RenderNavHighlight(bb, id);
+        }
+
 
         // mouse over hint
         if (is_hovered) {
-            if (isConnected && !mTuningMode) ImGui::SetTooltip("%s", "Disconnect");
-            else ImGui::SetTooltip("%s", mFavoStationData[*v].name.c_str());
+            // if (isConnected && !mTuningMode) ImGui::SetTooltip("%s", "Disconnect");
+            // else ImGui::SetTooltip("%s", mFavoStationData[*v].name.c_str());
+
+            ImGui::SetTooltip("%s", mFavoStationData[*v].name.c_str());
         }
 
         ImGui::PopID();

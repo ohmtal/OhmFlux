@@ -25,7 +25,7 @@
 #include <stdlib.h>									// The Standard Library Header
 #include <stdarg.h>									// And The Standard Argument Header For va_list
 #include <errno.h>
-
+#include <ctime>
 
 // #include "core/fluxGlobals.h"
 #include <SDL3/SDL.h>
@@ -40,13 +40,27 @@ int Log(const char *szFormat, ...)
 	if (!szFormat) return -1;
 
 	char targetStr[1024];
-	va_list Arg;
+	char timeStr[20]; // Buffer for "YY-MM-DD HH:MM:S"
 
+	std::time_t now = std::time(nullptr);
+	std::tm* localTime = std::localtime(&now);
+
+	std::strftime(timeStr, sizeof(timeStr), "%y%m%d %H:%M:%S", localTime);
+
+	va_list Arg;
 	va_start(Arg, szFormat);
-	SDL_vsnprintf(targetStr, sizeof(targetStr), szFormat, Arg);
+	int offset = SDL_snprintf(targetStr, sizeof(targetStr), "[%s] ", timeStr);
+	SDL_vsnprintf(targetStr + offset, sizeof(targetStr) - offset, szFormat, Arg);
 	va_end(Arg);
 
 	targetStr[sizeof(targetStr) - 1] = '\0';
+
+	// old without datetime
+	// va_list Arg;
+	// va_start(Arg, szFormat);
+	// SDL_vsnprintf(targetStr, sizeof(targetStr), szFormat, Arg);
+	// va_end(Arg);
+	// targetStr[sizeof(targetStr) - 1] = '\0';
 
 	if (ErrorLog)
 	{

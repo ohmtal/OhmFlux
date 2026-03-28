@@ -49,6 +49,7 @@ private:
 
     bool mScaleImGui = false;
     bool mEnableDockSpace = false;
+    bool mEnableGamePad = true;
 
     ImGuiID mDockSpaceId;
 
@@ -113,6 +114,8 @@ public:
         mGuiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         mGuiIO->DisplaySize  = ImVec2(getScreen()->getHeight(), getScreen()->getWidth());
         mGuiIO->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+        if (mEnableGamePad) mGuiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 
         mBaseStyle = ImGui::GetStyle();
 

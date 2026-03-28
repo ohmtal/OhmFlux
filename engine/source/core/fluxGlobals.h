@@ -446,6 +446,10 @@ struct FluxAppStatus
     Point2I getRealMousePosI() const  { return static_cast<Point2I>(RealMousePos); }
     Point2I getWorldMousePosI() const  { return static_cast<Point2I>(WorldMousePos); }
 
+
+    //game pads
+    std::vector<SDL_Gamepad*> Gamepads;
+
 };
 
 inline FluxAppStatus gAppStatus; //moved to global!

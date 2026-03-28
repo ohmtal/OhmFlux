@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Thomas Hühn (XXTH) 
+// // Copyright (c) 2012 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 
@@ -531,6 +531,33 @@ void FluxMain::IterateFrame()
 			case SDL_EVENT_MOUSE_BUTTON_UP:
 				onMouseButtonEvent(E.button);
 				break;
+
+			// ~~~ GamePads
+			case SDL_EVENT_GAMEPAD_ADDED: {
+				// E.gdevice.which is the instance ID
+				SDL_Gamepad* pad = SDL_OpenGamepad(E.gdevice.which);
+				if (pad) {
+					gAppStatus.Gamepads.push_back(pad);
+					dLog("Gamepad connected: %s", SDL_GetGamepadName(pad));
+				}
+				break;
+			}
+
+			case SDL_EVENT_GAMEPAD_REMOVED: {
+				// Find the gamepad by its instance ID
+				auto it = std::find_if(gAppStatus.Gamepads.begin(), gAppStatus.Gamepads.end(),
+										[&](SDL_Gamepad* p) {
+											return SDL_GetGamepadID(p) == E.gdevice.which;
+										});
+
+				if (it != gAppStatus.Gamepads.end()) {
+					SDL_Log("Gamepad removed: %s", SDL_GetGamepadName(*it));
+					SDL_CloseGamepad(*it);
+					gAppStatus.Gamepads.erase(it);
+				}
+				break;
+			}
+
 		}
 		onEvent(E);
 	}

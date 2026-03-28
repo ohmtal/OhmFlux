@@ -22,12 +22,12 @@ int main(int argc, char* argv[])
     AppMain* app = new AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "RadioWana II";
-    app->mSettings.Version = "1.260321";
+    app->mSettings.Version = "1.260328";
     app->mSettings.enableLogFile   = true;
-    app->mSettings.WindowMaximized = true;
+    app->mSettings.WindowMaximized = false;
     app->mSettings.ScreenWidth  = 1152; // 1920;
     app->mSettings.ScreenHeight =  648; //1080;
-    app->mSettings.minWindowSize = {720,320};
+    app->mSettings.minWindowSize = {540,300};
 
     //FIXME app->mSettings.IconFilename = "assets/icon.bmp";
 
