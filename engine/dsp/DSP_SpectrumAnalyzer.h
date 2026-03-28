@@ -29,7 +29,7 @@
 namespace DSP {
     class SpectrumAnalyzer : public Effect {
     private:
-        static constexpr int FFT_SIZE = 512; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
+        static constexpr int FFT_SIZE = 256; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
         std::vector<float> mCaptureBuffer;
         std::vector<float> mDisplayMagnitudes;
         int mWriteIdx = 0;
@@ -260,6 +260,40 @@ namespace DSP {
 
             return mDisplayMagnitudes;
         }
+
+        //----------------------------------------------------------------------
+        std::vector<float> getLogarithmicBands( int numTargetBands, bool useFFT = false) {
+            SpectrumAnalyzer* analyzer = this;
+            const auto& linearMags = useFFT ? analyzer->getMagnitudesFFT() : analyzer->getMagnitudes();
+
+            std::vector<float> logBands(numTargetBands, 0.0f);
+            int numLinear = static_cast<int>(linearMags.size());
+
+            for (int i = 0; i < numTargetBands; ++i) {
+                // Calculate start and end indices for this log-band
+                // Use power function to make lower bands narrower and higher bands wider
+                float startRel = pow(static_cast<float>(i) / numTargetBands, 1.5f);
+                float endRel   = pow(static_cast<float>(i + 1) / numTargetBands, 1.5f);
+
+                int startIdx = static_cast<int>(startRel * numLinear);
+                int endIdx   = static_cast<int>(endRel * numLinear);
+
+                // Ensure we at least pick one index
+                if (endIdx <= startIdx) endIdx = startIdx + 1;
+
+                // Average the magnitudes in this range
+                float sum = 0.0f;
+                int count = 0;
+                for (int j = startIdx; j < endIdx && j < numLinear; ++j) {
+                    sum += linearMags[j];
+                    count++;
+                }
+
+                logBands[i] = (count > 0) ? (sum / count) : 0.0f;
+            }
+            return logBands;
+        }
+
         //----------------------------------------------------------------------
         // virtual std::string getName() const override { return "SPECTRUM ANALYSER";}
         //----------------------------------------------------------------------

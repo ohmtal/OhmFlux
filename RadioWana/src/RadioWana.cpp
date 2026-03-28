@@ -69,6 +69,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     // bad if we are gone !!
     gui->mConsole.AddLog("%s", fluxStr::removePart(message,"\r\n").c_str());
 }
+
 // -----------------------------------------------------------------------------
 void RadioWana::restoreLayout(){
     //copied from json :P
@@ -149,6 +150,11 @@ void RadioWana::ApplyStudioTheme(){
     colors[ImGuiCol_TitleBgActive]      = ImVec4(0.08f, 0.08f, 0.19f, 1.00f); //  = ImVec4(0.08f, 0.08f, 0.09f, 1.00f);
 
 
+
+    const ImVec4 bgColor = ImVec4(0.1f, 0.1f, 0.1f, 0.80f);
+    colors[ImGuiCol_WindowBg] = bgColor;
+    colors[ImGuiCol_ChildBg] = bgColor;
+    colors[ImGuiCol_TitleBg] = bgColor;
 
 
     style.WindowRounding = 6.0f;
@@ -267,6 +273,25 @@ void RadioWana::DrawInfoPopup(FluxRadio::StreamInfo* info) {
     }
 }
 // -----------------------------------------------------------------------------
+void RadioWana::Update(const double& dt){
+
+    if ( mAudioHandler->getManager()) {
+        bool isConnected = mStreamHandler->isConnected();
+        if (mAudioHandler->getManager()->getVisualAnalyzer()) {
+            if (isConnected) {
+                mAudioLevels.x = mAudioHandler->getManager()->getVisualAnalyzer()->getLevel(0);
+                mAudioLevels.y = mAudioHandler->getManager()->getVisualAnalyzer()->getLevel(1);
+            } else {
+                mAudioLevels = {0.f, 0.f};
+            }
+        }
+
+    }
+
+
+
+}
+// -----------------------------------------------------------------------------
 void RadioWana::DrawRadio() {
 
     if (!mStreamHandler.get() || !mAudioHandler.get()) return;
@@ -306,7 +331,7 @@ void RadioWana::DrawRadio() {
     }
 
 
-    if (ImGui::Begin("RadioWana", nullptr, window_flags )) {
+    if (ImGui::Begin("Radio", nullptr, window_flags )) {
         // float fullWidth = ImGui::GetContentRegionAvail().x;
 
         // shift the main menu FIXME SIDE MENU!
@@ -388,24 +413,14 @@ void RadioWana::DrawRadio() {
         {
 
             if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
-                float valL, valR;
-                if (!isConnected) {
-                    valL = 0.f;
-                    valR = 0.f;
-
-                } else {
-                    valL = mAudioHandler->getManager()->getVisualAnalyzer()->getLevel(0);
-                    valR = mAudioHandler->getManager()->getVisualAnalyzer()->getLevel(1);
-
-                }
                 ImGui::SetCursorPos(ImVec2(CursorPos.x, CursorPos.y + displayHeight + 15.f ));
                 ImGui::BeginGroup();
                 if (isConnecting) ImFlux::DrawLED("Connecting",isConnecting, ImFlux::LED_YELLOW);
                 else ImFlux::DrawLED("Connected",isConnected, ImFlux::LED_GREEN);
                 ImGui::SameLine();
-                ImFlux::VUMeter80th(valL, 24, ImVec2(4.f, 16.f));
+                ImFlux::VUMeter80th(mAudioLevels.x, 24, ImVec2(4.f, 16.f));
                 ImGui::SameLine();
-                ImFlux::VUMeter80th(valR, 24, ImVec2(4.f, 16.f));
+                ImFlux::VUMeter80th(mAudioLevels.y, 24, ImVec2(4.f, 16.f));
                 ImGui::EndGroup();
             }
         }
@@ -1198,6 +1213,8 @@ void RadioWana::DrawGui(){
         DrawRadioBrowserWindow();
     }
     if (mAppSettings.ShowFavo) DrawFavo();
+
+    ImGui::SetNextWindowBgAlpha(0.05f);
     DrawRadio();
 
     // if (isDebugBuild()) ImFlux::ShowCaseWidgets();

@@ -17,6 +17,8 @@
 #include "utils/fluxScheduler.h"
 #include "utils/errorlog.h"
 
+#include "DSP_VisualAnalyzer.h"
+
 #include "StreamHandler.h"
 #include "AudioHandler.h"
 #include "StreamInfo.h"
@@ -113,8 +115,17 @@ private:
     FluxScheduler::TaskID mTuningResetTaskID = 0;
     const double mTuningResetSec = 3.0f;
 
+    Point2F mAudioLevels = {0.f, 0.f};
 
 public:
+    Point2F getAudioLevels() const { return mAudioLevels; }
+    DSP::SpectrumAnalyzer* getSpectrumAnalyzer() {
+        if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getSpectrumAnalyzer()) {
+            return mAudioHandler->getManager()->getSpectrumAnalyzer();
+        }
+        return nullptr;
+    }
+
     FluxTexture* mBrushedMetalTex = nullptr;
     FluxTexture* mKnobSilverTex = nullptr;
     FluxTexture* mKnobOffTex = nullptr;
@@ -171,6 +182,7 @@ public:
     void Deinitialize() override;
     void SaveSettings();
     void onEvent(SDL_Event event);
+    void Update(const double& dt) override;
     // void DrawMsgBoxPopup();
     void ShowMenuBar();
     // void ShowToolbar();

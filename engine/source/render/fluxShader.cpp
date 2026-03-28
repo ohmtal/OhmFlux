@@ -84,6 +84,10 @@ void FluxShader::setInt(const std::string& name, float value)
     glUniform1i(getLoc(name), value);
 }
 //-------------------------------------------------------------------------------
+void FluxShader::setFloatArray(const std::string& name, const float* values, int count) {
+    glUniform1fv(getLoc(name), count, values);
+}
+//-------------------------------------------------------------------------------
 bool FluxShader::checkCompileErrors(GLuint shader, std::string type)
 {
     GLint success;

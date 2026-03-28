@@ -41,6 +41,18 @@ public:
         return true;
     }
 
+    // load into a string
+    static bool LoadTextFile(const std::string& path, std::string& outString) {
+        size_t size;
+        void* data = SDL_LoadFile(path.c_str(), &size);
+        if (!data) return false;
+
+        outString.assign(static_cast<const char*>(data), size);
+        SDL_free(data);
+
+        return true;
+    }
+
     // Saves a vector of strings
     static bool SaveTextFile(const std::string& path, const std::vector<std::string>& lines) {
         SDL_IOStream* io = SDL_IOFromFile(path.c_str(), "w");

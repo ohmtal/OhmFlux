@@ -5,6 +5,7 @@
 
 #include <fluxMain.h>
 #include "RadioWana.h"
+#include "BackGroundEffects.h"
 
 class AppMain : public FluxMain
 {
@@ -12,6 +13,8 @@ class AppMain : public FluxMain
 private:
 
     RadioWana* mAppGui = nullptr;
+
+    FluxRadio::BackGroundEffects* mBackGroundEffects = nullptr;
 
 public:
     AppMain() {}
@@ -30,13 +33,30 @@ public:
         if (!mAppGui->Initialize())
             return false;
 
+        mBackGroundEffects = new FluxRadio::BackGroundEffects();
+        if (!mBackGroundEffects->Initialize()) {
+            SAFE_DELETE(mBackGroundEffects);
+            mBackGroundEffects = nullptr;
+        } else {
+            mBackGroundEffects->setAnalyzer(mAppGui->getSpectrumAnalyzer());
+        }
+
+
+
         return true;
     }
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
+        if (mBackGroundEffects) {
+            mBackGroundEffects->Deinitialize();
+            SAFE_DELETE(mBackGroundEffects);
+        }
+
         mAppGui->Deinitialize();
         SAFE_DELETE(mAppGui);
+
+
 
         Parent::Deinitialize();
     }
@@ -62,6 +82,17 @@ public:
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
+        if (mAppGui) {
+            mAppGui->Update(dt);
+            if (mBackGroundEffects) {
+                mBackGroundEffects->UpdateLevels(dt,
+                    mAppGui->getAudioLevels());
+            }
+        }
+
+
+
+
         Parent::Update(dt);
     }
     //--------------------------------------------------------------------------------------
@@ -73,18 +104,24 @@ public:
     //--------------------------------------------------------------------------------------
     void onDraw() override {
 
-            if (mAppGui && mAppGui->mBrushedMetalTex) {
-                DrawParams2D dp;
-                dp.image = mAppGui->mBrushedMetalTex;
-                dp.imgId = 0;
-                dp.x = getScreen()->getCenterX();
-                dp.y = getScreen()->getCenterY();
-                dp.z = 0.f;
-                dp.w = getScreen()->getWidth();
-                dp.h = getScreen()->getHeight();
+        if (mBackGroundEffects) mBackGroundEffects->Draw();
 
-                Render2D.drawSprite(dp);
-            }
+
+            // if (mAppGui && mAppGui->mBrushedMetalTex) {
+            //     DrawParams2D dp;
+            //     dp.image = mAppGui->mBrushedMetalTex;
+            //     dp.imgId = 0;
+            //     dp.x = getScreen()->getCenterX();
+            //     dp.y = getScreen()->getCenterY();
+            //     dp.z = 0.f;
+            //     dp.w = getScreen()->getWidth();
+            //     dp.h = getScreen()->getHeight();
+            //
+            //     Render2D.drawSprite(dp);
+            // }
+
+
+
     };
     //--------------------------------------------------------------------------------------
     RadioWana* getAppGui() const {return mAppGui; }
