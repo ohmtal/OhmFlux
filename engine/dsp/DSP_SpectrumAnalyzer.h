@@ -29,21 +29,31 @@
 namespace DSP {
     class SpectrumAnalyzer : public Effect {
     private:
-        static constexpr int FFT_SIZE = 512; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
+        // static constexpr int FFT_SIZE = 512; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
+        uint16_t mFFT_SIZE = 512; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
         std::vector<float> mCaptureBuffer;
         std::vector<float> mDisplayMagnitudes;
         int mWriteIdx = 0;
+
+        void updateBuffers() {
+            mCaptureBuffer.resize(mFFT_SIZE, 0.0f);
+            mDisplayMagnitudes.resize(mFFT_SIZE / 2, 0.0f);
+        }
 
     public:
         IMPLEMENT_EFF_CLONE_NO_SETTINGS(SpectrumAnalyzer)
 
         SpectrumAnalyzer(bool switchOn = false) : Effect(DSP::EffectType::SpectrumAnalyzer, switchOn) {
             mEffectName = "SPECTRUM ANALYSER";
-
-            mCaptureBuffer.resize(FFT_SIZE, 0.0f);
-            mDisplayMagnitudes.resize(FFT_SIZE / 2, 0.0f);
+            updateBuffers();
         }
 
+        void setFFTSize(uint16_t fftSize) {
+            mFFT_SIZE = fftSize;
+            updateBuffers();
+        }
+
+        uint16_t getFFTSize() const { return mFFT_SIZE; }
 
         //----------------------------------------------------------------------
         virtual void process(float* buffer, int numSamples, int numChannels) override {
@@ -61,7 +71,7 @@ namespace DSP {
                 monoSum /= static_cast<float>(numChannels);
                 // 3. Capture into the circular buffer
                 mCaptureBuffer[mWriteIdx] = monoSum;
-                mWriteIdx = (mWriteIdx + 1) % FFT_SIZE;
+                mWriteIdx = (mWriteIdx + 1) % mFFT_SIZE;
             }
         }
         //----------------------------------------------------------------------
@@ -124,62 +134,71 @@ namespace DSP {
         const std::vector<float>& getMagnitudesFFT() {
             // Prepare data for FFT (Windowing)
             // Reuse a static vector to avoid heap allocation every frame
-            static std::vector<std::complex<float>> fftData(FFT_SIZE);
+            static std::vector<std::complex<float>> fftData(mFFT_SIZE);
 
-            for (int i = 0; i < FFT_SIZE; i++) {
+            for (int i = 0; i < mFFT_SIZE; i++) {
                 // Hann Window to prevent spectral leakage
-                float window = 0.5f * (1.0f - std::cos(2.0f * (float)M_PI * i / (FFT_SIZE - 1)));
+                float window = 0.5f * (1.0f - std::cos(2.0f * (float)M_PI * i / (mFFT_SIZE - 1)));
                 // Align read pointer to the latest write position
-                float sample = mCaptureBuffer[(mWriteIdx + i) % FFT_SIZE];
+                float sample = mCaptureBuffer[(mWriteIdx + i) % mFFT_SIZE];
                 fftData[i] = std::complex<float>(sample * window, 0.0f);
             }
 
 
             performFFT(fftData);
 
+
+
+
             int numBars = mDisplayMagnitudes.size();
+
+
 
             //~~~~~~~~~~~~~~~~~~~~~
 
-            constexpr float minFreq = 63.f; //63.0f;
+            constexpr float minFreq = 125.f; //63.0f;
             constexpr float maxFreq = 16000.0f;
             float ratio = maxFreq / minFreq;
 
+// NOTE: attempt 1
+            // ok i think
             for (int i = 0; i < numBars; i++) {
                 float fLow  = minFreq * std::pow(ratio, (float)i / numBars);
                 float fHigh = minFreq * std::pow(ratio, (float)(i + 1) / numBars);
 
 
-                int startBin = std::max(1, (int)(fLow * FFT_SIZE / mSampleRate));
-                int endBin = std::max(startBin + 1, (int)(fHigh * FFT_SIZE / mSampleRate));
+                int startBin = std::max(1, (int)(fLow * mFFT_SIZE / mSampleRate));
+                int endBin = std::max(startBin + 1, (int)(fHigh * mFFT_SIZE / mSampleRate));
 
                 float avgMag = 0.0f;
-                for (int bin = startBin; bin < endBin && bin < FFT_SIZE / 2; bin++) {
+                for (int bin = startBin; bin < endBin && bin < mFFT_SIZE / 2; bin++) {
                     if (bin == 0 ) continue;
                     avgMag += std::abs(fftData[bin]);
                 }
 
                 // avgMag /= (endBin - startBin);
-                float amplitude = avgMag / (FFT_SIZE / 2.0f);
+                float amplitude = avgMag / (mFFT_SIZE / 2.0f);
                 // boost 40..150
                 float visualVal = std::log10(amplitude * 60.0f + 1.0f);
 
 
-            // better but still not good
-            // FFT_SIZE to 2048
-            // float binStep = (float)(FFT_SIZE / 2) / std::pow(numBars, 1.5f);
+// NOTE: attempt 2
 
+            // // better but still not good
+            // // FFT_SIZE to 2048
+            // float binStep = (float)(mFFT_SIZE / 2) / std::pow(numBars, 1.5f);
+            //
             // for (int i = 0; i < numBars; i++) {
             //
-            //     float lowF  = std::pow((float)i / numBars, 2.0f) * (FFT_SIZE / 2);
-            //     float highF = std::pow((float)(i + 1) / numBars, 2.0f) * (FFT_SIZE / 2);
+            //     float lowF  = std::pow((float)i / numBars, 2.0f) * (mFFT_SIZE / 2);
+            //     float highF = std::pow((float)(i + 1) / numBars, 2.0f) * (mFFT_SIZE / 2);
             //
             //     if (highF - lowF < 1.0f) highF = lowF + 1.0f;
             //
             //     float avgMag = 0.0f;
             //     int count = 0;
             //
-            //     for (int bin = (int)lowF; bin < (int)highF && bin < FFT_SIZE / 2; bin++) {
+            //     for (int bin = (int)lowF; bin < (int)highF && bin < mFFT_SIZE / 2; bin++) {
             //         if (bin < 2 ) continue; // DC Offset
             //         avgMag += std::abs(fftData[bin]);
             //         count++;
@@ -187,40 +206,12 @@ namespace DSP {
             //
             //     // if (count > 0) avgMag /= count;
             //
-            //     float amplitude = avgMag / (FFT_SIZE / 2);
+            //     float amplitude = avgMag / (mFFT_SIZE / 2);
             //     float visualVal = std::log10(amplitude * 100.0f + 1.0f);
 
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-            // ~~~~~~~~~~~~~~~~~~~~~~~
-            // // 3. Map FFT Bins to UI Bars
-            // int numBars = (int)mDisplayMagnitudes.size();
-            // for (int i = 0; i < numBars; i++) {
-            //     // Smooth decay (fallback)
-            //     mDisplayMagnitudes[i] *= 0.88f;
-            //
-            //     // Logarithmic frequency mapping
-            //     float normX = (float)i / numBars;
-            //
-            //     int lowBin = (int)(std::pow(2.0f, (normX * 7.0f) + 1.5f));
-            //     int highBin = (int)(std::pow(2.0f, (i + 1.0f) / numBars * 8.0f));
-            //
-            //     lowBin = std::clamp(lowBin, 0, FFT_SIZE / 2 - 1);
-            //     highBin = std::clamp(highBin, lowBin + 1, FFT_SIZE / 2);
-            //
-            //     float avgMag = 0.0f;
-            //     for (int bin = lowBin; bin < highBin; bin++) {
-            //         float amplitude = std::abs(fftData[bin]) / (FFT_SIZE / 2);
-            //
-            //         if (bin < 6) {
-            //             amplitude *= (bin / 6.0f);
-            //         }
-            //         avgMag += amplitude;
-            //
-            //     }
-            //     avgMag /= (highBin - lowBin); // Average energy in this frequency band
-            //
-            //     float visualVal = std::log10(avgMag * 60.0f + 1.0f);
-            //     // visualVal *= 0.8f;
+
 
                 // Peak-Smoothing
                 if (visualVal > mDisplayMagnitudes[i]) {
@@ -228,7 +219,7 @@ namespace DSP {
                     mDisplayMagnitudes[i] = visualVal;
                 } else {
                     // (Release) - 0.85f .. 0.95f
-                    mDisplayMagnitudes[i] *= 0.85f;
+                    mDisplayMagnitudes[i] *= 0.85f; //0.85f;
                 }
             } //for
             return mDisplayMagnitudes;
@@ -238,7 +229,7 @@ namespace DSP {
         const std::vector<float>& getMagnitudes() {
             // Determine how many samples to check per display bar
             // This ensures all captured data is represented in the visual
-            int samplesPerBar = FFT_SIZE / std::max(1, (int)mDisplayMagnitudes.size());
+            int samplesPerBar = mFFT_SIZE / std::max(1, (int)mDisplayMagnitudes.size());
 
             for (int i = 0; i < (int)mDisplayMagnitudes.size(); ++i) {
                 // Smoothing: Slow decay for a "fallback" effect
@@ -247,7 +238,7 @@ namespace DSP {
                 // Peak Detection in the range assigned to this bar
                 float peak = 0.0f;
                 for (int j = 0; j < samplesPerBar; ++j) {
-                    int idx = (i * samplesPerBar + j) % FFT_SIZE;
+                    int idx = (i * samplesPerBar + j) % mFFT_SIZE;
                     float val = std::abs(mCaptureBuffer[idx]);
                     if (val > peak) peak = val;
                 }
@@ -262,8 +253,8 @@ namespace DSP {
         }
 
         //----------------------------------------------------------------------
-        // higher powValue means less bass bars (default was 1.5 now 2.5)
-        std::vector<float> getLogarithmicBands( int numTargetBands, bool useFFT = true, float powValue = 2.5f) {
+        // lower powValue s (default was 1.5 now 2.5)
+        std::vector<float> getLogarithmicBands( int numTargetBands, bool useFFT = false, float powValue = 1.5f) {
             SpectrumAnalyzer* analyzer = this;
             const auto& linearMags = useFFT ? analyzer->getMagnitudesFFT() : analyzer->getMagnitudes();
 

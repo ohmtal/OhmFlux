@@ -28,12 +28,11 @@ In this Project I use:
 
 Limitation: 
 - Only MP3 streams.
-- Played station from RadioBrowser is added to Favorites automaticly 
 --- 
 
 ## Todos
 
-- [ ] Version 1.0
+- [ ] Version 1.x ==> target release: Mid April '26
     - [X] switch to OhmFlux agian with it's build system 
     - [X] setup Project (cmake)
     - [X] copy code from Prototype and make it basicly run 
@@ -78,6 +77,10 @@ Limitation:
         - [ ] About / Help dialogs
         
             
+    - [X] sucks: Played station from RadioBrowser is added to Favorites automaticly 
+        - find a other solution to handle the currentStation and tuning 
+        - => added stationcache ... 
+        
         
     - [X] Connect
         - Instead of URL - Favo only ? => save current stationuuid
@@ -100,7 +103,9 @@ Limitation:
     - [ ] Add Background Image 
     - [X] Bug in header parser: icy-decription when empty
     
-- [ ] Version 1.x
+---
+    
+- [ ] Version 2.x
     - [ ] Recorder
         - [X] Add recorder to Rack 
         - Enable recording controls without connected 
@@ -113,6 +118,8 @@ Limitation:
             - Manual - save a new stream be station name (or record if no name) - DATETIME.mp3
 
 
+    - [ ] need a function to add remove from Favo in "info?"
+    - [ ] Radio window content should be rendered centered ! 
     - [ ] lowspeed time out optional reconnect 
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;) **New Name?** 
             
@@ -134,6 +141,8 @@ Limitation:
             - Create Android Studio Project 
             - firetv 
 
+---
+            
 - TBD
     - [ ] RSS Podcast/Feeds
         - [ ] Handle mp3 stream without header data ! Take a url from a rss feed - handle empty meta-int and play the stream - visual feedback 

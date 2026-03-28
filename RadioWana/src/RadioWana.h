@@ -108,6 +108,7 @@ private:
     uint32_t mSelectedFavId = 0;
 
     std::vector<FluxRadio::RadioStation> mFavoStationData;
+    std::vector<FluxRadio::RadioStation> mStationCache;
 
 
     int mSelectedFavIndex = -1; //not the id the index in the list
@@ -228,8 +229,7 @@ public:
     void Tune(FluxRadio::RadioStation station) {
         mAppSettings.CurrentStation = station;
         ConnectCurrent();
-        // mSelectedFavId = -1; //Reset
-        setSelectedFavIndex();
+        mSelectedFavId = - 1;
         mTuningMode = false;
     }
 
@@ -252,26 +252,32 @@ public:
 
         // set current favIndex ...
         if (mSelectedFavIndex < 0) {
-            // mSelectedFavIndex = 0; //<< fallback
             setSelectedFavIndex();
 
-            // i guess current station is not a favorit
-            // can NOT add it to favo list mhhhhh
-            // should i add it to favorites ? << painless way
-            if (mSelectedFavIndex < 0) {
-                mFavoStationData.push_back(mAppSettings.CurrentStation);
-                // we need to set mSelectedFavIndex
-                mSelectedFavIndex = (int)FluxRadio::updateFavIds(&mFavoStationData);
-                mAppSettings.CurrentStation.favId = mSelectedFavIndex;
+            mStationCache.clear();
+            for ( auto& station : mFavoStationData ) {
+                mStationCache.push_back(station);
             }
 
+            if ( mAppSettings.CurrentStation.favId < 1) {
+                mStationCache.push_back( mAppSettings.CurrentStation );
+                mSelectedFavIndex = (int)mStationCache.size() - 1;
+            }
         }
+
+
+
+        // for ( auto& station : mFavoStationData ) {
+        //     mStationCache.push_back(station);
+        // }
+
+
 
         float delta = 0.f;
         int step = 1;
         int* v = &mSelectedFavIndex;
         int v_min = 0;
-        int v_max = (int)mFavoStationData.size() - 1;
+        int v_max = (int)mStationCache.size() - 1;
         if (v_max < 1) return ; //empty list fixme ?!
         if (*v > v_max ) *v = 0;
 
@@ -443,10 +449,7 @@ public:
 
         // mouse over hint
         if (is_hovered) {
-            // if (isConnected && !mTuningMode) ImGui::SetTooltip("%s", "Disconnect");
-            // else ImGui::SetTooltip("%s", mFavoStationData[*v].name.c_str());
-
-            ImGui::SetTooltip("%s", mFavoStationData[*v].name.c_str());
+            ImGui::SetTooltip("%s", mStationCache[*v].name.c_str());
         }
 
         ImGui::PopID();
@@ -478,12 +481,12 @@ public:
                     Disconnect();
 
                 } else {
-                   Tune(mFavoStationData[*v]);
-                   dLog("[info] TuneKnob: TUNE Selected Station: %s", mFavoStationData[*v].name.c_str());
+                    if (*v < mStationCache.size()) {
+                        FluxRadio::RadioStation tmpStation = mStationCache[*v];
+                        Tune(tmpStation);
+                        dLog("[info] TuneKnob: TUNE Selected Station: %s", tmpStation.name.c_str());
+                    }
                 }
-
-
-                // mAppSettings.CurrentFavId = mFavoStationData[*v].favId;
             } else {
                 Log("[warn] TuneKnob: Click ignored ... too fast!");
             }

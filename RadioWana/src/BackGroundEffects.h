@@ -25,8 +25,12 @@ namespace FluxRadio {
          float mRmsR = 0.0f;
          GLuint mVAO = 0, mVBO = 0;
 
+         static constexpr int mFreqCount = 16; //MAX 32!
+
          DSP::SpectrumAnalyzer* mAnalyzer = nullptr;
          std::vector<float> mSmoothedMags;
+
+
 
 
     public:
@@ -76,6 +80,7 @@ namespace FluxRadio {
         //----------------------------------------------------------------------
         void setAnalyzer(DSP::SpectrumAnalyzer* analyzer) {
             mAnalyzer = analyzer;
+            //default 512! mAnalyzer->setFFTSize(256); //lower load worse fft
         }
         //----------------------------------------------------------------------
         virtual void Deinitialize() override{
@@ -94,12 +99,13 @@ namespace FluxRadio {
 
             if ( mAnalyzer )
             {
-                auto currentBands = mAnalyzer->getLogarithmicBands(32, true);
+                auto currentBands = mAnalyzer->getLogarithmicBands(mFreqCount, true, 0.5f);
                 if (!currentBands.empty()) {
                     // Initialize smoothed vector if needed
                     if (mSmoothedMags.size() != currentBands.size()) {
                         mSmoothedMags = currentBands;
                     }
+                    mSmoothedMags[0] *= 0.5;
 
                     // Ballistics constants (adjust these to your taste)
                     float attack = 0.8f;  // How fast it rises (0.0 to 1.0)
@@ -107,6 +113,8 @@ namespace FluxRadio {
 
                     for (size_t i = 0; i < mSmoothedMags.size(); ++i) {
                         // If new value is higher, rise quickly (Attack)
+                        // lower first bar bass;
+
                         if (currentBands[i] > mSmoothedMags[i]) {
                             mSmoothedMags[i] = (mSmoothedMags[i] * (1.0f - attack)) + (currentBands[i] * attack);
                         } else {
@@ -134,8 +142,10 @@ namespace FluxRadio {
             mShader->setVec2("u_res", (float)size.x, (float)size.y);
 
 
+            mShader->setFloat("u_freqCount", mFreqCount);
             if (mAnalyzer && !mSmoothedMags.empty()) {
-                mShader->setFloatArray("u_freqs", mSmoothedMags.data(), 32);
+
+                mShader->setFloatArray("u_freqs", mSmoothedMags.data(), mFreqCount);
             }
 
 
