@@ -29,7 +29,7 @@
 namespace DSP {
     class SpectrumAnalyzer : public Effect {
     private:
-        static constexpr int FFT_SIZE = 256; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
+        static constexpr int FFT_SIZE = 512; //orig 512 Must be power of 2 .. 2048 would be better for FFT!
         std::vector<float> mCaptureBuffer;
         std::vector<float> mDisplayMagnitudes;
         int mWriteIdx = 0;
@@ -262,7 +262,8 @@ namespace DSP {
         }
 
         //----------------------------------------------------------------------
-        std::vector<float> getLogarithmicBands( int numTargetBands, bool useFFT = false) {
+        // higher powValue means less bass bars (default was 1.5 now 2.5)
+        std::vector<float> getLogarithmicBands( int numTargetBands, bool useFFT = true, float powValue = 2.5f) {
             SpectrumAnalyzer* analyzer = this;
             const auto& linearMags = useFFT ? analyzer->getMagnitudesFFT() : analyzer->getMagnitudes();
 
@@ -272,8 +273,9 @@ namespace DSP {
             for (int i = 0; i < numTargetBands; ++i) {
                 // Calculate start and end indices for this log-band
                 // Use power function to make lower bands narrower and higher bands wider
-                float startRel = pow(static_cast<float>(i) / numTargetBands, 1.5f);
-                float endRel   = pow(static_cast<float>(i + 1) / numTargetBands, 1.5f);
+                //  1.5 .. 3 higher means less bass bars
+                float startRel = pow(static_cast<float>(i) / numTargetBands, powValue);
+                float endRel   = pow(static_cast<float>(i + 1) / numTargetBands, powValue);
 
                 int startIdx = static_cast<int>(startRel * numLinear);
                 int endIdx   = static_cast<int>(endRel * numLinear);
