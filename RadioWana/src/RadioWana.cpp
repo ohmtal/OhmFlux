@@ -24,12 +24,14 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::AppSettings,
                                                 Volume,
                                                 DockSpaceInitialized,
                                                 ShowFileBrowser,
+                                                ShowRadio,
                                                 ShowConsole,
                                                 ShowRadioBrowser,
                                                 ShowRecorder,
                                                 ShowFavo,
                                                 ShowEqualizer,
-                                                SideBarOpen
+                                                SideBarOpen,
+                                                RenderBackGroundEffect
 )
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::WindowState,
@@ -75,12 +77,17 @@ void RadioWana::restoreLayout(){
     //copied from json :P
     static const std::string layout = "[Window][WindowOverViewport_11111111]\nPos=0,26\nSize=1152,622\nCollapsed=0\n\n[Window][Debug##Default]\nPos=60,60\nSize=400,400\nCollapsed=0\n\n[Window][About]\nPos=774,393\nSize=372,228\nCollapsed=0\n\n[Window][Console]\nPos=0,310\nSize=714,338\nCollapsed=0\nDockId=0x00000006,0\n\n[Window][Radio Browser]\nPos=716,26\nSize=436,622\nCollapsed=0\nDockId=0x00000002,0\n\n[Window][RadioWana]\nPos=0,26\nSize=714,622\nCollapsed=0\nDockId=0x00000005,0\n\n[Window][Recorder]\nPos=0,22\nSize=960,993\nCollapsed=0\nDockId=0x00000005,1\n\n[Window][Favorites]\nPos=716,26\nSize=436,622\nCollapsed=0\nDockId=0x00000002,1\n\n[Window][ImFlux ShowCase Widgets]\nPos=0,432\nSize=960,583\nCollapsed=0\nDockId=0x00000004,0\n\n[Window][HTTP Errror]\nPos=840,465\nSize=240,84\nCollapsed=0\n\n[Window][HUHU]\nPos=892,465\nSize=136,84\nCollapsed=0\n\n[Window][Favorit Dialog]\nPos=60,60\nSize=376,138\nCollapsed=0\n\n[Window][Favorite Dialog]\nPos=772,436\nSize=376,162\nCollapsed=0\n\n[Window][Stream Errror 56]\nPos=782,465\nSize=356,84\nCollapsed=0\n\n[Window][Stream Errror 0]\nPos=823,465\nSize=273,84\nCollapsed=0\n\n[Window][##MySidebar]\nSize=36,510\nCollapsed=0\n\n[Window][Stream Errror 1]\nPos=869,465\nSize=182,84\nCollapsed=0\n\n[Table][0x5B6633BA,5]\nColumn 0  Weight=1.0000\nColumn 1  Weight=1.0000\nColumn 2  Weight=1.0000\nColumn 3  Weight=1.0000\nColumn 4  Weight=1.0000\n\n[Table][0xD170F5FA,4]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000\nColumn 2  Width=74 Sort=0^\nColumn 3  Width=41\n\n[Table][0xC55E50B6,2]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000 Sort=0^\n\n[Docking][Data]\nDockSpace       ID=0x08BD597D Window=0x1BBC0F80 Pos=0,26 Size=1152,622 Split=Y\n  DockNode      ID=0x00000003 Parent=0x08BD597D SizeRef=960,408 Split=X Selected=0xCC2F45C2\n    DockNode    ID=0x00000001 Parent=0x00000003 SizeRef=714,484 Split=Y Selected=0xCC2F45C2\n      DockNode  ID=0x00000005 Parent=0x00000001 SizeRef=714,282 CentralNode=1 HiddenTabBar=1 Selected=0xCC2F45C2\n      DockNode  ID=0x00000006 Parent=0x00000001 SizeRef=714,338 Selected=0xEA83D666\n    DockNode    ID=0x00000002 Parent=0x00000003 SizeRef=436,484 Selected=0xB58DAB73\n  DockNode      ID=0x00000004 Parent=0x08BD597D SizeRef=960,583 Selected=0xF2A39ADC\n\n";
 
+    FluxRadio::RadioStation savStation = mAppSettings.CurrentStation;
+    mAppSettings = AppSettings();
+    mAppSettings.CurrentStation = savStation;
+    mAppSettings.DockSpaceInitialized = true;
+
     // must be scheduled !!
     static FluxScheduler::TaskID loadFactorySchedule = 0;
     if (!FluxSchedule.isPending(loadFactorySchedule))
     {
         std::string tmpLayout = layout;
-        loadFactorySchedule = FluxSchedule.add(0.0f, nullptr, [tmpLayout]() {
+        loadFactorySchedule = FluxSchedule.add(0.5f, nullptr, [tmpLayout]() {
             ImGui::LoadIniSettingsFromMemory(tmpLayout.c_str(), tmpLayout.size());
         });
     }
@@ -151,7 +158,7 @@ void RadioWana::ApplyStudioTheme(){
 
 
 
-    const ImVec4 bgColor = ImVec4(0.1f, 0.1f, 0.1f, 0.80f);
+    const ImVec4 bgColor = ImVec4(0.1f, 0.1f, 0.1f, 0.85f);
     colors[ImGuiCol_WindowBg] = bgColor;
     colors[ImGuiCol_ChildBg] = bgColor;
     colors[ImGuiCol_TitleBg] = bgColor;
@@ -331,10 +338,9 @@ void RadioWana::DrawRadio() {
     }
 
 
-    if (ImGui::Begin("Radio", nullptr, window_flags )) {
+    if (ImGui::Begin("Radio", &mAppSettings.ShowRadio, window_flags )) {
         // float fullWidth = ImGui::GetContentRegionAvail().x;
 
-        // shift the main menu FIXME SIDE MENU!
         if (fullScreenRadio) ImFlux::ShiftCursor(ImVec2(0.0f,20.f));
 
 
@@ -869,7 +875,7 @@ void RadioWana::ShowMenuBar(){
     ImGui::PushFont(getMain()->mHackNerdFont20);
 
     static float sideBarWidth = 0.f;
-    constexpr float targetSideBarWidth = 200.f;
+    constexpr float targetSideBarWidth = 350.f;
     if (mAppSettings.SideBarOpen) {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         sideBarWidth = ImLerp(sideBarWidth, targetSideBarWidth, ImGui::GetIO().DeltaTime * 10.0f);
@@ -892,10 +898,21 @@ void RadioWana::ShowMenuBar(){
             //
             // }
 
+            if (mAppSettings.CurrentStation.name != "") {
+                //FIXME WHEN TOO LONG THE WINDOW SIZE IS BROKEN !!!
+                if (ImGui::MenuItem(mAppSettings.CurrentStation.name.c_str())) {
+                    Tune(mAppSettings.CurrentStation);
+                    mAppSettings.SideBarOpen = false;
+
+                }
+            }
             if (ImGui::BeginMenu("Tune"))
             {
                 for (const auto& s : mFavoStationData) {
-                    if (ImGui::MenuItem(s.name.c_str())) { Tune(s); mAppSettings.SideBarOpen = false;}
+                    if (s.name != "" && ImGui::MenuItem((s.name + "##station").c_str())) {
+                        Tune(s);
+                        mAppSettings.SideBarOpen = false;
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -903,11 +920,13 @@ void RadioWana::ShowMenuBar(){
 
 
             ImGui::SeparatorText("Windows");
+            ImGui::MenuItem("Radio", NULL, &mAppSettings.ShowRadio);
             ImGui::MenuItem("Favorites", NULL, &mAppSettings.ShowFavo);
             ImGui::MenuItem("Radio Browser", NULL, &mAppSettings.ShowRadioBrowser);
             ImGui::Separator();
             ImGui::MenuItem("Recorder", NULL, &mAppSettings.ShowRecorder);
             ImGui::MenuItem("Equalizer", NULL, &mAppSettings.ShowEqualizer);
+            ImGui::MenuItem("Background Effect", NULL, &mAppSettings.RenderBackGroundEffect);
             ImGui::Separator();
             ImGui::MenuItem("Console", NULL, &mAppSettings.ShowConsole);
             ImGui::SeparatorText("Layout");
@@ -964,52 +983,76 @@ void RadioWana::ShowMenuBar(){
             dLog("Sidebar toggled via Selectable = %d", mAppSettings.SideBarOpen);
         }
 
+        if (!mAppSettings.ShowRadio)
+        {
+           bool isConnected = mStreamHandler->isConnected();
+           std::string displayStr = "";
+           if (isConnected && mStreamHandler->getStreamInfo() && mAudioHandler)
+           {
+               FluxRadio::StreamInfo info = *mStreamHandler->getStreamInfo();
+               displayStr = info.name + "   " + mAudioHandler->getCurrentTitle();
+           }
+
+            ImFlux::LCDTextScroller(displayStr.c_str(), 25, ImFlux::COL32_NEON_ORANGE);
+
+
+
+        }
+
+        float rightOffset = 155.f; //230.0f;
+        ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
+        if (ImFlux::FaderHorizontal("Volume", ImVec2(140, 14), &mAppSettings.Volume, 0.0f, 1.0f))
+        {
+            mAudioHandler->setVolume(mAppSettings.Volume);
+        }
+
         // FIXME
-        if (ImGui::BeginMenu("File"))
-        {
-            if (ImGui::MenuItem("Exit")) { getGame()->TerminateApplication(); }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Window"))
-        {
-            ImGui::MenuItem("Favorites", NULL, &mAppSettings.ShowFavo);
-            ImGui::MenuItem("Radio Browser", NULL, &mAppSettings.ShowRadioBrowser);
-            ImGui::Separator();
-            ImGui::MenuItem("Recorder", NULL, &mAppSettings.ShowRecorder);
-            ImGui::MenuItem("Equalizer", NULL, &mAppSettings.ShowEqualizer);
-            ImGui::Separator();
-            ImGui::MenuItem("Console", NULL, &mAppSettings.ShowConsole);
-            ImGui::SeparatorText("Layout");
-            if (ImGui::MenuItem("Restore Factory Layout")) { restoreLayout(); }
-            ImGui::EndMenu();
-        }
-
-
-        if (ImGui::BeginMenu("Help"))
-        {
-
-            if (ImGui::MenuItem("About")) {
-                mGuiGlue->showMessage ( "About",
-                 std::format(
-                        "RadioWana II\n"
-                        "============\n"
-                        "(c)2026 by Thomas Hühn \n"
-                        "Version {}\n"
-                        "https://ohmtal.com\n"
-                        "\n"
-                        "Settings are saved to:\n"
-                        "{}\n"
-                        "Recordings are saved to:\n"
-                        "{}\n"
-                        , getGame()->mSettings.Version
-                        , getGame()->mSettings.getPrefsPath()
-                        , mAudioRecorder->getPath()
-                    )
-                );
-            }
-            ImGui::EndMenu();
-        }
+        // if (ImGui::BeginMenu("File"))
+        // {
+        //     if (ImGui::MenuItem("Exit")) { getGame()->TerminateApplication(); }
+        //     ImGui::EndMenu();
+        // }
+        //
+        // if (ImGui::BeginMenu("Window"))
+        // {
+        //     ImGui::MenuItem("Favorites", NULL, &mAppSettings.ShowFavo);
+        //     ImGui::MenuItem("Radio Browser", NULL, &mAppSettings.ShowRadioBrowser);
+        //     ImGui::Separator();
+        //     ImGui::MenuItem("Recorder", NULL, &mAppSettings.ShowRecorder);
+        //     ImGui::MenuItem("Equalizer", NULL, &mAppSettings.ShowEqualizer);
+        //     ImGui::MenuItem("Background Effect", NULL, &mAppSettings.RenderBackGroundEffect);
+        //     ImGui::Separator();
+        //     ImGui::MenuItem("Console", NULL, &mAppSettings.ShowConsole);
+        //     ImGui::SeparatorText("Layout");
+        //     if (ImGui::MenuItem("Restore Factory Layout")) { restoreLayout(); }
+        //     ImGui::EndMenu();
+        // }
+        //
+        //
+        // if (ImGui::BeginMenu("Help"))
+        // {
+        //
+        //     if (ImGui::MenuItem("About")) {
+        //         mGuiGlue->showMessage ( "About",
+        //          std::format(
+        //                 "RadioWana II\n"
+        //                 "============\n"
+        //                 "(c)2026 by Thomas Hühn \n"
+        //                 "Version {}\n"
+        //                 "https://ohmtal.com\n"
+        //                 "\n"
+        //                 "Settings are saved to:\n"
+        //                 "{}\n"
+        //                 "Recordings are saved to:\n"
+        //                 "{}\n"
+        //                 , getGame()->mSettings.Version
+        //                 , getGame()->mSettings.getPrefsPath()
+        //                 , mAudioRecorder->getPath()
+        //             )
+        //         );
+        //     }
+        //     ImGui::EndMenu();
+        // }
         ImGui::EndMainMenuBar();
     }
 
@@ -1214,9 +1257,11 @@ void RadioWana::DrawGui(){
     }
     if (mAppSettings.ShowFavo) DrawFavo();
 
-    ImGui::SetNextWindowBgAlpha(0.05f);
-    DrawRadio();
 
+    if (mAppSettings.ShowRadio) {
+        ImGui::SetNextWindowBgAlpha(0.05f);
+        DrawRadio();
+    }
     // if (isDebugBuild()) ImFlux::ShowCaseWidgets();
 
     mGuiGlue->DrawEnd();

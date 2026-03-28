@@ -366,7 +366,8 @@ void FluxMain::Draw() {
 	// glDepthFunc(GL_LEQUAL);
 
 	// Inside your main render loop, before drawing anything:
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	// glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	// ADD GL_DEPTH_BUFFER_BIT TO THE CLEAR COMMAND:
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

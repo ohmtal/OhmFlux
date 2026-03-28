@@ -92,34 +92,34 @@ namespace FluxRadio {
 
 
 
-            if ( mAnalyzer )
-            {
-                auto currentBands = mAnalyzer->getLogarithmicBands(32, false);
-                if (!currentBands.empty()) {
-                    // Initialize smoothed vector if needed
-                    if (mSmoothedMags.size() != currentBands.size()) {
-                        mSmoothedMags = currentBands;
-                    }
-
-                    // Ballistics constants (adjust these to your taste)
-                    float attack = 0.8f;  // How fast it rises (0.0 to 1.0)
-                    float decay = 0.92f;  // How slow it falls (0.0 to 1.0)
-
-                    for (size_t i = 0; i < mSmoothedMags.size(); ++i) {
-                        // If new value is higher, rise quickly (Attack)
-                        if (currentBands[i] > mSmoothedMags[i]) {
-                            mSmoothedMags[i] = (mSmoothedMags[i] * (1.0f - attack)) + (currentBands[i] * attack);
-                        } else {
-                            // If new value is lower, fall slowly (Decay)
-                            mSmoothedMags[i] *= decay;
-                        }
-
-                        // Prevent denormals / tiny values
-                        if (mSmoothedMags[i] < 0.001f) mSmoothedMags[i] = 0.0f;
-                    }
-                }
-            }
-
+            // if ( mAnalyzer )
+            // {
+            //     auto currentBands = mAnalyzer->getLogarithmicBands(32, false);
+            //     if (!currentBands.empty()) {
+            //         // Initialize smoothed vector if needed
+            //         if (mSmoothedMags.size() != currentBands.size()) {
+            //             mSmoothedMags = currentBands;
+            //         }
+            //
+            //         // Ballistics constants (adjust these to your taste)
+            //         float attack = 0.8f;  // How fast it rises (0.0 to 1.0)
+            //         float decay = 0.92f;  // How slow it falls (0.0 to 1.0)
+            //
+            //         for (size_t i = 0; i < mSmoothedMags.size(); ++i) {
+            //             // If new value is higher, rise quickly (Attack)
+            //             if (currentBands[i] > mSmoothedMags[i]) {
+            //                 mSmoothedMags[i] = (mSmoothedMags[i] * (1.0f - attack)) + (currentBands[i] * attack);
+            //             } else {
+            //                 // If new value is lower, fall slowly (Decay)
+            //                 mSmoothedMags[i] *= decay;
+            //             }
+            //
+            //             // Prevent denormals / tiny values
+            //             if (mSmoothedMags[i] < 0.001f) mSmoothedMags[i] = 0.0f;
+            //         }
+            //     }
+            // }
+            //
 
         }
         //----------------------------------------------------------------------
@@ -134,9 +134,9 @@ namespace FluxRadio {
             mShader->setVec2("u_res", (float)size.x, (float)size.y);
 
 
-            if (mAnalyzer && !mSmoothedMags.empty()) {
-                mShader->setFloatArray("u_freqs", mSmoothedMags.data(), 32);
-            }
+            // if (mAnalyzer && !mSmoothedMags.empty()) {
+            //     mShader->setFloatArray("u_freqs", mSmoothedMags.data(), 32);
+            // }
 
 
 

@@ -84,7 +84,7 @@ public:
     {
         if (mAppGui) {
             mAppGui->Update(dt);
-            if (mBackGroundEffects) {
+            if (mBackGroundEffects && mAppGui->mAppSettings.RenderBackGroundEffect) {
                 mBackGroundEffects->UpdateLevels(dt,
                     mAppGui->getAudioLevels());
             }
@@ -104,21 +104,25 @@ public:
     //--------------------------------------------------------------------------------------
     void onDraw() override {
 
-        if (mBackGroundEffects) mBackGroundEffects->Draw();
+        if (mBackGroundEffects && mAppGui->mAppSettings.RenderBackGroundEffect) {
+            mBackGroundEffects->Draw();
+        }  else {
+            if (mAppGui && mAppGui->mBrushedMetalTex) {
+                DrawParams2D dp;
+                dp.image = mAppGui->mBrushedMetalTex;
+                dp.imgId = 0;
+                dp.x = getScreen()->getCenterX();
+                dp.y = getScreen()->getCenterY();
+                dp.z = 0.f;
+                dp.w = getScreen()->getWidth();
+                dp.h = getScreen()->getHeight();
+
+                Render2D.drawSprite(dp);
+            }
+
+        }
 
 
-            // if (mAppGui && mAppGui->mBrushedMetalTex) {
-            //     DrawParams2D dp;
-            //     dp.image = mAppGui->mBrushedMetalTex;
-            //     dp.imgId = 0;
-            //     dp.x = getScreen()->getCenterX();
-            //     dp.y = getScreen()->getCenterY();
-            //     dp.z = 0.f;
-            //     dp.w = getScreen()->getWidth();
-            //     dp.h = getScreen()->getHeight();
-            //
-            //     Render2D.drawSprite(dp);
-            // }
 
 
 

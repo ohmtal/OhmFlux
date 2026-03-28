@@ -145,6 +145,7 @@ public:
         bool ShowFavo             = true;
         bool ShowEqualizer        = true;
         bool SideBarOpen          = false;
+        bool RenderBackGroundEffect = true;
     };
 
     struct WindowState {
