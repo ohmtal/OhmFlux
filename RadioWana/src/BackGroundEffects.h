@@ -105,7 +105,8 @@ namespace FluxRadio {
                     if (mSmoothedMags.size() != currentBands.size()) {
                         mSmoothedMags = currentBands;
                     }
-                    mSmoothedMags[0] *= 0.5;
+                    // lower first bar bass;
+                    currentBands[0] *= 0.65f;
 
                     // Ballistics constants (adjust these to your taste)
                     float attack = 0.8f;  // How fast it rises (0.0 to 1.0)
@@ -113,7 +114,7 @@ namespace FluxRadio {
 
                     for (size_t i = 0; i < mSmoothedMags.size(); ++i) {
                         // If new value is higher, rise quickly (Attack)
-                        // lower first bar bass;
+
 
                         if (currentBands[i] > mSmoothedMags[i]) {
                             mSmoothedMags[i] = (mSmoothedMags[i] * (1.0f - attack)) + (currentBands[i] * attack);

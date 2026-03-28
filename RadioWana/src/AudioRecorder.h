@@ -28,15 +28,12 @@ namespace FluxRadio {
         uintmax_t mMinRequiredFileSpace = 50 * 1024 * 1024; // 50 MB
         char mStreamBuffer[8192];
 
-
-
     public:
         AudioRecorder(){
             mPath = fluxStr::addTrailingSlash(getMusicPath())+ "radioRecordings/";
             Log("[info] set recording path to: %s", mPath.c_str());
 
         }
-
 
         std::string getPath() const { return mPath; }
         std::string getCurrentFilename() const { return mCurrentFilename; }
@@ -126,5 +123,4 @@ namespace FluxRadio {
 
     private:
     };
-
 };

@@ -54,34 +54,6 @@ namespace FluxRadio {
     }
 
 
-    // void SDLCALL AudioHandler::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
-    //     auto* self = static_cast<AudioHandler*>(userdata);
-    //
-    //     int bytesPerFrame = sizeof(float) * self->mStreamInfo->channels;
-    //     ma_uint32 framesToRead = additional_amount / bytesPerFrame;
-    //
-    //     //  PCM-Data
-    //     std::vector<float> pcmBuffer(framesToRead * self->mStreamInfo->channels);
-    //
-    //     // miniaudio
-    //     ma_uint64 framesRead;
-    //     ma_result result = ma_decoder_read_pcm_frames(self->mDecoder, pcmBuffer.data(), framesToRead, &framesRead);
-    //
-    //     if (framesRead > 0) {
-    //         int numSamples =  (int)(framesRead * bytesPerFrame);
-    //         self->mEffectsManager->process(pcmBuffer.data(), numSamples, self->mStreamInfo->channels);
-    //
-    //         SDL_PutAudioStreamData(stream, pcmBuffer.data(), numSamples);
-    //     }
-    //
-    //     if (framesRead < framesToRead) {
-    //         int silenceBytes = (framesToRead - (int)framesRead) * bytesPerFrame;
-    //         std::vector<uint8_t> silence(silenceBytes, 0);
-    //
-    //         SDL_PutAudioStreamData(stream, silence.data(), silenceBytes);
-    //     }
-    // }
-
     // -----------------------------------------------------------------------------
     bool AudioHandler::init(StreamInfo* info) {
 
@@ -286,7 +258,6 @@ namespace FluxRadio {
     // -----------------------------------------------------------------------------
     void AudioHandler::reset ( bool doLock ){
         if (!mDecoderInitialized) return;
-        //FIXME on exit: Fatal glibc error: pthread_mutex_lock.c:426 (__pthread_mutex_lock_full): assertion failed: e != ESRCH || !robust
         if (doLock) std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
         mRawBuffer.clear();
         mDecoderInitialized = false;

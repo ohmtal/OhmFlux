@@ -99,11 +99,6 @@ namespace FluxRadio {
         bool init(StreamInfo* info);
         void shutDown() {
             onDisConnected(false);
-            // if (mStream) {
-            //     SDL_DestroyAudioStream(mStream);
-            //     mStream = nullptr;
-            // }
-            // mDecoderInitialized = false;
         }
 
         void OnStreamTitleUpdate(const std::string streamTitle, const size_t streamPosition);

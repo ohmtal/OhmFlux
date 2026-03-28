@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     AppMain* app = new AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "RadioWana II";
-    app->mSettings.Version = "0.260328";
+    app->mSettings.Version = "0.260329";
     app->mSettings.enableLogFile   = true;
     app->mSettings.WindowMaximized = false;
     app->mSettings.ScreenWidth  = 1152; // 1920;

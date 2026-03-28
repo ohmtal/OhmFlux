@@ -1005,6 +1005,7 @@ void RadioWana::ShowMenuBar(){
 
         }
 
+        //FIXME too big
         float rightOffset = 155.f; //230.0f;
         ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
         if (ImFlux::FaderHorizontal("Volume", ImVec2(140, 14), &mAppSettings.Volume, 0.0f, 1.0f))
@@ -1012,53 +1013,6 @@ void RadioWana::ShowMenuBar(){
             mAudioHandler->setVolume(mAppSettings.Volume);
         }
 
-        // FIXME
-        // if (ImGui::BeginMenu("File"))
-        // {
-        //     if (ImGui::MenuItem("Exit")) { getGame()->TerminateApplication(); }
-        //     ImGui::EndMenu();
-        // }
-        //
-        // if (ImGui::BeginMenu("Window"))
-        // {
-        //     ImGui::MenuItem("Favorites", NULL, &mAppSettings.ShowFavo);
-        //     ImGui::MenuItem("Radio Browser", NULL, &mAppSettings.ShowRadioBrowser);
-        //     ImGui::Separator();
-        //     ImGui::MenuItem("Recorder", NULL, &mAppSettings.ShowRecorder);
-        //     ImGui::MenuItem("Equalizer", NULL, &mAppSettings.ShowEqualizer);
-        //     ImGui::MenuItem("Background Effect", NULL, &mAppSettings.RenderBackGroundEffect);
-        //     ImGui::Separator();
-        //     ImGui::MenuItem("Console", NULL, &mAppSettings.ShowConsole);
-        //     ImGui::SeparatorText("Layout");
-        //     if (ImGui::MenuItem("Restore Factory Layout")) { restoreLayout(); }
-        //     ImGui::EndMenu();
-        // }
-        //
-        //
-        // if (ImGui::BeginMenu("Help"))
-        // {
-        //
-        //     if (ImGui::MenuItem("About")) {
-        //         mGuiGlue->showMessage ( "About",
-        //          std::format(
-        //                 "RadioWana II\n"
-        //                 "============\n"
-        //                 "(c)2026 by Thomas Hühn \n"
-        //                 "Version {}\n"
-        //                 "https://ohmtal.com\n"
-        //                 "\n"
-        //                 "Settings are saved to:\n"
-        //                 "{}\n"
-        //                 "Recordings are saved to:\n"
-        //                 "{}\n"
-        //                 , getGame()->mSettings.Version
-        //                 , getGame()->mSettings.getPrefsPath()
-        //                 , mAudioRecorder->getPath()
-        //             )
-        //         );
-        //     }
-        //     ImGui::EndMenu();
-        // }
         ImGui::EndMainMenuBar();
     }
 
@@ -1239,23 +1193,6 @@ void RadioWana::DrawGui(){
     mGuiGlue->DrawBegin();
 
 
-/*
-    //SIDEBAR with reserved space ...
-    float sidebarWidth = 36.0f;
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.f,0.f));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(1.f, 1.f));
-    if (ImGui::BeginViewportSideBar("##MySidebar", ImGui::GetMainViewport(), ImGuiDir_Left, sidebarWidth, ImGuiWindowFlags_NoDecoration)) {
-        if (ImGui::Button("≡", ImVec2(-1, 40))) {  }
-        if (ImGui::Button("Settings", ImVec2(-1, 40))) {  }
-
-        ImGui::End();
-    }
-    ImGui::PopStyleVar(2);
-
-    // ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-*/
-
-
     ShowMenuBar();
     if (mAppSettings.ShowConsole) mConsole.Draw("Console", &mAppSettings.ShowConsole);
     if (mAppSettings.ShowRadioBrowser)  {
@@ -1268,7 +1205,7 @@ void RadioWana::DrawGui(){
         ImGui::SetNextWindowBgAlpha(0.05f);
         DrawRadio();
     }
-    // if (isDebugBuild()) ImFlux::ShowCaseWidgets();
+
 
     mGuiGlue->DrawEnd();
 }
