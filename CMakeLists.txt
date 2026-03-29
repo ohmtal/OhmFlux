@@ -167,8 +167,9 @@ if(MSVC)
 else()
     FetchContent_Declare(
     SDL3
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG        release-3.4.2
+    # GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    # GIT_TAG        release-3.4.2
+    URL "${CMAKE_CURRENT_LIST_DIR}/lib/SDL-release-3.4.2.tar.gz"
     )
 
     set(SDL_TESTS OFF CACHE BOOL "" FORCE)
