@@ -147,21 +147,12 @@ namespace DSP {
 
             performFFT(fftData);
 
-
-
-
             int numBars = mDisplayMagnitudes.size();
 
-
-
-            //~~~~~~~~~~~~~~~~~~~~~
-
             constexpr float minFreq = 125.f; //63.0f;
-            constexpr float maxFreq = 20000.0f;
+            constexpr float maxFreq = 16000.0f;
             float ratio = maxFreq / minFreq;
 
-// NOTE: attempt 1
-            // ok i think
             for (int i = 0; i < numBars; i++) {
                 float fLow  = minFreq * std::pow(ratio, (float)i / numBars);
                 float fHigh = minFreq * std::pow(ratio, (float)(i + 1) / numBars);
@@ -180,37 +171,6 @@ namespace DSP {
                 float amplitude = avgMag / (mFFT_SIZE / 2.0f);
                 // boost 40..150
                 float visualVal = std::log10(amplitude * 60.0f + 1.0f);
-
-
-// NOTE: attempt 2
-
-            // // better but still not good
-            // // FFT_SIZE to 2048
-            // float binStep = (float)(mFFT_SIZE / 2) / std::pow(numBars, 1.5f);
-            //
-            // for (int i = 0; i < numBars; i++) {
-            //
-            //     float lowF  = std::pow((float)i / numBars, 2.0f) * (mFFT_SIZE / 2);
-            //     float highF = std::pow((float)(i + 1) / numBars, 2.0f) * (mFFT_SIZE / 2);
-            //
-            //     if (highF - lowF < 1.0f) highF = lowF + 1.0f;
-            //
-            //     float avgMag = 0.0f;
-            //     int count = 0;
-            //
-            //     for (int bin = (int)lowF; bin < (int)highF && bin < mFFT_SIZE / 2; bin++) {
-            //         if (bin < 2 ) continue; // DC Offset
-            //         avgMag += std::abs(fftData[bin]);
-            //         count++;
-            //     }
-            //
-            //     // if (count > 0) avgMag /= count;
-            //
-            //     float amplitude = avgMag / (mFFT_SIZE / 2);
-            //     float visualVal = std::log10(amplitude * 100.0f + 1.0f);
-
-            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 
                 // Peak-Smoothing
@@ -253,8 +213,8 @@ namespace DSP {
         }
 
         //----------------------------------------------------------------------
-        // lower powValue s (default was 1.5 now 2.5)
-        std::vector<float> getLogarithmicBands( int numTargetBands, bool useFFT = false, float powValue = 1.5f) {
+        // lower powValue s (default was 1.5)
+        std::vector<float> getLogarithmicBands( int numTargetBands, bool useFFT = false, float powValue = 0.85f) {
             SpectrumAnalyzer* analyzer = this;
             const auto& linearMags = useFFT ? analyzer->getMagnitudesFFT() : analyzer->getMagnitudes();
 
@@ -264,7 +224,6 @@ namespace DSP {
             for (int i = 0; i < numTargetBands; ++i) {
                 // Calculate start and end indices for this log-band
                 // Use power function to make lower bands narrower and higher bands wider
-                //  1.5 .. 3 higher means less bass bars
                 float startRel = pow(static_cast<float>(i) / numTargetBands, powValue);
                 float endRel   = pow(static_cast<float>(i + 1) / numTargetBands, powValue);
 
@@ -298,7 +257,7 @@ namespace DSP {
         virtual void renderUI() override {};
 
 
-        inline void DrawSpectrumAnalyzer(ImVec2 size, bool useFFT = false, uint16_t numBands = 128) {
+        inline void DrawSpectrumAnalyzer(ImVec2 size, bool useFFT = false, uint16_t numBands = 64) {
             SpectrumAnalyzer* analyzer = this;
             if (!analyzer->isEnabled()) return;
 

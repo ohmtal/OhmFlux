@@ -51,34 +51,37 @@
 
 namespace fs = std::filesystem;
 
-struct ImFileDialog {
-    std::string currentPath = fs::current_path().string();
+class ImFileDialog {
+
+    std::string mCurrentPath = fs::current_path().string();
     char pathInput[512];
     char fileInput[256] = "";
-    std::string selectedFile = "";
-    std::string selectedExt = "";
     std::string mExt = "";
-    std::string mUserData = "";
 
     std::vector<fs::directory_entry> mEntries;
-    bool mDirty = true;
 
-    std::string mLabel = "File Browser";
-    bool mSaveMode = false;
     int mSelectedFilterIdx = 0;
     std::vector<std::string> mDefaultFilters = {  };
-    std::vector<std::string> mFilters = { };
-    std::string mSaveExt = "";
-    bool mCancelPressed = false;
     bool mInitDone = false;
 
+
+public:
+    bool mDirty = true;
+    std::string mLabel = "File Browser";
+
+    std::string selectedFile = "";
+    std::string selectedExt = "";
+    std::vector<std::string> mFilters = { };
+
+    bool mCancelPressed = false;
+    bool mSaveMode = false;
+    std::string mSaveExt = "";
+    std::string mUserData = "";
     bool mWasOpen = true;
 
-    // //--------------------------------------------------------------------------
-    // void setFileName(std::string filename)
-    // {
-    //     strncpy(fileInput, filename.c_str(), sizeof(fileInput));
-    // }
+
+    //--------------------------------------------------------------------------
+
     void setFileName(std::string filename)
     {
         fs::path p(filename);
@@ -87,7 +90,7 @@ struct ImFileDialog {
         if (p.is_absolute() || p.has_parent_path()) {
             if (fs::exists(p.parent_path())) {
                 // Update the browser's current directory
-                currentPath = p.parent_path().string();
+                mCurrentPath = p.parent_path().string();
 
                 // Extract only the filename for the input field
                 std::string nameOnly = p.filename().string();
@@ -95,7 +98,7 @@ struct ImFileDialog {
                 fileInput[sizeof(fileInput) - 1] = '\0'; // Ensure null-termination
 
                 // Update pathInput if you use it as a text field for the path
-                strncpy(pathInput, currentPath.c_str(), sizeof(pathInput) - 1);
+                strncpy(pathInput, mCurrentPath.c_str(), sizeof(pathInput) - 1);
                 pathInput[sizeof(pathInput) - 1] = '\0';
 
                 // Trigger a refresh of the file list
@@ -114,7 +117,7 @@ struct ImFileDialog {
     {
         if (mInitDone)
             return ;
-        currentPath = path;
+        mCurrentPath = path;
         mDefaultFilters = filters;
         mFilters = filters;
         mInitDone = true;
@@ -133,13 +136,14 @@ struct ImFileDialog {
         mUserData = "";
     }
     //--------------------------------------------------------------------------
+private:
     bool fetchFiles()
     {
-        if (currentPath.empty() || !fs::exists(currentPath)) return false;
+        if (mCurrentPath.empty() || !fs::exists(mCurrentPath)) return false;
 
         std::vector<fs::directory_entry> localEntries;
         try {
-            for (const auto& entry : fs::directory_iterator(currentPath, fs::directory_options::skip_permission_denied)) {
+            for (const auto& entry : fs::directory_iterator(mCurrentPath, fs::directory_options::skip_permission_denied)) {
                 // Apply your extension filters here
                 if (!entry.is_directory()) {
                     std::string ext = entry.path().extension().string();
@@ -159,17 +163,17 @@ struct ImFileDialog {
 
     //--------------------------------------------------------------------------
     void cdDotDot() {
-        fs::path p(currentPath);
+        fs::path p(mCurrentPath);
 
         // Remove trailing slash if it exists (except for root like "C:\" or "/")
         if (p.has_relative_path()) {
-            if (currentPath.back() == '/' || currentPath.back() == '\\') {
-                currentPath.pop_back();
-                p = fs::path(currentPath);
+            if (mCurrentPath.back() == '/' || mCurrentPath.back() == '\\') {
+                mCurrentPath.pop_back();
+                p = fs::path(mCurrentPath);
             }
         }
 
-        currentPath = p.parent_path().string();
+        mCurrentPath = p.parent_path().string();
         mDirty = true;
     }
     //--------------------------------------------------------------------------
@@ -191,7 +195,7 @@ struct ImFileDialog {
         if (ImGui::BeginPopup("PathPickerPopup")) {
             auto selectPath = [&](const std::string& newPath) {
                 if (!newPath.empty()) {
-                    currentPath = newPath;
+                    mCurrentPath = newPath;
                     mDirty = true;
                     ImGui::CloseCurrentPopup();
                 }
@@ -259,14 +263,14 @@ struct ImFileDialog {
             cdDotDot();
         }
         ImGui::SameLine();
-        strncpy(pathInput, currentPath.c_str(), sizeof(pathInput));
+        strncpy(pathInput, mCurrentPath.c_str(), sizeof(pathInput));
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (ImGui::InputTextWithHint("##pathInput","Path", pathInput, sizeof(pathInput), ImGuiInputTextFlags_EnterReturnsTrue)) {
             if (fs::exists(pathInput)) {
-                currentPath = pathInput;
+                mCurrentPath = pathInput;
                 mDirty = true;
             } else {
-                std::strncpy(pathInput, currentPath.c_str(), sizeof(pathInput) - 1);
+                std::strncpy(pathInput, mCurrentPath.c_str(), sizeof(pathInput) - 1);
                 pathInput[sizeof(pathInput) - 1] = '\0';
 
             }
@@ -313,6 +317,7 @@ struct ImFileDialog {
     }
 
     //--------------------------------------------------------------------------
+public:
     bool Draw() {
         bool result = false;
 
@@ -405,14 +410,14 @@ struct ImFileDialog {
                         if (ImGui::Selectable(name.c_str(), isSelected, sel_flags)) {
                             if (ImGui::IsMouseDoubleClicked(0)) {
                                 if (isDir) {
-                                    currentPath = path.string();
+                                    mCurrentPath = path.string();
                                     mDirty = true; // Trigger directory change
                                 } else {
                                     if (strlen(fileInput) > 0) {
 
                                         std::string ext = path.extension().string();
                                         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-                                        selectedFile = (fs::path(currentPath) / fileInput).string();
+                                        selectedFile = (fs::path(mCurrentPath) / fileInput).string();
                                         selectedExt  = ext;
                                         result = true;
                                     }
@@ -496,7 +501,7 @@ struct ImFileDialog {
             ImGui::SameLine();
             if (ImGui::Button(mSaveMode ? "Save" : "Open", ImVec2(button_save_width, 0))) {
                 if (strlen(fileInput) > 0) {
-                    selectedFile = (fs::path(currentPath) / fileInput).string();
+                    selectedFile = (fs::path(mCurrentPath) / fileInput).string();
                     selectedExt = fs::path(selectedFile).extension().string();
 
 
@@ -526,4 +531,12 @@ struct ImFileDialog {
         return result;
     } //Draw
     //--------------------------------------------------------------------------
+public:
+    std::string pwd() const { return mCurrentPath; }
+
+    void changeDirectory(std::string path) {
+        mCurrentPath = path;
+        mDirty = true;
+    }
+
 };

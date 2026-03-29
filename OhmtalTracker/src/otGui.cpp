@@ -352,7 +352,7 @@ bool OTGui::Initialize()
     auto* controller = getMain()->getController();
 
     mSpectrumAnalyzer = DSP::addEffectToChain<DSP::SpectrumAnalyzer>(controller->getDspEffects(), false);
-    mSpectrumAnalyzer->setFFTSize(2048);
+    mSpectrumAnalyzer->setFFTSize(1024);
 
     mSpectrumAnalyzer->setEnabled(SettingsManager().get("DSP_SpectrumAnalyzer_ON", false));
     controller->getDSPBitCrusher()->setEnabled(SettingsManager().get("DSP_BitCrusher_ON", false));
@@ -423,7 +423,9 @@ bool OTGui::Initialize()
     }
 
     // FileManager
-    g_FileDialog.init( getGamePath(), {".fms3", ".fmb3", ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
+    std::string savPath = SettingsManager().get("FileDialog::Path", getGamePath());
+
+    g_FileDialog.init( savPath, {".fms3", ".fmb3", ".sbi", ".op2",".wopl", ".fmi", ".fms", ".wav", ".ogg" });
     // Console
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
     SDL_SetLogOutputFunction(ConsoleLogFunction, nullptr);
@@ -475,6 +477,11 @@ void OTGui::Deinitialize()
 
         //.....
         SettingsManager().set("WINDOW_MAXIMIZED", getScreenObject()->getWindowMaximized());
+
+        //.....
+        SettingsManager().set("FileDialog::Path", g_FileDialog.pwd());
+
+
 
         SettingsManager().save();
     }
@@ -1008,18 +1015,21 @@ void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
             }
         }
     }
-    else
-    if (cmd == "detach") {
+    else if (cmd == "detach") {
         getMain()->getController()->detachAudio();
     }
-    else
-    if (cmd == "attach") {
+    else if (cmd == "attach") {
         getMain()->getController()->attachAudio();
     }
-    else
-        if (cmd == "v") {
-            LogFMT("Voice active: {}", getMain()->getController()->isAnyVoiceActive());
+    else if (cmd == "v") { LogFMT("Voice active: {}", getMain()->getController()->isAnyVoiceActive());}
+    else if (cmd == "cd") {
+        if (fluxStr::getWord(cmdline,1) != "") {
+            g_FileDialog.changeDirectory(fluxStr::getWord(cmdline,1));
+        } else {
+            dLog("usage cd PATH");
         }
+
+    }
 
     else
     {
