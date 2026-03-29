@@ -157,7 +157,7 @@ namespace DSP {
             //~~~~~~~~~~~~~~~~~~~~~
 
             constexpr float minFreq = 125.f; //63.0f;
-            constexpr float maxFreq = 16000.0f;
+            constexpr float maxFreq = 20000.0f;
             float ratio = maxFreq / minFreq;
 
 // NOTE: attempt 1
@@ -298,11 +298,15 @@ namespace DSP {
         virtual void renderUI() override {};
 
 
-        inline void DrawSpectrumAnalyzer(ImVec2 size, bool useFFT = false) {
+        inline void DrawSpectrumAnalyzer(ImVec2 size, bool useFFT = false, uint16_t numBands = 128) {
             SpectrumAnalyzer* analyzer = this;
             if (!analyzer->isEnabled()) return;
 
-            const auto& mags = useFFT ? analyzer->getMagnitudesFFT() : analyzer->getMagnitudes();
+            // const auto& mags = useFFT ? analyzer->getMagnitudesFFT() : analyzer->getMagnitudes();
+
+
+            const auto& mags = analyzer->getLogarithmicBands(numBands, useFFT);
+
 
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             ImVec2 p = ImGui::GetCursorScreenPos();
@@ -310,13 +314,15 @@ namespace DSP {
             // Background
             drawList->AddRectFilled(p, {p.x + size.x, p.y + size.y}, ImColor(15, 15, 15), 2.0f);
 
-            int numBars = (int)mags.size() / 4; // Group bins for cleaner look
+            // int numBars = (int)mags.size() / 4; // Group bins for cleaner look
+            int numBars = numBands;
             float barWidth = size.x / numBars;
             float gap = 1.0f;
 
             for (int i = 0; i < numBars; i++) {
                 // Average a few bins for each bar
-                float val = (mags[i*2] + mags[i*2+1]) * 0.5f;
+                // float val = (mags[i*2] + mags[i*2+1]) * 0.5f;
+                float val = mags[i];
                 float height = std::clamp(val * size.y * 2.0f, 2.0f, size.y);
 
                 // Color Gradient: Green (bottom) to Red (top)

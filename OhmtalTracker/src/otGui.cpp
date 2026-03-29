@@ -352,6 +352,7 @@ bool OTGui::Initialize()
     auto* controller = getMain()->getController();
 
     mSpectrumAnalyzer = DSP::addEffectToChain<DSP::SpectrumAnalyzer>(controller->getDspEffects(), false);
+    mSpectrumAnalyzer->setFFTSize(2048);
 
     mSpectrumAnalyzer->setEnabled(SettingsManager().get("DSP_SpectrumAnalyzer_ON", false));
     controller->getDSPBitCrusher()->setEnabled(SettingsManager().get("DSP_BitCrusher_ON", false));
