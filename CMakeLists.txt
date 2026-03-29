@@ -530,24 +530,24 @@ if(BUILD_RADIOWANA AND NOT ANDROID AND NOT EMSCRIPTEN)
     #append curl if not already included
     # FETCH IT for Andoid !
     # ANDROID: then openssl is missing
-    # set(BUILD_CURL_EXE OFF CACHE INTERNAL "")
-    # set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
-    # set(CURL_USE_LIBPSL OFF CACHE INTERNAL "")
-    # set(CURL_DISABLE_LDAP ON CACHE INTERNAL "")
-    # set(CURL_DISABLE_LDAPS ON CACHE INTERNAL "")
-    # set(HTTP_ONLY ON CACHE INTERNAL "") # i only need https at the moment !
-    # FetchContent_Declare(
-    #     curl
-    #     GIT_REPOSITORY https://github.com/curl/curl.git
-    #     GIT_TAG curl-8_19_0
-    # )
-    # FetchContent_MakeAvailable(curl)
-    # list(APPEND PROJECT_LIBS libcurl)
+    set(BUILD_CURL_EXE OFF CACHE INTERNAL "")
+    set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+    set(CURL_USE_LIBPSL OFF CACHE INTERNAL "")
+    set(CURL_DISABLE_LDAP ON CACHE INTERNAL "")
+    set(CURL_DISABLE_LDAPS ON CACHE INTERNAL "")
+    set(CURL_USE_OPENSSL ON CACHE INTERNAL "")
+    set(HTTP_ONLY ON CACHE INTERNAL "") # i only need https at the moment !
+    FetchContent_Declare(
+        curl
+        URL "${CMAKE_CURRENT_LIST_DIR}/lib/curl-curl-8_19_0.tar.gz"
+    )
+    FetchContent_MakeAvailable(curl)
+    list(APPEND PROJECT_LIBS libcurl)
 
     # desktop
-    find_package(CURL REQUIRED)
-    list(APPEND PROJECT_LIBS CURL::libcurl)
-    message(STATUS "Added Curl .....")
+    # find_package(CURL REQUIRED)
+    # list(APPEND PROJECT_LIBS CURL::libcurl)
+    # message(STATUS "Added Curl .....")
 
     if(ANDROID)
         list(APPEND PROJECT_LIBS openssl z log)
