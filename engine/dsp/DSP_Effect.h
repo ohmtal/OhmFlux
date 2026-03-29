@@ -510,7 +510,7 @@ namespace DSP {
 
     virtual void renderUIWide(  ) {
         char buf[32];
-        snprintf(buf, sizeof(buf), "Effect_Row_W_%d", getType());
+        snprintf(buf, sizeof(buf), "Effect_Row_W_%d", (int)getType());
         ImGui::PushID(buf);
 
         ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
