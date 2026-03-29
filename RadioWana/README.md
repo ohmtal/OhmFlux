@@ -80,7 +80,7 @@ Limitation:
     - [X] sucks: Played station from RadioBrowser is added to Favorites automaticly 
         - find a other solution to handle the currentStation and tuning 
         - => added stationcache ... 
-        
+    - [ ] BUG: station list not updated when station added to favo
         
     - [X] Connect
         - Instead of URL - Favo only ? => save current stationuuid
