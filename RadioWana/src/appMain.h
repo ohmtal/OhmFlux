@@ -20,6 +20,11 @@ public:
     AppMain() {}
     ~AppMain() {}
 
+    bool reloadBackGroundEffectsShader(int id = 0, bool scanLines = false) {
+        if (mBackGroundEffects) return mBackGroundEffects->LoadShader(id, scanLines);
+        return false;
+    }
+    inline static ImFont* mHackNerdFont12 = nullptr;
     inline static ImFont* mHackNerdFont16 = nullptr;
     inline static ImFont* mHackNerdFont20 = nullptr;
     inline static ImFont* mHackNerdFont26 = nullptr;

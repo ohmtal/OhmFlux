@@ -93,6 +93,13 @@ private:
             .url = "http://streams.radiobob.de/bob-national/mp3-192/mediaplayer",
             .countrycode = "DE",
             .favId = 2
+        },
+        // not my music but can be used for a demo: NCS Radio (NoCopyrightSounds)
+        {
+            .stationuuid = "92556f58-20d3-44ae-8faa-322ce5f256c0",
+            .name= "NCS Radio (NoCopyrightSounds)",
+            .url = "https://stream.zeno.fm/ez4m4918n98uv",
+            .favId = 3
         }
     };
 

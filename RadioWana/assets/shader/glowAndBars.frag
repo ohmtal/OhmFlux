@@ -1,12 +1,19 @@
 #version 330 core
+precision mediump float;
+
+// --------------------------------------------
+// RadioWana Background Shader: Glow and Bars
+// --------------------------------------------
+
 out vec4 FragColor;
 
-uniform float u_time;
-uniform float u_rmsL;
-uniform float u_rmsR;
-uniform vec2 u_res;
-uniform float u_freqCount; //MAX 32!
-uniform float u_freqs[32];
+uniform float u_time;       // timer (dt)
+uniform float u_rmsL;       // left RMS
+uniform float u_rmsR;       // right RMS
+uniform vec2 u_res;         // screen resolution
+uniform float u_freqCount;  // frequencies (bands) count MAX 32!
+uniform float u_freqs[32];  // frequency FFT data
+uniform bool  u_scanlines;
 
 // Converts Hue, Saturation, Value to RGB
 vec3 hsv2rgb(vec3 c) {
@@ -17,29 +24,34 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
 
+    //260329 clamp rms values. silent with a little glow
+    float rmsL = clamp(u_rmsL, 0.2, 1.0);
+    float rmsR = clamp(u_rmsR, 0.2, 1.0);
+
+
     vec2 uv = (gl_FragCoord.xy * 2.0 - u_res.xy) / min(u_res.y, u_res.x);
 
     // Use low frequencies (Bass) to shake the UV coordinates
     // Index 0-3 are usually the kick/bass regions
-    float bassImpact = (u_freqs[0] + u_freqs[1] + u_freqs[2]) * 0.5;
-    uv *= 1.0 + bassImpact * 0.05; // Subtle pulse effect on the whole scene
+    // 260329 removed bass impact again
+//     float bassImpact = (u_freqs[0] + u_freqs[1] + u_freqs[2]) * 0.5;
+//     uv *= 1.0 + bassImpact * 0.05; // Subtle pulse effect on the whole scene
 
 
     // Calculate shifting hues over time (one full cycle every ~20s)
-    float hueL = fract(u_time * 0.05 + bassImpact * 0.1); // Bass shifts color slightly
-//     float hueL = fract(u_time * 0.05);
+//     float hueL = fract(u_time * 0.05 + bassImpact * 0.1); // Bass shifts color slightly
+    float hueL = fract(u_time * 0.05);
     float hueR = fract(u_time * 0.05 + 0.5); // Opposite color for contrast
 
     // Create colors (Hue, Saturation 0.6, Value 0.5 for a subtle look)
     vec3 colorL = hsv2rgb(vec3(hueL, 0.6, 0.5));
     vec3 colorR = hsv2rgb(vec3(hueR, 0.6, 0.5));
 
-
-
-
     // Distance from glow centers
-    float distL = length(uv + vec2(0.6, 0.0));
-    float distR = length(uv - vec2(0.6, 0.0));
+//     float distL = length(uv + vec2(0.6, 0.0));
+//     float distR = length(uv - vec2(0.6, 0.0));
+    float distL = length(uv + vec2(rmsL * 2.5, 0.0));
+    float distR = length(uv - vec2(rmsR * 2.5, 0.0));
 
     // Large, soft glow formula
     // Numerator controls size, addition in denominator prevents over-brightness
@@ -50,14 +62,15 @@ void main() {
     vec3 finalColor = vec3(0.01, 0.01, 0.02);
 
     // Apply audio-reactive glow (dampened RMS to keep it calm)
-    finalColor += colorL * glowL * (u_rmsL * 0.3);
-    finalColor += colorR * glowR * (u_rmsR * 0.3);
+    finalColor += colorL * glowL * (rmsL * 0.3);
+    finalColor += colorR * glowR * (rmsR * 0.3);
 
     // Subtle grain noise to prevent color banding
+    // ... fast random generator  ...
     float noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
     finalColor += noise * 0.012;
 
-    // --- 4. Draw Bars (Wide Version) ---
+    // --- Bars (Wide Version) ---
     float aspect = u_res.x / u_res.y;
     float barAreaWidth = 1.8; // Total width of the spectrum display
     float xPos = uv.x + (barAreaWidth * 0.5);
@@ -94,6 +107,31 @@ void main() {
         // Add to final color with a bit of "bloom/glow"
         finalColor += barColor * finalBarMask * 0.7;
     }
+
+    // -------------- --- CRT Scanline & Grain Layer --- -------------------
+    if ( u_scanlines ) {
+        float rms = (u_rmsL + u_rmsR) * 0.5;
+        // Create moving scanlines based on screen height
+        float scanline = sin(uv.y * u_res.y * 1.5 - u_time * 2.0) * 0.05;
+
+        // Subtle Grain
+        float grain = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+        //     grain = (grain - 0.5) * 0.05; // range -0.025 to 0.025
+        grain = (grain - 0.5) * 0.025; // range -0.025 to 0.025
+
+        // Apply the effects to the final color
+        // 'finalColor' is the vec3 result from your previous shader logic
+        finalColor -= scanline; // Darkens every second/third pixel row
+        finalColor += grain;    // Adds the organic noise
+
+//         float vignette = distance(uv, vec2(0.5));
+//         float edgeStart =  0.8;
+//         float edgeEnd = clamp(0.4 + (rms * 0.3), 0.0, 0.75);
+//         finalColor *= smoothstep(edgeStart, edgeEnd, vignette);
+
+        // << CRT
+    }
+
 
     FragColor = vec4(finalColor, 1.0);
 

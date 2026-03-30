@@ -32,7 +32,14 @@ namespace ImFlux {
         }
     }
     //--------------------------------------------------------------------------
+    inline float CalcLCDTextScrollerWidth(int display_chars) {
+        float digit_width = ImGui::CalcTextSize("W").x;
+        float spacing = digit_width * 0.15f;
+        return ( (digit_width  + spacing) * display_chars );
+    }
+    //--------------------------------------------------------------------------
     // LCD Text like scroller
+    // return width
     inline void LCDTextScroller(const std::string text, int display_chars, ImU32 color_on, float scroll_speed = 2.0f, bool embeded = false)
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -87,24 +94,6 @@ namespace ImFlux {
             }
             pos.x += digit_width + spacing;
         }
-
-        // for (int i = 0; i < display_chars; i++) {
-        //     int char_idx = (scroll_offset + i) % (virtual_total > 0 ? virtual_total : 1);
-        //     if (char_idx < actual_chars) {
-        //         const char* char_ptr = text_start;
-        //         for (int n = 0; n < char_idx; n++) {
-        //             unsigned int unused;
-        //             char_ptr += ImTextCharFromUtf8(&unused, char_ptr, text_end_ptr);
-        //         }
-        //
-        //         unsigned int c;
-        //         int len = ImTextCharFromUtf8(&c, char_ptr, text_end_ptr);
-        //         if (c != ' ' && c != 0) {
-        //             dl->AddText(pos, color_on, char_ptr, char_ptr + len);
-        //         }
-        //     }
-        //     pos.x += digit_width + spacing;
-        // }
 
         if (!embeded) ImGui::Dummy(fieldSize);
     }

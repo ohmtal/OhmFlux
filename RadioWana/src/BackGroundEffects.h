@@ -25,30 +25,50 @@ namespace FluxRadio {
          float mRmsR = 0.0f;
          GLuint mVAO = 0, mVBO = 0;
 
-         static constexpr int mFreqCount = 16; //MAX 32!
+
+
+         static constexpr int mFreqCount = 32; //MAX 32!
 
          DSP::SpectrumAnalyzer* mAnalyzer = nullptr;
          std::vector<float> mSmoothedMags;
+
+         std::string mShaderPath = "";
+         const std::string mVertShaderFile = "quad.vert";
+         const std::vector<std::string> mFragShaderFiles = {
+             "glowAndBars.frag"         // 0
+             , "liquidTerrain.frag"     // 1
+             , "rain.frag"              // 2
+             , "rainGlow.frag"          // 3
+             , "glow.frag"              // 4
+             , "glowLightning.frag"     // 5
+        };
+
 
 
 
 
     public:
+        //------------------
+        // shader options:
+        bool mScanLines = false;
+        //-------------------
+
+
         BackGroundEffects() = default;
         ~BackGroundEffects() = default;
-
         //----------------------------------------------------------------------
-        virtual bool Initialize() override {
+        bool LoadShader(int fragShaderId = 0, bool enableScanLines = false) {
             FluxFile textFile;
-            // static bool LoadTextFile(const std::string& path, std::vector<std::string>& outLines) {
+
+            if (fragShaderId >= mFragShaderFiles.size() ) fragShaderId = 0;
 
             std::string fragSrc = "";
             std::string vertSrc = "";
-            if (!textFile.LoadTextFile(getGamePath()+"/assets/shader/background2.frag", fragSrc)) {
+            if (!textFile.LoadTextFile(mShaderPath+mFragShaderFiles[fragShaderId], fragSrc)) {
                 Log("[error] failed to load Fragment Shader!! %s", SDL_GetError());
                 return false;
             }
-            if (!textFile.LoadTextFile(getGamePath()+"/assets/shader/background.vert", vertSrc)) {
+            if (!textFile.LoadTextFile(mShaderPath+mVertShaderFile , vertSrc)) {
                 Log("[error] failed to load Fragment Shader!! %s", SDL_GetError());
                 return false;
             }
@@ -57,6 +77,18 @@ namespace FluxRadio {
                 Log("[error] failed to compile Shaders!!");
                 return false;
             }
+
+            mScanLines = enableScanLines;
+
+            Log("Background: Fragment Shader %s loaded. Scanlines: %d", mFragShaderFiles[fragShaderId].c_str(), (int)mScanLines);
+
+            return true;
+        }
+        //----------------------------------------------------------------------
+        virtual bool Initialize() override {
+            mShaderPath = getGamePath()+"/assets/shader/";
+
+            if (!LoadShader()) return false;
             dLog("[info] BackGroundEffects initialized.");
 
             float vertices[] = {
@@ -106,7 +138,7 @@ namespace FluxRadio {
                         mSmoothedMags = currentBands;
                     }
                     // lower first bar bass;
-                    currentBands[0] *= 0.65f;
+                    if (mFreqCount == 16) currentBands[0] *= 0.65f;
 
                     // Ballistics constants (adjust these to your taste)
                     float attack = 0.8f;  // How fast it rises (0.0 to 1.0)
@@ -141,6 +173,10 @@ namespace FluxRadio {
             mShader->setFloat("u_rmsR", mRmsR);
             Point2I size =  getScreenObject()->getRealScreenSize();
             mShader->setVec2("u_res", (float)size.x, (float)size.y);
+
+            if (mScanLines) {
+                mShader->setBool("u_scanlines", mScanLines);
+            }
 
 
             mShader->setFloat("u_freqCount", mFreqCount);

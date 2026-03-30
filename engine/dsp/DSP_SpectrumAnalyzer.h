@@ -257,7 +257,7 @@ namespace DSP {
         virtual void renderUI() override {};
 
 
-        inline void DrawSpectrumAnalyzer(ImVec2 size, bool useFFT = false, uint16_t numBands = 64) {
+        inline void DrawSpectrumAnalyzer(ImVec2 size, bool useFFT = true, uint16_t numBands = 64) {
             SpectrumAnalyzer* analyzer = this;
             if (!analyzer->isEnabled()) return;
 

@@ -102,7 +102,7 @@ void SoundMixModule::DrawRack(bool* p_enabled)
         if (ImFlux::LEDCheckBox(mSpectrumAnalyzer->getName(), &isEnabled, mSpectrumAnalyzer->getColor()))
             mSpectrumAnalyzer->setEnabled(isEnabled);
         float fullWidth = ImGui::GetContentRegionAvail().x;
-        mSpectrumAnalyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f));
+        mSpectrumAnalyzer->DrawSpectrumAnalyzer(ImVec2(fullWidth, 80.0f), true);
         ImGui::EndGroup();
         ImGui::PopID();
         ImGui::Spacing();

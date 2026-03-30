@@ -102,6 +102,14 @@ void RadioWana::InitDockSpace(){
 void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
     std::string cmd = fluxStr::getWord(cmdline,0);
 
+    if (cmd == "rl") {
+        int id = std::atoi(fluxStr::getWord(cmdline,1).c_str());
+        bool scanLines = std::atoi(fluxStr::getWord(cmdline,2).c_str());
+        dLog("shader id is: %d", id);
+        getMain()->reloadBackGroundEffectsShader( id , scanLines);
+    }
+
+
     if (cmd == "contenttype") {
        Log("%s", FluxNet::NetTools::getHeaderValue(mStreamHandler->getHeader(), "Content-Type").c_str());
     }
@@ -292,9 +300,7 @@ void RadioWana::Update(const double& dt){
                 mAudioLevels = {0.f, 0.f};
             }
         }
-
     }
-
 
 
 }
@@ -853,8 +859,16 @@ void RadioWana::DrawRadioBrowserWindow() {
     }
 // -----------------------------------------------------------------------------
 void RadioWana::onEvent(SDL_Event event){
-       if (mGuiGlue.get()) mGuiGlue->onEvent(event);
-   }
+    if (mGuiGlue.get()) mGuiGlue->onEvent(event);
+
+
+    if (event.type == SDL_EVENT_KEY_DOWN) {
+        if (event.key.scancode == SDL_SCANCODE_GRAVE) mAppSettings.ShowConsole = !mAppSettings.ShowConsole;
+        if (event.key.scancode == SDL_SCANCODE_ESCAPE) mAppSettings.SideBarOpen = !mAppSettings.SideBarOpen;
+        if (event.key.scancode == SDL_SCANCODE_RETURN && (event.key.mod & SDL_KMOD_LALT)) getScreenObject()->toggleFullScreen();
+    }
+
+}
 // -----------------------------------------------------------------------------
 void RadioWana::ShowMenuBar(){
     ImGui::PushFont(getMain()->mHackNerdFont20);
@@ -963,10 +977,6 @@ void RadioWana::ShowMenuBar(){
             // if i want to close it when somewhere else is clicked ==>
             // if (!ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0)) mAppSettings.SideBarOpen = false;
             // if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) mAppSettings.SideBarOpen = false;
-            if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-                 mAppSettings.SideBarOpen = false;
-
-            }
 
 
 
@@ -976,7 +986,7 @@ void RadioWana::ShowMenuBar(){
         targetWidth = 0.f;
         sideBarWidth = 1.f;
         savStr = "";
-        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) mAppSettings.SideBarOpen = true;
+        // if (ImGui::IsKeyPressed(ImGuiKey_Escape)) mAppSettings.SideBarOpen = true;
 
     }
 
@@ -984,6 +994,8 @@ void RadioWana::ShowMenuBar(){
 
     if (ImGui::BeginMainMenuBar())
     {
+        float fullWidth = ImGui::GetContentRegionAvail().x;
+
         if (ImGui::Selectable("≡", false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetFrameHeight(), 0))) {
             mAppSettings.SideBarOpen = !mAppSettings.SideBarOpen;
             dLog("Sidebar toggled via Selectable = %d", mAppSettings.SideBarOpen);
@@ -996,22 +1008,29 @@ void RadioWana::ShowMenuBar(){
            if (isConnected && mStreamHandler->getStreamInfo() && mAudioHandler)
            {
                FluxRadio::StreamInfo info = *mStreamHandler->getStreamInfo();
-               displayStr = info.name + "   " + mAudioHandler->getCurrentTitle();
+               displayStr = info.name + "  . . .  " + mAudioHandler->getCurrentTitle();
            }
 
-            ImFlux::LCDTextScroller(displayStr.c_str(), 25, ImFlux::COL32_NEON_ORANGE);
+
+           float availWidth = fullWidth - 115.f - ImGui::GetCursorPosX();
+           const float w =  ImFlux::CalcLCDTextScrollerWidth(28);
+           ImFlux::ShiftCursor(ImVec2( availWidth / 2.f -  w / 2, 3.f));
+           ImFlux::LCDTextScroller(displayStr.c_str(), 28,  ImFlux::COL32_NEON_ORANGE);
 
 
 
         }
 
-        //FIXME too big
-        float rightOffset = 155.f; //230.0f;
+        ImGui::PushFont(getMain()->mHackNerdFont12);
+        float rightOffset = 115.f; //230.0f;
         ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
-        if (ImFlux::FaderHorizontal("Volume", ImVec2(140, 14), &mAppSettings.Volume, 0.0f, 1.0f))
+        ImFlux::ShiftCursor(ImVec2(0.f,3.f));
+        if (ImFlux::FaderHorizontal("Volume", ImVec2(100, 20), &mAppSettings.Volume, 0.0f, 1.0f))
         {
             mAudioHandler->setVolume(mAppSettings.Volume);
         }
+        ImGui::PopFont();
+
 
         ImGui::EndMainMenuBar();
     }
@@ -1032,6 +1051,7 @@ void RadioWana::setupFonts(){
     getMain()->mHackNerdFont16 = io.Fonts->AddFontFromMemoryTTF((void*)HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 16.0f, &config, range);
     getMain()->mHackNerdFont20 = io.Fonts->AddFontFromMemoryTTF((void*)HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 20.0f, &config, range);
     getMain()->mHackNerdFont26 = io.Fonts->AddFontFromMemoryTTF((void*)HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 26.0f, &config, range);
+    getMain()->mHackNerdFont12 = io.Fonts->AddFontFromMemoryTTF((void*)HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 12.0f, &config, range);
 
 }
 // -----------------------------------------------------------------------------
