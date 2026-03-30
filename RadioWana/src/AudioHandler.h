@@ -16,6 +16,7 @@
 #include "DSP_EffectsManager.h"
 #include "dsp/MonoProcessors/Volume.h"
 #include "utils/byteEncoder.h"
+#include "audio/fluxAudioBuffer.h"
 
 namespace FluxRadio {
 
@@ -26,7 +27,8 @@ namespace FluxRadio {
         ma_decoder* mDecoder = nullptr;
         SDL_AudioStream* mStream = nullptr;
 
-        std::vector<uint8_t> mRawBuffer; // ringbuffer
+        FluxAudio::AudioBuffer mRingBuffer;
+
         std::recursive_mutex mBufferMutex;
 
         bool mInitialized = false;
@@ -65,7 +67,7 @@ namespace FluxRadio {
     public:
 
 
-        AudioHandler() {
+        AudioHandler()  : mRingBuffer(1024 * 512) {
             mDecoder = new ma_decoder();
             memset(mDecoder, 0, sizeof(ma_decoder));
             mStreamInfo = nullptr;

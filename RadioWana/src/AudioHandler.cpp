@@ -6,7 +6,6 @@
 #define MA_NO_DEVICE_IO
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
-//FIXME  #include "extras/miniaudio_libav.h"
 
 #include "dsp/MonoProcessors/Volume.h"
 
@@ -72,8 +71,6 @@ namespace FluxRadio {
 
         mStreamInfo = info;
 
-        // FIXME reconnect [error] Unable to init decoder code:-203
-
 
         if (mInitialized ) {
             ma_decoder_uninit(mDecoder);
@@ -95,14 +92,10 @@ namespace FluxRadio {
         memset(mDecoder, 0, sizeof(ma_decoder));
         ma_decoder_config config = ma_decoder_config_init(ma_format_f32, info->channels, info->samplerate);
 
-        // ma_encoding_format_unknown = 0,
-        // ma_encoding_format_wav,
-        // ma_encoding_format_flac,
-        // ma_encoding_format_mp3,
-        // ma_encoding_format_vorbis
 
         if (info->content_type == "audio/aac") {
             // :/ lol bad evaluation !
+            return false;
         } else {
             // Default: audio/mpeg
             config.encodingFormat = ma_encoding_format_mp3;
@@ -112,24 +105,6 @@ namespace FluxRadio {
         // dLog("this: %p, pDecoder: %p (Inhalt)", this, (void*)mDecoder);
         mDecoder->pUserData = this;
         ma_result result = ma_decoder_init(OnReadFromRawBuffer, OnSeekDummy, this, &config, mDecoder);
-
-// FIXME ffmpeg backend
-//         ma_libav_decoder_config config = ma_libav_decoder_config_init(ma_format_f32, 2, 44100);
-//
-//         ma_libav_decoder decoder;
-//         ma_result result = ma_libav_decoder_init_file("url", &config, &decoder);
-//
-//         if (result != MA_SUCCESS) {
-//
-//         }
-// ------------- CALLBACK MUST BE LIKE:
-// ma_libav_vfs_callbacks vfsCallbacks;
-// vfsCallbacks.onRead = my_vfs_read_callback;
-// vfsCallbacks.onSeek = my_vfs_seek_callback;
-//
-// ma_libav_decoder_init_vfs(my_vfs_userdata, &vfsCallbacks, &config, &decoder);
-
-
 
 
         if (result != MA_SUCCESS) {
@@ -198,15 +173,20 @@ namespace FluxRadio {
         return true;
     }
     // -----------------------------------------------------------------------------
-    void AudioHandler::OnAudioChunk(const void* buffer, size_t size) {
-          std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
-        mRawBuffer.insert(mRawBuffer.end(), (uint8_t*)buffer, (uint8_t*)buffer + size);
 
-        if (mStreamInfo && !mDecoderInitialized && mRawBuffer.size() >= mPreBufferSize) {
+    void AudioHandler::OnAudioChunk(const void* buffer, size_t size) {
+        std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
+
+        // to buffer
+        mRingBuffer.push(static_cast<const uint8_t*>(buffer), size);
+
+        // init check
+        if (mStreamInfo && !mDecoderInitialized && mRingBuffer.getAvailable() >= mPreBufferSize) {
             mDecoderInitialized = true;
             this->init(mStreamInfo);
         }
     }
+
     // -----------------------------------------------------------------------------
 
 
@@ -219,16 +199,15 @@ namespace FluxRadio {
 
         std::lock_guard<std::recursive_mutex> lock(self->mBufferMutex);
 
-        size_t available = self->mRawBuffer.size();
-        size_t actualRead = std::min(bytesToRead, available);
+
+        size_t actualRead = self->mRingBuffer.pop(static_cast<uint8_t*>(pBufferOut), bytesToRead);
 
         if (actualRead > 0) {
             // fire OnAudioStreamData Event can be used for recording
-            if (self->OnAudioStreamData) self->OnAudioStreamData(self->mRawBuffer.data(), actualRead);
 
-            // Copy to pBufferOut and remove from mRawBuffer
-            memcpy(pBufferOut, self->mRawBuffer.data(), actualRead);
-            self->mRawBuffer.erase(self->mRawBuffer.begin(), self->mRawBuffer.begin() + actualRead);
+            if (self->OnAudioStreamData) {
+                self->OnAudioStreamData(static_cast<const uint8_t*>(pBufferOut), actualRead);
+            }
 
             // Title Trigger / mTotalAudioBytesPlayed
             self->mTotalAudioBytesPlayed += actualRead;
@@ -258,7 +237,9 @@ namespace FluxRadio {
     void AudioHandler::reset ( bool doLock ){
         if (!mDecoderInitialized) return;
         if (doLock) std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
-        mRawBuffer.clear();
+
+        mRingBuffer.clear();
+
         mDecoderInitialized = false;
         if (mStream) {
             SDL_PauseAudioStreamDevice(mStream);
