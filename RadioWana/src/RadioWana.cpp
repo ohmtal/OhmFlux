@@ -102,6 +102,12 @@ void RadioWana::InitDockSpace(){
 void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
     std::string cmd = fluxStr::getWord(cmdline,0);
 
+    if (cmd == "fl") {
+        float limit = std::atof(fluxStr::getWord(cmdline,1).c_str());
+        Log("[info] set framelimt to %f", limit);
+        getMain()->mSettings.frameLimiter = limit;
+    }
+
     if (cmd == "dd") {
         mAudioHandler->decoderDebug();
 

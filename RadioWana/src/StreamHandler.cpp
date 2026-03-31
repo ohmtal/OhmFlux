@@ -17,6 +17,7 @@
 #include <mutex>
 #include <functional>
 #include <map>
+#include <chrono>
 namespace FluxRadio {
 
     //--------------------------------------------------------------------------
@@ -162,6 +163,8 @@ namespace FluxRadio {
         if (stopRequested && stopRequested->load()) {
             return 1;
         }
+        //TEST: load reduce
+        // std::this_thread::sleep_for(std::chrono::milliseconds(20));
         return 0; // 0 ==> continue
     }
     //--------------------------------------------------------------------------
