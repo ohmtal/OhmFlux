@@ -461,7 +461,7 @@ public:
 
         ImGui::PopID();
 
-        static double last_click_time = 0.0;
+        static double last_click_time = 0.0f;
         const double cooldown_duration = 1.f;  //sec cooldown
 
         if (value_changed) {

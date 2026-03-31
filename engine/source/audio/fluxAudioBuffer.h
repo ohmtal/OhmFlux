@@ -76,10 +76,17 @@ public:
         return actualRead;
     }
     // -------------------------------------------------------------------------
-    size_t getAvailable() {
+    // get Available for read!
+    size_t getAvailableForRead() {
         std::lock_guard<std::recursive_mutex> lock(mMutex);
         return mFullCount;
     }
+    // -------------------------------------------------------------------------
+    size_t getAvailableForWrite() {
+        std::lock_guard<std::recursive_mutex> lock(mMutex);
+        return mBuffer.size() - mFullCount;
+    }
+
     // -------------------------------------------------------------------------
     void clear() {
         std::lock_guard<std::recursive_mutex> lock(mMutex);

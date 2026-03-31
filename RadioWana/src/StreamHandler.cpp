@@ -257,7 +257,7 @@ namespace FluxRadio {
                 mCurlHandle = nullptr;
             }
             if (headers) curl_slist_free_all(headers);
-            stop();
+            mStopRequested.store(true);
             mRunning.store(false);
             mConnected.store(false);
             if (onDisConnected) {

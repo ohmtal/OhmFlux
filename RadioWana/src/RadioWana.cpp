@@ -1087,6 +1087,7 @@ void RadioWana::Deinitialize(){
     SaveSettings();
     SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!!
     mStreamHandler->OnAudioChunk = nullptr;
+    mStreamHandler->stop();
     if (mAudioHandler.get()) mAudioHandler->shutDown();
 }
 // -----------------------------------------------------------------------------

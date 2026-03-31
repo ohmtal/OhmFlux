@@ -8,8 +8,8 @@
 #include "miniaudio.h"
 
 #include "dsp/MonoProcessors/Volume.h"
-
 #include <mutex>
+
 
 
 namespace FluxRadio {
@@ -64,42 +64,6 @@ namespace FluxRadio {
         }
     }
 
-    // void SDLCALL AudioHandler::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
-    //     auto* self = static_cast<AudioHandler*>(userdata);
-    //
-    //     int channels = self->mStreamInfo->channels;
-    //     ma_uint32 framesToRead = additional_amount / (sizeof(float) * channels);
-    //
-    //     // Buffer
-    //     std::vector<float> pcmBuffer(framesToRead * channels);
-    //
-    //     ma_uint64 framesRead;
-    //     ma_result result = ma_decoder_read_pcm_frames(self->mDecoder, pcmBuffer.data(), framesToRead, &framesRead);
-    //
-    //     if (framesRead > 0)
-    //     {
-    //         size_t totalSamplesRead = framesRead * channels;
-    //
-    //         float vol = self->mVolume.load();
-    //         for (uint32_t i = 0; i < totalSamplesRead; i++)
-    //             pcmBuffer.data()[i] = self->mVolProcessor.process(pcmBuffer.data()[i], vol, false);
-    //
-    //         if (self->mEffectsManager) {
-    //             self->mEffectsManager->process(pcmBuffer.data(), (int)totalSamplesRead, channels);
-    //         }
-    //
-    //         int bytesToWrite = (int)(totalSamplesRead * sizeof(float));
-    //         SDL_PutAudioStreamData(stream, pcmBuffer.data(), bytesToWrite);
-    //     }
-    //
-    //     if (framesRead < framesToRead) {
-    //         int missingFrames = framesToRead - (int)framesRead;
-    //         int silenceBytes = missingFrames * channels * sizeof(float);
-    //         std::vector<float> silence(missingFrames * channels, 0.0f);
-    //         SDL_PutAudioStreamData(stream, silence.data(), silenceBytes);
-    //     }
-    // }
-
 
     // -----------------------------------------------------------------------------
     bool AudioHandler::init(StreamInfo* info) {
@@ -123,11 +87,11 @@ namespace FluxRadio {
 
         if (mInitialized ) {
             ma_decoder_uninit(mDecoder);
-            mDecoderInitialized = false;
+            mDecoderInitialized.store( false ) ;
             mInitialized = false;
         }
 
-        if ( !mDecoderInitialized )
+        if ( !mDecoderInitialized.load() )
             return false;
 
 
@@ -164,6 +128,8 @@ namespace FluxRadio {
         // start DecoderWorker
         mDecoderThreadRunning.store( true );
         mDecoderThread = std::thread([this]() { DecoderWorker(); });
+
+
         // reset fade in !!
         mFadeInSamplesProcessed = 0;
 
@@ -236,8 +202,8 @@ namespace FluxRadio {
         mRawBuffer.insert(mRawBuffer.end(), (uint8_t*)buffer, (uint8_t*)buffer + size);
 
         // init check
-        if (mStreamInfo && !mDecoderInitialized && mRawBuffer.size() >= mPreBufferSize) {
-            mDecoderInitialized = true;
+        if (mStreamInfo && !mDecoderInitialized.load() && mRawBuffer.size() >= mPreBufferSize) {
+            mDecoderInitialized.store(true);
             this->init(mStreamInfo);
         }
     }
@@ -292,9 +258,9 @@ namespace FluxRadio {
 
 
     // -----------------------------------------------------------------------------
-    void AudioHandler::reset ( bool doLock ){
-        if (!mDecoderInitialized) return;
-        if (doLock) std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
+    void AudioHandler::reset ( ){
+        if (!mDecoderInitialized.load()) return;
+        std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
 
         // stop DecoderWorker
         mDecoderThreadRunning.store( false );
@@ -304,7 +270,7 @@ namespace FluxRadio {
         mRawBuffer.clear();
         mRingBuffer.clear();
 
-        mDecoderInitialized = false;
+        mDecoderInitialized.store(false);
         if (mStream) {
             SDL_PauseAudioStreamDevice(mStream);
         }
@@ -318,8 +284,8 @@ namespace FluxRadio {
 
     }
     // -----------------------------------------------------------------------------
-    void AudioHandler::onDisConnected ( bool doLock ){
-        reset(doLock);
+    void AudioHandler::onDisConnected ( ){
+        reset();
     }
     // -----------------------------------------------------------------------------
     void AudioHandler::OnStreamTitleUpdate(const std::string streamTitle, const size_t streamPosition){
@@ -338,7 +304,7 @@ namespace FluxRadio {
             bool canDecode = false;
             {
                 std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
-                canDecode = mDecoderInitialized && mStreamInfo && (mRawBuffer.size() > 4096);
+                canDecode = mDecoderInitialized.load() && mStreamInfo && (mRawBuffer.size() > 4096);
             }
 
             if (!canDecode) {
@@ -348,7 +314,8 @@ namespace FluxRadio {
 
             if (pcmBuffer.empty()) pcmBuffer.resize(framesToDecodePerLoop * mStreamInfo->channels);
 
-            if (mRingBuffer.getAvailable() < (mRingBuffer.getCapacity() - (framesToDecodePerLoop * mStreamInfo->channels))) {
+            // if (mRingBuffer.getAvailableForWrite() < (mRingBuffer.getCapacity() - (framesToDecodePerLoop * mStreamInfo->channels))) {
+            if (mRingBuffer.getAvailableForWrite() > (framesToDecodePerLoop * mStreamInfo->channels)) {
                 ma_uint64 framesRead = 0;
 
                 ma_result result = ma_decoder_read_pcm_frames(mDecoder, pcmBuffer.data(), framesToDecodePerLoop, &framesRead);
@@ -364,7 +331,7 @@ namespace FluxRadio {
 
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
 

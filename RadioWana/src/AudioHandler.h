@@ -26,7 +26,7 @@ namespace FluxRadio {
 
     class AudioHandler {
     protected:
-        bool mDecoderInitialized = false;
+        std::atomic<bool> mDecoderInitialized = false;
         ma_decoder* mDecoder = nullptr;
         SDL_AudioStream* mStream = nullptr;
 
@@ -116,14 +116,14 @@ namespace FluxRadio {
 
         bool init(StreamInfo* info);
         void shutDown() {
-            onDisConnected(false);
+           //double free?! onDisConnected();
         }
 
         void OnStreamTitleUpdate(const std::string streamTitle, const size_t streamPosition);
         void OnAudioChunk(const void* buffer, const size_t size);
-        void onDisConnected(bool doLock = true);
+        void onDisConnected();
 
-        void reset(bool doLock = true);
+        void reset();
 
     private:
         static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
@@ -169,7 +169,12 @@ namespace FluxRadio {
         size_t getRawBufferSize() const { return mRawBuffer.size(); }
         void decoderDebug( ) {
             // if (!isDebugBuild()) return;
-            Log("Raw Buffer Size: %d, Decode Running: %d",(int)getRawBufferSize(), (int)mDecoderThreadRunning);
+            Log("Raw Buffer Size: %d, Ringbuffer spaceLeft:%d inUse:%d, Decode Running: %d",
+                (int)getRawBufferSize(),
+                (int)mRingBuffer.getAvailableForWrite(),
+                (int)mRingBuffer.getAvailableForRead(),
+                (int)mDecoderThreadRunning
+            );
         }
 
     };

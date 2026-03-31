@@ -80,8 +80,13 @@ namespace FluxRadio {
         std::string getHeader() const { return mFullHeader; }
 
 
+
         void stop() {
-            mStopRequested.store( true ) ;
+            if (mStopRequested.load()) return ;
+            if (mThread.joinable()) {
+                mStopRequested.store(true);
+                mThread.join();
+            }
         };
 
 
