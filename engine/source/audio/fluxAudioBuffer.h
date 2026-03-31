@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// AudioBuffer - ThreadSafe
+// AudioBuffer - using float- ThreadSafe
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -15,7 +15,7 @@ namespace FluxAudio {
 
 class AudioBuffer {
 private:
-    std::vector<uint8_t> mBuffer;
+    std::vector<float> mBuffer;
     size_t mHead = 0; // write index
     size_t mTail = 0; // read index
     size_t mFullCount = 0;
@@ -24,50 +24,37 @@ private:
 public:
     AudioBuffer(size_t capacity) : mBuffer(capacity) {}
     // -------------------------------------------------------------------------
-    void push(const uint8_t* data, size_t size) {
+    size_t getCapacity() const { return mBuffer.size(); }
+    // -------------------------------------------------------------------------
+    void push(const float* data, size_t count) {
+        if (count == 0) return;
         std::lock_guard<std::recursive_mutex> lock(mMutex);
 
-        if (size > mBuffer.size()) {
-            data += (size - mBuffer.size());
-            size = mBuffer.size();
+        if (count > mBuffer.size()) {
+            data += (count - mBuffer.size());
+            count = mBuffer.size();
         }
 
         size_t spaceToEnd = mBuffer.size() - mHead;
-        size_t firstPart = std::min(size, spaceToEnd);
-        size_t secondPart = size - firstPart;
+        size_t firstPart = std::min(count, spaceToEnd);
+        size_t secondPart = count - firstPart;
 
-        std::memcpy(&mBuffer[mHead], data, firstPart);
+        std::memcpy(&mBuffer[mHead], data, firstPart * sizeof(float));
         if (secondPart > 0) {
-            std::memcpy(mBuffer.data(), data + firstPart, secondPart);
+            std::memcpy(mBuffer.data(), data + firstPart, secondPart * sizeof(float));
         }
 
-        mHead = (mHead + size) % mBuffer.size();
+        mHead = (mHead + count) % mBuffer.size();
 
-        if (mFullCount + size > mBuffer.size()) {
+        if (mFullCount + count > mBuffer.size()) {
             mFullCount = mBuffer.size();
             mTail = mHead;
         } else {
-            mFullCount += size;
+            mFullCount += count;
         }
     }
-
-    // void push(const uint8_t* data, size_t size) {
-    //     std::lock_guard<std::recursive_mutex> lock(mMutex);
-    //
-    //     size_t spaceToEnd = mBuffer.size() - mHead;
-    //     size_t firstPart = std::min(size, spaceToEnd);
-    //     size_t secondPart = size - firstPart;
-    //
-    //     std::memcpy(&mBuffer[mHead], data, firstPart);
-    //     if (secondPart > 0) {
-    //         std::memcpy(mBuffer.data(), data + firstPart, secondPart);
-    //     }
-    //
-    //     mHead = (mHead + size) % mBuffer.size();
-    //     mFullCount = std::min(mBuffer.size(), mFullCount + size);
-    // }
     // -------------------------------------------------------------------------
-    size_t pop(uint8_t* out, size_t requestedSize) {
+    size_t pop(float* out, size_t requestedSize) {
         std::lock_guard<std::recursive_mutex> lock(mMutex);
 
         size_t actualRead = std::min(requestedSize, mFullCount);
@@ -77,9 +64,10 @@ public:
         size_t firstPart = std::min(actualRead, dataToEnd);
         size_t secondPart = actualRead - firstPart;
 
-        std::memcpy(out, &mBuffer[mTail], firstPart);
+        std::memcpy(out, &mBuffer[mTail], firstPart * sizeof(float));
+
         if (secondPart > 0) {
-            std::memcpy(out + firstPart, mBuffer.data(), secondPart);
+            std::memcpy(out + firstPart, mBuffer.data(), secondPart * sizeof(float));
         }
 
         mTail = (mTail + actualRead) % mBuffer.size();

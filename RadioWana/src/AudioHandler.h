@@ -10,6 +10,9 @@
 #include <miniaudio.h>
 #include <vector>
 #include <mutex>
+#include <thread>
+#include <atomic>
+#include <chrono>
 #include <functional>
 #include <deque>
 #include "DSP.h"
@@ -27,9 +30,18 @@ namespace FluxRadio {
         ma_decoder* mDecoder = nullptr;
         SDL_AudioStream* mStream = nullptr;
 
+        std::vector<uint8_t> mRawBuffer;
         FluxAudio::AudioBuffer mRingBuffer;
-
         std::recursive_mutex mBufferMutex;
+
+        std::thread mDecoderThread;
+        std::atomic<bool> mDecoderThreadRunning{true};
+        void DecoderWorker();
+
+        size_t mFadeInSamplesProcessed = 0;
+        const size_t FADE_IN_DURATION = 44100 * 0.1;
+
+
 
         bool mInitialized = false;
         StreamInfo* mStreamInfo = nullptr;
@@ -63,10 +75,7 @@ namespace FluxRadio {
             }
         }
 
-
     public:
-
-
         AudioHandler()  : mRingBuffer(1024 * 512) {
             mDecoder = new ma_decoder();
             memset(mDecoder, 0, sizeof(ma_decoder));
@@ -74,7 +83,14 @@ namespace FluxRadio {
 
             mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
             populateRack(mEffectsManager->getActiveRack());
+
+
         }
+        // ~AudioHandler() {
+        //     mDecoderThreadRunning.store(false);
+        //     if (mDecoderThread.joinable()) mDecoderThread.join();
+        // }
+
 
         void RenderRack(int mode = 0) {
             if (mEffectsManager) {
@@ -150,6 +166,11 @@ namespace FluxRadio {
         }
 
 
+        size_t getRawBufferSize() const { return mRawBuffer.size(); }
+        void decoderDebug( ) {
+            // if (!isDebugBuild()) return;
+            Log("Raw Buffer Size: %d, Decode Running: %d",(int)getRawBufferSize(), (int)mDecoderThreadRunning);
+        }
 
     };
 }

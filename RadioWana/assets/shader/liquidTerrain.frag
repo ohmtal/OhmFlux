@@ -2,7 +2,7 @@
 precision mediump float;
 
 // --------------------------------------------
-// RadioWana Background Shader: Glow and Bars
+// RadioWana Background Shader: liquid
 // --------------------------------------------
 
 

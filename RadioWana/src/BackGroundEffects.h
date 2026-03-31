@@ -41,6 +41,7 @@ namespace FluxRadio {
              , "rainGlow.frag"          // 3
              , "glow.frag"              // 4
              , "glowLightning.frag"     // 5
+             , "bars.frag"              // 6
         };
 
 

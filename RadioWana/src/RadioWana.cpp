@@ -102,6 +102,11 @@ void RadioWana::InitDockSpace(){
 void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
     std::string cmd = fluxStr::getWord(cmdline,0);
 
+    if (cmd == "dd") {
+        mAudioHandler->decoderDebug();
+
+    }
+
     if (cmd == "rl") {
         int id = std::atoi(fluxStr::getWord(cmdline,1).c_str());
         bool scanLines = std::atoi(fluxStr::getWord(cmdline,2).c_str());

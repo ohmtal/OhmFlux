@@ -2,7 +2,7 @@
 precision mediump float;
 
 // -------------------------------------------
-// RadioWana Background Shader: rain and Glow
+// RadioWana Background Shader: Glow
 // -------------------------------------------
 
 uniform float u_time;

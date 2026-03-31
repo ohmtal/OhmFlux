@@ -14,42 +14,91 @@
 
 namespace FluxRadio {
     // -----------------------------------------------------------------------------
-
     void SDLCALL AudioHandler::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
         auto* self = static_cast<AudioHandler*>(userdata);
+        if (!self->mStreamInfo) return;
 
         int channels = self->mStreamInfo->channels;
-        ma_uint32 framesToRead = additional_amount / (sizeof(float) * channels);
+        size_t samplesNeeded = additional_amount / sizeof(float);
 
-        // Buffer
-        std::vector<float> pcmBuffer(framesToRead * channels);
+        std::vector<float> pcmBuffer(samplesNeeded);
 
-        ma_uint64 framesRead;
-        ma_result result = ma_decoder_read_pcm_frames(self->mDecoder, pcmBuffer.data(), framesToRead, &framesRead);
+        // new ringbuffer :D
+        size_t samplesRead = self->mRingBuffer.pop(pcmBuffer.data(), samplesNeeded);
 
-        if (framesRead > 0)
-        {
-            size_t totalSamplesRead = framesRead * channels;
+        if (samplesRead > 0) {
+
+            // if (self->mFadeInSamplesProcessed < self->FADE_IN_DURATION) {
+            //     for (size_t i = 0; i < samplesRead; ++i) {
+            //         float fade = (float)self->mFadeInSamplesProcessed / self->FADE_IN_DURATION;
+            //         pcmBuffer[i] *= fade;
+            //         if (self->mFadeInSamplesProcessed < self->FADE_IN_DURATION) {
+            //             self->mFadeInSamplesProcessed++;
+            //         }
+            //     }
+            // }
 
             float vol = self->mVolume.load();
-            for (uint32_t i = 0; i < totalSamplesRead; i++)
-                pcmBuffer.data()[i] = self->mVolProcessor.process(pcmBuffer.data()[i], vol, false);
 
-            if (self->mEffectsManager) {
-                self->mEffectsManager->process(pcmBuffer.data(), (int)totalSamplesRead, channels);
+            for (size_t i = 0; i < samplesRead; i++) {
+                if ( self->mFadeInSamplesProcessed < self->FADE_IN_DURATION) {
+                    pcmBuffer[i] = 0.f;
+                    self->mFadeInSamplesProcessed++;
+                } else {
+                    pcmBuffer[i] = self->mVolProcessor.process(pcmBuffer[i], vol, false);
+                }
+
             }
 
-            int bytesToWrite = (int)(totalSamplesRead * sizeof(float));
-            SDL_PutAudioStreamData(stream, pcmBuffer.data(), bytesToWrite);
+            if (self->mEffectsManager) {
+                self->mEffectsManager->process(pcmBuffer.data(), (int)samplesRead, channels);
+            }
+
+            SDL_PutAudioStreamData(stream, pcmBuffer.data(), (int)(samplesRead * sizeof(float)));
         }
 
-        if (framesRead < framesToRead) {
-            int missingFrames = framesToRead - (int)framesRead;
-            int silenceBytes = missingFrames * channels * sizeof(float);
-            std::vector<float> silence(missingFrames * channels, 0.0f);
-            SDL_PutAudioStreamData(stream, silence.data(), silenceBytes);
+        if (samplesRead < samplesNeeded) {
+            size_t missingSamples = samplesNeeded - samplesRead;
+            std::vector<float> silence(missingSamples, 0.0f);
+            SDL_PutAudioStreamData(stream, silence.data(), (int)(missingSamples * sizeof(float)));
         }
     }
+
+    // void SDLCALL AudioHandler::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
+    //     auto* self = static_cast<AudioHandler*>(userdata);
+    //
+    //     int channels = self->mStreamInfo->channels;
+    //     ma_uint32 framesToRead = additional_amount / (sizeof(float) * channels);
+    //
+    //     // Buffer
+    //     std::vector<float> pcmBuffer(framesToRead * channels);
+    //
+    //     ma_uint64 framesRead;
+    //     ma_result result = ma_decoder_read_pcm_frames(self->mDecoder, pcmBuffer.data(), framesToRead, &framesRead);
+    //
+    //     if (framesRead > 0)
+    //     {
+    //         size_t totalSamplesRead = framesRead * channels;
+    //
+    //         float vol = self->mVolume.load();
+    //         for (uint32_t i = 0; i < totalSamplesRead; i++)
+    //             pcmBuffer.data()[i] = self->mVolProcessor.process(pcmBuffer.data()[i], vol, false);
+    //
+    //         if (self->mEffectsManager) {
+    //             self->mEffectsManager->process(pcmBuffer.data(), (int)totalSamplesRead, channels);
+    //         }
+    //
+    //         int bytesToWrite = (int)(totalSamplesRead * sizeof(float));
+    //         SDL_PutAudioStreamData(stream, pcmBuffer.data(), bytesToWrite);
+    //     }
+    //
+    //     if (framesRead < framesToRead) {
+    //         int missingFrames = framesToRead - (int)framesRead;
+    //         int silenceBytes = missingFrames * channels * sizeof(float);
+    //         std::vector<float> silence(missingFrames * channels, 0.0f);
+    //         SDL_PutAudioStreamData(stream, silence.data(), silenceBytes);
+    //     }
+    // }
 
 
     // -----------------------------------------------------------------------------
@@ -111,6 +160,13 @@ namespace FluxRadio {
             Log("[error] Unable to init decoder code:%d", result);
             return false;
         }
+
+        // start DecoderWorker
+        mDecoderThreadRunning.store( true );
+        mDecoderThread = std::thread([this]() { DecoderWorker(); });
+        // reset fade in !!
+        mFadeInSamplesProcessed = 0;
+
 
         bool needsNewSDLStream = true;
         if (result == MA_SUCCESS) {
@@ -177,19 +233,16 @@ namespace FluxRadio {
     void AudioHandler::OnAudioChunk(const void* buffer, size_t size) {
         std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
 
-        // to buffer
-        mRingBuffer.push(static_cast<const uint8_t*>(buffer), size);
+        mRawBuffer.insert(mRawBuffer.end(), (uint8_t*)buffer, (uint8_t*)buffer + size);
 
         // init check
-        if (mStreamInfo && !mDecoderInitialized && mRingBuffer.getAvailable() >= mPreBufferSize) {
+        if (mStreamInfo && !mDecoderInitialized && mRawBuffer.size() >= mPreBufferSize) {
             mDecoderInitialized = true;
             this->init(mStreamInfo);
         }
     }
 
     // -----------------------------------------------------------------------------
-
-
     ma_result AudioHandler::OnReadFromRawBuffer(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead, size_t* pBytesRead)
     {
         auto* self = static_cast<AudioHandler*>(pDecoder->pUserData);
@@ -199,15 +252,17 @@ namespace FluxRadio {
 
         std::lock_guard<std::recursive_mutex> lock(self->mBufferMutex);
 
-
-        size_t actualRead = self->mRingBuffer.pop(static_cast<uint8_t*>(pBufferOut), bytesToRead);
+        size_t available = self->mRawBuffer.size();
+        size_t actualRead = std::min(bytesToRead, available);
 
         if (actualRead > 0) {
             // fire OnAudioStreamData Event can be used for recording
+            if (self->OnAudioStreamData) self->OnAudioStreamData(self->mRawBuffer.data(), actualRead);
 
-            if (self->OnAudioStreamData) {
-                self->OnAudioStreamData(static_cast<const uint8_t*>(pBufferOut), actualRead);
-            }
+            // Copy to pBufferOut and remove from mRawBuffer
+            memcpy(pBufferOut, self->mRawBuffer.data(), actualRead);
+            self->mRawBuffer.erase(self->mRawBuffer.begin(), self->mRawBuffer.begin() + actualRead);
+
 
             // Title Trigger / mTotalAudioBytesPlayed
             self->mTotalAudioBytesPlayed += actualRead;
@@ -218,7 +273,10 @@ namespace FluxRadio {
                 self->mPendingStreamTitles.pop_front();
                 if ( self->OnTitleTrigger ) self->OnTitleTrigger();
             }
-        }
+        } /*else if (available == 0) {
+            if (pBytesRead) *pBytesRead = 0;
+            return MA_BUSY; // <--- prevent "MA_AT_END" test
+        }*/
 
         if (pBytesRead) {
             *pBytesRead = actualRead;
@@ -238,6 +296,12 @@ namespace FluxRadio {
         if (!mDecoderInitialized) return;
         if (doLock) std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
 
+        // stop DecoderWorker
+        mDecoderThreadRunning.store( false );
+        if (mDecoderThread.joinable()) {
+            mDecoderThread.join();
+        }
+        mRawBuffer.clear();
         mRingBuffer.clear();
 
         mDecoderInitialized = false;
@@ -264,6 +328,44 @@ namespace FluxRadio {
         newEvent.streamTitle = streamTitle;
         newEvent.byteOffset = streamPosition;
         mPendingStreamTitles.push_back(newEvent);
+    }
+    // -----------------------------------------------------------------------------
+    void AudioHandler::DecoderWorker() {
+        const ma_uint64 framesToDecodePerLoop = 4096;
+        std::vector<float> pcmBuffer;
+
+        while (mDecoderThreadRunning.load()) {
+            bool canDecode = false;
+            {
+                std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
+                canDecode = mDecoderInitialized && mStreamInfo && (mRawBuffer.size() > 4096);
+            }
+
+            if (!canDecode) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                continue;
+            }
+
+            if (pcmBuffer.empty()) pcmBuffer.resize(framesToDecodePerLoop * mStreamInfo->channels);
+
+            if (mRingBuffer.getAvailable() < (mRingBuffer.getCapacity() - (framesToDecodePerLoop * mStreamInfo->channels))) {
+                ma_uint64 framesRead = 0;
+
+                ma_result result = ma_decoder_read_pcm_frames(mDecoder, pcmBuffer.data(), framesToDecodePerLoop, &framesRead);
+                if (framesRead > 0) {
+                    mRingBuffer.push(pcmBuffer.data(), framesRead * mStreamInfo->channels);
+                    continue;
+                } else  if (result == MA_AT_END && mRawBuffer.size() > 1024) {
+                    if (isDebugBuild()) Log("[warn] manual seek decode is at end!!");
+                    ma_uint64 currentFrame = 0;
+                    ma_decoder_get_cursor_in_pcm_frames(mDecoder, &currentFrame);
+                    ma_decoder_seek_to_pcm_frame(mDecoder, currentFrame);
+                }
+
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
     }
 
 }; //namespace
