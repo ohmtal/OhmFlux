@@ -28,6 +28,7 @@ In this Project I use:
 
 Limitation: 
 - Only MP3 streams.
+- Noticed interrupted sound on pipewite-pulse. need to test more my ringbuffer/threaded decoder did not fix it 
 --- 
 
 ## Todos
@@ -46,7 +47,7 @@ Limitation:
         - [X] edit popup auto size again
         - [X] replace lcd with a new scrolling text widget 
         - [X] remove stepper again 
-        - [ ] left menubar for window toggle - windows in fullscreen (not console)
+        - [ ] Sidebar: 
             - [X] Initial window implemented 
             - [ ] Radio
                 - info 
@@ -55,9 +56,15 @@ Limitation:
             - [X] Favorites
             - [X] Radio Browser 
             - [X] Windows
-            - [X] About 
-            - [ ] Help 
+            - [ ] About << make nice - markdown renderer ? 
+            - [ ] Help - markdown renderer ? 
+            - [ ] Background effects - selector None, ...
+            - [ ] different layouts not only factory 
         
+        - [ ] Player Window
+            - [ ] Display playerwindow with Equalizer or Recorder is enabled  => keep top scroll 
+            - [ ] center output :D
+            
         - [X] deny station when no meta-int is set !!  => Invalid station detected...
         
         - [X] add a BIG Knob list for tune 
@@ -74,13 +81,18 @@ Limitation:
                 - [X] set better min size  => 720 x 320
             - [ ] Autoconnect on start 
             
-        - [ ] About / Help dialogs
+        - [ ] TuneButton: station list cache not updated when station added to favo 
         
-            
+    - [ ] Recorder a bit nicer - or maybe finish it see Version 2
+    
+    - [ ] Kubuntu test: Music stuck 
+        - [X] added thread safe ring buffer
+        - [X] added threaded Decoder Worker 
+        - [ ] still does it - is it a curl buffer problem ? check raw buffer in console with "dd" (decodeDebug): It stucks at 30-80k while i have about 300k on my development machine
+        
     - [X] sucks: Played station from RadioBrowser is added to Favorites automaticly 
         - find a other solution to handle the currentStation and tuning 
         - => added stationcache ... 
-    - [ ] BUG: station list not updated when station added to favo
         
     - [X] Connect
         - Instead of URL - Favo only ? => save current stationuuid
@@ -91,7 +103,6 @@ Limitation:
         - FIXME ?! 
     - [~] Radio as internal fullscreen window 
         - Tested was bad :P 
-    - [ ] ImGui current Tab is not restored 
     - [X] fix wrong mouse over hint on tune button - should be show station name and not disconnect when it's not the current station
     - [X] Keyboard and GamePad: 
         - [X] Equalizer Fader
@@ -118,9 +129,8 @@ Limitation:
             - Manual - save a new stream be station name (or record if no name) - DATETIME.mp3
 
 
-    - [ ] need a function to add remove from Favo in "info?"
-    - [ ] Radio window content should be rendered centered ! 
-    - [ ] lowspeed time out optional reconnect 
+    - [ ] Player: need a function to add remove from Favo in "info?"
+    - [ ] lowspeed time out: optional reconnect 
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;) **New Name?** 
             
     - [ ] Cleanup Design (Windows) for Android 

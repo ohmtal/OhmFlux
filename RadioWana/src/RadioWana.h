@@ -359,7 +359,7 @@ public:
 
             if   (
                 ImGui::IsKeyPressed(ImGuiKey_Space)
-                || ImGui::IsKeyPressed(ImGuiKey_Enter)
+                // || ImGui::IsKeyPressed(ImGuiKey_Enter)
                 || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
             ) {
                 is_Pressed  = true;
