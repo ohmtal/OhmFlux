@@ -305,6 +305,20 @@ void RadioWana::Update(const double& dt){
             }
         }
     }
+    // set current favIndex ...
+    if (mSelectedFavIndex < 0) {
+        setSelectedFavIndex();
+
+        mStationCache.clear();
+        for ( auto& station : mFavoStationData ) {
+            mStationCache.push_back(station);
+        }
+
+        if ( mAppSettings.CurrentStation.favId < 1) {
+            mStationCache.push_back( mAppSettings.CurrentStation );
+            mSelectedFavIndex = (int)mStationCache.size() - 1;
+        }
+    }
 
 
 
@@ -1331,21 +1345,7 @@ void RadioWana::TuneKnob(std::string caption, const ImFlux::KnobSettings ks)
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems) { ImGui::PopID(); return ; }
 
-    // set current favIndex ...
-    if (mSelectedFavIndex < 0) {
-        setSelectedFavIndex();
-
-        mStationCache.clear();
-        for ( auto& station : mFavoStationData ) {
-            mStationCache.push_back(station);
-        }
-
-        if ( mAppSettings.CurrentStation.favId < 1) {
-            mStationCache.push_back( mAppSettings.CurrentStation );
-            mSelectedFavIndex = (int)mStationCache.size() - 1;
-        }
-    }
-
+    if (mSelectedFavId < 0 ) return;
 
 
     // for ( auto& station : mFavoStationData ) {
