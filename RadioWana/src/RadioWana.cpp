@@ -1343,14 +1343,7 @@ void RadioWana::TuneKnob(std::string caption, const ImFlux::KnobSettings ks)
 {
     ImGui::PushID((caption + "knob").c_str());
     ImGuiWindow* window = ImGui::GetCurrentWindow();
-    if (window->SkipItems) { ImGui::PopID(); return ; }
-
-    if (mSelectedFavId < 0 ) return;
-
-
-    // for ( auto& station : mFavoStationData ) {
-    //     mStationCache.push_back(station);
-    // }
+    if (window->SkipItems || mSelectedFavIndex < 0 ) { ImGui::PopID(); return ; }
 
 
 
