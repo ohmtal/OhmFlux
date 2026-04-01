@@ -47,19 +47,16 @@ Limitation:
         - [X] edit popup auto size again
         - [X] replace lcd with a new scrolling text widget 
         - [X] remove stepper again 
-        - [ ] Sidebar: 
+        - [X] Sidebar: 
             - [X] Initial window implemented 
             - [X] Radio
                 - info 
                 - connect / disconnect 
-                
             - [X] Favorites
             - [X] Radio Browser 
             - [X] Windows
-            - [ ] About << make nice - markdown renderer ? 
-            - [ ] Help - markdown renderer ? 
             - [X] Background effects - selector None, ...
-            - [ ] different layouts not only factory 
+
         
         - [ ] Player Window
             - [X] add favo 
@@ -81,15 +78,18 @@ Limitation:
                     
                 - [X] set better min size  => 720 x 320
             - [ ] Autoconnect on start 
+            - [ ] Auto Reconnect on timeout
             
-        - [ ] TuneButton: station list cache not updated when station added to favo 
+        - [X] TuneButton: station list cache not updated when station added to favo 
         
     - [ ] Recorder a bit nicer - or maybe finish it see Version 2
     
-    - [ ] Kubuntu test: Music stuck 
+    - [X] Player: need a function to add remove from Favo in "info?"
+    
+    - [X] Kubuntu test: Music stutter 
         - [X] added thread safe ring buffer
         - [X] added threaded Decoder Worker 
-        - [ ] still does it - is it a curl buffer problem ? check raw buffer in console with "dd" (decodeDebug): It stucks at 30-80k while i have about 300k on my development machine
+        - [~] still does it - is it a curl buffer problem ? check raw buffer in console with "dd" (decodeDebug): It stucks at 30-80k while i have about 300k on my development machine
         
     - [X] sucks: Played station from RadioBrowser is added to Favorites automaticly 
         - find a other solution to handle the currentStation and tuning 
@@ -110,10 +110,18 @@ Limitation:
         - [X] Tune Button 
     - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 
     - [X] add lowspeed timeout << 
-    - [ ] add error message on http 4xx 5xx
+    
     - [ ] Add SDL3 Icon
-    - [ ] Add Background Image 
+
     - [X] Bug in header parser: icy-decription when empty
+    
+    - [ ] Release
+        - [ ] Windows Installer
+            - [ ] Try windows build
+            - [ ] cmake add a windows icon 
+            - [ ] Create installer 
+        - [ ] Linux/BSD Installer shell script 
+        - [ ] Try a flatpak - flathub ? 
     
 ---
     
@@ -130,11 +138,11 @@ Limitation:
             - Manual - save a new stream be station name (or record if no name) - DATETIME.mp3
 
 
-    - [ ] Player: need a function to add remove from Favo in "info?"
-    - [ ] lowspeed time out: optional reconnect 
+    
+    
     - [ ] Move Back to RadioWana github ... stop creating new widgets ;) **New Name?** 
             
-    - [ ] Cleanup Design (Windows) for Android 
+    
     - [ ] radio-browser.info
         - [ ] search by highest click count and tag 
         - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
@@ -151,11 +159,17 @@ Limitation:
             - FIX Curl build - need also openssl if you add it via fetchcontent 
             - Create Android Studio Project 
             - firetv 
+    - [ ] Cleanup Design  for Android
+    - Finishing
+        - [ ] add error message on http 4xx 5xx
+        - [ ] About << make nice - markdown renderer ? 
+        - [ ] Help - markdown renderer ? 
+        - [ ] different layouts not only factory 
 
 ---
             
 - TBD
-    - [ ] RSS Podcast/Feeds
+    - [~] RSS Podcast/Feeds
         - [ ] Handle mp3 stream without header data ! Take a url from a rss feed - handle empty meta-int and play the stream - visual feedback 
             - [X] fixed meta-int not set so stream with audio continue
             - [ ] Problem: when stream complete it calles disconnect, which close the audiostream and kick the buffer away . 
