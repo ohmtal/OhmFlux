@@ -8,6 +8,7 @@
 
 #include "core/fluxGlobals.h"
 #include "utils/errorlog.h"
+#include "utils/fluxStr.h"
 
 #include <iostream>
 #include <filesystem>
@@ -30,7 +31,7 @@ namespace FluxRadio {
 
     public:
         AudioRecorder(){
-            mPath = fluxStr::addTrailingSlash(getMusicPath())+ "radioRecordings/";
+            mPath = FluxStr::addTrailingSlash(getMusicPath())+ "radioRecordings/";
             Log("[info] set recording path to: %s", mPath.c_str());
 
         }
@@ -61,7 +62,7 @@ namespace FluxRadio {
         bool openFile(std::string streamTitle, bool append = false) {
 
             // ~~~~ set current filename ~~~~~
-            std::string newFileName = fluxStr::addTrailingSlash(mPath) + fluxStr::sanitizeFilenameWithUnderScores(streamTitle)+".mp3";
+            std::string newFileName = FluxStr::addTrailingSlash(mPath) + FluxStr::sanitizeFilenameWithUnderScores(streamTitle)+".mp3";
             if ( mCurrentFilename.compare(newFileName) == 0 && mFileStream.is_open()) {
                 // who cares dLog("[warn] Recording: We are already on this file ....");
                 return true;

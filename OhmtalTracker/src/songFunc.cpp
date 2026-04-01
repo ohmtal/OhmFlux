@@ -6,6 +6,7 @@
 #include <string>
 #include <cctype>
 
+#include "utils/fluxStr.h"
 //------------------------------------------------------------------------------
 void OTGui::setLoop(bool loop) {
     mLoopSong = loop;
@@ -138,7 +139,7 @@ void OTGui::callSaveSong() {
 
     std::string fileName = "";
     if ( mCurrentSongFileName.empty() ) {
-        fileName = fluxStr::sanitizeFilenameWithUnderScores(mCurrentSong.title) + ".fms3";
+        fileName = FluxStr::sanitizeFilenameWithUnderScores(mCurrentSong.title) + ".fms3";
     } else {
         fileName = mCurrentSongFileName;
     }
@@ -158,7 +159,7 @@ void OTGui::callExportSong(){
 
     stopSong();
 
-    std::string fileName = fluxStr::sanitizeFilenameWithUnderScores(mCurrentSong.title) + ".wav";
+    std::string fileName = FluxStr::sanitizeFilenameWithUnderScores(mCurrentSong.title) + ".wav";
     g_FileDialog.setFileName(fileName);
     g_FileDialog.mSaveMode = true;
     g_FileDialog.mSaveExt = ".wav";

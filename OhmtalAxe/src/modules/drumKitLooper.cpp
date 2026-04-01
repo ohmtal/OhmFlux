@@ -5,6 +5,7 @@
 
 #include "drumKitLooper.h"
 #include <src/fonts/IconsFontAwesome6.h>
+#include "utils/fluxStr.h"
 //------------------------------------------------------------------------------
 DSP::EffectsManager* DrumKitLooperModule::getManager() const{
     return mDrumKitManager.get();
@@ -127,7 +128,7 @@ bool DrumKitLooperModule::addDrumKit(){
 }
 //------------------------------------------------------------------------------
 void DrumKitLooperModule::callSavePresets() {
-    g_FileDialog.setFileName(fluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".drum");
+    g_FileDialog.setFileName(FluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".drum");
     g_FileDialog.mSaveMode = true;
     g_FileDialog.mSaveExt = ".drum";
     g_FileDialog.mFilters = {".drum"};
@@ -138,7 +139,7 @@ void DrumKitLooperModule::callSavePresets() {
 
 }
 void DrumKitLooperModule::callLoadPresets() {
-    g_FileDialog.setFileName(fluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".drum");
+    g_FileDialog.setFileName(FluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".drum");
     g_FileDialog.mSaveMode = false;
     g_FileDialog.mSaveExt = ".drum";
     g_FileDialog.mFilters = {".drum"};

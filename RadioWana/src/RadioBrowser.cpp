@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "RadioBrowser.h"
-
+#include "utils/fluxStr.h"
 
 namespace FluxRadio {
 
@@ -33,7 +33,7 @@ namespace FluxRadio {
 
                 std::string tagStr = item.value("tags", "");
 
-                for (auto sv : fluxStr::Tokenize(tagStr, ',')) {
+                for (auto sv : FluxStr::Tokenize(tagStr, ',')) {
                     s.tags.push_back(std::string(sv));
                 }
 
@@ -41,7 +41,7 @@ namespace FluxRadio {
                 s.favicon       = item.value("favicon", "");
                 s.countrycode   = item.value("countrycode", "");
                 std::string strLanguages = item.value("language", "");
-                for (auto sv : fluxStr::Tokenize(strLanguages, ',')) {
+                for (auto sv : FluxStr::Tokenize(strLanguages, ',')) {
                     s.languages.push_back(std::string(sv));
                 }
 

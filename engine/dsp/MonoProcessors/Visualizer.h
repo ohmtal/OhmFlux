@@ -20,8 +20,7 @@
 
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
 
     class BasicVisualizer {
         static constexpr int scope_size = 512;
@@ -59,4 +58,4 @@ namespace MonoProcessors {
 
 
 
-};};
+};

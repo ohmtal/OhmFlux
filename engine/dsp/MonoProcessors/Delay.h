@@ -14,9 +14,7 @@
 
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
-
+namespace DSP::MonoProcessors {
     // Delay
     // std::atomic<float> delay_time_ms{300.0f};
     // std::atomic<float> delay_feedback{0.4f};
@@ -61,4 +59,4 @@ namespace MonoProcessors {
 
 
 
-};};
+};

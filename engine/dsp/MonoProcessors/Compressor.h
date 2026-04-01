@@ -14,8 +14,7 @@
 
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
 
 
     // Threshold : -30.f .. -40.f
@@ -50,4 +49,4 @@ namespace MonoProcessors {
     };
 
 
-};};
+};

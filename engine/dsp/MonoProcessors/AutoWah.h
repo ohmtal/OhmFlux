@@ -15,8 +15,7 @@
 #include "../DSP_Math.h"
 
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
 
     // Auto-Wah
     // Defaults:
@@ -58,4 +57,4 @@ namespace MonoProcessors {
     };
 
 
-};};
+};

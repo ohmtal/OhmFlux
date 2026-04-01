@@ -9,6 +9,7 @@
 #include "utils/fluxSettingsManager.h"
 #include "gui/fonts/HackNerdFontPropo-Regular.h"
 #include "utils/errorlog.h"
+#include "utils/fluxStr.h"
 #include <algorithm>
 
 #include "imgui_internal.h"
@@ -69,8 +70,9 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     }
 
     // bad if we are gone !!
-    gui->mConsole.AddLog("%s", fluxStr::removePart(message,"\r\n").c_str());
+    gui->mConsole.AddLog("%s", FluxStr::removePart(message,"\r\n").c_str());
 }
+
 
 // -----------------------------------------------------------------------------
 void RadioWana::restoreLayout(){
@@ -100,22 +102,20 @@ void RadioWana::InitDockSpace(){
 }
 // -----------------------------------------------------------------------------
 void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
-    std::string cmd = fluxStr::getWord(cmdline,0);
+    std::string cmd = FluxStr::getWord(cmdline,0);
 
-    if (cmd == "fl") {
-        float limit = std::atof(fluxStr::getWord(cmdline,1).c_str());
-        Log("[info] set framelimt to %f", limit);
-        getMain()->mSettings.frameLimiter = limit;
+
+    if (cmd == "sc" ) {  //STATION CACHE
+        DumpStationCache();
     }
 
-    if (cmd == "dd") {
+    if (cmd == "dd") { //DECODE DEBUG
         mAudioHandler->decoderDebug();
-
     }
 
     if (cmd == "rl") {
-        int id = std::atoi(fluxStr::getWord(cmdline,1).c_str());
-        bool scanLines = std::atoi(fluxStr::getWord(cmdline,2).c_str());
+        int id = std::atoi(FluxStr::getWord(cmdline,1).c_str());
+        bool scanLines = std::atoi(FluxStr::getWord(cmdline,2).c_str());
         dLog("shader id is: %d", id);
         getMain()->reloadBackGroundEffectsShader( id , scanLines);
     }
@@ -187,14 +187,6 @@ void RadioWana::ApplyStudioTheme(){
     style.FrameRounding = 4.0f;
 
 }
-// -----------------------------------------------------------------------------
-bool RadioWana::isFavoStation(std::string searchUuid){
-       auto it = std::find_if(mFavoStationData.begin(), mFavoStationData.end(),
-                              [&searchUuid](const FluxRadio::RadioStation& s) {
-                                  return s.stationuuid == searchUuid;
-                              });
-       return it != mFavoStationData.end();
-   }
 // -----------------------------------------------------------------------------
 void RadioWana::DrawRecorder(){
 //FIXME move recorder here
@@ -678,8 +670,9 @@ void RadioWana::DrawFavo() {
                             Log("[error] FAV_EDIT::SAVE => station is null pointer!!");
                         }
                     } else {
-                        mFavoStationData.push_back(workStation);
-                        FluxRadio::updateFavIds(&mFavoStationData);
+                        AddFavo(&workStation);
+                        // mFavoStationData.push_back(workStation);
+                        // FluxRadio::updateFavIds(&mFavoStationData);
                     }
                     showDialog = false;
                 }
@@ -733,12 +726,12 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
         ImGui::TableHeadersRow();
 
         std::vector<const FluxRadio::RadioStation*> displayList;
-        std::string searchStr = fluxStr::toLower(searchBuffer);
+        std::string searchStr = FluxStr::toLower(searchBuffer);
 
                 //FIXME case sensitive !!
         for (const auto& s : stations) {
 
-            if (searchStr.empty() || fluxStr::toLower(s.name).find(searchStr) != std::string::npos) {
+            if (searchStr.empty() || FluxStr::toLower(s.name).find(searchStr) != std::string::npos) {
                 displayList.push_back(&s);
             }
         }
@@ -781,22 +774,25 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
                 ImGui::TableNextColumn();
                 bool isFavo = false;
                 if (isFavoList) isFavo = true;
-                else isFavo = isFavoStation(station->stationuuid);
+                else isFavo = isFavoStation(station);
 
                 if (ImFlux::FavoriteStar("Favorit", isFavo)) {
                     if (isFavoList) {
-                        std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
-                            // return s.stationuuid == station->stationuuid;
-                            return s.favId == station->favId;
-                        });
+                        // std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
+                        //     // return s.stationuuid == station->stationuuid;
+                        //     return s.favId == station->favId;
+                        // });
+                        RmvFavoByFavId(station);
                     } else {
                         if (!isFavo) {
-                            mFavoStationData.push_back(*station);
-                            FluxRadio::updateFavIds(&mFavoStationData);
+                            // mFavoStationData.push_back(*station);
+                            // FluxRadio::updateFavIds(&mFavoStationData);
+                            AddFavo(station);
                         } else {
-                            std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
-                                return s.stationuuid == station->stationuuid;
-                            });
+                            // std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
+                            //     return s.stationuuid == station->stationuuid;
+                            // });
+                            RmvFavoByUUID(station);
                         }
                     }
                     SaveSettings();
@@ -932,8 +928,9 @@ void RadioWana::ShowMenuBar(){
             }
             if (ImGui::BeginMenu("Tune"))
             {
-                for (const auto& s : mFavoStationData) {
-                    if (s.name != "" && ImGui::MenuItem((s.name + "##station").c_str())) {
+                for (const auto& s : mStationCache) {
+                    std::string tmpStr = FluxStr::truncate( s.name, 20);
+                    if (tmpStr != "" && ImGui::MenuItem((tmpStr + "##station").c_str())) {
                         Tune(s);
                         mAppSettings.SideBarOpen = false;
                     }
@@ -1241,6 +1238,264 @@ void RadioWana::DrawGui(){
 
     mGuiGlue->DrawEnd();
 }
+// -----------------------------------------------------------------------------
+void RadioWana::setSelectedFavIndex(){
+    for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
+        if ( mFavoStationData[i].favId == mAppSettings.CurrentStation.favId ) {
+            mSelectedFavIndex = i;
+            return;
+        }
+    }
+    mSelectedFavIndex = -1; //nothing found!
+}
+// -----------------------------------------------------------------------------
+void RadioWana::TuneKnob(std::string caption, const ImFlux::KnobSettings ks)
+{
+    ImGui::PushID((caption + "knob").c_str());
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if (window->SkipItems) { ImGui::PopID(); return ; }
+
+    // set current favIndex ...
+    if (mSelectedFavIndex < 0) {
+        setSelectedFavIndex();
+
+        mStationCache.clear();
+        for ( auto& station : mFavoStationData ) {
+            mStationCache.push_back(station);
+        }
+
+        if ( mAppSettings.CurrentStation.favId < 1) {
+            mStationCache.push_back( mAppSettings.CurrentStation );
+            mSelectedFavIndex = (int)mStationCache.size() - 1;
+        }
+    }
 
 
+
+    // for ( auto& station : mFavoStationData ) {
+    //     mStationCache.push_back(station);
+    // }
+
+
+
+    float delta = 0.f;
+    int step = 1;
+    int* v = &mSelectedFavIndex;
+    int v_min = 0;
+    int v_max = (int)mStationCache.size() - 1;
+    if (v_max < 1) return ; //empty list fixme ?!
+    if (*v > v_max ) *v = 0;
+
+
+
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    ImVec2 size = ImVec2(ks.radius * 2, ks.radius * 2);
+    ImRect bb(pos, pos + size);
+
+    // NOTE: keyboard:
+    // ImGui::InvisibleButton(caption.c_str(), size);
+    ImGui::ItemSize(size);
+    ImGuiID id = window->GetID(caption.c_str());
+    if (!ImGui::ItemAdd(bb, id)) { ImGui::PopID(); return; }
+    //<<< keyboard
+
+
+
+    bool value_changed = false;
+    bool isConnected = mStreamHandler->isConnected();
+
+
+
+    //NOTE: keyboard ~~~~~~
+    ImGuiIO& io = ImGui::GetIO();
+    bool is_hovered, is_held;
+
+    ImGui::ButtonBehavior(bb, id, &is_hovered, &is_held, ImGuiButtonFlags_None);
+    bool is_clicked = ImGui::IsItemClicked();
+    bool is_active = is_held;
+    bool is_focused = ImGui::IsItemFocused(); // Now this works!
+
+    bool is_mouseRelease = ImGui::IsItemDeactivated();
+    static bool is_Pressed = false;
+    if (is_clicked) is_Pressed = true;
+
+    //.......
+    int new_v = *v;
+
+    // if (is_Pressed) dLog("PRESSED!");
+    // if (is_mouseRelease) dLog("RELEASED! pressed is: %d", is_Pressed);
+
+
+    if (is_focused) {
+        bool plus =  (
+            ImGui::IsKeyPressed(ImGuiKey_RightArrow) ||
+            ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight));
+
+
+        bool minus = (
+            ImGui::IsKeyPressed(ImGuiKey_LeftArrow)  ||
+            ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft));
+        static float keyboardDelta = 0.f;
+        if (plus || minus) {
+            float multi = 0.f;
+            // TELL IMGUI: "I am using the navigation keys, don't move focus!"
+            // ImGui::SetNavCursorVisible(true);
+
+            if (plus) {new_v = *v + (int)keyboardDelta;multi = 0.05f;}
+            if (minus) {new_v = *v + (int)keyboardDelta;multi = -0.05f;}
+
+            delta = (v_max - v_min) * multi; // only for visual
+            keyboardDelta += delta;
+
+            if (new_v != *v) {
+                value_changed = true;
+                keyboardDelta = 0.f;
+            }
+        }
+
+        if   (
+            ImGui::IsKeyPressed(ImGuiKey_Space)
+            // || ImGui::IsKeyPressed(ImGuiKey_Enter)
+            || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
+        ) {
+            is_Pressed  = true;
+            is_mouseRelease = true;
+        }
+    }
+
+    //NOTE <<< KEYBOARD ~~~~~
+    // --- INTERACTION ---
+    if (is_hovered && io.MouseWheel != 0) {
+        delta = ImGui::GetIO().MouseWheel;
+        new_v = *v + (int)delta * step;
+        if (new_v != *v) value_changed = true;
+    }
+
+
+    if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+        delta = ImGui::GetIO().MouseDelta.y;
+        if (std::abs(delta) > 0.0f) {
+            static float accumulator = 0.0f;
+            accumulator -= delta;
+            if (std::abs(accumulator) >= 5.0f) {
+                int steps = (int)(accumulator / 5.0f) * step;
+                new_v = *v + steps;
+                accumulator -= (float)steps * 5.0f; // keep the remainder
+                value_changed = true;
+            }
+        }
+    } else {
+
+    }
+
+
+    // clamp
+    if (new_v < v_min) new_v = v_max;
+    if (new_v > v_max) new_v = v_min;
+    *v = new_v ;
+
+
+    // --- DRAWING ---
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 center = ImVec2(pos.x + ks.radius, pos.y + ks.radius);
+
+    // Outer Border / Housing (Integration of bg_outer)
+    dl->AddCircle(center, ks.radius, ks.bg_inner, 32, 1.5f);
+    // dl->AddCircleFilled(center, ks.radius + 1.f, ks.bg_inner);
+    dl->AddCircleFilled(center, ks.radius, ks.bg_outer);
+
+    // Main Knob Body
+    float knob_radius = ks.radius * 0.90f; // 0.65f;
+    //seamless movement
+    static float visual_value = 0.0f;
+    visual_value += delta * 0.01f;
+    float needle_ang = visual_value  * M_2PI;
+    // ImGui::SameLine(); ImGui::Text("%.3f", visual_value);
+
+
+    if (mKnobSilverTex) {
+        float r = knob_radius;
+        GLuint handle = 0;
+
+        if ( !isConnected ) handle = mKnobOffTex->getHandle();
+        else if (mTuningMode) handle = mKnobSilverTex->getHandle();
+        else handle = mKnobOnTex->getHandle();
+        ImTextureID texID = (ImTextureID)(intptr_t)handle;
+
+        // Die 4 Eckpunkte des Bildes (ungerotiert)
+        ImVec2 p0 = center + ImVec2(-r, -r); // Oben Links
+        ImVec2 p1 = center + ImVec2( r, -r); // Oben Rechts
+        ImVec2 p2 = center + ImVec2( r,  r); // Unten Rechts
+        ImVec2 p3 = center + ImVec2(-r,  r); // Unten Links
+
+        // Mit deiner Funktion rotieren
+        dl->AddImageQuad(
+            texID,
+            ImFlux::Rotate(p0, center, needle_ang),
+                         ImFlux::Rotate(p1, center, needle_ang),
+                         ImFlux::Rotate(p2, center, needle_ang),
+                         ImFlux::Rotate(p3, center, needle_ang),
+                         ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1)
+        );
+    }
+
+
+    //bevel
+    dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
+
+
+    // NOTE: keyboard
+    if (is_focused) {
+        ImGui::RenderNavHighlight(bb, id);
+    }
+
+
+    // mouse over hint
+    if (is_hovered) {
+        ImGui::SetTooltip("%s", mStationCache[*v].name.c_str());
+    }
+
+    ImGui::PopID();
+
+    static double last_click_time = 0.0f;
+    const double cooldown_duration = 1.f;  //sec cooldown
+
+    if (value_changed) {
+        // dLog("TuneKnob: value changed: %d", mSelectedFavIndex);
+        mTuningMode = true;
+        if (FluxSchedule.isPending(mTuningResetTaskID)) {
+            FluxSchedule.extend(mTuningResetTaskID,mTuningResetSec );
+        } else {
+            mTuningResetTaskID = FluxSchedule.add(mTuningResetSec, nullptr,[&]() { mTuningMode = false; });
+        }
+
+        is_Pressed = false;
+    }
+    // ImGui::SameLine();  ImFlux::DrawLED("clicki",is_clicked, ImFlux::LED_RED);
+    // ImGui::SameLine(); ImFlux::DrawLED("pressed",is_Pressed, ImFlux::LED_BLUE);
+    // ImGui::SameLine(); ImFlux::DrawLED("connected",isConnected, ImFlux::LED_GREEN);
+
+    if (is_mouseRelease && is_Pressed ) {
+        is_Pressed = false;
+        if (ImGui::GetTime() - last_click_time > cooldown_duration) {
+
+            if (isConnected && !mTuningMode) {
+                dLog("[info] TuneKnow:: Disconnecting...");
+                Disconnect();
+
+            } else {
+                if (*v < mStationCache.size()) {
+                    FluxRadio::RadioStation tmpStation = mStationCache[*v];
+                    Tune(tmpStation);
+                    dLog("[info] TuneKnob: TUNE Selected Station: %s", tmpStation.name.c_str());
+                }
+            }
+        } else {
+            Log("[warn] TuneKnob: Click ignored ... too fast!");
+        }
+        last_click_time = ImGui::GetTime();
+    }
+}
 

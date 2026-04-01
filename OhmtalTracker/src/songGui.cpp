@@ -6,7 +6,7 @@
 #include <string>
 #include <cctype>
 #include <src/fonts/IconsFontAwesome6.h>
-
+#include "utils/fluxStr.h"
 //------------------------------------------------------------------------------
 
 constexpr float CellHeight = 22.f;
@@ -157,7 +157,7 @@ void OTGui::RenderPatternUI(bool standAlone)
     std::string lSongFileName = "";
 
     if (!mCurrentSongFileName.empty()) {
-        lSongFileName = std::string( fluxStr::extractFilename(g_FileDialog.selectedFile));
+        lSongFileName = std::string( FluxStr::extractFilename(g_FileDialog.selectedFile));
     }
 
     if (isPlaying())

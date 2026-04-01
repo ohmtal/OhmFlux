@@ -14,8 +14,7 @@
 
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
 
     // Tremolo
     // std::atomic<float> tremolo_rate{5.0f};  // 0.1f - 20.0f Hz
@@ -45,4 +44,4 @@ namespace MonoProcessors {
     };
 
 
-};};
+};

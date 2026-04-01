@@ -9,6 +9,7 @@
 #include <audio/fluxAudioStream.h>
 
 #include <core/fluxBaseObject.h>
+#include "utils/fluxStr.h"
 
 class WaveModule : public FluxBaseObject {
 private:
@@ -66,7 +67,7 @@ public:
                 for (int n = 0; n < (int)mAudioStreams.size(); n++) {
                     auto ao = mAudioStreams[n].get();
 
-                    waveCaption = std::format("{:02X} {}", n, fluxStr::extractFilename( ao->getFileName()));
+                    waveCaption = std::format("{:02X} {}", n, FluxStr::extractFilename( ao->getFileName()));
 
                     if (ao->isPlaying()) waveCaption += " *";
 

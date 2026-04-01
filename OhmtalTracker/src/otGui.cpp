@@ -15,7 +15,7 @@
 #include <cctype>
 #include <sstream>
 #include <src/fonts/IconsFontAwesome6.h>
-
+#include "utils/fluxStr.h"
 
 
 //------------------------------------------------------------------------------
@@ -245,7 +245,7 @@ void OTGui::ShowFileManager(){
                 std::array<uint8_t, 24> instrumentData;
                 if (opl3_bridge_fm::loadInstrumentData(g_FileDialog.selectedFile,instrumentData)) {
                     Instrument newIns=opl3_bridge_fm::toInstrument(
-                        std::string( fluxStr::extractFilename(g_FileDialog.selectedFile) ),
+                        std::string( FluxStr::extractFilename(g_FileDialog.selectedFile) ),
                         instrumentData
                     );
                     getMain()->getController()->getSoundBank().push_back(newIns);
@@ -711,7 +711,7 @@ void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
 
 
 
-    std::string cmd = fluxStr::getWord(cmdline,0);
+    std::string cmd = FluxStr::getWord(cmdline,0);
 
 
 
@@ -719,10 +719,10 @@ void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     {
 
         std::string tone = "C-3";
-        if (fluxStr::getWord(cmdline,1) != "")
-            tone = fluxStr::toUpper(fluxStr::getWord(cmdline,1));
+        if (FluxStr::getWord(cmdline,1) != "")
+            tone = FluxStr::toUpper(FluxStr::getWord(cmdline,1));
 
-        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,2) , 0);
+        uint8_t instrument = FluxStr::strToInt(FluxStr::getWord(cmdline,2) , 0);
         SongStep step{opl3::NoteToValue(tone),instrument,63};
         getMain()->getController()->playNoteHW(0,step);
     }
@@ -744,7 +744,7 @@ void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "scale")
     {
-        int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
+        int instrument = FluxStr::strToInt(FluxStr::getWord(cmdline,1) , -1);
         if ( instrument < 0 )
             instrument = mCurrentInstrumentId;
         Log ("Using Instrument %d",instrument);
@@ -754,7 +754,7 @@ void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "effects")
     {
-        int instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , -1);
+        int instrument = FluxStr::strToInt(FluxStr::getWord(cmdline,1) , -1);
         if ( instrument < 0 )
             instrument = mCurrentInstrumentId;
         Log ("Using Instrument %d",instrument);
@@ -764,7 +764,7 @@ void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     else
     if (cmd == "insdump")
     {
-        uint8_t instrument = fluxStr::strToInt(fluxStr::getWord(cmdline,1) , 1);
+        uint8_t instrument = FluxStr::strToInt(FluxStr::getWord(cmdline,1) , 1);
         Log ("Using Instrument %d",instrument);
         getMain()->getController()->dumpInstrument(instrument);
     }
@@ -1023,8 +1023,8 @@ void OTGui::OnConsoleCommand(ImConsole* console, const char* cmdline)
     }
     else if (cmd == "v") { LogFMT("Voice active: {}", getMain()->getController()->isAnyVoiceActive());}
     else if (cmd == "cd") {
-        if (fluxStr::getWord(cmdline,1) != "") {
-            g_FileDialog.changeDirectory(fluxStr::getWord(cmdline,1));
+        if (FluxStr::getWord(cmdline,1) != "") {
+            g_FileDialog.changeDirectory(FluxStr::getWord(cmdline,1));
         } else {
             dLog("usage cd PATH");
         }

@@ -15,8 +15,8 @@
 #include "../DSP_Math.h"
 
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
+
 //-----------------------------------------------------------------------------
 // Tone Control :: Volume and Tone
 // ------------
@@ -256,6 +256,5 @@ struct Biquad {
         float last_bass = -999.0f, last_treble = -999.0f, last_presence = -999.0f;
     };
 
-};
 
 }; //namespace

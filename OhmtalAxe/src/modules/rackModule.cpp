@@ -11,7 +11,7 @@
 #include <filesystem>
 
 #include <audio/fluxAudio.h>
-
+#include "utils/fluxStr.h"
 #include <src/appMain.h>
 #include "src/appGlobals.h"
 
@@ -318,7 +318,7 @@ void RackModule::DrawEffectManagerPresetListWindow(bool* p_enabled) {
 }
 //------------------------------------------------------------------------------
 void RackModule::callSavePresets() {
-    g_FileDialog.setFileName(fluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".axe");
+    g_FileDialog.setFileName(FluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".axe");
     g_FileDialog.mSaveMode = true;
     g_FileDialog.mSaveExt = ".axe";
     g_FileDialog.mFilters = {".axe"};
@@ -329,7 +329,7 @@ void RackModule::callSavePresets() {
 
 }
 void RackModule::callLoadPresets() {
-    g_FileDialog.setFileName(fluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".axe");
+    g_FileDialog.setFileName(FluxStr::sanitizeFilenameWithUnderScores(getManager()->getName())+".axe");
     g_FileDialog.mSaveMode = false;
     g_FileDialog.mSaveExt = ".axe";
     g_FileDialog.mFilters = {".axe"};

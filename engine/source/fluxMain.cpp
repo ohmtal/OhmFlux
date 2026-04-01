@@ -18,6 +18,7 @@
 
 #include "fluxMain.h"
 #include "core/fluxMath.h"
+#include "utils/fluxStr.h"
 #include "utils/errorlog.h"
 #include "render/fluxRender2D.h"
 #include "particle/fluxParticleManager.h"
@@ -71,10 +72,10 @@ bool FluxMain::Initialize()
 	if (mSettings.enableLogFile)
 	{
 #ifdef FLUX_DEBUG
-		std::string lLogFileString = fluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+		std::string lLogFileString = FluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
 #else 
 		std::string lLogFileString = mSettings.getPrefsPath() 
-				+ fluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+				+ FluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
 #endif
 		InitErrorLog(lLogFileString.c_str(),this->mSettings.Caption,this->mSettings.Version);
 	}

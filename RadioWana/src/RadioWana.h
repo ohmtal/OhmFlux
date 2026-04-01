@@ -217,7 +217,95 @@ public:
     void DrawRecorder();
     void DrawEqualizer();
 
-    bool isFavoStation(std::string searchUuid);
+    // bool isFavoStation(std::string searchUuid);
+
+    bool isFavoStation(const FluxRadio::RadioStation* station) {
+        if ( !station ) return false;
+        auto it = std::find_if(mFavoStationData.begin(), mFavoStationData.end(),
+                               [&station](const FluxRadio::RadioStation& s) {
+                                   return (
+                                       (s.stationuuid != "" && s.stationuuid == station->stationuuid)
+                                       || (s.url != "" &&  s.url == station->url)
+                                   );
+                               });
+        return it != mFavoStationData.end();
+    }
+    FluxRadio::RadioStation* getFavoStation(const FluxRadio::RadioStation* station) {
+        if ( !station ) return nullptr;
+        auto it = std::find_if(mFavoStationData.begin(), mFavoStationData.end(),
+                               [&station](const FluxRadio::RadioStation& s) {
+                                   return (
+                                       (s.stationuuid != "" && s.stationuuid == station->stationuuid)
+                                       || (s.url != "" &&  s.url == station->url)
+                                   );
+                               });
+
+        if (it != mFavoStationData.end()) {
+            return &(*it);
+        }
+        return nullptr;
+
+    }
+
+    bool isCacheStation(const FluxRadio::RadioStation* station) {
+        if ( !station ) return false;
+        auto it = std::find_if(mStationCache.begin(), mStationCache.end(),
+                               [&station](const FluxRadio::RadioStation& s) {
+                                   return (
+                                       (s.favId != 0 && s.favId == station->favId)
+                                       || (s.stationuuid != "" && s.stationuuid == station->stationuuid)
+                                       || (s.url != "" &&  s.url == station->url)
+                                   );
+                               });
+        return it != mStationCache.end();
+    }
+
+
+    bool AddFavo(const FluxRadio::RadioStation* station) {
+        if ( !station ) return false;
+        if ( !isFavoStation(station) ) {
+            mFavoStationData.push_back(*station);
+        }
+        FluxRadio::updateFavIds(&mFavoStationData);
+
+        if ( !isCacheStation(station) ) {
+            FluxRadio::RadioStation* favStation =  getFavoStation(station);
+            if (favStation) mStationCache.push_back(*favStation);
+        }
+
+        return true;
+    }
+
+    bool RmvFavoByFavId(const FluxRadio::RadioStation* station) {
+        bool result = std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
+            return s.favId == station->favId;
+        });
+
+        if (result) {
+            std::erase_if(mStationCache, [&](const FluxRadio::RadioStation& s) {
+                return s.stationuuid == station->stationuuid;
+            });
+        }
+        return result;
+    }
+    bool RmvFavoByUUID(const FluxRadio::RadioStation* station) {
+        bool result = std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
+            return s.stationuuid == station->stationuuid;
+        });
+
+        if (result) {
+            std::erase_if(mStationCache, [&](const FluxRadio::RadioStation& s) {
+                return s.stationuuid == station->stationuuid;
+            });
+        }
+        return result;
+    }
+
+    void DumpStationCache() {
+        for (auto& s: mStationCache ) {
+            Log("%03d %s (%s)", s.favId,  s.name.c_str(), s.stationuuid.c_str());
+        }
+    }
 
 
     // ---------- Tune Station -----------------
@@ -241,265 +329,8 @@ public:
     }
 
     //-------------------- TuneKnob Interger with overflow ---------------------------
-    void setSelectedFavIndex() {
-        for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
-            if ( mFavoStationData[i].favId == mAppSettings.CurrentStation.favId ) {
-                mSelectedFavIndex = i;
-                return;
-            }
-        }
-        mSelectedFavIndex = -1; //nothing found!
-    }
-
-    void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB)
-    {
-        ImGui::PushID((caption + "knob").c_str());
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-        if (window->SkipItems) { ImGui::PopID(); return ; }
-
-        // set current favIndex ...
-        if (mSelectedFavIndex < 0) {
-            setSelectedFavIndex();
-
-            mStationCache.clear();
-            for ( auto& station : mFavoStationData ) {
-                mStationCache.push_back(station);
-            }
-
-            if ( mAppSettings.CurrentStation.favId < 1) {
-                mStationCache.push_back( mAppSettings.CurrentStation );
-                mSelectedFavIndex = (int)mStationCache.size() - 1;
-            }
-        }
-
-
-
-        // for ( auto& station : mFavoStationData ) {
-        //     mStationCache.push_back(station);
-        // }
-
-
-
-        float delta = 0.f;
-        int step = 1;
-        int* v = &mSelectedFavIndex;
-        int v_min = 0;
-        int v_max = (int)mStationCache.size() - 1;
-        if (v_max < 1) return ; //empty list fixme ?!
-        if (*v > v_max ) *v = 0;
-
-
-
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-        ImVec2 size = ImVec2(ks.radius * 2, ks.radius * 2);
-        ImRect bb(pos, pos + size);
-
-        // NOTE: keyboard:
-        // ImGui::InvisibleButton(caption.c_str(), size);
-        ImGui::ItemSize(size);
-        ImGuiID id = window->GetID(caption.c_str());
-        if (!ImGui::ItemAdd(bb, id)) { ImGui::PopID(); return; }
-        //<<< keyboard
-
-
-
-        bool value_changed = false;
-        bool isConnected = mStreamHandler->isConnected();
-
-
-
-        //NOTE: keyboard ~~~~~~
-        ImGuiIO& io = ImGui::GetIO();
-        bool is_hovered, is_held;
-
-        ImGui::ButtonBehavior(bb, id, &is_hovered, &is_held, ImGuiButtonFlags_None);
-        bool is_clicked = ImGui::IsItemClicked();
-        bool is_active = is_held;
-        bool is_focused = ImGui::IsItemFocused(); // Now this works!
-
-        bool is_mouseRelease = ImGui::IsItemDeactivated();
-        static bool is_Pressed = false;
-        if (is_clicked) is_Pressed = true;
-
-        //.......
-        int new_v = *v;
-
-        // if (is_Pressed) dLog("PRESSED!");
-        // if (is_mouseRelease) dLog("RELEASED! pressed is: %d", is_Pressed);
-
-
-        if (is_focused) {
-            bool plus =  (
-                ImGui::IsKeyPressed(ImGuiKey_RightArrow) ||
-                ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  ||
-                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight));
-
-
-            bool minus = (
-            ImGui::IsKeyPressed(ImGuiKey_LeftArrow)  ||
-            ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
-            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft));
-            static float keyboardDelta = 0.f;
-            if (plus || minus) {
-                float multi = 0.f;
-                // TELL IMGUI: "I am using the navigation keys, don't move focus!"
-                // ImGui::SetNavCursorVisible(true);
-
-                if (plus) {new_v = *v + (int)keyboardDelta;multi = 0.05f;}
-                if (minus) {new_v = *v + (int)keyboardDelta;multi = -0.05f;}
-
-                delta = (v_max - v_min) * multi; // only for visual
-                keyboardDelta += delta;
-
-                if (new_v != *v) {
-                    value_changed = true;
-                    keyboardDelta = 0.f;
-                }
-            }
-
-            if   (
-                ImGui::IsKeyPressed(ImGuiKey_Space)
-                // || ImGui::IsKeyPressed(ImGuiKey_Enter)
-                || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
-            ) {
-                is_Pressed  = true;
-                is_mouseRelease = true;
-            }
-        }
-
-        //NOTE <<< KEYBOARD ~~~~~
-        // --- INTERACTION ---
-        if (is_hovered && io.MouseWheel != 0) {
-            delta = ImGui::GetIO().MouseWheel;
-            new_v = *v + (int)delta * step;
-            if (new_v != *v) value_changed = true;
-        }
-
-
-        if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            delta = ImGui::GetIO().MouseDelta.y;
-            if (std::abs(delta) > 0.0f) {
-                static float accumulator = 0.0f;
-                accumulator -= delta;
-                if (std::abs(accumulator) >= 5.0f) {
-                    int steps = (int)(accumulator / 5.0f) * step;
-                    new_v = *v + steps;
-                    accumulator -= (float)steps * 5.0f; // keep the remainder
-                    value_changed = true;
-                }
-            }
-        } else {
-
-        }
-
-
-        // clamp
-        if (new_v < v_min) new_v = v_max;
-        if (new_v > v_max) new_v = v_min;
-        *v = new_v ;
-
-
-        // --- DRAWING ---
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-        ImVec2 center = ImVec2(pos.x + ks.radius, pos.y + ks.radius);
-
-        // Outer Border / Housing (Integration of bg_outer)
-        dl->AddCircle(center, ks.radius, ks.bg_inner, 32, 1.5f);
-        // dl->AddCircleFilled(center, ks.radius + 1.f, ks.bg_inner);
-        dl->AddCircleFilled(center, ks.radius, ks.bg_outer);
-
-        // Main Knob Body
-        float knob_radius = ks.radius * 0.90f; // 0.65f;
-        //seamless movement
-        static float visual_value = 0.0f;
-        visual_value += delta * 0.01f;
-        float needle_ang = visual_value  * M_2PI;
-        // ImGui::SameLine(); ImGui::Text("%.3f", visual_value);
-
-
-        if (mKnobSilverTex) {
-            float r = knob_radius;
-            GLuint handle = 0;
-
-            if ( !isConnected ) handle = mKnobOffTex->getHandle();
-            else if (mTuningMode) handle = mKnobSilverTex->getHandle();
-            else handle = mKnobOnTex->getHandle();
-            ImTextureID texID = (ImTextureID)(intptr_t)handle;
-
-            // Die 4 Eckpunkte des Bildes (ungerotiert)
-            ImVec2 p0 = center + ImVec2(-r, -r); // Oben Links
-            ImVec2 p1 = center + ImVec2( r, -r); // Oben Rechts
-            ImVec2 p2 = center + ImVec2( r,  r); // Unten Rechts
-            ImVec2 p3 = center + ImVec2(-r,  r); // Unten Links
-
-            // Mit deiner Funktion rotieren
-            dl->AddImageQuad(
-                texID,
-                ImFlux::Rotate(p0, center, needle_ang),
-                ImFlux::Rotate(p1, center, needle_ang),
-                ImFlux::Rotate(p2, center, needle_ang),
-                ImFlux::Rotate(p3, center, needle_ang),
-                ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1)
-            );
-        }
-
-
-        //bevel
-        dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
-
-
-        // NOTE: keyboard
-        if (is_focused) {
-            ImGui::RenderNavHighlight(bb, id);
-        }
-
-
-        // mouse over hint
-        if (is_hovered) {
-            ImGui::SetTooltip("%s", mStationCache[*v].name.c_str());
-        }
-
-        ImGui::PopID();
-
-        static double last_click_time = 0.0f;
-        const double cooldown_duration = 1.f;  //sec cooldown
-
-        if (value_changed) {
-            // dLog("TuneKnob: value changed: %d", mSelectedFavIndex);
-            mTuningMode = true;
-            if (FluxSchedule.isPending(mTuningResetTaskID)) {
-                FluxSchedule.extend(mTuningResetTaskID,mTuningResetSec );
-            } else {
-                mTuningResetTaskID = FluxSchedule.add(mTuningResetSec, nullptr,[&]() { mTuningMode = false; });
-            }
-
-            is_Pressed = false;
-        }
-        // ImGui::SameLine();  ImFlux::DrawLED("clicki",is_clicked, ImFlux::LED_RED);
-        // ImGui::SameLine(); ImFlux::DrawLED("pressed",is_Pressed, ImFlux::LED_BLUE);
-        // ImGui::SameLine(); ImFlux::DrawLED("connected",isConnected, ImFlux::LED_GREEN);
-
-        if (is_mouseRelease && is_Pressed ) {
-            is_Pressed = false;
-            if (ImGui::GetTime() - last_click_time > cooldown_duration) {
-
-                if (isConnected && !mTuningMode) {
-                    dLog("[info] TuneKnow:: Disconnecting...");
-                    Disconnect();
-
-                } else {
-                    if (*v < mStationCache.size()) {
-                        FluxRadio::RadioStation tmpStation = mStationCache[*v];
-                        Tune(tmpStation);
-                        dLog("[info] TuneKnob: TUNE Selected Station: %s", tmpStation.name.c_str());
-                    }
-                }
-            } else {
-                Log("[warn] TuneKnob: Click ignored ... too fast!");
-            }
-            last_click_time = ImGui::GetTime();
-        }
-    }
+    void setSelectedFavIndex();
+    void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB);
 
 }; //class
 

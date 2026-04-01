@@ -14,8 +14,7 @@
 
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
     // ChorusLine
     // Rate: 0.1 - 5.0 Hz (Lush to fast Leslie-style)
     // Depth: 0.1 - 10.0 ms (Subtle to heavy pitch-bend)
@@ -86,4 +85,4 @@ namespace MonoProcessors {
 
 
 
-};};
+};

@@ -14,8 +14,7 @@
 
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
 
     class Volume {
     public:
@@ -27,4 +26,4 @@ namespace MonoProcessors {
     };
 
 
-};};
+};

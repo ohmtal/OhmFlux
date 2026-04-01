@@ -17,8 +17,7 @@
 
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
 
 
     // Phaser
@@ -56,4 +55,4 @@ namespace MonoProcessors {
     };
 
 
-};};
+};

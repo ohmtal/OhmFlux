@@ -3,6 +3,7 @@
 #include <gui/ImFileDialog.h>
 #include <imgui_internal.h>
 #include <utils/fluxSettingsManager.h>
+#include "utils/fluxStr.h"
 #include "appGlobals.h"
 
 // #include <gui/ImFlux/showCase.h> //demos of ImFlux Widgets
@@ -292,7 +293,7 @@ void AppGui::ShowFileBrowser(){
 }
 //------------------------------------------------------------------------------
 void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
-    std::string cmd = fluxStr::getWord(cmdline,0);
+    std::string cmd = FluxStr::getWord(cmdline,0);
 
     //if i want to add "help" and autocomplete  mConsole.Commands.push_back("/spam");
 

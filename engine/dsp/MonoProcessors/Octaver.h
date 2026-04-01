@@ -17,8 +17,7 @@
 #include "Filter.h"
 #include "../DSP_Math.h"
 
-namespace DSP {
-namespace MonoProcessors {
+namespace DSP::MonoProcessors {
 
     // Octaver
     // std::atomic<float> octaver_dry{1.0f};
@@ -54,4 +53,4 @@ namespace MonoProcessors {
 
 
 
-};};
+};
