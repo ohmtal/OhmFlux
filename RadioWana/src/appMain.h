@@ -20,6 +20,8 @@ public:
     AppMain() {}
     ~AppMain() {}
 
+
+    FluxRadio::BackGroundEffects* getBackGroundRenderEffect() const {return mBackGroundEffects; }
     bool reloadBackGroundEffectsShader(int id = 0, bool scanLines = false) {
         if (mBackGroundEffects) return mBackGroundEffects->LoadShader(id, scanLines);
         return false;
@@ -44,6 +46,7 @@ public:
             mBackGroundEffects = nullptr;
         } else {
             mBackGroundEffects->setAnalyzer(mAppGui->getSpectrumAnalyzer());
+            mAppGui->setBackGroundRenderId(mAppGui->mAppSettings.BackGroundRenderId, mAppGui->mAppSettings.BackGroundScanLines);
         }
 
 
@@ -89,7 +92,7 @@ public:
     {
         if (mAppGui) {
             mAppGui->Update(dt);
-            if (mBackGroundEffects && mAppGui->mAppSettings.RenderBackGroundEffect) {
+            if (mBackGroundEffects && mAppGui->mAppSettings.BackGroundRenderId >= 0) {
                 mBackGroundEffects->UpdateLevels(dt,
                     mAppGui->getAudioLevels());
             }
@@ -109,7 +112,7 @@ public:
     //--------------------------------------------------------------------------------------
     void onDraw() override {
 
-        if (mBackGroundEffects && mAppGui->mAppSettings.RenderBackGroundEffect) {
+        if (mBackGroundEffects && mAppGui->mAppSettings.BackGroundRenderId >=0) {
             mBackGroundEffects->Draw();
         }  else {
             if (mAppGui && mAppGui->mBrushedMetalTex) {

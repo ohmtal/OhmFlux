@@ -53,6 +53,17 @@ namespace FluxRadio {
         // shader options:
         bool mScanLines = false;
         //-------------------
+        const std::vector<std::string> mFragShaderCaptions = {
+            "Glow and Bars"         // 0
+            , "Liquid Pulse"     // 1
+            , "Rain"              // 2
+            , "Rain and Glow"          // 3
+            , "Glow"              // 4
+            , "Glow and Lightning"     // 5
+            , "Bars"              // 6
+        };
+
+
 
 
         BackGroundEffects() = default;

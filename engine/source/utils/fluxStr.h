@@ -12,10 +12,11 @@ namespace FluxStr {
 
 
     //--------------------------------------------------------------------------
-    inline std::string truncate(std::string str, size_t width) {
-        if (width < 4) return str;
+    inline std::string truncate(std::string str, size_t width, bool addPoints = true) {
+        if (addPoints && width < 4) return str;
         if (str.length() > width) {
-            return str.substr(0, width - 3) + "...";
+            if (addPoints) return str.substr(0, width - 3) + "...";
+            else return str.substr(0, width);
         }
         return str;
     }

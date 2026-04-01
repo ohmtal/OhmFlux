@@ -32,7 +32,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::AppSettings,
                                                 ShowFavo,
                                                 ShowEqualizer,
                                                 SideBarOpen,
-                                                RenderBackGroundEffect
+                                                BackGroundRenderId,
+                                                BackGroundScanLines
 )
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(RadioWana::WindowState,
@@ -77,7 +78,7 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 // -----------------------------------------------------------------------------
 void RadioWana::restoreLayout(){
     //copied from json :P
-    static const std::string layout = "[Window][WindowOverViewport_11111111]\nPos=0,26\nSize=1152,622\nCollapsed=0\n\n[Window][Debug##Default]\nPos=60,60\nSize=400,400\nCollapsed=0\n\n[Window][About]\nPos=774,393\nSize=372,228\nCollapsed=0\n\n[Window][Console]\nPos=0,310\nSize=714,338\nCollapsed=0\nDockId=0x00000006,0\n\n[Window][Radio Browser]\nPos=708,26\nSize=444,622\nCollapsed=0\nDockId=0x00000002,0\n\n[Window][RadioWana]\nPos=0,26\nSize=714,622\nCollapsed=0\nDockId=0x00000005,0\n\n[Window][Recorder]\nPos=0,22\nSize=960,993\nCollapsed=0\nDockId=0x00000005,1\n\n[Window][Favorites]\nPos=708,26\nSize=444,622\nCollapsed=0\nDockId=0x00000002,1\n\n[Window][ImFlux ShowCase Widgets]\nPos=0,432\nSize=960,583\nCollapsed=0\nDockId=0x00000004,0\n\n[Window][HTTP Errror]\nPos=840,465\nSize=240,84\nCollapsed=0\n\n[Window][HUHU]\nPos=892,465\nSize=136,84\nCollapsed=0\n\n[Window][Favorit Dialog]\nPos=60,60\nSize=376,138\nCollapsed=0\n\n[Window][Favorite Dialog]\nPos=772,436\nSize=376,162\nCollapsed=0\n\n[Window][Stream Errror 56]\nPos=782,465\nSize=356,84\nCollapsed=0\n\n[Window][Stream Errror 0]\nPos=823,465\nSize=273,84\nCollapsed=0\n\n[Window][##MySidebar]\nSize=36,510\nCollapsed=0\n\n[Window][Stream Errror 1]\nPos=869,465\nSize=182,84\nCollapsed=0\n\n[Window][Stream Errror 52]\nPos=765,465\nSize=389,84\nCollapsed=0\n\n[Window][Radio]\nPos=0,26\nSize=706,622\nCollapsed=0\nDockId=0x00000005,0\n\n[Table][0x5B6633BA,5]\nColumn 0  Weight=1.0000\nColumn 1  Weight=1.0000\nColumn 2  Weight=1.0000\nColumn 3  Weight=1.0000\nColumn 4  Weight=1.0000\n\n[Table][0xD170F5FA,4]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000\nColumn 2  Width=74 Sort=0^\nColumn 3  Width=41\n\n[Table][0xC55E50B6,2]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000 Sort=0^\n\n[Docking][Data]\nDockSpace       ID=0x08BD597D Window=0x1BBC0F80 Pos=0,26 Size=1152,622 Split=Y\n  DockNode      ID=0x00000003 Parent=0x08BD597D SizeRef=960,408 Split=X Selected=0xCC2F45C2\n    DockNode    ID=0x00000001 Parent=0x00000003 SizeRef=706,484 Split=Y Selected=0xCC2F45C2\n      DockNode  ID=0x00000005 Parent=0x00000001 SizeRef=714,282 CentralNode=1 Selected=0xDB489985\n      DockNode  ID=0x00000006 Parent=0x00000001 SizeRef=714,338 Selected=0xEA83D666\n    DockNode    ID=0x00000002 Parent=0x00000003 SizeRef=444,484 Selected=0xB58DAB73\n  DockNode      ID=0x00000004 Parent=0x08BD597D SizeRef=960,583 Selected=0xF2A39ADC\n\n";
+    static const std::string layout = "[Window][WindowOverViewport_11111111]\nPos=0,26\nSize=1152,622\nCollapsed=0\n\n[Window][Debug##Default]\nPos=60,60\nSize=400,400\nCollapsed=0\n\n[Window][About]\nPos=774,393\nSize=372,228\nCollapsed=0\n\n[Window][Console]\nPos=0,310\nSize=714,338\nCollapsed=0\nDockId=0x00000006,0\n\n[Window][Radio Browser]\nPos=708,26\nSize=444,622\nCollapsed=0\nDockId=0x00000002,0\n\n[Window][RadioWana]\nPos=0,26\nSize=714,622\nCollapsed=0\nDockId=0x00000005,0\n\n[Window][Recorder]\nPos=0,22\nSize=960,993\nCollapsed=0\nDockId=0x00000005,1\n\n[Window][Favorites]\nPos=708,26\nSize=444,622\nCollapsed=0\nDockId=0x00000002,1\n\n[Window][ImFlux ShowCase Widgets]\nPos=0,432\nSize=960,583\nCollapsed=0\nDockId=0x00000004,0\n\n[Window][HTTP Errror]\nPos=840,465\nSize=240,84\nCollapsed=0\n\n[Window][HUHU]\nPos=892,465\nSize=136,84\nCollapsed=0\n\n[Window][Favourite Dialog]\nPos=60,60\nSize=376,138\nCollapsed=0\n\n[Window][Favorite Dialog]\nPos=772,436\nSize=376,162\nCollapsed=0\n\n[Window][Stream Errror 56]\nPos=782,465\nSize=356,84\nCollapsed=0\n\n[Window][Stream Errror 0]\nPos=823,465\nSize=273,84\nCollapsed=0\n\n[Window][##MySidebar]\nSize=36,510\nCollapsed=0\n\n[Window][Stream Errror 1]\nPos=869,465\nSize=182,84\nCollapsed=0\n\n[Window][Stream Errror 52]\nPos=765,465\nSize=389,84\nCollapsed=0\n\n[Window][Radio]\nPos=0,26\nSize=706,622\nCollapsed=0\nDockId=0x00000005,0\n\n[Table][0x5B6633BA,5]\nColumn 0  Weight=1.0000\nColumn 1  Weight=1.0000\nColumn 2  Weight=1.0000\nColumn 3  Weight=1.0000\nColumn 4  Weight=1.0000\n\n[Table][0xD170F5FA,4]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000\nColumn 2  Width=74 Sort=0^\nColumn 3  Width=41\n\n[Table][0xC55E50B6,2]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000 Sort=0^\n\n[Docking][Data]\nDockSpace       ID=0x08BD597D Window=0x1BBC0F80 Pos=0,26 Size=1152,622 Split=Y\n  DockNode      ID=0x00000003 Parent=0x08BD597D SizeRef=960,408 Split=X Selected=0xCC2F45C2\n    DockNode    ID=0x00000001 Parent=0x00000003 SizeRef=706,484 Split=Y Selected=0xCC2F45C2\n      DockNode  ID=0x00000005 Parent=0x00000001 SizeRef=714,282 CentralNode=1 Selected=0xDB489985\n      DockNode  ID=0x00000006 Parent=0x00000001 SizeRef=714,338 Selected=0xEA83D666\n    DockNode    ID=0x00000002 Parent=0x00000003 SizeRef=444,484 Selected=0xB58DAB73\n  DockNode      ID=0x00000004 Parent=0x08BD597D SizeRef=960,583 Selected=0xF2A39ADC\n\n";
 
     FluxRadio::RadioStation savStation = mAppSettings.CurrentStation;
     mAppSettings = AppSettings();
@@ -306,6 +307,7 @@ void RadioWana::Update(const double& dt){
     }
 
 
+
 }
 // -----------------------------------------------------------------------------
 void RadioWana::DrawRadio() {
@@ -414,15 +416,31 @@ void RadioWana::DrawRadio() {
         TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(48.f));
 
 
-        //FIXME INFO MUST BE SOMEWHERE ELSE
+        //Station Stream - INFO
         ImGui::SameLine();
         ImGui::BeginGroup();
-        if (!isConnected) ImGui::BeginDisabled();
-        if (ImFlux::ButtonFancy("Info", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88) ))) {
-            ImGui::OpenPopup("##StationInfo");
+        {
+            // bool isFavo =  mSelectedFavIndex < mFavoStationData.size();
+            bool isFavo = mAppSettings.CurrentStation.favId > 0;
+            if (ImFlux::FavouriteStar("Favourite", isFavo)) {
+                if (isFavo) {
+                    RmvFavoByFavId(&mAppSettings.CurrentStation);
+                } else {
+                    AddFavo(&mAppSettings.CurrentStation);
+                }
+            }
+
         }
-        if (!isConnected) ImGui::EndDisabled();
-        DrawInfoPopup(&info);
+
+        // if (!isConnected) ImGui::BeginDisabled();
+        //
+        // if (ImFlux::ButtonFancy("Info", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88) ))) {
+        //     ImGui::OpenPopup("##StationInfo");
+        // }
+        // if (!isConnected) ImGui::EndDisabled();
+        // DrawInfoPopup(&info);
+
+
 
         // if (!mAppSettings.ShowEqualizer)
         {
@@ -640,9 +658,9 @@ void RadioWana::DrawFavo() {
 
 
     if (showDialog ) {
-        ImGui::OpenPopup("Favorit Dialog");
+        ImGui::OpenPopup("Favourite Dialog");
 
-        if (ImGui::BeginPopupModal("Favorit Dialog", &showDialog, ImGuiWindowFlags_AlwaysAutoResize) ) {
+        if (ImGui::BeginPopupModal("Favourite Dialog", &showDialog, ImGuiWindowFlags_AlwaysAutoResize) ) {
             ImGui::SeparatorText(isEdit ? "Edit" : "New");
             //mhh what to use as
             char strBuff[256];
@@ -776,7 +794,7 @@ void RadioWana::DrawStationsList(std::vector<FluxRadio::RadioStation> stations, 
                 if (isFavoList) isFavo = true;
                 else isFavo = isFavoStation(station);
 
-                if (ImFlux::FavoriteStar("Favorit", isFavo)) {
+                if (ImFlux::FavouriteStar("Favourite", isFavo)) {
                     if (isFavoList) {
                         // std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
                         //     // return s.stationuuid == station->stationuuid;
@@ -877,12 +895,25 @@ void RadioWana::onEvent(SDL_Event event){
 
 }
 // -----------------------------------------------------------------------------
+void RadioWana::setBackGroundRenderId(int id, bool enableScanLines){
+    // if (mAppSettings.BackGroundRenderId == id ) return;
+    mAppSettings.BackGroundRenderId = id;
+    if (id >= 0) {
+        getMain()->reloadBackGroundEffectsShader( id, enableScanLines );
+    }
+}
+
+
+// -----------------------------------------------------------------------------
 void RadioWana::ShowMenuBar(){
     ImGui::PushFont(getMain()->mHackNerdFont20);
 
     static float sideBarWidth = 1.f;
     static float targetWidth = 0.f;
     static std::string savStr = "";
+
+    bool isConnected = mStreamHandler->isConnected();
+    FluxRadio::StreamInfo info = FluxRadio::StreamInfo();
 
     if (mAppSettings.SideBarOpen) {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -929,15 +960,25 @@ void RadioWana::ShowMenuBar(){
             if (ImGui::BeginMenu("Tune"))
             {
                 for (const auto& s : mStationCache) {
-                    std::string tmpStr = FluxStr::truncate( s.name, 20);
+                    std::string tmpStr = FluxStr::truncate( s.name, 35);
                     if (tmpStr != "" && ImGui::MenuItem((tmpStr + "##station").c_str())) {
                         Tune(s);
                         mAppSettings.SideBarOpen = false;
                     }
                 }
-
                 ImGui::EndMenu();
             }
+
+            if (!isConnected) ImGui::BeginDisabled();
+
+            if (ImGui::MenuItem("Stream-Info")) {
+                ImGui::OpenPopup("##StationInfo");
+            }
+            if (!isConnected) ImGui::EndDisabled();
+            if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
+            DrawInfoPopup(&info);
+
+
 
 
             ImGui::SeparatorText("Windows");
@@ -947,7 +988,35 @@ void RadioWana::ShowMenuBar(){
             ImGui::Separator();
             ImGui::MenuItem("Recorder", NULL, &mAppSettings.ShowRecorder);
             ImGui::MenuItem("Equalizer", NULL, &mAppSettings.ShowEqualizer);
-            ImGui::MenuItem("Background Effect", NULL, &mAppSettings.RenderBackGroundEffect);
+            // ImGui::MenuItem("Background Effect", NULL, &mAppSettings.RenderBackGroundEffect);
+            if (ImGui::BeginMenu("Background Rendering"))
+            {
+
+                bool isSelected = mAppSettings.BackGroundRenderId == -1;
+                if (ImGui::MenuItem("Texture##BackGroundRenderId", NULL, isSelected)) { setBackGroundRenderId(-1);}
+                ImGui::Separator();
+
+                if (getMain()->getBackGroundRenderEffect() ) {
+                    for (size_t i = 0; i < getMain()->getBackGroundRenderEffect()->mFragShaderCaptions.size(); i++ ) {
+                        std::string caption =  getMain()->getBackGroundRenderEffect()->mFragShaderCaptions[i] + "##BackGroundRenderId";
+                        isSelected = (i == mAppSettings.BackGroundRenderId);
+                        if (ImGui::MenuItem(caption.c_str(), NULL, &isSelected)) {
+                            setBackGroundRenderId((int)i, mAppSettings.BackGroundScanLines);
+                        }
+                    }
+                    ImGui::Separator();
+                    if (ImGui::Checkbox("Render Scanlines",&mAppSettings.BackGroundScanLines)) {
+                        if (mAppSettings.BackGroundRenderId >=0) {
+                            setBackGroundRenderId(mAppSettings.BackGroundRenderId, mAppSettings.BackGroundScanLines);
+                        }
+                    }
+
+                }
+
+                ImGui::EndMenu();
+            }
+
+
             ImGui::Separator();
             ImGui::MenuItem("Console", NULL, &mAppSettings.ShowConsole);
             ImGui::SeparatorText("Layout");
@@ -1113,6 +1182,9 @@ bool RadioWana::Initialize(){
     mWindowState = SettingsManager().get("Windows::State", WindowState());
     mWindowState.updateWindow();
 
+    //update background renderer
+    // setBackGroundRenderId(mAppSettings.BackGroundRenderId, mAppSettings.BackGroundScanLines);
+
 
 
     // ~~~~~ GuiGlue ~~~~~
@@ -1240,12 +1312,16 @@ void RadioWana::DrawGui(){
 }
 // -----------------------------------------------------------------------------
 void RadioWana::setSelectedFavIndex(){
+
+    // mCurStationIsFavo =
+
     for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
         if ( mFavoStationData[i].favId == mAppSettings.CurrentStation.favId ) {
             mSelectedFavIndex = i;
             return;
         }
     }
+    Log("CALL: setSelectedFavIndex!");
     mSelectedFavIndex = -1; //nothing found!
 }
 // -----------------------------------------------------------------------------

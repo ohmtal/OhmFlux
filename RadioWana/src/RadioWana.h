@@ -117,7 +117,6 @@ private:
     std::vector<FluxRadio::RadioStation> mFavoStationData;
     std::vector<FluxRadio::RadioStation> mStationCache;
 
-
     int mSelectedFavIndex = -1; //not the id the index in the list
     bool mTuningMode = false;
     FluxScheduler::TaskID mTuningResetTaskID = 0;
@@ -153,7 +152,8 @@ public:
         bool ShowFavo             = true;
         bool ShowEqualizer        = true;
         bool SideBarOpen          = false;
-        bool RenderBackGroundEffect = true;
+        int BackGroundRenderId     = 0;
+        bool BackGroundScanLines  = false;
     };
 
     struct WindowState {
@@ -268,15 +268,26 @@ public:
         }
         FluxRadio::updateFavIds(&mFavoStationData);
 
-        if ( !isCacheStation(station) ) {
-            FluxRadio::RadioStation* favStation =  getFavoStation(station);
-            if (favStation) mStationCache.push_back(*favStation);
+        FluxRadio::RadioStation* favStation =  getFavoStation(station);
+        if (favStation) {
+            if ( !isCacheStation(favStation) ) {
+                mStationCache.push_back(*favStation);
+            }
+            // update current station
+            if (
+                (favStation->url  != "" && mAppSettings.CurrentStation.url == favStation->url )
+                || (favStation->stationuuid  != "" && mAppSettings.CurrentStation.stationuuid == favStation->stationuuid )
+            ) {
+                mAppSettings.CurrentStation.favId = favStation->favId;
+            }
         }
+
 
         return true;
     }
 
     bool RmvFavoByFavId(const FluxRadio::RadioStation* station) {
+        if (!station || station->favId < 1 ) return false;
         bool result = std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
             return s.favId == station->favId;
         });
@@ -285,10 +296,17 @@ public:
             std::erase_if(mStationCache, [&](const FluxRadio::RadioStation& s) {
                 return s.stationuuid == station->stationuuid;
             });
+
+            // update current station
+            if ( station->favId  ==  mAppSettings.CurrentStation.favId) {
+                mAppSettings.CurrentStation.favId = 0;
+            }
+
         }
         return result;
     }
     bool RmvFavoByUUID(const FluxRadio::RadioStation* station) {
+        if (!station || station->stationuuid == "" ) return false;
         bool result = std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
             return s.stationuuid == station->stationuuid;
         });
@@ -297,6 +315,10 @@ public:
             std::erase_if(mStationCache, [&](const FluxRadio::RadioStation& s) {
                 return s.stationuuid == station->stationuuid;
             });
+            // update current station
+            if ( mAppSettings.CurrentStation.stationuuid == station->stationuuid ) {
+                mAppSettings.CurrentStation.favId = 0;
+            }
         }
         return result;
     }
@@ -323,6 +345,8 @@ public:
 
     void Tune(FluxRadio::RadioStation station) {
         mAppSettings.CurrentStation = station;
+
+        if (!isCacheStation(&station)) { mStationCache.push_back(station); }
         ConnectCurrent();
         mSelectedFavId = - 1;
         mTuningMode = false;
@@ -331,6 +355,10 @@ public:
     //-------------------- TuneKnob Interger with overflow ---------------------------
     void setSelectedFavIndex();
     void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB);
+
+
+    // BackGroundRenderId
+    void setBackGroundRenderId(int id, bool enableScanLines = false);
 
 }; //class
 

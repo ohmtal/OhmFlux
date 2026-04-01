@@ -49,19 +49,20 @@ Limitation:
         - [X] remove stepper again 
         - [ ] Sidebar: 
             - [X] Initial window implemented 
-            - [ ] Radio
+            - [X] Radio
                 - info 
                 - connect / disconnect 
-                - favorites as shortcuts 
+                
             - [X] Favorites
             - [X] Radio Browser 
             - [X] Windows
             - [ ] About << make nice - markdown renderer ? 
             - [ ] Help - markdown renderer ? 
-            - [ ] Background effects - selector None, ...
+            - [X] Background effects - selector None, ...
             - [ ] different layouts not only factory 
         
         - [ ] Player Window
+            - [X] add favo 
             - [ ] Display playerwindow with Equalizer or Recorder is enabled  => keep top scroll 
             - [ ] center output :D
             

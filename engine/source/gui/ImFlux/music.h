@@ -17,7 +17,7 @@ namespace ImFlux {
     //--------------------------------------------------------------------------
     // Favorite Star
     //--------------------------------------------------------------------------
-    inline bool FavoriteStar(std::string tooltip, bool on, float radius = 8.f, ImU32 color_on = ImColor(200, 200, 0), bool embed = false)
+    inline bool FavouriteStar(std::string tooltip, bool on, float radius = 8.f, ImU32 color_on = ImColor(200, 200, 0), bool embed = false)
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
