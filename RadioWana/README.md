@@ -111,14 +111,14 @@ Limitation:
     - [X] reset fullheader if redirect 3xx else content-type is not detected correctly. 
     - [X] add lowspeed timeout << 
     
-    - [ ] Add SDL3 Icon
+    - [X] Add SDL3 Icon
 
     - [X] Bug in header parser: icy-decription when empty
     
     - [ ] Release
         - [ ] Windows Installer
-            - [ ] Try windows build
-            - [ ] cmake add a windows icon 
+            - [X] Try windows build
+            - [X] cmake add a windows icon 
             - [ ] Create installer 
         - [ ] Linux/BSD Installer shell script 
         - [ ] Try a flatpak - flathub ? 

@@ -528,42 +528,56 @@ option(BUILD_RADIOWANA "Build RadioWana" ON)
 
 
 if(BUILD_RADIOWANA AND NOT ANDROID AND NOT EMSCRIPTEN)
-    #append curl if not already included
-    # FETCH IT for Andoid !
-    # ANDROID: then openssl is missing
-    set(BUILD_CURL_EXE OFF CACHE INTERNAL "")
-    set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
-    set(CURL_USE_LIBPSL OFF CACHE INTERNAL "")
-    set(CURL_DISABLE_LDAP ON CACHE INTERNAL "")
-    set(CURL_DISABLE_LDAPS ON CACHE INTERNAL "")
-    set(CURL_USE_OPENSSL ON CACHE INTERNAL "")
-    set(HTTP_ONLY ON CACHE INTERNAL "") # i only need https at the moment !
-    FetchContent_Declare(
-        curl
-        URL "${CMAKE_CURRENT_LIST_DIR}/lib/curl-curl-8_19_0.tar.gz"
-    )
-    FetchContent_MakeAvailable(curl)
-    list(APPEND PROJECT_LIBS libcurl)
+    set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")
 
-    # desktop
-    # find_package(CURL REQUIRED)
-    # list(APPEND PROJECT_LIBS CURL::libcurl)
-    # message(STATUS "Added Curl .....")
+	if(MSVC)
+		find_package(CURL REQUIRED)
+		list(APPEND PROJECT_LIBS CURL::libcurl)
+		message(STATUS "Added Curl .....")
+		
+		set(RES_FILES "${RADIOWANA_DIR}/res/resources.rc")
+		
+	else ()
+		#append curl if not already included
+		# FETCH IT for Andoid !
+		# ANDROID: then openssl is missing
+		set(BUILD_CURL_EXE OFF CACHE INTERNAL "")
+		set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+		set(CURL_USE_LIBPSL OFF CACHE INTERNAL "")
+		set(CURL_DISABLE_LDAP ON CACHE INTERNAL "")
+		set(CURL_DISABLE_LDAPS ON CACHE INTERNAL "")
+		set(CURL_USE_OPENSSL ON CACHE INTERNAL "")
+		set(HTTP_ONLY ON CACHE INTERNAL "") # i only need https at the moment !
+		FetchContent_Declare(
+			curl
+			URL "${CMAKE_CURRENT_LIST_DIR}/lib/curl-curl-8_19_0.tar.gz"
+		)
+		FetchContent_MakeAvailable(curl)
+		list(APPEND PROJECT_LIBS libcurl)
+	endif()
+
 
     if(ANDROID)
         list(APPEND PROJECT_LIBS openssl z log)
     endif()
 
-    set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")
     set(RADIOWANA_SOURCES
         "${RADIOWANA_DIR}/src/main.cpp"
+        "${RADIOWANA_DIR}/src/appMain.h"
+        "${RADIOWANA_DIR}/src/RadioWana.h"
         "${RADIOWANA_DIR}/src/RadioWana.cpp"
+        "${RADIOWANA_DIR}/src/AudioHandler.h"
         "${RADIOWANA_DIR}/src/AudioHandler.cpp"
+        "${RADIOWANA_DIR}/src/AudioRecorder.h"
+        "${RADIOWANA_DIR}/src/BackGroundEffects.h"
+        "${RADIOWANA_DIR}/src/StreamHandler.h"
         "${RADIOWANA_DIR}/src/StreamHandler.cpp"
+        "${RADIOWANA_DIR}/src/RadioBrowser.h"
         "${RADIOWANA_DIR}/src/RadioBrowser.cpp"
+        "${RADIOWANA_DIR}/src/StreamInfo.h"
 
     )
-    configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}" )
+    configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}" ${RES_FILES})
 
 elseif(BUILD_RADIOWANA)
     message(WARNING "CURL: ANDROID AND EMSCRIPTEN BUILD IS NOT FIXED SO FAR!!")

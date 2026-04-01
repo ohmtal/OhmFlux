@@ -33,10 +33,11 @@ Before you begin, ensure you have the following installed:
 
 ### Using vcpkg with OhmFlux
 
+- optional add curl 
 
 ```powershell
 cd C:\dev\vcpkg
-.\vcpkg install sdl3 glew opengl
+.\vcpkg install sdl3 glew opengl 
 ```
 
 In OhmFlux directory you can now do: 

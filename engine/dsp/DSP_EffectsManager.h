@@ -545,7 +545,7 @@ public:
             case RackLoadMode::AppendToPresets:
                 if (getPresetsCount() >= MAX_RACKS_IN_PRESET){
                     addError(std::format("LoadRackStream: We cant have more then {} racks in a Preset", MAX_RACKS_IN_PRESET));
-                    return -1;
+                    return false;
                 }
 
                 mPresets.push_back(std::move(loadedRack));
@@ -553,7 +553,7 @@ public:
             case AppendToPresetsAndSetActive:
                 if (getPresetsCount() >= MAX_RACKS_IN_PRESET){
                     addError(std::format("LoadRackStream: We cant have more then {} racks in a Preset", MAX_RACKS_IN_PRESET));
-                    return -1;
+                    return false;
                 }
 
                 mPresets.push_back(std::move(loadedRack));
