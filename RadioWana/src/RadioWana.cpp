@@ -477,14 +477,14 @@ void RadioWana::DrawRadio() {
         if (mAppSettings.ShowEqualizer) {
             ImFlux::GradientBox(ImVec2(0.f, 145.f));
 
-            if (fullHalfWidth - radioHalfWidth > 0.f) {
-                ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
-            }
             ImGui::BeginGroup(/*EQ*/);
             ImGui::PushFont(getMain()->mHackNerdFont16);
             ImFlux::ShadowText("EQUALIZER");
             ImGui::PopFont();
             ImGui::Separator();
+            if (fullHalfWidth - radioHalfWidth > 0.f) {
+                ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
+            }
 
             ImFlux::ShiftCursor(ImVec2(5.f,5.f));
 
@@ -527,15 +527,16 @@ void RadioWana::DrawRadio() {
         if (mAppSettings.ShowRecorder) {
 
             ImFlux::GradientBox(ImVec2(0.f, 180.f));
-            if (fullHalfWidth - radioHalfWidth > 0.f) {
-                ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
-            }
             ImGui::BeginGroup(/*RECORDER*/);
 
             ImGui::PushFont(getMain()->mHackNerdFont16);
             ImFlux::ShadowText("RECORDER");
             ImGui::PopFont();
             ImGui::Separator();
+
+            if (fullHalfWidth - radioHalfWidth > 0.f) {
+                ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
+            }
 
             ImFlux::ShiftCursor(ImVec2(5.f,5.f));
 
@@ -557,9 +558,9 @@ void RadioWana::DrawRadio() {
             ImGui::SameLine();
 
             // 5.2
-            //FIXME
+            //TODO: Options
             if (ImGui::BeginChild("RECORDSETTINGS", ImVec2(0.f,110.f))) {
-                float fullWidth = ImGui::GetContentRegionAvail().x;
+                // float fullWidth = ImGui::GetContentRegionAvail().x;
 
                 ImGui::SeparatorText("Recording");
 
