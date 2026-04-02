@@ -51,7 +51,7 @@ void main() {
     float rowID = floor(yPos * 5.0);
 
     vec3 whiteCore = vec3(0.8, 1.0, 0.9); // Brighter tip
-    float heightLimit = smoothstep(uv.y - 0.2, uv.y, freqValue);
+    float heightLimit = smoothstep(uv.y - 0.2, uv.y, freqValue * 2.5);
 
 
     // --------------------------------------
