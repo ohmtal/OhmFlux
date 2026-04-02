@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# MinGW creash release build
+# MinGW  release build disable optimation
 if(MINGW)
     add_compile_options("-mno-avx" "-mno-avx2")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mstackrealign" CACHE STRING "" FORCE)
@@ -404,6 +404,8 @@ set(PROJECT_LIBS  "")
 
 option(DISABLE_DEMOS "Disable all Demos" OFF)
 
+if (NOT DISABLE_DEMOS) # added to prevent extra libs from projects
+
 
 # --- FishTank ---
 option(BUILD_FISHTANK "Build FishTank demo" ON)
@@ -589,3 +591,4 @@ endif()
 # =============================================================================
 # <<<<< PROJECTS SECTION
 # =============================================================================
+endif() #disable demos
