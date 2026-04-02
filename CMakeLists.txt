@@ -170,6 +170,7 @@ else()
     # GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
     # GIT_TAG        release-3.4.2
     URL "${CMAKE_CURRENT_LIST_DIR}/lib/SDL-release-3.4.2.tar.gz"
+    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
     )
 
     set(SDL_TESTS OFF CACHE BOOL "" FORCE)
@@ -551,6 +552,7 @@ if(BUILD_RADIOWANA AND NOT ANDROID AND NOT EMSCRIPTEN)
 		FetchContent_Declare(
 			curl
 			URL "${CMAKE_CURRENT_LIST_DIR}/lib/curl-curl-8_19_0.tar.gz"
+			DOWNLOAD_EXTRACT_TIMESTAMP FALSE
 		)
 		FetchContent_MakeAvailable(curl)
 		list(APPEND PROJECT_LIBS libcurl)
