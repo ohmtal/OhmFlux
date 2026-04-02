@@ -69,7 +69,7 @@ namespace FluxRadio {
         BackGroundEffects() = default;
         ~BackGroundEffects() = default;
         //----------------------------------------------------------------------
-        bool LoadShader(int fragShaderId = 0, bool enableScanLines = false) {
+        bool LoadShader(uint8_t fragShaderId = 0, bool enableScanLines = false) {
             FluxFile textFile;
 
             if (fragShaderId >= mFragShaderFiles.size() ) fragShaderId = 0;

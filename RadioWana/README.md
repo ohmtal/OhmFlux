@@ -58,10 +58,10 @@ Limitation:
             - [X] Background effects - selector None, ...
 
         
-        - [ ] Player Window
+        - [X] Player Window
             - [X] add favo 
-            - [ ] Display playerwindow with Equalizer or Recorder is enabled  => keep top scroll 
-            - [ ] center output :D
+            - [~] Display playerwindow with Equalizer or Recorder is enabled  => keep top scroll 
+            - [X] center output :D
             
         - [X] deny station when no meta-int is set !!  => Invalid station detected...
         
@@ -70,19 +70,18 @@ Limitation:
             - [X] click connects or disconnects
             - [X] Enhance Hint: Disconnect or station name only 
             
-        - [ ] Options
+        - [X] Options
             - [X] Window Save States << look at console command "window"
                 - [X] add a struct for this with json stuff
                     - [X] Maximized
                     - [X] Size and Position 
                     
                 - [X] set better min size  => 720 x 320
-            - [ ] Autoconnect on start 
-            - [ ] Auto Reconnect on timeout
+
             
         - [X] TuneButton: station list cache not updated when station added to favo 
         
-    - [ ] Recorder a bit nicer - or maybe finish it see Version 2
+    - [X] not really Recorder a bit nicer - or maybe finish it see Version 2
     
     - [X] Player: need a function to add remove from Favo in "info?"
     
@@ -116,16 +115,18 @@ Limitation:
     - [X] Bug in header parser: icy-decription when empty
     
     - [ ] Release
-        - [ ] Windows Installer
+        - [X] Windows Installer
             - [X] Try windows build
             - [X] cmake add a windows icon 
-            - [ ] Create installer 
+            - [X] Create installer 
         - [ ] Linux/BSD Installer shell script 
         - [ ] Try a flatpak - flathub ? 
     
 ---
     
 - [ ] Version 2.x
+    - [ ] Autoconnect on start 
+    - [ ] Auto Reconnect on timeout
     - [ ] Recorder
         - [X] Add recorder to Rack 
         - Enable recording controls without connected 

@@ -74,7 +74,7 @@ namespace FluxRadio {
                     processResponse(mContentData);
                 }
                 if (mLastRequestType == RequestType::CLICK &&  cType == "application/json") {
-                    //FIXME click ... but what todo with it ?
+                    //FIXME click ...update url ? or ignore it
                 }
 
 

@@ -110,7 +110,7 @@ void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
         DumpStationCache();
     }
 
-    if (cmd == "dd") { //DECODE DEBUG
+    if (cmd == "dd")  {  //DECODE DEBUG
         mAudioHandler->decoderDebug();
     }
 
@@ -364,7 +364,7 @@ void RadioWana::DrawRadio() {
 
 
     if (ImGui::Begin("Radio", &mAppSettings.ShowRadio, window_flags )) {
-        // float fullWidth = ImGui::GetContentRegionAvail().x;
+        float fullHalfWidth = ImGui::GetContentRegionAvail().x / 2.f;
 
         if (fullScreenRadio) ImFlux::ShiftCursor(ImVec2(0.0f,20.f));
 
@@ -372,26 +372,19 @@ void RadioWana::DrawRadio() {
         const int lcdDigits    = 30;
         const int lcdDigits2   = 38; //40;
 
-        const float displayWidth =  lcdDigits * 16.9f; //* 16.5f; // 20 ==> 320.f; //lcdDigits * lcdHeight1 * 0.5f;
+        const float displayWidth =  lcdDigits * 16.9f + 32.f; //* 16.5f; // 20 ==> 320.f; //lcdDigits * lcdHeight1 * 0.5f;
         const float displayHeight = 60.f; //(2 * lcdHeight1) + ( 3 * lcdHeight1 * 0.5f);
-
-
-        // -------- 1. TUNE -----------
-        // ImFlux::GradientBox(ImVec2(0.f, 30.f));
-        // if (mBrushedMetalTex) {
-        //     ImFlux::TextureBox(ImVec2(0.f, 60.f), (ImTextureID)(intptr_t)mBrushedMetalTex->getHandle());
-        // }
-        //
-        //
-        // ImFlux::ShiftCursor(ImVec2(5.f,5.f));
-        //
-
-
+        // maybe alternative deffered calc
+        const float radioHalfWidth = (displayWidth + 48.f + 50.f ) / 2.f;
 
 
         // --------  INFO -----------
 
         ImFlux::GradientBox(ImVec2(0.f, displayHeight + 10.f));
+        if (fullHalfWidth - radioHalfWidth > 0.f) {
+            ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
+        }
+        ImGui::BeginGroup(/*RADIO*/);
         ImFlux::ShiftCursor(ImVec2(5.f,5.f));
         ImVec2 CursorPos  =ImGui::GetCursorPos();
 
@@ -408,9 +401,19 @@ void RadioWana::DrawRadio() {
             } else {
                 ImFlux::LCDTextScroller(mAudioHandler->getCurrentTitle(), lcdDigits, ImFlux::COL32_NEON_ORANGE);
             }
-
-
             ImGui::PopFont();
+
+            {   // Info Button
+                ImGui::SameLine();
+
+                if (!isConnected) ImGui::BeginDisabled();
+                ImFlux::ShiftCursor(ImVec2(0,8));
+                if (ImFlux::ButtonFancy("I", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88)).WithSize(ImVec2(24,24) ))) {
+                    ImGui::OpenPopup("##StationInfo");
+                }
+                if (!isConnected) ImGui::EndDisabled();
+                DrawInfoPopup(&info);
+            }
 
             // ImGui::Spacing();
             ImGui::PushFont(getMain()->mHackNerdFont20);
@@ -421,6 +424,19 @@ void RadioWana::DrawRadio() {
             }
             ImGui::PopFont();
 
+            {   // Favourite
+                ImGui::SameLine();
+                ImFlux::ShiftCursor(ImVec2(5,2));
+                bool isFavo = mAppSettings.CurrentStation.favId > 0;
+                if (ImFlux::FavouriteStar("Favourite", isFavo)) {
+                    if (isFavo) {
+                        RmvFavoByFavId(&mAppSettings.CurrentStation);
+                    } else {
+                        AddFavo(&mAppSettings.CurrentStation);
+                    }
+                }
+
+            }
 
             ImGui::EndGroup();
         }
@@ -429,34 +445,7 @@ void RadioWana::DrawRadio() {
         ImGui::SameLine();
         TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(48.f));
 
-
-        //Station Stream - INFO
-        ImGui::SameLine();
         ImGui::BeginGroup();
-        {
-            // bool isFavo =  mSelectedFavIndex < mFavoStationData.size();
-            bool isFavo = mAppSettings.CurrentStation.favId > 0;
-            if (ImFlux::FavouriteStar("Favourite", isFavo)) {
-                if (isFavo) {
-                    RmvFavoByFavId(&mAppSettings.CurrentStation);
-                } else {
-                    AddFavo(&mAppSettings.CurrentStation);
-                }
-            }
-
-        }
-
-        // if (!isConnected) ImGui::BeginDisabled();
-        //
-        // if (ImFlux::ButtonFancy("Info", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88) ))) {
-        //     ImGui::OpenPopup("##StationInfo");
-        // }
-        // if (!isConnected) ImGui::EndDisabled();
-        // DrawInfoPopup(&info);
-
-
-
-        // if (!mAppSettings.ShowEqualizer)
         {
 
             if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
@@ -471,14 +460,12 @@ void RadioWana::DrawRadio() {
                 ImGui::EndGroup();
             }
         }
-
-
         ImGui::EndGroup();
 
-
+        ImGui::EndGroup(/*RADIO*/);
         //----------------------------
 
-        ImGui::Separator();
+        // ImGui::Separator();
 
         // -------- 3. VOL + VU -----------
 
@@ -490,6 +477,10 @@ void RadioWana::DrawRadio() {
         if (mAppSettings.ShowEqualizer) {
             ImFlux::GradientBox(ImVec2(0.f, 145.f));
 
+            if (fullHalfWidth - radioHalfWidth > 0.f) {
+                ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
+            }
+            ImGui::BeginGroup(/*EQ*/);
             ImGui::PushFont(getMain()->mHackNerdFont16);
             ImFlux::ShadowText("EQUALIZER");
             ImGui::PopFont();
@@ -525,29 +516,9 @@ void RadioWana::DrawRadio() {
                 ImGui::SetCursorPosY(cursorY + 20.f);
                 ImFlux::VUMeter70th(vuSize,dbR, "R", gRadioDisplayBox.col_top, gRadioDisplayBox.col_bot);
             }
+            ImGui::EndGroup(/*EQ*/);
         } //show Equilizer
 
-
-
-
-        // dbR = mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(1);
-        // ImFlux::VUMeter70th(halfSize, mapDB(dbR), "R");
-
-
-        // ~~~ VU Meter ~~~
-        // ImGui::SameLine();
-        // if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
-        //     mAudioHandler->getManager()->getVisualAnalyzer()->renderVU(ImVec2(280,90), 70);
-        // }
-
-
-        //----------------------------
-
-        // if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getSpectrumAnalyzer()) {
-        //
-        //     ImFlux::ShiftCursor(ImVec2(0.f,10.f));
-        //     mAudioHandler->getManager()->getSpectrumAnalyzer()->DrawSpectrumAnalyzer(ImVec2(fullWidth,60), true);
-        // }
 
 
 
@@ -556,6 +527,10 @@ void RadioWana::DrawRadio() {
         if (mAppSettings.ShowRecorder) {
 
             ImFlux::GradientBox(ImVec2(0.f, 180.f));
+            if (fullHalfWidth - radioHalfWidth > 0.f) {
+                ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
+            }
+            ImGui::BeginGroup(/*RECORDER*/);
 
             ImGui::PushFont(getMain()->mHackNerdFont16);
             ImFlux::ShadowText("RECORDER");
@@ -588,7 +563,7 @@ void RadioWana::DrawRadio() {
 
                 ImGui::SeparatorText("Recording");
 
-                ImGui::Checkbox("Recording starts on when new stream title is triggered", &mRecordingStartsOnNewTile);
+                ImGui::Checkbox("Wait for new Title.", &mRecordingStartsOnNewTile);
                 if (!isConnected) ImGui::BeginDisabled();
 
                 if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
@@ -607,6 +582,7 @@ void RadioWana::DrawRadio() {
                 }
             }
             ImGui::EndChild();
+            ImGui::EndGroup(/*RECORDER*/);
 
         } //mAppSettings.ShowRecorder
 
@@ -957,15 +933,15 @@ void RadioWana::ShowMenuBar(){
             // }
 
             if (mAppSettings.CurrentStation.name != "") {
-
+                std::string curName = FluxStr::truncate(mAppSettings.CurrentStation.name , 35);
                 if (savStr != mAppSettings.CurrentStation.name) {
                     savStr = mAppSettings.CurrentStation.name;
-                    targetWidth = ImGui::CalcTextSize(mAppSettings.CurrentStation.name.c_str()).x + 50.f;
+                    targetWidth = ImGui::CalcTextSize(curName.c_str()).x + 50.f;
                     if (targetWidth < 250.f) targetWidth=250.f;
                 }
 
 
-                if (ImGui::MenuItem(mAppSettings.CurrentStation.name.c_str())) {
+                if (ImGui::MenuItem(curName.c_str())) {
                     Tune(mAppSettings.CurrentStation);
                     mAppSettings.SideBarOpen = false;
 
@@ -983,14 +959,13 @@ void RadioWana::ShowMenuBar(){
                 ImGui::EndMenu();
             }
 
-            if (!isConnected) ImGui::BeginDisabled();
-
-            if (ImGui::MenuItem("Stream-Info")) {
-                ImGui::OpenPopup("##StationInfo");
-            }
-            if (!isConnected) ImGui::EndDisabled();
-            if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
-            DrawInfoPopup(&info);
+            // if (!isConnected) ImGui::BeginDisabled();
+            // if (ImGui::MenuItem("Stream-Info")) {
+            //     ImGui::OpenPopup("##StationInfo");
+            // }
+            // if (!isConnected) ImGui::EndDisabled();
+            // if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
+            // DrawInfoPopup(&info);
 
 
 
@@ -1067,7 +1042,6 @@ void RadioWana::ShowMenuBar(){
 
             // if i want to close it when somewhere else is clicked ==>
             // if (!ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0)) mAppSettings.SideBarOpen = false;
-            // if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) mAppSettings.SideBarOpen = false;
 
 
 

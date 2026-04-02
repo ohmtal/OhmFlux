@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     AppMain* app = new AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "RadioWana II";
-    app->mSettings.Version = "0.260401";
+    app->mSettings.Version = "0.260402";
     app->mSettings.enableLogFile   = true;
     app->mSettings.WindowMaximized = false;
     app->mSettings.ScreenWidth  = 1152; // 1920;
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     app->mSettings.minWindowSize = {540,300};
     app->mSettings.IconFilename = "assets/icon64.bmp";
 
-    //FIXME Cursor
+    // Cursor
     // app->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";
     // app->mSettings.cursorHotSpotX = 10;
     // app->mSettings.cursorHotSpotY = 10;
