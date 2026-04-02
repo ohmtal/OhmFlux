@@ -152,9 +152,9 @@ namespace FluxRadio {
                     // lower first bar bass;
                     if (mFreqCount == 16) currentBands[0] *= 0.65f;
 
-                    // Ballistics constants (adjust these to your taste)
-                    float attack = 0.8f;  // How fast it rises (0.0 to 1.0)
-                    float decay = 0.92f;  // How slow it falls (0.0 to 1.0)
+                    // Ballistics constants
+                    constexpr float attack = 0.2f;  //0.8 How fast it rises (0.0 to 1.0)
+                    constexpr float decay = 0.96f;  //0.92 How slow it falls (0.0 to 1.0)
 
                     for (size_t i = 0; i < mSmoothedMags.size(); ++i) {
                         // If new value is higher, rise quickly (Attack)
