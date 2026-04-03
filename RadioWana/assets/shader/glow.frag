@@ -5,6 +5,8 @@ precision mediump float;
 // RadioWana Background Shader: Glow
 // -------------------------------------------
 
+out vec4 FragColor;
+
 uniform float u_time;
 uniform float u_rmsL;
 uniform float u_rmsR;
@@ -109,5 +111,5 @@ void main() {
         finalColor += noise * 0.05 * (rmsL + rmsR);
     }
 
-    gl_FragColor = vec4(finalColor, 1.0);
+    FragColor = vec4(finalColor, 1.0);
 }
