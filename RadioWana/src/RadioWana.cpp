@@ -343,7 +343,13 @@ void RadioWana::DrawRadio() {
         else {
             if (isRunning) info.name = " * * * connecting * * *          ";
             else if (isConnected) info.name = " * * *          ";
-            else info.name = " * * * offline * * *          ";
+            else {
+                info.name = " * * * offline * * *          ";
+                if ( isAndroidBuild()) {
+                    info.name += "..... a n d r o i d  b u i l d .....";
+                }
+
+            }
         }
 
     }
@@ -897,7 +903,11 @@ void RadioWana::setBackGroundRenderId(int id, bool enableScanLines){
 
 // -----------------------------------------------------------------------------
 void RadioWana::ShowMenuBar(){
-    ImGui::PushFont(getMain()->mHackNerdFont20);
+    if ( isAndroidBuild()) {
+        ImGui::PushFont(getMain()->mHackNerdFont26);
+    } else {
+        ImGui::PushFont(getMain()->mHackNerdFont20);
+    }
 
     static float sideBarWidth = 1.f;
     static float targetWidth = 0.f;
@@ -1061,11 +1071,15 @@ void RadioWana::ShowMenuBar(){
     if (ImGui::BeginMainMenuBar())
     {
         float fullWidth = ImGui::GetContentRegionAvail().x;
+        if ( isAndroidBuild()) {
+                ImFlux::ShiftCursor(ImVec2(20.f,0.f));
+        }
 
         if (ImGui::Selectable("≡", false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetFrameHeight(), 0))) {
             mAppSettings.SideBarOpen = !mAppSettings.SideBarOpen;
             dLog("Sidebar toggled via Selectable = %d", mAppSettings.SideBarOpen);
         }
+
 
         if (!mAppSettings.ShowRadio)
         {
@@ -1185,10 +1199,6 @@ bool RadioWana::Initialize(){
     ApplyStudioTheme();
 
 
-    if ( isAndroidBuild()) {
-        setImGuiScale(2.f);
-    }
-
 
     // ~~~~~  Console right after GuiGlue ~~~~~
     mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
@@ -1273,6 +1283,12 @@ bool RadioWana::Initialize(){
 
     texPath = std::format("{}assets/knobs/gruenerrand.png", getGamePath());
     mKnobOnTex =  getMain()->loadTexture(texPath);
+
+
+    if ( isAndroidBuild())
+    {
+        setImGuiScale(2.f);
+    }
 
 
 
@@ -1542,4 +1558,10 @@ void RadioWana::TuneKnob(std::string caption, const ImFlux::KnobSettings ks)
         last_click_time = ImGui::GetTime();
     }
 }
-
+// -----------------------------------------------------------------------------
+void RadioWana::setImGuiScale(float factor){
+       mGuiGlue->getGuiIO()->DisplaySize = ImVec2(getMain()->getScreen()->getHeight(), getMain()->getScreen()->getWidth());
+       ImGui::GetStyle() = mGuiGlue->getBaseStyle();
+       ImGui::GetStyle().ScaleAllSizes(factor);
+       ImGui::GetStyle().FontScaleDpi = factor;
+   }

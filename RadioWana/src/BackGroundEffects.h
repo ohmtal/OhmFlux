@@ -84,6 +84,15 @@ namespace FluxRadio {
                 Log("[error] failed to load Fragment Shader!! %s", SDL_GetError());
                 return false;
             }
+
+            if (isAndroidBuild()) {
+                fragSrc = "#version 300 es\n" + fragSrc;
+                vertSrc = "#version 300 es\n" + vertSrc;
+            } else {
+                fragSrc = "#version 330 core\n" + fragSrc;
+                vertSrc = "#version 330 core\n" + vertSrc;
+            }
+
             mShader = new FluxShader();
             if (!mShader->load(vertSrc.c_str(), fragSrc.c_str())) {
                 Log("[error] failed to compile Shaders!!");

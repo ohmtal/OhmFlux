@@ -198,12 +198,12 @@ public:
 
     void onKeyEvent(SDL_KeyboardEvent event) {};
     void InitDockSpace();
-    void ShowFileBrowser() {}
+    // void ShowFileBrowser() {}
     void ApplyStudioTheme();
     void setupFonts();
     AppSettings* getAppSettings() {return &mAppSettings;}
     void restoreLayout( );
-    void setImGuiScale(float factor) {}
+    void setImGuiScale(float factor);
 
     //-----
     void DrawGui( );

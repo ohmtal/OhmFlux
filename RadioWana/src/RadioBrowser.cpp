@@ -11,7 +11,7 @@ namespace FluxRadio {
 
     void RadioBrowser::clickStation(std::string stationUuid){
         if (stationUuid.empty()) return;
-        std::string url = "https://" + mHostname + "/json/url/" + stationUuid;
+        std::string url = mProto + mHostname + "/json/url/" + stationUuid;
         Execute(url, "", RequestType::CLICK);
     }
     // -----------------------------------------------------------------------------
@@ -64,6 +64,13 @@ namespace FluxRadio {
     }
     // -----------------------------------------------------------------------------
     RadioBrowser::RadioBrowser() {
+
+        if (isAndroidBuild())
+        {
+            mProto = "http://"; //FIXME
+        }
+
+
         // Parent::HttpsClient();
         onDisConnected = [&]() {
             if (!mContentData.empty()) {
@@ -88,7 +95,7 @@ namespace FluxRadio {
     }
     // -----------------------------------------------------------------------------
     void RadioBrowser::searchStationsByNameAndTag(std::string name, std::string tag, uint8_t limit, bool onlyMP3){
-        std::string url = "https://" + mHostname + "/json/stations/search";
+        std::string url = mProto + mHostname + "/json/stations/search";
         std::string postData = "name=" + name;
         if (!tag.empty() ) postData += "&tag=" + tag;
         postData += std::format ("&limit={}&hidebroken=true&order=clickcount", limit);

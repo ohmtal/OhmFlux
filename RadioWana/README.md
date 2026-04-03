@@ -157,8 +157,9 @@ Limitation:
         - [ ] Emscripten
             - FIX Curl build - need also openssl if you add it via fetchcontent 
         - [ ] Android 
-            - FIX Curl build - need also openssl if you add it via fetchcontent 
-            - Create Android Studio Project 
+            - [ ] shaders fail to compile 
+            - [ ] SSL / CURL .. 
+            - Create Android Studio Project  << allow internet for testing look at: android/app/src/main/AndroidManifest.xml
             - firetv 
     - [ ] Cleanup Design  for Android
     - Finishing

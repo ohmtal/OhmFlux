@@ -166,11 +166,11 @@ if(MSVC)
     find_package(GLEW REQUIRED)
 else()
     FetchContent_Declare(
-    SDL3
-    # GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    # GIT_TAG        release-3.4.2
-    URL "${CMAKE_CURRENT_LIST_DIR}/lib/SDL-release-3.4.2.tar.gz"
-    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+        SDL3
+        # GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        # GIT_TAG        release-3.4.2
+        URL "${CMAKE_CURRENT_LIST_DIR}/lib/SDL-release-3.4.2.tar.gz"
+        DOWNLOAD_EXTRACT_TIMESTAMP FALSE
     )
 
     set(SDL_TESTS OFF CACHE BOOL "" FORCE)
@@ -527,10 +527,11 @@ endif()
 
 # --- RadioWana ---
 option(BUILD_RADIOWANA "Build RadioWana" ON)
-# CURL AND ANDROID IS NO FUN! ... test it later
+# CURL(SSL) AND ANDROID IS NO FUN! ... later.... no idea how many hours i spend on it ...
+#  FIXME enable internet on : android/app/src/main/AndroidManifest.xml
 
 
-if(BUILD_RADIOWANA AND NOT ANDROID AND NOT EMSCRIPTEN)
+if(BUILD_RADIOWANA AND NOT EMSCRIPTEN)
     set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")
 
 	if(MSVC)
@@ -541,29 +542,74 @@ if(BUILD_RADIOWANA AND NOT ANDROID AND NOT EMSCRIPTEN)
 		set(RES_FILES "${RADIOWANA_DIR}/res/resources.rc")
 		
 	else ()
-		#append curl if not already included
-		# FETCH IT for Andoid !
-		# ANDROID: then openssl is missing
+
+
+
+        if (ANDROID)
+            # set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+            # FetchContent_Declare(
+            #     boringssl
+            #     URL "${CMAKE_CURRENT_LIST_DIR}/lib/boringssl-0.20260327.0.tar.gz"
+            #     DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+            # )
+            #
+            # FetchContent_MakeAvailable(boringssl)
+            #
+            # set(FAKE_LIB_PATH "${boringssl_SOURCE_DIR}/CMakeLists.txt")
+            #
+            # set(OPENSSL_FOUND TRUE CACHE BOOL "" FORCE)
+            # set(OpenSSL_FOUND TRUE CACHE BOOL "" FORCE)
+            #
+            # set(OPENSSL_CRYPTO_LIBRARY "${FAKE_LIB_PATH}" CACHE FILEPATH "" FORCE)
+            # set(OPENSSL_SSL_LIBRARY "${FAKE_LIB_PATH}" CACHE FILEPATH "" FORCE)
+            #
+            # set(OPENSSL_INCLUDE_DIR "${boringssl_SOURCE_DIR}/include" CACHE PATH "" FORCE)
+            # set(OPENSSL_VERSION "1.1.1" CACHE STRING "" FORCE)
+            # set(OPENSSL_IS_BORINGSSL ON CACHE BOOL "" FORCE)
+            # set(CURL_USE_OPENSSL ON CACHE BOOL "" FORCE)
+
+            set(CURL_USE_OPENSSL OFF CACHE INTERNAL "")
+
+        else()
+            set(CURL_USE_OPENSSL ON CACHE INTERNAL "")
+        endif()
+
+
 		set(BUILD_CURL_EXE OFF CACHE INTERNAL "")
 		set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
 		set(CURL_USE_LIBPSL OFF CACHE INTERNAL "")
 		set(CURL_DISABLE_LDAP ON CACHE INTERNAL "")
 		set(CURL_DISABLE_LDAPS ON CACHE INTERNAL "")
-		set(CURL_USE_OPENSSL ON CACHE INTERNAL "")
 		set(HTTP_ONLY ON CACHE INTERNAL "") # i only need https at the moment !
+
+
 		FetchContent_Declare(
 			curl
 			URL "${CMAKE_CURRENT_LIST_DIR}/lib/curl-curl-8_19_0.tar.gz"
 			DOWNLOAD_EXTRACT_TIMESTAMP FALSE
 		)
 		FetchContent_MakeAvailable(curl)
+
+    if (ANDROID)
+        # if(TARGET libcurl_static)
+        #     target_link_libraries(libcurl_static PRIVATE ssl crypto)
+        #     set_property(TARGET ssl PROPERTY EXPORT_NAME "ssl")
+        #     set_property(TARGET crypto PROPERTY EXPORT_NAME "crypto")
+        # endif()
+        #
+        # set(CURL_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+        # if(TARGET crypto)
+        #     target_link_libraries(crypto INTERFACE log)
+        # endif()
+
+        # list(APPEND PROJECT_LIBS openssl z log)
+    endif()
+
+
 		list(APPEND PROJECT_LIBS libcurl)
 	endif()
 
 
-    if(ANDROID)
-        list(APPEND PROJECT_LIBS openssl z log)
-    endif()
 
     set(RADIOWANA_SOURCES
         "${RADIOWANA_DIR}/src/main.cpp"

@@ -165,6 +165,7 @@ namespace FluxRadio {
         std::string mUserAgent = "RadioWana/2.0";
         //TODO later SRV - _api._tcp.radio-browser.info
         std::string mHostname = "de1.api.radio-browser.info";
+        std::string mProto = "https://";
 
         enum class RequestType { NONE, SEARCH, CLICK };
         RequestType mLastRequestType = RequestType::NONE;
@@ -175,6 +176,7 @@ namespace FluxRadio {
 
     public:
         RadioBrowser();
+
         //----------------------------------------------------------------------
         // bool Execute()
         void Execute(std::string url, std::string postFields, RequestType requestType);

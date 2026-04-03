@@ -106,6 +106,7 @@ android:
 		-DANDROID_ABI=arm64-v8a \
 		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
 		-DCMAKE_BUILD_TYPE=Release
+
 	cmake --build $(BASE_BUILD_DIR)/android $(JOBS)
 
 	# 2. Initialize and Patch the SDL3 Android Project
@@ -144,7 +145,7 @@ android:
 	@echo "---------------------------------------------------------------------------------"
 	@echo "Finished! hopefully"
 	@echo "---------------------------------------------------------------------------------"
-	@echo "This is only a basic build based on SDL3 Template for testing. You need to" "
+	@echo "This is only a basic build based on SDL3 Template for testing. You need to"
 	@echo "change the Manifest,gradle, the res/icon and so on."
 	@echo "---------------------------------------------------------------------------------"
 	@echo "# 1. Install it to your phone example:"
@@ -153,7 +154,7 @@ android:
 	@echo "# (Assuming your package name in the template was org.libsdl.app)"
 	@echo "# adb shell am start -n org.libsdl.app/org.libsdl.app.SDLActivity"
 	@echo "DEBUG WITH:"
-	@echo "adb logcat '*:F' | grep -Ei "SDL|libmain|DEBUG"
+	@echo "adb logcat '*:F' | grep -Ei SDL|libmain|DEBUG"
 	@echo "Check content example:"
 	@echo "unzip -l ./_build/apks/FishTankDemo.apk"
 	@echo "---------------------------------------------------------------------------------"
