@@ -1301,7 +1301,8 @@ bool RadioWana::Initialize(){
 
         if (errorCode == 28 && mReconnectOnTimeOutCount < 3) {
             mReconnectOnTimeOutCount ++;
-            ConnectCurrent();
+            //deffered connect !
+            FluxSchedule.add(0.5f, this,[&]() { ConnectCurrent(); });
         } else {
             mGuiGlue->showMessage("Stream Errror "+std::to_string(errorCode), errorMsg);
         }

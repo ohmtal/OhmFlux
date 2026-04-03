@@ -61,7 +61,7 @@ Limitation:
 
 ## Todos
 
-- [ ] auto reconnect cause crash !
+- [X] auto reconnect cause crash !
 
 - [ ] Carousel View and Redesign:
     - [ ] Code Redesign
