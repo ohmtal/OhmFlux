@@ -52,15 +52,17 @@ namespace FluxRadio {
         //------------------
         // shader options:
         bool mScanLines = false;
+
+        bool mShaderESTesting = false;
         //-------------------
         const std::vector<std::string> mFragShaderCaptions = {
             "Glow and Bars"         // 0
-            , "Liquid Pulse"     // 1
-            , "Rain"              // 2
-            , "Rain and Glow"          // 3
-            , "Glow"              // 4
-            , "Glow and Lightning"     // 5
-            , "Bars"              // 6
+            , "Liquid Pulse"        // 1
+            , "Rain"                // 2
+            , "Rain and Glow"       // 3
+            , "Glow and Bars II"    // 4
+            , "Glow and Lightning"  // 5
+            , "Bars"                // 6
         };
 
 
@@ -85,7 +87,7 @@ namespace FluxRadio {
                 return false;
             }
 
-            if (isAndroidBuild()) {
+            if (isAndroidBuild() || mShaderESTesting) {
                 fragSrc = "#version 300 es\n" + fragSrc;
                 vertSrc = "#version 300 es\n" + vertSrc;
             } else {

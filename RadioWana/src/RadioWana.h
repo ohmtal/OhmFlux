@@ -117,6 +117,7 @@ private:
     std::vector<FluxRadio::RadioStation> mFavoStationData;
     std::vector<FluxRadio::RadioStation> mStationCache;
 
+    int mReconnectOnTimeOutCount = 0;
     int mSelectedFavIndex = -1; //not the id the index in the list
     bool mTuningMode = false;
     FluxScheduler::TaskID mTuningResetTaskID = 0;
@@ -335,13 +336,32 @@ public:
         if (!FluxNet::NetTools::isValidURL(mAppSettings.CurrentStation.url) ) {
             return false;
         }
-        mStreamHandler->Execute(mAppSettings.CurrentStation.url);
+
+
+        std::string url = mAppSettings.CurrentStation.url;
+
+
+        FluxNet::NetTools::URLParts parts = FluxNet::NetTools::parseURL(url);
+
+        // FIXME ANDROID SSL but without is better anyway WHY must be a radio station stream encrypted ?
+        if (isAndroidBuild())
+        {
+            if (parts.protocol  == "https" ) {
+                url = "http://" + parts.hostname + "/" + parts.path;
+            }
+        }
+        dLog("[error] protocol is: %s final url is: %s",parts.protocol.c_str(), url.c_str() );
+
+
+        mStreamHandler->Execute(url);
         if (!mAppSettings.CurrentStation.stationuuid.empty()) mRadioBrowser->clickStation(mAppSettings.CurrentStation.stationuuid);
         return true;
     }
     void Disconnect() {
         mStreamHandler->stop();
     }
+
+
 
     void Tune(FluxRadio::RadioStation station) {
         mAppSettings.CurrentStation = station;
@@ -350,6 +370,7 @@ public:
         ConnectCurrent();
         mSelectedFavId = - 1;
         mTuningMode = false;
+        mReconnectOnTimeOutCount = 0;
     }
 
     //-------------------- TuneKnob Interger with overflow ---------------------------

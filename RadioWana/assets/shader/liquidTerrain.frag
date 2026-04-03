@@ -1,4 +1,4 @@
-// #version 330 core
+// do not set a #version, it's done in the loader!
 precision mediump float;
 
 // --------------------------------------------
@@ -18,7 +18,7 @@ uniform bool  u_scanlines;
 
 vec3 hsv2rgb(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - vec3(K.w));
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
@@ -62,9 +62,10 @@ void main() {
 //     vec3 colorMid  = vec3(0.1, 0.4, 0.6);    // Calm Teal
 //     vec3 colorHigh = vec3(0.4, 0.8, 0.9);    // Bright Cyan/Aqua
 
-    vec3 colorDeep = vec3(f1 * 0.01, f2 * 0.01, f3 * 0.01);
-    vec3 colorMid  = vec3(f3 * 0.02, f2 * 0.02, f1 * 0.02);
-    vec3 colorHigh = hsv2rgb(vec3(f2 * 0.04, f1 * 0.04, f3 * 0.04));
+    vec3 colorDeep = vec3(float(f1) * 0.01, float(f2) * 0.01, float(f3) * 0.01);
+    vec3 colorMid  = vec3(float(f3) * 0.02, float(f2) * 0.02, float(f1) * 0.02);
+    vec3 colorHigh = hsv2rgb(vec3(float(f2) * 0.04, float(f1) * 0.04, float(f3) * 0.04));
+
 
 
     // Create a smooth gradient based on wave height and vertical position

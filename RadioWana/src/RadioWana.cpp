@@ -105,6 +105,7 @@ void RadioWana::InitDockSpace(){
 void RadioWana::OnConsoleCommand(ImConsole* console, const char* cmdline){
     std::string cmd = FluxStr::getWord(cmdline,0);
 
+    if (cmd == "testes") getMain()->getBackGroundRenderEffect()->mShaderESTesting = true;
 
     if (cmd == "sc" ) {  //STATION CACHE
         DumpStationCache();
@@ -883,12 +884,85 @@ void RadioWana::DrawRadioBrowserWindow() {
 void RadioWana::onEvent(SDL_Event event){
     if (mGuiGlue.get()) mGuiGlue->onEvent(event);
 
+    // FIRE TV KEYS:
+    // D-Pad Up        SDLK_UP
+    // D-Pad Down      SDLK_DOWN
+    // D-Pad Left      SDLK_LEFT
+    // D-Pad Right     SDLK_RIGHT
+    // Center (Select) SDLK_RETURN or SDLK_KP_ENTER
+    // Back            SDLK_ESCAPE or SDLK_AC_BACK
+    // Play/Pause      SDLK_MEDIA_PLAY_PAUSE
+
 
     if (event.type == SDL_EVENT_KEY_DOWN) {
         if (event.key.scancode == SDL_SCANCODE_GRAVE) mAppSettings.ShowConsole = !mAppSettings.ShowConsole;
         if (event.key.scancode == SDL_SCANCODE_ESCAPE) mAppSettings.SideBarOpen = !mAppSettings.SideBarOpen;
         if (event.key.scancode == SDL_SCANCODE_RETURN && (event.key.mod & SDL_KMOD_LALT)) getScreenObject()->toggleFullScreen();
     }
+
+
+
+    // --------------------
+    // FIXME SWIPE
+    //
+    // float touchStartX = 0.0f;
+    // bool isSwiping = false;
+    //
+    // if (event.type == SDL_EVENT_FINGER_DOWN) {
+    //     touchStartX = event.tfinger.x; // x is normalized  (0.0 bis 1.0)
+    //     isSwiping = true;
+    // }
+    // else if (event.type == SDL_EVENT_FINGER_UP) {
+    //     float deltaX = event.tfinger.x - touchStartX;
+    // if (deltaX < -0.15f) { // swipe left
+    //     if (targetPageIndex < maxPages - 1) targetPageIndex++;
+    // }
+    // else if (deltaX > 0.15f) { // swipe right
+    //     if (targetPageIndex > 0) targetPageIndex--;
+    // }    //     isSwiping = false;
+    // }
+    ///////////////////
+    // TODO: ImGuiWindowFlags_NoScrollWithMouse
+
+    // Page Example
+    // int targetPageIndex = 0;
+    // float currentScrollX = 0.0f;
+    // float scrollSpeed = 10.0f;
+
+    // --- ----------
+    // float deltaTime = ImGui::GetIO().DeltaTime;
+    // float screenWidth = ImGui::GetMainViewport()->Size.x;
+    //
+    // // Lineare Interpolation (Lerp)
+    // float targetX = (float)targetPageIndex * -screenWidth;
+    //
+    // //  current = current + (target - current) * speed * dt
+    // if (std::abs(targetX - currentScrollX) > 0.1f) {
+    //     currentScrollX += (targetX - currentScrollX) * scrollSpeed * deltaTime;
+    // } else {
+    //     currentScrollX = targetX;
+    // }
+
+    // // windows
+    // for (int i = 0; i < 3; i++) { // Beispiel für 3 Seiten
+    //     float xPos = currentScrollX + (i * screenWidth);
+    //
+    //     // Performance-Check:
+    //     if (xPos + screenWidth < 0 || xPos > screenWidth) continue;
+    //
+    //     ImGui::SetNextWindowPos(ImVec2(xPos, 0));
+    //     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size);
+    //
+    //     char buf[32]; sprintf(buf, "Seite %d", i);
+    //     ImGui::Begin(buf, nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    //
+    //     ImGui::Text("Inhalt von Seite %d", i);
+    //     if (ImGui::Button("NEXT PAGE") && targetPageIndex < 2) targetPageIndex++;
+    //
+    //     ImGui::End();
+    // }
+
+
 
 }
 // -----------------------------------------------------------------------------
@@ -1224,7 +1298,17 @@ bool RadioWana::Initialize(){
     };
 
     mStreamHandler->OnError = [&](const uint16_t errorCode, const std::string errorMsg) {
-        mGuiGlue->showMessage("Stream Errror "+std::to_string(errorCode), errorMsg);
+
+        if (errorCode == 28 && mReconnectOnTimeOutCount < 3) {
+            mReconnectOnTimeOutCount ++;
+            ConnectCurrent();
+        } else {
+            mGuiGlue->showMessage("Stream Errror "+std::to_string(errorCode), errorMsg);
+        }
+
+
+
+
     };
 
     mStreamHandler->OnConnected = [&]() {
