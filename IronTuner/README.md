@@ -61,6 +61,8 @@ Limitation:
 
 ## Todos
 
+- [ ] auto reconnect cause crash !
+
 - [ ] Carousel View and Redesign:
     - [ ] Code Redesign
         - RadioWana Class replacement:
