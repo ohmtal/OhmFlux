@@ -114,19 +114,78 @@ Limitation:
 
     - [X] Bug in header parser: icy-decription when empty
     
-    - [ ] Release
+    - [X] Release
         - [X] Windows Installer
             - [X] Try windows build
             - [X] cmake add a windows icon 
             - [X] Create installer 
-        - [ ] Linux/BSD Installer shell script 
-        - [ ] Try a flatpak - flathub ? 
+        - [X] Try Android Build :
+            - SSL failed - code changed so it prefer http over https
+        
+    - [ ] Move code to RadioWana Repo 
     
+---
+
+# Redesign and Rename 
+
+- [ ] Name it: 
+
+- [ ] Carousel View:
+    - [ ] Code Redesign
+        - RadioWana Class replacement:
+            - add a core class which hold the save/load/lists/handline
+                - what about the main class ? 
+            - create base view and derive the other views 
+        - Current Tree:
+            - main
+                - AppMain (getMain())
+                    - * holding Fonts 
+                    - Background Effects 
+                    - RadioWana: handling gui and app logic
+                        - *loading Fonts
+                        - AudioHandler
+                        - AudioRecoder
+                        - RadioBrowser
+                        - StreamHandler
+                        - StreamInfo
+        - New Tree
+        
+    - Usage Rules:
+        - left right change window 
+        - up down navigate in window
+        - enter change option or popup other options
+    - [ ] Play View 
+        - Display
+            - Title
+            - Station || next Title
+            - Recoding * 
+        
+    - [ ] Radio Browser 
+        - Search
+        - Filter results 
+        - Result list 
+            - Item Enter open menu
+                - Favourite
+                - Play
+                - Info 
+    - [ ] Tune: Favorites or better Station cache ?! 
+        - Filter results 
+        - Result list 
+            - Item Enter open menu
+                - Favourite
+                - Play
+                - Info 
+    - [ ] Equalizer + Volume
+        - up down should select fader and enter toggle edit mode
+    - [ ] Background Mode selector
+        - [ ] list with modes 
+
+    (*) Desktop only 
 ---
     
 - [ ] Version 2.x
     - [ ] Autoconnect on start 
-    - [ ] Auto Reconnect on timeout
+    - [X] Auto Reconnect on timeout
     - [ ] Recorder
         - [X] Add recorder to Rack 
         - Enable recording controls without connected 
