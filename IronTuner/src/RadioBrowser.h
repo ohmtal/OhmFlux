@@ -162,7 +162,7 @@ namespace FluxRadio {
         std::function<void()> OnStationResponseError = nullptr;
         // ---------------------------------------------------------------------
     protected:
-        std::string mUserAgent = "RadioWana/2.0";
+        std::string mUserAgent = "IronTuner/1.0";
         //TODO later SRV - _api._tcp.radio-browser.info
         std::string mHostname = "de1.api.radio-browser.info";
         std::string mProto = "https://";

@@ -218,7 +218,7 @@ namespace FluxRadio {
             if(mCurlHandle) {
 
                 curl_easy_setopt(mCurlHandle, CURLOPT_URL, mUrl.c_str());
-                curl_easy_setopt(mCurlHandle, CURLOPT_USERAGENT, "RadioWana/2.0");
+                curl_easy_setopt(mCurlHandle, CURLOPT_USERAGENT, "IronTuner/1.0");
                 curl_easy_setopt(mCurlHandle, CURLOPT_HTTPHEADER, headers);
                 curl_easy_setopt(mCurlHandle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 

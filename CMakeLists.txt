@@ -525,21 +525,21 @@ if(BUILD_FLUXTRACKER)
     configure_demo_target(OhmtalTracker ${TRACKER_DIR} "${TRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
 endif()
 
-# --- RadioWana ---
-option(BUILD_RADIOWANA "Build RadioWana" ON)
+# --- IronTuner ---
+option(BUILD_IRONTUNER "Build IronTuner" ON)
 # CURL(SSL) AND ANDROID IS NO FUN! ... later.... no idea how many hours i spend on it ...
 #  FIXME enable internet on : android/app/src/main/AndroidManifest.xml
 
 
-if(BUILD_RADIOWANA AND NOT EMSCRIPTEN)
-    set(RADIOWANA_DIR "${CMAKE_CURRENT_LIST_DIR}/RadioWana")
+if(BUILD_IRONTUNER AND NOT EMSCRIPTEN)
+    set(IRONTUNER_DIR "${CMAKE_CURRENT_LIST_DIR}/IronTuner")
 
 	if(MSVC)
 		find_package(CURL REQUIRED)
 		list(APPEND PROJECT_LIBS CURL::libcurl)
 		message(STATUS "Added Curl .....")
 		
-		set(RES_FILES "${RADIOWANA_DIR}/res/resources.rc")
+		set(RES_FILES "${IRONTUNER_DIR}/res/resources.rc")
 		
 	else ()
 
@@ -611,26 +611,26 @@ if(BUILD_RADIOWANA AND NOT EMSCRIPTEN)
 
 
 
-    set(RADIOWANA_SOURCES
-        "${RADIOWANA_DIR}/src/main.cpp"
-        "${RADIOWANA_DIR}/src/appMain.h"
-        "${RADIOWANA_DIR}/src/RadioWana.h"
-        "${RADIOWANA_DIR}/src/RadioWana.cpp"
-        "${RADIOWANA_DIR}/src/AudioHandler.h"
-        "${RADIOWANA_DIR}/src/AudioHandler.cpp"
-        "${RADIOWANA_DIR}/src/AudioRecorder.h"
-        "${RADIOWANA_DIR}/src/BackGroundEffects.h"
-        "${RADIOWANA_DIR}/src/StreamHandler.h"
-        "${RADIOWANA_DIR}/src/StreamHandler.cpp"
-        "${RADIOWANA_DIR}/src/RadioBrowser.h"
-        "${RADIOWANA_DIR}/src/RadioBrowser.cpp"
-        "${RADIOWANA_DIR}/src/StreamInfo.h"
+    set(IRONTUNER_SOURCES
+        "${IRONTUNER_DIR}/src/main.cpp"
+        "${IRONTUNER_DIR}/src/appMain.h"
+        "${IRONTUNER_DIR}/src/RadioWana.h"
+        "${IRONTUNER_DIR}/src/RadioWana.cpp"
+        "${IRONTUNER_DIR}/src/AudioHandler.h"
+        "${IRONTUNER_DIR}/src/AudioHandler.cpp"
+        "${IRONTUNER_DIR}/src/AudioRecorder.h"
+        "${IRONTUNER_DIR}/src/BackGroundEffects.h"
+        "${IRONTUNER_DIR}/src/StreamHandler.h"
+        "${IRONTUNER_DIR}/src/StreamHandler.cpp"
+        "${IRONTUNER_DIR}/src/RadioBrowser.h"
+        "${IRONTUNER_DIR}/src/RadioBrowser.cpp"
+        "${IRONTUNER_DIR}/src/StreamInfo.h"
 
     )
-    configure_demo_target(RadioWana ${RADIOWANA_DIR} "${RADIOWANA_DIR}/assets@assets" "${RADIOWANA_SOURCES}" ${RES_FILES})
+    configure_demo_target(IronTuner ${IRONTUNER_DIR} "${IRONTUNER_DIR}/assets@assets" "${IRONTUNER_SOURCES}" ${RES_FILES})
 
-elseif(BUILD_RADIOWANA)
-    message(WARNING "CURL: ANDROID AND EMSCRIPTEN BUILD IS NOT FIXED SO FAR!!")
+elseif(BUILD_IRONTUNER)
+    message(WARNING "CURL: EMSCRIPTEN BUILD IS NOT FIXED SO FAR!!")
 endif()
 
 
