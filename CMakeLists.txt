@@ -68,6 +68,24 @@ set(MINIAUDIO_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/miniaudio")
 # <<<< PROJECTS SECTION
 # =============================================================================
 
+set (SFX_SOURCES
+    #  --- sfx ---
+    ${SFX_DIR}/SFXGenerator.cpp
+    ${SFX_DIR}/SFXGeneratorStereo.cpp
+)
+
+set( OPL_SOURCES
+    #  --- ymfm ---
+    ${YMFM_DIR}/ymfm_opl.cpp
+    ${YMFM_DIR}/ymfm_misc.cpp
+    ${YMFM_DIR}/ymfm_adpcm.cpp
+    ${YMFM_DIR}/ymfm_pcm.cpp
+    ${YMFM_DIR}/ymfm_ssg.cpp
+
+    #  --- opl3 ---
+    ${OPL3_DIR}/OPL3Controller.cpp
+)
+
 
 # --- Engine Library Sources ---
 set(ENGINE_SOURCES
@@ -102,20 +120,6 @@ set(ENGINE_SOURCES
     #  --- stb ---
     ${STB_DIR}/flux_stb_impl.cpp
 
-    #  --- ymfm ---
-    ${YMFM_DIR}/ymfm_opl.cpp
-    ${YMFM_DIR}/ymfm_misc.cpp
-    ${YMFM_DIR}/ymfm_adpcm.cpp
-    ${YMFM_DIR}/ymfm_pcm.cpp
-    ${YMFM_DIR}/ymfm_ssg.cpp
-
-    #  --- opl3 ---
-    ${OPL3_DIR}/OPL3Controller.cpp
-
-
-    #  --- sfx ---
-    ${SFX_DIR}/SFXGenerator.cpp
-    ${SFX_DIR}/SFXGeneratorStereo.cpp
 
     #  --- imggui ---
     ${IMGGUI_DIR}/imgui.cpp
@@ -126,6 +130,7 @@ set(ENGINE_SOURCES
     ${IMGGUI_DIR}/imgui_demo.cpp
     ${IMGGUI_DIR}/backends/imgui_impl_sdl3.cpp
     ${IMGGUI_DIR}/backends/imgui_impl_opengl3.cpp
+
 
 )
 
@@ -420,7 +425,15 @@ endif()
 option(BUILD_TESTBED "Build TestBed application" ON)
 if(BUILD_TESTBED)
     set(TESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}/TestBed")
-    set(GAME_SOURCES "${TESTBED_DIR}/src/main.cpp")
+    set(GAME_SOURCES
+        "${TESTBED_DIR}/src/main.cpp"
+
+        # --- OPL
+        ${OPL_SOURCES}
+        # --- sfx
+        ${SFX_SOURCES}
+
+    )
     configure_demo_target(TestBed ${TESTBED_DIR} "${TESTBED_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
@@ -486,6 +499,12 @@ if(BUILD_SOUNDSTUDIO)
         "${SOUNDSTUDIO_DIR}/src/appGui.cpp"
         "${SOUNDSTUDIO_DIR}/src/modules/soundMixModule.cpp"
         "${SOUNDSTUDIO_DIR}/src/modules/inputModule.cpp"
+
+        # --- OPL
+        ${OPL_SOURCES}
+        # --- sfx
+        ${SFX_SOURCES}
+
     )
     configure_demo_target(SoundStudio ${SOUNDSTUDIO_DIR} "${SOUNDSTUDIO_DIR}/assets@assets" "${APP_SOURCES}")
 endif()
@@ -521,6 +540,12 @@ if(BUILD_FLUXTRACKER)
         "${TRACKER_DIR}/src/keyboardGui.cpp"
         "${TRACKER_DIR}/src/fancyOverlays.cpp"
         "${TRACKER_DIR}/src/ordersGui.cpp"
+
+        # --- OPL
+        ${OPL_SOURCES}
+        # --- sfx
+        ${SFX_SOURCES}
+
     )
     configure_demo_target(OhmtalTracker ${TRACKER_DIR} "${TRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
 endif()
