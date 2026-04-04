@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Thomas Hühn (XXTH)
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // RadioWana
@@ -19,11 +19,11 @@
 
 #include "DSP_VisualAnalyzer.h"
 
-#include "StreamHandler.h"
-#include "AudioHandler.h"
-#include "StreamInfo.h"
-#include "AudioRecorder.h"
-#include "RadioBrowser.h"
+#include "fluxRadio/StreamHandler.h"
+#include "fluxRadio/AudioHandler.h"
+#include "fluxRadio/StreamInfo.h"
+#include "fluxRadio/AudioRecorder.h"
+#include "fluxRadio/RadioBrowser.h"
 
 
 
@@ -163,10 +163,13 @@ public:
         int posX     = 0;
         int posY     = 0;
         bool  maximized   = false;
+        bool  fullScreen   = false;
 
         void sync() {
             SDL_Window* window = getScreenObject()->getWindow();
             if (!window) return;
+
+            fullScreen = getScreenObject()->getFullScreen();
             maximized = getScreenObject()->getWindowMaximized();
             // Window size
             SDL_GetWindowSize(window, &width, &height);
@@ -177,9 +180,13 @@ public:
         void updateWindow() {
             SDL_Window* window = getScreenObject()->getWindow();
             if (!window) return;
-            getScreenObject()->setWindowMaximized(maximized);
-            SDL_SetWindowSize(window, width, height);
-            if (posX != 0.f && posY != 0.f) SDL_SetWindowPosition(window, posX, posY);
+            getScreenObject()->setFullScreen(fullScreen);
+            // we have fullScreen ignore maximized and position
+            if (!fullScreen)  {
+                getScreenObject()->setWindowMaximized(maximized);
+                SDL_SetWindowSize(window, width, height);
+                if (posX != 0.f && posY != 0.f) SDL_SetWindowPosition(window, posX, posY);
+            }
         }
     };
 

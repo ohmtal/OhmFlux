@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Thomas Hühn (XXTH)
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "StreamHandler.h"
@@ -218,7 +218,7 @@ namespace FluxRadio {
             if(mCurlHandle) {
 
                 curl_easy_setopt(mCurlHandle, CURLOPT_URL, mUrl.c_str());
-                curl_easy_setopt(mCurlHandle, CURLOPT_USERAGENT, "IronTuner/1.0");
+                curl_easy_setopt(mCurlHandle, CURLOPT_USERAGENT, mUserAgent.c_str());
                 curl_easy_setopt(mCurlHandle, CURLOPT_HTTPHEADER, headers);
                 curl_easy_setopt(mCurlHandle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 

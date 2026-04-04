@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Thomas Hühn (XXTH)
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // RadioWana
@@ -1281,10 +1281,10 @@ bool RadioWana::Initialize(){
 
 
     // ~~~~ modules ~~~~~
-    mStreamHandler = std::make_unique<FluxRadio::StreamHandler>();
+    mStreamHandler = std::make_unique<FluxRadio::StreamHandler>("IronTuner/1.0");
     mAudioHandler  = std::make_unique<FluxRadio::AudioHandler>();
     mAudioRecorder = std::make_unique<FluxRadio::AudioRecorder>();
-    mRadioBrowser  = std::make_unique<FluxRadio::RadioBrowser>();
+    mRadioBrowser  = std::make_unique<FluxRadio::RadioBrowser>("IronTuner/1.0");
 
 
     mAudioHandler->setVolume(mAppSettings.Volume); //sync volume

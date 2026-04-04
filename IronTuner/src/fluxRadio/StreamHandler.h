@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Thomas Hühn (XXTH)
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #pragma once
@@ -22,6 +22,7 @@ namespace FluxRadio {
     class StreamHandler {
     private:
         std::string mUrl;
+        std::string mUserAgent = "FluxRadioClass/1.0";
         std::atomic<bool> mStopRequested{false}; // remember : .store .load  :P
         std::thread mThread;
         std::atomic<bool> mRunning = false;
@@ -66,7 +67,9 @@ namespace FluxRadio {
         std::function<void(const void*, const size_t)> OnAudioChunk = nullptr;
 
 
-        StreamHandler() = default;
+        StreamHandler(std::string userAgent) {
+            mUserAgent = userAgent;
+        }
         ~StreamHandler() {
             stop();
             if (mThread.joinable()) mThread.join();
@@ -78,8 +81,6 @@ namespace FluxRadio {
         void dumpInfo() { mStreamInfo.dump(); }
 
         std::string getHeader() const { return mFullHeader; }
-
-
 
         void stop() {
             if (mStopRequested.load()) return ;

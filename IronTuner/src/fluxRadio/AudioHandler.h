@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Thomas Hühn (XXTH)
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #pragma once
@@ -73,12 +73,7 @@ namespace FluxRadio {
         std::function<void()> OnTitleTrigger = nullptr;
         std::string getCurrentTitle() const { return mCurrentTitle;}
         std::deque<MetaEvent> getPendingStreamTitles()  const { return mPendingStreamTitles; }
-        std::string getNextTitle() const {
-            if (!mPendingStreamTitles.empty()) {
-                return mPendingStreamTitles.front().streamTitle;
-            }
-            return "";
-        }
+        std::string getNextTitle() const;
 
         bool init(StreamInfo* info);
         void shutDown() {
@@ -91,27 +86,17 @@ namespace FluxRadio {
 
         void reset();
 
+        std::string getEffectsSettingsBase64( );
+        bool setEffectsSettingsBase64( std::string settingsBase64);
+        size_t getRawBufferSize() const { return mRawBuffer.size(); }
+
+        void decoderDebug( );
+
+
     private:
         static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
         static ma_result OnReadFromRawBuffer(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead, size_t* pBytesRead);
         static ma_result OnSeekDummy(ma_decoder* pDecoder, ma_int64 byteOffset, ma_seek_origin origin);
-
-
-    public:
-        std::string getEffectsSettingsBase64( );
-        bool setEffectsSettingsBase64( std::string settingsBase64);
-
-
-        size_t getRawBufferSize() const { return mRawBuffer.size(); }
-        void decoderDebug( ) {
-            // if (!isDebugBuild()) return;
-            Log("Raw Buffer Size: %d, Ringbuffer spaceLeft:%d inUse:%d, Decode Running: %d",
-                (int)getRawBufferSize(),
-                (int)mRingBuffer.getAvailableForWrite(),
-                (int)mRingBuffer.getAvailableForRead(),
-                (int)mDecoderThreadRunning
-            );
-        }
 
     };
 }

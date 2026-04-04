@@ -102,16 +102,12 @@ FluxScreen::~FluxScreen()
 	}
 }
 //-------------------------------------------------------------------------------
-//FIXME should be in an extra file ... cleanup...
+bool FluxScreen::setFullScreen(const bool& value) {
 
-//-------------------------------------------------------------------------------
-
-bool FluxScreen::toggleFullScreen()
-{
 	S32 windowFlags = SDL_GetWindowFlags(mWindow);
 	bool isFullscreen = (windowFlags & SDL_WINDOW_FULLSCREEN) != 0;
-	bool targetFullscreen = !isFullscreen;
-
+	bool targetFullscreen = value;
+	if ( isFullscreen == value ) return true;
 	bool lResultBool = SDL_SetWindowFullscreen(mWindow, targetFullscreen);
 
 	if (!lResultBool)
@@ -119,11 +115,14 @@ bool FluxScreen::toggleFullScreen()
 		Log("Failed to toggle FullScreen !");
 		return false;
 	}
-
 	mFullScreen = targetFullscreen;
 
-
 	return true;
+}
+
+
+bool FluxScreen::toggleFullScreen() {
+	return setFullScreen(!mFullScreen);
 }
 //-------------------------------------------------------------------------------
 void FluxScreen::setVSync(const bool& lEnabled)

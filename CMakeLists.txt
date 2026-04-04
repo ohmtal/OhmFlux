@@ -614,18 +614,24 @@ if(BUILD_IRONTUNER AND NOT EMSCRIPTEN)
     set(IRONTUNER_SOURCES
         "${IRONTUNER_DIR}/src/main.cpp"
         "${IRONTUNER_DIR}/src/appMain.h"
+        "${IRONTUNER_DIR}/src/appMain.cpp"
         "${IRONTUNER_DIR}/src/RadioWana.h"
         "${IRONTUNER_DIR}/src/RadioWana.cpp"
-        "${IRONTUNER_DIR}/src/AudioHandler.h"
-        "${IRONTUNER_DIR}/src/AudioHandler.cpp"
-        "${IRONTUNER_DIR}/src/AudioRecorder.h"
         "${IRONTUNER_DIR}/src/BackGroundEffects.h"
-        "${IRONTUNER_DIR}/src/StreamHandler.h"
-        "${IRONTUNER_DIR}/src/StreamHandler.cpp"
-        "${IRONTUNER_DIR}/src/RadioBrowser.h"
-        "${IRONTUNER_DIR}/src/RadioBrowser.cpp"
-        "${IRONTUNER_DIR}/src/StreamInfo.h"
 
+        # fluxRadio:
+        "${IRONTUNER_DIR}/src/fluxRadio/AudioHandler.h"
+        "${IRONTUNER_DIR}/src/fluxRadio/AudioHandler.cpp"
+        "${IRONTUNER_DIR}/src/fluxRadio/AudioRecorder.h"
+        "${IRONTUNER_DIR}/src/fluxRadio/AudioRecorder.cpp"
+        "${IRONTUNER_DIR}/src/fluxRadio/StreamHandler.h"
+        "${IRONTUNER_DIR}/src/fluxRadio/StreamHandler.cpp"
+        "${IRONTUNER_DIR}/src/fluxRadio/RadioBrowser.h"
+        "${IRONTUNER_DIR}/src/fluxRadio/RadioBrowser.cpp"
+        "${IRONTUNER_DIR}/src/fluxRadio/RadioStation.h"
+        "${IRONTUNER_DIR}/src/fluxRadio/RadioStation.cpp"
+        "${IRONTUNER_DIR}/src/fluxRadio/StreamInfo.h"
+        "${IRONTUNER_DIR}/src/fluxRadio/StreamInfo.cpp"
     )
     configure_demo_target(IronTuner ${IRONTUNER_DIR} "${IRONTUNER_DIR}/assets@assets" "${IRONTUNER_SOURCES}" ${RES_FILES})
 

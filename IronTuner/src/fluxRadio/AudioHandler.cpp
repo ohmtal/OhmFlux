@@ -1,3 +1,7 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Thomas Hühn (XXTH)
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
 #include <SDL3/SDL.h>
 #include "AudioHandler.h"
 #include "utils/errorlog.h"
@@ -66,8 +70,6 @@ namespace FluxRadio {
             SDL_PutAudioStreamData(stream, silence.data(), (int)(missingSamples * sizeof(float)));
         }
     }
-
-
     // -----------------------------------------------------------------------------
     bool AudioHandler::init(StreamInfo* info) {
 
@@ -83,11 +85,7 @@ namespace FluxRadio {
             if (isDebugBuild()) info->dump();
 
         }
-
-
         mStreamInfo = info;
-
-
         if (mInitialized ) {
             ma_decoder_uninit(mDecoder);
             mDecoderInitialized.store( false ) ;
@@ -198,7 +196,6 @@ namespace FluxRadio {
         return true;
     }
     // -----------------------------------------------------------------------------
-
     void AudioHandler::OnAudioChunk(const void* buffer, size_t size) {
         std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
 
@@ -210,7 +207,6 @@ namespace FluxRadio {
             this->init(mStreamInfo);
         }
     }
-
     // -----------------------------------------------------------------------------
     ma_result AudioHandler::OnReadFromRawBuffer(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead, size_t* pBytesRead)
     {
@@ -242,24 +238,17 @@ namespace FluxRadio {
                 self->mPendingStreamTitles.pop_front();
                 if ( self->OnTitleTrigger ) self->OnTitleTrigger();
             }
-        } /*else if (available == 0) {
-            if (pBytesRead) *pBytesRead = 0;
-            return MA_BUSY; // <--- prevent "MA_AT_END" test
-        }*/
-
+        }
         if (pBytesRead) {
             *pBytesRead = actualRead;
         }
 
         return MA_SUCCESS;
     }
-
     // -----------------------------------------------------------------------------
     ma_result AudioHandler::OnSeekDummy(ma_decoder* pDecoder, ma_int64 byteOffset, ma_seek_origin origin){
         return MA_SUCCESS;
     }
-
-
     // -----------------------------------------------------------------------------
     void AudioHandler::reset ( ){
         if (!mDecoderInitialized.load()) return;
@@ -371,7 +360,7 @@ namespace FluxRadio {
         return "";
     }
     // -----------------------------------------------------------------------------
-    bool AudioHandler::setEffectsSettingsBase64(std::__1::string settingsBase64) {
+    bool AudioHandler::setEffectsSettingsBase64(std::string settingsBase64) {
 
         if (settingsBase64.empty()) {
             LogFMT("[error] setInputEffectsSettings failed! Empty INPUT Stream!");
@@ -394,7 +383,22 @@ namespace FluxRadio {
         }
         return false;
     }
-
-
+    // -----------------------------------------------------------------------------
+    std::string AudioHandler::getNextTitle() const{
+        if (!mPendingStreamTitles.empty()) {
+            return mPendingStreamTitles.front().streamTitle;
+        }
+        return "";
+    }
+    // -----------------------------------------------------------------------------
+    void AudioHandler::decoderDebug(){
+        // if (!isDebugBuild()) return;
+        Log("Raw Buffer Size: %d, Ringbuffer spaceLeft:%d inUse:%d, Decode Running: %d",
+            (int)getRawBufferSize(),
+            (int)mRingBuffer.getAvailableForWrite(),
+            (int)mRingBuffer.getAvailableForRead(),
+            (int)mDecoderThreadRunning
+        );
+    }
 }; //namespace
 

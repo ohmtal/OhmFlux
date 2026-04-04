@@ -90,6 +90,8 @@ public:
 
 
 	bool getFullScreen() const { return mFullScreen; }
+	bool setFullScreen(const bool& value);
+
 	bool getVsync()		 const { return mVsync; }
 	void setVSync(const bool& lEnabled);
 

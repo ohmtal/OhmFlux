@@ -1,5 +1,8 @@
 //-----------------------------------------------------------------------------
-// Main App
+// Copyright (c) 2026 Thomas Hühn (XXTH)
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
+// APP Main
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -32,113 +35,22 @@ public:
     inline static ImFont* mHackNerdFont26 = nullptr;
 
 
-    bool Initialize() override
-    {
-        if (!Parent::Initialize()) return false;
+    bool Initialize() override;
+    void Deinitialize() override;
 
-        mAppGui = new RadioWana();
-        if (!mAppGui->Initialize())
-            return false;
-
-        mBackGroundEffects = new FluxRadio::BackGroundEffects();
-        if (!mBackGroundEffects->Initialize()) {
-            SAFE_DELETE(mBackGroundEffects);
-            mBackGroundEffects = nullptr;
-        } else {
-            mBackGroundEffects->setAnalyzer(mAppGui->getSpectrumAnalyzer());
-            mAppGui->setBackGroundRenderId(mAppGui->mAppSettings.BackGroundRenderId, mAppGui->mAppSettings.BackGroundScanLines);
-        }
-
-
-
-        return true;
-    }
-    //--------------------------------------------------------------------------------------
-    void Deinitialize() override
-    {
-        if (mBackGroundEffects) {
-            mBackGroundEffects->Deinitialize();
-            SAFE_DELETE(mBackGroundEffects);
-        }
-
-        mAppGui->Deinitialize();
-        SAFE_DELETE(mAppGui);
-
-
-
-        Parent::Deinitialize();
-    }
-    //--------------------------------------------------------------------------------------
-    void onKeyEvent(SDL_KeyboardEvent event) override
-    {
-        bool isKeyUp = (event.type == SDL_EVENT_KEY_UP);
-        bool isAlt =  event.mod & SDLK_LALT || event.mod & SDLK_RALT;
-        if (event.key == SDLK_F4 && isAlt  && isKeyUp)
-            TerminateApplication();
-        else
-            mAppGui->onKeyEvent(event);
-
-
-    }
-    //--------------------------------------------------------------------------------------
+    void onKeyEvent(SDL_KeyboardEvent event) override;
     void onMouseButtonEvent(SDL_MouseButtonEvent event) override    {    }
-    //--------------------------------------------------------------------------------------
-    void onEvent(SDL_Event event) override
-    {
-        mAppGui->onEvent(event);
-    }
-    //--------------------------------------------------------------------------------------
-    void Update(const double& dt) override
-    {
-        if (mAppGui) {
-            mAppGui->Update(dt);
-            if (mBackGroundEffects && mAppGui->mAppSettings.BackGroundRenderId >= 0) {
-                mBackGroundEffects->UpdateLevels(dt,
-                    mAppGui->getAudioLevels());
-            }
-        }
+    void onEvent(SDL_Event event) override;
 
+    void Update(const double& dt) override;
+    void onDrawTopMost() override;
+    void onDraw() override;;
 
-
-
-        Parent::Update(dt);
-    }
-    //--------------------------------------------------------------------------------------
-    // imGui must be put in here !!
-    void onDrawTopMost() override
-    {
-        mAppGui->DrawGui();
-    }
-    //--------------------------------------------------------------------------------------
-    void onDraw() override {
-
-        if (mBackGroundEffects && mAppGui->mAppSettings.BackGroundRenderId >=0) {
-            mBackGroundEffects->Draw();
-        }  else {
-            if (mAppGui && mAppGui->mBrushedMetalTex) {
-                DrawParams2D dp;
-                dp.image = mAppGui->mBrushedMetalTex;
-                dp.imgId = 0;
-                dp.x = getScreen()->getCenterX();
-                dp.y = getScreen()->getCenterY();
-                dp.z = 0.f;
-                dp.w = getScreen()->getWidth();
-                dp.h = getScreen()->getHeight();
-
-                Render2D.drawSprite(dp);
-            }
-
-        }
-
-    };
-    //--------------------------------------------------------------------------------------
     RadioWana* getAppGui() const {return mAppGui; }
     RadioWana::AppSettings* getAppSettings() {return mAppGui->getAppSettings();}
 
 
-
-
-}; //classe ImguiTest
+};
 
 extern AppMain* gAppMain;
 AppMain* getGame();

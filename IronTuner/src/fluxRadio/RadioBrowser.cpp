@@ -1,27 +1,22 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 Thomas Hühn (XXTH)
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "RadioBrowser.h"
 #include "utils/fluxStr.h"
 
 namespace FluxRadio {
-
     // -----------------------------------------------------------------------------
-
     void RadioBrowser::clickStation(std::string stationUuid){
         if (stationUuid.empty()) return;
         std::string url = mProto + mHostname + "/json/url/" + stationUuid;
         Execute(url, "", RequestType::CLICK);
     }
     // -----------------------------------------------------------------------------
-
     void RadioBrowser::processResponse(const std::string data) {
         try {
             auto j = json::parse(data);
-
             std::vector<RadioStation> stations;
-
             for (const auto& item : j) {
                 RadioStation s;
                 s.stationuuid = item.value("stationuuid", "");
@@ -60,16 +55,16 @@ namespace FluxRadio {
             if (OnStationResponseError) OnStationResponseError();
             Log("[error] JSON Parse Error: %s", e.what());
         }
-
     }
     // -----------------------------------------------------------------------------
-    RadioBrowser::RadioBrowser() {
+    RadioBrowser::RadioBrowser(std::string userAgent) {
+
+        mUserAgent = userAgent;
 
         if (isAndroidBuild())
         {
-            mProto = "http://"; //FIXME
+            mProto = "http://";
         }
-
 
         // Parent::HttpsClient();
         onDisConnected = [&]() {
@@ -81,10 +76,8 @@ namespace FluxRadio {
                     processResponse(mContentData);
                 }
                 if (mLastRequestType == RequestType::CLICK &&  cType == "application/json") {
-                    //FIXME click ...update url ? or ignore it
+                    //click ...update url  - or ignore it
                 }
-
-
             }
         };
     }
