@@ -58,50 +58,16 @@ namespace FluxRadio {
 
 
         std::unique_ptr<DSP::EffectsManager> mEffectsManager = nullptr;
-        void populateRack(DSP::EffectsRack* lRack) {
-            std::vector<DSP::EffectType> types = {
-                DSP::EffectType::Equalizer9Band,
-                // DSP::EffectType::Limiter,
-                // high cpu usage!
-                DSP::EffectType::SpectrumAnalyzer,
-                DSP::EffectType::VisualAnalyzer,
-            };
-            for (auto type : types) {
-                auto fx = DSP::EffectFactory::Create(type);
-                if (fx) {
-                    fx->setEnabled(true);
-                    lRack->getEffects().push_back(std::move(fx));
-                }
-            }
-        }
+        void populateRack(DSP::EffectsRack* lRack);
 
     public:
-        AudioHandler()  : mRingBuffer(1024 * 512) {
-            mDecoder = new ma_decoder();
-            memset(mDecoder, 0, sizeof(ma_decoder));
-            mStreamInfo = nullptr;
+        AudioHandler();
 
-            mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
-            populateRack(mEffectsManager->getActiveRack());
-
-
-        }
-        // ~AudioHandler() {
-        //     mDecoderThreadRunning.store(false);
-        //     if (mDecoderThread.joinable()) mDecoderThread.join();
-        // }
-
-
-        void RenderRack(int mode = 0) {
-            if (mEffectsManager) {
-                    mEffectsManager->renderUI(mode);
-            }
-        }
+        void RenderRack(int mode = 0);
         DSP::EffectsManager* getManager() const { return mEffectsManager.get();}
 
         float getVolume() {return mVolume.load(); }
         void setVolume(float value) {return mVolume.store(value); }
-
 
         std::function<void(const uint8_t*, size_t)> OnAudioStreamData = nullptr;
         std::function<void()> OnTitleTrigger = nullptr;
@@ -116,7 +82,7 @@ namespace FluxRadio {
 
         bool init(StreamInfo* info);
         void shutDown() {
-           //double free?! onDisConnected();
+
         }
 
         void OnStreamTitleUpdate(const std::string streamTitle, const size_t streamPosition);
@@ -132,38 +98,8 @@ namespace FluxRadio {
 
 
     public:
-        std::string getEffectsSettingsBase64( ) {
-            if (mEffectsManager->getActiveRack()) {
-                std::stringstream oss;
-                mEffectsManager->SaveRackStream(mEffectsManager->getActiveRack(), oss);
-                ByteEncoder::Base64 lEncoder;
-                return lEncoder.encode(oss);
-            }
-            return "";
-        }
-        bool setEffectsSettingsBase64( std::string settingsBase64) {
-
-            if (settingsBase64.empty()) {
-                LogFMT("[error] setInputEffectsSettings failed! Empty INPUT Stream!");
-                return false;
-            }
-
-            if (mEffectsManager->getActiveRack()) {
-                ByteEncoder::Base64 lEncoder;
-                std::stringstream iss;
-                if (!lEncoder.decode(settingsBase64, iss)) {
-                    LogFMT("[error] setInputEffectsSettings failed! Invalid Stream!");
-                    return false;
-                }
-                if (!mEffectsManager->LoadRackStream(iss, DSP::EffectsManager::OnlyUpdateExistingSingularity, true)) {
-                    LogFMT("[error] setInputEffectsSettings failed!\n{}", mEffectsManager->getErrors());
-                    return false;
-                }
-
-                return true;
-            }
-            return false;
-        }
+        std::string getEffectsSettingsBase64( );
+        bool setEffectsSettingsBase64( std::string settingsBase64);
 
 
         size_t getRawBufferSize() const { return mRawBuffer.size(); }

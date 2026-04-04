@@ -14,9 +14,22 @@
 
 namespace FluxRadio {
     // -----------------------------------------------------------------------------
+    AudioHandler::AudioHandler()
+    : mRingBuffer(1024 * 512)
+    {
+        mDecoder = new ma_decoder();
+        memset(mDecoder, 0, sizeof(ma_decoder));
+        mStreamInfo = nullptr;
+
+        mEffectsManager = std::make_unique<DSP::EffectsManager>(true);
+        populateRack(mEffectsManager->getActiveRack());
+
+
+    }
+    // -----------------------------------------------------------------------------
     void SDLCALL AudioHandler::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
         auto* self = static_cast<AudioHandler*>(userdata);
-        if (!self->mStreamInfo) return;
+        if (!self || !self->mStreamInfo) return;
 
         int channels = self->mStreamInfo->channels;
         size_t samplesNeeded = additional_amount / sizeof(float);
@@ -27,16 +40,6 @@ namespace FluxRadio {
         size_t samplesRead = self->mRingBuffer.pop(pcmBuffer.data(), samplesNeeded);
 
         if (samplesRead > 0) {
-
-            // if (self->mFadeInSamplesProcessed < self->FADE_IN_DURATION) {
-            //     for (size_t i = 0; i < samplesRead; ++i) {
-            //         float fade = (float)self->mFadeInSamplesProcessed / self->FADE_IN_DURATION;
-            //         pcmBuffer[i] *= fade;
-            //         if (self->mFadeInSamplesProcessed < self->FADE_IN_DURATION) {
-            //             self->mFadeInSamplesProcessed++;
-            //         }
-            //     }
-            // }
 
             float vol = self->mVolume.load();
 
@@ -304,7 +307,7 @@ namespace FluxRadio {
             bool canDecode = false;
             {
                 std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
-                canDecode = mDecoderInitialized.load() && mStreamInfo && (mRawBuffer.size() > 4096);
+                canDecode = mDecoderInitialized.load() && mStreamInfo && (mRawBuffer.size() > framesToDecodePerLoop);
             }
 
             if (!canDecode) {
@@ -334,6 +337,64 @@ namespace FluxRadio {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
+    // -----------------------------------------------------------------------------
+    void AudioHandler::populateRack(DSP::EffectsRack* lRack){
+        std::vector<DSP::EffectType> types = {
+            DSP::EffectType::Equalizer9Band,
+            // DSP::EffectType::Limiter,
+            // high cpu usage!
+            DSP::EffectType::SpectrumAnalyzer,
+            DSP::EffectType::VisualAnalyzer,
+        };
+        for (auto type : types) {
+            auto fx = DSP::EffectFactory::Create(type);
+            if (fx) {
+                fx->setEnabled(true);
+                lRack->getEffects().push_back(std::move(fx));
+            }
+        }
+    }
+    // -----------------------------------------------------------------------------
+    void AudioHandler::RenderRack(int mode){
+        if (mEffectsManager) {
+            mEffectsManager->renderUI(mode);
+        }
+    }
+    // -----------------------------------------------------------------------------
+    std::string AudioHandler::getEffectsSettingsBase64(){
+        if (mEffectsManager->getActiveRack()) {
+            std::stringstream oss;
+            mEffectsManager->SaveRackStream(mEffectsManager->getActiveRack(), oss);
+            ByteEncoder::Base64 lEncoder;
+            return lEncoder.encode(oss);
+        }
+        return "";
+    }
+    // -----------------------------------------------------------------------------
+    bool AudioHandler::setEffectsSettingsBase64(std::__1::string settingsBase64) {
+
+        if (settingsBase64.empty()) {
+            LogFMT("[error] setInputEffectsSettings failed! Empty INPUT Stream!");
+            return false;
+        }
+
+        if (mEffectsManager->getActiveRack()) {
+            ByteEncoder::Base64 lEncoder;
+            std::stringstream iss;
+            if (!lEncoder.decode(settingsBase64, iss)) {
+                LogFMT("[error] setInputEffectsSettings failed! Invalid Stream!");
+                return false;
+            }
+            if (!mEffectsManager->LoadRackStream(iss, DSP::EffectsManager::OnlyUpdateExistingSingularity, true)) {
+                LogFMT("[error] setInputEffectsSettings failed!\n{}", mEffectsManager->getErrors());
+                return false;
+            }
+
+            return true;
+        }
+        return false;
+    }
+
 
 }; //namespace
 
