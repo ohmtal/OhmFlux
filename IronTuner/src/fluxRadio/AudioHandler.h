@@ -62,6 +62,14 @@ namespace FluxRadio {
 
     public:
         AudioHandler();
+        ~AudioHandler() {
+            // stop DecoderWorker
+            mDecoderThreadRunning.store( false );
+            if (mDecoderThread.joinable()) {
+                mDecoderThread.join();
+            }
+
+        }
 
         void RenderRack(int mode = 0);
         DSP::EffectsManager* getManager() const { return mEffectsManager.get();}
