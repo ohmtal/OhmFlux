@@ -886,6 +886,7 @@ namespace IronTuner {
         // Center (Select) SDLK_RETURN or SDLK_KP_ENTER
         // Back            SDLK_ESCAPE or SDLK_AC_BACK
         // Play/Pause      SDLK_MEDIA_PLAY_PAUSE
+        // Menu            SDLK_MENU
 
 
         if (event.type == SDL_EVENT_KEY_DOWN) {
@@ -958,14 +959,6 @@ namespace IronTuner {
 
 
 
-    }
-    // -----------------------------------------------------------------------------
-    void AppGui::setBackGroundRenderId(int id, bool enableScanLines){
-        // if (getMain()->getAppSettings().BackGroundRenderId == id ) return;
-        getMain()->getAppSettings().BackGroundRenderId = id;
-        if (id >= 0) {
-            getMain()->reloadBackGroundEffectsShader( id, enableScanLines );
-        }
     }
 
 
@@ -1061,7 +1054,7 @@ namespace IronTuner {
                 {
 
                     bool isSelected = getMain()->getAppSettings().BackGroundRenderId == -1;
-                    if (ImGui::MenuItem("Texture##BackGroundRenderId", NULL, isSelected)) { setBackGroundRenderId(-1);}
+                    if (ImGui::MenuItem("Texture##BackGroundRenderId", NULL, isSelected)) { getMain()->setBackGroundRenderId(-1);}
                     ImGui::Separator();
 
                     if (getMain()->getBackGroundRenderEffect() ) {
@@ -1069,13 +1062,13 @@ namespace IronTuner {
                             std::string caption =  getMain()->getBackGroundRenderEffect()->mFragShaderCaptions[i] + "##BackGroundRenderId";
                             isSelected = (i == getMain()->getAppSettings().BackGroundRenderId);
                             if (ImGui::MenuItem(caption.c_str(), NULL, &isSelected)) {
-                                setBackGroundRenderId((int)i, getMain()->getAppSettings().BackGroundScanLines);
+                                getMain()->setBackGroundRenderId((int)i, getMain()->getAppSettings().BackGroundScanLines);
                             }
                         }
                         ImGui::Separator();
                         if (ImGui::Checkbox("Render Scanlines",&getMain()->getAppSettings().BackGroundScanLines)) {
                             if (getMain()->getAppSettings().BackGroundRenderId >=0) {
-                                setBackGroundRenderId(getMain()->getAppSettings().BackGroundRenderId, getMain()->getAppSettings().BackGroundScanLines);
+                                getMain()->setBackGroundRenderId(getMain()->getAppSettings().BackGroundRenderId, getMain()->getAppSettings().BackGroundScanLines);
                             }
                         }
 
@@ -1224,7 +1217,6 @@ namespace IronTuner {
     void AppGui::Deinitialize(){
         SaveSettings();
         SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!!
-        // mStreamHandler->OnAudioChunk = nullptr;
         mStreamHandler->shutdown();
         if (mAudioHandler.get()) mAudioHandler->shutDown();
     }

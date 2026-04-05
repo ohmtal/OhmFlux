@@ -29,6 +29,12 @@ namespace IronTuner {
 
 
     public:
+        inline static ImFont* mHackNerdFont12 = nullptr;
+        inline static ImFont* mHackNerdFont16 = nullptr;
+        inline static ImFont* mHackNerdFont20 = nullptr;
+        inline static ImFont* mHackNerdFont26 = nullptr;
+
+
         AppMain() {}
         ~AppMain() {}
 
@@ -39,10 +45,9 @@ namespace IronTuner {
             if (mBackGroundEffects) return mBackGroundEffects->LoadShader(id, scanLines);
             return false;
         }
-        inline static ImFont* mHackNerdFont12 = nullptr;
-        inline static ImFont* mHackNerdFont16 = nullptr;
-        inline static ImFont* mHackNerdFont20 = nullptr;
-        inline static ImFont* mHackNerdFont26 = nullptr;
+        void setBackGroundRenderId(int id, bool enableScanLines = false);
+
+
 
 
         bool Initialize() override;

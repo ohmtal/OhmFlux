@@ -71,8 +71,7 @@ namespace FluxRadio {
             mUserAgent = userAgent;
         }
         ~StreamHandler() {
-            stop();
-            if (mThread.joinable()) mThread.join();
+           shutdown();
         }
 
         bool isRunning() {return mRunning.load();}

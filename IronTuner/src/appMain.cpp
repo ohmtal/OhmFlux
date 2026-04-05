@@ -22,7 +22,7 @@ namespace IronTuner {
             mBackGroundEffects = nullptr;
         } else {
             mBackGroundEffects->setAnalyzer(mAppGui->getSpectrumAnalyzer());
-            mAppGui->setBackGroundRenderId(getAppSettings().BackGroundRenderId, getAppSettings().BackGroundScanLines);
+            setBackGroundRenderId(getAppSettings().BackGroundRenderId, getAppSettings().BackGroundScanLines);
         }
 
         return true;
@@ -94,5 +94,11 @@ namespace IronTuner {
         }
     }
     //--------------------------------------------------------------------------
-
+    void AppMain::setBackGroundRenderId(int id, bool enableScanLines){
+        getAppSettings().BackGroundRenderId = id;
+        if (id >= 0) {
+            reloadBackGroundEffectsShader( id, enableScanLines );
+        }
+    }
+    // -------------------------------------------------------------------------
 };

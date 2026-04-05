@@ -157,8 +157,7 @@ namespace IronTuner {
         void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB);
 
 
-        // BackGroundRenderId
-        void setBackGroundRenderId(int id, bool enableScanLines = false);
+
 
     }; //class
 
