@@ -36,7 +36,7 @@ namespace IronTuner {
     };
 
     //--------------------------------------------------------------------------
-    inline void to_json(nlohmann::json_abi_v3_12_0::json& j, const AppSettings& s){
+    inline void to_json(nlohmann::json& j, const AppSettings& s){
         j = nlohmann::json{
             // NOT CurrentStation
             {"Volume",              s.Volume},
@@ -45,10 +45,10 @@ namespace IronTuner {
         };
     }
     //--------------------------------------------------------------------------
-    inline void from_json(const nlohmann::json_abi_v3_12_0::json& j, AppSettings& s){
+    inline void from_json(const nlohmann::json& j, AppSettings& s){
         s.Volume                = j.value("Volume", 1.f);
-        s.BackGroundRenderId    = j.value("BackGroundRenderId", 1.f);
-        s.BackGroundScanLines   = j.value("BackGroundScanLines", 1.f);
+        s.BackGroundRenderId    = j.value("BackGroundRenderId", 0);
+        s.BackGroundScanLines   = j.value("BackGroundScanLines", false);
     }
 
 

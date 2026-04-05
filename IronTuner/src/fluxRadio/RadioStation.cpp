@@ -44,7 +44,7 @@ namespace FluxRadio {
         return result;
     }
     //--------------------------------------------------------------------------
-    void to_json(nlohmann::json_abi_v3_12_0::json& j, const RadioStation& s){
+    void to_json(nlohmann::json& j, const RadioStation& s){
         j = nlohmann::json{
             {"stationuuid", s.stationuuid},
             {"name",        s.name},
@@ -63,7 +63,7 @@ namespace FluxRadio {
         };
     }
     //--------------------------------------------------------------------------
-    void from_json(const nlohmann::json_abi_v3_12_0::json& j, RadioStation& s){
+    void from_json(const nlohmann::json& j, RadioStation& s){
         s.stationuuid = j.value("stationuuid", "");
         s.name        = j.value("name", "");
         s.url         = j.value("url", "");

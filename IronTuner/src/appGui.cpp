@@ -104,9 +104,10 @@ namespace IronTuner {
     }
     // -----------------------------------------------------------------------------
     void AppGui::InitDockSpace(){
-        if (getMain()->getAppSettings().DockSpaceInitialized) return;
-        getMain()->getAppSettings().DockSpaceInitialized = true;
-        restoreLayout();
+        //FIXME CARUSEL
+        // if (getMain()->getAppSettings().DockSpaceInitialized) return;
+        // getMain()->getAppSettings().DockSpaceInitialized = true;
+        // restoreLayout();
     }
     // -----------------------------------------------------------------------------
     void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
@@ -1245,9 +1246,6 @@ namespace IronTuner {
         getMain()->getWindowState() = SettingsManager().get("Windows::State", WindowState());
         getMain()->getWindowState().updateWindow();
 
-        //update background renderer
-        // setBackGroundRenderId(getMain()->getAppSettings().BackGroundRenderId, getMain()->getAppSettings().BackGroundScanLines);
-
 
 
         // ~~~~~ GuiGlue ~~~~~
@@ -1255,10 +1253,9 @@ namespace IronTuner {
         if (!mGuiGlue->Initialize())
             return false;
 
-        InitDockSpace();
+        // CARUSEL InitDockSpace();
+
         ApplyStudioTheme();
-
-
 
         // ~~~~~  Console right after GuiGlue ~~~~~
         mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
@@ -1271,7 +1268,6 @@ namespace IronTuner {
         mAudioHandler  = std::make_unique<FluxRadio::AudioHandler>();
         mAudioRecorder = std::make_unique<FluxRadio::AudioRecorder>();
         mRadioBrowser  = std::make_unique<FluxRadio::RadioBrowser>("IronTuner/1.0");
-
 
         mAudioHandler->setVolume(getMain()->getAppSettings().Volume); //sync volume
         std::string emptyStr = "";

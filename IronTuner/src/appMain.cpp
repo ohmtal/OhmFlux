@@ -23,6 +23,7 @@ namespace IronTuner {
         } else {
             mBackGroundEffects->setAnalyzer(mAppGui->getSpectrumAnalyzer());
             setBackGroundRenderId(getAppSettings().BackGroundRenderId, getAppSettings().BackGroundScanLines);
+            dLog("Set background render id: %d, scanlines:%d",getAppSettings().BackGroundRenderId, getAppSettings().BackGroundScanLines );
         }
 
         return true;

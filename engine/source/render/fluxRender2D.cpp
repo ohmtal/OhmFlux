@@ -170,7 +170,7 @@ void FluxRender2D::drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color, bo
         return;
     }
 
-    // 2025 High-Performance Approach:
+    //  High-Performance Approach:
     // Treat a filled rect as a sprite using the white pixel texture.
     DrawParams2D dp;
     dp.x = x + w * 0.5f; // Center X
