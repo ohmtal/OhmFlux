@@ -7,19 +7,19 @@
 // Main
 //------------------------------------------------------------------------------
 
-AppMain* gAppMain = nullptr;
+IronTuner::AppMain* gAppMain = nullptr;
 
-AppMain* getGame() {
+IronTuner::AppMain* getGame() {
     return gAppMain;
 }
-AppMain* getMain() {
+IronTuner::AppMain* getMain() {
     return gAppMain;
 }
 
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    AppMain* app = new AppMain();
+    IronTuner::AppMain* app = new IronTuner::AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "Iron Tuner";
     app->mSettings.Version = "0.260404";

@@ -64,7 +64,6 @@ namespace FluxRadio {
     }
     //--------------------------------------------------------------------------
     void from_json(const nlohmann::json_abi_v3_12_0::json& j, RadioStation& s){
-        // .value() nimmt den Wert aus dem JSON, oder den Default (2. Parameter), falls der Key fehlt
         s.stationuuid = j.value("stationuuid", "");
         s.name        = j.value("name", "");
         s.url         = j.value("url", "");

@@ -643,9 +643,12 @@ if(BUILD_IRONTUNER AND NOT EMSCRIPTEN)
         "${IRONTUNER_DIR}/src/main.cpp"
         "${IRONTUNER_DIR}/src/appMain.h"
         "${IRONTUNER_DIR}/src/appMain.cpp"
-        "${IRONTUNER_DIR}/src/RadioWana.h"
-        "${IRONTUNER_DIR}/src/RadioWana.cpp"
+        "${IRONTUNER_DIR}/src/appGui.h"
+        "${IRONTUNER_DIR}/src/appGui.cpp"
         "${IRONTUNER_DIR}/src/BackGroundEffects.h"
+        "${IRONTUNER_DIR}/src/StationHandler.h"
+        "${IRONTUNER_DIR}/src/StationHandler.cpp"
+        "${IRONTUNER_DIR}/src/WindowState.h"
 
         # fluxRadio:
         "${IRONTUNER_DIR}/src/fluxRadio/AudioHandler.h"

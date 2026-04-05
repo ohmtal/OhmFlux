@@ -14,7 +14,7 @@
 #include "utils/fluxFile.h"
 #include "DSP_SpectrumAnalyzer.h"
 
-namespace FluxRadio {
+namespace IronTuner {
 
     class BackGroundEffects : public FluxBaseObject{
     private:
