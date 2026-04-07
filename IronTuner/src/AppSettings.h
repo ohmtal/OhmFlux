@@ -21,15 +21,16 @@ namespace IronTuner {
         FluxRadio::RadioStation CurrentStation;
         float Volume = 1.f;
         // FIXME carussel
+
         bool DockSpaceInitialized = false;
-        bool ShowFileBrowser      = false;
         bool ShowConsole          = false;
-        bool ShowRadioBrowser     = true;
-        bool ShowRadio            = true;
-        bool ShowRecorder         = false;
-        bool ShowFavo             = true;
-        bool ShowEqualizer        = true;
         bool SideBarOpen          = false;
+        // bool ShowFileBrowser      = false;
+        // bool ShowRadioBrowser     = true;
+        // bool ShowRadio            = true;
+        // bool ShowRecorder         = false;
+        // bool ShowFavo             = true;
+        // bool ShowEqualizer        = true;
         //<<<<
         int BackGroundRenderId     = 0;
         bool BackGroundScanLines  = false;

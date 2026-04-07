@@ -25,7 +25,7 @@
 #include "fluxRadio/RadioBrowser.h"
 
 #include "StationHandler.h"
-
+#include "Page.h"
 
 namespace IronTuner {
 
@@ -71,9 +71,9 @@ namespace IronTuner {
         std::unique_ptr<FluxRadio::AudioRecorder> mAudioRecorder;
         std::unique_ptr<FluxRadio::RadioBrowser> mRadioBrowser;
 
-
-
         StationHandler mStations;
+
+        std::vector<Page> mPages;
 
 
 
@@ -89,6 +89,16 @@ namespace IronTuner {
         const double mTuningResetSec = 3.0f;
 
         Point2F mAudioLevels = {0.f, 0.f};
+
+
+        // CARUSEL windows test:
+        int mTargetPageIndex = 0;
+        float mCurrentScrollX = 0.0f;
+        float mScrollSpeed = 10.0f;
+        float mTouchStartX = 0.0f;
+        Uint64 mCursorKeyDownStart = 0;
+        SDL_Keycode  mCursorKeyDown = 0;
+        const Uint64 mCursorChangeTime = 750;
 
     public:
         Point2F getAudioLevels() const { return mAudioLevels; }
@@ -111,7 +121,12 @@ namespace IronTuner {
         bool Initialize() override;
         void Deinitialize() override;
         void SaveSettings();
+
+        void changePage(int step);
+        std::string getChangePageName(int step);
+        void handleSwipe(float deltaX);
         void onEvent(SDL_Event event);
+
         void Update(const double& dt) override;
         // void DrawMsgBoxPopup();
         void ShowMenuBar();
@@ -129,8 +144,8 @@ namespace IronTuner {
         void DrawGui( );
 
         void DrawFavo();
-        void DrawStationsList(const std::vector<FluxRadio::RadioStation> stations, const bool isFavoList );
         void DrawRadioBrowserWindow();
+        void DrawStationsList(const std::vector<FluxRadio::RadioStation> stations, const bool isFavoList );
         void DrawInfoPopup(FluxRadio::StreamInfo* info);
 
         void DrawRadio();

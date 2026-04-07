@@ -113,6 +113,14 @@ namespace IronTuner {
     void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
         std::string cmd = FluxStr::getWord(cmdline,0);
 
+        if (cmd == "fl" )  {
+            float limit = std::stof (FluxStr::getWord(cmdline,1));
+            getMain()->mSettings.frameLimiter = limit;
+            dLog("Setting Framelimit to %f (current fps: %d)", limit, getMain()->getFPS());
+
+            // app->mSettings.frameLimiter = 32.f;
+        }
+
         if (cmd == "testes") getMain()->getBackGroundRenderEffect()->mShaderESTesting = true;
 
         if (cmd == "sc" ) {  //STATION CACHE
@@ -199,11 +207,109 @@ namespace IronTuner {
     }
     // -----------------------------------------------------------------------------
     void AppGui::DrawRecorder(){
-        //FIXME move recorder here
+        if (!mStreamHandler.get() || !mAudioHandler.get() || !mAudioHandler->getManager()) return;
+        float fullHalfWidth = ImGui::GetContentRegionAvail().x / 2.f;
+        const float radioHalfWidth = 320.f; //FIXME !!
+
+        ImFlux::GradientBox(ImVec2(0.f, 180.f));
+        ImGui::BeginGroup(/*RECORDER*/);
+
+        ImGui::PushFont(getMain()->mHackNerdFont16);
+        ImFlux::ShadowText("RECORDER");
+        ImGui::PopFont();
+        ImGui::Separator();
+
+        if (fullHalfWidth - radioHalfWidth > 0.f) {
+            ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
+        }
+
+        ImFlux::ShiftCursor(ImVec2(5.f,5.f));
+
+        bool recordAndWrite = mRecording && mAudioRecorder->isFileOpen();
+
+        // 5.1
+        static ImFlux::VirtualTapePlayer tapePlayer;
+        tapePlayer.type = ImFlux::CassetteType::Chrome;
+        tapePlayer.size.x = 220;
+        tapePlayer.mode = recordAndWrite ? ImFlux::CassetteMode::Record : ImFlux::CassetteMode::Stop;
+        if (recordAndWrite) {
+            tapePlayer.label = mAudioHandler->getCurrentTitle();
+        } else {
+            tapePlayer.label = "";
+        }
+        tapePlayer.Draw();
+
+
+        ImGui::SameLine();
+
+        // 5.2
+        //TODO: Options
+        if (ImGui::BeginChild("RECORDSETTINGS", ImVec2(0.f,110.f))) {
+            // float fullWidth = ImGui::GetContentRegionAvail().x;
+
+            ImGui::SeparatorText("Recording");
+
+            ImGui::Checkbox("Wait for new Title.", &mRecordingStartsOnNewTile);
+            if (!mStreamHandler->isConnected()) ImGui::BeginDisabled();
+
+            if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
+                if (mRecording && !mRecordingStartsOnNewTile && !mAudioHandler->getCurrentTitle().empty()) {
+                    mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
+                }
+                if (!mRecording)
+                    mAudioRecorder->closeFile();
+            }
+            if (!mStreamHandler->isConnected()) ImGui::EndDisabled();
+
+            if (mRecording) {
+                ImFlux::DrawLED("Recording", mAudioRecorder->isFileOpen(), ImFlux::LED_GREEN_ANIMATED_GLOW);
+                ImGui::SameLine();
+                ImGui::Text("File: %s", mAudioRecorder->getCurrentFilename().c_str());
+            }
+        }
+        ImGui::EndChild();
+        ImGui::EndGroup(/*RECORDER*/);
     }
     // -----------------------------------------------------------------------------
     void AppGui::DrawEqualizer(){
-        if (!mAudioHandler.get() || !mAudioHandler->getManager()) return;
+        if (!mStreamHandler.get() || !mAudioHandler.get() || !mAudioHandler->getManager()) return;
+        float fullHalfWidth = ImGui::GetContentRegionAvail().x / 2.f;
+        const float radioHalfWidth = 320.f; //FIXME !!
+
+        ImFlux::GradientBox(ImVec2(0.f, 145.f));
+
+        ImGui::BeginGroup(/*EQ*/);
+        ImGui::PushFont(getMain()->mHackNerdFont16);
+        ImFlux::ShadowText("EQUALIZER");
+        ImGui::PopFont();
+        ImGui::Separator();
+        if (fullHalfWidth - radioHalfWidth > 0.f) {
+            ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
+        }
+
+        ImFlux::ShiftCursor(ImVec2(5.f,5.f));
+
+        const ImVec2 vuSize = {135,70};
+        float dbL, dbR;
+        auto mapDB = [](float db) {
+            float minDB = -20.0f;
+            return (db < minDB) ? 0.0f : (db - minDB) / (0.0f - minDB);
+        };
+
+        float cursorY = ImGui::GetCursorPosY();
+        // ~~~ VU Meter LEFT ~~~
+        if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
+            if (!mStreamHandler->isConnected()) dbL = 0.f;
+            else  dbL = mapDB(mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(0));
+            ImGui::SetCursorPosY(cursorY + 20.f);
+            ImFlux::VUMeter70th(vuSize,dbL, "L",  gRadioDisplayBox.col_top, gRadioDisplayBox.col_bot);
+
+        }
+        ImGui::SameLine();
+
+        ImGui::SetCursorPosY(cursorY);
+
+        // ----- EQ9 ------------
         DSP::Equalizer9Band* effect = static_cast<DSP::Equalizer9Band*>(mAudioHandler->getManager()->getEffectByType(DSP::EffectType::Equalizer9Band));
         if (!effect) return;
         const float boxHeight = 110.f;
@@ -280,6 +386,16 @@ namespace IronTuner {
         if (changed) {
             effect->setSettings(currentSettings);
         }
+        //--------- <<< EQ9
+
+        ImGui::SameLine();
+        if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
+            if (!mStreamHandler->isConnected()) dbR = 0.f;
+            else dbR = mapDB(mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(0));
+            ImGui::SetCursorPosY(cursorY + 20.f);
+            ImFlux::VUMeter70th(vuSize,dbR, "R", gRadioDisplayBox.col_top, gRadioDisplayBox.col_bot);
+        }
+        ImGui::EndGroup(/*EQ*/);
 
     }
 
@@ -321,6 +437,7 @@ namespace IronTuner {
 
     }
     // -----------------------------------------------------------------------------
+
     void AppGui::DrawRadio() {
 
         if (!mStreamHandler.get() || !mAudioHandler.get()) return;
@@ -351,25 +468,26 @@ namespace IronTuner {
 
         }
 
-        const bool fullScreenRadio = false;
-        ImGuiWindowFlags window_flags = 0;
-        if (fullScreenRadio) {
-            const ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos(viewport->Pos);
-            ImGui::SetNextWindowSize(viewport->Size);
+        // const bool fullScreenRadio = false;
+        // ImGuiWindowFlags window_flags = 0;
+        // if (fullScreenRadio) {
+        //     const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        //     ImGui::SetNextWindowPos(viewport->Pos);
+        //     ImGui::SetNextWindowSize(viewport->Size);
+        //
+        //     window_flags = ImGuiWindowFlags_NoDecoration
+        //     | ImGuiWindowFlags_NoMove
+        //     | ImGuiWindowFlags_NoResize
+        //     | ImGuiWindowFlags_NoSavedSettings
+        //     | ImGuiWindowFlags_NoBringToFrontOnFocus;
+        // }
 
-            window_flags = ImGuiWindowFlags_NoDecoration
-            | ImGuiWindowFlags_NoMove
-            | ImGuiWindowFlags_NoResize
-            | ImGuiWindowFlags_NoSavedSettings
-            | ImGuiWindowFlags_NoBringToFrontOnFocus;
-        }
 
-
-        if (ImGui::Begin("Radio", &getMain()->getAppSettings().ShowRadio, window_flags )) {
+        // if (ImGui::Begin("Radio", &getMain()->getAppSettings().ShowRadio, window_flags ))
+        {
             float fullHalfWidth = ImGui::GetContentRegionAvail().x / 2.f;
 
-            if (fullScreenRadio) ImFlux::ShiftCursor(ImVec2(0.0f,20.f));
+            // if (fullScreenRadio) ImFlux::ShiftCursor(ImVec2(0.0f,20.f));
 
 
             const int lcdDigits    = 30;
@@ -477,122 +595,11 @@ namespace IronTuner {
 
 
 
-            // ~~~ 9BandEQ ~~~
-            if (getMain()->getAppSettings().ShowEqualizer) {
-                ImFlux::GradientBox(ImVec2(0.f, 145.f));
-
-                ImGui::BeginGroup(/*EQ*/);
-                ImGui::PushFont(getMain()->mHackNerdFont16);
-                ImFlux::ShadowText("EQUALIZER");
-                ImGui::PopFont();
-                ImGui::Separator();
-                if (fullHalfWidth - radioHalfWidth > 0.f) {
-                    ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
-                }
-
-                ImFlux::ShiftCursor(ImVec2(5.f,5.f));
-
-                const ImVec2 vuSize = {135,70};
-                float dbL, dbR;
-                auto mapDB = [](float db) {
-                    float minDB = -20.0f;
-                    return (db < minDB) ? 0.0f : (db - minDB) / (0.0f - minDB);
-                };
-
-                float cursorY = ImGui::GetCursorPosY();
-                // ~~~ VU Meter LEFT ~~~
-                if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
-                    if (!isConnected) dbL = 0.f;
-                    else  dbL = mapDB(mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(0));
-                    ImGui::SetCursorPosY(cursorY + 20.f);
-                    ImFlux::VUMeter70th(vuSize,dbL, "L",  gRadioDisplayBox.col_top, gRadioDisplayBox.col_bot);
-
-                }
-                ImGui::SameLine();
-
-                ImGui::SetCursorPosY(cursorY);
-                DrawEqualizer();
-
-                ImGui::SameLine();
-                if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getVisualAnalyzer()) {
-                    if (!isConnected) dbR = 0.f;
-                    else dbR = mapDB(mAudioHandler->getManager()->getVisualAnalyzer()->getDecible(0));
-                    ImGui::SetCursorPosY(cursorY + 20.f);
-                    ImFlux::VUMeter70th(vuSize,dbR, "R", gRadioDisplayBox.col_top, gRadioDisplayBox.col_bot);
-                }
-                ImGui::EndGroup(/*EQ*/);
-            } //show Equilizer
 
 
-
-
-
-            // -------- 5. Recorder ----------
-            if (getMain()->getAppSettings().ShowRecorder) {
-
-                ImFlux::GradientBox(ImVec2(0.f, 180.f));
-                ImGui::BeginGroup(/*RECORDER*/);
-
-                ImGui::PushFont(getMain()->mHackNerdFont16);
-                ImFlux::ShadowText("RECORDER");
-                ImGui::PopFont();
-                ImGui::Separator();
-
-                if (fullHalfWidth - radioHalfWidth > 0.f) {
-                    ImFlux::ShiftCursor(ImVec2(fullHalfWidth - radioHalfWidth, 0.f));
-                }
-
-                ImFlux::ShiftCursor(ImVec2(5.f,5.f));
-
-                bool recordAndWrite = mRecording && mAudioRecorder->isFileOpen();
-
-                // 5.1
-                static ImFlux::VirtualTapePlayer tapePlayer;
-                tapePlayer.type = ImFlux::CassetteType::Chrome;
-                tapePlayer.size.x = 220;
-                tapePlayer.mode = recordAndWrite ? ImFlux::CassetteMode::Record : ImFlux::CassetteMode::Stop;
-                if (recordAndWrite) {
-                    tapePlayer.label = mAudioHandler->getCurrentTitle();
-                } else {
-                    tapePlayer.label = "";
-                }
-                tapePlayer.Draw();
-
-
-                ImGui::SameLine();
-
-                // 5.2
-                //TODO: Options
-                if (ImGui::BeginChild("RECORDSETTINGS", ImVec2(0.f,110.f))) {
-                    // float fullWidth = ImGui::GetContentRegionAvail().x;
-
-                    ImGui::SeparatorText("Recording");
-
-                    ImGui::Checkbox("Wait for new Title.", &mRecordingStartsOnNewTile);
-                    if (!isConnected) ImGui::BeginDisabled();
-
-                    if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
-                        if (mRecording && !mRecordingStartsOnNewTile && !mAudioHandler->getCurrentTitle().empty()) {
-                            mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
-                        }
-                        if (!mRecording)
-                            mAudioRecorder->closeFile();
-                    }
-                    if (!isConnected) ImGui::EndDisabled();
-
-                    if (mRecording) {
-                        ImFlux::DrawLED("Recording", mAudioRecorder->isFileOpen(), ImFlux::LED_GREEN_ANIMATED_GLOW);
-                        ImGui::SameLine();
-                        ImGui::Text("File: %s", mAudioRecorder->getCurrentFilename().c_str());
-                    }
-                }
-                ImGui::EndChild();
-                ImGui::EndGroup(/*RECORDER*/);
-
-            } //getMain()->getAppSettings().ShowRecorder
 
         }
-        ImGui::End();
+        // ImGui::End();
     }
     // -----------------------------------------------------------------------------
     void AppGui::DrawFavo() {
@@ -602,7 +609,7 @@ namespace IronTuner {
         static uint32_t editId = 0;
         static bool showInfo = false;
 
-        if (ImGui::Begin("Favorites", &getMain()->getAppSettings().ShowFavo)){
+        // if (ImGui::Begin("Favorites", &getMain()->getAppSettings().ShowFavo)){
 
             // ~~~ BUTTONS ~~~
             if (ImFlux::ButtonFancy("NEW")) {
@@ -648,8 +655,8 @@ namespace IronTuner {
             // ~~~ LIST ~~~
 
             DrawStationsList(mStations.getFavoStationData(), true);
-        }
-        ImGui::End();
+        // }
+        // ImGui::End();
 
 
         if (showDialog ) {
@@ -853,7 +860,7 @@ namespace IronTuner {
     }
     // -----------------------------------------------------------------------------
     void AppGui::DrawRadioBrowserWindow() {
-        if (ImGui::Begin("Radio Browser", &getMain()->getAppSettings().ShowRadioBrowser)){
+        // if (ImGui::Begin("Radio Browser", &getMain()->getAppSettings().ShowRadioBrowser)){
             static char strBuff[64];
 
             ImGui::BeginGroup();
@@ -872,10 +879,29 @@ namespace IronTuner {
 
             DrawStationsList(mStations.getQueryStationData(), false);
 
-        }
-        ImGui::End();
+        // }
+        // ImGui::End();
     }
     // -----------------------------------------------------------------------------
+
+    void AppGui::handleSwipe(float deltaX) {
+        if (deltaX < -0.15f) changePage(1);
+        if (deltaX > 0.15f)  changePage(-1);
+    }
+
+    void AppGui::changePage(int step) {
+        int numPages = (int)mPages.size();
+        if (numPages == 0) return;
+        mTargetPageIndex = (mTargetPageIndex + step + numPages) % numPages;
+    }
+
+    std::string AppGui::getChangePageName(int step) {
+        int numPages = (int)mPages.size();
+        if (numPages == 0) return "invalid page";
+        int id = (mTargetPageIndex + step + numPages) % numPages;
+        return mPages[id].getCaption();
+    }
+
     void AppGui::onEvent(SDL_Event event){
         if (mGuiGlue.get()) mGuiGlue->onEvent(event);
 
@@ -892,71 +918,80 @@ namespace IronTuner {
 
         if (event.type == SDL_EVENT_KEY_DOWN) {
             if (event.key.scancode == SDL_SCANCODE_GRAVE) getMain()->getAppSettings().ShowConsole = !getMain()->getAppSettings().ShowConsole;
-            if (event.key.scancode == SDL_SCANCODE_ESCAPE) getMain()->getAppSettings().SideBarOpen = !getMain()->getAppSettings().SideBarOpen;
-            if (event.key.scancode == SDL_SCANCODE_RETURN && (event.key.mod & SDL_KMOD_LALT)) getScreenObject()->toggleFullScreen();
+            if (
+                event.key.key == SDLK_MENU
+                || event.key.key == SDLK_F1
+            ) {
+                getMain()->getAppSettings().SideBarOpen = !getMain()->getAppSettings().SideBarOpen;
+            }
+            if (event.key.key == SDLK_RETURN && (event.key.mod & SDL_KMOD_LALT)) getScreenObject()->toggleFullScreen();
         }
 
 
 
         // --------------------
-        // FIXME SWIPE
-        //
-        // float touchStartX = 0.0f;
-        // bool isSwiping = false;
-        //
-        // if (event.type == SDL_EVENT_FINGER_DOWN) {
-        //     touchStartX = event.tfinger.x; // x is normalized  (0.0 bis 1.0)
-        //     isSwiping = true;
-        // }
-        // else if (event.type == SDL_EVENT_FINGER_UP) {
-        //     float deltaX = event.tfinger.x - touchStartX;
-        // if (deltaX < -0.15f) { // swipe left
-        //     if (targetPageIndex < maxPages - 1) targetPageIndex++;
-        // }
-        // else if (deltaX > 0.15f) { // swipe right
-        //     if (targetPageIndex > 0) targetPageIndex--;
-        // }    //     isSwiping = false;
-        // }
-        ///////////////////
-        // TODO: ImGuiWindowFlags_NoScrollWithMouse
+        // CARUSEL windows test:
+        // In deiner Event-Loop:
+        switch (event.type) {
+            // TOUCH & MAUS START
+            case SDL_EVENT_FINGER_DOWN:
+                mTouchStartX = event.tfinger.x;
+                break;
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                // Maus-Pixel in 0.0-1.0 umrechnen (Viewport-Breite nutzen)
+                mTouchStartX = event.button.x / ImGui::GetMainViewport()->Size.x;
+                break;
 
-        // Page Example
-        // int targetPageIndex = 0;
-        // float currentScrollX = 0.0f;
-        // float scrollSpeed = 10.0f;
+                // TOUCH & MAUS ENDE
+            case SDL_EVENT_FINGER_UP:
+                handleSwipe(event.tfinger.x - mTouchStartX);
+                break;
+            case SDL_EVENT_MOUSE_BUTTON_UP:  {
+                float mouseEndX = event.button.x / ImGui::GetMainViewport()->Size.x;
+                handleSwipe(mouseEndX - mTouchStartX);
+                break;
+            }
 
-        // --- ----------
-        // float deltaTime = ImGui::GetIO().DeltaTime;
-        // float screenWidth = ImGui::GetMainViewport()->Size.x;
-        //
-        // // Lineare Interpolation (Lerp)
-        // float targetX = (float)targetPageIndex * -screenWidth;
-        //
-        // //  current = current + (target - current) * speed * dt
-        // if (std::abs(targetX - currentScrollX) > 0.1f) {
-        //     currentScrollX += (targetX - currentScrollX) * scrollSpeed * deltaTime;
-        // } else {
-        //     currentScrollX = targetX;
-        // }
 
-        // // windows
-        // for (int i = 0; i < 3; i++) { // Beispiel für 3 Seiten
-        //     float xPos = currentScrollX + (i * screenWidth);
-        //
-        //     // Performance-Check:
-        //     if (xPos + screenWidth < 0 || xPos > screenWidth) continue;
-        //
-        //     ImGui::SetNextWindowPos(ImVec2(xPos, 0));
-        //     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->Size);
-        //
-        //     char buf[32]; sprintf(buf, "Seite %d", i);
-        //     ImGui::Begin(buf, nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
-        //
-        //     ImGui::Text("Inhalt von Seite %d", i);
-        //     if (ImGui::Button("NEXT PAGE") && targetPageIndex < 2) targetPageIndex++;
-        //
-        //     ImGui::End();
-        // }
+            // FIRE TV / KEYBOARD (Left/Right)
+            case SDL_EVENT_KEY_DOWN:
+                if (event.key.repeat) break;
+                if (event.key.key == SDLK_LEFT || event.key.key == SDLK_RIGHT) {
+                    mCursorKeyDownStart = SDL_GetTicks();
+                    mCursorKeyDown = event.key.key;
+                }
+                break;
+            case SDL_EVENT_KEY_UP:
+                if ((event.key.key == SDLK_LEFT || event.key.key == SDLK_RIGHT)) {
+                    // if (SDL_GetTicks() - mCursorKeyDownStart > mCursorChangeTime ) {
+                    //     if (event.key.key == SDLK_LEFT)  changePage(-1);
+                    //     if (event.key.key == SDLK_RIGHT) changePage(1);
+                    // } else {
+                    //     dLog("ticks ellapsed = %d", (int)(SDL_GetTicks() - mCursorKeyDownStart));
+                    // }
+                    mCursorKeyDownStart = 0;
+                }
+                break;
+        }
+
+/*
+        float deltaX = 0.f;
+        if (event.type == SDL_EVENT_FINGER_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+            mTouchStartX = event.tfinger.x; // x is normalized  (0.0 bis 1.0)
+
+        }
+        else if (event.type == SDL_EVENT_FINGER_UP || event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+            deltaX = event.tfinger.x - mTouchStartX;
+        }
+        if (deltaX < -0.15f) { // swipe left
+            if (mTargetPageIndex < mPages.size() - 1) mTargetPageIndex++;
+
+        }
+        else if (deltaX > 0.15f) { // swipe right
+            if (mTargetPageIndex > 0) mTargetPageIndex--;
+        }*/
+
+
 
 
 
@@ -970,6 +1005,10 @@ namespace IronTuner {
         } else {
             ImGui::PushFont(getMain()->mHackNerdFont20);
         }
+
+
+
+
 
         static float sideBarWidth = 1.f;
         static float targetWidth = 0.f;
@@ -1043,14 +1082,20 @@ namespace IronTuner {
 
 
 
-                ImGui::SeparatorText("Windows");
-                ImGui::MenuItem("Radio", NULL, &getMain()->getAppSettings().ShowRadio);
-                ImGui::MenuItem("Favorites", NULL, &getMain()->getAppSettings().ShowFavo);
-                ImGui::MenuItem("Radio Browser", NULL, &getMain()->getAppSettings().ShowRadioBrowser);
-                ImGui::Separator();
-                ImGui::MenuItem("Recorder", NULL, &getMain()->getAppSettings().ShowRecorder);
-                ImGui::MenuItem("Equalizer", NULL, &getMain()->getAppSettings().ShowEqualizer);
-                // ImGui::MenuItem("Background Effect", NULL, &getMain()->getAppSettings().RenderBackGroundEffect);
+                ImGui::SeparatorText("Pages");
+
+                {
+                    bool isSelected = false;
+                    for(int id = 0; id < mPages.size(); id++  ) {
+                        isSelected = id == mTargetPageIndex;
+                        if (ImGui::MenuItem(mPages[id].getCaption().c_str(), NULL, &isSelected)) {
+                            mTargetPageIndex = id;
+                            getMain()->getAppSettings().SideBarOpen = false;
+                        }
+                        // mTargetPageIndex
+                    }
+                }
+
                 if (ImGui::BeginMenu("Background Rendering"))
                 {
 
@@ -1081,8 +1126,8 @@ namespace IronTuner {
 
                 ImGui::Separator();
                 ImGui::MenuItem("Console", NULL, &getMain()->getAppSettings().ShowConsole);
-                ImGui::SeparatorText("Layout");
-                if (ImGui::MenuItem("Restore Layout")) { restoreLayout(); }
+                // ImGui::SeparatorText("Layout");
+                // if (ImGui::MenuItem("Restore Layout")) { restoreLayout(); }
 
 
                 ImGui::Separator();
@@ -1115,7 +1160,7 @@ namespace IronTuner {
                 }
 
                 // if i want to close it when somewhere else is clicked ==>
-                // if (!ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0)) getMain()->getAppSettings().SideBarOpen = false;
+                if (ImGui::IsWindowFocused() && ImGui::IsKeyDown(ImGuiKey_Escape)) getMain()->getAppSettings().SideBarOpen = false;
 
 
 
@@ -1144,7 +1189,40 @@ namespace IronTuner {
             }
 
 
-            if (!getMain()->getAppSettings().ShowRadio)
+            // change page here !!
+            float progress = 0.f;
+            if (mCursorKeyDownStart > 0) {
+                Uint64 duration = SDL_GetTicks() - mCursorKeyDownStart;
+                progress = std::min(1.0f, (float)duration / (float)mCursorChangeTime);
+
+                if (progress > 0.25f) {
+                    // ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.4f,
+                    //                                viewport->WorkPos.y + 20));
+                    // ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x * 0.2f, 0));
+
+                    // ImGui::Begin("HoldProgress", nullptr,
+                    //              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                    //              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+                    //
+                    // ImGui::Text("%s", getChangePageName(mCursorKeyDown == SDLK_LEFT ? -1 : 1).c_str());
+                    // ImGui::ProgressBar(progress, ImVec2(-1, 0), "");
+
+                    // ImGui::End();
+
+                    // ImGui::Text("%s", getChangePageName(mCursorKeyDown == SDLK_LEFT ? -1 : 1).c_str());
+                    // ImGui::SameLine();
+                    ImGui::ProgressBar(progress, ImVec2(200.f, 0.f), getChangePageName(mCursorKeyDown == SDLK_LEFT ? -1 : 1).c_str());
+
+
+                    if (progress == 1.f ) {
+                        changePage(mCursorKeyDown == SDLK_LEFT ? -1 : 1);
+                        mCursorKeyDownStart = SDL_GetTicks();
+                    }
+                }
+            }
+
+
+            if ( mTargetPageIndex != 1 )
             {
                 bool isConnected = mStreamHandler->isConnected();
                 std::string displayStr = "";
@@ -1308,78 +1386,153 @@ namespace IronTuner {
         mStreamHandler->OnStreamTitleUpdate = [&](std::string title, size_t streamPosition) {
             if (mAudioHandler.get()) mAudioHandler->OnStreamTitleUpdate(title, streamPosition);
         };
-            mStreamHandler->OnAudioChunk = [&](const void* buffer , size_t size) {  mAudioHandler->OnAudioChunk(buffer, size); };
-            mStreamHandler->onDisConnected = [&]() {
-                if (mAudioHandler.get()) mAudioHandler->onDisConnected();
-                if (mAudioRecorder.get()) mAudioRecorder->closeFile();
-                mRecording = false;
-                Log("[info] Stream disconncted.");
-            };
+        mStreamHandler->OnAudioChunk = [&](const void* buffer , size_t size) {  mAudioHandler->OnAudioChunk(buffer, size); };
+        mStreamHandler->onDisConnected = [&]() {
+            if (mAudioHandler.get()) mAudioHandler->onDisConnected();
+            if (mAudioRecorder.get()) mAudioRecorder->closeFile();
+            mRecording = false;
+            Log("[info] Stream disconncted.");
+        };
 
-            mAudioHandler->OnTitleTrigger = [&]() {
-                Log("Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
-                //FIXME toggle delay ... needed for some stations
-                if (mRecording && mAudioRecorder.get()) mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
-            };
+        mAudioHandler->OnTitleTrigger = [&]() {
+            Log("Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
+            //FIXME toggle delay ... needed for some stations
+            if (mRecording && mAudioRecorder.get()) mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
+        };
 
-                mAudioHandler->OnAudioStreamData = [&](const uint8_t* buffer, size_t bufferSize)  {
-                    if (mAudioRecorder.get() && mAudioRecorder->isFileOpen()) {
-                        mAudioRecorder->OnStreamData(buffer,bufferSize);
-                    }
-                };
+        mAudioHandler->OnAudioStreamData = [&](const uint8_t* buffer, size_t bufferSize)  {
+            if (mAudioRecorder.get() && mAudioRecorder->isFileOpen()) {
+                mAudioRecorder->OnStreamData(buffer,bufferSize);
+            }
+        };
 
-                mRadioBrowser->OnStationResponse = [&](std::vector<FluxRadio::RadioStation> stations) {
-                    mStations.getQueryStationDataMutable() = stations;
-                    // mQueryStationData = stations;
-                };
+        mRadioBrowser->OnStationResponse = [&](std::vector<FluxRadio::RadioStation> stations) {
+            mStations.getQueryStationDataMutable() = stations;
+            // mQueryStationData = stations;
+        };
 
-                mRadioBrowser->OnStationResponseError = [&]() {
-                    mStations.getQueryStationDataMutable().clear();
-                    // mQueryStationData.clear();
-                };
+        mRadioBrowser->OnStationResponseError = [&]() {
+            mStations.getQueryStationDataMutable().clear();
+            // mQueryStationData.clear();
+        };
 
-                std::string texPath = std::format("{}assets/metal_linear_brush_HD.png", getGamePath());
-                mBrushedMetalTex = getMain()->loadTexture(texPath);
+        std::string texPath = std::format("{}assets/metal_linear_brush_HD.png", getGamePath());
+        mBrushedMetalTex = getMain()->loadTexture(texPath);
 
-                // texPath = std::format("{}assets/metal_round_brush.png", getGamePath());
-                // mBackgroundTex = getMain()->loadTexture(texPath);
+        // texPath = std::format("{}assets/metal_round_brush.png", getGamePath());
+        // mBackgroundTex = getMain()->loadTexture(texPath);
 
-                texPath = std::format("{}assets/knobs/silber256.png", getGamePath());
-                mKnobSilverTex = getMain()->loadTexture(texPath);
+        texPath = std::format("{}assets/knobs/silber256.png", getGamePath());
+        mKnobSilverTex = getMain()->loadTexture(texPath);
 
-                texPath = std::format("{}assets/knobs/roterrand.png", getGamePath());
-                mKnobOffTex = getMain()->loadTexture(texPath);
+        texPath = std::format("{}assets/knobs/roterrand.png", getGamePath());
+        mKnobOffTex = getMain()->loadTexture(texPath);
 
-                texPath = std::format("{}assets/knobs/gruenerrand.png", getGamePath());
-                mKnobOnTex =  getMain()->loadTexture(texPath);
-
-
-                if ( isAndroidBuild())
-                {
-                    setImGuiScale(2.f);
-                }
+        texPath = std::format("{}assets/knobs/gruenerrand.png", getGamePath());
+        mKnobOnTex =  getMain()->loadTexture(texPath);
 
 
+        if ( isAndroidBuild())
+        {
+            setImGuiScale(2.f);
+        }
 
-                return true;
+
+
+        // CARUSEL windows test:
+        mPages.emplace_back("pure", nullptr, mPages.size());
+        mPages.emplace_back("Radio", [this]() { DrawRadio(); }, mPages.size());
+        mPages.emplace_back("Equalizer", [this]() { DrawEqualizer(); }, mPages.size());
+        mPages.emplace_back("Recorder", [this]() { DrawRecorder(); }, mPages.size());
+        mPages.emplace_back("Favorites", [this]() { DrawFavo(); }, mPages.size());
+        mPages.emplace_back("Radio Browser", [this]() { DrawRadioBrowserWindow(); }, mPages.size());
+
+
+        return true;
     }
     // -----------------------------------------------------------------------------
     void AppGui::DrawGui(){
         mGuiGlue->DrawBegin();
-
-
         ShowMenuBar();
         if (getMain()->getAppSettings().ShowConsole) mConsole.Draw("Console", &getMain()->getAppSettings().ShowConsole);
-        if (getMain()->getAppSettings().ShowRadioBrowser)  {
-            DrawRadioBrowserWindow();
+
+        // --------------------
+        // CARUSEL
+        auto* viewport = ImGui::GetMainViewport();
+
+        float deltaTime = ImGui::GetIO().DeltaTime;
+        float screenWidth = viewport->WorkSize.x;
+        float screenHeight = viewport->WorkSize.y;
+        float startY = viewport->WorkPos.y;
+
+        // Lineare Interpolation (Lerp)
+        float targetX = (float)mTargetPageIndex * - screenWidth;
+        static int lastPageIndex = -1;
+
+        bool scrollDone = false;
+        //  current = current + (target - current) * speed * dt
+        if (std::abs(targetX - mCurrentScrollX) > 0.1f) {
+            mCurrentScrollX += (targetX - mCurrentScrollX) * mScrollSpeed * deltaTime;
+        } else {
+            mCurrentScrollX = targetX;
+            scrollDone = true;
         }
-        if (getMain()->getAppSettings().ShowFavo) DrawFavo();
+
+        // pages
+        ImVec2 Size = ImVec2(screenWidth, screenHeight);
+
+        if ( scrollDone ) {
+            float xPos = mCurrentScrollX + (mTargetPageIndex * screenWidth);
+            ImVec2 Pos = ImVec2(xPos, startY);
+
+            bool focus = ( lastPageIndex != mTargetPageIndex )
+                        && !getMain()->getAppSettings().SideBarOpen
+                        && !getMain()->getAppSettings().ShowConsole;
+
+            mPages[mTargetPageIndex].Draw(Pos, Size, mTargetPageIndex, focus);
+            lastPageIndex = mTargetPageIndex;
+        } else {
+            for (int i = 0; i < mPages.size(); i++) {
+                float xPos = mCurrentScrollX + (i * screenWidth);
+                if (xPos + screenWidth < -10.0f || xPos > screenWidth + 10.0f) continue;
+                ImVec2 Pos = ImVec2(xPos, startY);
+                mPages[i].Draw(Pos, Size, mTargetPageIndex, false);
+            }
+        }
 
 
-        if (getMain()->getAppSettings().ShowRadio) {
-            ImGui::SetNextWindowBgAlpha(0.05f);
-            DrawRadio();
-        }
+
+
+        // -------------
+        // direct draw !
+        // auto* viewport = ImGui::GetMainViewport();
+        // static int lastPageIndex = -1;
+        // float screenWidth = viewport->WorkSize.x;
+        // float screenHeight = viewport->WorkSize.y;
+        // float startY = viewport->WorkPos.y;
+        // float xPos = viewport->WorkPos.x;
+        // ImVec2 Pos = ImVec2(xPos, startY);
+        // ImVec2 Size = ImVec2(screenWidth, screenHeight);
+        // mPages[mTargetPageIndex].Draw(Pos, Size, mTargetPageIndex, lastPageIndex != mTargetPageIndex);
+        // lastPageIndex = mTargetPageIndex;
+
+        // CARUSEL
+
+
+
+
+
+
+        // if (getMain()->getAppSettings().ShowRadioBrowser)  {
+        //     DrawRadioBrowserWindow();
+        // }
+        // if (getMain()->getAppSettings().ShowFavo) DrawFavo();
+        //
+        //
+        // if (getMain()->getAppSettings().ShowRadio) {
+        //     ImGui::SetNextWindowBgAlpha(0.05f);
+        //     DrawRadio();
+        // }
 
 
         mGuiGlue->DrawEnd();
@@ -1390,7 +1543,6 @@ namespace IronTuner {
         ImGui::PushID((caption + "knob").c_str());
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems || mStations.getFavIndex() < 0 ) { ImGui::PopID(); return ; }
-
 
 
         float delta = 0.f;
@@ -1443,15 +1595,15 @@ namespace IronTuner {
 
         if (is_focused) {
             bool plus =  (
-                ImGui::IsKeyPressed(ImGuiKey_RightArrow) ||
+                ImGui::IsKeyPressed(ImGuiKey_DownArrow) ||
                 ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  ||
-                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight));
+                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown));
 
 
             bool minus = (
-                ImGui::IsKeyPressed(ImGuiKey_LeftArrow)  ||
+                ImGui::IsKeyPressed(ImGuiKey_UpArrow)  ||
                 ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
-                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft));
+                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp));
             static float keyboardDelta = 0.f;
             if (plus || minus) {
                 float multi = 0.f;
@@ -1471,9 +1623,11 @@ namespace IronTuner {
             }
 
             if   (
-                ImGui::IsKeyPressed(ImGuiKey_Space)
-                // || ImGui::IsKeyPressed(ImGuiKey_Enter)
-                || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
+                 io.KeyMods == ImGuiMod_None &&
+                 ( ImGui::IsKeyPressed(ImGuiKey_Space)
+                    || ImGui::IsKeyPressed(ImGuiKey_Enter)
+                    || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
+                 )
             ) {
                 is_Pressed  = true;
                 is_mouseRelease = true;

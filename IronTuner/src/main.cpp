@@ -36,6 +36,8 @@ int main(int argc, char* argv[])
     // app->mSettings.cursorHotSpotY = 10;
 
 
+
+
     gAppMain = app;
 
 
