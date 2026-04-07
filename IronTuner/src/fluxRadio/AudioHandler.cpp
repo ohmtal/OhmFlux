@@ -234,9 +234,10 @@ namespace FluxRadio {
             if ( !self->mPendingStreamTitles.empty() &&
                 self->mTotalAudioBytesPlayed >= self->mPendingStreamTitles.front().byteOffset
             ) {
+                bool newTitle = self->mCurrentTitle != self->mPendingStreamTitles.front().streamTitle;
                 self->mCurrentTitle = self->mPendingStreamTitles.front().streamTitle;
                 self->mPendingStreamTitles.pop_front();
-                if ( self->OnTitleTrigger ) self->OnTitleTrigger();
+                if ( newTitle &&  self->OnTitleTrigger ) self->OnTitleTrigger();
             }
         }
         if (pBytesRead) {

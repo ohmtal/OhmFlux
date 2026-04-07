@@ -27,6 +27,7 @@
 #include "StationHandler.h"
 #include "Page.h"
 
+
 namespace IronTuner {
 
     // -----------------------------------------------------------------------------
@@ -56,7 +57,6 @@ namespace IronTuner {
 
 
     // -----------------------------------------------------------------------------
-
 
     class AppGui: public FluxBaseObject {
     private:
@@ -139,6 +139,7 @@ namespace IronTuner {
         void setupFonts();
         void restoreLayout( );
         void setImGuiScale(float factor);
+        float getScale() const;
 
         //-----
         void DrawGui( );
@@ -167,10 +168,7 @@ namespace IronTuner {
 
 
         void Tune(FluxRadio::RadioStation station);
-
-        //-------------------- TuneKnob Interger with overflow ---------------------------
         void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB);
-
 
 
 

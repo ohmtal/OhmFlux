@@ -20,20 +20,15 @@ namespace IronTuner {
     struct AppSettings {
         FluxRadio::RadioStation CurrentStation;
         float Volume = 1.f;
-        // FIXME carussel
-
-        bool DockSpaceInitialized = false;
+        bool UIInitialized        = false;
         bool ShowConsole          = false;
         bool SideBarOpen          = false;
-        // bool ShowFileBrowser      = false;
-        // bool ShowRadioBrowser     = true;
-        // bool ShowRadio            = true;
-        // bool ShowRecorder         = false;
-        // bool ShowFavo             = true;
-        // bool ShowEqualizer        = true;
-        //<<<<
-        int BackGroundRenderId     = 0;
+        int BackGroundRenderId    = 0;
         bool BackGroundScanLines  = false;
+
+        int PageIndex             = 1; //radio
+        float Scale               = 1.f;
+
     };
 
     //--------------------------------------------------------------------------
@@ -41,15 +36,24 @@ namespace IronTuner {
         j = nlohmann::json{
             // NOT CurrentStation
             {"Volume",              s.Volume},
+            {"UIInitialized",       s.UIInitialized},
+            {"SideBarOpen",         s.SideBarOpen},
             {"BackGroundRenderId",  s.BackGroundRenderId},
             {"BackGroundScanLines", s.BackGroundScanLines},
+            {"PageIndex", s.PageIndex},
+            {"Scale", s.Scale},
+
         };
     }
     //--------------------------------------------------------------------------
     inline void from_json(const nlohmann::json& j, AppSettings& s){
         s.Volume                = j.value("Volume", 1.f);
+        s.UIInitialized         = j.value("UIInitialized", false);
+        s.SideBarOpen           = j.value("SideBarOpen", false);
         s.BackGroundRenderId    = j.value("BackGroundRenderId", 0);
         s.BackGroundScanLines   = j.value("BackGroundScanLines", false);
+        s.PageIndex             = j.value("PageIndex", 1);
+        s.Scale                 = j.value("Scale", 1.f);
     }
 
 

@@ -44,6 +44,7 @@ namespace IronTuner {
         // bad if we are gone !!
         gui->mConsole.AddLog("%s", FluxStr::removePart(message,"\r\n").c_str());
     }
+
     // -----------------------------------------------------------------------------
     bool AppGui::ConnectCurrent() {
         if (!FluxNet::NetTools::isValidURL(getMain()->getAppSettings().CurrentStation.url) ) {
@@ -90,7 +91,7 @@ namespace IronTuner {
         FluxRadio::RadioStation savStation = getMain()->getAppSettings().CurrentStation;
         getMain()->getAppSettings() = AppSettings();
         getMain()->getAppSettings().CurrentStation = savStation;
-        getMain()->getAppSettings().DockSpaceInitialized = true;
+        getMain()->getAppSettings().UIInitialized = true;
 
         // must be scheduled !!
         static FluxScheduler::TaskID loadFactorySchedule = 0;
@@ -209,9 +210,9 @@ namespace IronTuner {
     void AppGui::DrawRecorder(){
         if (!mStreamHandler.get() || !mAudioHandler.get() || !mAudioHandler->getManager()) return;
         float fullHalfWidth = ImGui::GetContentRegionAvail().x / 2.f;
-        const float radioHalfWidth = 320.f; //FIXME !!
+        const float radioHalfWidth = 320.f * getScale(); //FIXME !!
 
-        ImFlux::GradientBox(ImVec2(0.f, 180.f));
+        ImFlux::GradientBox(ImVec2(0.f, 180.f * getScale()));
         ImGui::BeginGroup(/*RECORDER*/);
 
         ImGui::PushFont(getMain()->mHackNerdFont16);
@@ -230,7 +231,7 @@ namespace IronTuner {
         // 5.1
         static ImFlux::VirtualTapePlayer tapePlayer;
         tapePlayer.type = ImFlux::CassetteType::Chrome;
-        tapePlayer.size.x = 220;
+        tapePlayer.size.x = 220 * getScale();
         tapePlayer.mode = recordAndWrite ? ImFlux::CassetteMode::Record : ImFlux::CassetteMode::Stop;
         if (recordAndWrite) {
             tapePlayer.label = mAudioHandler->getCurrentTitle();
@@ -244,7 +245,7 @@ namespace IronTuner {
 
         // 5.2
         //TODO: Options
-        if (ImGui::BeginChild("RECORDSETTINGS", ImVec2(0.f,110.f))) {
+        if (ImGui::BeginChild("RECORDSETTINGS", ImVec2(0.f,110.f * getScale()), ImGuiChildFlags_NavFlattened)) {
             // float fullWidth = ImGui::GetContentRegionAvail().x;
 
             ImGui::SeparatorText("Recording");
@@ -252,7 +253,8 @@ namespace IronTuner {
             ImGui::Checkbox("Wait for new Title.", &mRecordingStartsOnNewTile);
             if (!mStreamHandler->isConnected()) ImGui::BeginDisabled();
 
-            if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
+            // if (ImFlux::LEDCheckBox("Enable Recording", &mRecording, ImVec4(0.8f,0.3f,0.3f,1.f))) {
+            if (ImGui::Checkbox("Enable Recording", &mRecording)) {
                 if (mRecording && !mRecordingStartsOnNewTile && !mAudioHandler->getCurrentTitle().empty()) {
                     mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
                 }
@@ -274,9 +276,9 @@ namespace IronTuner {
     void AppGui::DrawEqualizer(){
         if (!mStreamHandler.get() || !mAudioHandler.get() || !mAudioHandler->getManager()) return;
         float fullHalfWidth = ImGui::GetContentRegionAvail().x / 2.f;
-        const float radioHalfWidth = 320.f; //FIXME !!
+        const float radioHalfWidth = 320.f * getScale(); //FIXME !!
 
-        ImFlux::GradientBox(ImVec2(0.f, 145.f));
+        ImFlux::GradientBox(ImVec2(0.f, 145.f * getScale()));
 
         ImGui::BeginGroup(/*EQ*/);
         ImGui::PushFont(getMain()->mHackNerdFont16);
@@ -289,7 +291,7 @@ namespace IronTuner {
 
         ImFlux::ShiftCursor(ImVec2(5.f,5.f));
 
-        const ImVec2 vuSize = {135,70};
+        const ImVec2 vuSize = {135* getScale(),70* getScale()} ;
         float dbL, dbR;
         auto mapDB = [](float db) {
             float minDB = -20.0f;
@@ -312,41 +314,41 @@ namespace IronTuner {
         // ----- EQ9 ------------
         DSP::Equalizer9Band* effect = static_cast<DSP::Equalizer9Band*>(mAudioHandler->getManager()->getEffectByType(DSP::EffectType::Equalizer9Band));
         if (!effect) return;
-        const float boxHeight = 110.f;
-        const float boxWidth = 380.f; //340.f;
-        const float sliderSpaceing = 12.f;
+
+
+        const float boxHeight = 110.f * getScale();
+        const float boxWidth  = 380.f * getScale() ;
+        const float sliderSpaceing = 12.f * getScale();
         DSP::Equalizer9BandSettings currentSettings = effect->getSettings();
 
-        const float sliderWidth = 25.f;
-        const float sliderHeight = 70.f;
+        const float sliderWidth = 25.f * getScale();
+        const float sliderHeight = 70.f * getScale();
         const std::string volStr = "VOL";
 
         ImGui::PushID(effect);
         bool changed = false;
-        // effect->renderUIHeader();
         // if (effect->isEnabled())
         {
-            if (ImGui::BeginChild("UI_Box", ImVec2(boxWidth, boxHeight)/*, ImGuiChildFlags_Borders*/)) {
+            if (ImGui::BeginChild("UI_Box", ImVec2(boxWidth, boxHeight), ImGuiChildFlags_NavFlattened)) {
                 ImFlux::GradientBoxDL(gRadioDisplayBox.WithSize(ImVec2(boxWidth, boxHeight)) );
                 ImFlux::ShiftCursor(ImVec2(5.f,5.f));
 
                 //Volume
-                // inline bool FaderVertical2(const char* label, ImVec2 size, float* v, float v_min, float v_max, const char* format = "%.2f") {
                 ImGui::BeginGroup();
                 float vol = mAudioHandler->getVolume();
                 if (ImFlux::FaderVertical(volStr.c_str(), ImVec2(sliderWidth,sliderHeight), &vol,0.f,1.f )) {
                     mAudioHandler->setVolume(vol);
                     getMain()->getAppSettings().Volume = vol;
                 }
-                float textWidth = ImGui::CalcTextSize(volStr.c_str()).x;
 
+                float textWidth = ImGui::CalcTextSize(volStr.c_str()).x;
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (sliderWidth - textWidth) * 0.5f);
                 ImGui::TextUnformatted(volStr.c_str());
+
                 ImGui::EndGroup();
                 ImGui::SameLine(0, 0);
 
                 ImFlux::SeparatorFancy(ImGuiSeparatorFlags_Vertical, 2.f,  0.f, sliderSpaceing / 1.5f);
-
 
                 ImGui::BeginGroup();
                 // Control Sliders
@@ -354,9 +356,8 @@ namespace IronTuner {
                 int i = 0;
                 for (auto* param :currentSettings.getAll() ) {
 
-                    // virtual bool FaderVWithText( float sliderWidth = 20.f, float sliderHeight = 80.f ) = 0;
-
                     changed |= param->FaderVWithText(sliderWidth,sliderHeight);
+
                     if (i < count) ImGui::SameLine(0, sliderSpaceing);
                     i++;
                 }
@@ -467,34 +468,17 @@ namespace IronTuner {
             }
 
         }
-
-        // const bool fullScreenRadio = false;
-        // ImGuiWindowFlags window_flags = 0;
-        // if (fullScreenRadio) {
-        //     const ImGuiViewport* viewport = ImGui::GetMainViewport();
-        //     ImGui::SetNextWindowPos(viewport->Pos);
-        //     ImGui::SetNextWindowSize(viewport->Size);
-        //
-        //     window_flags = ImGuiWindowFlags_NoDecoration
-        //     | ImGuiWindowFlags_NoMove
-        //     | ImGuiWindowFlags_NoResize
-        //     | ImGuiWindowFlags_NoSavedSettings
-        //     | ImGuiWindowFlags_NoBringToFrontOnFocus;
-        // }
-
-
         // if (ImGui::Begin("Radio", &getMain()->getAppSettings().ShowRadio, window_flags ))
         {
             float fullHalfWidth = ImGui::GetContentRegionAvail().x / 2.f;
 
-            // if (fullScreenRadio) ImFlux::ShiftCursor(ImVec2(0.0f,20.f));
-
-
             const int lcdDigits    = 30;
             const int lcdDigits2   = 38; //40;
 
-            const float displayWidth =  lcdDigits * 16.9f + 32.f; //* 16.5f; // 20 ==> 320.f; //lcdDigits * lcdHeight1 * 0.5f;
-            const float displayHeight = 60.f; //(2 * lcdHeight1) + ( 3 * lcdHeight1 * 0.5f);
+            const float displayWidth =  (lcdDigits * 16.9f + 32.f) * getScale();
+            const float displayHeight = 60.f * getScale();
+
+
             // maybe alternative deffered calc
             const float radioHalfWidth = (displayWidth + 48.f + 50.f ) / 2.f;
 
@@ -509,7 +493,10 @@ namespace IronTuner {
             ImFlux::ShiftCursor(ImVec2(5.f,5.f));
             ImVec2 CursorPos  =ImGui::GetCursorPos();
 
-            if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth  ,displayHeight ))) {
+            if (ImGui::BeginChild("##RadioDisplayStation", ImVec2(displayWidth  ,displayHeight ), ImGuiChildFlags_NavFlattened)) {
+
+                ImFlux::GradientBoxDL(gRadioDisplayBox.WithSize(ImVec2(displayWidth  ,displayHeight )) );
+
                 ImGui::SameLine();ImFlux::ShiftCursor(ImVec2(5.f,6.f));
                 ImGui::BeginGroup();
                 ImGui::PushFont(getMain()->mHackNerdFont26);
@@ -530,7 +517,7 @@ namespace IronTuner {
 
                     if (!isConnected) ImGui::BeginDisabled();
                     ImFlux::ShiftCursor(ImVec2(0,8));
-                    if (ImFlux::ButtonFancy("I", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88)).WithSize(ImVec2(24,24) ))) {
+                    if (ImFlux::ButtonFancy("I", gRadioButtonParams.WithColor(IM_COL32(88,88,88,88)).WithSize(ImVec2(24,24)*getScale() ))) {
                         ImGui::OpenPopup("##StationInfo");
                     }
                     if (!isConnected) ImGui::EndDisabled();
@@ -550,7 +537,7 @@ namespace IronTuner {
                     ImGui::SameLine();
                     ImFlux::ShiftCursor(ImVec2(5,2));
                     bool isFavo = getMain()->getAppSettings().CurrentStation.favId > 0;
-                    if (ImFlux::FavouriteStar("Favourite", isFavo)) {
+                    if (ImFlux::FavouriteStar("Favourite", isFavo, 8.f * getScale())) {
                         if (isFavo) {
                             mStations.RmvFavoByFavId(&getMain()->getAppSettings().CurrentStation);
                         } else {
@@ -565,7 +552,7 @@ namespace IronTuner {
             ImGui::EndChild();
 
             ImGui::SameLine();
-            TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(48.f));
+            TuneKnob("Tune Station", ImFlux::DARK_KNOB.WithRadius(48.f * getScale()));
 
             ImGui::BeginGroup();
             {
@@ -585,19 +572,6 @@ namespace IronTuner {
             ImGui::EndGroup();
 
             ImGui::EndGroup(/*RADIO*/);
-            //----------------------------
-
-            // ImGui::Separator();
-
-            // -------- 3. VOL + VU -----------
-
-
-
-
-
-
-
-
         }
         // ImGui::End();
     }
@@ -679,7 +653,6 @@ namespace IronTuner {
                 if (ImGui::Button("Save")) {
                     bool validated = false;
                     validated = !workStation.name.empty() && FluxNet::NetTools::isValidURL(workStation.url);
-                    // FIXME display error message or display in dialog
                     if (validated)
                     {
                         if (isEdit) {
@@ -713,7 +686,7 @@ namespace IronTuner {
         //---------------
         ImGui::BeginGroup();
         ImGui::SeparatorText("Filter results");
-        ImGui::SetNextItemWidth(150);
+        ImGui::SetNextItemWidth( 150.f * getScale());
         ImGui::InputText("##Filter", searchBuffer, IM_ARRAYSIZE(searchBuffer));
         ImGui::EndGroup();
         //---------------
@@ -794,7 +767,7 @@ namespace IronTuner {
                     if (isFavoList) isFavo = true;
                     else isFavo = mStations.isFavoStation(station);
 
-                    if (ImFlux::FavouriteStar("Favourite", isFavo)) {
+                    if (ImFlux::FavouriteStar("Favourite", isFavo, 8.f * getScale())) {
                         if (isFavoList) {
                             // std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
                             //     // return s.stationuuid == station->stationuuid;
@@ -823,10 +796,15 @@ namespace IronTuner {
                         if (!isFavoList)  mStations.setUuid( station->stationuuid );
                         else mStations.setFavId(station->favId);
 
+
                         if (ImGui::IsMouseDoubleClicked(0)) {
                             Tune(*station);
                         }
                     }
+                    if (ImGui::IsItemFocused() && (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Space))) {
+                        Tune(*station);
+                    }
+
                     ImGui::PopFont();
 
 
@@ -866,7 +844,7 @@ namespace IronTuner {
             ImGui::BeginGroup();
             ImGui::SeparatorText("radio-browser.info");
             strncpy(strBuff, mStations.getQueryString().c_str(), sizeof(strBuff));
-            ImGui::SetNextItemWidth(150.f);
+            ImGui::SetNextItemWidth(150.f * getScale());
             if (ImGui::InputText("##SearchName", strBuff, sizeof(strBuff), ImGuiInputTextFlags_EnterReturnsTrue)) {
                 mRadioBrowser->searchStationsByNameAndTag(strBuff, "");
                 mStations.getQueryStringMutable() = strBuff;
@@ -933,22 +911,25 @@ namespace IronTuner {
         // CARUSEL windows test:
         // In deiner Event-Loop:
         switch (event.type) {
-            // TOUCH & MAUS START
+            // TOUCH & MOUSE START
             case SDL_EVENT_FINGER_DOWN:
-                mTouchStartX = event.tfinger.x;
+                if (event.button.which != SDL_TOUCH_MOUSEID) {
+                    mTouchStartX = event.tfinger.x;
+                }
                 break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                // Maus-Pixel in 0.0-1.0 umrechnen (Viewport-Breite nutzen)
                 mTouchStartX = event.button.x / ImGui::GetMainViewport()->Size.x;
                 break;
 
-                // TOUCH & MAUS ENDE
+            // TOUCH & MOUSE
             case SDL_EVENT_FINGER_UP:
                 handleSwipe(event.tfinger.x - mTouchStartX);
                 break;
             case SDL_EVENT_MOUSE_BUTTON_UP:  {
-                float mouseEndX = event.button.x / ImGui::GetMainViewport()->Size.x;
-                handleSwipe(mouseEndX - mTouchStartX);
+                if (event.button.which != SDL_TOUCH_MOUSEID) {
+                    float mouseEndX = event.button.x / ImGui::GetMainViewport()->Size.x;
+                    handleSwipe(mouseEndX - mTouchStartX);
+                }
                 break;
             }
 
@@ -1000,11 +981,12 @@ namespace IronTuner {
 
     // -----------------------------------------------------------------------------
     void AppGui::ShowMenuBar(){
-        if ( isAndroidBuild()) {
-            ImGui::PushFont(getMain()->mHackNerdFont26);
-        } else {
-            ImGui::PushFont(getMain()->mHackNerdFont20);
-        }
+        // if ( isAndroidBuild()) {
+        //     ImGui::PushFont(getMain()->mHackNerdFont26);
+        // } else {
+        //     ImGui::PushFont(getMain()->mHackNerdFont20);
+        // }
+        ImGui::PushFont(getMain()->mHackNerdFont20);
 
 
 
@@ -1095,6 +1077,21 @@ namespace IronTuner {
                         // mTargetPageIndex
                     }
                 }
+                ImGui::Separator();
+
+                std::vector<float> scales = { 0.75f, 1.f, 1.5f, 2.f};
+                bool isCurrent = false;
+                std::string scaleCap = "";
+                if (ImGui::BeginMenu("Scale")) {
+                    for (auto scale: scales) {
+                        isCurrent = getScale() == scale;
+                        scaleCap = std::format("{}x", scale);
+                        if (ImGui::MenuItem(scaleCap.c_str(), nullptr, isCurrent))  setImGuiScale(scale);
+                    }
+
+                    ImGui::EndMenu();
+                }
+
 
                 if (ImGui::BeginMenu("Background Rendering"))
                 {
@@ -1131,7 +1128,7 @@ namespace IronTuner {
 
 
                 ImGui::Separator();
-                //FIXME ABOUT DIALIOG!!
+                //FIXME ABOUT DIALOG!!
                 if (ImGui::MenuItem("About")) {
                     mGuiGlue->showMessage ( "About",
                                             std::format(
@@ -1278,6 +1275,7 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::SaveSettings() {
         if (SettingsManager().IsInitialized()) {
+            getMain()->getAppSettings().PageIndex = mTargetPageIndex;
             SettingsManager().set("AppGui::mAppSettings", getMain()->getAppSettings());
             mStations.Save();
             SettingsManager().set("Radio::CurrentStation", getMain()->getAppSettings().CurrentStation);
@@ -1446,6 +1444,10 @@ namespace IronTuner {
         mPages.emplace_back("Recorder", [this]() { DrawRecorder(); }, mPages.size());
         mPages.emplace_back("Favorites", [this]() { DrawFavo(); }, mPages.size());
         mPages.emplace_back("Radio Browser", [this]() { DrawRadioBrowserWindow(); }, mPages.size());
+
+
+        setImGuiScale(getMain()->getAppSettings().Scale);
+        mTargetPageIndex =  getMain()->getAppSettings().PageIndex;
 
 
         return true;
@@ -1773,9 +1775,13 @@ namespace IronTuner {
     }
     // -----------------------------------------------------------------------------
     void AppGui::setImGuiScale(float factor){
-        mGuiGlue->getGuiIO()->DisplaySize = ImVec2(getMain()->getScreen()->getHeight(), getMain()->getScreen()->getWidth());
-        ImGui::GetStyle() = mGuiGlue->getBaseStyle();
-        ImGui::GetStyle().ScaleAllSizes(factor);
-        ImGui::GetStyle().FontScaleDpi = factor;
+        mGuiGlue->setScale(factor);
+        getMain()->getAppSettings().Scale = factor;
     }
-};
+    float AppGui::getScale() const {
+        return getMain()->getAppSettings().Scale;
+    }
+
+
+
+}; //namespace

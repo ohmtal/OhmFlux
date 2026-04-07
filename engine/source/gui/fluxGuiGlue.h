@@ -160,14 +160,21 @@ public:
         ImGui::DestroyContext();
     }
 
+    void setScale(float factor) {
+        ImGui::GetStyle() = mBaseStyle;
+        ImGui::GetStyle().ScaleAllSizes(factor);
+        ImGui::GetStyle().FontScaleDpi = factor;
+    }
+
     void OnScaleChanged() {
         mGuiIO->DisplaySize = ImVec2(getScreen()->getHeight(), getScreen()->getWidth());
         if ( mScaleImGui )
         {
-            float lMasterScale = getScreen()->getScaleX(); // Usually better to scale UI based on height
-            ImGui::GetStyle() = mBaseStyle; // Reset to the clean copy
-            ImGui::GetStyle().ScaleAllSizes(lMasterScale);
-            ImGui::GetStyle().FontScaleDpi = lMasterScale;
+            float lMasterScale = getScreen()->getScaleX();
+            setScale(lMasterScale);
+            // ImGui::GetStyle() = mBaseStyle;
+            // ImGui::GetStyle().ScaleAllSizes(lMasterScale);
+            // ImGui::GetStyle().FontScaleDpi = lMasterScale;
         }
     }
 

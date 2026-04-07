@@ -28,7 +28,7 @@ namespace IronTuner {
             | ImGuiWindowFlags_NoMove
             | ImGuiWindowFlags_NoResize
             | ImGuiWindowFlags_NoSavedSettings
-            // | ImGuiWindowFlags_NoBringToFrontOnFocus;
+            | ImGuiWindowFlags_NoBringToFrontOnFocus;
             ;
         //MAYBE:  ImGuiWindowFlags_NoScrollWithMouse
 

@@ -37,14 +37,15 @@ namespace ImFlux {
         bool hovered, held;
         bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
 
+
         // --- DRAWING LOGIC ---
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImVec2 center = pos + ImVec2(maxRadius, maxRadius);
 
         const int num_points = 5;
-        const float inner_radius = radius * 0.45f;
+        // 0.40f .. 0.45f
+        const float inner_radius = radius * 0.40f;
         const float angle_step = IM_PI / num_points;
-
         float start_angle = -IM_PI / 2.0f;
 
         ImVec2 points[10];
@@ -55,12 +56,40 @@ namespace ImFlux {
         }
 
         if (on) {
-            draw_list->AddConvexPolyFilled(points, 10, color_on);
+            for (int i = 0; i < 10; i++) {
+                int next = (i + 1) % 10;
+                draw_list->AddTriangleFilled(center, points[i], points[next], color_on);
+            }
             draw_list->AddPolyline(points, 10, ImGui::GetColorU32(ImGuiCol_Border), ImDrawFlags_Closed, 1.0f);
         } else {
             ImU32 col_outline = hovered ? ImGui::GetColorU32(ImGuiCol_Text) : ImGui::GetColorU32(ImGuiCol_TextDisabled);
             draw_list->AddPolyline(points, 10, col_outline, ImDrawFlags_Closed, 1.5f);
         }
+
+        // // --- DRAWING LOGIC ---
+        // ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        // ImVec2 center = pos + ImVec2(maxRadius, maxRadius);
+        //
+        // const int num_points = 5;
+        // const float inner_radius = radius * 0.45f;
+        // const float angle_step = IM_PI / num_points;
+        //
+        // float start_angle = -IM_PI / 2.0f;
+        //
+        // ImVec2 points[10];
+        // for (int i = 0; i < 10; i++) {
+        //     float r = (i % 2 == 0) ? radius : inner_radius;
+        //     float angle = start_angle + (i * angle_step);
+        //     points[i] = ImVec2(center.x + cosf(angle) * r, center.y + sinf(angle) * r);
+        // }
+        //
+        // if (on) {
+        //     draw_list->AddConvexPolyFilled(points, 10, color_on);
+        //     draw_list->AddPolyline(points, 10, ImGui::GetColorU32(ImGuiCol_Border), ImDrawFlags_Closed, 1.0f);
+        // } else {
+        //     ImU32 col_outline = hovered ? ImGui::GetColorU32(ImGuiCol_Text) : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+        //     draw_list->AddPolyline(points, 10, col_outline, ImDrawFlags_Closed, 1.5f);
+        // }
 
         if (!tooltip.empty() && hovered) ImGui::SetTooltip("%s", tooltip.c_str());
         return pressed;

@@ -132,6 +132,9 @@ android:
 		rm -rf $$ASSET_DIR; \
 		mkdir -p $$ASSET_DIR; \
 		cp -r $$target/assets $$ASSET_DIR; \
+		echo "----- copy Custom settings -----" \
+		cp -r $(BASE_BUILD_DIR)/android/_deps/sdl3-src/android-project/app/* $(ANDROID_PROJ_DIR)/app/; \
+		cp -r $$target/res/app/* $(ANDROID_PROJ_DIR)/app/; \
 		echo "----- copy SDL ----"; \
 		find $(BASE_BUILD_DIR)/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/ \; ; \
 		sed -i "s/<string name=\"SDL_DEFAULT_LIBRARY\">.*<\/string>/<string name=\"SDL_DEFAULT_LIBRARY\">main<\/string>/g" \

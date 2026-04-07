@@ -116,8 +116,11 @@ Limitation:
         - [ ] Emscripten
             - FIX Curl build - need also openssl if you add it via fetchcontent 
         - [ ] Android 
-            - [ ] shaders fail to compile 
-            - [ ] SSL / CURL .. 
+            - [X] shaders fail to compile 
+            - [ ] SSL / CURL ..  
+                - [X] quick and dirty: rewrite https to http in source ! - it's a radio stream why is it encoded ? 
+            - [X] added separate handling in Makefile which fetch [PROJECTDIR]/res/app
+            - [ ] Background only changeing the AndroidManifest is not enough: FIXME in java source: startForegroundService() and Notification and SDL_APP_WILLENTERBACKGROUND
             - Create Android Studio Project  << allow internet for testing look at: android/app/src/main/AndroidManifest.xml
             - firetv 
     - [ ] Cleanup Design  for Android

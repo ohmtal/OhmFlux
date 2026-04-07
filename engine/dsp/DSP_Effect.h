@@ -224,6 +224,10 @@ namespace DSP {
     //  ---------- A U D I O  P A R A M ---------------
     //--------------------------------------------------------------------------
     // Parameter Template-Class Thread safe
+    //
+    // NOTE: typecasting like that: auto p = static_cast<DSP::AudioParam<float>*>(param);
+    //
+
 
     template <typename T>
     class AudioParam : public IParameter {
