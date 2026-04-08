@@ -50,7 +50,7 @@ namespace IronTuner {
         s.Volume                = j.value("Volume", 1.f);
         s.UIInitialized         = j.value("UIInitialized", false);
         s.SideBarOpen           = j.value("SideBarOpen", false);
-        s.BackGroundRenderId    = j.value("BackGroundRenderId", 0);
+        s.BackGroundRenderId    = j.value("BackGroundRenderId", 4);
         s.BackGroundScanLines   = j.value("BackGroundScanLines", false);
         s.PageIndex             = j.value("PageIndex", 1);
         s.Scale                 = j.value("Scale", 1.f);

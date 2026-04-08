@@ -193,7 +193,7 @@ public:
                 mTouchData.touchStartTime = SDL_GetTicks();
                 mTouchData.touchX = event.tfinger.x;
                 mTouchData.touchY = event.tfinger.y;
-                Log("[info]touch down...");
+                // dLog("[info]touch down...");
 
             }
             else if (event.type == SDL_EVENT_FINGER_UP) {
@@ -204,7 +204,7 @@ public:
                     if ( xDiff < 0.1f && yDiff < 0.1f ) {
                         mGuiIO->AddMouseButtonEvent(ImGuiMouseButton_Right, true);
                         mGuiIO->AddMouseButtonEvent(ImGuiMouseButton_Right, false);
-                        Log("[info]Fire Right mouse button press..... (diffs: %f, %f)", xDiff, yDiff);
+                        // dLog("[info]Fire Right mouse button press..... (diffs: %f, %f)", xDiff, yDiff);
                         return;
                     }
                 }

@@ -86,6 +86,7 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::restoreLayout(){
         //copied from json :P
+        //FIXME !!!
         static const std::string layout = "[Window][WindowOverViewport_11111111]\nPos=0,26\nSize=1152,622\nCollapsed=0\n\n[Window][Debug##Default]\nPos=60,60\nSize=400,400\nCollapsed=0\n\n[Window][About]\nPos=774,393\nSize=372,228\nCollapsed=0\n\n[Window][Console]\nPos=0,310\nSize=714,338\nCollapsed=0\nDockId=0x00000006,0\n\n[Window][Radio Browser]\nPos=708,26\nSize=444,622\nCollapsed=0\nDockId=0x00000002,0\n\n[Window][RadioWana]\nPos=0,26\nSize=714,622\nCollapsed=0\nDockId=0x00000005,0\n\n[Window][Recorder]\nPos=0,22\nSize=960,993\nCollapsed=0\nDockId=0x00000005,1\n\n[Window][Favorites]\nPos=708,26\nSize=444,622\nCollapsed=0\nDockId=0x00000002,1\n\n[Window][ImFlux ShowCase Widgets]\nPos=0,432\nSize=960,583\nCollapsed=0\nDockId=0x00000004,0\n\n[Window][HTTP Errror]\nPos=840,465\nSize=240,84\nCollapsed=0\n\n[Window][HUHU]\nPos=892,465\nSize=136,84\nCollapsed=0\n\n[Window][Favourite Dialog]\nPos=60,60\nSize=376,138\nCollapsed=0\n\n[Window][Favorite Dialog]\nPos=772,436\nSize=376,162\nCollapsed=0\n\n[Window][Stream Errror 56]\nPos=782,465\nSize=356,84\nCollapsed=0\n\n[Window][Stream Errror 0]\nPos=823,465\nSize=273,84\nCollapsed=0\n\n[Window][##MySidebar]\nSize=36,510\nCollapsed=0\n\n[Window][Stream Errror 1]\nPos=869,465\nSize=182,84\nCollapsed=0\n\n[Window][Stream Errror 52]\nPos=765,465\nSize=389,84\nCollapsed=0\n\n[Window][Radio]\nPos=0,26\nSize=706,622\nCollapsed=0\nDockId=0x00000005,0\n\n[Table][0x5B6633BA,5]\nColumn 0  Weight=1.0000\nColumn 1  Weight=1.0000\nColumn 2  Weight=1.0000\nColumn 3  Weight=1.0000\nColumn 4  Weight=1.0000\n\n[Table][0xD170F5FA,4]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000\nColumn 2  Width=74 Sort=0^\nColumn 3  Width=41\n\n[Table][0xC55E50B6,2]\nRefScale=16\nColumn 0  Width=20\nColumn 1  Weight=1.0000 Sort=0^\n\n[Docking][Data]\nDockSpace       ID=0x08BD597D Window=0x1BBC0F80 Pos=0,26 Size=1152,622 Split=Y\n  DockNode      ID=0x00000003 Parent=0x08BD597D SizeRef=960,408 Split=X Selected=0xCC2F45C2\n    DockNode    ID=0x00000001 Parent=0x00000003 SizeRef=706,484 Split=Y Selected=0xCC2F45C2\n      DockNode  ID=0x00000005 Parent=0x00000001 SizeRef=714,282 CentralNode=1 Selected=0xDB489985\n      DockNode  ID=0x00000006 Parent=0x00000001 SizeRef=714,338 Selected=0xEA83D666\n    DockNode    ID=0x00000002 Parent=0x00000003 SizeRef=444,484 Selected=0xB58DAB73\n  DockNode      ID=0x00000004 Parent=0x08BD597D SizeRef=960,583 Selected=0xF2A39ADC\n\n";
 
         FluxRadio::RadioStation savStation = getMain()->getAppSettings().CurrentStation;
@@ -1020,7 +1021,7 @@ namespace IronTuner {
 
 
 
-                ImGui::SeparatorText("Radio");
+                // ImGui::SeparatorText("Radio");
                 // if (ImGui::Selectable("Dummy 1")) {
                 //     getMain()->getAppSettings().SideBarOpen = false;
                 //
@@ -1053,20 +1054,8 @@ namespace IronTuner {
                     ImGui::EndMenu();
                 }
 
-                // if (!isConnected) ImGui::BeginDisabled();
-                // if (ImGui::MenuItem("Stream-Info")) {
-                //     ImGui::OpenPopup("##StationInfo");
-                // }
-                // if (!isConnected) ImGui::EndDisabled();
-                // if (isConnected && mStreamHandler->getStreamInfo()) info = *mStreamHandler->getStreamInfo();
-                // DrawInfoPopup(&info);
-
-
-
-
-                ImGui::SeparatorText("Pages");
-
-                {
+                ImGui::Separator();
+                if (ImGui::BeginMenu("Pages")) {
                     bool isSelected = false;
                     for(int id = 0; id < mPages.size(); id++  ) {
                         isSelected = id == mTargetPageIndex;
@@ -1076,25 +1065,26 @@ namespace IronTuner {
                         }
                         // mTargetPageIndex
                     }
-                }
-                ImGui::Separator();
-
-                std::vector<float> scales = { 0.75f, 1.f, 1.5f, 2.f};
-                bool isCurrent = false;
-                std::string scaleCap = "";
-                if (ImGui::BeginMenu("Scale")) {
-                    for (auto scale: scales) {
-                        isCurrent = getScale() == scale;
-                        scaleCap = std::format("{}x", scale);
-                        if (ImGui::MenuItem(scaleCap.c_str(), nullptr, isCurrent))  setImGuiScale(scale);
-                    }
-
                     ImGui::EndMenu();
                 }
 
+                if (!isAndroidBuild()) {
+                    std::vector<float> scales = { 0.75f, 1.f, 1.5f, 2.f};
+                    bool isCurrent = false;
+                    std::string scaleCap = "";
+                    if (ImGui::BeginMenu("Scale")) {
+                        for (auto scale: scales) {
+                            isCurrent = getScale() == scale;
+                            scaleCap = std::format("{}x", scale);
+                            if (ImGui::MenuItem(scaleCap.c_str(), nullptr, isCurrent))  setImGuiScale(scale);
+                        }
 
-                if (ImGui::BeginMenu("Background Rendering"))
-                {
+                        ImGui::EndMenu();
+                    }
+                }
+
+
+                if (ImGui::BeginMenu("Background")) {
 
                     bool isSelected = getMain()->getAppSettings().BackGroundRenderId == -1;
                     if (ImGui::MenuItem("Texture##BackGroundRenderId", NULL, isSelected)) { getMain()->setBackGroundRenderId(-1);}
@@ -1121,7 +1111,6 @@ namespace IronTuner {
                 }
 
 
-                ImGui::Separator();
                 ImGui::MenuItem("Console", NULL, &getMain()->getAppSettings().ShowConsole);
                 // ImGui::SeparatorText("Layout");
                 // if (ImGui::MenuItem("Restore Layout")) { restoreLayout(); }
@@ -1438,12 +1427,18 @@ namespace IronTuner {
 
 
         // CARUSEL windows test:
-        mPages.emplace_back("pure", nullptr, mPages.size());
+        mPages.emplace_back("Relax", nullptr, mPages.size());
         mPages.emplace_back("Radio", [this]() { DrawRadio(); }, mPages.size());
         mPages.emplace_back("Equalizer", [this]() { DrawEqualizer(); }, mPages.size());
-        mPages.emplace_back("Recorder", [this]() { DrawRecorder(); }, mPages.size());
+        if (!isAndroidBuild()) mPages.emplace_back("Recorder", [this]() { DrawRecorder(); }, mPages.size());
         mPages.emplace_back("Favorites", [this]() { DrawFavo(); }, mPages.size());
         mPages.emplace_back("Radio Browser", [this]() { DrawRadioBrowserWindow(); }, mPages.size());
+
+        if (!isAndroidBuild()) mPages.emplace_back("Rack", [this]() {
+             DrawRadio();
+             DrawEqualizer();
+             DrawRecorder();
+        }, mPages.size());
 
 
         setImGuiScale(getMain()->getAppSettings().Scale);

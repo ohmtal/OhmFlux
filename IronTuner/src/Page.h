@@ -71,7 +71,6 @@ namespace IronTuner {
             if (takeFocus) {
                 ImGui::SetWindowFocus();
             }
-            ImGui::TextUnformatted(mWindowName); //FIXME DEBUG only
             if (mOnDrawPage) mOnDrawPage();
 
             ImGui::End();
