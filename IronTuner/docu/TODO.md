@@ -2,13 +2,21 @@
 ## Todos
 
 - [X] auto reconnect cause crash !
+
 - [X] Invalid Station: https://us2.maindigitalstream.com/ssl/7739
     - maybe icy infos case sensitive => icy-metaint
-- [ ] Swipe: Ignore when other popup is selected 
-- [ ] SideBar: scale width by "mScale"
-- [ ] tune button 
-    - [ ] sync station on Tune
-    - [ ] too fast (android) 
+    
+- [X] Swipe: Ignore when other popup is selected 
+    - added in Page.h
+    
+- [ ] Infopage with current station info, raw/ring buffer , 
+- [X] SideBar: scale width by "mScale"
+
+- [ ] TuneKnob
+    - [X] sync station on Tune
+    - [X] too fast (android) changed step from 5.f to 20.f
+    - [ ] test on android 
+    
 - [ ] usable (android) lists for radio browser / Favo 
     - Height
     - Popup: Tune, Edit, Info 

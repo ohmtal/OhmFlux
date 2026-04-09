@@ -36,9 +36,11 @@ namespace IronTuner {
         std::string mCaption = "BASE WINDOW";
         char mWindowName[256];
         std::function<void()> mOnDrawPage = nullptr;
+        bool mIsFocused = false;
     public:
         std::string getCaption() const { return mCaption; }
         int getId() const { return mId; }
+        bool isFocused() const { return mIsFocused; }
 
         Page(std::string caption, std::function<void()> drawfunc, int id) {
             mId = id;
@@ -72,7 +74,7 @@ namespace IronTuner {
                 ImGui::SetWindowFocus();
             }
             if (mOnDrawPage) mOnDrawPage();
-
+            mIsFocused =  ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_NoPopupHierarchy);
             ImGui::End();
         }
 

@@ -100,6 +100,8 @@ namespace IronTuner {
         SDL_Keycode  mCursorKeyDown = 0;
         const Uint64 mCursorChangeTime = 750;
 
+        bool mPageWindowFocused = false;
+
     public:
         Point2F getAudioLevels() const { return mAudioLevels; }
         DSP::SpectrumAnalyzer* getSpectrumAnalyzer() {

@@ -77,9 +77,11 @@ namespace IronTuner {
 
         mStations.addCache(station);
         ConnectCurrent();
-        mStations.setFavId(-1);
+        // fragment before index ? --- mStations.setFavId(-1);
         mTuningMode = false;
         mReconnectOnTimeOutCount = 0;
+        // reset index so tuneknob get in sync
+        mStations.setFavIndex(-1);
     }
 
 
@@ -864,6 +866,10 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
 
     void AppGui::handleSwipe(float deltaX) {
+        if (!mPageWindowFocused) {
+            // dLog("[warn] Swipe but not focused.....");
+            return ;
+        }
         if (deltaX < -0.15f) changePage(1);
         if (deltaX > 0.15f)  changePage(-1);
     }
@@ -1027,12 +1033,13 @@ namespace IronTuner {
                 //
                 // }
 
+                float baseTargetWidth = 250.f * getScale();
                 if (getMain()->getAppSettings().CurrentStation.name != "") {
                     std::string curName = FluxStr::truncate(getMain()->getAppSettings().CurrentStation.name , 35);
                     if (savStr != getMain()->getAppSettings().CurrentStation.name) {
                         savStr = getMain()->getAppSettings().CurrentStation.name;
-                        targetWidth = ImGui::CalcTextSize(curName.c_str()).x + 50.f;
-                        if (targetWidth < 250.f) targetWidth=250.f;
+                        targetWidth = ImGui::CalcTextSize(curName.c_str()).x + 50.f * getScale();
+                        if (targetWidth < baseTargetWidth) targetWidth=baseTargetWidth;
                     }
 
 
@@ -1076,7 +1083,11 @@ namespace IronTuner {
                         for (auto scale: scales) {
                             isCurrent = getScale() == scale;
                             scaleCap = std::format("{}x", scale);
-                            if (ImGui::MenuItem(scaleCap.c_str(), nullptr, isCurrent))  setImGuiScale(scale);
+                            if (ImGui::MenuItem(scaleCap.c_str(), nullptr, isCurrent))  {
+                                setImGuiScale(scale);
+                                targetWidth = 0;
+                                savStr = "";
+                            }
                         }
 
                         ImGui::EndMenu();
@@ -1174,6 +1185,7 @@ namespace IronTuner {
                 dLog("Sidebar toggled via Selectable = %d", getMain()->getAppSettings().SideBarOpen);
             }
 
+            if (isDebugBuild())  ImFlux::DrawLED("focused", mPageWindowFocused, ImFlux::LED_BLUE);
 
             // change page here !!
             float progress = 0.f;
@@ -1487,6 +1499,7 @@ namespace IronTuner {
                         && !getMain()->getAppSettings().ShowConsole;
 
             mPages[mTargetPageIndex].Draw(Pos, Size, mTargetPageIndex, focus);
+            mPageWindowFocused = mPages[mTargetPageIndex].isFocused();
             lastPageIndex = mTargetPageIndex;
         } else {
             for (int i = 0; i < mPages.size(); i++) {
@@ -1494,6 +1507,7 @@ namespace IronTuner {
                 if (xPos + screenWidth < -10.0f || xPos > screenWidth + 10.0f) continue;
                 ImVec2 Pos = ImVec2(xPos, startY);
                 mPages[i].Draw(Pos, Size, mTargetPageIndex, false);
+
             }
         }
 
@@ -1644,11 +1658,12 @@ namespace IronTuner {
             delta = ImGui::GetIO().MouseDelta.y;
             if (std::abs(delta) > 0.0f) {
                 static float accumulator = 0.0f;
+                const float accuStep = 20.f; // 10.f; //orig: 5.f
                 accumulator -= delta;
-                if (std::abs(accumulator) >= 5.0f) {
-                    int steps = (int)(accumulator / 5.0f) * step;
+                if (std::abs(accumulator) >= accuStep) {
+                    int steps = (int)(accumulator / accuStep) * step;
                     new_v = *v + steps;
-                    accumulator -= (float)steps * 5.0f; // keep the remainder
+                    accumulator -= (float)steps * accuStep; // keep the remainder
                     value_changed = true;
                 }
             }

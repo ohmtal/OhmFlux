@@ -113,6 +113,7 @@ namespace IronTuner {
 
         // FavIndex
         int getFavIndex() const { return mSelectedFavIndex; }
+        void setFavIndex(int value) { mSelectedFavIndex = value; }
         int& getFavIndexMutable()  { return mSelectedFavIndex; }
         void setSelectedFavIndex();
 
