@@ -9,6 +9,7 @@
 - [X] Swipe: Ignore when other popup is selected 
     - added in Page.h
     
+- [ ] remove "final protocol is" error message or change it to normal message 
 - [ ] Infopage with current station info, raw/ring buffer , 
 - [X] SideBar: scale width by "mScale"
 
@@ -17,6 +18,9 @@
     - [X] too fast (android) changed step from 5.f to 20.f
     - [ ] test on android 
     
+- [ ] check why multiple stations show favo in radio browser (test: radio bob)
+- [ ] Favo add your own clicks and sort by 
+
 - [ ] usable (android) lists for radio browser / Favo 
     - Height
     - Popup: Tune, Edit, Info 
