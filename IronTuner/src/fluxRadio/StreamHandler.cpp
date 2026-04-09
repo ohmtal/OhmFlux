@@ -35,12 +35,17 @@ namespace FluxRadio {
             self->mFullHeader += header;
         }
 
-        if (header.find("icy-metaint:") == 0) {
+
+   /*     if (header.find("icy-metaint:") == 0) {
             size_t pos = header.find(":");
             self->mMetaInt = std::atol(header.substr(pos + 1).c_str());
             // self->mBytesToRead = self->mMetaInt;
             dLog("[info] METAINT: %s (metaint:%d)", header.c_str(), self->mMetaInt);
 
+        } */
+        std::string metaIntStr = FluxNet::NetTools::getHeaderValue(header, "icy-metaint");
+        if ( metaIntStr != "" ) {
+            self->mMetaInt = std::atol(metaIntStr.c_str());
         } else if (header == "\r\n" || header == "\n") {
 
             long http_code = 0;

@@ -2,8 +2,8 @@
 ## Todos
 
 - [X] auto reconnect cause crash !
-- [ ] Invalid Station: https://us2.maindigitalstream.com/ssl/7739
-    - maybe icy infos case sensitive
+- [X] Invalid Station: https://us2.maindigitalstream.com/ssl/7739
+    - maybe icy infos case sensitive => icy-metaint
 - [ ] Swipe: Ignore when other popup is selected 
 - [ ] SideBar: scale width by "mScale"
 - [ ] tune button 
