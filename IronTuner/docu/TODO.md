@@ -1,0 +1,129 @@
+
+## Todos
+
+- [X] auto reconnect cause crash !
+- [ ] Invalid Station: https://us2.maindigitalstream.com/ssl/7739
+    - maybe icy infos case sensitive
+- [ ] Swipe: Ignore when other popup is selected 
+- [ ] SideBar: scale width by "mScale"
+- [ ] tune button 
+    - [ ] sync station on Tune
+    - [ ] too fast (android) 
+- [ ] usable (android) lists for radio browser / Favo 
+    - Height
+    - Popup: Tune, Edit, Info 
+    - Double click
+    - Select favo 
+    
+- [ ] Display Text from ImGui Font in OpenGL Shader:
+```
+ImTextureID fontTexId = ImGui::GetIO().Fonts->TexID;
+GLuint glFontTexId = (GLuint)(intptr_t)fontTexId;
+//......
+ImFont* font = ImGui::GetFont(); // Aktueller Font
+const ImFontGlyph* glyph = font->FindGlyph('A'); // UVs für den Buchstaben 'A'
+
+float u0 = glyph->V0.x, v0 = glyph->V0.y; // top left 
+float u1 = glyph->V1.x, v1 = glyph->V1.y; // bottom right
+```
+
+- [ ] Carousel View and Redesign:
+    - [ ] Code Redesign
+        - RadioWana Class replacement:
+            - add a core class which hold the save/load/lists/handline
+                - what about the main class ? 
+            - create base view and derive the other views 
+        - Current Tree:
+            - main
+                - AppMain (getMain())
+                    - * holding Fonts 
+                    - Background Effects 
+                    - RadioWana: handling gui and app logic
+                        - *loading Fonts
+                        - AudioHandler
+                        - AudioRecoder
+                        - RadioBrowser
+                        - StreamHandler
+                        - StreamInfo
+        - New Tree
+        
+    - Usage Rules:
+        - left right change window 
+        - up down navigate in window
+        - enter change option or popup other options
+    - [ ] Play View 
+        - Display
+            - Title
+            - Station || next Title
+            - Recoding * 
+        
+    - [ ] Radio Browser 
+        - Search
+        - Filter results 
+        - Result list 
+            - Item Enter open menu
+                - Favourite
+                - Play
+                - Info 
+    - [ ] Tune: Favorites or better Station cache ?! 
+        - Filter results 
+        - Result list 
+            - Item Enter open menu
+                - Favourite
+                - Play
+                - Info 
+    - [ ] Equalizer + Volume
+        - up down should select fader and enter toggle edit mode
+    - [ ] Background Mode selector
+        - [ ] list with modes 
+
+    (*) Desktop only 
+---
+    
+- [ ] Milestone III
+    - [ ] Autoconnect on start 
+    - [X] Auto Reconnect on timeout
+    - [ ] Recorder
+        - [X] Add recorder to Rack 
+        - Enable recording controls without connected 
+        - [ ] add Modes: 
+            - split by Meta Data - save a song with the name of the meta data information 
+                - Delay in ms to switch 
+                - start recording on new song ( meta data )
+            - Mix-Tape - append to tape bei manually start stop recoring
+                - Tape name
+            - Manual - save a new stream be station name (or record if no name) - DATETIME.mp3
+
+
+    
+    
+    - [ ] Move Back to RadioWana github ... stop creating new widgets ;) **New Name?** 
+            
+    
+    - [ ] radio-browser.info
+        - [ ] search by highest click count and tag 
+        - [ ] SRV DNS lookup - _api._tcp.radio-browser.info
+        - [ ] Update Favo on  "Click Responce" / RequestType::CLICK - if stationuuid is set
+        - [ ] add favicon support 
+    
+    - [ ] Build
+        - [ ] Windows 
+            - Add Icon 
+            - write docu like https://github.com/ohmtal/OhmFlux/blob/main/README_BUILD_WINDOWS.md but add curl 
+        - [ ] Emscripten
+            - FIX Curl build - need also openssl if you add it via fetchcontent 
+        - [ ] Android 
+            - [X] shaders fail to compile 
+            - [ ] SSL / CURL ..  
+                - [X] quick and dirty: rewrite https to http in source ! - it's a radio stream why is it encoded ? 
+            - [X] added separate handling in Makefile which fetch [PROJECTDIR]/res/app
+            - [ ] Background only changeing the AndroidManifest is not enough: FIXME in java source: startForegroundService() and Notification and SDL_APP_WILLENTERBACKGROUND
+            - Create Android Studio Project  << allow internet for testing look at: android/app/src/main/AndroidManifest.xml
+            - firetv 
+    - [ ] Cleanup Design  for Android
+    - Finishing
+        - [ ] add error message on http 4xx 5xx
+        - [ ] About << make nice - markdown renderer ? 
+        - [ ] Help - markdown renderer ? 
+        - [ ] different layouts not only factory 
+
