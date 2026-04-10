@@ -33,7 +33,13 @@
     - [X] Context Menu : Tune, Edit, Info  (see also: FIXME CONTEXT MENU)
     - [X] scrollbar 
     
-
+- [ ] Small changes
+    - [ ] hide top scroller on rack - define hide pages on initialize
+    - [ ] url clicks
+    - [ ] define more stations, techno and bluegrasshyms
+    - [ ] rename browser in station search or find a station ...
+    - [ ] extra button for windows alt 1...x for page
+    
     
 - [ ] Fix Table to show Cached Stations so when clicking on favo it can be re-done . 
     
