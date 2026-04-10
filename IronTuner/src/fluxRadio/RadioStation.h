@@ -32,7 +32,7 @@ namespace FluxRadio {
         // internal fav id
         uint32_t    favId = 0;
 
-        std::vector<std::string> dump(bool useLog = true);
+        std::vector<std::string> dump(bool useLog = true) const ;
     };
     // -----------------------------------------------------------------------------
     void to_json(nlohmann::json& j, const RadioStation& s);

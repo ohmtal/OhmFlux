@@ -33,9 +33,9 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     constexpr  ImFlux::ButtonParams gRadioButtonParams {
         .color = IM_COL32(20, 20, 30, 255),
-        .size  = { 40.f, 40.f },
+        .size  = { 80.f, 40.f },
         .gloss = true, //<< does not work so good with round buttons
-        .rounding = 6.f,
+        .rounding = 0.f,
 
     };
 
@@ -60,6 +60,15 @@ namespace IronTuner {
 
     class AppGui: public FluxBaseObject {
     private:
+        struct StationContextData {
+            bool showDialog = false;
+            bool isEdit = false;
+            FluxRadio::RadioStation workStation;
+            uint32_t editId = 0;
+            // bool showInfo = false;
+        };
+        StationContextData mStationContextData;
+
         //FIXME FluxRenderObject* mBackground = nullptr;
 
         void OnConsoleCommand(ImConsole* console, const char* cmdline);
@@ -148,12 +157,15 @@ namespace IronTuner {
 
         void DrawFavo();
         void DrawRadioBrowserWindow();
-        void DrawStationsList(const std::vector<FluxRadio::RadioStation> stations, const bool isFavoList );
+        void DrawStationsTable(const std::vector<FluxRadio::RadioStation> stations, const bool isFavoList );
+        void DrawInfoContent(FluxRadio::StreamInfo* info);
         void DrawInfoPopup(FluxRadio::StreamInfo* info);
 
         void DrawRadio();
         void DrawRecorder();
         void DrawEqualizer();
+
+        void DrawInfo();
 
         // bool isFavoStation(std::string searchUuid);
 
@@ -171,6 +183,22 @@ namespace IronTuner {
 
         void Tune(FluxRadio::RadioStation station);
         void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB);
+
+        void FavoStar(bool isFavo,bool isFavoList, float radius, const FluxRadio::RadioStation* station )  {
+            if (ImFlux::FavouriteStar("Favourite", isFavo, radius)) {
+                if (isFavoList) {
+                    mStations.RmvFavoByFavId(station);
+                } else {
+                    if (!isFavo) {
+                        mStations.AddFavo(station);
+                    } else {
+                        mStations.RmvFavoByUUID(station);
+                    }
+                }
+                SaveSettings();
+            }
+        }
+
 
 
 

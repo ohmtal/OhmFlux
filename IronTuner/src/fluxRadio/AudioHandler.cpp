@@ -393,7 +393,6 @@ namespace FluxRadio {
     }
     // -----------------------------------------------------------------------------
     void AudioHandler::decoderDebug(){
-        // if (!isDebugBuild()) return;
         Log("Raw Buffer Size: %d, Ringbuffer spaceLeft:%d inUse:%d, Decode Running: %d",
             (int)getRawBufferSize(),
             (int)mRingBuffer.getAvailableForWrite(),

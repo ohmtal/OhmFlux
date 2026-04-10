@@ -8,7 +8,7 @@
 
 namespace FluxRadio {
     //--------------------------------------------------------------------------
-    std::vector< std::string > RadioStation::dump(bool useLog) {
+    std::vector< std::string > RadioStation::dump(bool useLog) const {
         std::vector<std::string> result ;
 
         auto output = [&](const char* fmt, ...) {

@@ -9,23 +9,35 @@
 - [X] Swipe: Ignore when other popup is selected 
     - added in Page.h
     
-- [ ] remove "final protocol is" error message or change it to normal message 
-- [ ] Infopage with current station info, raw/ring buffer , 
+- [X] remove "final protocol is" error message or change it to normal message 
+
+- [X] Infopage with current station info, raw/ring buffer << "about" replacement
+    
 - [X] SideBar: scale width by "mScale"
 
-- [ ] TuneKnob
+- [X] TuneKnob
     - [X] sync station on Tune
     - [X] too fast (android) changed step from 5.f to 20.f
-    - [ ] test on android 
+    - [X] test on android 
     
-- [ ] check why multiple stations show favo in radio browser (test: radio bob)
-- [ ] Favo add your own clicks and sort by 
+- [X] check why multiple stations show favo in radio browser (test: radio bob)
+    ==> isFavo checks UUID AND url and the **url does match** on multiple Stars in radio browser 
 
-- [ ] usable (android) lists for radio browser / Favo 
-    - Height
-    - Popup: Tune, Edit, Info 
-    - Double click
-    - Select favo 
+- [X] still => double insert into cache << favID ?! 
+    
+
+- [X] usable (android) lists for radio browser / Favo 
+    - [X] Height
+    - [X] Double click
+    - [X] Select favo 
+    - [X] Context Menu : Tune, Edit, Info  (see also: FIXME CONTEXT MENU)
+    - [X] scrollbar 
+    
+
+    
+- [ ] Fix Table to show Cached Stations so when clicking on favo it can be re-done . 
+    
+- [ ] Favo add your own clicks and sort by 
     
 - [ ] Display Text from ImGui Font in OpenGL Shader:
 ```

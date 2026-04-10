@@ -33,7 +33,7 @@ namespace IronTuner {
         },
         // not my music but can be used for a demo: NCS Radio (NoCopyrightSounds)
         // {
-        //     .stationuuid = "92556f58-20d3-44ae-8faa-322ce5f256c0",
+        //     .stationuuid = "",
         //     .name= "NCS Radio (NoCopyrightSounds)",
         //     .url = "https://stream.zeno.fm/ez4m4918n98uv",
         //     .favId = 3
@@ -45,7 +45,8 @@ namespace IronTuner {
         // Radio browser
         std::vector<FluxRadio::RadioStation> mQueryStationData;
         std::string mQueryString = "";
-        std::string mSelectedStationUuid = "";
+        // std::string mSelectedStationUuid = "";
+
         uint32_t mSelectedFavId = 0;
         int mSelectedFavIndex = -1; //not the id the index in the list
 
@@ -58,11 +59,13 @@ namespace IronTuner {
         std::string& getQueryStringMutable() { return mQueryString; }
         std::vector<FluxRadio::RadioStation> getQueryStationData() const { return  mQueryStationData; };
         std::vector<FluxRadio::RadioStation>& getQueryStationDataMutable() { return  mQueryStationData; };
+        void DumpQueryStations();
+
 
 
         //UUID
-        std::string getUuid() const { return mSelectedStationUuid; }
-        void setUuid(std::string value)  { mSelectedStationUuid = value; }
+        // std::string getUuid() const { return mSelectedStationUuid; }
+        // void setUuid(std::string value)  { mSelectedStationUuid = value; }
 
         // favo
         std::vector<FluxRadio::RadioStation> getFavoStationData() const { return  mFavoStationData; };

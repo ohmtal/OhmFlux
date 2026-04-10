@@ -62,6 +62,7 @@ namespace IronTuner {
         void onDraw() override;;
 
         AppGui* getAppGui() const {return mAppGui; }
+
         //mutable!
         AppSettings& getAppSettings() {return mAppSettings; }
         WindowState& getWindowState() { return mWindowState; }

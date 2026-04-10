@@ -98,6 +98,9 @@ namespace FluxRadio {
         bool setEffectsSettingsBase64( std::string settingsBase64);
         size_t getRawBufferSize() const { return mRawBuffer.size(); }
 
+        size_t getRingBufferAvailableForWrite()  { return mRingBuffer.getAvailableForWrite(); }
+        size_t getRingBufferAvailableForRead()  { return mRingBuffer.getAvailableForRead(); }
+
         void decoderDebug( );
 
 

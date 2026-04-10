@@ -8,6 +8,14 @@ namespace IronTuner {
             Log("%03d %s (%s)", s.favId,  s.name.c_str(), s.stationuuid.c_str());
         }
     }
+    void StationHandler::DumpQueryStations(){
+        Log("QUERY:%s", mQueryString.c_str());
+        for (auto& s: mQueryStationData ) {
+            Log("%s %s (%s)", s.stationuuid.c_str(),  s.name.c_str(), s.url.c_str());
+        }
+    }
+
+
 
 
     bool StationHandler::isFavoStation(const FluxRadio::RadioStation* station){
@@ -84,6 +92,7 @@ namespace IronTuner {
         });
 
         if (result) {
+            // remove from Station Cache - WHY ? uuid is not the best identifier anyway
             std::erase_if(mStationCache, [&](const FluxRadio::RadioStation& s) {
                 return s.stationuuid == station->stationuuid;
             });
@@ -116,9 +125,17 @@ namespace IronTuner {
     }
 
     void StationHandler::setSelectedFavIndex() {
-        // mCurStationIsFavo =
+        if ( getMain()->getAppSettings().CurrentStation.favId > 0 ) {
+            for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
+                if ( mFavoStationData[i].favId == getMain()->getAppSettings().CurrentStation.favId ) {
+                    mSelectedFavIndex = i;
+                    return;
+                }
+            }
+        }
+        // we check against URL!
         for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
-            if ( mFavoStationData[i].favId == getMain()->getAppSettings().CurrentStation.favId ) {
+            if ( mFavoStationData[i].url == getMain()->getAppSettings().CurrentStation.url ) {
                 mSelectedFavIndex = i;
                 return;
             }
@@ -136,7 +153,7 @@ namespace IronTuner {
                 mStationCache.push_back(station);
             }
 
-            if ( getMain()->getAppSettings().CurrentStation.favId < 1) {
+            if ( !isFavoStation(&getMain()->getAppSettings().CurrentStation)) {
                 mStationCache.push_back( getMain()->getAppSettings().CurrentStation );
                 mSelectedFavIndex = (int)mStationCache.size() - 1;
             }
