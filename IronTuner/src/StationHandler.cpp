@@ -1,172 +1,178 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2026 Thomas Hühn (XXTH)
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
+// Station Handler - NOT Thread Save!
+//-----------------------------------------------------------------------------
 #include "StationHandler.h"
 #include "appMain.h"
 #include "utils/fluxSettingsManager.h"
 
 namespace IronTuner {
-    void StationHandler::DumpStationCache(){
-        for (auto& s: mStationCache ) {
-            Log("%03d %s (%s)", s.favId,  s.name.c_str(), s.stationuuid.c_str());
-        }
+
+
+    //--------------------------------------------------------------------------
+    const std::string& StationHandler::getQueryString() const{
+        return mQueryString;
     }
+
+    std::string& StationHandler::getQueryStringMutable(){
+        return mQueryString;
+    }
+
     void StationHandler::DumpQueryStations(){
         Log("QUERY:%s", mQueryString.c_str());
         for (auto& s: mQueryStationData ) {
             Log("%s %s (%s)", s.stationuuid.c_str(),  s.name.c_str(), s.url.c_str());
         }
     }
-
-
-
-
+    //--------------------------------------------------------------------------
+    const std::vector< FluxRadio::RadioStation >& StationHandler::getStations() const{
+        return  mLocalStations;
+    }
+    //--------------------------------------------------------------------------
+    FluxRadio::RadioStation* StationHandler::getStation(const FluxRadio::RadioStation* station) {
+        if ( !station ) return nullptr;
+        auto it = std::find_if(mLocalStations.begin(), mLocalStations.end(),
+                               [&station](const FluxRadio::RadioStation& s) {
+                                   return (
+                                       (s.stationuuid != "" && s.stationuuid == station->stationuuid)
+                                       || (s.url != "" &&  s.url == station->url)
+                                   );
+                               });
+        if (it == mLocalStations.end()) {
+            return nullptr;
+        }
+        return &(*it);
+    }
+    //--------------------------------------------------------------------------
+    bool StationHandler::getSelectedStation(FluxRadio::RadioStation& station){
+        if (mSelectedIndex >= 0 && mLocalStations.size() > mSelectedIndex) {
+            station = mLocalStations[mSelectedIndex];
+            return true;
+        }
+        return false;
+    }
+    //--------------------------------------------------------------------------
+    FluxRadio::RadioStation* StationHandler::getStation(size_t index){
+        if ( index >= mLocalStations.size() ) return nullptr;
+        return &mLocalStations[index];
+    }
+    //--------------------------------------------------------------------------
+    bool StationHandler::isLocalStation(const FluxRadio::RadioStation* station){
+        if ( !station ) return false;
+        return getStation(station) != nullptr;
+    }
+    //--------------------------------------------------------------------------
     bool StationHandler::isFavoStation(const FluxRadio::RadioStation* station){
         if ( !station ) return false;
-        auto it = std::find_if(mFavoStationData.begin(), mFavoStationData.end(),
-                               [&station](const FluxRadio::RadioStation& s) {
-                                   return (
-                                       (s.stationuuid != "" && s.stationuuid == station->stationuuid)
-                                       || (s.url != "" &&  s.url == station->url)
-                                   );
-                               });
-        return it != mFavoStationData.end();
+        FluxRadio::RadioStation* s = getStation(station);
+        return (s != nullptr && s->isLocalFavo  );
     }
-
-    FluxRadio::RadioStation* StationHandler::getFavoStation(const FluxRadio::RadioStation* station) {
-        if ( !station ) return nullptr;
-        auto it = std::find_if(mFavoStationData.begin(), mFavoStationData.end(),
-                               [&station](const FluxRadio::RadioStation& s) {
-                                   return (
-                                       (s.stationuuid != "" && s.stationuuid == station->stationuuid)
-                                       || (s.url != "" &&  s.url == station->url)
-                                   );
-                               });
-
-        if (it != mFavoStationData.end()) {
-            return &(*it);
-        }
-        return nullptr;
-
-    }
-
-    bool StationHandler::isCacheStation(const FluxRadio::RadioStation* station){
+    //--------------------------------------------------------------------------
+    bool StationHandler::addStation(const FluxRadio::RadioStation* station, bool setFavo ) {
         if ( !station ) return false;
-        auto it = std::find_if(mStationCache.begin(), mStationCache.end(),
-                               [&station](const FluxRadio::RadioStation& s) {
-                                   return (
-                                       (s.favId != 0 && s.favId == station->favId)
-                                       || (s.stationuuid != "" && s.stationuuid == station->stationuuid)
-                                       || (s.url != "" &&  s.url == station->url)
-                                   );
-                               });
-        return it != mStationCache.end();
-    }
-
-    bool StationHandler::AddFavo(const FluxRadio::RadioStation* station) {
-        if ( !station ) return false;
-        if ( !isFavoStation(station) ) {
-            mFavoStationData.push_back(*station);
+        FluxRadio::RadioStation* s = getStation(station);
+        if ( s == nullptr ) {
+            dLog("[info] Add new station to list:%s", station->name.c_str());
+            mLocalStations.push_back(*station);
+            s = &mLocalStations.back();
+            s->clickcount = 0;
         }
-        FluxRadio::updateFavIds(&mFavoStationData);
-
-        FluxRadio::RadioStation* favStation =  getFavoStation(station);
-        if (favStation) {
-            if ( !isCacheStation(favStation) ) {
-                mStationCache.push_back(*favStation);
-            }
-            // update current station
-            if (
-                (favStation->url  != "" && getMain()->getAppSettings().CurrentStation.url == favStation->url )
-                || (favStation->stationuuid  != "" && getMain()->getAppSettings().CurrentStation.stationuuid == favStation->stationuuid )
-            ) {
-                getMain()->getAppSettings().CurrentStation.favId = favStation->favId;
-            }
+        if ( s == nullptr ) return false;
+        if (setFavo) {
+            s->isLocalFavo = true;
         }
 
 
         return true;
     }
-
-    bool StationHandler::RmvFavoByFavId(const FluxRadio::RadioStation* station) {
-        if (!station || station->favId < 1 ) return false;
-        bool result = std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
-            return s.favId == station->favId;
-        });
-
-        if (result) {
-            // remove from Station Cache - WHY ? uuid is not the best identifier anyway
-            std::erase_if(mStationCache, [&](const FluxRadio::RadioStation& s) {
-                return s.stationuuid == station->stationuuid;
-            });
-
-            // update current station
-            if ( station->favId  ==  getMain()->getAppSettings().CurrentStation.favId) {
-                getMain()->getAppSettings().CurrentStation.favId = 0;
-            }
-
-        }
-        return result;
+    //--------------------------------------------------------------------------
+    bool StationHandler::setFavo(const FluxRadio::RadioStation* station, bool value) {
+        if ( !station ) return false;
+        FluxRadio::RadioStation* s = getStation(station);
+        if ( s == nullptr ) return false;
+        s->isLocalFavo = value;
+        return true;
     }
-
-    bool StationHandler::RmvFavoByUUID(const FluxRadio::RadioStation* station) {
-        if (!station || station->stationuuid == "" ) return false;
-        bool result = std::erase_if(mFavoStationData, [&](const FluxRadio::RadioStation& s) {
-            return s.stationuuid == station->stationuuid;
-        });
-
-        if (result) {
-            std::erase_if(mStationCache, [&](const FluxRadio::RadioStation& s) {
-                return s.stationuuid == station->stationuuid;
-            });
-            // update current station
-            if ( getMain()->getAppSettings().CurrentStation.stationuuid == station->stationuuid ) {
-                getMain()->getAppSettings().CurrentStation.favId = 0;
-            }
-        }
-        return result;
+    //--------------------------------------------------------------------------
+    bool StationHandler::incClick(const FluxRadio::RadioStation* station)   {
+        if ( !station ) return false;
+        FluxRadio::RadioStation* s = getStation(station);
+        if ( s == nullptr ) return false;
+        s->clickcount++;
+        return true;
     }
-
-    void StationHandler::setSelectedFavIndex() {
-        if ( getMain()->getAppSettings().CurrentStation.favId > 0 ) {
-            for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
-                if ( mFavoStationData[i].favId == getMain()->getAppSettings().CurrentStation.favId ) {
-                    mSelectedFavIndex = i;
-                    return;
-                }
-            }
+    //--------------------------------------------------------------------------
+    int StationHandler::getSize() const{
+        return (int)mLocalStations.size();
+    }
+    //--------------------------------------------------------------------------
+    void StationHandler::dumpStations(){
+        for (auto& s: mLocalStations ) {
+            Log("%s(%d), %s, %s", s.name.c_str(), s.isLocalFavo , s.url.c_str(), s.stationuuid.c_str());
         }
-        // we check against URL!
-        for (int i =0 ; i < (int)mFavoStationData.size(); i++) {
-            if ( mFavoStationData[i].url == getMain()->getAppSettings().CurrentStation.url ) {
-                mSelectedFavIndex = i;
+    }
+    //--------------------------------------------------------------------------
+    void StationHandler::setSelectedIndex() {
+        // we check against URL OR UUID!
+        const auto& station = getMain()->getAppSettings().CurrentStation;
+        for (size_t i =0 ; i < mLocalStations.size(); i++) {
+            const auto& s = mLocalStations[i];
+
+            if (
+                (s.stationuuid != "" && s.stationuuid == station.stationuuid)
+                || (s.url != "" &&  s.url == station.url)
+            ) {
+                mSelectedIndex = i;
                 return;
             }
         }
-        mSelectedFavIndex = -1; //nothing found!
+        mSelectedIndex = -1; //nothing found!
     }
-
-    void StationHandler::update() {
-        // set current favIndex ...
-        if (mSelectedFavIndex < 0) {
-            setSelectedFavIndex();
-
-            mStationCache.clear();
-            for ( auto& station : mFavoStationData ) {
-                mStationCache.push_back(station);
-            }
-
-            if ( !isFavoStation(&getMain()->getAppSettings().CurrentStation)) {
-                mStationCache.push_back( getMain()->getAppSettings().CurrentStation );
-                mSelectedFavIndex = (int)mStationCache.size() - 1;
+    //--------------------------------------------------------------------------
+    bool StationHandler::cleanup()  {
+        std::vector<FluxRadio::RadioStation> stations;
+        stations = mLocalStations;
+        mLocalStations.clear();
+        for (auto s : stations) {
+            if ( s.isLocalFavo || s.url == getMain()->getAppSettings().CurrentStation.url ) {
+                 mLocalStations.push_back(s);
             }
         }
+        mSelectedIndex = -1; //setup new index
+        return true;
     }
-
+    //--------------------------------------------------------------------------
+    void StationHandler::update() {
+        if (mSelectedIndex < 0) {
+            if (!isLocalStation(&getMain()->getAppSettings().CurrentStation)) {
+                addStation(&getMain()->getAppSettings().CurrentStation);
+            }
+            setSelectedIndex();
+            updateSortedCache();
+        }
+    }
+    //--------------------------------------------------------------------------
+    void StationHandler::updateSortedCache(){
+        mSortedStations.clear();
+        for (const auto& s : mLocalStations) {
+            mSortedStations.push_back(&s);
+        }
+        std::sort(mSortedStations.begin(), mSortedStations.end(), [](auto* a, auto* b) {
+            return a->clickcount > b->clickcount;
+        });
+    }
+    //--------------------------------------------------------------------------
     void StationHandler::Load(){
-        mFavoStationData = SettingsManager().get("Radio::Favo", DefaultFavo);
-        FluxRadio::updateFavIds(&mFavoStationData);
+        mLocalStations = SettingsManager().get("Radio::Stations", DefaultFavo);
+        updateSortedCache();
     }
+    //--------------------------------------------------------------------------
     void StationHandler::Save(){
-        SettingsManager().set("Radio::Favo", mFavoStationData);
+        SettingsManager().set("Radio::Stations", mLocalStations);
     }
+    //--------------------------------------------------------------------------
 
 
-};
+}; //namespace

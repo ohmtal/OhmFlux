@@ -41,10 +41,7 @@ namespace IronTuner {
 
 
         BackGroundEffects* getBackGroundRenderEffect() const {return mBackGroundEffects; }
-        bool reloadBackGroundEffectsShader(int id = 0, bool scanLines = false) {
-            if (mBackGroundEffects) return mBackGroundEffects->LoadShader(id, scanLines);
-            return false;
-        }
+        bool reloadBackGroundEffectsShader(int id = 0, bool scanLines = false);
         void setBackGroundRenderId(int id, bool enableScanLines = false);
 
 

@@ -64,8 +64,7 @@ namespace IronTuner {
             bool showDialog = false;
             bool isEdit = false;
             FluxRadio::RadioStation workStation;
-            uint32_t editId = 0;
-            // bool showInfo = false;
+            FluxRadio::RadioStation* pStation = nullptr;
         };
         StationContextData mStationContextData;
 
@@ -83,6 +82,7 @@ namespace IronTuner {
         StationHandler mStations;
 
         std::vector<Page> mPages;
+        std::vector<int> mTopScrollerIgnorePages;
 
 
 
@@ -112,13 +112,8 @@ namespace IronTuner {
         bool mPageWindowFocused = false;
 
     public:
-        Point2F getAudioLevels() const { return mAudioLevels; }
-        DSP::SpectrumAnalyzer* getSpectrumAnalyzer() {
-            if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getSpectrumAnalyzer()) {
-                return mAudioHandler->getManager()->getSpectrumAnalyzer();
-            }
-            return nullptr;
-        }
+        Point2F getAudioLevels() const;
+        DSP::SpectrumAnalyzer* getSpectrumAnalyzer();
 
         FluxTexture* mBrushedMetalTex = nullptr;
         FluxTexture* mKnobSilverTex = nullptr;
@@ -140,7 +135,7 @@ namespace IronTuner {
 
         void Update(const double& dt) override;
         // void DrawMsgBoxPopup();
-        void ShowMenuBar();
+        void DrawMenuBar();
         // void ShowToolbar();
 
         void onKeyEvent(SDL_KeyboardEvent event) {};
@@ -166,40 +161,13 @@ namespace IronTuner {
         void DrawEqualizer();
 
         void DrawInfo();
-
-        // bool isFavoStation(std::string searchUuid);
-
-
-
-
-
         // ---------- Tune Station -----------------
         bool ConnectCurrent();
-        void Disconnect() {
-            mStreamHandler->stop();
-        }
+        void Disconnect();
 
-
-
-        void Tune(FluxRadio::RadioStation station);
+        void Tune(const FluxRadio::RadioStation station);
         void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB);
-
-        void FavoStar(bool isFavo,bool isFavoList, float radius, const FluxRadio::RadioStation* station )  {
-            if (ImFlux::FavouriteStar("Favourite", isFavo, radius)) {
-                if (isFavoList) {
-                    mStations.RmvFavoByFavId(station);
-                } else {
-                    if (!isFavo) {
-                        mStations.AddFavo(station);
-                    } else {
-                        mStations.RmvFavoByUUID(station);
-                    }
-                }
-                SaveSettings();
-            }
-        }
-
-
+        void FavoStar(bool isFavo,bool isFavoList, float radius, const FluxRadio::RadioStation* station );
 
 
     }; //class

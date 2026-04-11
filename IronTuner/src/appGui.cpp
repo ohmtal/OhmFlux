@@ -12,6 +12,7 @@
 #include "utils/fluxStr.h"
 #include <algorithm>
 
+
 #include "imgui_internal.h"
 #include <gui/ImFlux/widets/VirtualTapePlayer.h>
 
@@ -45,16 +46,28 @@ namespace IronTuner {
         gui->mConsole.AddLog("%s", FluxStr::removePart(message,"\r\n").c_str());
     }
 
+
+    // -----------------------------------------------------------------------------
+    DSP::SpectrumAnalyzer* AppGui::getSpectrumAnalyzer(){
+        if ( mAudioHandler->getManager() && mAudioHandler->getManager()->getSpectrumAnalyzer()) {
+            return mAudioHandler->getManager()->getSpectrumAnalyzer();
+        }
+        return nullptr;
+    }
+    // -----------------------------------------------------------------------------
+    Point2F AppGui::getAudioLevels() const{
+        return mAudioLevels;
+    }
+    // -----------------------------------------------------------------------------
+    void AppGui::Disconnect(){
+        mStreamHandler->stop();
+    }
     // -----------------------------------------------------------------------------
     bool AppGui::ConnectCurrent() {
         if (!FluxNet::NetTools::isValidURL(getMain()->getAppSettings().CurrentStation.url) ) {
             return false;
         }
-
-
         std::string url = getMain()->getAppSettings().CurrentStation.url;
-
-
         FluxNet::NetTools::URLParts parts = FluxNet::NetTools::parseURL(url);
 
         // FIXME ANDROID SSL but without is better anyway WHY must be a radio station stream encrypted ?
@@ -72,16 +85,16 @@ namespace IronTuner {
         return true;
     }
     // -----------------------------------------------------------------------------
-    void AppGui::Tune(FluxRadio::RadioStation station) {
+    void AppGui::Tune(const FluxRadio::RadioStation station) {
         getMain()->getAppSettings().CurrentStation = station;
 
-        mStations.addCache(station);
+        mStations.addStation(&station);
+        mStations.incClick(&station);
         ConnectCurrent();
-        mStations.setFavId(-1);
         mTuningMode = false;
         mReconnectOnTimeOutCount = 0;
         // reset index so tuneknob get in sync
-        mStations.setFavIndex(-1);
+        mStations.setIndex(-1);
     }
 
 
@@ -127,8 +140,8 @@ namespace IronTuner {
 
         if (cmd == "testes") getMain()->getBackGroundRenderEffect()->mShaderESTesting = true;
 
-        if (cmd == "dumpCache" ) {  //STATION CACHE
-            mStations.DumpStationCache();
+        if (cmd == "dumpLocal" ) {  //STATION CACHE
+            mStations.dumpStations();
         }
 
         if (cmd == "dumpQuery" ) {  //STATION CACHE
@@ -436,7 +449,8 @@ namespace IronTuner {
         ImGui::TextDisabled("Next: %s", mAudioHandler->getNextTitle().c_str());
         ImGui::Separator();
         ImGui::Text("Audio: %d Hz, %d kbps, %d Channels", info->samplerate, info->bitrate, info->channels);
-        if (!info->url.empty()) ImGui::Text("Url: %s", info->url.c_str());
+        if (!info->url.empty() && ImGui::TextLink(info->url.c_str())) SDL_OpenURL(info->url.c_str());
+
     }
     void AppGui::DrawInfoPopup(FluxRadio::StreamInfo* info) {
         if (ImGui::BeginPopup("##StationInfo")) {
@@ -529,7 +543,7 @@ namespace IronTuner {
                 ImGui::PushFont(getMain()->mHackNerdFont26);
                 if (mTuningMode || isOffline) {
                     FluxRadio::RadioStation station;
-                    if (mStations.cachedStationBySelectedIndex(station)) {
+                    if (mStations.getSelectedStation(station)) {
                         ImFlux::LCDTextScroller(station.name, lcdDigits, ImFlux::COL32_NEON_PURPLE);
                     }  else {
                         ImFlux::LCDTextScroller("*** failed to get station name ***", lcdDigits, ImFlux::COL32_NEON_RED);
@@ -563,13 +577,9 @@ namespace IronTuner {
                 {   // Favourite
                     ImGui::SameLine();
                     ImFlux::ShiftCursor(ImVec2(5,2));
-                    bool isFavo = getMain()->getAppSettings().CurrentStation.favId > 0;
+                    bool isFavo = mStations.isFavoStation(&getMain()->getAppSettings().CurrentStation);
                     if (ImFlux::FavouriteStar("Favourite", isFavo, 8.f * getScale())) {
-                        if (isFavo) {
-                            mStations.RmvFavoByFavId(&getMain()->getAppSettings().CurrentStation);
-                        } else {
-                            mStations.AddFavo(&getMain()->getAppSettings().CurrentStation);
-                        }
+                        mStations.setFavo(&getMain()->getAppSettings().CurrentStation, !isFavo);
                     }
 
                 }
@@ -614,11 +624,16 @@ namespace IronTuner {
                 mStationContextData.workStation = FluxRadio::RadioStation();
                 mStationContextData.workStation.url = "http://";
             }
+            ImFlux::Hint("Add a new Station.");
 
+            ImGui::SameLine();
+            if (ImFlux::ButtonFancy("CLEAN", gRadioButtonParams)) {
+                mStations.cleanup();
+            }
+            ImFlux::Hint("Remove non favourite Stations");
             // ~~~ LIST ~~~
 
-            DrawStationsTable(mStations.getFavoStationData(), true);
-            //FIXME THIS WAS FAIL DrawStationsTable(mStations.getStationCache(), true);
+            DrawStationsTable(mStations.getStations(), true);
         // }
         // ImGui::End();
 
@@ -652,14 +667,13 @@ namespace IronTuner {
                         if (validated)
                         {
                             if (mStationContextData.isEdit) {
-                                FluxRadio::RadioStation* pStation = mStations.getStationByFavId(mStationContextData.editId);
-                                if (pStation) {
-                                    *pStation = mStationContextData.workStation;
+                                if (mStationContextData.pStation) {
+                                    *mStationContextData.pStation = mStationContextData.workStation;
                                 } else {
                                     Log("[error] FAV_EDIT::SAVE => station is null pointer!!");
                                 }
                             } else {
-                                mStations.AddFavo(&mStationContextData.workStation);
+                                mStations.addStation(&mStationContextData.workStation, true);
                             }
                             mStationContextData.showDialog = false;
                         }
@@ -702,28 +716,26 @@ namespace IronTuner {
 
         const bool uuid_DEBUG = false;
 
-        int colCount = 4;
-        if (uuid_DEBUG) colCount = 6;
-        if (isFavoList) colCount = 2;
-
-
-
+        int colCount = 3;
+        if (uuid_DEBUG) colCount = 5;
 
 
         if (ImGui::BeginTable("RadioStations", colCount, flags)) {
             ImGui::TableSetupScrollFreeze(0, 1);
             ImGui::TableSetupColumn("Favo", ImGuiTableColumnFlags_WidthFixed, 36.f * getScale());
+
             if (isFavoList) {
-                ImGui::TableSetupColumn("Station", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_DefaultSort, 0.f);
-            } else  {
+                ImGui::TableSetupColumn("Station", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending, 0.f);
+                ImGui::TableSetupColumn("Clicks", ImGuiTableColumnFlags_WidthFixed ,  120.f);
+            } else {
                 ImGui::TableSetupColumn("Station", ImGuiTableColumnFlags_WidthStretch, 0.f);
-                ImGui::TableSetupColumn("Clicks", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending, 120.f);
-                ImGui::TableSetupColumn("Bitrate", ImGuiTableColumnFlags_WidthFixed, 60.f);
-                if (uuid_DEBUG) {
-                    ImGui::TableSetupColumn("UUID", ImGuiTableColumnFlags_WidthFixed, 240.f);
-                    ImGui::TableSetupColumn("URL", ImGuiTableColumnFlags_WidthFixed, 240.f);
-                }
+                ImGui::TableSetupColumn("Clicks", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending,  120.f);
             }
+            if (uuid_DEBUG) {
+                ImGui::TableSetupColumn("UUID", ImGuiTableColumnFlags_WidthFixed, 240.f);
+                ImGui::TableSetupColumn("URL", ImGuiTableColumnFlags_WidthFixed, 240.f);
+            }
+
             ImGui::TableHeadersRow();
 
             std::vector<const FluxRadio::RadioStation*> displayList;
@@ -763,7 +775,6 @@ namespace IronTuner {
                 for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
                     const auto* station = displayList[row];
 
-                    // for (const auto& station : stations ) {
                     ImGui::TableNextRow(ImGuiTableRowFlags_None, rowHeight);
                     ImGui::PushID((station->stationuuid + "#" +  std::to_string(row)).c_str());
 
@@ -776,7 +787,7 @@ namespace IronTuner {
                     // ~~~~~~~~~ FAVO ~~~~~~~~~~~~~~
                     ImGui::TableNextColumn();
                     bool isFavo = false;
-                    if (isFavoList) isFavo = true;
+                    if (isFavoList) isFavo = station->isLocalFavo;
                     else isFavo = mStations.isFavoStation(station);
 
                     FavoStar(isFavo, isFavoList, 14.f * getScale(), station );
@@ -814,7 +825,7 @@ namespace IronTuner {
                         {
                             ImGui::SameLine();
                             if (ImFlux::ButtonFancy("Edit", gRadioButtonParams)) {
-                                mStationContextData.editId = station->favId;
+                                mStationContextData.pStation = mStations.getStation(station);
                                 mStationContextData.workStation = *station;
                                 mStationContextData.showDialog = true;
                                 mStationContextData.isEdit = true;
@@ -836,32 +847,32 @@ namespace IronTuner {
                     }
 
 
+                    // ~~~~~~~~~ Clicks ~~~~~~~~~~~~~~
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%d",station->clickcount);
 
-                    if (!isFavoList) {
-                        // ~~~~~~~~~ Clicks ~~~~~~~~~~~~~~
+                    // if (!isFavoList) {
+                    //
+                    //     // ~~~~~~~~~ Bitrate ~~~~~~~~~~~~~~
+                    //     ImGui::TableNextColumn();
+                    //     if (station->bitrate >= 128) {
+                    //         ImGui::TextColored(ImColor(0, 255, 0), "%d", station->bitrate);
+                    //     } else if (station->bitrate >= 64) {
+                    //         ImGui::TextColored(ImColor(255, 255, 0), "%d", station->bitrate);
+                    //     } else if (station->bitrate == 0) {
+                    //         ImGui::TextDisabled("---");
+                    //     } else {
+                    //         ImGui::TextColored(ImColor(255, 0, 0), "%d", station->bitrate);
+                    //     }
+                    //
+                    //
+                    // }
+                    // ~~~~~~~~~ UUID + URL~~~~~~~~~~~~~~
+                    if (uuid_DEBUG) {
                         ImGui::TableNextColumn();
-                        ImGui::Text("%d (%d)",station->clickcount, station->clicktrend);
-
-                        // ~~~~~~~~~ Bitrate ~~~~~~~~~~~~~~
+                        ImGui::Text("%s",station->stationuuid.c_str());
                         ImGui::TableNextColumn();
-                        if (station->bitrate >= 128) {
-                            ImGui::TextColored(ImColor(0, 255, 0), "%d", station->bitrate);
-                        } else if (station->bitrate >= 64) {
-                            ImGui::TextColored(ImColor(255, 255, 0), "%d", station->bitrate);
-                        } else if (station->bitrate == 0) {
-                            ImGui::TextDisabled("---");
-                        } else {
-                            ImGui::TextColored(ImColor(255, 0, 0), "%d", station->bitrate);
-                        }
-
-                        // ~~~~~~~~~ UUID + URL~~~~~~~~~~~~~~
-                        if (uuid_DEBUG) {
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%s",station->stationuuid.c_str());
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%s",station->url.c_str());
-                        }
-
+                        ImGui::Text("%s",station->url.c_str());
                     }
 
 
@@ -999,42 +1010,14 @@ namespace IronTuner {
         }
 
 
-/*
-        float deltaX = 0.f;
-        if (event.type == SDL_EVENT_FINGER_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-            mTouchStartX = event.tfinger.x; // x is normalized  (0.0 bis 1.0)
-
-        }
-        else if (event.type == SDL_EVENT_FINGER_UP || event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
-            deltaX = event.tfinger.x - mTouchStartX;
-        }
-        if (deltaX < -0.15f) { // swipe left
-            if (mTargetPageIndex < mPages.size() - 1) mTargetPageIndex++;
-
-        }
-        else if (deltaX > 0.15f) { // swipe right
-            if (mTargetPageIndex > 0) mTargetPageIndex--;
-        }*/
-
-
-
 
 
     }
 
 
     // -----------------------------------------------------------------------------
-    void AppGui::ShowMenuBar(){
-        // if ( isAndroidBuild()) {
-        //     ImGui::PushFont(getMain()->mHackNerdFont26);
-        // } else {
-        //     ImGui::PushFont(getMain()->mHackNerdFont20);
-        // }
+    void AppGui::DrawMenuBar(){
         ImGui::PushFont(getMain()->mHackNerdFont20);
-
-
-
-
 
         static float sideBarWidth = 1.f;
         static float targetWidth = 0.f;
@@ -1062,36 +1045,28 @@ namespace IronTuner {
 
             if (ImGui::Begin("Menu##SidebarOverlay", &getMain()->getAppSettings().SideBarOpen, window_flags)) {
 
-
-
-                // ImGui::SeparatorText("Radio");
-                // if (ImGui::Selectable("Dummy 1")) {
-                //     getMain()->getAppSettings().SideBarOpen = false;
-                //
-                // }
-
                 float baseTargetWidth = 250.f * getScale();
                 if (getMain()->getAppSettings().CurrentStation.name != "") {
                     std::string curName = FluxStr::truncate(getMain()->getAppSettings().CurrentStation.name , 35);
                     if (savStr != getMain()->getAppSettings().CurrentStation.name) {
                         savStr = getMain()->getAppSettings().CurrentStation.name;
-                        targetWidth = ImGui::CalcTextSize(curName.c_str()).x + 50.f * getScale();
+                        targetWidth = ImGui::CalcTextSize((curName + " F2").c_str()).x + 50.f * getScale();
                         if (targetWidth < baseTargetWidth) targetWidth=baseTargetWidth;
                     }
 
 
-                    if (ImGui::MenuItem(curName.c_str())) {
+                    if (ImGui::MenuItem(curName.c_str(), "F2")) {
                         Tune(getMain()->getAppSettings().CurrentStation);
                         getMain()->getAppSettings().SideBarOpen = false;
 
                     }
                 }
-                if (ImGui::BeginMenu("Tune"))
-                {
-                    for (const auto& s : mStations.getStationCache()) {
-                        std::string tmpStr = FluxStr::truncate( s.name, 35);
-                        if (tmpStr != "" && ImGui::MenuItem((tmpStr + "##station").c_str())) {
-                            Tune(s);
+
+                if (ImGui::BeginMenu("Tune")) {
+                    for (const auto* s : mStations.getSortedStations()) {
+                        std::string label = FluxStr::truncate(s->name, 35) + "##" + s->stationuuid;
+                        if (ImGui::MenuItem(label.c_str())) {
+                            Tune(*s);
                             getMain()->getAppSettings().SideBarOpen = false;
                         }
                     }
@@ -1103,7 +1078,8 @@ namespace IronTuner {
                     bool isSelected = false;
                     for(int id = 0; id < mPages.size(); id++  ) {
                         isSelected = id == mTargetPageIndex;
-                        if (ImGui::MenuItem(mPages[id].getCaption().c_str(), NULL, &isSelected)) {
+                        std::string shortCut = (id < 9) ? ("ALT " + std::to_string(id + 1)) : "";
+                        if (ImGui::MenuItem(mPages[id].getCaption().c_str(), shortCut.c_str(), &isSelected)) {
                             mTargetPageIndex = id;
                             getMain()->getAppSettings().SideBarOpen = false;
                         }
@@ -1172,7 +1148,7 @@ namespace IronTuner {
                 }
 
                 // if i want to close it when somewhere else is clicked ==>
-                if (ImGui::IsWindowFocused() && ImGui::IsKeyDown(ImGuiKey_Escape)) getMain()->getAppSettings().SideBarOpen = false;
+                if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) getMain()->getAppSettings().SideBarOpen = false;
 
 
 
@@ -1188,7 +1164,7 @@ namespace IronTuner {
 
         bool raiseHeight = isAndroidBuild();
         float verticalPadding = (raiseHeight ? 6.f : 3.f) * getScale();
-        ImVec2 hamburgerSize = ImVec2(55.f * getScale() ,28.f * getScale());
+        ImVec2 hamburgerSize = ImVec2(55.f * getScale() ,26.f * getScale());
 
         // default: ImVec2(4,3)
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, verticalPadding));
@@ -1205,42 +1181,21 @@ namespace IronTuner {
             if (ImFlux::ButtonFancy("≡##BTN", gRadioButtonParams.WithSize(hamburgerSize))) {
                 getMain()->getAppSettings().SideBarOpen = !getMain()->getAppSettings().SideBarOpen;
             }
+            if (!isAndroidBuild()) ImFlux::Hint("MENU (F1)");
 
-            // ImGui::SameLine();
-            // if (ImGui::Selectable("≡##SELECT", false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetFrameHeight(), 0.f))) {
-            //     getMain()->getAppSettings().SideBarOpen = !getMain()->getAppSettings().SideBarOpen;
-            //     dLog("Sidebar toggled via Selectable = %d", getMain()->getAppSettings().SideBarOpen);
-            // }
             if ( raiseHeight) {
                 ImGui::SetWindowFontScale(1.f);
             }
 
 
-            // change page here !!
+            // ~~~~ change page progress (from keyborard switch)~~~~
             float progress = 0.f;
             if (mCursorKeyDownStart > 0) {
                 Uint64 duration = SDL_GetTicks() - mCursorKeyDownStart;
                 progress = std::min(1.0f, (float)duration / (float)mCursorChangeTime);
 
                 if (progress > 0.25f) {
-                    // ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x + viewport->WorkSize.x * 0.4f,
-                    //                                viewport->WorkPos.y + 20));
-                    // ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x * 0.2f, 0));
-
-                    // ImGui::Begin("HoldProgress", nullptr,
-                    //              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-                    //              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-                    //
-                    // ImGui::Text("%s", getChangePageName(mCursorKeyDown == SDLK_LEFT ? -1 : 1).c_str());
-                    // ImGui::ProgressBar(progress, ImVec2(-1, 0), "");
-
-                    // ImGui::End();
-
-                    // ImGui::Text("%s", getChangePageName(mCursorKeyDown == SDLK_LEFT ? -1 : 1).c_str());
-                    // ImGui::SameLine();
                     ImGui::ProgressBar(progress, ImVec2(200.f, 0.f), getChangePageName(mCursorKeyDown == SDLK_LEFT ? -1 : 1).c_str());
-
-
                     if (progress == 1.f ) {
                         changePage(mCursorKeyDown == SDLK_LEFT ? -1 : 1);
                         mCursorKeyDownStart = SDL_GetTicks();
@@ -1249,7 +1204,7 @@ namespace IronTuner {
             }
 
 
-            if ( mTargetPageIndex != 1 )
+            if ( std::ranges::find(mTopScrollerIgnorePages, mTargetPageIndex) == mTopScrollerIgnorePages.end() )
             {
                 bool isConnected = mStreamHandler->isConnected();
                 std::string displayStr = "";
@@ -1259,9 +1214,9 @@ namespace IronTuner {
                         FluxRadio::StreamInfo info = *mStreamHandler->getStreamInfo();
                         displayStr = info.name + "  . . .  " + mAudioHandler->getCurrentTitle();
                     } else if (mStreamHandler->isConnecting()) {
-                        displayStr = " * * * connecting * * *          ";
+                        displayStr =  " * * * connecting * * * " + getMain()->getAppSettings().CurrentStation.name;
                     } else {
-                        displayStr = " * * * offline * * *          ";
+                        displayStr =  " * * * offline * * * " + getMain()->getAppSettings().CurrentStation.name ;
                     }
                 }
 
@@ -1475,12 +1430,15 @@ namespace IronTuner {
 
         // Pages:
         mPages.emplace_back("Relax", nullptr, mPages.size());
+        mTopScrollerIgnorePages.push_back(mPages.size()); //1
         mPages.emplace_back("Radio", [this]() { DrawRadio(); }, mPages.size());
+
         mPages.emplace_back("Equalizer", [this]() { DrawEqualizer(); }, mPages.size());
         if (!isAndroidBuild()) mPages.emplace_back("Recorder", [this]() { DrawRecorder(); }, mPages.size());
         mPages.emplace_back("Favorites", [this]() { DrawFavo(); }, mPages.size());
-        mPages.emplace_back("Radio Browser", [this]() { DrawRadioBrowserWindow(); }, mPages.size());
+        mPages.emplace_back("Station Search", [this]() { DrawRadioBrowserWindow(); }, mPages.size());
 
+        mTopScrollerIgnorePages.push_back(mPages.size());
         if (!isAndroidBuild()) mPages.emplace_back("Rack", [this]() {
              DrawRadio();
              DrawEqualizer();
@@ -1507,7 +1465,7 @@ namespace IronTuner {
             ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 12.f );
         }
 
-        ShowMenuBar();
+        DrawMenuBar();
         if (getMain()->getAppSettings().ShowConsole) mConsole.Draw("Console", &getMain()->getAppSettings().ShowConsole);
 
         // --------------------
@@ -1560,21 +1518,53 @@ namespace IronTuner {
         {
             ImGui::PopStyleVar(3);
         }
+
+
+        // keyboard page number handling
+        if (mGuiGlue->getGuiIO()->KeyAlt) {
+            for (size_t i = 0; i < mPages.size() && i < 9; i++) {
+                if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_1 + i))) {
+                    mTargetPageIndex = i;
+                }
+            }
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_F2)) {
+            if (mStreamHandler->isOffline()) ConnectCurrent();
+        }
+
+
+
         mGuiGlue->DrawEnd();
+    }
+    // -----------------------------------------------------------------------------
+    void AppGui::FavoStar(bool isFavo, bool isFavoList, float radius, const FluxRadio::RadioStation* station){
+        if (ImFlux::FavouriteStar("Favourite", isFavo, radius)) {
+            if (isFavoList) {
+                mStations.setFavo(station, !isFavo);
+            } else {
+                if (!isFavo) {
+                    mStations.addStation(station, true);
+                } else {
+                    mStations.setFavo(station, false);
+                }
+            }
+            SaveSettings();
+        }
     }
     // -----------------------------------------------------------------------------
     void AppGui::TuneKnob(std::string caption, const ImFlux::KnobSettings ks)
     {
         ImGui::PushID((caption + "knob").c_str());
         ImGuiWindow* window = ImGui::GetCurrentWindow();
-        if (window->SkipItems || mStations.getFavIndex() < 0 ) { ImGui::PopID(); return ; }
+        if (window->SkipItems /* FIXME ? || mStations.getFavIndex() < 0*/ ) { ImGui::PopID(); return ; }
 
 
         float delta = 0.f;
         int step = 1;
-        int* v = &mStations.getFavIndexMutable();
+        int* v = &mStations.getIndexMutable();
         int v_min = 0;
-        int v_max = mStations.getCacheSize() - 1;
+        int v_max = mStations.getSize() - 1;
         if (v_max < 1) { ImGui::PopID(); return ; } //empty list fixme ?!
         if (*v > v_max ) *v = 0;
 
@@ -1748,8 +1738,8 @@ namespace IronTuner {
 
 
         // mouse over hint
-        if (is_hovered && mStations.getCachedStation(*v)) {
-            ImGui::SetTooltip("%s", mStations.getCachedStation(*v)->name.c_str());
+        if (is_hovered && mStations.getStation(*v)) {
+            ImGui::SetTooltip("%s", mStations.getStation(*v)->name.c_str());
         }
 
         ImGui::PopID();
@@ -1781,8 +1771,8 @@ namespace IronTuner {
                     Disconnect();
 
                 } else {
-                    if (*v < mStations.getCacheSize() ) {
-                        FluxRadio::RadioStation* tmpStation = mStations.getCachedStation(*v);
+                    if (*v < mStations.getSize() ) {
+                        FluxRadio::RadioStation* tmpStation = mStations.getStation(*v);
                         if ( tmpStation ) {
                             Tune(*tmpStation);
                             dLog("[info] TuneKnob: TUNE Selected Station: %s", tmpStation->name.c_str());

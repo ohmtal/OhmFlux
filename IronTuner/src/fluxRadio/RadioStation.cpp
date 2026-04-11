@@ -39,7 +39,8 @@ namespace FluxRadio {
         //FIXME TAGS
         //FIXME languages
         if (useLog) output("------------------------------------");
-        if (useLog) output("FAVID    :%d", favId);
+        // if (useLog) output("FAVID    :%d", favId);
+        if (useLog) output("local FAV:%d", isLocalFavo);
         if (useLog) output("------------------------------------");
         return result;
     }
@@ -59,7 +60,7 @@ namespace FluxRadio {
             {"languages",   s.languages},
             {"clickcount",  s.clickcount},
             {"clicktrend",  s.clicktrend},
-            {"favId",       s.favId}
+            {"isLocalFavo",       s.isLocalFavo}
         };
     }
     //--------------------------------------------------------------------------
@@ -77,31 +78,7 @@ namespace FluxRadio {
         s.languages   = j.value("languages", std::vector<std::string>{});
         s.clickcount  = j.value("clickcount", 0);
         s.clicktrend  = j.value("clicktrend", 0);
-        s.favId       = j.value("favId", (uint32_t)0);
+        s.isLocalFavo = j.value("isLocalFavo", false);
     }
-    //--------------------------------------------------------------------------
-    RadioStation* getStationByFavId(std::vector< FluxRadio::RadioStation >* mFavList, uint32_t id) {
-        for (auto& fav : *mFavList) {
-            if (fav.favId == id) {
-                return &fav;
-            }
-        }
-        return nullptr;
-    }
-    //--------------------------------------------------------------------------
-    int updateFavIds(std::vector< FluxRadio::RadioStation >* mFavList) {
-        if (!mFavList) return -1;
 
-        int maxId = 0;
-        for (const auto& fav : *mFavList) {
-            if (fav.favId > maxId) maxId = fav.favId;
-        }
-
-        for (auto& fav : *mFavList) {
-            if (fav.favId == 0) {
-                fav.favId = ++maxId;
-            }
-        }
-        return maxId;
-    }
 };

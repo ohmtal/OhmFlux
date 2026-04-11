@@ -20,7 +20,7 @@
 
 struct DrawParams2D {
     FluxTexture* image = nullptr;
-    S32 imgId = 0;   // frame
+    S32 imgId = 0;   // frame see also the alternative useUV
     F32 x = 0.0f;
     F32 y = 0.0f;
     F32 z = 0.0f;  //layer
@@ -35,7 +35,8 @@ struct DrawParams2D {
     F32 verticalScollSpeed = 0.f;
     bool  isGuiElement = false; //not effected by camera
 
-    // for TrueType Font >>>>
+    // using UV instead of imageID!! >>>>
+    // UV values are normalized!
     bool  useUV = false;
     F32 u0 = 0.0f; F32 v0 = 0.0f;
     F32 u1 = 1.0f; F32 v1 = 1.0f;

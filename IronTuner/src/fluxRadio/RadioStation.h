@@ -29,17 +29,16 @@ namespace FluxRadio {
         int clickcount = 0;
         int clicktrend = 0;
 
-        // internal fav id
-        uint32_t    favId = 0;
+        // internal flags
+        bool    isLocalFavo = false;
 
+        // dump infos
         std::vector<std::string> dump(bool useLog = true) const ;
     };
     // -----------------------------------------------------------------------------
     void to_json(nlohmann::json& j, const RadioStation& s);
     void from_json(const nlohmann::json& j, RadioStation& s);
     // -----------------------------------------------------------------------------
-    RadioStation* getStationByFavId(std::vector<FluxRadio::RadioStation>* mFavList, uint32_t id);
-    int updateFavIds(std::vector<FluxRadio::RadioStation>* mFavList);
 
 
 

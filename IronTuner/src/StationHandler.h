@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Station Handler
+// Station Handler - NOT Thread Save!
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -20,7 +20,8 @@ namespace IronTuner {
             .name= "Rock Antenne",
             .url = "http://mp3channels.webradio.rockantenne.de/rockantenne",
             .countrycode = "DE",
-            .favId = 1
+            .clickcount  = 0,
+            .isLocalFavo = true
         },
         // {"ok":true,"message":"retrieved station url","stationuuid":"92556f58-20d3-44ae-8faa-322ce5f256c0",
         // "name":"Radio BOB!","url":"http://streams.radiobob.de/bob-national/mp3-192/mediaplayer"},
@@ -29,14 +30,16 @@ namespace IronTuner {
             .name= "BOB! - Radio Bob",
             .url = "http://streams.radiobob.de/bob-national/mp3-192/mediaplayer",
             .countrycode = "DE",
-            .favId = 2
+            .clickcount  = 0,
+            .isLocalFavo = true
         },
         // not my music but can be used for a demo: NCS Radio (NoCopyrightSounds)
         // {
         //     .stationuuid = "",
         //     .name= "NCS Radio (NoCopyrightSounds)",
         //     .url = "https://stream.zeno.fm/ez4m4918n98uv",
-        //     .favId = 3
+        //     .clickcount  = 0,
+        //     .isLocalFavo = true
         // }
     };
     //--------------------------------------------------------------------------
@@ -47,78 +50,52 @@ namespace IronTuner {
         std::string mQueryString = "";
         // std::string mSelectedStationUuid = "";
 
-        uint32_t mSelectedFavId = 0;
-        int mSelectedFavIndex = -1; //not the id the index in the list
+        int mSelectedIndex = -1; //not the id the index in the list
 
+        std::vector<FluxRadio::RadioStation> mLocalStations;
+        std::vector<const FluxRadio::RadioStation*> mSortedStations; //cache sorted by click
 
-        std::vector<FluxRadio::RadioStation> mFavoStationData;
-        std::vector<FluxRadio::RadioStation> mStationCache;
     public:
         //Query
-        std::string getQueryString() const { return mQueryString; }
-        std::string& getQueryStringMutable() { return mQueryString; }
-        std::vector<FluxRadio::RadioStation> getQueryStationData() const { return  mQueryStationData; };
+        const std::string& getQueryString() const;
+        std::string& getQueryStringMutable();
+        const std::vector<FluxRadio::RadioStation>& getQueryStationData() const { return  mQueryStationData; };
         std::vector<FluxRadio::RadioStation>& getQueryStationDataMutable() { return  mQueryStationData; };
         void DumpQueryStations();
 
 
+        // local Stations list
+        const std::vector<FluxRadio::RadioStation>& getStations() const;
 
-        //UUID
-        // std::string getUuid() const { return mSelectedStationUuid; }
-        // void setUuid(std::string value)  { mSelectedStationUuid = value; }
+        // get a local station pointer by station data
+        FluxRadio::RadioStation* getStation(const FluxRadio::RadioStation* station);
+        bool getSelectedStation(FluxRadio::RadioStation& station);
+        FluxRadio::RadioStation* getStation(size_t index);
 
-        // favo
-        std::vector<FluxRadio::RadioStation> getFavoStationData() const { return  mFavoStationData; };
-
+        bool isLocalStation(const FluxRadio::RadioStation* station);
         bool isFavoStation(const FluxRadio::RadioStation* station);
-        FluxRadio::RadioStation* getFavoStation(const FluxRadio::RadioStation* station);
-        bool AddFavo(const FluxRadio::RadioStation* station);
-        bool RmvFavoByFavId(const FluxRadio::RadioStation* station);
-        bool RmvFavoByUUID(const FluxRadio::RadioStation* station);
-        void setFavId ( const int id) { mSelectedFavId = id; }
-        uint32_t getFavId () const { return mSelectedFavId; }
 
-        FluxRadio::RadioStation* getSelectedFavStation() {
-            return getStationByFavId(mSelectedFavId);
-        }
+        // add a station if not in list ...update favo if setFavo
+        bool addStation(const FluxRadio::RadioStation* station, bool setFavo = false);
+        bool setFavo(const FluxRadio::RadioStation* station, bool value);
+        bool incClick(const FluxRadio::RadioStation* station);
 
-        FluxRadio::RadioStation* getStationByFavId(uint32_t id) {
-            return FluxRadio::getStationByFavId(&mFavoStationData, id);
-        }
-        int updateFavIds() {
-            return FluxRadio::updateFavIds(&mFavoStationData);
-        }
+        // remove non favo stations
+        bool cleanup();
 
-        // cache
-        int getCacheSize() const { return (int)mStationCache.size();}
-        void DumpStationCache();
-        bool isCacheStation(const FluxRadio::RadioStation* station);
-        void addCache(const FluxRadio::RadioStation station ) {
-            if (!isCacheStation(&station)) {
-                mStationCache.push_back(station);
-            }
-        }
-        std::vector<FluxRadio::RadioStation> getStationCache() const { return  mStationCache; };
+        int  getSize() const;
+        void dumpStations();
 
-
-        bool cachedStationBySelectedIndex(FluxRadio::RadioStation& station) {
-            if (mSelectedFavIndex >= 0 && mStationCache.size() > mSelectedFavIndex) {
-                station = mStationCache[mSelectedFavIndex];
-                return true;
-            }
-            return false;
-        }
-
-        FluxRadio::RadioStation* getCachedStation(size_t id)  {
-            if ( id >= mStationCache.size() ) return nullptr;
-            return &mStationCache[id];
-        }
 
         // FavIndex
-        int getFavIndex() const { return mSelectedFavIndex; }
-        void setFavIndex(int value) { mSelectedFavIndex = value; }
-        int& getFavIndexMutable()  { return mSelectedFavIndex; }
-        void setSelectedFavIndex();
+        int getIndex() const { return mSelectedIndex; }
+        void setIndex(int value) { mSelectedIndex = value; }
+        int& getIndexMutable()  { return mSelectedIndex; }
+        void setSelectedIndex();
+
+        // sorted cache
+        const std::vector<const FluxRadio::RadioStation*>& getSortedStations() const { return mSortedStations;}
+        void updateSortedCache();
 
 
         // -----

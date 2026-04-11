@@ -102,4 +102,9 @@ namespace IronTuner {
         }
     }
     // -------------------------------------------------------------------------
+    bool AppMain::reloadBackGroundEffectsShader(int id, bool scanLines){
+        if (mBackGroundEffects) return mBackGroundEffects->LoadShader(id, scanLines);
+        return false;
+    }
+
 };
