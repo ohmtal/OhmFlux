@@ -102,6 +102,9 @@
     - [X] SideBar - tune sort by clicks 
 
 
+- [X] add !WantInput to mouse up for selecting text! 
+- [X] added escape for main menu again - if no other window is focused
+    
     
 - [ ] Display Text from ImGui Font in OpenGL Shader:
 
@@ -205,12 +208,16 @@ mTexture.setManual(glFontTexId, w, h);
 ---
     
 - [ ] Milestone III
+    
     - [ ] Autoconnect on start 
+    - [ ] maybe: 
+        - [ ] (can be a security issue?!) load and render favIcon  - there was also a meta info for the song picture, forgot which station it was
 
-- [ ] Build
-    - [ ] Android 
-        - [ ] SSL / CURL ..  
-            - [X] quick and dirty: rewrite https to http in source ! - it's a radio stream why is it encoded ? 
+    
+    - [ ] Build
+        - [ ] Android 
+            - [ ] SSL / CURL ..  
+                - [X] quick and dirty: rewrite https to http in source ! - it's a radio stream why is it encoded ? 
 
     - [ ] OGG support but disable recorder ?! or need to 
     - [ ] Recorder

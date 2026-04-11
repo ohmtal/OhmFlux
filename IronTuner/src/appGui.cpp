@@ -953,6 +953,7 @@ namespace IronTuner {
             if (
                 event.key.key == SDLK_MENU
                 || event.key.key == SDLK_F1
+                || ((mPageWindowFocused || getMain()->getAppSettings().SideBarOpen) && event.key.key == SDLK_ESCAPE)
             ) {
                 getMain()->getAppSettings().SideBarOpen = !getMain()->getAppSettings().SideBarOpen;
             }
@@ -982,7 +983,7 @@ namespace IronTuner {
             case SDL_EVENT_MOUSE_BUTTON_UP:  {
                 if (event.button.which != SDL_TOUCH_MOUSEID) {
                     float mouseEndX = event.button.x / ImGui::GetMainViewport()->Size.x;
-                    handleSwipe(mouseEndX - mTouchStartX);
+                     if ( !mGuiGlue->getGuiIO()->WantTextInput ) handleSwipe(mouseEndX - mTouchStartX);
                 }
                 break;
             }
@@ -990,7 +991,7 @@ namespace IronTuner {
 
             // FIRE TV / KEYBOARD (Left/Right)
             case SDL_EVENT_KEY_DOWN:
-                if (event.key.repeat) break;
+                if (event.key.repeat || mGuiGlue->getGuiIO()->WantTextInput ) break;
                 if (event.key.key == SDLK_LEFT || event.key.key == SDLK_RIGHT) {
                     mCursorKeyDownStart = SDL_GetTicks();
                     mCursorKeyDown = event.key.key;
@@ -998,12 +999,6 @@ namespace IronTuner {
                 break;
             case SDL_EVENT_KEY_UP:
                 if ((event.key.key == SDLK_LEFT || event.key.key == SDLK_RIGHT)) {
-                    // if (SDL_GetTicks() - mCursorKeyDownStart > mCursorChangeTime ) {
-                    //     if (event.key.key == SDLK_LEFT)  changePage(-1);
-                    //     if (event.key.key == SDLK_RIGHT) changePage(1);
-                    // } else {
-                    //     dLog("ticks ellapsed = %d", (int)(SDL_GetTicks() - mCursorKeyDownStart));
-                    // }
                     mCursorKeyDownStart = 0;
                 }
                 break;
@@ -1148,7 +1143,8 @@ namespace IronTuner {
                 }
 
                 // if i want to close it when somewhere else is clicked ==>
-                if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) getMain()->getAppSettings().SideBarOpen = false;
+                // if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) getMain()->getAppSettings().SideBarOpen = false;
+
 
 
 
