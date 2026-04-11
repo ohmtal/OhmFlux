@@ -104,6 +104,15 @@ namespace FluxRadio {
         size_t getRingBufferCapacity()  { return mRingBuffer.getCapacity(); }
         bool setRingBufferCapacity(size_t value)  { return mRingBuffer.setCapacity(value); }
 
+        bool fastForward( size_t bytes ) {
+            if ( getRingBufferAvailableForRead() > bytes ) {
+                float * dummy;
+                return mRingBuffer.pop( dummy, bytes) > 0;
+
+            }
+            return false;
+        }
+
         void decoderDebug( );
 
 

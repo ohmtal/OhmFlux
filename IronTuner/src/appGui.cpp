@@ -130,6 +130,16 @@ namespace IronTuner {
     void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
         std::string cmd = FluxStr::getWord(cmdline,0);
 
+        if (cmd == "ff" ) {
+              // size_t bytes = std::stoi (FluxStr::getWord(cmdline,1));
+            size_t bytes = 32;
+            if (mAudioHandler->fastForward(bytes * 1024)) {
+                Log("FAST FORWARD %d KB", (int)bytes);
+            } else {
+                Log("[error]FAST FORWARD %d KB FAILED!!", (int)bytes);
+            }
+        }
+
         if (cmd == "fl" )  {
             float limit = std::stof (FluxStr::getWord(cmdline,1));
             getMain()->mSettings.frameLimiter = limit;
@@ -1042,7 +1052,7 @@ namespace IronTuner {
 
                 float baseTargetWidth = 250.f * getScale();
                 if (getMain()->getAppSettings().CurrentStation.name != "") {
-                    std::string curName = FluxStr::truncate(getMain()->getAppSettings().CurrentStation.name , 35);
+                    std::string curName = FluxStr::truncate(getMain()->getAppSettings().CurrentStation.name , 32);
                     if (savStr != getMain()->getAppSettings().CurrentStation.name) {
                         savStr = getMain()->getAppSettings().CurrentStation.name;
                         targetWidth = ImGui::CalcTextSize((curName + " F2").c_str()).x + 50.f * getScale();
