@@ -19,7 +19,7 @@
 namespace FluxRadio {
     // -----------------------------------------------------------------------------
     AudioHandler::AudioHandler()
-    : mRingBuffer(1024 * 1536 /*512*/)
+    : mRingBuffer( 1024 * 512 )
     {
         mDecoder = new ma_decoder();
         memset(mDecoder, 0, sizeof(ma_decoder));

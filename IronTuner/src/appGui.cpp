@@ -132,7 +132,7 @@ namespace IronTuner {
 
         if (cmd == "ff" ) {
               // size_t bytes = std::stoi (FluxStr::getWord(cmdline,1));
-            size_t bytes = 32;
+            size_t bytes = 128;
             if (mAudioHandler->fastForward(bytes * 1024)) {
                 Log("FAST FORWARD %d KB", (int)bytes);
             } else {
