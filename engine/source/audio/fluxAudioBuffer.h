@@ -24,6 +24,13 @@ private:
 public:
     AudioBuffer(size_t capacity) : mBuffer(capacity) {}
     // -------------------------------------------------------------------------
+    bool setCapacity(size_t capacity) {
+        if (capacity == getCapacity()) return false;
+        if (capacity < (64 * 1024)) return false; //64kb min size
+        if (capacity < getCapacity())clear();
+        mBuffer.resize(capacity);
+        return true;
+    }
     size_t getCapacity() const { return mBuffer.size(); }
     // -------------------------------------------------------------------------
     void push(const float* data, size_t count) {
