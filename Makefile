@@ -3,6 +3,7 @@
 # Configuration
 # --------------
 DEMO_DIRS := FishTankDemo TestBed LuaTest Amana SoundStudio OhmtalTracker OhmtalAxe IronTuner
+# DEMO_DIRS := TestBed
 
 BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web
@@ -133,11 +134,16 @@ android:
 	fi
 
 	# Overwrite the dynamic Gradle file with your static template
-	cp build.gradle.template $(ANDROID_PROJ_DIR)/app/build.gradle
-	rm -rf $(ANDROID_PROJ_DIR)/app/jni
+# 	cp build.gradle.template $(ANDROID_PROJ_DIR)/app/build.gradle
+# 	rm -rf $(ANDROID_PROJ_DIR)/app/jni
 
 	# 3. Build an APK for each demo
 	@for target in $(DEMO_DIRS); do \
+		echo "--- prepare app for: $$target ---"; \
+		rm -rf $(ANDROID_PROJ_DIR)/app/*; \
+		cp -r $(BASE_BUILD_DIR)/android/_deps/sdl3-src/android-project/app/* $(ANDROID_PROJ_DIR)/app/; \
+		cp build.gradle.template $(ANDROID_PROJ_DIR)/app/build.gradle; \
+		rm -rf $(ANDROID_PROJ_DIR)/app/jni; \
 		echo "--- Packaging APK for: $$target ---"; \
 		rm -rf $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/*; \
 		mkdir -p $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/; \
@@ -150,11 +156,7 @@ android:
 		rm -rf $$ASSET_DIR; \
 		mkdir -p $$ASSET_DIR; \
 		cp -r $$target/assets $$ASSET_DIR; \
-		echo "----- copy Custom settings -----" \
-		rm -rf $(ANDROID_PROJ_DIR)/app/; \
-		cp -r $(BASE_BUILD_DIR)/android/_deps/sdl3-src/android-project/app/* $(ANDROID_PROJ_DIR)/app/; \
-		cp build.gradle.template $(ANDROID_PROJ_DIR)/app/build.gradle; \
-		rm -rf $(ANDROID_PROJ_DIR)/app/jni; \
+		echo "----- copy Custom settings -----"; \
 		cp -r $$target/res/app/* $(ANDROID_PROJ_DIR)/app/; \
 		echo "----- copy SDL ----"; \
 		find $(BASE_BUILD_DIR)/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/ \; ; \

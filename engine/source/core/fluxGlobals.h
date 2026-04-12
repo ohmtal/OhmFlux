@@ -454,6 +454,7 @@ struct FluxAppStatus
 
     //game pads
     std::vector<SDL_Gamepad*> Gamepads;
+    std::vector<SDL_Joystick*> JoySticks;
 
 };
 

@@ -948,14 +948,49 @@ namespace IronTuner {
         if (mGuiGlue.get()) mGuiGlue->onEvent(event);
 
         // FIRE TV KEYS:
-        // D-Pad Up        SDLK_UP
-        // D-Pad Down      SDLK_DOWN
-        // D-Pad Left      SDLK_LEFT
-        // D-Pad Right     SDLK_RIGHT
-        // Center (Select) SDLK_RETURN or SDLK_KP_ENTER
-        // Back            SDLK_ESCAPE or SDLK_AC_BACK
-        // Play/Pause      SDLK_MEDIA_PLAY_PAUSE
-        // Menu            SDLK_MENU
+        // - Gamepad buttons (integer read with test programm):
+        // - ok (enter) 0  SDL_GAMEPAD_BUTTON_SOUTH
+        // - back 1    SDL_GAMEPAD_BUTTON_BACK
+        // - menu 6    SDL_GAMEPAD_BUTTON_START
+        // - up 11     SDL_GAMEPAD_BUTTON_DPAD_UP
+        // - down 12   SDL_GAMEPAD_BUTTON_DPAD_DOWN
+        // - left 13   SDL_GAMEPAD_BUTTON_DPAD_LEFT
+        // - right 14  SDL_GAMEPAD_BUTTON_DPAD_RIGHT
+        //
+        //
+        // - Multimedia key:
+        // - backward  1073742090  SDL_SCANCODE_MEDIA_REWIND
+        // - play 1073742095   SDL_SCANCODE_MEDIA_PLAYPAUSE
+        // - forward 1073742089    SDL_SCANCODE_MEDIA_FAST_FORWARD
+        if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+            switch (event.gbutton.button) {
+                case SDL_GAMEPAD_BUTTON_DPAD_LEFT: {
+                    if (mGuiGlue->getGuiIO()->WantTextInput) break;
+                    mCursorKeyDownStart = SDL_GetTicks();
+                    mCursorKeyDown = SDLK_LEFT;
+                    break;
+                }
+                case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: {
+                    if (mGuiGlue->getGuiIO()->WantTextInput) break;
+                    mCursorKeyDownStart = SDL_GetTicks();
+                    mCursorKeyDown = SDLK_RIGHT;
+                    break;
+                }
+                case SDL_GAMEPAD_BUTTON_START: {
+                    getMain()->getAppSettings().SideBarOpen = !getMain()->getAppSettings().SideBarOpen;
+                    break;
+                }
+            }
+        }
+        if (event.type == SDL_EVENT_GAMEPAD_BUTTON_UP) {
+            switch (event.gbutton.button) {
+                case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+                case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+                    mCursorKeyDownStart = 0;
+                    break;
+            }
+        }
+
 
 
         if (event.type == SDL_EVENT_KEY_DOWN) {
@@ -999,7 +1034,7 @@ namespace IronTuner {
             }
 
 
-            // FIRE TV / KEYBOARD (Left/Right)
+            // KEYBOARD (Left/Right)
             case SDL_EVENT_KEY_DOWN:
                 if (event.key.repeat || mGuiGlue->getGuiIO()->WantTextInput ) break;
                 if (event.key.key == SDLK_LEFT || event.key.key == SDLK_RIGHT) {

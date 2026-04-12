@@ -534,13 +534,36 @@ void FluxMain::IterateFrame()
 				onMouseButtonEvent(E.button);
 				break;
 
-			// ~~~ GamePads
+			// ~~~ GamePads and JoySticks
+			case SDL_EVENT_JOYSTICK_ADDED: {
+				SDL_Joystick * joystick = SDL_OpenJoystick(E.gdevice.which);
+				if (joystick) {
+					gAppStatus.JoySticks.push_back(joystick);
+					Log("[info] JoyStick connected: %s", SDL_GetJoystickName(joystick));
+				}
+				break;
+			}
+
+			case SDL_EVENT_JOYSTICK_REMOVED: {
+				auto it = std::find_if(gAppStatus.JoySticks.begin(), gAppStatus.JoySticks.end(),
+									   [&](SDL_Joystick* p) {
+										   return SDL_GetJoystickID(p) == E.gdevice.which;
+									   });
+
+				if (it != gAppStatus.JoySticks.end()) {
+					SDL_Log("JoyStick removed: %s", SDL_GetJoystickName(*it));
+					SDL_CloseJoystick(*it);
+					gAppStatus.JoySticks.erase(it);
+				}
+				break;
+			}
+
 			case SDL_EVENT_GAMEPAD_ADDED: {
 				// E.gdevice.which is the instance ID
 				SDL_Gamepad* pad = SDL_OpenGamepad(E.gdevice.which);
 				if (pad) {
 					gAppStatus.Gamepads.push_back(pad);
-					dLog("Gamepad connected: %s", SDL_GetGamepadName(pad));
+					Log("[info] Gamepad connected: %s", SDL_GetGamepadName(pad));
 				}
 				break;
 			}
@@ -553,7 +576,7 @@ void FluxMain::IterateFrame()
 										});
 
 				if (it != gAppStatus.Gamepads.end()) {
-					SDL_Log("Gamepad removed: %s", SDL_GetGamepadName(*it));
+					SDL_Log("[info] Gamepad removed: %s", SDL_GetGamepadName(*it));
 					SDL_CloseGamepad(*it);
 					gAppStatus.Gamepads.erase(it);
 				}

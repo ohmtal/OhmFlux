@@ -9,8 +9,10 @@
 #include <vector>
 #include <string>
 
+#include "fluxGlobals.h"
+
 // 1. Define your Input Types
-enum class FluxInputType { KEYBOARD, MOUSE };
+enum class FluxInputType { KEYBOARD, MOUSE, GAMEPAD, JOYSTICK };
 
 struct FluxBinding {
     FluxInputType type;
@@ -35,6 +37,16 @@ public:
         mBindings[action].push_back({FluxInputType::MOUSE, button});
     }
     //----------------------------------------------------------------------
+    void bindGamePad(const std::string& action, int button)
+    {
+        mBindings[action].push_back({FluxInputType::GAMEPAD, button});
+    }
+    //----------------------------------------------------------------------
+    void bindJoyStick(const std::string& action, int button)
+    {
+        mBindings[action].push_back({FluxInputType::JOYSTICK, button});
+    }
+    //----------------------------------------------------------------------
     bool isActionActive(const std::string& action)
     {
         // SDL_PumpEvents();
@@ -46,6 +58,7 @@ public:
         // Get Mouse State
         float msX, msY;
         Uint32 mState = SDL_GetMouseState(&msX, &msY);
+
 
         //FIXME scaled pos ?!
         // if (g_CurrentScreen)
@@ -62,6 +75,23 @@ public:
                 // Use the SDL_BUTTON_MASK macro to check the specific bit
                 if (mState & SDL_BUTTON_MASK(b.code)) return true;
             }
+            else if (b.type == FluxInputType::GAMEPAD) {
+                // b.code should be a SDL_GamepadButton (e.g., SDL_GAMEPAD_BUTTON_SOUTH)
+                for (auto* gamepad : gAppStatus.Gamepads) {
+                    if (gamepad && SDL_GetGamepadButton(gamepad, (SDL_GamepadButton)b.code)) {
+                        return true;
+                    }
+                }
+            }
+            else if (b.type == FluxInputType::JOYSTICK) {
+                // For older Joysticks without Gamepad-Mapping
+                for (auto* joystick : gAppStatus.JoySticks) {
+                    if (joystick && SDL_GetJoystickButton(joystick, b.code)) {
+                        return true;
+                    }
+                }
+            }
+
         }
         return false;
     }

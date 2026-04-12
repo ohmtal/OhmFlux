@@ -39,6 +39,7 @@ private:
     FluxTexture* mFontTex = nullptr;
     FluxTexture* mBackgroundTex = nullptr;
     FluxBitmapFont* mStatusLabel = nullptr;
+    FluxBitmapFont* mKeyEventLabel = nullptr;
 
     // FluxTexture* mBasicGroundTiles = nullptr;
 
@@ -102,6 +103,8 @@ public:
         mStatusLabel = new FluxBitmapFont(mFontTex, "..STATUS..", {getScreen()->getCenterX(),50}, {26,32} , FontAlign_Center, cl_Blue);
         queueObject(mStatusLabel);
 
+        mKeyEventLabel  = new FluxBitmapFont(mFontTex, "..KEYS..", {getScreen()->getCenterX(),20}, {26,32} , FontAlign_Center, cl_Blue);
+        queueObject(mKeyEventLabel);
 
         // --- Input Mapping Setup ---
 
@@ -110,6 +113,13 @@ public:
         mInput.bindKey("MoveRight", SDL_SCANCODE_RIGHT);
         mInput.bindKey("MoveUp",    SDL_SCANCODE_UP);
         mInput.bindKey("MoveDown",  SDL_SCANCODE_DOWN);
+
+        //FIRETV (see also docu )
+        mInput.bindGamePad("MoveLeft",  SDL_GAMEPAD_BUTTON_DPAD_LEFT);
+        mInput.bindGamePad("MoveRight", SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
+        mInput.bindGamePad("MoveUp",    SDL_GAMEPAD_BUTTON_DPAD_UP);
+        mInput.bindGamePad("MoveDown",  SDL_GAMEPAD_BUTTON_DPAD_DOWN);
+
 
         // Zoom (Page keys and +/-)
         // Note: SDL_SCANCODE_EQUALS is the key usually physically associated with '+'
@@ -368,6 +378,15 @@ public:
     {
         switch (event.type)
         {
+            case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+                mKeyEventLabel->setCaption("GAMEPAD BUTTON DOWN:%d", event.gbutton.button);
+                break;
+            case SDL_EVENT_KEY_DOWN:
+                mKeyEventLabel->setCaption("KEY DOWN:%d", event.key.key);
+                if (event.key.key == SDLK_F1) {
+                    // SDL_GetJoysticks();
+                }
+                break;
             case SDL_EVENT_MOUSE_WHEEL: {
                 // Zoom speed is usually much higher for the wheel
                 float scrollZoom = event.wheel.y *  0.001f  * getFrameTime();
@@ -428,9 +447,10 @@ public:
         };
 
         // debug text:
-        mStatusLabel->setCaption("cam pos:%4.1f,%4.1f zoom:%4.2f"
+        mStatusLabel->setCaption("cam pos:%4.1f,%4.1f zoom:%4.2f fps:%d"
             , Render2D.getCamera()->getPosition().x, Render2D.getCamera()->getPosition().y
             , Render2D.getCamera()->getZoom()
+            , getFPS()
         );
 
 
