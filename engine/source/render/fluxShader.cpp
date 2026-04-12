@@ -23,6 +23,7 @@ bool FluxShader::load(const char* vSource, const char* fSource)
     mProgram = glCreateProgram();
     glAttachShader(mProgram, sVertex);
     glAttachShader(mProgram, sFragment);
+    if (OnBeforeLinkShader) OnBeforeLinkShader(mProgram);
     glLinkProgram(mProgram);
 
     bool linked = checkCompileErrors(mProgram, "PROGRAM");
@@ -92,6 +93,20 @@ void FluxShader::setBool(const std::string& name, bool value)
 void FluxShader::setFloatArray(const std::string& name, const float* values, int count) {
     glUniform1fv(getLoc(name), count, values);
 }
+
+void FluxShader::setVec2Array(const std::string& name, const float* values, int count) {
+    glUniform2fv(getLoc(name), count, values);
+}
+
+void FluxShader::setVec3Array(const std::string& name, const float* values, int count) {
+    glUniform3fv(getLoc(name), count, values);
+}
+
+void FluxShader::setVec4Array(const std::string& name, const float* values, int count) {
+    glUniform4fv(getLoc(name), count, values);
+}
+
+
 //-------------------------------------------------------------------------------
 bool FluxShader::checkCompileErrors(GLuint shader, std::string type)
 {

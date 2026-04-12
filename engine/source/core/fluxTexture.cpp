@@ -24,6 +24,11 @@
 #include "stb_image_write.h"
 
 
+#ifdef FLUX_GLES2
+GLint internalFormat = GL_RGBA; // GLES 2.0
+#else
+GLint internalFormat = GL_RGBA8;
+#endif
 
 //------------------------------------------------------------------------------
 //constructor
@@ -63,7 +68,7 @@ SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
   // 1. Read from APK/Filesystem
   void* buffer = SDL_LoadFile(filename, &fileSize);
   if (!buffer) {
-    SDL_Log("SDL_LoadFile failed for %s: %s", filename, SDL_GetError());
+    SDL_Log("[error] SDL_LoadFile failed for %s: %s", filename, SDL_GetError());
     return nullptr;
   }
 
@@ -76,7 +81,7 @@ SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
   SDL_free(buffer);
 
   if (!data) {
-    SDL_Log("STB failed to decode %s", filename);
+    SDL_Log("[error] STB failed to decode %s", filename);
     return nullptr;
   }
 
@@ -87,7 +92,7 @@ SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
   );
 
   if (!tempSurface) {
-    SDL_Log("SDL_CreateSurfaceFrom failed: %s", SDL_GetError());
+    SDL_Log("[error] SDL_CreateSurfaceFrom failed: %s", SDL_GetError());
     stbi_image_free(data);
     return nullptr;
   }
@@ -115,7 +120,7 @@ bool FluxTexture::loadTextureDirect(const char* filename)
   void* buffer = SDL_LoadFile(filename, &fileSize);
 
   if (!buffer) {
-    SDL_Log("FluxTexture Error: Could not load %s - %s", filename, SDL_GetError());
+    SDL_Log("[error] FluxTexture Error: Could not load %s - %s", filename, SDL_GetError());
     return false;
   }
 
@@ -131,7 +136,7 @@ bool FluxTexture::loadTextureDirect(const char* filename)
   SDL_free(buffer);
 
   if (!data) {
-    SDL_Log("STB Error: Failed to decode image %s", filename);
+    SDL_Log("[error] STB Error: Failed to decode image %s", filename);
     return false;
   }
 
@@ -161,7 +166,7 @@ bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
   }
 
   if (!lSurface) {
-    SDL_Log("FluxTexture Error: Failed to load %s", filename);
+    SDL_Log("[error] FluxTexture Error: Failed to load %s", filename);
     return false;
   }
 
@@ -188,7 +193,7 @@ bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
     mLoaded = bindOpenGL(finalSurface);
     SDL_DestroySurface(finalSurface);
   } else {
-    SDL_Log("FluxTexture Error: Surface conversion failed for %s", filename);
+    SDL_Log("[error] FluxTexture Error: Surface conversion failed for %s", filename);
     mLoaded = false;
   }
 
@@ -233,7 +238,7 @@ void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
 {
 
   if (!pixels) {
-    Log("FluxTexture::bindOpenGLDirect - Invalid Pixel Data!");
+    Log("[error] FluxTexture::bindOpenGLDirect - Invalid Pixel Data!");
     return;
   }
 
@@ -255,7 +260,7 @@ void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
   }
 
   // 3. Upload DIRECTLY from STB buffer (This is the only copy: RAM -> VRAM)
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
   // 4. Mipmaps
   if (mUseTrilinearFiltering) {
@@ -269,13 +274,13 @@ void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
     #endif
   }
 
-  if (mHandle == 0) Log("Failed to bind OpenGL Texture: %s", mFileName);
+  if (mHandle == 0) Log("[error] Failed to bind OpenGL Texture: %s", mFileName);
 }
 //------------------------------------------------------------------------------
 bool FluxTexture::bindOpenGL(SDL_Surface* lSurface)
 {
   if (!lSurface) {
-    Log("FluxTexture::bindOpenGL - Invalid Surface!");
+    Log("[error] FluxTexture::bindOpenGL - Invalid Surface!");
     return false;
   }
 
@@ -283,7 +288,7 @@ bool FluxTexture::bindOpenGL(SDL_Surface* lSurface)
   SDL_Surface* formattedSurface = SDL_ConvertSurface(lSurface, SDL_PIXELFORMAT_RGBA32);
 
   if (!formattedSurface) {
-    Log("Failed to convert surface for OpenGL upload");
+    Log("[error] Failed to convert surface for OpenGL upload");
     return false;
   }
 
@@ -309,7 +314,7 @@ bool FluxTexture::bindOpenGL(SDL_Surface* lSurface)
   }
 
   //  Upload Texture Data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat,
                formattedSurface->w, formattedSurface->h,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
 
@@ -333,7 +338,7 @@ bool FluxTexture::bindOpenGL(SDL_Surface* lSurface)
   SDL_DestroySurface(formattedSurface);
 
   if (mHandle == 0) {
-    Log("Failed to bind OpenGL Texture: %s", mFileName);
+    Log("[error] Failed to bind OpenGL Texture: %s", mFileName);
     return false;
   }
   return true;
@@ -558,7 +563,7 @@ bool FluxTexture::savePNGToFile(const char* filename)
   int success = stbi_write_png(filename, mW, mH, channels, pixels.data(), mW * channels);
 
   if (!success) {
-    SDL_Log("STB Error: Could not save image to %s", filename);
+    SDL_Log("[error] STB Error: Could not save image to %s", filename);
     return false;
   }
 

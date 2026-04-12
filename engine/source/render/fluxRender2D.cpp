@@ -27,13 +27,24 @@ bool FluxRender2D::init(U32 maxSprites)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // 2. Load Default Sprite Shader
+    mDefaultShader.OnBeforeLinkShader = [](GLuint program) {
+        glBindAttribLocation(program, 0, "aPos");
+        glBindAttribLocation(program, 1, "aTexCoord");
+        glBindAttribLocation(program, 2, "aColor");
+    };
+
     if (!mDefaultShader.load(vertexShaderSource, fragmentShaderSource)) {
         Log("FluxRender2D: Failed to load Default Sprite Shader");
         mShaderFailed = true;
         return false;
     }
 
-    // 3. Load Flat Color Shader (for primitives)
+    mFlatShader.OnBeforeLinkShader = [](GLuint program) {
+        glBindAttribLocation(program, 0, "aPos");
+        glBindAttribLocation(program, 1, "aTexCoord");
+        glBindAttribLocation(program, 2, "aColor");
+    };
+
     if (!mFlatShader.load(flatVertexShaderSource, flatFragmentShaderSource)) {
         Log("FluxRender2D: Failed to load Flat Color Shader");
         mShaderFailed = true;
@@ -49,7 +60,11 @@ bool FluxRender2D::init(U32 maxSprites)
     mQuadMesh.createEmpty(MAX_VERTICES);
 
     // Generate the repeating Index Pattern: 0,1,3, 1,2,3, 4,5,7, 5,6,7...
+#ifdef FLUX_GLES2
+    std::vector<U16> quadIndices;
+#else
     std::vector<U32> quadIndices;
+#endif
     quadIndices.reserve(MAX_INDICES);
     for (U32 i = 0; i < mMaxSprites; i++) {
         U32 offset = i * 4;
@@ -63,7 +78,12 @@ bool FluxRender2D::init(U32 maxSprites)
 
     // Upload the Index Buffer once (it never changes)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mQuadMesh.getEBO());
+#ifdef FLUX_GLES2
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices.size() * sizeof(U16), quadIndices.data(), GL_STATIC_DRAW);
+#else
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices.size() * sizeof(U32), quadIndices.data(), GL_STATIC_DRAW);
+#endif
+
 
     //--------
 
@@ -339,6 +359,37 @@ void FluxRender2D::renderLights()
 
     int activeLightCount = 0;
 
+#ifdef FLUX_GLES2
+    float lightPositions[MAX_LIGHTS * 3];
+    float lightColors[MAX_LIGHTS * 4];
+    float lightRadii[MAX_LIGHTS];
+
+    for (int i = 0; i < lights.size() && i < MAX_LIGHTS; ++i) {
+        lightPositions[i * 3 + 0] = lights[i].position.x;
+        lightPositions[i * 3 + 1] = lights[i].position.y;
+        lightPositions[i * 3 + 2] = lights[i].position.z;
+
+        lightColors[i * 4 + 0] = lights[i].color.r;
+        lightColors[i * 4 + 1] = lights[i].color.g;
+        lightColors[i * 4 + 2] = lights[i].color.b;
+        lightColors[i * 4 + 3] = lights[i].color.a;
+
+        lightRadii[i] = lights[i].radius;
+
+        activeLightCount++;
+    }
+
+    // glUniform3fv(mDefaultShader.getUniformLocation("uLightPos"), activeLightCount, lightPositions);
+    mDefaultShader.setVec3Array("uLightPos", lightPositions, activeLightCount);
+    // glUniform4fv(mDefaultShader.getUniformLocation("uLightColor"), activeLightCount, lightColors);
+    mDefaultShader.setVec4Array("uLightColor", lightColors, activeLightCount);
+    // glUniform1fv(mDefaultShader.getUniformLocation("uLightRadius"), activeLightCount, lightRadii);
+    mDefaultShader.setFloatArray("uLightRadius", lightRadii, activeLightCount );
+
+
+
+#else
+
     for (size_t i = 0; i < lights.size(); ++i) {
         //  Safety check: Stop if we've filled the shader's available slots
         if (activeLightCount >= MAX_LIGHTS) {
@@ -361,6 +412,7 @@ void FluxRender2D::renderLights()
 
         activeLightCount++;
     }
+#endif
 
     if ( lSceneHaveLights && activeLightCount == 0 )
     {

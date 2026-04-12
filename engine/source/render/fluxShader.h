@@ -10,6 +10,7 @@
 #include "core/fluxGlobals.h"
 #include <unordered_map>
 #include <string>
+#include <functional>
 
 class FluxShader {
 public:
@@ -17,6 +18,10 @@ public:
     ~FluxShader() { unload(); }
 
     bool load(const char* vSource, const char* fSource);
+
+    std::function<void(GLuint)> OnBeforeLinkShader = nullptr;
+
+
     void use();
     void unload();
 
@@ -29,6 +34,11 @@ public:
     void setInt(const std::string& name, float value);
     void setBool(const std::string& name, bool value);
     void setFloatArray(const std::string& name, const float* values, int count);
+
+    void setVec2Array(const std::string& name, const float* values, int count);
+    void setVec3Array(const std::string& name, const float* values, int count);
+    void setVec4Array(const std::string& name, const float* values, int count);
+
 
 private:
     GLuint mProgram;

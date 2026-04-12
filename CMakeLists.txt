@@ -25,6 +25,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 
+option(ANDROID_GLES2 "Use GLES2" OFF)
+
 # --- Cross-Platform Compatibility Fixes ---
 if(ANDROID)
     add_compile_definitions(ANDROID)
@@ -301,6 +303,11 @@ target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE)
 target_compile_definitions(ohmFlux_engine PUBLIC IMGUI_DEFINE_MATH_OPERATORS)
 target_compile_definitions(ohmFlux_engine PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(ohmFlux_engine PUBLIC FLUX_ENGINE_OPENGL)
+
+if (ANDROID_GLES2)
+target_compile_definitions(ohmFlux_engine PUBLIC FLUX_GLES2)
+endif()
+
 
 # speed up build
 target_precompile_headers(ohmFlux_engine PRIVATE ${ENGINE_PRECOMPILED_HEADER})

@@ -123,7 +123,9 @@ public:
         if (!ImGui_ImplSDL3_InitForOpenGL(getScreen()->getWindow(), getScreen()->getGLContext()))
             return false;
 
-        #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+        #if defined(FLUX_GLES2)
+        const char* glsl_version = "#version 100";
+        #elif defined(__EMSCRIPTEN__) || defined(__ANDROID__)
         const char* glsl_version = "#version 300 es";
         #elif defined(__APPLE__)
         const char* glsl_version = "#version 150"; // Required for GL 3.2+ Core on macOS

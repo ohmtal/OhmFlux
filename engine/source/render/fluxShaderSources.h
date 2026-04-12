@@ -6,188 +6,310 @@
 #ifndef _FLUXSHADERSOURCES_H_
 #define _FLUXSHADERSOURCES_H_
 
-// #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-// #define GLSL_VERSION "#version 300 es\nprecision highp float;\n"
-// #else
-// #define GLSL_VERSION "#version 330 core\n"
-// #endif
-
-#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-#define GLSL_VERSION "#version 300 es\n"
-
-#define VERT_PRECISION "precision highp float;\n"
-// #define FRAG_PRECISION "precision mediump float;\n"
-#define FRAG_PRECISION "precision highp float;\n"
+#ifdef FLUX_GLES2
+    #define GLSL_VERSION "#version 100\n"
+    #define FRAG_PRECISION "precision mediump float;\n"
+    #define VERT_PRECISION "precision mediump float;\n"
 #else
-#define GLSL_VERSION "#version 330 core\n"
-#define VERT_PRECISION ""
-#define FRAG_PRECISION ""
+    #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+        #define GLSL_VERSION "#version 300 es\n"
+        #define VERT_PRECISION "precision highp float;\n"
+        #define FRAG_PRECISION "precision highp float;\n"
+    #else
+        #define GLSL_VERSION "#version 330 core\n"
+        #define VERT_PRECISION ""
+        #define FRAG_PRECISION ""
+    #endif
 #endif
+
 
 
 //------------------------------------------------------------------------------
 // --- Default Sprite Shader ---
+
 inline const char* vertexShaderSource = GLSL_VERSION VERT_PRECISION R"(
-layout (location = 0) in vec3 aPos;      // Final position calculated on CPU
-layout (location = 1) in vec2 aTexCoord; // Final UV (handled flipping/scrolling)
-layout (location = 2) in vec4 aColor;    // Per-sprite Tint and Alpha
+#if __VERSION__ >= 300
+    // GL/ES 3.0+ Syntax
+    layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec2 aTexCoord;
+    layout (location = 2) in vec4 aColor;
+    out vec2 TexCoord;
+    out vec4 TintColor;
+    out vec3 fragWorldPos;
+#else
+    // GLES 2.0 Syntax
+    attribute vec3 aPos;
+    attribute vec2 aTexCoord;
+    attribute vec4 aColor;
+    varying vec2 TexCoord;
+    varying vec4 TintColor;
+    varying vec3 fragWorldPos;
+#endif
 
-out vec2 TexCoord;
-out vec4 TintColor; // Pass to Fragment Shader
-out vec3 fragWorldPos; // Pass world position to fragment shader
-
-uniform mat4 view;       // Camera View Matrix (Shared by batch)
-uniform mat4 projection; // Ortho Matrix (Shared by batch)
+uniform mat4 view;
+uniform mat4 projection;
 
 void main() {
-    // 1. For the GPU screen position, we need View and Projection
     gl_Position = projection * view * vec4(aPos, 1.0);
-
-    // 2. For lighting, we need the STATIC world position.
-    // If aPos is already world-space from the CPU, just pass it through:
     fragWorldPos = aPos;
-
     TexCoord = aTexCoord;
     TintColor = aColor;
 }
 )";
-//------------------------------------------------------------------------------
-inline const char* fragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
-out vec4 FragColor;
 
-in vec2 TexCoord;
-in vec4 TintColor;
-in vec3 fragWorldPos;
+
+// inline const char* vertexShaderSource = GLSL_VERSION VERT_PRECISION R"(
+// layout (location = 0) in vec3 aPos;      // Final position calculated on CPU
+// layout (location = 1) in vec2 aTexCoord; // Final UV (handled flipping/scrolling)
+// layout (location = 2) in vec4 aColor;    // Per-sprite Tint and Alpha
+//
+// out vec2 TexCoord;
+// out vec4 TintColor; // Pass to Fragment Shader
+// out vec3 fragWorldPos; // Pass world position to fragment shader
+//
+// uniform mat4 view;       // Camera View Matrix (Shared by batch)
+// uniform mat4 projection; // Ortho Matrix (Shared by batch)
+//
+// void main() {
+//     // 1. For the GPU screen position, we need View and Projection
+//     gl_Position = projection * view * vec4(aPos, 1.0);
+//
+//     // 2. For lighting, we need the STATIC world position.
+//     // If aPos is already world-space from the CPU, just pass it through:
+//     fragWorldPos = aPos;
+//
+//     TexCoord = aTexCoord;
+//     TintColor = aColor;
+// }
+// )";
+//------------------------------------------------------------------------------
+
+#ifdef FLUX_GLES2
+
+inline const char* fragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
+// --- GLES 2.0 Optimized Fragment Shader ---
+#define FragColor gl_FragColor
+#define texture texture2D
+varying vec2 TexCoord;
+varying vec4 TintColor;
+varying vec3 fragWorldPos;
 
 uniform sampler2D texture1;
-uniform vec3 uAmbientColor; // New Uniform: RGB for color, Magnitude for intensity
+uniform vec3 uAmbientColor;
 
-struct Light {
-    vec3 position;
-    vec4 color;    // rgb, alpha for intensity
-    float radius;
-    vec2 direction;
-    float cutoff;
-};
+#define MAX_LIGHTS 4
+uniform vec3 uLightPos[MAX_LIGHTS];
+uniform vec4 uLightColor[MAX_LIGHTS];
+uniform float uLightRadius[MAX_LIGHTS];
 
-#define MAX_LIGHTS 16
-uniform Light uLights[MAX_LIGHTS];
 uniform int uNumLights;
 uniform bool uIsGui;
-uniform float uExposure; // = 1.0;
-// uniform int uToneMappingType; // = 2; //default=none, 1=Reinhard, 2=Filmic
+uniform float uExposure;
 
 void main() {
     vec4 texColor = texture(texture1, TexCoord);
 
     if (uIsGui) {
         FragColor = texColor * TintColor;
-    } else if ( uNumLights == 0)
-    {
-        //2026-03-25 disabled much too dark without lights!
-        //      texColor.rgb = pow(texColor.rgb, vec3(2.2));
-        FragColor = texColor * TintColor;
-
     } else {
-        texColor.rgb = pow(texColor.rgb, vec3(2.2));
+        //  Linear-Space: x^2 much faster than  pow(x, 2.2)
+        vec3 linearRGB = texColor.rgb * texColor.rgb;
         vec3 lightAccum = uAmbientColor;
 
+        for (int i = 0; i < MAX_LIGHTS; ++i) {
+            if (i >= uNumLights) break;
 
-        for (int i = 0; i < uNumLights; ++i) {
-            vec2 lightToFrag = fragWorldPos.xy - uLights[i].position.xy;
+            vec2 lightToFrag = fragWorldPos.xy - uLightPos[i].xy;
             float dist = length(lightToFrag);
 
-            if (dist < uLights[i].radius) {
-                float intensity = 1.0; // Default for Omni-lights
-
-                // Only calculate spotlight logic if it's NOT an Omni-light
-                // AND we aren't exactly on top of the light source
-                if (uLights[i].cutoff > -0.99 && dist > 0.001) {
-                    vec2 normLightToFrag = normalize(lightToFrag);
-                    float theta = dot(normLightToFrag, normalize(uLights[i].direction));
-
-                    if (theta > uLights[i].cutoff) {
-                        // Smooth the edge of the spotlight cone
-                        float epsilon = 0.1;
-                        intensity = clamp((theta - uLights[i].cutoff) / epsilon, 0.0, 1.0);
-                    } else {
-                        intensity = 0.0; // Outside the cone
-                    }
-                }
-
-                if (intensity > 0.0) {
-                    float attenuation = 1.0 - (dist / uLights[i].radius);
-                    lightAccum += uLights[i].color.rgb * uLights[i].color.a * attenuation * intensity;
-                }
+            if (dist < uLightRadius[i]) {
+                float attenuation = 1.0 - (dist / uLightRadius[i]);
+                lightAccum += uLightColor[i].rgb * uLightColor[i].a * attenuation;
             }
-        } // Light loop
+        }
 
-
-
-        vec3 result = texColor.rgb * lightAccum;
-        result *= uExposure;
-
-        //----------------- Filmic by default !! ---------------
-        vec3 x = result;
-        result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
-        FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
-
-        // switch (uToneMappingType)
-        // {
-        //     case 1: // Reinhard Tonemapping
-        //         result = result / (result + vec3(1.0));
-        //         FragColor = vec4(pow(result, vec3(1.0/2.2)), texColor.a) * TintColor;
-        //         break;
-        //     case 2: // Filmic Tonemapping (Simplified ACES)
-        //         vec3 x = result;
-        //         result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
-        //         FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
-        //         break;
-        //     default: //none
-        //         // Clamp light to 1.0 to prevent over-exposure before final Tint
-        //         lightAccum = min(lightAccum, vec3(1.0));
-        //         texColor.rgb *= lightAccum;
-        //         FragColor = texColor * TintColor;
-        //         break;
-        // }
-    } //<<< Lights
-
-    // Linear to sRGB (Optional: recommended if your textures are sRGB)
-    // texColor.rgb = pow(texColor.rgb, vec3(1.0/2.2));
-
-    if (texColor.a < 0.1) {
-        discard;
+        vec3 result = linearRGB * lightAccum * uExposure;
+        result = result / (result + 1.0); // Reinhard
+        FragColor = vec4(sqrt(result), texColor.a * TintColor.a) * TintColor;
     }
 
+    if (texColor.a < 0.1) discard;
 }
 )";
+#else
+    inline const char* fragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
+    out vec4 FragColor;
 
+    in vec2 TexCoord;
+    in vec4 TintColor;
+    in vec3 fragWorldPos;
+
+    uniform sampler2D texture1;
+    uniform vec3 uAmbientColor; // New Uniform: RGB for color, Magnitude for intensity
+
+    struct Light {
+        vec3 position;
+        vec4 color;    // rgb, alpha for intensity
+        float radius;
+        vec2 direction;
+        float cutoff;
+    };
+
+    #define MAX_LIGHTS 16
+    uniform Light uLights[MAX_LIGHTS];
+    uniform int uNumLights;
+    uniform bool uIsGui;
+    uniform float uExposure; // = 1.0;
+    // uniform int uToneMappingType; // = 2; //default=none, 1=Reinhard, 2=Filmic
+
+    void main() {
+        vec4 texColor = texture(texture1, TexCoord);
+
+        if (uIsGui) {
+            FragColor = texColor * TintColor;
+        } else if ( uNumLights == 0)
+        {
+            //2026-03-25 disabled much too dark without lights!
+            //      texColor.rgb = pow(texColor.rgb, vec3(2.2));
+            FragColor = texColor * TintColor;
+
+        } else {
+            texColor.rgb = pow(texColor.rgb, vec3(2.2));
+            vec3 lightAccum = uAmbientColor;
+
+
+            for (int i = 0; i < uNumLights; ++i) {
+                vec2 lightToFrag = fragWorldPos.xy - uLights[i].position.xy;
+                float dist = length(lightToFrag);
+
+                if (dist < uLights[i].radius) {
+                    float intensity = 1.0; // Default for Omni-lights
+
+                    // Only calculate spotlight logic if it's NOT an Omni-light
+                    // AND we aren't exactly on top of the light source
+                    if (uLights[i].cutoff > -0.99 && dist > 0.001) {
+                        vec2 normLightToFrag = normalize(lightToFrag);
+                        float theta = dot(normLightToFrag, normalize(uLights[i].direction));
+
+                        if (theta > uLights[i].cutoff) {
+                            // Smooth the edge of the spotlight cone
+                            float epsilon = 0.1;
+                            intensity = clamp((theta - uLights[i].cutoff) / epsilon, 0.0, 1.0);
+                        } else {
+                            intensity = 0.0; // Outside the cone
+                        }
+                    }
+
+                    if (intensity > 0.0) {
+                        float attenuation = 1.0 - (dist / uLights[i].radius);
+                        lightAccum += uLights[i].color.rgb * uLights[i].color.a * attenuation * intensity;
+                    }
+                }
+            } // Light loop
+
+
+
+            vec3 result = texColor.rgb * lightAccum;
+            result *= uExposure;
+
+            //----------------- Filmic by default !! ---------------
+            vec3 x = result;
+            result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
+            FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
+
+            // switch (uToneMappingType)
+            // {
+            //     case 1: // Reinhard Tonemapping
+            //         result = result / (result + vec3(1.0));
+            //         FragColor = vec4(pow(result, vec3(1.0/2.2)), texColor.a) * TintColor;
+            //         break;
+            //     case 2: // Filmic Tonemapping (Simplified ACES)
+            //         vec3 x = result;
+            //         result = (x * (6.2 * x + 0.5)) / (x * (6.2 * x + 1.7) + 0.06);
+            //         FragColor = vec4(result, texColor.a * TintColor.a) * TintColor;
+            //         break;
+            //     default: //none
+            //         // Clamp light to 1.0 to prevent over-exposure before final Tint
+            //         lightAccum = min(lightAccum, vec3(1.0));
+            //         texColor.rgb *= lightAccum;
+            //         FragColor = texColor * TintColor;
+            //         break;
+            // }
+        } //<<< Lights
+
+        // Linear to sRGB (Optional: recommended if your textures are sRGB)
+        // texColor.rgb = pow(texColor.rgb, vec3(1.0/2.2));
+
+        if (texColor.a < 0.1) {
+            discard;
+        }
+
+    }
+    )";
+#endif
 //------------------------------------------------------------------------------
 // --- Flat Color Shader (for Primitives) ---
+
 inline const char* flatVertexShaderSource = GLSL_VERSION VERT_PRECISION R"(
-layout (location = 0) in vec3 aPos;
-layout (location = 2) in vec4 aColor; // MUST match Location 2 in Vertex2D
+#if __VERSION__ >= 300
+    layout (location = 0) in vec3 aPos;
+    layout (location = 2) in vec4 aColor;
+    out vec4 vColor;
+#else
+    attribute vec3 aPos;
+    attribute vec4 aColor;
+    varying vec4 vColor;
+#endif
 
-out vec4 vColor;
-
-uniform mat4 model;      // Keep for line transformations
+uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
 void main() {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
-    vColor = aColor; // Pass the vertex color to fragment
+    vColor = aColor;
 }
 )";
+
+// inline const char* flatVertexShaderSource = GLSL_VERSION VERT_PRECISION R"(
+// layout (location = 0) in vec3 aPos;
+// layout (location = 2) in vec4 aColor; // MUST match Location 2 in Vertex2D
+//
+// out vec4 vColor;
+//
+// uniform mat4 model;      // Keep for line transformations
+// uniform mat4 view;
+// uniform mat4 projection;
+//
+// void main() {
+//     gl_Position = projection * view * model * vec4(aPos, 1.0);
+//     vColor = aColor; // Pass the vertex color to fragment
+// }
+// )";
 
 
 inline const char* flatFragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
-out vec4 FragColor;
-in vec4 vColor; // Received from vertex shader
+#if __VERSION__ >= 300
+    layout(location = 0) out vec4 FragColor;
+    in vec4 vColor;
+#else
+    // GLES 2.0 nutzt kein 'out', sondern die feste Variable gl_FragColor
+    #define FragColor gl_FragColor
+    varying vec4 vColor;
+#endif
 
 void main() {
-    FragColor = vColor; // No texture sampling needed here
+    FragColor = vColor;
 }
 )";
+
+// inline const char* flatFragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
+// out vec4 FragColor;
+// in vec4 vColor; // Received from vertex shader
+//
+// void main() {
+//     FragColor = vColor; // No texture sampling needed here
+// }
+// )";
 
 #endif

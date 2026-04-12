@@ -27,7 +27,8 @@ class TestBed : public FluxMain
 {
     typedef FluxMain Parent;
 private:
-    OPL3Controller* mOPL3Controller = nullptr;
+    //FIXME does not work anymore ?! ...
+    // OPL3Controller* mOPL3Controller = nullptr;
 
 
     SFXGenerator* mSFXGenerator = nullptr;
@@ -255,13 +256,13 @@ public:
          // use right mouse to test it ! SDL_SetWindowMouseGrab(getScreen()->getWindow(), true);
 
 
-         // OPL TEST
-         mOPL3Controller = new OPL3Controller();
-         if (!mOPL3Controller->initController())
-         {
-             Log("Failed to init OplController");
-             SAFE_DELETE(mOPL3Controller);
-         }
+         //FIXME does not work anymore ?! ...
+         // mOPL3Controller = new OPL3Controller();
+         // if (!mOPL3Controller->initController())
+         // {
+         //     Log("Failed to init OplController");
+         //     SAFE_DELETE(mOPL3Controller);
+         // }
 
 
 
@@ -290,7 +291,8 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
-        SAFE_DELETE(mOPL3Controller);
+        //FIXME does not work anymore ?! ...
+        // SAFE_DELETE(mOPL3Controller);
         SAFE_DELETE(mSFXGenerator);
 
         Parent::Deinitialize();
@@ -463,17 +465,16 @@ public:
         //
         // }
 
-        static float sirenPos = 24.0f; // Start at C-2
-        static float sirenDir = 0.2f;
-
-        // In your 60 FPS loop
-        sirenPos += sirenDir;
-        if (sirenPos > 72.0f || sirenPos < 24.0f) sirenDir *= -1.0f; // Bounce between C-2 and C-6
-
-        mOPL3Controller->setChannelOn(0); //should only called once but for the test here ok
-        mOPL3Controller->setChannelPanning(0, 1);//lol
-        mOPL3Controller->setFrequencyLinear(0, sirenPos);
-         Log("mOPL3Controller->setFrequencyLinear %4.2f", sirenPos);
+        //FIXME does not work anymore ?! ...
+        // static float sirenPos = 24.0f; // Start at C-2
+        // static float sirenDir = 0.2f;
+        // sirenPos += sirenDir;
+        // if (sirenPos > 72.0f || sirenPos < 24.0f) sirenDir *= -1.0f; // Bounce between C-2 and C-6
+        //
+        // mOPL3Controller->setChannelOn(0); //should only called once but for the test here ok
+        // mOPL3Controller->setChannelPanning(0, 1);//lol
+        // mOPL3Controller->setFrequencyLinear(0, sirenPos);
+        //  Log("mOPL3Controller->setFrequencyLinear %4.2f", sirenPos);
 
 
         Parent::Update(dt);

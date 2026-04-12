@@ -61,16 +61,19 @@ FluxScreen::FluxScreen(VideoMode lVM)
 // #endif
 
 
-
+static int lGL_Context = SDL_GL_CONTEXT_PROFILE_CORE;
+static int lGL_MajorVersion = 3;
+static int lGL_MinorVersion = 3;
 
 #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-	static int lGL_Context = SDL_GL_CONTEXT_PROFILE_ES;
-	static int lGL_MajorVersion = 3;
-	static int lGL_MinorVersion = 0;
-#else
-	static int lGL_Context = SDL_GL_CONTEXT_PROFILE_CORE;
-	static int lGL_MajorVersion = 3;
-	static int lGL_MinorVersion = 3;
+	lGL_Context = SDL_GL_CONTEXT_PROFILE_ES;
+	lGL_MajorVersion = 3;
+	lGL_MinorVersion = 0;
+#endif
+#ifdef FLUX_GLES2
+	lGL_Context = SDL_GL_CONTEXT_PROFILE_ES;
+	lGL_MajorVersion = 2;
+	lGL_MinorVersion = 0;
 #endif
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, lGL_MajorVersion);
@@ -78,6 +81,8 @@ FluxScreen::FluxScreen(VideoMode lVM)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,  lGL_Context);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+
+	Log("[info] Using OPENGL: %d.%d.%d", lGL_MajorVersion, lGL_MinorVersion, lGL_Context);
 
 }
 //-------------------------------------------------------------------------------

@@ -26,7 +26,11 @@
 #include <array>
 
 #include "utils/fluxStr.h"
+#ifdef FLUX_GLES2
+#define MAX_LIGHTS 4 // Maximum number of 2D lights supported by the shader
+#else
 #define MAX_LIGHTS 16 // Maximum number of 2D lights supported by the shader
+#endif
 
 
 #ifdef FLUX_DEBUG

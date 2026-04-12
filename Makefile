@@ -15,7 +15,9 @@ NDK_DIRS := $(wildcard /opt/android/sdk/ndk/*/)
 ANDROID_PROJ_DIR := android
 ANDROID_NDK_HOME := $(lastword $(sort $(NDK_DIRS)))
 # ANDROID_NDK_HOME := $(shell @ls -d /opt/android/sdk/ndk/*/ | sort -V | tail -n 1)
-ANDROID_PLATFORM := android-24
+# ANDROID_PLATFORM := android-24
+ANDROID_PLATFORM := 21
+
 
 # Parallel Build Detection
 # Uses all available cores on Linux/FreeBSD, defaults to 4 if detection fails
@@ -109,6 +111,18 @@ android:
 
 	cmake --build $(BASE_BUILD_DIR)/android $(JOBS)
 
+
+	#FIXME DEBUG ...
+	cmake -S . -B $(BASE_BUILD_DIR)/androidv7a \
+		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=armeabi-v7a \
+		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both" \
+		-DANDROID_GLES2=1
+
+	cmake --build $(BASE_BUILD_DIR)/androidv7a $(JOBS)
+
 	# 2. Initialize and Patch the SDL3 Android Project
 	mkdir -p $(ANDROID_PROJ_DIR)/app
 	@if [ ! -f $(ANDROID_PROJ_DIR)/gradlew ]; then \
@@ -126,17 +140,24 @@ android:
 		echo "--- Packaging APK for: $$target ---"; \
 		rm -rf $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/*; \
 		mkdir -p $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/; \
+		rm -rf $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/*; \
+		mkdir -p $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/; \
 		cp $(BASE_BUILD_DIR)/android/lib$$target.so $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/libmain.so; \
+		cp $(BASE_BUILD_DIR)/androidv7a/lib$$target.so $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/libmain.so; \
 		echo "----- copy assets ----"; \
 		ASSET_DIR=$(ANDROID_PROJ_DIR)/app/src/main/assets/; \
 		rm -rf $$ASSET_DIR; \
 		mkdir -p $$ASSET_DIR; \
 		cp -r $$target/assets $$ASSET_DIR; \
 		echo "----- copy Custom settings -----" \
+		rm -rf $(ANDROID_PROJ_DIR)/app/; \
 		cp -r $(BASE_BUILD_DIR)/android/_deps/sdl3-src/android-project/app/* $(ANDROID_PROJ_DIR)/app/; \
+		cp build.gradle.template $(ANDROID_PROJ_DIR)/app/build.gradle; \
+		rm -rf $(ANDROID_PROJ_DIR)/app/jni; \
 		cp -r $$target/res/app/* $(ANDROID_PROJ_DIR)/app/; \
 		echo "----- copy SDL ----"; \
 		find $(BASE_BUILD_DIR)/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/ \; ; \
+		find $(BASE_BUILD_DIR)/androidv7a -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/ \; ; \
 		sed -i "s/<string name=\"SDL_DEFAULT_LIBRARY\">.*<\/string>/<string name=\"SDL_DEFAULT_LIBRARY\">main<\/string>/g" \
 			$(ANDROID_PROJ_DIR)/app/src/main/res/values/strings.xml; \
 		cd $(ANDROID_PROJ_DIR) && ./gradlew assembleDebug -Pandroid.sdk.dir=$(ANDROID_HOME); \
@@ -152,7 +173,7 @@ android:
 	@echo "change the Manifest,gradle, the res/icon and so on."
 	@echo "---------------------------------------------------------------------------------"
 	@echo "# 1. Install it to your phone example:"
-	@echo "    adb install ./_build/apks/FishTankDemo.apk"
+	@echo "    adb install -r ./_build/apks/FishTankDemo.apk"
 	@echo "# 2. Launch it"
 	@echo "# (Assuming your package name in the template was org.libsdl.app)"
 	@echo "# adb shell am start -n org.libsdl.app/org.libsdl.app.SDLActivity"

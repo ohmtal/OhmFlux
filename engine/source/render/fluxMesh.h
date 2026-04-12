@@ -27,7 +27,10 @@ public:
 
     void operator=(const FluxMesh&) = delete;
 
-    void createStatic(Vertex2D* vertices, U32 vCount, U32* indices, U32 iCount);
+    void createStatic(Vertex2D* vertices, U32 vCount, void* indices, U32 iCount);
+    // void createStatic(Vertex2D* vertices, U32 vCount, U32* indices, U32 iCount);
+
+
 
     void updateDynamic(Vertex2D* vertices, U32 vCount); //, GLenum usage = GL_DYNAMIC_DRAW);
 

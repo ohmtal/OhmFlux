@@ -1,5 +1,9 @@
 # TODO
 
+- [ ] DEFAULT SHADER ARE NOT COMPATIBLE WITH GLES2
+
+---
+
 - 2026-03-02 
   - replaced in headers: Ohmtal Game Studio with my name (testing utf8)
   - removed/disabled  fluxTrueTypeFont
