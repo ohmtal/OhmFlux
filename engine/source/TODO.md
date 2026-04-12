@@ -1,6 +1,10 @@
 # TODO
 
-- [ ] DEFAULT SHADER ARE NOT COMPATIBLE WITH GLES2
+- [ ] write a docu about setup android project / grade / icons / and so on 
+
+- [X] 2026-04-12 DEFAULT SHADER ARE NOT COMPATIBLE WITH GLES2 
+  - NOTE: it works but this was a nobody need this waste of time ;)
+  - I may use the shader changes as a peformance mode (fragment "monster" shader) or keep it like it is 
 
 ---
 

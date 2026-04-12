@@ -112,14 +112,15 @@ android:
 	cmake --build $(BASE_BUILD_DIR)/android $(JOBS)
 
 
-	#FIXME DEBUG ...
 	cmake -S . -B $(BASE_BUILD_DIR)/androidv7a \
 		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
 		-DANDROID_ABI=armeabi-v7a \
 		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
-		-DCMAKE_BUILD_TYPE=Debug \
-		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both" \
-		-DANDROID_GLES2=1
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both"
+
+# i added it to Engine but it's imgui does not really support it
+# 		-DANDROID_GLES2=1
 
 	cmake --build $(BASE_BUILD_DIR)/androidv7a $(JOBS)
 
