@@ -1,6 +1,12 @@
 # TODO
 
 - [ ] write a docu about setup android project / grade / icons / and so on 
+  - Tools: make_android_icons.py, make_windows_icon.py
+  - App Name : [PROJECT]/res/app/src/main/res/values/strings.xml
+  - App ID: [PROJECT]/res/app/build.gradle => applicationId
+
+- [X] FireTV:
+  - [X]  Rendered left bottom only 
 
 - [X] 2026-04-12 DEFAULT SHADER ARE NOT COMPATIBLE WITH GLES2 
   - NOTE: it works but this was a nobody need this waste of time ;)

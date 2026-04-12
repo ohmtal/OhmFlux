@@ -27,7 +27,9 @@
 #include "StationHandler.h"
 #include "Page.h"
 
-
+namespace ImFlux {
+    struct VirtualKeyBoard; // Forward Declaration
+}
 namespace IronTuner {
 
     // -----------------------------------------------------------------------------
@@ -111,6 +113,9 @@ namespace IronTuner {
 
         bool mPageWindowFocused = false;
 
+        bool mUseVirtualKeyBoard = false;
+        ImFlux::VirtualKeyBoard* mVirtualKeyBoard;
+
     public:
         Point2F getAudioLevels() const;
         DSP::SpectrumAnalyzer* getSpectrumAnalyzer();
@@ -168,6 +173,9 @@ namespace IronTuner {
         void Tune(const FluxRadio::RadioStation station);
         void TuneKnob(std::string caption, const ImFlux::KnobSettings ks = ImFlux::DARK_KNOB);
         void FavoStar(bool isFavo,bool isFavoList, float radius, const FluxRadio::RadioStation* station );
+
+
+        bool InputText(const char* label, std::string& buffer, std::function<void(const std::string& value)> onEnter = nullptr );
 
 
     }; //class

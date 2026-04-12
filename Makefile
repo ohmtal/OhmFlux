@@ -118,10 +118,10 @@ android:
 		-DANDROID_ABI=armeabi-v7a \
 		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
 		-DCMAKE_BUILD_TYPE=Release \
+ 		-DANDROID_GLES2=1 \
 		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both"
 
-# i added it to Engine but it's imgui does not really support it
-# 		-DANDROID_GLES2=1
+
 
 	cmake --build $(BASE_BUILD_DIR)/androidv7a $(JOBS)
 

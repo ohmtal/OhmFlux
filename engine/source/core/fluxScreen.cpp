@@ -285,10 +285,15 @@ bool FluxScreen::updateWindowSize(S32 lWidth, S32 lHeight)
 		// NOTE: with mScreenFlags |= SDL_WINDOW_HIGH_PIXEL_DENSITY
 		// uses HighDPI but this make it very laggy
 		// and does _NOT_ fix my FluxEditor is rendered to small
-		#ifdef __EMSCRIPTEN__ //2026-01-08
+		//2026-01-08
+		#if defined(__EMSCRIPTEN__)  || defined(__ANDROID__)
 		S32 lPixelW, lPixelH;
 		SDL_GetWindowSizeInPixels(mWindow, &lPixelW, &lPixelH);
 		glViewport(0,0, lPixelW, lPixelH);
+
+		mRealScreenSize.x = lPixelW;
+		mRealScreenSize.y = lPixelH;
+
 		dLog("EMSCRIPTEN: Viewport size: %dx%d", lPixelW, lPixelH);
 		#else
 		if (mScaleScreen) {

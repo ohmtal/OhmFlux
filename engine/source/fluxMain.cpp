@@ -81,7 +81,7 @@ bool FluxMain::Initialize()
 	}
 
 #endif
-	LogFMT("{} running on SDL3", mSettings.Caption);
+	LogFMT("{} running on {}", mSettings.Caption, SDL_GetPlatform());
 
 	gAppStatus.Visible		 = true;
 	gAppStatus.Paused		 = false;

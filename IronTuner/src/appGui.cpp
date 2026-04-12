@@ -14,7 +14,10 @@
 
 
 #include "imgui_internal.h"
-#include <gui/ImFlux/widets/VirtualTapePlayer.h>
+#include "gui/ImFlux/widets/VirtualTapePlayer.h"
+#include "gui/ImFlux/widets/VirtualKeyBoard.h"
+
+
 
 namespace IronTuner {
     // -----------------------------------------------------------------------------
@@ -660,15 +663,18 @@ namespace IronTuner {
                 if (ImGui::BeginPopupModal("Favourite Dialog", &mStationContextData.showDialog, ImGuiWindowFlags_AlwaysAutoResize) ) {
                     ImGui::SeparatorText(mStationContextData.isEdit ? "Edit" : "New");
 
-                    char strBuff[1024];
-                    strncpy(strBuff, mStationContextData.workStation.name.c_str(), sizeof(strBuff));
-                    if (ImGui::InputText("Station Name",strBuff, sizeof(strBuff))) {
-                        mStationContextData.workStation.name = strBuff;
-                    }
-                    strncpy(strBuff, mStationContextData.workStation.url.c_str(), sizeof(strBuff));
-                    if (ImGui::InputText("URL", strBuff, sizeof(strBuff))) {
-                        mStationContextData.workStation.url = strBuff;
-                    }
+                    // char strBuff[1024];
+                    // strncpy(strBuff, mStationContextData.workStation.name.c_str(), sizeof(strBuff));
+                    InputText("Station Name",mStationContextData.workStation.name);
+                    // if (InputText("Station Name",strBuff, sizeof(strBuff))) {
+                    //     mStationContextData.workStation.name = strBuff;
+                    // }
+
+                    InputText("URL",mStationContextData.workStation.url);
+                    // strncpy(strBuff, mStationContextData.workStation.url.c_str(), sizeof(strBuff));
+                    // if (InputText("URL", strBuff, sizeof(strBuff))) {
+                    //     mStationContextData.workStation.url = strBuff;
+                    // }
                     ImFlux::SeparatorFancy();
 
                     if (ImGui::Button("Save")) {
@@ -703,13 +709,15 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::DrawStationsTable(const std::vector<FluxRadio::RadioStation> stations, const bool isFavoList ) {
 
-        static char searchBuffer[128] = "";
+        // static char searchBuffer[128] = "";
+        static std::string searchBuffer = "";
 
         //---------------
         ImGui::BeginGroup();
         ImGui::SeparatorText("Filter results");
         ImGui::SetNextItemWidth( 180.f * getScale());
-        ImGui::InputText("##Filter", searchBuffer, IM_ARRAYSIZE(searchBuffer));
+        // InputText("##Filter", searchBuffer, IM_ARRAYSIZE(searchBuffer));
+        InputText("##Filter", searchBuffer);
 
         ImGui::EndGroup();
         //---------------
@@ -899,17 +907,23 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::DrawRadioBrowserWindow() {
         // if (ImGui::Begin("Radio Browser", &getMain()->getAppSettings().ShowRadioBrowser)){
-            static char strBuff[64];
+            // static char strBuff[64];
+            static std::string strBuff;
 
             ImGui::BeginGroup();
             ImGui::SeparatorText("radio-browser.info");
-            strncpy(strBuff, mStations.getQueryString().c_str(), sizeof(strBuff));
+            // strncpy(strBuff, mStations.getQueryString().c_str(), sizeof(strBuff));
             ImGui::SetNextItemWidth(180.f * getScale());
-            if (ImGui::InputText("##SearchName", strBuff, sizeof(strBuff), ImGuiInputTextFlags_EnterReturnsTrue)) {
-                mRadioBrowser->searchStationsByNameAndTag(strBuff, "");
-                mStations.getQueryStringMutable() = strBuff;
-                dLog("query for %s", strBuff);
-            }
+
+            // if (InputText("##SearchName", strBuff, sizeof(strBuff), ImGuiInputTextFlags_EnterReturnsTrue)) {
+
+
+            InputText("##SearchName", strBuff, [this](const std::string& value) {
+                    mRadioBrowser->searchStationsByNameAndTag(value, "");
+                    mStations.getQueryStringMutable() = value;
+                    dLog("query for %s", value.c_str());
+                }
+            );
             ImFlux::Hint("Search Radio Station by Name");
             ImGui::EndGroup();
             ImFlux::ShiftCursor(ImVec2(30.f,0.f));
@@ -946,6 +960,12 @@ namespace IronTuner {
 
     void AppGui::onEvent(SDL_Event event){
         if (mGuiGlue.get()) mGuiGlue->onEvent(event);
+
+
+        if (event.type == SDL_EVENT_WILL_ENTER_BACKGROUND) {
+            //FIXME background handline FIRETV / ANDROID !
+            Log("[info] ** Enter Background! **");
+        }
 
         // FIRE TV KEYS:
         // - Gamepad buttons (integer read with test programm):
@@ -1009,7 +1029,6 @@ namespace IronTuner {
 
         // --------------------
         // CARUSEL windows test:
-        // In deiner Event-Loop:
         switch (event.type) {
             // TOUCH & MOUSE START
             case SDL_EVENT_FINGER_DOWN:
@@ -1327,6 +1346,7 @@ namespace IronTuner {
     void AppGui::Deinitialize(){
         SaveSettings();
         SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!!
+        SAFE_DELETE(mVirtualKeyBoard);
         mStreamHandler->shutdown();
         if (mAudioHandler.get()) mAudioHandler->shutDown();
     }
@@ -1463,36 +1483,55 @@ namespace IronTuner {
         mKnobOnTex =  getMain()->loadTexture(texPath);
 
 
+        mVirtualKeyBoard = new ImFlux::VirtualKeyBoard();
+
+
         if ( isAndroidBuild())
         {
             setImGuiScale(2.f);
 
         }
 
-        // Pages:
+        //--------- Pages ------------
+        // empty page
         mPages.emplace_back("Relax", nullptr, mPages.size());
+
+        // radio pnly
         mTopScrollerIgnorePages.push_back(mPages.size()); //1
         mPages.emplace_back("Radio", [this]() { DrawRadio(); }, mPages.size());
 
-        mPages.emplace_back("Equalizer", [this]() { DrawEqualizer(); }, mPages.size());
-        if (!isAndroidBuild()) mPages.emplace_back("Recorder", [this]() { DrawRecorder(); }, mPages.size());
+        // rack on desktop / Equalizer9Band on android
+        mTopScrollerIgnorePages.push_back(mPages.size());
+        if (!isAndroidBuild()) {
+            mPages.emplace_back("Rack", [this]() {
+                DrawRadio();
+                DrawEqualizer();
+                DrawRecorder();
+            }, mPages.size());
+        } else {
+            mPages.emplace_back("Equalizer", [this]() { DrawEqualizer(); }, mPages.size());
+        }
         mPages.emplace_back("Favorites", [this]() { DrawFavo(); }, mPages.size());
         mPages.emplace_back("Station Search", [this]() { DrawRadioBrowserWindow(); }, mPages.size());
-
-        mTopScrollerIgnorePages.push_back(mPages.size());
-        if (!isAndroidBuild()) mPages.emplace_back("Rack", [this]() {
-             DrawRadio();
-             DrawEqualizer();
-             DrawRecorder();
-        }, mPages.size());
 
         mPages.emplace_back("Info", [this]() { DrawInfo(); }, mPages.size());
 
 
-
         setImGuiScale(getMain()->getAppSettings().Scale);
         mTargetPageIndex =  getMain()->getAppSettings().PageIndex;
+        if (mTargetPageIndex >= mPages.size()) mTargetPageIndex = 1;
 
+        //--------- check for virtual keyboard ------------
+
+        mUseVirtualKeyBoard = false;
+        if (isAndroidBuild())  {
+            int numTouchDevices = 0;
+            SDL_GetTouchDevices(&numTouchDevices);
+            if (numTouchDevices <= 0) {
+                mUseVirtualKeyBoard = true;
+            }
+
+        }
 
         return true;
     }
@@ -1574,6 +1613,7 @@ namespace IronTuner {
             if (mStreamHandler->isOffline()) ConnectCurrent();
         }
 
+        mVirtualKeyBoard->Draw();
 
 
         mGuiGlue->DrawEnd();
@@ -1653,13 +1693,17 @@ namespace IronTuner {
             bool plus =  (
                 ImGui::IsKeyPressed(ImGuiKey_DownArrow) ||
                 ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)  ||
-                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown));
+                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown)
+            );
 
 
             bool minus = (
                 ImGui::IsKeyPressed(ImGuiKey_UpArrow)  ||
                 ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract) ||
-                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp));
+                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp) ||
+                ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp)
+            );
             static float keyboardDelta = 0.f;
             if (plus || minus) {
                 float multi = 0.f;
@@ -1756,7 +1800,6 @@ namespace IronTuner {
             ImVec2 p2 = center + ImVec2( r,  r); // Unten Rechts
             ImVec2 p3 = center + ImVec2(-r,  r); // Unten Links
 
-            // Mit deiner Funktion rotieren
             dl->AddImageQuad(
                 texID,
                 ImFlux::Rotate(p0, center, needle_ang),
@@ -1831,6 +1874,7 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::setImGuiScale(float factor){
         mGuiGlue->setScale(factor);
+        mVirtualKeyBoard->setScale(factor);
         getMain()->getAppSettings().Scale = factor;
     }
     float AppGui::getScale() const {
@@ -1907,15 +1951,39 @@ namespace IronTuner {
                     ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes free", bufferValues[0]).c_str());
                     ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes buffered", bufferValues[1]).c_str());
                  }
-
              }
+             if (ImGui::CollapsingHeader("Options")) {
+                 ImGui::Checkbox("Virtual Keyboard", &mUseVirtualKeyBoard);
+             }
+
 
              ImGui::EndGroup();
              ImGui::PopStyleColor(3);
         } //BeginChild
         ImGui::EndChild();
-
-
     }
+    // -----------------------------------------------------------------------------
+    bool AppGui::InputText(const char* label, std::string& buffer, std::function<void(const std::string& value)> onEnter) {
+        char tempBuffer[1024];
+        strncpy(tempBuffer, buffer.c_str(), sizeof(tempBuffer));
+
+        ImGuiInputTextFlags flags = 0;
+        if (onEnter && !mUseVirtualKeyBoard) {
+            flags = ImGuiInputTextFlags_EnterReturnsTrue;
+        }
+
+        if (ImGui::InputText(label, tempBuffer, sizeof(tempBuffer), flags)) {
+            buffer = tempBuffer;
+            if ( onEnter ) onEnter(tempBuffer);
+            return true;
+        }
+
+
+        if (ImGui::IsItemActive() && mUseVirtualKeyBoard) {
+            mVirtualKeyBoard->Open(buffer, onEnter);
+        }
+        return false;
+    }
+
 
 }; //namespace

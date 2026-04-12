@@ -573,6 +573,8 @@ inline void dumpPathes(FluxSettings* settings=nullptr) {
     SDL_Log("Music Path:%s", getMusicPath().c_str());
     SDL_Log("Video Path:%s", getVideosPath().c_str());
 }
+//-----------------------------------------------------------------------------
+
 
 
 //-----------------------------------------------------------------------------
