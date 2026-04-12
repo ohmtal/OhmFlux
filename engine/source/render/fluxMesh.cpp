@@ -49,7 +49,7 @@ void FluxMesh::createStatic(Vertex2D* vertices, U32 vCount, void* indices, U32 i
     glBindBuffer(GL_ARRAY_BUFFER, mVBO);
     glBufferData(GL_ARRAY_BUFFER, vCount * sizeof(Vertex2D), vertices, GL_STATIC_DRAW);
 
-    // Index Data (Unterscheidung U16 vs U32)
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mEBO);
     #ifdef FLUX_GLES2
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, iCount * sizeof(U16), indices, GL_STATIC_DRAW);
@@ -58,7 +58,7 @@ void FluxMesh::createStatic(Vertex2D* vertices, U32 vCount, void* indices, U32 i
     #endif
 
     #ifndef FLUX_GLES2
-    // Attribute nur im VAO speichern, wenn GLES3+
+
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (void*)0);
 
@@ -70,7 +70,7 @@ void FluxMesh::createStatic(Vertex2D* vertices, U32 vCount, void* indices, U32 i
 
     glBindVertexArray(0);
     #else
-    // Buffer entbinden für GLES2
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     #endif

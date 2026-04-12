@@ -293,7 +293,6 @@ inline const char* flatFragmentShaderSource = GLSL_VERSION FRAG_PRECISION R"(
     layout(location = 0) out vec4 FragColor;
     in vec4 vColor;
 #else
-    // GLES 2.0 nutzt kein 'out', sondern die feste Variable gl_FragColor
     #define FragColor gl_FragColor
     varying vec4 vColor;
 #endif
