@@ -1972,9 +1972,9 @@ namespace IronTuner {
                     ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes buffered", bufferValues[1]).c_str());
                  }
              }
-             // if (ImGui::CollapsingHeader("Options")) {
-             //     ImGui::Checkbox("Virtual Keyboard", &mUseVirtualKeyBoard);
-             // }
+             if (ImGui::CollapsingHeader("Options")) {
+                 ImGui::Checkbox("Virtual Keyboard", &getMain()->getAppSettings().useVirtualKeyboard);
+             }
 
              ImGui::EndGroup();
              ImGui::PopStyleColor(3);
@@ -1997,10 +1997,9 @@ namespace IronTuner {
             return true;
         }
 
-        if ( /*mUseVirtualKeyBoard ||*/ ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown) ) {
-            if ( ImGui::IsItemActive() || ImGui::IsItemFocused() ) {
+        if ( (getMain()->getAppSettings().useVirtualKeyboard  && ImGui::IsItemActive())
+            || ( ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown) &&  ImGui::IsItemFocused() ) ){
                 mVirtualKeyBoard->Open(buffer, onEnter);
-            }
         }
         return false;
     }

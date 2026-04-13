@@ -84,6 +84,8 @@ namespace IronTuner {
             s->isLocalFavo = true;
         }
 
+        // updateSortedCache();
+         mSelectedIndex = -1;
 
         return true;
     }
