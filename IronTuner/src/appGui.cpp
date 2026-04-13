@@ -1746,6 +1746,7 @@ namespace IronTuner {
                  ( ImGui::IsKeyPressed(ImGuiKey_Space)
                     || ImGui::IsKeyPressed(ImGuiKey_Enter)
                     || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
+                    || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)
                  )
             ) {
                 is_Pressed  = true;
