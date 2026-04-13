@@ -29,6 +29,7 @@ namespace IronTuner {
         int PageIndex             = 1; //radio
         float Scale               = 1.f;
         bool useVirtualKeyboard   = false;
+        bool autoConnectOnStartUp = false;
 
     };
 
@@ -43,7 +44,9 @@ namespace IronTuner {
             {"BackGroundScanLines", s.BackGroundScanLines},
             {"PageIndex", s.PageIndex},
             {"Scale", s.Scale},
-            {"useVirtualKeyboard",s.useVirtualKeyboard}
+            {"useVirtualKeyboard",s.useVirtualKeyboard},
+            {"autoConnectOnStartUp",s.autoConnectOnStartUp},
+
 
         };
     }
@@ -57,6 +60,7 @@ namespace IronTuner {
         s.PageIndex             = j.value("PageIndex", 1);
         s.Scale                 = j.value("Scale", 1.f);
         s.useVirtualKeyboard    = j.value("useVirtualKeyboard", false);
+        s.autoConnectOnStartUp    = j.value("autoConnectOnStartUp", false);
     }
 
 

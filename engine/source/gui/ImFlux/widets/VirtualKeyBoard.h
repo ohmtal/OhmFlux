@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 // ImFlux VirtualGamepadKeyboard / VirtualQwertyGamepadKeyboard
-// TODO TEST !
+// TODO MAKE IT NICER!
 //-----------------------------------------------------------------------------
 #pragma once
 #include "imgui.h"
@@ -38,7 +38,7 @@ namespace ImFlux {
      *
      */
 
-enum class VirtualKeyBoardMode { Qwerty, Sorted };
+enum class VirtualKeyBoardMode { Qwerty, Qwertz, Sorted };
 
 struct VirtualKeyBoard {
 
@@ -64,8 +64,9 @@ struct VirtualKeyBoard {
                 break;
 
             case VirtualKeyBoardMode::Qwerty:
+            case VirtualKeyBoardMode::Qwertz:
             default:
-                QwertyKeyboard();
+                Keyboard();
                 break;
         };
     }
@@ -77,35 +78,52 @@ struct VirtualKeyBoard {
 private:
     bool mVisible = false;
     float mScale = 1.f;
+    bool mUpperCase = true;
 
     VirtualKeyBoardMode mMode = VirtualKeyBoardMode::Qwerty;
     std::string* mInputBuffer = nullptr;
     std::function<void(const std::string& value)> mOnEnter = nullptr;
 
-    void QwertyKeyboard() {
-        const std::vector<std::vector<std::string>> layout = {
-            {"!", "\"", "§", "$", "%", "&", "/", "(", ")", "=", "?"},
-            {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "BACK"},
-            {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"},
-            {"A", "S", "D", "F", "G", "H", "J", "K", "L", "#"},
-            {"Z", "X", "C", "V", "B", "N", "M", ".", ",","+", "-"},
-            {"SPACE", "CLEAR", "CANCEL", "ENTER"}
-        };
 
+    const std::vector<std::vector<std::string>> QwertzLayOut = {
+        {"!", "\"", "§", "$", "%", "&", "/", "(", ")", "=", "?"},
+        {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "BACK"},
+        {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"},
+        {"A", "S", "D", "F", "G", "H", "J", "K", "L", "#"},
+        {"Z", "X", "C", "V", "B", "N", "M", ".", ",","+", "-"},
+        {"SPACE",  "CANCEL", "ENTER"}
+    };
+
+    const std::vector<std::vector<std::string>> QwertyLayOut = {
+        {"!", "\"", "§", "$", "%", "&", "/", "(", ")", "=", "?"},
+        {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "BACK"},
+        {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"},
+        {"A", "S", "D", "F", "G", "H", "J", "K", "L", "#"},
+        {"Z", "X", "C", "V", "B", "N", "M", ".", ",","+", "-"},
+        {"SPACE",  "CANCEL", "ENTER"}
+    };
+
+    void Keyboard() {
         if (!mInputBuffer) return;
+
+        std::vector<std::vector<std::string>> layout = QwertyLayOut;
+        if (mMode == VirtualKeyBoardMode::Qwertz ) layout = QwertzLayOut;
+
         std::string& inputBuffer = *mInputBuffer;
 
+        float buttonSize = 42.0f * mScale ;
 
         ImGui::Begin("Virtual Keyboard", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
         ImGui::InputText("##display", (char*)inputBuffer.c_str(), inputBuffer.capacity(), ImGuiInputTextFlags_ReadOnly);
         ImGui::PopStyleColor();
+        ImGui::SameLine(); if (ImGui::Button("CLEAR", ImVec2(buttonSize * 1.5f, buttonSize / 2.f))) inputBuffer.clear();
+        ImGui::SameLine(); if (ImGui::Button(mUpperCase ? "abc" : "ABC", ImVec2(buttonSize, buttonSize / 2.f))) mUpperCase = !mUpperCase;
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
 
-        float buttonSize = 42.0f * mScale ;
 
         for (int r = 0; r < layout.size(); r++) {
             if (r == 2) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 20.0f);
@@ -115,16 +133,17 @@ private:
                 const std::string& key = layout[r][i];
 
                 float currentWidth = buttonSize;
-                if (key == "SPACE") currentWidth = buttonSize * 3.0f;
-                if (key == "BACK" || key == "ENTER") currentWidth = buttonSize * 1.5f;
+                if (key == "SPACE") currentWidth = buttonSize * 5.0f;
+                else
+                if (key == "BACK" || key == "ENTER" || key == "CANCEL") currentWidth = buttonSize * 1.5f;
 
-                if (ImGui::Button(key.c_str(), ImVec2(currentWidth, buttonSize))) {
+
+                if (ImGui::Button(((mUpperCase) ? key : FluxStr::toLower(key)).c_str(), ImVec2(currentWidth, buttonSize))) {
                     if (key == "SPACE") inputBuffer += " ";
                     else if (key == "BACK") { if (!inputBuffer.empty()) inputBuffer.pop_back(); }
-                    else if (key == "CLEAR") { inputBuffer.clear(); }
                     else if (key == "CANCEL") { Close(false); }
                     else if (key == "ENTER") { Close(true); }
-                    else { inputBuffer += key; }
+                    else { inputBuffer += (mUpperCase) ? key : FluxStr::toLower(key); }
                 }
 
                 if (i < layout[r].size() - 1) ImGui::SameLine();
@@ -132,6 +151,7 @@ private:
             if (ImGui::IsWindowFocused() &&
                 (   ImGui::IsKeyPressed(ImGuiKey_Escape)
                     || ImGui::IsKeyPressed(ImGuiKey_GamepadBack)
+                    || ImGui::IsKeyPressed(ImGuiKey_AppBack)
                     || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight)
                 )) {
                 Close(false);

@@ -1,5 +1,6 @@
 // #version 330 core
-precision mediump float;
+// precision mediump float;
+precision highp float;
 
 // ------------------------------------
 // RadioWana Background Shader: rain

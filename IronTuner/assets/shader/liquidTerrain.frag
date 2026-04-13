@@ -1,5 +1,6 @@
 // do not set a #version, it's done in the loader!
-precision mediump float;
+// precision mediump float;
+precision highp float;
 
 // --------------------------------------------
 // RadioWana Background Shader: liquid

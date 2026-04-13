@@ -139,6 +139,7 @@ set(ENGINE_SOURCES
 set(ENGINE_PRECOMPILED_HEADER
     ${ENGINE_DIR}/core/fluxGlobals.h
     ${ENGINE_DIR}/utils/errorlog.h
+    ${ENGINE_DIR}/gui/ImFlux.h
 )
 
 

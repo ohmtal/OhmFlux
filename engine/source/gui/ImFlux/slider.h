@@ -106,7 +106,7 @@ namespace ImFlux {
         dl->AddLine({pos.x + 2, cap_y + cap_h * 0.5f}, {pos.x + size.x - 2, cap_y + cap_h * 0.5f}, IM_COL32(0, 0, 0, 200), 2.0f); // Center line on cap
 
 
-        if (hovered || is_focused) {
+        if (hovered /*|| is_focused*/) {
             char val_buf[64];
             ImFormatString(val_buf, IM_ARRAYSIZE(val_buf), format, *v);
             ImGui::SetTooltip("%s: %s", label, val_buf);

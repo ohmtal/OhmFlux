@@ -27,12 +27,13 @@ public:
     //----------------------------------------------------------------------
     // STATIC :
     static const char* getKeyName( SDL_Scancode scancode) {
-        retrun SDL_GetScancodeName(scancode);
+        return SDL_GetScancodeName(scancode);
     }
 
     static bool isKeyDown( SDL_Scancode scancode ) {
         int numkeys;
         const bool* kState = SDL_GetKeyboardState(&numkeys);
+        if ((int)scancode >= numkeys) return false;
         return kState[scancode];
     }
 

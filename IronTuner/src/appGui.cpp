@@ -658,9 +658,9 @@ namespace IronTuner {
                 mGuiGlue->showMessage("ERROR", "URL or Name too long!");
                 mStationContextData.showDialog = false;
             } else {
-                ImGui::OpenPopup("Favourite Dialog");
-
-                if (ImGui::BeginPopupModal("Favourite Dialog", &mStationContextData.showDialog, ImGuiWindowFlags_AlwaysAutoResize) ) {
+                // ImGui::OpenPopup("Favourite Dialog");
+                // if (ImGui::BeginPopupModal("Favourite Dialog", &mStationContextData.showDialog, ImGuiWindowFlags_AlwaysAutoResize) ) {
+                if (ImGui::Begin("Favourite Dialog", &mStationContextData.showDialog, ImGuiWindowFlags_AlwaysAutoResize) ) {
                     ImGui::SeparatorText(mStationContextData.isEdit ? "Edit" : "New");
 
                     // char strBuff[1024];
@@ -699,7 +699,8 @@ namespace IronTuner {
                         mStationContextData.showDialog = false;
                     }
 
-                    ImGui::EndPopup();
+                    // ImGui::EndPopup();
+                    ImGui::End();
                 }
 
             }
@@ -733,6 +734,7 @@ namespace IronTuner {
         ;
 
         const bool uuid_DEBUG = false;
+        bool tableIsFocused = false;
 
         int colCount = 3;
         if (uuid_DEBUG) colCount = 5;
@@ -828,6 +830,7 @@ namespace IronTuner {
                         (   ImGui::IsKeyPressed(ImGuiKey_Enter)
                             || ImGui::IsKeyPressed(ImGuiKey_Space)
                             || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
+                            || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)
                         )
                     ) {
                         Tune(*station);
@@ -906,6 +909,11 @@ namespace IronTuner {
             }
             ImGui::EndTable();
 
+
+        }
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows)  && (ImGui::IsKeyPressed(ImGuiKey_AppBack) || ImGui::IsKeyPressed(ImGuiKey_End)) ) {
+            // dLog("call window focus ....");
+            ImGui::SetWindowFocus();
         }
 
     }
@@ -972,21 +980,6 @@ namespace IronTuner {
             Log("[warn] ** Enter Background! **");
         }
 
-        // FIRE TV KEYS:
-        // - Gamepad buttons (integer read with test programm):
-        // - ok (enter) 0  SDL_GAMEPAD_BUTTON_SOUTH
-        // - back 1    SDL_GAMEPAD_BUTTON_BACK
-        // - menu 6    SDL_GAMEPAD_BUTTON_START
-        // - up 11     SDL_GAMEPAD_BUTTON_DPAD_UP
-        // - down 12   SDL_GAMEPAD_BUTTON_DPAD_DOWN
-        // - left 13   SDL_GAMEPAD_BUTTON_DPAD_LEFT
-        // - right 14  SDL_GAMEPAD_BUTTON_DPAD_RIGHT
-        //
-        //
-        // - Multimedia key:
-        // - backward  1073742090  SDL_SCANCODE_MEDIA_REWIND
-        // - play 1073742095   SDL_SCANCODE_MEDIA_PLAYPAUSE
-        // - forward 1073742089    SDL_SCANCODE_MEDIA_FAST_FORWARD
         if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
             switch (event.gbutton.button) {
                 case SDL_GAMEPAD_BUTTON_DPAD_LEFT: {
@@ -1199,6 +1192,18 @@ namespace IronTuner {
                 }
 
 
+                if (ImGui::BeginMenu("Options")) {
+                    ImGui::Checkbox("Auto Connect on start", &getMain()->getAppSettings().autoConnectOnStartUp);
+                    ImGui::Separator();
+                    if (!isAndroidBuild()) {
+                        bool fullScreen = getScreenObject()->getFullScreen();
+                        if (ImGui::Checkbox("Full Screen", &fullScreen)) getScreenObject()->setFullScreen(fullScreen);
+                        ImGui::Checkbox("Virtual Keyboard", &getMain()->getAppSettings().useVirtualKeyboard);
+                    }
+                    ImGui::EndMenu();
+                }
+
+
                 ImGui::MenuItem("Console", NULL, &getMain()->getAppSettings().ShowConsole);
                 // ImGui::SeparatorText("Layout");
                 // if (ImGui::MenuItem("Restore Layout")) { restoreLayout(); }
@@ -1272,6 +1277,7 @@ namespace IronTuner {
             if ( std::ranges::find(mTopScrollerIgnorePages, mTargetPageIndex) == mTopScrollerIgnorePages.end() )
             {
                 bool isConnected = mStreamHandler->isConnected();
+                ImU32 col =  ImFlux::COL32_NEON_ORANGE;
                 std::string displayStr = "";
                 if (  mStreamHandler->getStreamInfo() && mAudioHandler)
                 {
@@ -1279,8 +1285,10 @@ namespace IronTuner {
                         FluxRadio::StreamInfo info = *mStreamHandler->getStreamInfo();
                         displayStr = info.name + "  . . .  " + mAudioHandler->getCurrentTitle();
                     } else if (mStreamHandler->isConnecting()) {
+                        col = ImFlux::COL32_NEON_PURPLE;
                         displayStr =  " * * * connecting * * * " + getMain()->getAppSettings().CurrentStation.name;
                     } else {
+                        col = ImFlux::COL32_NEON_RED;
                         displayStr =  " * * * offline * * * " + getMain()->getAppSettings().CurrentStation.name ;
                     }
                 }
@@ -1289,7 +1297,7 @@ namespace IronTuner {
                 float availWidth = fullWidth - 115.f - ImGui::GetCursorPosX();
                 const float w =  ImFlux::CalcLCDTextScrollerWidth(28);
                 ImFlux::ShiftCursor(ImVec2( availWidth / 2.f -  w / 2, 3.f));
-                ImFlux::LCDTextScroller(displayStr.c_str(), 28,  ImFlux::COL32_NEON_ORANGE);
+                ImFlux::LCDTextScroller(displayStr.c_str(), 28,  col);
 
 
 
@@ -1516,6 +1524,8 @@ namespace IronTuner {
         } else {
             mPages.emplace_back("Equalizer", [this]() { DrawEqualizer(); }, mPages.size());
         }
+
+
         mPages.emplace_back("Favorites", [this]() { DrawFavo(); }, mPages.size());
         mPages.emplace_back("Station Search", [this]() { DrawRadioBrowserWindow(); }, mPages.size());
 
@@ -1551,6 +1561,10 @@ namespace IronTuner {
         //         Log("[info] Detected TouchDevices: %d", numTouchDevices);
         //     }
         // }
+
+        if (getMain()->getAppSettings().autoConnectOnStartUp) {
+            ConnectCurrent();
+        }
 
         return true;
     }
@@ -1639,7 +1653,7 @@ namespace IronTuner {
     }
     // -----------------------------------------------------------------------------
     void AppGui::FavoStar(bool isFavo, bool isFavoList, float radius, const FluxRadio::RadioStation* station){
-        if (ImFlux::FavouriteStar("Favourite", isFavo, radius)) {
+        if (ImFlux::FavouriteStar("", isFavo, radius)) {
             if (isFavoList) {
                 mStations.setFavo(station, !isFavo);
             } else {
@@ -1931,11 +1945,13 @@ namespace IronTuner {
              ImFlux::ShadowText( std::format("Version: {}",getMain()->mSettings.Version).c_str() );
              ImFlux::ShadowText( std::format("(c)2026 Thomas Hühn /  {}",getMain()->mSettings.Company).c_str()  );
              ImGui::Spacing();
-             if (ImGui::CollapsingHeader("Pathes")) {
-                 ImFlux::ShadowText(("Installation path: " + getGamePath()).c_str());
-                 ImFlux::ShadowText(("Settings path: " + getMain()->mSettings.getPrefsPath()).c_str());
-                if (!isAndroidBuild()) ImFlux::ShadowText( ("Recording path: " + mAudioRecorder->getPath()).c_str());
-             }
+             if (!isAndroidBuild() ) {
+                 if (ImGui::CollapsingHeader("Pathes")) {
+                     ImFlux::ShadowText(("Installation path: " + getGamePath()).c_str());
+                     ImFlux::ShadowText(("Settings path: " + getMain()->mSettings.getPrefsPath()).c_str());
+                     if (!isAndroidBuild()) ImFlux::ShadowText( ("Recording path: " + mAudioRecorder->getPath()).c_str());
+                 }
+            }
 
              if ( getMain()->getAppSettings().CurrentStation.name != "" ) {
                  ImGui::Spacing();
@@ -1971,9 +1987,6 @@ namespace IronTuner {
                     ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes free", bufferValues[0]).c_str());
                     ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes buffered", bufferValues[1]).c_str());
                  }
-             }
-             if (ImGui::CollapsingHeader("Options")) {
-                 ImGui::Checkbox("Virtual Keyboard", &getMain()->getAppSettings().useVirtualKeyboard);
              }
 
              ImGui::EndGroup();
