@@ -22,13 +22,15 @@ int main(int argc, char* argv[])
     IronTuner::AppMain* app = new IronTuner::AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "Iron Tuner";
-    app->mSettings.Version = "0.2604XX";
+    app->mSettings.Version = "0.260413.2";
     app->mSettings.enableLogFile   = true;
     app->mSettings.WindowMaximized = false;
     app->mSettings.ScreenWidth  = 1152; // 1920;
     app->mSettings.ScreenHeight =  648; //1080;
     app->mSettings.minWindowSize = {540,300};
     app->mSettings.IconFilename = "assets/icon64.bmp";
+
+    app->mSettings.FullScreen = isAndroidBuild();
 
     // Cursor
     // app->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";

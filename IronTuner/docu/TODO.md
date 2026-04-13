@@ -105,23 +105,24 @@
 - [X] add !WantInput to mouse up for selecting text! 
 - [X] added escape for main menu again - if no other window is focused
     
-- [ ] FireTV
+- [X] FireTV
     - [X] Background rendered left bottom 
-    - [ ] Equalizer does not change (up/down)
+- GamePad:
+    - [X] Equalizer does not change (up/down)
         - ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown)
         - ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp)
-    - [ ] TuneButton does not change (up/down)
+    - [X] TuneButton does not change (up/down)
         - ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown)
         - ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp)
-        
-    - [ ] Trigger Edit for input keyboard  => Virtual keyboard
-    
-    - [ ] GamePad on list Tune and Favorite toggle
+    - [X] GamePad: Trigger Edit for input keyboard  => Virtual keyboard
+    - [X] GamePad on list Tune and Favorite toggle
 
 
-  [ ] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
+- [ ] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
+    - => never called ?! checked on firetv
     
-    
+- [ ] Fix Background shader on OPENGLES/3
+
 - [ ] Display Text from ImGui Font in OpenGL Shader:
 
     - [ ] Add ImGuiTextGlue Class which : 

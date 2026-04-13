@@ -113,7 +113,7 @@ namespace IronTuner {
 
         bool mPageWindowFocused = false;
 
-        bool mUseVirtualKeyBoard = false;
+        // nonsense autodetect by faceDown! bool mUseVirtualKeyBoard = false;
         ImFlux::VirtualKeyBoard* mVirtualKeyBoard;
 
     public:

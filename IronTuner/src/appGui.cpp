@@ -824,7 +824,12 @@ namespace IronTuner {
                     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                         Tune(*station);
                     }
-                    if (ImGui::IsItemFocused() && (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Space))) {
+                    if (ImGui::IsItemFocused() &&
+                        (   ImGui::IsKeyPressed(ImGuiKey_Enter)
+                            || ImGui::IsKeyPressed(ImGuiKey_Space)
+                            || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown)
+                        )
+                    ) {
                         Tune(*station);
                     }
 
@@ -964,7 +969,7 @@ namespace IronTuner {
 
         if (event.type == SDL_EVENT_WILL_ENTER_BACKGROUND) {
             //FIXME background handline FIRETV / ANDROID !
-            Log("[info] ** Enter Background! **");
+            Log("[warn] ** Enter Background! **");
         }
 
         // FIRE TV KEYS:
@@ -1523,15 +1528,29 @@ namespace IronTuner {
 
         //--------- check for virtual keyboard ------------
 
-        mUseVirtualKeyBoard = false;
-        if (isAndroidBuild())  {
-            int numTouchDevices = 0;
-            SDL_GetTouchDevices(&numTouchDevices);
-            if (numTouchDevices <= 0) {
-                mUseVirtualKeyBoard = true;
-            }
-
-        }
+        // dummfug
+        // mUseVirtualKeyBoard = false;
+        // if (isAndroidBuild())  {
+        //     const char* mfg = SDL_GetHint("SDL_ANDROID_MANUFACTURER");
+        //     const char* model = SDL_GetHint("SDL_ANDROID_DEVICE_MODEL_NAME");
+        //
+        //     if (mfg ) Log("[info] ANDROID MANUFACTURER: %s", mfg);
+        //     else Log("[error] SDL_ANDROID_MANUFACTURER not available");
+        //     if (model ) Log("[info] ANDROID DEVICE MODEL NAME: %s", model);
+        //     else Log("[error] SDL_ANDROID_DEVICE_MODEL_NAME not available");
+        //
+        //     if ((mfg && strstr(mfg, "Amazon")) || (model && strstr(model, "AFT"))) {
+        //         mUseVirtualKeyBoard = true;
+        //         Log("[info] Amazon FireTV device detected");
+        //     } else {
+        //         int numTouchDevices = 0;
+        //         SDL_GetTouchDevices(&numTouchDevices);
+        //         if (numTouchDevices <= 0) {
+        //             mUseVirtualKeyBoard = true;
+        //         }
+        //         Log("[info] Detected TouchDevices: %d", numTouchDevices);
+        //     }
+        // }
 
         return true;
     }
@@ -1952,10 +1971,9 @@ namespace IronTuner {
                     ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes buffered", bufferValues[1]).c_str());
                  }
              }
-             if (ImGui::CollapsingHeader("Options")) {
-                 ImGui::Checkbox("Virtual Keyboard", &mUseVirtualKeyBoard);
-             }
-
+             // if (ImGui::CollapsingHeader("Options")) {
+             //     ImGui::Checkbox("Virtual Keyboard", &mUseVirtualKeyBoard);
+             // }
 
              ImGui::EndGroup();
              ImGui::PopStyleColor(3);
@@ -1968,7 +1986,7 @@ namespace IronTuner {
         strncpy(tempBuffer, buffer.c_str(), sizeof(tempBuffer));
 
         ImGuiInputTextFlags flags = 0;
-        if (onEnter && !mUseVirtualKeyBoard) {
+        if (onEnter /* && !mUseVirtualKeyBoard*/) {
             flags = ImGuiInputTextFlags_EnterReturnsTrue;
         }
 
@@ -1978,9 +1996,10 @@ namespace IronTuner {
             return true;
         }
 
-
-        if (ImGui::IsItemActive() && mUseVirtualKeyBoard) {
-            mVirtualKeyBoard->Open(buffer, onEnter);
+        if ( /*mUseVirtualKeyBoard ||*/ ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown) ) {
+            if ( ImGui::IsItemActive() || ImGui::IsItemFocused() ) {
+                mVirtualKeyBoard->Open(buffer, onEnter);
+            }
         }
         return false;
     }

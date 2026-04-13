@@ -130,7 +130,10 @@ private:
                 if (i < layout[r].size() - 1) ImGui::SameLine();
             }
             if (ImGui::IsWindowFocused() &&
-                (ImGui::IsKeyPressed(ImGuiKey_Escape) || ImGui::IsKeyPressed(ImGuiKey_GamepadBack)) ) {
+                (   ImGui::IsKeyPressed(ImGuiKey_Escape)
+                    || ImGui::IsKeyPressed(ImGuiKey_GamepadBack)
+                    || ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight)
+                )) {
                 Close(false);
             }
         }
