@@ -18,9 +18,6 @@
 
 | action     | id | SDL | imgui | 
 |------------|----|------|------|
-| backward  | 1073742090 | SDL_SCANCODE_MEDIA_REWIND | ImGuiKey_MediaRewind |
-| play      | 1073742095 | SDL_SCANCODE_MEDIA_PLAYPAUSE | ImGuiKey_MediaPlayPause |
-| forward   | 1073742089 | SDL_SCANCODE_MEDIA_FAST_FORWARD | ImGuiKey_MediaFastForward |
 
 
 - FireTV Keys when detected as Keyboard:
@@ -32,11 +29,11 @@
 | left       | 1073741904 | SDLK_LEFT | ImGuiKey_LeftArrow |
 | right      | 1073741903 | SDLK_RIGHT | ImGuiKey_RightArrow |
 |--|--|--|--|
-| ok (enter) | 1073741912 | SDLK_RETURN | ImGuiKey_Enter |
-| back       | 1073742106 | SDLK_AC_BACK (or SDLK_BACKSPACE if mapped as backspace) | ImGuiKey_Escape |
-| menu       | 1073741942 | SDLK_MENU | ImGuiKey_Menu |
-| home       | 1073742105 | SDLK_AC_HOME (or SDLK_HOME) | ImGuiKey_Home |
+| ok (enter) | 1073741912 |  |  |
+| back       | 1073742106 |  |  |
+| menu       | 1073741942 |  |  |
+| home       | 1073742105 |  |  |
 |--|--|--|--|
-| backward  | 1073742090 | SDL_SCANCODE_MEDIA_REWIND | ImGuiKey_MediaRewind |
-| play      | 1073742095 | SDL_SCANCODE_MEDIA_PLAYPAUSE | ImGuiKey_MediaPlayPause |
-| forward   | 1073742089 | SDL_SCANCODE_MEDIA_FAST_FORWARD | ImGuiKey_MediaFastForward |
+| backward  | 1073742090 |  |  |
+| play      | 1073742095 |  |  |
+| forward   | 1073742089 |  |  |
