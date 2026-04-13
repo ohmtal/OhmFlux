@@ -16,7 +16,7 @@
 #include "imgui_internal.h"
 #include "gui/ImFlux/widets/VirtualTapePlayer.h"
 #include "gui/ImFlux/widets/VirtualKeyBoard.h"
-
+#include "core/fluxInput.h"
 
 
 namespace IronTuner {

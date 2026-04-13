@@ -22,18 +22,95 @@
 
 - FireTV Keys when detected as Keyboard:
 
-| action     | id | SDL | imgui |
-|------------|----|------|------|
-| up         | 1073741906 | SDLK_UP | ImGuiKey_UpArrow |
-| down       | 1073741905 | SDLK_DOWN | ImGuiKey_DownArrow |
-| left       | 1073741904 | SDLK_LEFT | ImGuiKey_LeftArrow |
-| right      | 1073741903 | SDLK_RIGHT | ImGuiKey_RightArrow |
-|--|--|--|--|
-| ok (enter) | 1073741912 |  |  |
-| back       | 1073742106 |  |  |
-| menu       | 1073741942 |  |  |
-| home       | 1073742105 |  |  |
-|--|--|--|--|
-| backward  | 1073742090 |  |  |
-| play      | 1073742095 |  |  |
-| forward   | 1073742089 |  |  |
+```
+#pragma once
+
+#include "imgui.h"
+#include <SDL3/SDL.h>
+
+// Key definition
+struct KeyDef {
+    const char* action;
+    ImGuiKey imgui_key;
+    SDL_Scancode scancode = SDL_SCANCODE_UNKNOWN;
+};
+
+static KeyDef kKeys[] = {
+
+
+    { "UP",        ImGuiKey_UpArrow   ,     SDL_SCANCODE_UP},
+    { "DOWN",      ImGuiKey_DownArrow ,     SDL_SCANCODE_DOWN },
+    { "LEFT",      ImGuiKey_LeftArrow,      SDL_SCANCODE_LEFT },
+    { "RIGHT",     ImGuiKey_RightArrow,     SDL_SCANCODE_RIGHT },
+
+    { "ENTER",     ImGuiKey_KeypadEnter,    SDL_SCANCODE_KP_ENTER },
+    { "BACK",      ImGuiKey_AppBack ,       SDL_SCANCODE_AC_BACK},
+    { "MENU",      ImGuiKey_None,           SDL_SCANCODE_MENU},
+    { "HOME",      ImGuiKey_None ,          SDL_SCANCODE_AC_HOME},
+
+    { "FORWARD",ImGuiKey_None, SDL_SCANCODE_MEDIA_FAST_FORWARD},
+    { "PLAY",   ImGuiKey_None, SDL_SCANCODE_MEDIA_PLAY_PAUSE},
+    { "REWIND", ImGuiKey_None, SDL_SCANCODE_MEDIA_REWIND},
+
+};
+
+inline void TestKeysWindow()
+{
+    ImGui::Begin("FireTV Key Tester (SDL3)");
+
+
+    ImGui::Columns(3, "key_table");
+    ImGui::Text("Action"); ImGui::NextColumn();
+    ImGui::Text("ImGui"); ImGui::NextColumn();
+    ImGui::Text("SDL"); ImGui::NextColumn();
+    ImGui::Separator();
+
+    int numkeys;
+    const bool* kState = SDL_GetKeyboardState(&numkeys);
+
+
+    for (int i = 0; i < IM_ARRAYSIZE(kKeys); i++)
+    {
+        const KeyDef& key = kKeys[i];
+        bool isDown =  (key.imgui_key != ImGuiKey_None) ? ImGui::IsKeyDown(key.imgui_key) : false;
+
+        ImGui::Text("%s", key.action); ImGui::NextColumn();
+        if (isDown)
+            ImGui::TextColored(ImVec4(0, 1, 0, 1), "%s", ImGui::GetKeyName(key.imgui_key));
+        else
+            ImGui::TextDisabled("---");
+
+        ImGui::NextColumn();
+        isDown = kState[key.scancode];
+        if (isDown)
+            ImGui::TextColored(ImVec4(0, 1, 0, 1), "%s", SDL_GetScancodeName(key.scancode));
+        else
+            ImGui::TextDisabled("---");
+
+
+        ImGui::NextColumn();
+    }
+    ImGui::Columns(1);
+    ImGui::Separator();
+
+
+    ImGui::SeparatorText("ImGui Keys Keys:");
+
+    for (ImGuiKey key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; key = (ImGuiKey)(key + 1))
+    {
+        if (ImGui::IsKeyDown(key))
+        {
+            ImGui::TextColored(ImVec4(1, 1, 0, 1), "AKTIV: %s (ID: %d)", ImGui::GetKeyName(key), key);
+        }
+    }
+
+
+    ImGui::SeparatorText("SDL3 Keys:");
+    for ( int i = 0; i < numkeys; i++ ) {
+        if (kState[i])  ImGui::TextColored(ImVec4(0, 1, 1, 1), "%d:%s", i, SDL_GetScancodeName((SDL_Scancode)i));
+    }
+
+    ImGui::End();
+}
+
+```

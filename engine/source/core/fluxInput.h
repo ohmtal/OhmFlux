@@ -11,7 +11,7 @@
 
 #include "fluxGlobals.h"
 
-// 1. Define your Input Types
+// Define your Input Types
 enum class FluxInputType { KEYBOARD, MOUSE, GAMEPAD, JOYSTICK };
 
 struct FluxBinding {
@@ -24,6 +24,18 @@ private:
     std::unordered_map<std::string, std::vector<FluxBinding>> mBindings;
 
 public:
+    //----------------------------------------------------------------------
+    // STATIC :
+    static const char* getKeyName( SDL_Scancode scancode) {
+        retrun SDL_GetScancodeName(scancode);
+    }
+
+    static bool isKeyDown( SDL_Scancode scancode ) {
+        int numkeys;
+        const bool* kState = SDL_GetKeyboardState(&numkeys);
+        return kState[scancode];
+    }
+
     //----------------------------------------------------------------------
     // Bind Keyboard
     void bindKey(const std::string& action, SDL_Scancode code)
@@ -49,7 +61,6 @@ public:
     //----------------------------------------------------------------------
     bool isActionActive(const std::string& action)
     {
-        // SDL_PumpEvents();
 
         // Get Keyboard State
         int numkeys;
