@@ -20,7 +20,8 @@ int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
 
-    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "4096");
+    // 8192 should be best for the radio ?!
+    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "8192" /*"4096"*/);
 
     IronTuner::AppMain* app = new IronTuner::AppMain();
     app->mSettings.Company = "Ohmtal";
