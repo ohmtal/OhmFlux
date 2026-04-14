@@ -133,6 +133,13 @@ namespace IronTuner {
     void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
         std::string cmd = FluxStr::getWord(cmdline,0);
 
+
+        if (cmd == "pause" ) {
+            bool wasPause = mAudioHandler->getPause();
+            mAudioHandler->setPause(!wasPause);
+            Log("[info] %s", wasPause ? "now playing" : "now paused");
+        }
+
         if (cmd == "ff" ) {
               // size_t bytes = std::stoi (FluxStr::getWord(cmdline,1));
             size_t bytes = 128;

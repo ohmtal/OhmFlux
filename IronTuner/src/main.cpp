@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     IronTuner::AppMain* app = new IronTuner::AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "Iron Tuner";
-    app->mSettings.Version = "0.260414.1";
+    app->mSettings.Version = "0.260414.2";
     app->mSettings.enableLogFile   = true;
     app->mSettings.WindowMaximized = false;
     app->mSettings.ScreenWidth  = 1152; // 1920;

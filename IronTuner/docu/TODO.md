@@ -1,6 +1,11 @@
 
 ## Todos
 
+- [ ] add pause to test buffer 
+
+- [ ] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
+    - => never called ?! checked on firetv
+
 - [X] Carousel View and Redesign:
     - [X] Code Redesign
         - RadioWana Class replacement:
@@ -118,10 +123,8 @@
     - [X] GamePad on list Tune and Favorite toggle
 
 
-- [ ] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
-    - => never called ?! checked on firetv
     
-- [ ] Fix Background shader on OPENGLES/3
+- [X] Fix Background shader on OPENGLES/3
 
 - [ ] Display Text from ImGui Font in OpenGL Shader:
 

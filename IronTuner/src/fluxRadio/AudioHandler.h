@@ -27,6 +27,7 @@ namespace FluxRadio {
     class AudioHandler {
     protected:
         std::atomic<bool> mDecoderInitialized = false;
+        std::atomic<bool> mDecoderPause = false;
         ma_decoder* mDecoder = nullptr;
         SDL_AudioStream* mStream = nullptr;
 
@@ -76,6 +77,10 @@ namespace FluxRadio {
 
         float getVolume() {return mVolume.load(); }
         void setVolume(float value) {return mVolume.store(value); }
+
+        bool getPause() { return mDecoderPause.load(); }
+        void setPause(const bool value) { mDecoderPause.store(value); }
+
 
         std::function<void(const uint8_t*, size_t)> OnAudioStreamData = nullptr;
         std::function<void()> OnTitleTrigger = nullptr;

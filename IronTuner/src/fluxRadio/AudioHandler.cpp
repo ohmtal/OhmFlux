@@ -33,7 +33,7 @@ namespace FluxRadio {
     // -----------------------------------------------------------------------------
     void SDLCALL AudioHandler::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
         auto* self = static_cast<AudioHandler*>(userdata);
-        if (!self || !self->mStreamInfo) return;
+        if (!self || !self->mStreamInfo || self->mDecoderPause.load()) return;
 
         int channels = self->mStreamInfo->channels;
         size_t samplesNeeded = additional_amount / sizeof(float);
@@ -299,7 +299,6 @@ namespace FluxRadio {
                 std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
                 canDecode = mDecoderInitialized.load() && mStreamInfo && (mRawBuffer.size() > framesToDecodePerLoop);
             }
-
             if (!canDecode) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 continue;
