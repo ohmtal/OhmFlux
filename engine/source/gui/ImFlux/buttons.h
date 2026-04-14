@@ -86,7 +86,8 @@ namespace ImFlux {
         else if (hovered) {
             switch (params.mouseOverEffect) {
                 case BUTTON_MO_HIGHLIGHT:
-                    colFactor = ImVec4(1.2f, 1.2f, 1.2f, 1.0f);
+                    // colFactor = ImVec4(1.2f, 1.2f, 1.2f, 1.0f);
+                    colFactor = ImVec4(1.5f, 1.5f, 1.9f, 1.0f);
                     break;
                 case BUTTON_MO_PULSE: {
                     float p = (sinf((float)(time * 10.0)) * 0.5f) + 0.5f;

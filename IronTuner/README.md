@@ -21,5 +21,4 @@ In this Project I use:
 Limitation: 
 - Only MP3 streams.
 - Android Build does not support SSL - only http can be used so far 
-- Noticed interrupted sound on pipewite-pulse. need to test more my ringbuffer/threaded decoder did not fix it 
 

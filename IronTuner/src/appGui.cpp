@@ -493,6 +493,7 @@ namespace IronTuner {
             }
         }
 
+
         mStations.update();
 
 
@@ -981,11 +982,28 @@ namespace IronTuner {
     void AppGui::onEvent(SDL_Event event){
         if (mGuiGlue.get()) mGuiGlue->onEvent(event);
 
+        //FIXME background handling debug log:
+        switch (event.type) {
+    			case SDL_EVENT_WINDOW_SHOWN:
+                    Log("[warn] window shown");
+				break;
+			case SDL_EVENT_WINDOW_HIDDEN:
+				Log("[warn] window hidden");
+                break;
 
-        if (event.type == SDL_EVENT_WILL_ENTER_BACKGROUND) {
-            //FIXME background handline FIRETV / ANDROID !
-            Log("[warn] ** Enter Background! **");
+
+
+            case SDL_EVENT_WILL_ENTER_BACKGROUND:
+                //never called ?!
+                  Log("[warn] ** Enter Background! **");
+                break;
         }
+
+        if (gAppStatus.Visible == false) return;
+
+        //--------------
+
+
 
         if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
             switch (event.gbutton.button) {
@@ -1200,13 +1218,19 @@ namespace IronTuner {
 
 
                 if (ImGui::BeginMenu("Options")) {
-                    ImGui::Checkbox("Auto Connect on start", &getMain()->getAppSettings().autoConnectOnStartUp);
+                    bool changed = false;
+                    changed |= ImGui::Checkbox("Auto Connect on start", &getMain()->getAppSettings().autoConnectOnStartUp);
                     ImGui::Separator();
                     if (!isAndroidBuild()) {
                         bool fullScreen = getScreenObject()->getFullScreen();
-                        if (ImGui::Checkbox("Full Screen", &fullScreen)) getScreenObject()->setFullScreen(fullScreen);
-                        ImGui::Checkbox("Virtual Keyboard", &getMain()->getAppSettings().useVirtualKeyboard);
+                        if (ImGui::Checkbox("Full Screen", &fullScreen)) {
+                            getScreenObject()->setFullScreen(fullScreen);
+                            changed = true;
+                        }
+
+                        changed |= ImGui::Checkbox("Virtual Keyboard", &getMain()->getAppSettings().useVirtualKeyboard);
                     }
+                    if (changed) SaveSettings();
                     ImGui::EndMenu();
                 }
 
@@ -1372,8 +1396,6 @@ namespace IronTuner {
     }
     // -----------------------------------------------------------------------------
     bool AppGui::Initialize(){
-
-
 
         std::string lSettingsFile =
         getGame()->mSettings.getPrefsPath()
@@ -1960,15 +1982,15 @@ namespace IronTuner {
                  }
             }
 
-             if ( getMain()->getAppSettings().CurrentStation.name != "" ) {
-                 ImGui::Spacing();
-                 // ImGui::SeparatorText("Station");
-                 if (ImGui::CollapsingHeader("Station")) {
-                     for (const auto& line: (&getMain()->getAppSettings().CurrentStation)->dump(false)) {
-                         ImFlux::ShadowText(FluxStr::truncate( line , 60).c_str());
-                     }
-                }
-             }
+             // if ( getMain()->getAppSettings().CurrentStation.name != "" ) {
+             //     ImGui::Spacing();
+             //     // ImGui::SeparatorText("Station");
+             //     if (ImGui::CollapsingHeader("Station")) {
+             //         for (const auto& line: (&getMain()->getAppSettings().CurrentStation)->dump(false)) {
+             //             ImFlux::ShadowText(FluxStr::truncate( line , 60).c_str());
+             //         }
+             //    }
+             // }
 
              if ( mStreamHandler->isConnected() && mStreamHandler->getStreamInfo() ) {
                  if (ImGui::CollapsingHeader("Stream Info")) {
