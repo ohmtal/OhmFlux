@@ -19,6 +19,9 @@ IronTuner::AppMain* getMain() {
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
+
+    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "4096");
+
     IronTuner::AppMain* app = new IronTuner::AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "Iron Tuner";

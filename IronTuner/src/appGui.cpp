@@ -1390,8 +1390,6 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     bool AppGui::Initialize(){
 
-
-
         std::string lSettingsFile =
         getGame()->mSettings.getPrefsPath()
         .append(getGame()->mSettings.getSafeCaption())
