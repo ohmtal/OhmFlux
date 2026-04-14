@@ -119,7 +119,25 @@
 
 
 - [ ] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
-    - => never called ?! checked on firetv
+
+    ** ADD TO ENGINE!! **
+```
+int SDLCALL MyEventWatcher(void *userdata, SDL_Event *event) {
+// SDL_EVENT_WILL_ENTER_BACKGROUND
+    if (event->type == SDL_EVENT_DID_ENTER_BACKGROUND) {
+        // PAUSE!!
+
+    }
+// SDL_EVENT_TERMINATING
+// SDL_EVENT_LOW_MEMORY
+// SDL_EVENT_WILL_ENTER_FOREGROUND
+// SDL_EVENT_DID_ENTER_FOREGROUND
+
+    return 0; // 0 bedeutet: Event add to queue
+}
+
+SDL_AddEventWatch(MyEventWatcher, NULL);
+```
     
 - [ ] Fix Background shader on OPENGLES/3
 
