@@ -1,11 +1,25 @@
 
 ## Todos
 
-- [ ] add pause to test buffer 
+- Buffer experiments:
+    - [X] add pause - fill up buffer
+    - [X] add "continue playing on disconnect" << until buffer is empty of cause ;)
+    - [X] max raw buffer size !  => 100MB it simply ignores the new data
 
-- [ ] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
-    - => never called ?! checked on firetv
 
+- [X] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
+
+   
+- [ ] Background (continue playing)
+    - [ ] FIXME: R.drawable.ic_notification
+    - [ ] FIXME: updateAndroidNotification  not send from OnTitleTrigger ? 
+        ==> just got a crash maybe from the update ?!..
+    - [X] gradle.properties => 
+        android.useAndroidX=true
+        android.enableJetifier=true
+    
+
+    
 - [X] Carousel View and Redesign:
     - [X] Code Redesign
         - RadioWana Class replacement:
@@ -123,28 +137,10 @@
     - [X] GamePad on list Tune and Favorite toggle
 
 
-- [ ] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
-
-    ** ADD TO ENGINE!! **
-```
-int SDLCALL MyEventWatcher(void *userdata, SDL_Event *event) {
-// SDL_EVENT_WILL_ENTER_BACKGROUND
-    if (event->type == SDL_EVENT_DID_ENTER_BACKGROUND) {
-        // PAUSE!!
-
-    }
-// SDL_EVENT_TERMINATING
-// SDL_EVENT_LOW_MEMORY
-// SDL_EVENT_WILL_ENTER_FOREGROUND
-// SDL_EVENT_DID_ENTER_FOREGROUND
-
-    return 0; // 0 bedeutet: Event add to queue
-}
-
-SDL_AddEventWatch(MyEventWatcher, NULL);
-```
     
 - [X] Fix Background shader on OPENGLES/3
+
+- [ ] Android: Bluetooth send Songdata to player 
 
 - [ ] Display Text from ImGui Font in OpenGL Shader:
 

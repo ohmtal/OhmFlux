@@ -493,6 +493,8 @@ struct FluxSettings
 
     bool enableLogFile = true;
 
+    bool PauseMainThreadOnWindowMinimized = false;
+
 
     // std::string getPrefsPath() {
     //     return  SDL_GetPrefPath(getSafeCompany().c_str(), getSafeCaption().c_str());

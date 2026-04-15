@@ -30,6 +30,10 @@ namespace IronTuner {
         float Scale               = 1.f;
         bool useVirtualKeyboard   = false;
         bool autoConnectOnStartUp = false;
+        bool continuePlayingAfterDisconnect = false;
+
+        bool disconnectOnBackground = true; //android
+        bool requestBackgroundPlaying = false; //android
 
     };
 
@@ -46,6 +50,10 @@ namespace IronTuner {
             {"Scale", s.Scale},
             {"useVirtualKeyboard",s.useVirtualKeyboard},
             {"autoConnectOnStartUp",s.autoConnectOnStartUp},
+            {"continuePlayingAfterDisconnect", s.continuePlayingAfterDisconnect},
+            //android
+            {"disconnectOnBackground", s.disconnectOnBackground},
+            {"requestBackgroundPlaying", s.requestBackgroundPlaying},
 
 
         };
@@ -61,6 +69,10 @@ namespace IronTuner {
         s.Scale                 = j.value("Scale", 1.f);
         s.useVirtualKeyboard    = j.value("useVirtualKeyboard", false);
         s.autoConnectOnStartUp    = j.value("autoConnectOnStartUp", false);
+        s.continuePlayingAfterDisconnect = j.value("continuePlayingAfterDisconnect", false);
+        //android
+        s.disconnectOnBackground = j.value("disconnectOnBackground", true);
+        s.requestBackgroundPlaying = j.value("requestBackgroundPlaying", false);
     }
 
 

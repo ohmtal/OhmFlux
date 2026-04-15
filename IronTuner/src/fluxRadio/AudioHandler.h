@@ -32,6 +32,8 @@ namespace FluxRadio {
         SDL_AudioStream* mStream = nullptr;
 
         std::vector<uint8_t> mRawBuffer;
+        size_t mRawBufferLimit = 100 * 1024 * 1024; //100MB ... take a long time :P
+
         FluxAudio::AudioBuffer mRingBuffer;
         std::recursive_mutex mBufferMutex;
 

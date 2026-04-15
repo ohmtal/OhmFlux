@@ -506,6 +506,15 @@ void FluxMain::IterateFrame()
 			case SDL_EVENT_WINDOW_HIDDEN:
 				gAppStatus.Visible = false;
 				break;
+			case SDL_EVENT_WINDOW_MINIMIZED:
+				if (mSettings.PauseMainThreadOnWindowMinimized) {
+					dLog("[warn]go into pause....");
+					gAppStatus.Visible = false;
+				}
+				break;
+			case SDL_EVENT_WINDOW_RESTORED:
+				gAppStatus.Visible = true;
+				break;
 			case SDL_EVENT_WINDOW_FOCUS_GAINED:
 				gAppStatus.KeyboardFocus = true;
 				break;

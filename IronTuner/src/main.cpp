@@ -23,10 +23,15 @@ int main(int argc, char* argv[])
     // 8192 should be best for the radio ?!
     SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "8192" /*"4096"*/);
 
+    SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
+    SDL_SetHint("SDL_AUDIO_DEVICE_AS_COMPONENT", "1");
+
+
+
     IronTuner::AppMain* app = new IronTuner::AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "Iron Tuner";
-    app->mSettings.Version = "0.260414.2";
+    app->mSettings.Version = "0.260415.5";
     app->mSettings.enableLogFile   = true;
     app->mSettings.WindowMaximized = false;
     app->mSettings.ScreenWidth  = 1152; // 1920;
@@ -35,6 +40,7 @@ int main(int argc, char* argv[])
     app->mSettings.IconFilename = "assets/icon64.bmp";
 
     app->mSettings.FullScreen = isAndroidBuild();
+    app->mSettings.PauseMainThreadOnWindowMinimized = true;
 
     // Cursor
     // app->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";

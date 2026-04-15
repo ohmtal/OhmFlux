@@ -130,6 +130,8 @@ namespace IronTuner {
 
         ImConsole mConsole;
 
+        const std::string getCurrentTitle() { return mAudioHandler ? mAudioHandler->getCurrentTitle() : "";}
+
         bool Initialize() override;
         void Deinitialize() override;
         void SaveSettings();

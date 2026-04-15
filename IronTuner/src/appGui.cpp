@@ -19,7 +19,123 @@
 #include "core/fluxInput.h"
 
 
+#ifdef __ANDROID__
+#include <jni.h>
+#include <SDL3/SDL_system.h>
+#endif
+
 namespace IronTuner {
+
+    void triggerJavaService() {
+        #ifdef __ANDROID__
+        JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+        if (!env) {
+            Log("[error] IronTuner::triggerJavaService env is NULL!");
+            return;
+        }
+
+        //FIXME com.ohmtal.irontuner.IronTunerActivity !!
+        jobject activity = (jobject)SDL_GetAndroidActivity();
+        if (!activity) return;
+
+        jclass clazz = env->GetObjectClass(activity);
+        if (!clazz) {
+            env->DeleteLocalRef(activity);
+            Log("[error] IronTuner::triggerJavaService clazz not found! (startSdlForegroundService)");
+            return;
+        }
+
+        Log("[info] IronTuner::triggerJavaService startSdlForegroundService");
+        jmethodID method_id = env->GetMethodID(clazz, "startSdlForegroundService", "()V");
+
+        if (method_id) {
+            env->CallVoidMethod(activity, method_id);
+        } else {
+            Log("[error] IronTuner::triggerJavaService Method not found! (startSdlForegroundService)");
+        }
+
+        env->DeleteLocalRef(activity);
+        env->DeleteLocalRef(clazz);
+        #endif
+    }
+
+    void updateAndroidNotification(const std::string& message) {
+        #ifdef __ANDROID__
+        JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+        if (!env) return;
+
+        jobject activity = (jobject)SDL_GetAndroidActivity();
+        if (!activity) return;
+
+        jclass clazz = env->GetObjectClass(activity);
+        if (!clazz) {
+            env->DeleteLocalRef(activity);
+            return;
+        }
+        jmethodID method_id = env->GetMethodID(clazz, "updateNotificationFromCpp", "(Ljava/lang/String;)V");
+
+        if (method_id) {
+            jstring jmsg = env->NewStringUTF(message.c_str());
+            env->CallVoidMethod(activity, method_id, jmsg);
+            env->DeleteLocalRef(jmsg);
+        }
+
+        env->DeleteLocalRef(activity);
+        env->DeleteLocalRef(clazz);
+        #endif
+    }
+
+
+    // -----------------------------------------------------------------------------
+    // Event Watcher - for special events !
+    // -----------------------------------------------------------------------------
+    bool SDLCALL EventWatcher(void *userdata, SDL_Event *event) {
+        if (!userdata) return true;
+        auto* appGui = static_cast<AppGui*>(userdata);
+        bool handled = false;
+
+        // SDL_EVENT_WILL_ENTER_BACKGROUND
+        // SDL_EVENT_TERMINATING
+        // SDL_EVENT_LOW_MEMORY
+        // SDL_EVENT_WILL_ENTER_FOREGROUND
+        // SDL_EVENT_DID_ENTER_FOREGROUND
+        // SDL_EVENT_DID_ENTER_BACKGROUND
+
+        switch ( event->type ) {
+            case SDL_EVENT_WILL_ENTER_BACKGROUND:  {
+                appGui->SaveSettings();
+                gAppStatus.Visible = false;
+                Log("[info] IronTuner WILL ENTER BACKGROUND...");
+
+
+                if (getMain()->getAppSettings().disconnectOnBackground) {
+                    appGui->Disconnect();
+                }
+                else if (getMain()->getAppSettings().requestBackgroundPlaying) {
+                    triggerJavaService();
+                    updateAndroidNotification(appGui->getCurrentTitle());
+                }
+
+                handled = true;
+                break;
+            }
+            case SDL_EVENT_DID_ENTER_FOREGROUND:  {
+                gAppStatus.Visible = true;
+                Log("[info] IronTuner ENTER FOREGROUND...");
+                if ( getMain()->getAppSettings().disconnectOnBackground &&
+                     getMain()->getAppSettings().autoConnectOnStartUp ) {
+                    appGui->ConnectCurrent();
+                }
+                handled = true;
+                break;
+            }
+        }
+
+        // updateAndroidNotification
+
+        return !handled;
+    }
+
     // -----------------------------------------------------------------------------
     // Console handling
     // -----------------------------------------------------------------------------
@@ -64,6 +180,7 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::Disconnect(){
         mStreamHandler->stop();
+        mAudioHandler->reset();
     }
     // -----------------------------------------------------------------------------
     bool AppGui::ConnectCurrent() {
@@ -83,6 +200,7 @@ namespace IronTuner {
         dLog("Connect Current: protocol: %s, url: %s",parts.protocol.c_str(), url.c_str() );
 
 
+        mAudioHandler->reset();
         mStreamHandler->Execute(url);
         if (!getMain()->getAppSettings().CurrentStation.stationuuid.empty()) mRadioBrowser->clickStation(getMain()->getAppSettings().CurrentStation.stationuuid);
         return true;
@@ -139,6 +257,13 @@ namespace IronTuner {
             mAudioHandler->setPause(!wasPause);
             Log("[info] %s", wasPause ? "now playing" : "now paused");
         }
+
+        if (cmd == "stop" ) {
+            mStreamHandler->stop();
+            Log("[info] Stop but audiostream continue");
+        }
+
+
 
         if (cmd == "ff" ) {
               // size_t bytes = std::stoi (FluxStr::getWord(cmdline,1));
@@ -1128,7 +1253,11 @@ namespace IronTuner {
             if (ImGui::Begin("Menu##SidebarOverlay", &getMain()->getAppSettings().SideBarOpen, window_flags)) {
 
                 float baseTargetWidth = 250.f * getScale();
-                if (getMain()->getAppSettings().CurrentStation.name != "") {
+
+                if (isConnected) {
+                    if (ImGui::MenuItem("Stop")) Disconnect();
+                    targetWidth=baseTargetWidth;
+                } else if (getMain()->getAppSettings().CurrentStation.name != "") {
                     std::string curName = FluxStr::truncate(getMain()->getAppSettings().CurrentStation.name , 32);
                     if (savStr != getMain()->getAppSettings().CurrentStation.name) {
                         savStr = getMain()->getAppSettings().CurrentStation.name;
@@ -1169,6 +1298,8 @@ namespace IronTuner {
                     }
                     ImGui::EndMenu();
                 }
+
+
 
                 if (!isAndroidBuild()) {
                     std::vector<float> scales = { 0.75f, 1.f, 1.5f, 2.f};
@@ -1220,6 +1351,7 @@ namespace IronTuner {
                 if (ImGui::BeginMenu("Options")) {
                     bool changed = false;
                     changed |= ImGui::Checkbox("Auto Connect on start", &getMain()->getAppSettings().autoConnectOnStartUp);
+                    changed |= ImGui::Checkbox("Continue playing after unplaned Disconnect.", &getMain()->getAppSettings().continuePlayingAfterDisconnect);
                     ImGui::Separator();
                     if (!isAndroidBuild()) {
                         bool fullScreen = getScreenObject()->getFullScreen();
@@ -1229,7 +1361,14 @@ namespace IronTuner {
                         }
 
                         changed |= ImGui::Checkbox("Virtual Keyboard", &getMain()->getAppSettings().useVirtualKeyboard);
+                    } else {
+                        changed |= ImGui::Checkbox("Stop on enter Background", &getMain()->getAppSettings().disconnectOnBackground);
+                        bool disable = getMain()->getAppSettings().disconnectOnBackground;
+                        if (disable) ImGui::BeginDisabled();
+                        changed |= ImGui::Checkbox("Request Background playing", &getMain()->getAppSettings().requestBackgroundPlaying);
+                        if (disable) ImGui::EndDisabled();
                     }
+
                     if (changed) SaveSettings();
                     ImGui::EndMenu();
                 }
@@ -1239,6 +1378,16 @@ namespace IronTuner {
                 // ImGui::SeparatorText("Layout");
                 // if (ImGui::MenuItem("Restore Layout")) { restoreLayout(); }
 
+
+                if (ImGui::BeginMenu("Controls")) {
+                    ImGui::SeparatorText("Experimental");
+                    // if (ImGui::MenuItem("STOP")) Disconnect();
+                    if (mAudioHandler->getPause())  { if (ImGui::MenuItem("RESUME")) mAudioHandler->setPause(false); }
+                    else { if (ImGui::MenuItem("PAUSE")) mAudioHandler->setPause(true); }
+                    if (ImGui::MenuItem("FF 3sec")) mAudioHandler->fastForward(44100 * 3);
+                    if (ImGui::MenuItem("FF 5sec")) mAudioHandler->fastForward(44100 * 5);
+                    ImGui::EndMenu();
+                }
 
                 ImGui::Separator();
 
@@ -1389,9 +1538,11 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::Deinitialize(){
         SaveSettings();
+        SDL_RemoveEventWatch(EventWatcher, this);
         SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!!
         SAFE_DELETE(mVirtualKeyBoard);
         mStreamHandler->shutdown();
+        mAudioHandler->reset();
         if (mAudioHandler.get()) mAudioHandler->shutDown();
     }
     // -----------------------------------------------------------------------------
@@ -1481,15 +1632,22 @@ namespace IronTuner {
         };
         mStreamHandler->OnAudioChunk = [&](const void* buffer , size_t size) {  mAudioHandler->OnAudioChunk(buffer, size); };
         mStreamHandler->onDisConnected = [&]() {
-            if (mAudioHandler.get()) mAudioHandler->onDisConnected();
+
+            if (!getMain()->getAppSettings().continuePlayingAfterDisconnect) {
+              if (mAudioHandler.get()) mAudioHandler->onDisConnected();
+            }
+
             if (mAudioRecorder.get()) mAudioRecorder->closeFile();
             mRecording = false;
             Log("[info] Stream disconncted.");
         };
 
         mAudioHandler->OnTitleTrigger = [&]() {
-            Log("Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
-            //FIXME toggle delay ... needed for some stations
+            Log("[info]Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
+
+            updateAndroidNotification(mAudioHandler->getCurrentTitle());
+
+
             if (mRecording && mAudioRecorder.get()) mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
         };
 
@@ -1594,6 +1752,11 @@ namespace IronTuner {
         if (getMain()->getAppSettings().autoConnectOnStartUp) {
             ConnectCurrent();
         }
+
+        // ADD Event Watcher
+        SDL_AddEventWatch(EventWatcher, this);
+
+
 
         return true;
     }
@@ -1974,13 +2137,6 @@ namespace IronTuner {
              ImFlux::ShadowText( std::format("Version: {}",getMain()->mSettings.Version).c_str() );
              ImFlux::ShadowText( std::format("(c)2026 Thomas Hühn /  {}",getMain()->mSettings.Company).c_str()  );
              ImGui::Spacing();
-             if (!isAndroidBuild() ) {
-                 if (ImGui::CollapsingHeader("Pathes")) {
-                     ImFlux::ShadowText(("Installation path: " + getGamePath()).c_str());
-                     ImFlux::ShadowText(("Settings path: " + getMain()->mSettings.getPrefsPath()).c_str());
-                     if (!isAndroidBuild()) ImFlux::ShadowText( ("Recording path: " + mAudioRecorder->getPath()).c_str());
-                 }
-            }
 
              // if ( getMain()->getAppSettings().CurrentStation.name != "" ) {
              //     ImGui::Spacing();
@@ -1991,7 +2147,7 @@ namespace IronTuner {
              //         }
              //    }
              // }
-
+//
              if ( mStreamHandler->isConnected() && mStreamHandler->getStreamInfo() ) {
                  if (ImGui::CollapsingHeader("Stream Info")) {
                     FluxRadio::StreamInfo info = *mStreamHandler->getStreamInfo();
@@ -1999,24 +2155,32 @@ namespace IronTuner {
                     DrawInfoContent(&info);
                  }
 
-                 if (ImGui::CollapsingHeader("Audio - Buffer")) {
-                    static std::array<size_t, 3> bufferValues = {0, 0, 0};
-                    static double nextUpdate = 0.0;
-                    const double updateInterval = 0.2;
-
-                    if (ImGui::GetTime() >= nextUpdate) {
-                        bufferValues[0] = mAudioHandler->getRingBufferAvailableForWrite();
-                        bufferValues[1] = mAudioHandler->getRingBufferAvailableForRead();
-                        bufferValues[2] = mAudioHandler->getRawBufferSize();
-                        nextUpdate = ImGui::GetTime() + updateInterval;
-                    }
-                    ImGui::Spacing();
-                    ImFlux::ShadowText(std::format("Raw Buffer  {:8} bytes buffered",bufferValues[2]).c_str() );
-                    ImGui::Spacing();
-                    ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes free", bufferValues[0]).c_str());
-                    ImFlux::ShadowText(std::format("Ring Buffer {:8} bytes buffered", bufferValues[1]).c_str());
+             }
+             if (!isAndroidBuild() ) {
+                 if (ImGui::CollapsingHeader("Pathes")) {
+                     ImFlux::ShadowText(("Installation path: " + getGamePath()).c_str());
+                     ImFlux::ShadowText(("Settings path: " + getMain()->mSettings.getPrefsPath()).c_str());
+                     if (!isAndroidBuild()) ImFlux::ShadowText( ("Recording path: " + mAudioRecorder->getPath()).c_str());
                  }
              }
+             if (ImGui::CollapsingHeader("Audio - Buffer")) {
+                 static std::array<size_t, 3> bufferValues = {0, 0, 0};
+                 static double nextUpdate = 0.0;
+                 const double updateInterval = 0.2;
+
+                 if (ImGui::GetTime() >= nextUpdate) {
+                     bufferValues[0] = mAudioHandler->getRingBufferAvailableForWrite();
+                     bufferValues[1] = mAudioHandler->getRingBufferAvailableForRead();
+                     bufferValues[2] = mAudioHandler->getRawBufferSize();
+                     nextUpdate = ImGui::GetTime() + updateInterval;
+                 }
+                 ImGui::Spacing();
+                 ImFlux::ShadowText(std::format("Raw Buffer  {:8} bytes buffered",bufferValues[2]).c_str() );
+                 ImGui::Spacing();
+                 ImFlux::ShadowText(std::format("Ring Buffer {:8} samples free", bufferValues[0]).c_str());
+                 ImFlux::ShadowText(std::format("Ring Buffer {:8} samples buffered", bufferValues[1]).c_str());
+             }
+
 
              ImGui::EndGroup();
              ImGui::PopStyleColor(3);

@@ -197,6 +197,11 @@ namespace FluxRadio {
     }
     // -----------------------------------------------------------------------------
     void AudioHandler::OnAudioChunk(const void* buffer, size_t size) {
+
+        if (mRawBuffer.size() > mRawBufferLimit)  {
+            return; //i simply return !
+        }
+
         std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
 
         mRawBuffer.insert(mRawBuffer.end(), (uint8_t*)buffer, (uint8_t*)buffer + size);
@@ -252,7 +257,11 @@ namespace FluxRadio {
     }
     // -----------------------------------------------------------------------------
     void AudioHandler::reset ( ){
+
+
         if (!mDecoderInitialized.load()) return;
+        dLog("[info] AudioHandler::reset");
+
         std::lock_guard<std::recursive_mutex> lock(mBufferMutex);
 
         // stop DecoderWorker
@@ -274,6 +283,8 @@ namespace FluxRadio {
         }
         mPendingStreamTitles.clear();
         mCurrentTitle = "";
+        mDecoderPause.store(false);
+
 
     }
     // -----------------------------------------------------------------------------

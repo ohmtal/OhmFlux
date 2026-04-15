@@ -3,7 +3,7 @@
 # Configuration
 # --------------
 DEMO_DIRS := FishTankDemo TestBed LuaTest Amana SoundStudio OhmtalTracker OhmtalAxe IronTuner
-# DEMO_DIRS := TestBed
+# DEMO_DIRS := IronTuner
 
 BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web
@@ -142,6 +142,7 @@ android:
 		echo "--- prepare app for: $$target ---"; \
 		rm -rf $(ANDROID_PROJ_DIR)/app/*; \
 		cp -r $(BASE_BUILD_DIR)/android/_deps/sdl3-src/android-project/app/* $(ANDROID_PROJ_DIR)/app/; \
+		cp -r $(BASE_BUILD_DIR)/android/_deps/sdl3-src/android-project/gradle.properties $(ANDROID_PROJ_DIR)/; \
 		cp build.gradle.template $(ANDROID_PROJ_DIR)/app/build.gradle; \
 		rm -rf $(ANDROID_PROJ_DIR)/app/jni; \
 		echo "--- Packaging APK for: $$target ---"; \
@@ -158,6 +159,7 @@ android:
 		cp -r $$target/assets $$ASSET_DIR; \
 		echo "----- copy Custom settings -----"; \
 		cp -r $$target/res/app/* $(ANDROID_PROJ_DIR)/app/; \
+		cp -r $$target/res/gradle.properties $(ANDROID_PROJ_DIR)/; \
 		echo "----- copy SDL ----"; \
 		find $(BASE_BUILD_DIR)/android -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/ \; ; \
 		find $(BASE_BUILD_DIR)/androidv7a -name "libSDL3.so" -exec cp {} $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/ \; ; \
