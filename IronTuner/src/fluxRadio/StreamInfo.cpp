@@ -12,6 +12,7 @@ namespace FluxRadio {
 
         content_type = FluxNet::NetTools::getHeaderValue(headerData, "Content-Type");
         audio_info   = FluxNet::NetTools::getHeaderValue(headerData, "ice-audio-info");
+        if (audio_info.empty()) audio_info = FluxNet::NetTools::getHeaderValue(headerData, "icy-audio-info");
         if (!audio_info.empty()) ParseIcyAudioInfo(audio_info);
         bitRate      = FluxNet::NetTools::getHeaderValue(headerData, "icy-br");
         description  = FluxNet::NetTools::getHeaderValue(headerData, "icy-description");

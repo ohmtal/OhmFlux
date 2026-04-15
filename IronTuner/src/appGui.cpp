@@ -2226,7 +2226,7 @@ namespace IronTuner {
         // 0.1 sec to let the ringbuffer update
         mSkipToNextTitleTaskID = FluxSchedule.add(0.1f, nullptr, [this]() {
             if (!mStreamHandler->isConnected()) return;
-            if (mAudioHandler->fastForward(44100 * 3)) {
+            if (mAudioHandler->fastForward(44100 * 8)) {
                 SkipToNextTitle();
             }
         });
