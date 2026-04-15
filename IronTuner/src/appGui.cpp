@@ -1363,10 +1363,6 @@ namespace IronTuner {
                         changed |= ImGui::Checkbox("Virtual Keyboard", &getMain()->getAppSettings().useVirtualKeyboard);
                     } else {
                         changed |= ImGui::Checkbox("Stop on enter Background", &getMain()->getAppSettings().disconnectOnBackground);
-                        bool disable = getMain()->getAppSettings().disconnectOnBackground;
-                        if (disable) ImGui::BeginDisabled();
-                        changed |= ImGui::Checkbox("Request Background playing", &getMain()->getAppSettings().requestBackgroundPlaying);
-                        if (disable) ImGui::EndDisabled();
                     }
 
                     if (changed) SaveSettings();
