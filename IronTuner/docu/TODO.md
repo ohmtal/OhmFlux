@@ -10,11 +10,10 @@
 - [X] appGui handle enter Background :  SDL_EVENT_WILL_ENTER_BACKGROUND
 
    
-- [ ] Background (continue playing)
-    - [ ] since i set the SDL hints for android the background service is not needed ?! 
-    - [ ] FIXME: R.drawable.ic_notification
-    - [ ] FIXME: updateAndroidNotification  not send from OnTitleTrigger ? 
-        ==> just got a crash maybe from the update ?!..
+- [X] Background (continue playing)
+    - [X] since i set the SDL hints for android the background service is not needed ?! 
+    - [X] FIXME: R.drawable.ic_notification
+    - [X] FIXME: updateAndroidNotification  not send from OnTitleTrigger ? 
     - [X] gradle.properties => 
         android.useAndroidX=true
         android.enableJetifier=true
@@ -141,7 +140,32 @@
     
 - [X] Fix Background shader on OPENGLES/3
 
+- [X] OpenGL/ES shader:
+    - Liquid looks awfull - on restart it's better but why does reload not work ? 
+
+- [X] on smartphone some times i not able to connect and get no error message - dLog is disabled there also because of release build
+
+- [X] Build
+    - [X] Windows 
+        - [X] Add Icon 
+        - [X] updated docu https://github.com/ohmtal/OhmFlux/blob/main/README_BUILD_WINDOWS.md optional curl 
+    - [~] Emscripten
+    - [X] Android 
+        - [X] shaders fail to compile 
+        - [X] added separate handling in Makefile which fetch [PROJECTDIR]/res/app
+        
+        - [X] Build Gradle and IronTunerActivity / Service 
+            - [X] Background only changeing the AndroidManifest is not enough: FIXME in java source: startForegroundService() and Notification and SDL_APP_WILLENTERBACKGROUND
+            - [X] more ABI's  << firetv and old smartphones => but is dumfug ! 
+
+    - [X] Autoconnect on start 
+
+---
+
+# NEXT VERSION:
+
 - [ ] Android: Bluetooth send Songdata to player 
+
 
 - [ ] Display Text from ImGui Font in OpenGL Shader:
 
@@ -219,34 +243,8 @@ mTexture.setManual(glFontTexId, w, h);
 
 
 
-
-
-- [ ] OpenGL/ES shader:
-    - Liquid looks awfull - on restart it's better but why does reload not work ? 
-
-- [ ] on smartphone some times i not able to connect and get no error message - dLog is disabled there also because of release build
-
-- [ ] Build
-    - [X] Windows 
-        - [X] Add Icon 
-        - [X] updated docu https://github.com/ohmtal/OhmFlux/blob/main/README_BUILD_WINDOWS.md optional curl 
-    - [~] Emscripten
-    - [ ] Android 
-        - [X] shaders fail to compile 
-        - [X] added separate handling in Makefile which fetch [PROJECTDIR]/res/app
-        
-        - [ ] Build Gradle and IronTunerActivity / Service 
-            - [ ] Background only changeing the AndroidManifest is not enough: FIXME in java source: startForegroundService() and Notification and SDL_APP_WILLENTERBACKGROUND
-            - [ ] more ABI's  << firetv and old smartphones 
-
-
 - [ ] Fresh start welcome window with introduction 
         
----
-    
-- [ ] Milestone III
-    
-    - [ ] Autoconnect on start 
     - [ ] maybe: 
         - [ ] (can be a security issue?!) load and render favIcon  - there was also a meta info for the song picture, forgot which station it was
 

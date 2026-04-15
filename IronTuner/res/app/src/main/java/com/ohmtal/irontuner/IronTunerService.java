@@ -3,27 +3,46 @@ package com.ohmtal.irontuner;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.Context;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
+
 
 public class IronTunerService extends Service {
     private static final String CHANNEL_ID = "SdlServiceChannel";
     private static final int NOTIF_ID = 1;
 
+    //--------------------------------------------------------------------------
     private Notification buildNotification(String title, String text) {
+
+        Intent notificationIntent = new Intent(this, IronTunerActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        int iconId = getResources().getIdentifier("ic_launcher", "mipmap", getPackageName());
+
+               // .setSmallIcon(android.R.drawable.ic_menu_info_details)
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(text)
-                .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                .setSmallIcon(iconId != 0 ? iconId : android.R.drawable.ic_menu_info_details)
+                .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setOngoing(true) // deny swipe away
+                .setOngoing(true)
                 .build();
+
     }
-
-
+    //--------------------------------------------------------------------------
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         createNotificationChannel();
@@ -37,23 +56,14 @@ public class IronTunerService extends Service {
 
         return START_NOT_STICKY;
     }
-
-
-
-    public void updateNotificationFromCpp(String text) {
-        Intent intent = new Intent(this, IronTunerService.class);
-        intent.putExtra("update_text", text);
-        this.startService(intent);
+    //--------------------------------------------------------------------------
+    private void updateNotification(String newText) {
+        Notification notification = buildNotification("Iron Tuner", newText);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        manager.notify(NOTIF_ID, notification);
     }
 
-    public void updateNotification(String text) {
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) {
-            manager.notify(NOTIF_ID, buildNotification("Iron Tuner", text));
-        }
-    }
-
-
+    //--------------------------------------------------------------------------
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(
@@ -64,80 +74,9 @@ public class IronTunerService extends Service {
             }
         }
     }
-
-
-
+    //--------------------------------------------------------------------------
     @Override public IBinder onBind(Intent intent) { return null; }
 }
 
 
 
-    // @Override
-    // public int onStartCommand(Intent intent, int flags, int startId) {
-    //     createNotificationChannel();
-    //     startForeground(NOTIF_ID, buildNotification("Iron Tuner", "Running..."));
-    //     if (intent != null && intent.hasExtra("update_text")) {
-    //         updateNotification(intent.getStringExtra("update_text"));
-    //     }
-    //
-    //     return START_NOT_STICKY;
-    // }
-
-
-    // public void updateNotification(final String text) {
-    //     runOnUiThread(new Runnable() {
-    //         @Override
-    //         public void run() {
-    //             // Logik zum Update der Notification
-    //         }
-    //     });
-    // @Override
-    // public int onStartCommand(Intent intent, int flags, int startId) {
-    //     createNotificationChannel();
-    //     Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-    //             .setContentTitle("Iron Tuner")
-    //             .setContentText("Running in background")
-    //             .setSmallIcon(android.R.drawable.ic_menu_info_details)
-    //             .setPriority(NotificationCompat.PRIORITY_LOW)
-    //             .build();
-    //
-    //     startForeground(1, notification);
-    //     return START_NOT_STICKY;
-    // }
-
-// import android.app.Notification;
-// import android.app.NotificationChannel;
-// import android.app.NotificationManager;
-// import android.app.Service;
-// import android.content.Intent;
-// import android.os.Build;
-// import android.os.IBinder;
-// import androidx.core.app.NotificationCompat;
-//
-// public class IronTunerService extends Service {
-//     private static final String CHANNEL_ID = "SdlServiceChannel";
-//
-//     @Override
-//     public int onStartCommand(Intent intent, int flags, int startId) {
-//         createNotificationChannel();
-//         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-//                 .setContentTitle("Iron Tuner")
-//                 .setContentText("running in background")
-//                 .setSmallIcon(android.R.drawable.ic_menu_info_details)
-//                 .build();
-//
-//         startForeground(1, notification);
-//         return START_NOT_STICKY;
-//     }
-//
-//     private void createNotificationChannel() {
-//         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//             NotificationChannel serviceChannel = new NotificationChannel(
-//                     CHANNEL_ID, "SDL Service Channel", NotificationManager.IMPORTANCE_DEFAULT);
-//             getSystemService(NotificationManager.class).createNotificationChannel(serviceChannel);
-//         }
-//     }
-//
-//     @Override public IBinder onBind(Intent intent) { return null; }
-// }
-//

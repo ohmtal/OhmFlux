@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// RadioWana
+// Iron Tuner
 //-----------------------------------------------------------------------------
 #include "appGui.h"
 #include "appMain.h"
@@ -60,7 +60,7 @@ namespace IronTuner {
     }
 
     void updateAndroidNotification(const std::string& message) {
-        return; //FIXME CAUSE CRASH!
+        //FIXME CAUSE CRASH!
         #ifdef __ANDROID__
         JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
         if (!env) return;
@@ -1237,7 +1237,7 @@ namespace IronTuner {
                     if (ImGui::MenuItem("Stop")) Disconnect();
                     targetWidth=baseTargetWidth;
                 } else if (getMain()->getAppSettings().CurrentStation.name != "") {
-                    std::string curName = FluxStr::truncate(getMain()->getAppSettings().CurrentStation.name , 32);
+                    std::string curName = FluxStr::truncate(getMain()->getAppSettings().CurrentStation.name , 25);
                     if (savStr != getMain()->getAppSettings().CurrentStation.name) {
                         savStr = getMain()->getAppSettings().CurrentStation.name;
                         targetWidth = ImGui::CalcTextSize((curName + " F2").c_str()).x + 50.f * getScale();
@@ -1354,7 +1354,7 @@ namespace IronTuner {
                 // ImGui::SeparatorText("Layout");
                 // if (ImGui::MenuItem("Restore Layout")) { restoreLayout(); }
 
-//FIXME: 1. remote control / key, 2. overlay
+                //TODO ? 1. remote control / key, 2. overlay
                 if (ImGui::BeginMenu("Controls")) {
                     ImGui::SeparatorText("Experimental");
                     // if (ImGui::MenuItem("STOP")) Disconnect();

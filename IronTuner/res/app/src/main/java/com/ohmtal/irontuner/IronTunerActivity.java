@@ -25,6 +25,13 @@ public class IronTunerActivity extends SDLActivity {
         }
     }
 
+    public void updateNotificationFromCpp(String text) {
+        Intent intent = new Intent(this, IronTunerService.class);
+        intent.putExtra("update_text", text);
+        this.startService(intent);
+    }
+
+
 
     public void startSdlForegroundService() {
         Intent serviceIntent = new Intent(this, IronTunerService.class);
@@ -32,13 +39,3 @@ public class IronTunerActivity extends SDLActivity {
     }
 
 }
-
-
-    // @Override
-    // protected boolean onUnhandledMessage(int command, Object param) {
-    //     if (command == 0x8001) {
-    //         startSdlForegroundService();
-    //         return true;
-    //     }
-    //     return super.onUnhandledMessage(command, param);
-    // }
