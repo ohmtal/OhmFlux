@@ -101,6 +101,8 @@ namespace IronTuner {
 
         Point2F mAudioLevels = {0.f, 0.f};
 
+        FluxScheduler::TaskID mSkipToNextTitleTaskID = 0;
+        void SkipToNextTitle();
 
         // CARUSEL windows test:
         int mTargetPageIndex = 0;

@@ -251,6 +251,7 @@ namespace IronTuner {
     void AppGui::OnConsoleCommand(ImConsole* console, const char* cmdline){
         std::string cmd = FluxStr::getWord(cmdline,0);
 
+        if (cmd=="skip") SkipToNextTitle();
 
         if (cmd == "pause" ) {
             bool wasPause = mAudioHandler->getPause();
@@ -1351,7 +1352,8 @@ namespace IronTuner {
                 if (ImGui::BeginMenu("Options")) {
                     bool changed = false;
                     changed |= ImGui::Checkbox("Auto Connect on start", &getMain()->getAppSettings().autoConnectOnStartUp);
-                    changed |= ImGui::Checkbox("Continue playing after unplaned Disconnect.", &getMain()->getAppSettings().continuePlayingAfterDisconnect);
+                    changed |= ImGui::Checkbox("Continue playing...", &getMain()->getAppSettings().continuePlayingAfterDisconnect);
+                    ImFlux::Hint("Continue playing after unplaned disconnect.");
                     ImGui::Separator();
                     if (!isAndroidBuild()) {
                         bool fullScreen = getScreenObject()->getFullScreen();
@@ -1369,19 +1371,21 @@ namespace IronTuner {
                     ImGui::EndMenu();
                 }
 
-
+                ImGui::Separator();
                 ImGui::MenuItem("Console", NULL, &getMain()->getAppSettings().ShowConsole);
                 // ImGui::SeparatorText("Layout");
                 // if (ImGui::MenuItem("Restore Layout")) { restoreLayout(); }
 
-
+//FIXME: 1. remote control / key, 2. overlay
                 if (ImGui::BeginMenu("Controls")) {
                     ImGui::SeparatorText("Experimental");
                     // if (ImGui::MenuItem("STOP")) Disconnect();
                     if (mAudioHandler->getPause())  { if (ImGui::MenuItem("RESUME")) mAudioHandler->setPause(false); }
                     else { if (ImGui::MenuItem("PAUSE")) mAudioHandler->setPause(true); }
-                    if (ImGui::MenuItem("FF 3sec")) mAudioHandler->fastForward(44100 * 3);
-                    if (ImGui::MenuItem("FF 5sec")) mAudioHandler->fastForward(44100 * 5);
+                    bool disable =  (mAudioHandler->getNextTitle() == "" || FluxSchedule.isPending(mSkipToNextTitleTaskID));
+                    if (disable) ImGui::BeginDisabled();
+                    if (ImGui::MenuItem("FF to next title")) SkipToNextTitle();
+                    if (disable) ImGui::EndDisabled();
                     ImGui::EndMenu();
                 }
 
@@ -1642,6 +1646,10 @@ namespace IronTuner {
             Log("[info]Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
 
             updateAndroidNotification(mAudioHandler->getCurrentTitle());
+            if ( FluxSchedule.isPending(mSkipToNextTitleTaskID) ) {
+                FluxSchedule.cancel(mSkipToNextTitleTaskID);
+                mSkipToNextTitleTaskID = 0;
+            }
 
 
             if (mRecording && mAudioRecorder.get()) mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
@@ -2206,5 +2214,21 @@ namespace IronTuner {
         return false;
     }
 
+    //FIXME store title to cancel endless skipping ?!
+    void AppGui::SkipToNextTitle() {
+        if ( FluxSchedule.isPending(mSkipToNextTitleTaskID) ) return;
+        if (!mAudioHandler.get() || !mStreamHandler.get()) return;
+        if (mAudioHandler->getNextTitle() == "") {
+            Log("[error]Next title empty can not skip.");
+            return;
+        }
+        // 0.1 sec to let the ringbuffer update
+        mSkipToNextTitleTaskID = FluxSchedule.add(0.1f, nullptr, [this]() {
+            if (!mStreamHandler->isConnected()) return;
+            if (mAudioHandler->fastForward(44100)) {
+                SkipToNextTitle();
+            }
+        });
+    }
 
 }; //namespace

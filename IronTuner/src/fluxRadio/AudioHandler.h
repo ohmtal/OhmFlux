@@ -114,7 +114,7 @@ namespace FluxRadio {
         // this would only make sense if we prebuffer a lot of data
         // when the ringbuffer gets empty it's not filled up again.
         bool fastForward( size_t bytes ) {
-            if ( getRingBufferAvailableForRead() > bytes ) {
+            if ( getRawBufferSize() > 16384 && getRingBufferAvailableForRead() > bytes ) {
                 //FIXME ringbuffer need a simple move of the read needle
                 std::vector<float> dummyBuffer(bytes);
                 return mRingBuffer.pop( dummyBuffer.data(), bytes) > 0;
