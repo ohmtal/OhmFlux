@@ -11,19 +11,31 @@ namespace FluxRadio {
     void StreamInfo::parseHeader(const std::string headerData) {
 
         content_type = FluxNet::NetTools::getHeaderValue(headerData, "Content-Type");
-        audio_info   = FluxNet::NetTools::getHeaderValue(headerData, "ice-audio-info");
-        if (audio_info.empty()) audio_info = FluxNet::NetTools::getHeaderValue(headerData, "icy-audio-info");
-        if (!audio_info.empty()) ParseIcyAudioInfo(audio_info);
-        bitRate      = FluxNet::NetTools::getHeaderValue(headerData, "icy-br");
+        bitRateStr      = FluxNet::NetTools::getHeaderValue(headerData, "icy-br");
         description  = FluxNet::NetTools::getHeaderValue(headerData, "icy-description");
         name         = FluxNet::NetTools::getHeaderValue(headerData, "icy-name");
         url          = FluxNet::NetTools::getHeaderValue(headerData, "icy-url");
+
+        audio_info   = FluxNet::NetTools::getHeaderValue(headerData, "ice-audio-info");
+        if (audio_info.empty()) audio_info = FluxNet::NetTools::getHeaderValue(headerData, "icy-audio-info");
+        if (!audio_info.empty()) {
+            ParseIcyAudioInfo(audio_info);
+        } else {
+            if (!bitRateStr.empty()) {
+                try {
+                    bitrate = std::stoi(bitRateStr);
+                } catch(const std::exception& e) {
+                    bitrate = 0;
+                }
+            }
+        }
+
     };
     //--------------------------------------------------------------------------
     void StreamInfo::dump(){
         Log("Content Type: %s", content_type.c_str());
         Log("Audio: %d Hz, %d kbps, %d Channels", samplerate, bitrate, channels);
-        Log("Bitrate: %s", bitRate.c_str());
+        Log("Bitrate: %s", bitRateStr.c_str());
         Log("Description: %s", description.c_str());
         Log("Name: %s", name.c_str());
         Log("Url: %s", url.c_str());

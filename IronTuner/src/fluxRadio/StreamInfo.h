@@ -28,7 +28,7 @@ namespace FluxRadio {
         uint16_t samplerate = 44100;
         uint16_t bitrate    = 192;
         uint8_t  channels   = 2;
-        std::string bitRate = "";       // icy-br: 192
+        std::string bitRateStr = "";       // icy-br: 192
         std::string description = "";     // icy-description: RADIO BOB - Power Metal
         std::string name = "";     //  icy-name: RADIO BOB - Power Metal
         std::string url = "";     //  icy-url: http://www.rockantenne.de

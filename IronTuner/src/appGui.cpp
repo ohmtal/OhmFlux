@@ -112,7 +112,7 @@ namespace IronTuner {
                 if (getMain()->getAppSettings().disconnectOnBackground) {
                     appGui->Disconnect();
                 }
-                else /*if (getMain()->getAppSettings().requestBackgroundPlaying)*/ {
+                else  {
                     triggerJavaService();
                     updateAndroidNotification(appGui->getCurrentTitle());
                 }
@@ -254,9 +254,8 @@ namespace IronTuner {
         if (cmd=="skip") SkipToNextTitle();
 
         if (cmd == "pause" ) {
-            bool wasPause = mAudioHandler->getPause();
-            mAudioHandler->setPause(!wasPause);
-            Log("[info] %s", wasPause ? "now playing" : "now paused");
+
+            togglePause();
         }
 
         if (cmd == "stop" ) {
@@ -1107,27 +1106,6 @@ namespace IronTuner {
 
     void AppGui::onEvent(SDL_Event event){
         if (mGuiGlue.get()) mGuiGlue->onEvent(event);
-
-        //FIXME background handling debug log:
-        switch (event.type) {
-    			case SDL_EVENT_WINDOW_SHOWN:
-                    Log("[warn] window shown");
-				break;
-			case SDL_EVENT_WINDOW_HIDDEN:
-				Log("[warn] window hidden");
-                break;
-
-
-
-            case SDL_EVENT_WILL_ENTER_BACKGROUND:
-                //never called ?!
-                  Log("[warn] ** Enter Background! **");
-                break;
-        }
-
-        if (gAppStatus.Visible == false) return;
-
-        //--------------
 
 
 

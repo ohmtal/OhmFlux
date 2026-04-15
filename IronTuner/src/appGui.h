@@ -182,6 +182,11 @@ namespace IronTuner {
 
         bool InputText(const char* label, std::string& buffer, std::function<void(const std::string& value)> onEnter = nullptr );
 
+        void togglePause() {
+            bool wasPause = mAudioHandler->getPause();
+            mAudioHandler->setPause(!wasPause);
+            Log("[info] %s", wasPause ? "now playing" : "now paused");
+        }
 
     }; //class
 
