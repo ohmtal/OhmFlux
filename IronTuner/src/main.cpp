@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
     SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "8192" /*"4096"*/);
 
     SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
-    SDL_SetHint("SDL_AUDIO_DEVICE_AS_COMPONENT", "1");
+    // ?? SDL_SetHint("SDL_AUDIO_DEVICE_AS_COMPONENT", "1");
 
 
 
