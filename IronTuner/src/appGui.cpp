@@ -60,6 +60,7 @@ namespace IronTuner {
     }
 
     void updateAndroidNotification(const std::string& message) {
+        return; //FIXME CAUSE CRASH!
         #ifdef __ANDROID__
         JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
         if (!env) return;
@@ -1645,7 +1646,7 @@ namespace IronTuner {
         mAudioHandler->OnTitleTrigger = [&]() {
             Log("[info]Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
 
-            updateAndroidNotification(mAudioHandler->getCurrentTitle());
+            //FIXME check service is enabled updateAndroidNotification(mAudioHandler->getCurrentTitle());
 
 
             if (mRecording && mAudioRecorder.get()) mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());

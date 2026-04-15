@@ -11,6 +11,7 @@
 
    
 - [ ] Background (continue playing)
+    - [ ] since i set the SDL hints for android the background service is not needed ?! 
     - [ ] FIXME: R.drawable.ic_notification
     - [ ] FIXME: updateAndroidNotification  not send from OnTitleTrigger ? 
         ==> just got a crash maybe from the update ?!..
