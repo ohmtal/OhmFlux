@@ -33,7 +33,7 @@ namespace IronTuner {
         bool continuePlayingAfterDisconnect = false;
 
         bool disconnectOnBackground = true; //android
-        bool requestBackgroundPlaying = false; //android
+        // bool requestBackgroundPlaying = false; //android
 
     };
 
@@ -53,7 +53,7 @@ namespace IronTuner {
             {"continuePlayingAfterDisconnect", s.continuePlayingAfterDisconnect},
             //android
             {"disconnectOnBackground", s.disconnectOnBackground},
-            {"requestBackgroundPlaying", s.requestBackgroundPlaying},
+            // {"requestBackgroundPlaying", s.requestBackgroundPlaying},
 
 
         };
@@ -72,7 +72,7 @@ namespace IronTuner {
         s.continuePlayingAfterDisconnect = j.value("continuePlayingAfterDisconnect", false);
         //android
         s.disconnectOnBackground = j.value("disconnectOnBackground", true);
-        s.requestBackgroundPlaying = j.value("requestBackgroundPlaying", false);
+        // s.requestBackgroundPlaying = j.value("requestBackgroundPlaying", false);
     }
 
 

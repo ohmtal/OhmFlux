@@ -116,7 +116,11 @@ private:
         ImGui::Begin("Virtual Keyboard", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
-        ImGui::InputText("##display", (char*)inputBuffer.c_str(), inputBuffer.capacity(), ImGuiInputTextFlags_ReadOnly);
+
+        char tempBuffer[1024];
+        strncpy(tempBuffer, inputBuffer.c_str(), sizeof(tempBuffer));
+        ImGui::InputText("##display", tempBuffer, sizeof(tempBuffer), ImGuiInputTextFlags_ReadOnly);
+
         ImGui::PopStyleColor();
         ImGui::SameLine(); if (ImGui::Button("CLEAR", ImVec2(buttonSize * 1.5f, buttonSize / 2.f))) inputBuffer.clear();
         ImGui::SameLine(); if (ImGui::Button(mUpperCase ? "abc" : "ABC", ImVec2(buttonSize, buttonSize / 2.f))) mUpperCase = !mUpperCase;

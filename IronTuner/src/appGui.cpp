@@ -112,7 +112,7 @@ namespace IronTuner {
                 if (getMain()->getAppSettings().disconnectOnBackground) {
                     appGui->Disconnect();
                 }
-                else if (getMain()->getAppSettings().requestBackgroundPlaying) {
+                else /*if (getMain()->getAppSettings().requestBackgroundPlaying)*/ {
                     triggerJavaService();
                     updateAndroidNotification(appGui->getCurrentTitle());
                 }
@@ -131,8 +131,6 @@ namespace IronTuner {
                 break;
             }
         }
-
-        // updateAndroidNotification
 
         return !handled;
     }
@@ -192,10 +190,11 @@ namespace IronTuner {
         FluxNet::NetTools::URLParts parts = FluxNet::NetTools::parseURL(url);
 
         // FIXME ANDROID SSL but without is better anyway WHY must be a radio station stream encrypted ?
-        if (isAndroidBuild())
+        // TESTING
+        // if (isAndroidBuild())
         {
             if (parts.protocol  == "https" ) {
-                url = "http://" + parts.hostname + "/" + parts.path;
+                url = "http://" + parts.hostname +  parts.path;
             }
         }
         dLog("Connect Current: protocol: %s, url: %s",parts.protocol.c_str(), url.c_str() );
@@ -1646,7 +1645,7 @@ namespace IronTuner {
         mAudioHandler->OnTitleTrigger = [&]() {
             Log("[info]Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
 
-            //FIXME check service is enabled updateAndroidNotification(mAudioHandler->getCurrentTitle());
+            updateAndroidNotification(mAudioHandler->getCurrentTitle());
 
 
             if (mRecording && mAudioRecorder.get()) mAudioRecorder->openFile(mAudioHandler->getCurrentTitle());
@@ -1702,8 +1701,8 @@ namespace IronTuner {
         mPages.emplace_back("Radio", [this]() { DrawRadio(); }, mPages.size());
 
         // rack on desktop / Equalizer9Band on android
-        mTopScrollerIgnorePages.push_back(mPages.size());
         if (!isAndroidBuild()) {
+            mTopScrollerIgnorePages.push_back(mPages.size());
             mPages.emplace_back("Rack", [this]() {
                 DrawRadio();
                 DrawEqualizer();

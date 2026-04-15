@@ -22,7 +22,7 @@ namespace ImFlux {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
-        const ImGuiID id = window->GetID(tooltip.c_str());
+        const ImGuiID id = window->GetID((tooltip + "##FavouriteStar").c_str());
         ImVec2 pos = ImGui::GetCursorScreenPos();
 
         float maxRadius = radius;
