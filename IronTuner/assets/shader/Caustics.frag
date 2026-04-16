@@ -49,7 +49,7 @@ void main() {
 
     float energy = (u_rmsL + u_rmsR) * 0.5;
     vec3 finalColor = color + causticColor + (causticColor /** highs*/ * 2.0);
-    finalColor += energy * 0.15 ; //* bass;
+//     finalColor += energy * 0.15 ; //* bass;
 
     // Vignette
     float vignette = 1.0 - length(static_uv - 0.5) * 1.1;
