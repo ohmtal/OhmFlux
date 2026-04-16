@@ -1,3 +1,4 @@
+// the for ... 50 is heavy!! 8 also works .. but does not look so good :P
 precision mediump float;
 
 uniform float u_time;
