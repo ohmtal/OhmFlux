@@ -1,5 +1,7 @@
 precision mediump float;
 
+out vec4 FragColor;
+
 uniform float u_time;
 uniform vec2 u_res;
 uniform float u_rmsL;
@@ -42,5 +44,5 @@ void main() {
 //      finalColor += vec3(0.02, 0.03, 0.05) * energy;
      finalColor += vec3(0.04, 0.06, 0.1) * energy;
 
-    gl_FragColor = vec4(finalColor, 1.0);
+    FragColor = vec4(finalColor, 1.0);
 }

@@ -43,9 +43,15 @@ namespace IronTuner {
              , "glowLightning.frag"     // 5
              , "bars.frag"              // 6
              , "liquidAura.frag"        // 7
-             , "liquidAura2.frag"        // 8
+             , "liquidAura2.frag"       // 8
+             , "CausticsDark.frag"      // 9
+             , "Caustics.frag"          // 10
+             , "CausticsHigh.frag"      // 11
+             , "starfield.frag"         // 12 
+             , "CausticsMetal.frag"     // 13
 
-             , "test.frag" //9
+
+             , "test.frag" 
         };
 
 
@@ -68,7 +74,12 @@ namespace IronTuner {
             , "Glow and Lightning"  // 5
             , "Bars"                // 6
             , "Liquid Aura"         // 7
-            , "Liquid Aura II"         // 8
+            , "Liquid Aura II"       // 8
+            , "Caustics Dark"      // 9
+            , "Caustics"          // 10
+            , "Caustics High"      // 11
+            , "Starfield"         // 12 
+            , "Caustics Metal" // 13
 
             , "TEST!"
         };

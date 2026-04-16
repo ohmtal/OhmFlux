@@ -26,7 +26,7 @@ void main() {
     float c = 1.0;
     float intensity = 0.005;
 
-    for (int n = 0; n < 8; n++) {
+    for (int n = 0; n < 50; n++) {
         float t =  time * (1.0 - (3.0 / float(n + 1)));
         i = p + vec2(cos(t - i.x) + sin(t + i.y), sin(t - i.y) + cos(t + i.x));
         c += 0.1 / length(vec2(p.x / (sin(i.x + t) / intensity), p.y / (cos(i.y + t) / intensity)));
@@ -44,10 +44,14 @@ void main() {
 
     float energy = (u_rmsL + u_rmsR) * 0.5;
     vec3 finalColor = color + causticColor + (causticColor /** highs*/ * 2.0);
+//     finalColor += energy * 0.15 ; //* bass;
 
     // Vignette
     float vignette = 1.0 - length(static_uv - 0.5) * 0.9;
     finalColor *= clamp(vignette, 0.0, 1.0);
+
+
+
 
     FragColor = vec4(finalColor, 1.0);
 }
