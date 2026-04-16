@@ -1593,7 +1593,7 @@ namespace IronTuner {
                 //deffered connect !
                 const float baseDelay = 2.0f;
                 float delay = baseDelay * (1.0f + std::log(static_cast<float>(currentAttempt)));
-                if (isAndroidBuild()) {
+                {
                     updateAndroidNotification(std::format("Reconnecting #{} in {}....", std::to_string(currentAttempt), delay));
                 }
                 std::thread([this, delay]() {
@@ -1607,7 +1607,7 @@ namespace IronTuner {
 
             } else {
                 mGuiGlue->showMessage("Stream Errror "+std::to_string(errorCode), errorMsg);
-                updateAndroidNotification("offline " + std::to_string(errorCode) );
+                updateAndroidNotification("offline Error:" + errorMsg );
             }
         };
 
