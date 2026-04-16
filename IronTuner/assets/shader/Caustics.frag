@@ -31,7 +31,8 @@ void main() {
     float c = 1.0;
     float intensity = 0.005;
 
-    for (int n = 0; n < 50; n++) {
+    // 50 did look so cool - but heavy load on old intel graphics :P
+    for (int n = 0; n < 8; n++) {
         float t =  time * (1.0 - (3.0 / float(n + 1)));
         i = p + vec2(cos(t - i.x) + sin(t + i.y), sin(t - i.y) + cos(t + i.x));
         c += 0.1 / length(vec2(p.x / (sin(i.x + t) / intensity), p.y / (cos(i.y + t) / intensity)));
