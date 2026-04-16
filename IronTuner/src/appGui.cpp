@@ -1593,7 +1593,9 @@ namespace IronTuner {
                 //deffered connect !
                 const float baseDelay = 2.0f;
                 float delay = baseDelay * (1.0f + std::log(static_cast<float>(currentAttempt)));
-                if (isAndroidBuild()) updateAndroidNotification(std::format("Reconnecting #{} in {}....", std::to_string(currentAttempt), delay);
+                if (isAndroidBuild()) {
+                    updateAndroidNotification(std::format("Reconnecting #{} in {}....", std::to_string(currentAttempt), delay));
+                }
                 std::thread([this, delay]() {
                     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
                     if (mIsShuttingDown.load()) return;
