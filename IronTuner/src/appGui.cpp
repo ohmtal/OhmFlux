@@ -1583,7 +1583,12 @@ namespace IronTuner {
         };
 
         mStreamHandler->OnError = [&](const uint16_t errorCode, const std::string errorMsg) {
-            if ( ( errorCode == 28 || errorCode == 56) && mReconnectOnTimeOutCount < 5 ) {
+
+            bool reconnect =  errorCode == 28 || errorCode == 56 ;
+
+            if ( getMain()->getAppSettings().CurrentStation.clickcount > 1 && errorCode == 6 ) reconnect = true;
+
+            if ( reconnect && mReconnectOnTimeOutCount < 5 ) {
                 int currentAttempt = ++mReconnectOnTimeOutCount;
                 //deffered connect !
                 const float baseDelay = 2.0f;
