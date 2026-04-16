@@ -1608,6 +1608,7 @@ namespace IronTuner {
             } else {
                 mGuiGlue->showMessage("Stream Errror "+std::to_string(errorCode), errorMsg);
                 updateAndroidNotification("offline Error:" + errorMsg );
+                mReconnectOnTimeOutCount = 0;
             }
         };
 

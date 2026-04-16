@@ -170,7 +170,7 @@
 
 # NEXT VERSION:
 
-- [ ] Android: Bluetooth send Songdata to player 
+- [ ] Android: Bluetooth send Songdata to player << MediaSession API
 
 
 - [ ] Display Text from ImGui Font in OpenGL Shader:

@@ -42,6 +42,10 @@ namespace IronTuner {
              , "glow.frag"              // 4
              , "glowLightning.frag"     // 5
              , "bars.frag"              // 6
+             , "liquidAura.frag"        // 7
+             , "liquidAura2.frag"        // 8
+
+             , "test.frag" //9
         };
 
 
@@ -63,6 +67,10 @@ namespace IronTuner {
             , "Glow and Bars II"    // 4
             , "Glow and Lightning"  // 5
             , "Bars"                // 6
+            , "Liquid Aura"         // 7
+            , "Liquid Aura II"         // 8
+
+            , "TEST!"
         };
 
 
