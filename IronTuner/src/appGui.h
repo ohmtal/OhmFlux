@@ -94,7 +94,7 @@ namespace IronTuner {
         bool mRecordingMixTape = false; //<< FIXME !!
 
 
-        int mReconnectOnTimeOutCount = 0;
+        int mReconnectOnTimeOutCount{0};
         bool mTuningMode = false;
         FluxScheduler::TaskID mTuningResetTaskID = 0;
         const double mTuningResetSec = 3.0f;
@@ -118,6 +118,8 @@ namespace IronTuner {
         // nonsense autodetect by faceDown!
         // bool mUseVirtualKeyBoard = false;
         ImFlux::VirtualKeyBoard* mVirtualKeyBoard;
+
+        std::atomic<bool>mIsShuttingDown{false};
 
     public:
         Point2F getAudioLevels() const;

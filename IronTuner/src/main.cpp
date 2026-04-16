@@ -20,8 +20,9 @@ int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
 
-    // 8192 should be best for the radio ?!
-    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "8192" /*"4096"*/);
+    // 8192 should be best for the radio ?! NOT ..
+    /*if (!isAndroidBuild()) */
+    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "1024" /*"4096"*/);
 
     SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
     // ?? SDL_SetHint("SDL_AUDIO_DEVICE_AS_COMPONENT", "1");
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
     IronTuner::AppMain* app = new IronTuner::AppMain();
     app->mSettings.Company = "Ohmtal";
     app->mSettings.Caption = "Iron Tuner";
-    app->mSettings.Version = "0.260415.23";
+    app->mSettings.Version = "0.260416.0";
     app->mSettings.enableLogFile   = true;
     app->mSettings.WindowMaximized = false;
     app->mSettings.ScreenWidth  = 1152; // 1920;

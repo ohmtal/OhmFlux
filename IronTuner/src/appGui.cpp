@@ -60,7 +60,6 @@ namespace IronTuner {
     }
 
     void updateAndroidNotification(const std::string& message) {
-        //FIXME CAUSE CRASH!
         #ifdef __ANDROID__
         JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
         if (!env) return;
@@ -83,6 +82,8 @@ namespace IronTuner {
 
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
+        #else
+        Log("[info] %s", message.c_str());
         #endif
     }
 
@@ -197,7 +198,7 @@ namespace IronTuner {
                 url = "http://" + parts.hostname +  parts.path;
             }
         }
-        dLog("Connect Current: protocol: %s, url: %s",parts.protocol.c_str(), url.c_str() );
+        // dLog("Connect Current: protocol: %s, url: %s",parts.protocol.c_str(), url.c_str() );
 
 
         mAudioHandler->reset();
@@ -1516,6 +1517,7 @@ namespace IronTuner {
     }
     // -----------------------------------------------------------------------------
     void AppGui::Deinitialize(){
+        mIsShuttingDown.store(true);
         SaveSettings();
         SDL_RemoveEventWatch(EventWatcher, this);
         SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!!
@@ -1581,18 +1583,25 @@ namespace IronTuner {
         };
 
         mStreamHandler->OnError = [&](const uint16_t errorCode, const std::string errorMsg) {
-
-            if (errorCode == 28 && mReconnectOnTimeOutCount < 3) {
-                mReconnectOnTimeOutCount ++;
+            if ( ( errorCode == 28 || errorCode == 56) && mReconnectOnTimeOutCount < 5 ) {
+                int currentAttempt = ++mReconnectOnTimeOutCount;
                 //deffered connect !
-                FluxSchedule.add(0.5f, this,[&]() { ConnectCurrent(); });
+                const float baseDelay = 2.0f;
+                float delay = baseDelay * (1.0f + std::log(static_cast<float>(currentAttempt)));
+                if (isAndroidBuild()) updateAndroidNotification(std::format("Reconnecting #{} in {}....", std::to_string(currentAttempt), delay);
+                std::thread([this, delay]() {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));
+                    if (mIsShuttingDown.load()) return;
+                    try {
+                        if (!mStreamHandler->isConnected()) this->ConnectCurrent();
+                    } catch (...) {
+                    }
+                }).detach();
+
             } else {
                 mGuiGlue->showMessage("Stream Errror "+std::to_string(errorCode), errorMsg);
+                updateAndroidNotification("offline " + std::to_string(errorCode) );
             }
-
-
-
-
         };
 
         mStreamHandler->OnConnected = [&]() {
@@ -1622,7 +1631,7 @@ namespace IronTuner {
         };
 
         mAudioHandler->OnTitleTrigger = [&]() {
-            Log("[info]Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
+            // Log("[info]Streamtitle %s", mAudioHandler->getCurrentTitle().c_str());
 
             updateAndroidNotification(mAudioHandler->getCurrentTitle());
             if ( FluxSchedule.isPending(mSkipToNextTitleTaskID) ) {

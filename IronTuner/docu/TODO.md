@@ -1,6 +1,12 @@
 
 ## Todos
 
+- [ ] scheduled reconnect on error 56 (network gone / android wlan)
+- [ ] notifies
+    - [ ] offline update 
+    - [ ] only when in background ?! 
+    - [ ] ...
+
 - Buffer experiments:
     - [X] add pause - fill up buffer
     - [X] add "continue playing on disconnect" << until buffer is empty of cause ;)
