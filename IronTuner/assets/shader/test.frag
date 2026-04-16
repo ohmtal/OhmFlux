@@ -21,8 +21,7 @@ vec3 hsv2rgb(vec3 c) {
 
 
 void main() {
-
-    vec3 finalColor;
+    vec3 finalColor = vec3(0.0,0.0,0.0);
     vec2 uv = gl_FragCoord.xy / u_res.xy;
     vec2 p = uv * 3.0;
 
@@ -44,20 +43,10 @@ void main() {
 
 
 
-    c /= 256.0 * (energy + 0.1);
+    c /= 2.0 * (energy + 0.1);
     c =  2.0 - pow(c, 2.0);
 
-
-
-
-    vec3 deepWater = vec3(0.01, 0.01, 0.01)  ;
-    vec3 lightWater = vec3(0.1, 0.1, 0.1) ;
-
-
-
-     float highlights = smoothstep(0.6, 0.9, c);
-
-     finalColor += mix(deepWater, lightWater, c);
+    float highlights = smoothstep(0.6, 0.9, c);
     finalColor += highlights * ( energy * 0.2 ) ;
 
 
