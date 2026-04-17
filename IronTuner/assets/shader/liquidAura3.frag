@@ -1,5 +1,5 @@
 //---------------------------------------------------------
-// Liquid
+// Liquid Aura III
 // - but with more random flow
 // - and energy(rms) saturation only
 // - less loops with opengl ES

@@ -284,7 +284,11 @@ namespace IronTuner {
             // app->mSettings.frameLimiter = 32.f;
         }
 
-        if (cmd == "testes") getMain()->getBackGroundRenderEffect()->mShaderESTesting = true;
+        if (cmd == "testes") {
+            getMain()->getBackGroundRenderEffect()->mShaderESTesting = !getMain()->getBackGroundRenderEffect()->mShaderESTesting ;
+            Log("OpenGL ES mode is: %d", getMain()->getBackGroundRenderEffect()->mShaderESTesting );
+        }
+
 
         if (cmd == "dumpLocal" ) {  //STATION CACHE
             mStations.dumpStations();
