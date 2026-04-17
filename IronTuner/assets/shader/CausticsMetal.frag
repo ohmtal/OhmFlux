@@ -32,7 +32,7 @@ void main() {
     // ~~~~~~~~ LIQUID ~~~~~~~~~~
     float c = 0.0;
 
-    for(float i = 1.0; i < 16.0; i++) {
+    for(float i = 1.0; i < 8.0; i++) {
         uv.x += 0.3 / i * sin(i * 3.0 * uv.y + time);
         uv.y += 0.4 / i * cos(i * 2.5 * uv.x + time);
 
@@ -124,8 +124,8 @@ void main() {
 
     // -------------
 
-    float vignette = 1.0 - length(uv - 0.5) * 1.2;
-    finalColor *= clamp(vignette, 0.0, 1.0);
+    float darken = 1.0 - length(uv - 0.5) * 0.8;
+    finalColor *= clamp(darken, 0.0, 1.0);
 
     FragColor = vec4(finalColor, 1.0);
 }

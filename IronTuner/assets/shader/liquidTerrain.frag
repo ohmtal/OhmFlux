@@ -35,7 +35,7 @@ void main() {
     float rms = (u_rmsL + u_rmsR) * 0.5;
 
     // drifting time base
-    float slowTime = u_time * 3.0;
+    float slowTime = u_time * 0.4; //3.0;
 
     // Liquid deformation logic
     float wave = 0.0;

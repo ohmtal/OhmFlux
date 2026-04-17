@@ -72,8 +72,8 @@ void main() {
     }
 
 
-    float vignette = 1.0 - length(uv - 0.5) * 1.2;
-    finalColor *= clamp(vignette, 0.0, 1.0);
+    float darken = 1.0 - length(uv - 0.5) * 0.8;
+    finalColor *= clamp(darken, 0.0, 1.0);
 
     FragColor = vec4(finalColor, 1.0);
 }

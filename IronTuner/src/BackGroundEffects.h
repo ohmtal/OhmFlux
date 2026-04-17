@@ -67,7 +67,7 @@ namespace IronTuner {
         //-------------------
         const std::vector<std::string> mFragShaderCaptions = {
             "Glow and Bars"         // 0
-            , "Liquid Pulse"        // 1
+            , "Milchglas"           // 1
             , "Rain"                // 2
             , "Rain and Glow"       // 3
             , "Glow and Bars II"    // 4
@@ -75,11 +75,11 @@ namespace IronTuner {
             , "Bars"                // 6
             , "Liquid Aura"         // 7
             , "Liquid Aura II"       // 8
-            , "Caustics Dark"      // 9
+            , "Liquid Blue"         // 9
             , "Caustics"          // 10
-            , "Caustics High"      // 11
-            , "Starfield"         // 12 
-            , "Caustics Metal" // 13
+            , "Caustics II"      // 11
+            , "Neon Starfield"         // 12
+            , "Liquid Metal" // 13
 
             , "TEST!"
         };

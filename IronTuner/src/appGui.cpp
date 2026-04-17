@@ -1315,12 +1315,12 @@ namespace IronTuner {
                                 getMain()->setBackGroundRenderId((int)i, getMain()->getAppSettings().BackGroundScanLines);
                             }
                         }
-                        ImGui::Separator();
-                        if (ImGui::Checkbox("Render Scanlines",&getMain()->getAppSettings().BackGroundScanLines)) {
-                            if (getMain()->getAppSettings().BackGroundRenderId >=0) {
-                                getMain()->setBackGroundRenderId(getMain()->getAppSettings().BackGroundRenderId, getMain()->getAppSettings().BackGroundScanLines);
-                            }
-                        }
+                        // ImGui::Separator();
+                        // if (ImGui::Checkbox("Render Scanlines",&getMain()->getAppSettings().BackGroundScanLines)) {
+                        //     if (getMain()->getAppSettings().BackGroundRenderId >=0) {
+                        //         getMain()->setBackGroundRenderId(getMain()->getAppSettings().BackGroundRenderId, getMain()->getAppSettings().BackGroundScanLines);
+                        //     }
+                        // }
 
                     }
 
