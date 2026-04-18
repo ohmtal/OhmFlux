@@ -52,8 +52,8 @@ void main() {
 
     // -------------------- LIGHTNING BOLT (between L and R) --------------------
     // Define the two centers (matching your Glow positions)
-    vec2 posL = vec2(-u_rmsL * 1.5, 0.0);
-    vec2 posR = vec2( u_rmsR * 1.5, 0.0);
+    vec2 posL = vec2(-u_rmsL * 2.0, 0.0);
+    vec2 posR = vec2( u_rmsR * 2.0, 0.0);
 
      // Calculate distance to the line segment between posL and posR
     vec2 dir = posR - posL;
@@ -66,24 +66,24 @@ void main() {
 
     float waveSum = 0.0;
 
-    for (int i = 0; i < 32; i+=4) {
-        float t = float(i) / 8.0;
-        float freq = u_freqs[i];
-        if (i == 0) freq *= 0.85; //normalize first bass bar
-        float waveFreq = 8.5 + t * 15.0;
-        float phase = u_time * (2.0 + t) + t * 6.28;
-        waveSum += sin(uv.x * waveFreq + phase) * freq * 0.05 ;
-
+     for (int i = 0; i < 32; i++) {
+        float t = float(i) / 2.0;
+        float freq =  u_freqs[i] * 0.1;
+        float waveFreq = 0.5 + t * 10.0;
+        float phase = 2.0; //u_time * 0.5 ; //* (1.0 + t) + t * //6.28;
+        waveSum += sin(uv.x * waveFreq + phase) * freq;
     }
 
-    float boltIntensity = smoothstep(0.1, 0.0, distToLine + waveSum );
+    float boltShape = abs(distToLine +  waveSum) ;
+    float boltIntensity = smoothstep(0.2, 0.0, boltShape) * 2.0;
+//     float boltIntensity = smoothstep(0.2, 0.0, distToLine + waveSum );
 
-    float hue = fract(u_time * 0.5);
-    vec3 colorDeep = hsv2rgb(vec3(hue, 0.5+energy*0.2, 0.2)) * 4.0;
+    float hue = fract(u_time * 0.2);
+    vec3 colorDeep = hsv2rgb(vec3(hue, 0.5+energy*0.5, 1.0));
 
-    vec3 boltColor = colorDeep * boltIntensity  * 2.0;
+    vec3 boltColor = colorDeep * boltIntensity ;
 
-    finalColor += boltColor * smoothstep(0.02, 1.0, energy) ;
+    finalColor += boltColor * smoothstep(0.01, 0.1, energy) ;
 
 
     // --- darken ----
