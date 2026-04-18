@@ -79,6 +79,7 @@ void main() {
 */
 
     for (int i = 0; i < 32; i+=FreqInc) {
+        if ( i > int(u_freqCount) ) return;
         float t = float(i) / 32.0;
         float freq = u_freqs[i];
         if (i == 0) freq *= 0.85; //normalize first bass bar

@@ -15,7 +15,7 @@ uniform bool  u_scanlines;
 #ifdef GL_ES
 const int FreqInc = 16;
 #else
-const int FreqInc = 1;
+const int FreqInc = 16;
 #endif
 
 
@@ -42,8 +42,9 @@ void main() {
     float waveSum = 0.0;
 
 
-    for (int i = 0; i < int(u_freqCount); i+=FreqInc) {
-        float t = float(i) / u_freqCount;
+    for (int i = 0; i < 32; i+=FreqInc) {
+        if ( i > int(u_freqCount) ) return;
+        float t = float(i) / 32.0;
         float freq = u_freqs[i];
         if (i == 0) freq *= 0.85; //normalize first bass bar
         float waveFreq = 1.5 + t * 15.0;
