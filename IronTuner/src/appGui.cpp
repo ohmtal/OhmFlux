@@ -1365,6 +1365,7 @@ namespace IronTuner {
                     // if (ImGui::MenuItem("STOP")) Disconnect();
                     if (mAudioHandler->getPause())  { if (ImGui::MenuItem("RESUME")) mAudioHandler->setPause(false); }
                     else { if (ImGui::MenuItem("PAUSE")) mAudioHandler->setPause(true); }
+                    ImGui::SeparatorText(std::format( "Buffer: {}", mAudioHandler->getRawBufferSize()).c_str());
                     if (ImGui::MenuItem("FF 5sec"))  mAudioHandler->fastForward(44100 * 5);
                     bool disable =  (mAudioHandler->getNextTitle() == "" || FluxSchedule.isPending(mSkipToNextTitleTaskID));
                     if (disable) ImGui::BeginDisabled();
@@ -1468,14 +1469,33 @@ namespace IronTuner {
             }
 
             ImGui::PushFont(getMain()->mHackNerdFont12);
-            float rightOffset = 115.f; //230.0f;
+            float rightOffset = 115.f * getScale(); //230.0f;
             ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset);
             ImFlux::ShiftCursor(ImVec2(0.f,3.f));
-            if (ImFlux::FaderHorizontal("Volume", ImVec2(100, 20), &getMain()->getAppSettings().Volume, 0.0f, 1.0f))
+            if (ImFlux::FaderHorizontal("Volume", ImVec2(100, 20) * getScale(), &getMain()->getAppSettings().Volume, 0.0f, 1.0f))
             {
                 mAudioHandler->setVolume(getMain()->getAppSettings().Volume);
             }
             ImGui::PopFont();
+            if ( mAudioRecorder->isFileOpen() || mRecording )
+            {
+                float size = 9.f * getScale();
+                rightOffset += size * 2.f + 15.f;
+                ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset );
+                if (ImFlux::DrawLED("Recording", mAudioRecorder->isFileOpen(), ImFlux::LED_RED_ANIMATED_GLOW.WithRadius(size)) ) {
+                    mAudioRecorder->closeFile();
+                    mRecording = false;
+
+                }
+            }
+            if (mAudioHandler->getPause())  {
+                float size = 9.f * getScale();
+                rightOffset += size * 2.f + 15.f;
+                ImGui::SameLine(ImGui::GetWindowWidth() - rightOffset );
+                if (ImFlux::DrawLED("Playback paused", true, ImFlux::LED_BLUE_ANIMATED_GLOW.WithRadius(size))) {
+                    mAudioHandler->setPause(false);
+                }
+            }
 
 
             ImGui::EndMainMenuBar();

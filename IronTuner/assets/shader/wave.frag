@@ -19,55 +19,50 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 void main() {
-    vec3 finalColor  = vec3(0.01,0.01,0.01);
+    vec3 finalColor  = vec3(0.0,0.0,0.0);
     vec2 uv = gl_FragCoord.xy / u_res.xy;
     vec2 p = uv * 2.0 - 1.0;
     p.x *= u_res.x / u_res.y;
 
-    float rms = (u_rmsL + u_rmsR) * 0.5;
-    float slowTime =  u_time * 0.1;
+    float energy = (u_rmsL + u_rmsR) * 0.5;
+    float slowTime =  u_time * 0.8;
 
     // Liquid deformation logic
     float waveSum = 0.0;
 
-       float waveRand = dot(uv, vec2(u_rmsL,u_rmsR)) ;
-
 
     for (int i = 0; i < int(u_freqCount); i++) {
         float t = float(i) / u_freqCount;
+        float freq = u_freqs[i];
+        if (i == 0) freq *= 0.85; //normalize first bass bar
         float waveFreq = 1.5 + t * 15.0;
         float phase = slowTime * (2.0 + t) + t * 6.28;
-        waveSum += sin(p.x * waveFreq + phase) * u_freqs[i] * 0.15 ;
+        waveSum += sin(p.x * waveFreq + phase) * freq * 0.15 ;
     }
 
 
-     float hue = fract(u_time * 0.04);
-     vec3 colorDeep = hsv2rgb(vec3(hue, 0.9, 0.8)) * waveRand;
+     float hue = fract(u_time * 0.05);
+     vec3 colorDeep = hsv2rgb(vec3(hue, 0.5+energy*0.2, 0.8)) * 3.0;
 
     vec3 colorMid  = vec3(0.1, 0.4, 0.6);    // Calm Teal
-    vec3 colorHigh = vec3(0.2, 0.4, 0.45) + (rms * 0.5) ;    // Bright Cyan/Aqua
+    vec3 colorHigh = vec3(0.4, 0.8, 0.9); // + (energy * 0.5) ;    // Bright Cyan/Aqua
 
-    float height = p.y  + waveSum;
-    float flow =  smoothstep(-0.5, 0.5, height);
+    float height = p.y + waveSum * 1.5;
+    float flow =  smoothstep(-0.5, 0.5, height) * 4.0;
 
-    vec3 grad = mix(colorDeep, colorMid, flow);
+    vec3 grad = mix(colorDeep, colorMid, flow );
     grad = mix(grad, colorHigh, smoothstep(0.3, 1.0, flow + waveSum * 0.5));
     finalColor += grad;
 
 
-
-
     // -------------------------
-    // Add a secondary highlight layer that reacts to RMS
-     float highlight = smoothstep(0.3, 1.0,  rms * 0.5);
-    finalColor *= mix(finalColor, colorMid, highlight * 0.4);
+
+     float highlight = smoothstep(0.3, 1.0,  energy * 0.1 + 0.4);
+     finalColor *= mix(finalColor, colorMid, highlight * 0.4);
 
 
-    float vignette = distance(uv, vec2(0.5));
-    float edgeStart =  0.8;
-    float edgeEnd = clamp(0.4 + (rms * 0.2), 0.0, 0.75);
-    finalColor *= smoothstep(edgeStart, edgeEnd, vignette);
-
+    float darken = 1.0 - length(uv - 0.5) * 0.8;
+    finalColor *= clamp(darken, 0.0, 1.0);
 
     // -------------- --- CRT Scanline & Grain Layer --- -------------------
     if (u_scanlines) {

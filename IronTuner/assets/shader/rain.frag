@@ -34,6 +34,12 @@ void main() {
     // Average RMS for overall intensity
     float rms = (u_rmsL + u_rmsR) * 0.5;
 
+//     vec3 finalColor = vec3(0.0, 0.0, 0.0);
+//
+//     float backHue = fract(u_time * 0.1);
+//     finalColor = hsv2rgb(vec3(backHue, 0.8, 0.1 ));
+
+
     // Grid settings: 16 columns matching your u_freqCount
     float columns = u_freqCount;
     float colIndex = floor(uv.x * columns);

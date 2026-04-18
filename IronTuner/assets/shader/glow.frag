@@ -1,9 +1,5 @@
-// #version 330 core
 precision mediump float;
 
-// -------------------------------------------
-// RadioWana Background Shader: Glow
-// -------------------------------------------
 
 out vec4 FragColor;
 
@@ -53,7 +49,7 @@ void main() {
     float glowR = 1.4 / (distR + 0.7);
 
     // Deep dark blue background base
-    vec3 finalColor = vec3(0.01, 0.01, 0.02);
+    vec3 finalColor = vec3(0.05, 0.05, 0.1);
 
     // Apply audio-reactive glow (dampened RMS to keep it calm)
     finalColor += colorL * glowL * (rmsL * 0.4);
@@ -93,7 +89,7 @@ void main() {
         // --- Dynamic Color ---
         // Full rainbow shift from left to right + time animation
         float hue = fract(float(idx) / barCount + u_time * 0.05);
-        vec3 barColor = hsv2rgb(vec3(hue, 0.9, 0.9));
+        vec3 barColor = hsv2rgb(vec3(hue, 0.9, 0.9)) * 4.0;
 
         // Add to final color with a bit of "bloom/glow"
         finalColor += barColor * finalBarMask * (rms + 0.04);
