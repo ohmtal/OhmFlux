@@ -5,7 +5,7 @@
 // - less loops with opengl ES
 //---------------------------------------------------------
 
-precision mediump float;
+precision highp float;
 
 out vec4 FragColor;
 

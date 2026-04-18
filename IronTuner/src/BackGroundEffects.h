@@ -46,14 +46,14 @@ namespace IronTuner {
              , "liquidAura2.frag"       // 8
              , "CausticsDark.frag"      // 9
              , "Caustics.frag"          // 10
-             , "CausticsHigh.frag"      // 11
-             , "starfield.frag"         // 12 
+             , "liquidAura3.frag"       // 11
+             , "starfield.frag"         // 12
              , "CausticsMetal.frag"     // 13
              , "neonwave.frag"          // 14
-             , "liquidAura3.frag"       // 15
 
-
+#ifdef FLUX_DEBUG
              , "test.frag" 
+#endif
         };
 
 
@@ -79,13 +79,14 @@ namespace IronTuner {
             , "Liquid Aura II"      // 8
             , "Liquid Blue"         // 9
             , "Caustics"            // 10
-            , "Caustics II"         // 11
+            , "Liquid Aura III"     // 11
             , "Neon Starfield"      // 12
             , "Liquid Metal"        // 13
             , "Neon Wave"                // 14
-            , "Liquid Aura III"     // 15
 
+#ifdef FLUX_DEBUG
             , "TEST!"
+#endif
         };
 
 
@@ -95,13 +96,17 @@ namespace IronTuner {
         ~BackGroundEffects() = default;
         //----------------------------------------------------------------------
         bool LoadShader(uint8_t fragShaderId = 0, bool enableScanLines = false) {
+            if (fragShaderId >= mFragShaderFiles.size() ) fragShaderId = 0;
+            return LoadShader(mFragShaderFiles[fragShaderId], enableScanLines);
+        }
+        //----------------------------------------------------------------------
+        bool LoadShader(std::string fileName, bool enableScanLines = false) {
             FluxFile textFile;
 
-            if (fragShaderId >= mFragShaderFiles.size() ) fragShaderId = 0;
 
             std::string fragSrc = "";
             std::string vertSrc = "";
-            if (!textFile.LoadTextFile(mShaderPath+mFragShaderFiles[fragShaderId], fragSrc)) {
+            if (!textFile.LoadTextFile(mShaderPath+fileName, fragSrc)) {
                 Log("[error] failed to load Fragment Shader!! %s", SDL_GetError());
                 return false;
             }
@@ -120,13 +125,13 @@ namespace IronTuner {
 
             mShader = new FluxShader();
             if (!mShader->load(vertSrc.c_str(), fragSrc.c_str())) {
-                Log("[error] failed to compile Shaders!!");
+                Log("[error] failed to compile Shaders %s!!", fileName.c_str());
                 return false;
             }
 
             mScanLines = enableScanLines;
 
-            Log("Background: Fragment Shader %s loaded. Scanlines: %d", mFragShaderFiles[fragShaderId].c_str(), (int)mScanLines);
+            Log("Background: Fragment Shader %s loaded. Scanlines: %d", fileName.c_str(), (int)mScanLines);
 
             return true;
         }

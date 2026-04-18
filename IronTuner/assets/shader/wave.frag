@@ -1,5 +1,4 @@
-precision mediump float;
-// precision highp float;
+precision highp float;
 
 out vec4 FragColor;
 
@@ -10,6 +9,18 @@ uniform vec2 u_res;
 uniform float u_freqCount;     // Currently 16
 uniform float u_freqs[32];     // Array of FFT data
 uniform bool  u_scanlines;
+
+
+//---------------------------------------------------------
+#ifdef GL_ES
+const int FreqInc = 16;
+#else
+const int FreqInc = 1;
+#endif
+
+
+const float speed = 0.8;
+//---------------------------------------------------------
 
 
 vec3 hsv2rgb(vec3 c) {
@@ -25,13 +36,13 @@ void main() {
     p.x *= u_res.x / u_res.y;
 
     float energy = (u_rmsL + u_rmsR) * 0.5;
-    float slowTime =  u_time * 0.8;
+    float slowTime =  u_time * speed;
 
     // Liquid deformation logic
     float waveSum = 0.0;
 
 
-    for (int i = 0; i < int(u_freqCount); i++) {
+    for (int i = 0; i < int(u_freqCount); i+=FreqInc) {
         float t = float(i) / u_freqCount;
         float freq = u_freqs[i];
         if (i == 0) freq *= 0.85; //normalize first bass bar

@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 out vec4 FragColor;
 
@@ -15,18 +15,29 @@ vec3 hsv2rgb(vec3 c) {
 }
 
 
+#ifdef GL_ES
+const float texLoops = 4.0; //8.0 ;min 4,  6 is ok
+const float starLoops = 2.0; //4.0 ; 4
+#else
+const float texLoops = 4.0; //8.0 ;min 4,  6 is ok
+const float starLoops = 4.0; //4.0 ; 4
+#endif
+
+const float speed = 0.3;
+
+
 void main() {
     vec2 uv = gl_FragCoord.xy / u_res.xy;
     uv = uv * 2.0 - 1.0;
     uv.x *= u_res.x / u_res.y;
 
     float rmsAvg = (u_rmsL + u_rmsR) * 0.5;
-    float time = u_time * 0.3 ; //+ (rmsAvg * 0.1);
+    float time = u_time * speed ;
 
 
     float color = 0.0;
 
-    for(float i = 1.0; i < 4.0; i++) {
+    for(float i = 1.0; i < texLoops; i++) {
         uv.x += 0.3 / i * sin(i * 3.0 * uv.y + time);
         uv.y += 0.4 / i * cos(i * 2.5 * uv.x + time);
 
@@ -45,7 +56,7 @@ void main() {
     vec3 finalColor = baseColor * color + (glowColor * color * rmsAvg * 2.0);
 
        // STARS
-    for(float i = 0.0; i < 4.0; i++) {
+    for(float i = 0.0; i < starLoops; i++) {
         float depth = fract(i * 0.25 + time * 0.1);
         float scale = mix(20.0, 0.5, depth);
         float fade = depth * smoothstep(1.0, 0.8, depth);

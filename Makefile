@@ -2,8 +2,8 @@
 
 # Configuration
 # --------------
-# DEMO_DIRS := FishTankDemo TestBed LuaTest Amana SoundStudio OhmtalTracker OhmtalAxe IronTuner
-DEMO_DIRS := IronTuner
+DEMO_DIRS := FishTankDemo TestBed LuaTest Amana SoundStudio OhmtalTracker OhmtalAxe IronTuner
+# DEMO_DIRS := IronTuner
 
 BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web

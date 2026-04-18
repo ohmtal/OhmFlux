@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 out vec4 FragColor;
 
@@ -8,13 +8,27 @@ uniform float u_rmsL;
 uniform float u_rmsR;
 
 
+//---------------------------------------------------------
+// Starfield
+#ifdef GL_ES
+const float starLoops = 4.0; //4.0 ; 4
+const float starLoopInc = 1.0; //0.4
+#else
+const float starLoops = 4.0; //4.0 ; 4
+const float starLoopInc = 0.4; //0.4
+#endif
+
+const float speed = 0.25;
+//---------------------------------------------------------
+
+
 void main() {
     vec2 uv = gl_FragCoord.xy / u_res.xy;
     vec2 baseUV = uv;
     vec2 p = uv * 3.0;
 
     float energy = (u_rmsL + u_rmsR) * 0.5 + 0.01;
-    float time = u_time * 0.25 ;
+    float time = u_time * speed ;
 
     for(float i = 1.0; i < 2.0; i++) {
         uv.x += 0.1 / i * sin(i * 3.5 * uv.y + time);
@@ -23,7 +37,9 @@ void main() {
 
     vec3 finalColor = vec3(0.1, 0.0, 0.1);;
 
-    for(float i = 0.0; i < 4.0; i+=0.44) {
+//     for(float i = 0.0; i < 4.0; i+=0.44) {
+
+    for(float i = 0.0; i < starLoops; i+=starLoopInc) {
         float depth = fract(i * 0.25 + time * 0.1);
         float scale = mix(20.0, 0.5, depth);
         float fade = depth * smoothstep(1.0, 0.8, depth);
@@ -47,6 +63,7 @@ void main() {
 
 
 
+    //darken
     float darken = 1.0 - length(uv - 0.5) * 1.5;
     finalColor *= clamp(darken, 0.0, 1.0);
 

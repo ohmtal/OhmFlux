@@ -1,6 +1,19 @@
-precision mediump float;
+precision highp float;
 
 out vec4 FragColor;
+
+//---------------------------------------------------------
+#ifdef GL_ES
+const float CausicsLoops = 8.0;
+#else
+const float CausicsLoops = 8.0; //8.0
+#endif
+
+
+const float SparklePow  = 8.0;
+const float speed = 0.2;
+//---------------------------------------------------------
+
 
 uniform float u_time;
 uniform vec2 u_res;
@@ -20,29 +33,29 @@ void main() {
     vec2 p = static_uv * 4.0 - 20.0;
 
 
-    float time = u_time * 0.2;
+    float energy = (u_rmsL + u_rmsR) * 0.5;
+    float time = u_time * speed;
 
     vec2 i = vec2(p);
     float c = 1.0;
     float intensity = 0.005;
 
-    for (int n = 0; n < 8; n++) {
-        float t =  time * (1.0 - (3.0 / float(n + 1)));
+    for (float n = 0.0; n < CausicsLoops; n++) {
+        float t =  time * (1.0 - (3.0 / (n + 1.0)));
         i = p + vec2(cos(t - i.x) + sin(t + i.y), sin(t - i.y) + cos(t + i.x));
         c += 0.1 / length(vec2(p.x / (sin(i.x + t) / intensity), p.y / (cos(i.y + t) / intensity)));
     }
 
-    c /= 5.0;
+    c /= CausicsLoops;
     c = 1.5 - pow(c, 0.5);
 
     float hue = fract(u_time * 0.05);
-    float dynamicSaturation = 0.5 + (u_rmsL * 0.5);
-    vec3 color = hsv2rgb(vec3(hue, dynamicSaturation, 0.5));
+    float dynamicSaturation = 0.1 + energy ;
+    vec3 color = hsv2rgb(vec3(hue, dynamicSaturation, 0.5)) ;
 
-    float sparkle = pow(abs(c), 8.0);
+    float sparkle = pow(abs(c), SparklePow );
     vec3 causticColor = vec3(0.2, 0.6, 0.7) * sparkle;
 
-    float energy = (u_rmsL + u_rmsR) * 0.5;
     vec3 finalColor = color + causticColor + (causticColor /** highs*/ * 2.0);
 
     // Vignette

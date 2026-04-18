@@ -1209,6 +1209,9 @@ namespace IronTuner {
     // -----------------------------------------------------------------------------
     void AppGui::DrawMenuBar(){
         ImGui::PushFont(getMain()->mHackNerdFont20);
+        ImVec2 spacingVec = { 8.0f, 8.0f}; //default 8.0f, 4.0f
+        if (isAndroidBuild()) spacingVec = { 8.0f, 16.0f};
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, spacingVec );
 
         static float sideBarWidth = 1.f;
         static float targetWidth = 0.f;
@@ -1500,7 +1503,7 @@ namespace IronTuner {
 
             ImGui::EndMainMenuBar();
         } //BeginMainMenuBar
-        ImGui::PopStyleVar();
+        ImGui::PopStyleVar(2);
 
         ImGui::PopFont();
 

@@ -70,7 +70,7 @@ void main() {
         float t = float(i) / 32.0;
         float freq = u_freqs[i];
         if (i == 0) freq *= 0.85; //normalize first bass bar
-        float waveFreq = 30 + t * 10.0;
+        float waveFreq = 30.0 + t * 10.0;
         float phase = u_time * speed * (2.0 + t) + t * 6.28;
         waveSum += sin(uv.x * waveFreq + phase) * freq * 0.15 ;
     }

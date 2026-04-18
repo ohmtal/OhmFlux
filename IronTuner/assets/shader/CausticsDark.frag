@@ -1,6 +1,6 @@
 // ~~~ MASTER PIECE :D ~~~~
 
-precision mediump float;
+precision highp float;
 
 out vec4 FragColor;
 
@@ -10,16 +10,34 @@ uniform float u_rmsL;
 uniform float u_rmsR;
 
 
+//---------------------------------------------------------
+// Liquid
+
+// 4/2 low gpu usage
+// 16/4 was my default
+#ifdef GL_ES
+const float texLoops = 4.0; //8.0 ;min 4,  6 is ok
+const float starLoops = 4.0; //4.0 ; 4
+#else
+const float texLoops = 8.0; //16.0 ;min 4,  6 is ok
+const float starLoops = 4.0; //4.0 ; 4
+#endif
+
+const float speed = 0.2;
+//---------------------------------------------------------
+
+
+
 void main() {
     vec2 uv = gl_FragCoord.xy / u_res.xy;
     vec2 p = uv * 3.0;
 
     float energy = (u_rmsL + u_rmsR) * 0.5;
-    float time = u_time * 0.2 ;
+    float time = u_time * speed ;
 
     float c = 0.0;
 
-    for(float i = 1.0; i < 16.0; i++) {
+    for(float i = 1.0; i < texLoops; i++) {
         uv.x += 0.3 / i * sin(i * 3.0 * uv.y + time);
         uv.y += 0.4 / i * cos(i * 2.5 * uv.x + time);
 
@@ -48,7 +66,7 @@ void main() {
 
 
     // from starfield :D
-    for(float i = 0.0; i < 4.0; i++) {
+    for(float i = 0.0; i < starLoops; i++) {
         float depth = fract(i * 0.25 + time * 0.1);
         float scale = mix(20.0, 0.5, depth);
         float fade = depth * smoothstep(1.0, 0.8, depth);
