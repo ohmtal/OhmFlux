@@ -78,15 +78,15 @@ void main() {
 
 
     float boltShape = abs(uvGlow.y +  waveSum);
-    float boltIntensity = smoothstep(0.05, 0.0, boltShape);
+    float boltIntensity = smoothstep(0.3, 0.0, boltShape);
     const float glowMulti = 0.3;
     vec3 boltGlow = vec3(0.3, 0.5, 1.0) * (glowMulti / (boltShape + 0.04));
 
     float hue = fract(u_time * 0.5);
-    vec3 colorDeep = hsv2rgb(vec3(hue, 0.5 + energy * 0.2, 0.8));
-    vec3 boltColor = colorDeep * (boltIntensity + boltGlow) * 2.0;
+    vec3 colorDeep = hsv2rgb(vec3(hue, 0.2 + energy * 0.5, 0.2));
+    vec3 boltColor = colorDeep * (boltIntensity + boltGlow) ;
     // check energy
-    finalColor += boltColor *  smoothstep(0.05, 1.0, energy);
+    finalColor += boltColor *  smoothstep(0.05, 0.5, energy);
 
     // --- darken ----
     float darken = 1.0 - length(uv - 0.5) * 0.8;
