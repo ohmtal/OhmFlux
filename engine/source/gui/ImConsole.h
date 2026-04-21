@@ -155,8 +155,8 @@ public:
     void Draw(const char* title, bool* p_open)
     {
 
-        static bool justOpened = false;
-        if (!*p_open) {
+       static bool justOpened = true;
+        if (p_open &&  !*p_open) {
             justOpened = true;
             return;
         }
