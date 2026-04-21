@@ -1,7 +1,7 @@
 # OhmFlux a Cross Platform Game Engine, Sound Machine and more. 
 
-- 🎸 Digital Sound Effects (engine/dsp) [DSP](./engine/dsp/README.md) see also [Ohmtal Axe](./OhmtalAxe/README.md)
-- 🎵 OPL3 Controller (engine/opl3) with wopl instrument import/export and it's own format. see also [Ohmtal Tracker](./OhmtalTracker/README.md)
+- 🎸 Digital Sound Effects (engine/dsp) [DSP](./engine/dsp/README.md) see also [Ohmtal Axe](https://github.com/ohmtal/OhmtalAxe)
+- 🎵 OPL3 Controller (engine/opl3) with wopl instrument import/export and it's own format. see also [Ohmtal Tracker](https://github.com/ohmtal/OhmtalTracker)
 - 〰️ SFXGenerator(Stereo) a modern implementation of Tomas Pettersson SXFR (engine/sfx)
 - 🗂️ ImFlux a collection of Tools and Widgets for ImGui (engine/source/gui/ImFlux)
 - 🕹 A lightweight, high-performance,  modern C++ game engine. Built around **SDL3**, it provides a streamlined pipeline for 2D graphics, particle simulations, and cross-platform deployment.

@@ -451,40 +451,6 @@ option(BUILD_LUATEST "Build LuaTest application" OFF)
 
 if(BUILD_LUATEST)
     add_subdirectory(LuaTest)
-    # set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}/LuaTest")
-    # # Fetch dependencies
-    # include(FetchContent)
-    #
-    # FetchContent_Declare(
-    #     lua
-    #     GIT_REPOSITORY https://github.com/lua/lua.git
-    #     GIT_TAG v5.4.7
-    # )
-    #
-    # FetchContent_Declare(
-    #     sol2
-    #     GIT_REPOSITORY https://github.com/ThePhD/sol2.git
-    #     GIT_TAG v3.5.0
-    # )
-    #
-    # # This command downloads and adds the subprojects to the build tree
-    # FetchContent_MakeAvailable(lua sol2)
-    #
-    # # Define your sources
-    # set(GAME_SOURCES
-    #     ${LUATEST_DIR}/src/main.cpp
-    #     # ${LUATEST_DIR}/src/luabind/luaFluxMain.cpp
-    # )
-    #
-    # # Configure the target
-    # configure_demo_target(LuaTest ${LUATEST_DIR} "${LUATEST_DIR}/assets@assets" "${GAME_SOURCES}")
-    #
-    # # Link Lua and sol2 specifically to this target
-    # # target_link_libraries ensures these are only linked to LuaTest
-    # target_link_libraries(LuaTest PRIVATE lua sol2::sol2)
-    #
-    # target_compile_features(LuaTest PRIVATE cxx_std_17)
-    # target_compile_definitions(LuaTest PRIVATE SOL_ALL_SAFETIES_ON=1)
 endif()
 
 # --- Amana ---
@@ -518,21 +484,6 @@ if(BUILD_SOUNDSTUDIO)
     configure_demo_target(SoundStudio ${SOUNDSTUDIO_DIR} "${SOUNDSTUDIO_DIR}/assets@assets" "${APP_SOURCES}")
 endif()
 
-# --- Ohmtal Axe ---
-option(BUILD_AXE "Build Ohmtal Axe application" ON)
-if(BUILD_AXE)
-    set(AXE_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalAxe")
-    set(APP_SOURCES
-        "${AXE_DIR}/src/main.cpp"
-        "${AXE_DIR}/src/appGui.cpp"
-        "${AXE_DIR}/src/modules/soundMixModule.cpp"
-        "${AXE_DIR}/src/modules/inputModule.cpp"
-        "${AXE_DIR}/src/modules/rackModule.cpp"
-        "${AXE_DIR}/src/modules/keyboardModule.cpp"
-        "${AXE_DIR}/src/modules/drumKitLooper.cpp"
-    )
-    configure_demo_target(OhmtalAxe ${AXE_DIR} "${AXE_DIR}/assets@assets" "${APP_SOURCES}")
-endif()
 
 
 # --- Ohmtal Tracker ---
