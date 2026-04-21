@@ -7,6 +7,7 @@
 //
 // To redirect use:  SDL_SetLogOutputFunction(MyLogCallback, optionalUserdataPointer)
 //
+// NOTE: to claim focus on open you have call draw always!!!
 //-----------------------------------------------------------------------------
 #pragma once
 #include "imgui.h"
@@ -32,6 +33,7 @@ private:
     ImVector<int> mFilterIndices;
     bool mDirty = true;
 
+    bool mReclaim_focus = false;
 public:
     std::function<void(ImConsole*, const char*)> OnCommand;
 
@@ -40,7 +42,7 @@ public:
     bool                  AutoScroll;
     bool                  ScrollToBottom;
 
-    bool mShowButtons = false; //FIXME save as option (and the other options too)
+    bool mShowButtons = false;
 
 
 
@@ -82,6 +84,16 @@ public:
         mDirty = true;
     }
     //--------------------------------------------------------------------------
+    // from FlucStr ..
+    std::string removePart(std::string s, const std::string& part) {
+        if (part.empty()) return s;
+        size_t pos = 0;
+        while ((pos = s.find(part, pos)) != std::string::npos) {
+            s.erase(pos, part.length());
+        }
+        return s;
+    }
+
     void    AddLog(const char* fmt, ...) IM_FMTARGS(2)
     {
         char buf[1024];
@@ -90,7 +102,10 @@ public:
         vsnprintf(buf, IM_ARRAYSIZE(buf), fmt, args);
         buf[IM_ARRAYSIZE(buf)-1] = 0;
         va_end(args);
-        Items.push_back(Strdup(buf));
+        std::string line = removePart(Strdup(buf),"\r\n");
+        line = removePart(line,"\n");
+        Items.push_back(Strdup(line.c_str()));
+        // orig Items.push_back(Strdup(buf));
         mDirty = true;
     }
     //--------------------------------------------------------------------------
@@ -139,6 +154,13 @@ public:
 
     void Draw(const char* title, bool* p_open)
     {
+
+        static bool justOpened = false;
+        if (!*p_open) {
+            justOpened = true;
+            return;
+        }
+
         ImGui::SetNextWindowSize(ImVec2(1024, 600), ImGuiCond_FirstUseEver);
 
         if (!ImGui::Begin(title, p_open))
@@ -146,6 +168,9 @@ public:
             ImGui::End();
             return;
         }
+
+        mReclaim_focus = justOpened;
+        justOpened = false;
 
         bool loDoCopyToClipboard = false;
 
@@ -309,7 +334,7 @@ public:
         }
 
 
-        bool reclaim_focus = false;
+
         ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (ImGui::InputText("##Input", InputBuf, IM_ARRAYSIZE(InputBuf), input_text_flags, &TextEditCallbackStub, (void*)this))
@@ -319,12 +344,12 @@ public:
             if (s[0])
                 ExecCommand(s);
             strcpy(s, "");
-            reclaim_focus = true;
+            mReclaim_focus = true;
         }
 
         // Auto-focus on window apparition
         ImGui::SetItemDefaultFocus();
-        if (reclaim_focus)
+        if (mReclaim_focus)
             ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
 
