@@ -124,11 +124,13 @@ public:
         reset();
     }
     //--------------------------------------------------------------------------
-    void reset() {
+    void reset(bool resetFilters=true) {
         mLabel = "File Browser";
         mSaveMode = false;
-        mFilters = mDefaultFilters;
-        mSelectedFilterIdx = -1; // NOTE: ALL - good or bad to set it here
+        if (resetFilters) {
+            mFilters = mDefaultFilters;
+            mSelectedFilterIdx = -1;
+        }
         mSaveExt = "";
         mCancelPressed = false;
         mDirty = true;
