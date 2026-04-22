@@ -486,30 +486,6 @@ endif()
 
 
 
-# --- Ohmtal Tracker ---
-option(BUILD_FLUXTRACKER "Build Ohmtal Tracker" ON)
-if(BUILD_FLUXTRACKER)
-    set(TRACKER_DIR "${CMAKE_CURRENT_LIST_DIR}/OhmtalTracker")
-    set(TRACKER_SOURCES
-        "${TRACKER_DIR}/src/main.cpp"
-        "${TRACKER_DIR}/src/otGui.cpp"
-        "${TRACKER_DIR}/src/dspGui.cpp"
-        "${TRACKER_DIR}/src/bankGui.cpp"
-        "${TRACKER_DIR}/src/songGui.cpp"
-        "${TRACKER_DIR}/src/songFunc.cpp"
-        "${TRACKER_DIR}/src/keyboardGui.cpp"
-        "${TRACKER_DIR}/src/fancyOverlays.cpp"
-        "${TRACKER_DIR}/src/ordersGui.cpp"
-
-        # --- OPL
-        ${OPL_SOURCES}
-        # --- sfx
-        ${SFX_SOURCES}
-
-    )
-    configure_demo_target(OhmtalTracker ${TRACKER_DIR} "${TRACKER_DIR}/assets@assets" "${TRACKER_SOURCES}")
-endif()
-
 
 
 # =============================================================================

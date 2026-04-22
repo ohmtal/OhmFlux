@@ -220,7 +220,7 @@ public:
          mBrrooiiSound->setPositon( getScreen()->getCenterF());
          queueObject(mBrrooiiSound);
 
-         mScheduleTestId = FluxSchedule.add(3.0, this, [this]() {
+         mScheduleTestId = FluxSchedule.addTicker(3.0, this, [this]() {
                           this->Brrooii(); // Calls method with arguments
          });
          // Log("ScheduleTestId is: %zu", mScheduleTestId);
@@ -292,10 +292,17 @@ public:
     void Brrooii()
     {
         mBrrooiiSound->play();
-        // mScheduleTestId = FluxSchedule.add(3.0, this, [this]() {
-        //     this->Brrooii(); // Calls method with arguments
-        // });
-        // Log("ScheduleTestId is: %zu", mScheduleTestId);
+
+        static uint8_t counter = 0;
+        counter++;
+
+        Log("#%d Brrooii! ScheduleTestId is: %d",counter, (int)mScheduleTestId);
+
+        if ( counter >= 5 ) {
+            Log("[info] %s","----- Brrooii! Limit reached. -----");
+            FluxSchedule.cancel(mScheduleTestId);
+            counter = 0;
+        }
 
     }
     //--------------------------------------------------------------------------------------
@@ -385,6 +392,7 @@ public:
                 mKeyEventLabel->setCaption("KEY DOWN:%d", event.key.key);
                 if (event.key.key == SDLK_F1) {
                     // SDL_GetJoysticks();
+                    FluxSchedule.listPending();
                 }
                 break;
             case SDL_EVENT_MOUSE_WHEEL: {

@@ -55,6 +55,8 @@ private:
         double timeRemaining;
         std::function<void()> action;
         void* owner;
+        bool isTicker;
+        double timeInterval;
     };
 
     std::vector<ScheduledTask> mTasks;
@@ -66,6 +68,7 @@ private:
 
     bool mIsShutdown = false;
 
+
 public:
 
     //-------------------------------------------------------------------------
@@ -74,7 +77,9 @@ public:
 
     // Adds a task and returns a unique ID
     // TaskID add(double lDelaySeconds, void* lOwner, std::function<void()> lAction);
-    TaskID add(double lDelaySeconds, FluxBaseObject* lOwner, std::function<void()> lAction);
+    TaskID add(double lDelaySeconds, FluxBaseObject* lOwner, std::function<void()> lAction, bool ticker = false);
+
+    TaskID addTicker(double lDelaySeconds, FluxBaseObject* lOwner, std::function<void()> lAction);
 
     // extend the time of a running schedule, if not found false is returned
     bool extend(TaskID id, double lDelaySeconds);
@@ -96,5 +101,8 @@ public:
 
     // clean by a Owner to prevent pointer dangling
     void cleanByOwner(void* lOwner);
+
+    // list the pending events
+    void listPending();
 
 };
