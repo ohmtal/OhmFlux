@@ -1,168 +1,201 @@
 #include <stdio.h>
 #include <fluxMain.h>
-#include "luabind/luaFluxBindings.h"
+#include <gui/fluxGuiGlue.h>
+#include <gui/ImConsole.h>
+#include "luabind/luaBindings.h"
+#include "luabind/luaState.h"
 #include <sol/sol.hpp>
-#include "SDL3/SDL.h"
-/*
- Binding Lua is much more headache than i thought when i read:
-    It is the industry standard for "I just want to add scripts to my C++ project without a headache".
+#include <SDL3/SDL.h>
 
- I guess i will stay with c++ for the moment :P
-*/
+#include <format>
+#include <iostream>
+#include <filesystem>
+#include <vector>
+namespace fs = std::filesystem;
 
-
-class LuaTestGame : public FluxMain
+//-----------------------------------------------------------------------------
+// console redirect ....
+void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority priority, const char *message)
 {
-    typedef FluxMain Parent;
-private:
+    if (!userdata) return;
+    auto* console = static_cast<ImConsole*>(userdata);
+    if (!console) return;
+
+    char lBuffer[1024];
+    snprintf(lBuffer, sizeof(lBuffer), "%s", message);
+    console->AddLog("%s", message);
+}
+//-----------------------------------------------------------------------------
+class LuaGame: public OhmFlux::Lua::LuaState {
+    typedef OhmFlux::Lua::LuaState Parent;
+
+    ImConsole console;
+    std::vector<fs::path> luaFiles;
+
+    std::unique_ptr<FluxGuiGlue> mGuiGlue;
 
 public:
-    // This stores the Lua table/object
-    sol::table lua_self;
-
-    std::function<bool()> onInitialize;
-
-    // virtual bool Initialize() override {
-    //     if (!Parent::Initialize()) {
-    //         return false;
-    //     }
-    //     // Look for "Initialize" in the Lua object
-    //     sol::optional<sol::function> lua_init = lua_self["Initialize"];
-    //     if (lua_init) {
-    //         return (*lua_init)(lua_self); // Call Lua version
-    //     }
-    //     return true; //??
-    // }
-
-    virtual bool Initialize() override {
+    // -------------------------------------------------------------------------
+    bool Initialize() override {
         if (!Parent::Initialize()) return false;
+        mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, nullptr);
+        if (!mGuiGlue->Initialize())
+            return false;
 
-        if (lua_self.valid() && lua_self != sol::lua_nil) {
-            // 1. Get the function
-            sol::protected_function lua_init = lua_self["Initialize"];
+        SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
+        console.OnCommand = [&](ImConsole* console, const char* command_line) {
+            OnConsoleCommand(console, command_line);
+        };
 
-            if (!lua_init.valid()) {
-                printf("CRITICAL: Lua function 'Initialize' not found in myLogic table!\n");
-                return false;
+        return true;
+    }
+    // -------------------------------------------------------------------------
+    void OnConsoleCommand(ImConsole* console, const char* command_line) {
+        std::string cmdLineStr = command_line;
+        std::string cmd = FluxStr::getWord(cmdLineStr, 0);
+
+        if (cmd == "load" || cmd == "exec" ) {
+            std::string file = FluxStr::getWord(cmdLineStr,1);
+            if (file != "") {
+                if (file.find(".lua") == std::string::npos) {
+                    file = file + ".lua";
+                }
+                setScript(file);
             }
+            return;
+        }
 
-            // 2. Call it WITHOUT a handler first to see if it even runs
-            auto result = lua_init(lua_self);
+
+        if (cmd == "rl") {
+            LoadScript();
+            return;
+        }
+
+
+        // Lua commands:
+        try {
+            if (!getLua()) {
+                SDL_Log("[error] failed to get LuaState!");
+                return;
+            }
+            auto result =  getLua()->safe_script(cmdLineStr, sol::script_pass_on_error);
 
             if (!result.valid()) {
                 sol::error err = result;
-                // THIS WILL PRINT THE REAL ERROR
-                printf("LUA ERROR: %s\n", err.what());
-                return false;
+                console->AddLog("Error: %s", err.what());
+                return;
             }
-            return true;
-        }
-        return true;
-    }
-    //--------------------------------------------------------------------------
-    virtual void Update(const double& dt) override {
-        FluxMain::Update(dt);
 
-        // Look for onUpdate inside the table we linked
-        if (lua_self != sol::lua_nil) {
-            sol::optional<sol::function> fx = lua_self["onUpdate"];
-            if (fx) {
-                fx.value()(lua_self, dt); // Call as myLogic:onUpdate(dt)
+            if (result.return_count() == 0 || result[0].is<sol::nil_t>()) {
+                return;
             }
+
+            sol::object obj = result[0];
+            std::string output = (*getLua())["tostring"](obj);
+
+            console->AddLog("%s", output.c_str());
+
+        } catch (const std::exception &e) {
+            console->AddLog("C++ Exception: %s", e.what());
         }
+
     }
-    //--------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    void Deinitialize() override {
+        SDL_SetLogOutputFunction(nullptr, nullptr);
+        mGuiGlue->Deinitialize();
+
+        Parent::Deinitialize();
+    }
+    // -------------------------------------------------------------------------
     virtual void onKeyEvent(SDL_KeyboardEvent event) override {
-        if (lua_self.valid()) {
-            sol::protected_function fx = lua_self["onKeyEvent"];
-            if (fx.valid()) {
-                const char* keyName = SDL_GetKeyName(event.key);
-                bool isDown = event.down;
+        if (mGuiGlue && mGuiGlue->getGuiIO() && mGuiGlue->getGuiIO()->WantTextInput) {
+            return;
+        }
 
-                // SDL3: Check modifiers using the 'mod' field and bitwise AND
-                bool isAlt   = (event.mod & SDL_KMOD_ALT) != 0;
-                bool isCtrl  = (event.mod & SDL_KMOD_CTRL) != 0;
-                bool isShift = (event.mod & SDL_KMOD_SHIFT) != 0;
+        Parent::onKeyEvent(event);
 
-                // Call Lua with modifiers: myLogic:onKeyEvent(key, isDown, alt, ctrl, shift)
-                sol::state_view lua(lua_self.lua_state());
-                fx.set_error_handler(lua["debug"]["traceback"]);
+    }
+    // -------------------------------------------------------------------------
+    virtual void onEvent(SDL_Event event) override {
 
-                fx(lua_self, keyName, isDown, isAlt, isCtrl, isShift);
+        if (mGuiGlue) {
+            mGuiGlue->onEvent(event);
+            if (mGuiGlue->getGuiIO() && mGuiGlue->getGuiIO()->WantTextInput) {
+                if (event.type == SDL_EVENT_KEY_DOWN ||
+                    event.type == SDL_EVENT_KEY_UP ||
+                    event.type == SDL_EVENT_TEXT_INPUT) {
+                    return;
+                    }
             }
         }
+
+        Parent::onEvent(event);
     }
-    //--------------------------------------------------------------------------
-    virtual void onMouseButtonEvent(SDL_MouseButtonEvent event) override {
-        if (lua_self.valid()) {
-            sol::protected_function fx = lua_self["onMouseButton"];
-            if (fx.valid()) {
-                fx(lua_self, (int)event.button, event.x, event.y, (bool)event.down);
+
+    // -------------------------------------------------------------------------
+    virtual void onDrawTopMost() override {
+        Parent::onDrawTopMost();
+
+        if (!mGuiGlue) return;
+        mGuiGlue->DrawBegin();
+
+        static bool showConsole = false;
+        static bool showMenu = false;
+
+        if (showMenu) {
+            if (ImGui::BeginMainMenuBar()) {
+                if (ImGui::BeginMenu("Window")) {
+                    ImGui::MenuItem("Console", "GraveAccent", &showConsole);
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Scripts")) {
+                    if (ImGui::MenuItem(std::format("Hot Reload {}", getScript()).c_str(),"CTRL+R")) {
+                        LoadScript();
+                    }
+
+                    ImGui::SeparatorText("Files");
+                    bool selected = false;
+                    for (const auto& f : luaFiles) {
+                        selected = getScript() == f.string();
+                        if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
+                            setScript(f.string());
+                        }
+
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                ImGui::EndMainMenuBar();
             }
         }
-    }
-    //--------------------------------------------------------------------------
-    void reloadScript() {
-        sol::state_view lua(lua_self.lua_state());
-        auto result = lua.script_file("assets/main.lua");
 
-        if (result.valid()) {
-            printf("Lua Script Reloaded Successfully!\n");
-            // Re-assign the new logic table to ensure C++ has the latest references
-            this->lua_self = lua["Game"];
-        } else {
-            sol::error err = result;
-            printf("RELOAD ERROR: %s\n", err.what());
+        if (ImGui::IsKeyPressed(ImGuiKey_F10)) showMenu = !showMenu;
+        if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
+        if (mGuiGlue->getGuiIO()->KeyCtrl) {
+            if (ImGui::IsKeyPressed(ImGuiKey_R)) LoadScript();
         }
-    }
-    //--------------------------------------------------------------------------
+
+
+        console.Draw("Lua Console",&showConsole);
+
+        // ------
+        mGuiGlue->DrawEnd();
+
+
+
+    };
+
+
 
 };
-
-
 //------------------------------------------------------------------------------
-void BindLuaTestGame(sol::state& lua) {
-    // Bind base classes first
-    bindFluxBaseObject(lua);   // Root
-    bindFluxScreen(lua);       // Utility
-    bindFluxTexture(lua);      // Resource
-    bindFluxAudioStream(lua);
-    bindDrawParams2D(lua);
-    bindFluxRenderObject(lua); // Parent of Font
-    bindFluxBitmapFont(lua);   // Child of RenderObject
-    bindFluxMain(lua);         // Engine
 
-
-    auto type = lua.new_usertype<LuaTestGame>("LuaTestGame",
-        sol::base_classes, sol::bases<FluxMain, FluxBaseObject>()
-    );
-    type["lua_self"] = &LuaTestGame::lua_self;
-    type["reloadScript"] = &LuaTestGame::reloadScript;
-
-}
-//------------------------------------------------------------------------------
 int main(int argc, char* argv[]) {
-    sol::state lua;
-    lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::debug);
+    LuaGame gGame;
 
-    BindLuaTestGame(lua);
-
-    // 2. Create the C++ game instance
-    LuaTestGame game;
-
-    // 3. CRITICAL: Inject the 'game' pointer into Lua's global scope FIRST
-    lua["app"] = &game;
-
-    // 4. Load the script NOW. The script can now safely access the global 'app'.
-    auto result = lua.script_file("assets/main.lua");
-    if (!result.valid()) {
-        sol::error err = result;
-        printf("SCRIPT LOAD ERROR: %s\n", err.what());
-        return 1;
-    }
-
-    // 5. Run the engine (which calls your Lua Initialize function)
-    game.Execute();
+    gGame.Execute();
 
     return 0;
 }

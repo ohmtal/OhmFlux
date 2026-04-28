@@ -2,7 +2,8 @@ set(LUATEST_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 set(GAME_SOURCES
     ${LUATEST_DIR}/src/main.cpp
-    # ${LUATEST_DIR}/src/luabind/luaFluxMain.cpp
+    ${LUATEST_DIR}/src/luabind/luaState.cpp
+    ${LUATEST_DIR}/src/luabind/luaBindings.cpp
 )
 
 

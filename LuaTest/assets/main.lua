@@ -1,8 +1,5 @@
--- ### Testing Lua #####
-
 -- Create a logic table
 local Game = {}
-
 
 -- @tom property are: foo.bar = , methods are: foo:peep(1)
 
@@ -96,4 +93,5 @@ end
 
 
 -- Assign this logic table to the C++ instance's lua_self
-app.lua_self = Game
+app.self = Game
+print("Lua Script Loaded")
