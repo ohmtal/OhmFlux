@@ -38,7 +38,7 @@ public:
     // -------------------------------------------------------------------------
     bool Initialize() override {
         if (!Parent::Initialize()) return false;
-        mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, nullptr);
+        mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, "lua.ini");
         if (!mGuiGlue->Initialize())
             return false;
 
