@@ -24,16 +24,16 @@
 #include "source/fluxMain.h"
 #include "globals.h"
 
-class GuiFishLabel : public FluxBitmapFont
+class GuiFishLabel : public FluxBitmapLabel
 {
-	typedef FluxBitmapFont Parent;
+	typedef FluxBitmapLabel Parent;
 private:
 	FluxTexture* mFishTexture;
 
 public:
 
 	GuiFishLabel(FluxTexture* lFishTex, FluxTexture* lFontTex)
-		:FluxBitmapFont(lFontTex)
+		:FluxBitmapLabel(lFontTex)
 	{
         mFishTexture = lFishTex;
 	}

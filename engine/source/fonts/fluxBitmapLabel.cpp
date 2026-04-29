@@ -2,14 +2,14 @@
 // Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-#include "fluxBitmapFont.h"
+#include "fluxBitmapLabel.h"
 #include "render/fluxRender2D.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include "utils/errorlog.h"
 //-----------------------------------------------------------------------------
-void FluxBitmapFont::setCaption(const char *szFormat, ...)
+void FluxBitmapLabel::setCaption(const char *szFormat, ...)
 {
     if (!szFormat) return;
     va_list Arg;
@@ -25,7 +25,7 @@ void FluxBitmapFont::setCaption(const char *szFormat, ...)
 }
 
 //-----------------------------------------------------------------------------
-void FluxBitmapFont::Draw()
+void FluxBitmapLabel::Draw()
 {
     S32 x = getX();
     S32 y = getY();
@@ -61,7 +61,7 @@ void FluxBitmapFont::Draw()
     }
 }
 //-----------------------------------------------------------------------------
-RectI FluxBitmapFont::getRectI() const
+RectI FluxBitmapLabel::getRectI() const
 {
     RectI lResult = getDrawParams().getRectI();
     S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);

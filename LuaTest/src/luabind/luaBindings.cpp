@@ -2,7 +2,8 @@
 #include <fluxMain.h>
 #include <sol/sol.hpp>
 #include <SDL3/SDL.h>
-#include <fonts/fluxTrueTypeFont.h>
+#include <fonts/fluxTTFont.h>
+#include <fonts/fluxLabel.h>
 
 namespace OhmFlux::Lua {
 
@@ -289,16 +290,10 @@ namespace OhmFlux::Lua {
         );
 
         type["getSpeed"] = &FluxRenderObject::getSpeed;
-        type["getDirX"] = &FluxRenderObject::getDirX;
-        type["getDirY"] = &FluxRenderObject::getDirY;
+        type["getVelocity"] = &FluxRenderObject::getVelocity;
 
         type["setSpeed"] = &FluxRenderObject::setSpeed;
-        type["setDirX"] = &FluxRenderObject::setDirX;
-        type["setDirY"] = &FluxRenderObject::setDirY;
-        // void setSpeed(const F32& speed) { this->mSpeed = speed; }
-        // void setDirX(const F32& dirX) { this->mDirX = dirX; }
-        // void setDirY(const F32& dirY) { this->mDirY = dirY; }
-
+        type["setVelocity"] = &FluxRenderObject::setVelocity;
     }
 
     //==============================================================================
@@ -317,90 +312,128 @@ namespace OhmFlux::Lua {
         // Add other methods as needed
     }
     //==============================================================================
-    void bindFluxBitmapFont(sol::state& lua) {
-        auto type = lua.new_usertype<FluxBitmapFont>("FluxBitmapFont",
-                                                     sol::base_classes, sol::bases<FluxRenderObject, FluxBaseObject>()
-        );
+    void bindFluxFonts(sol::state& lua) {
 
-        // Use sol::factories with stack_object for maximum debuggability
-        type["new"] = sol::factories(
-            [](sol::stack_object tex_obj ) -> FluxBitmapFont* {
-                // Check if these are actually the types we expect
-                if (!tex_obj.is<FluxTexture*>()) {
-                    throw sol::error("Font Constructor Error: Argument 1 is not a FluxTexture pointer!");
+        // BitMapLabel
+        {
+            auto type = lua.new_usertype<FluxBitmapLabel>("FluxBitmapLabel",
+                                                          sol::base_classes, sol::bases<FluxRenderObject, FluxBaseObject>()
+            );
+
+            // Use sol::factories with stack_object for maximum debuggability
+            type["new"] = sol::factories(
+                [](sol::stack_object tex_obj ) -> FluxBitmapLabel* {
+                    // Check if these are actually the types we expect
+                    if (!tex_obj.is<FluxTexture*>()) {
+                        throw sol::error("Font Constructor Error: Argument 1 is not a FluxTexture pointer!");
+                    }
+
+                    return new FluxBitmapLabel( tex_obj.as<FluxTexture*>() );
                 }
+            );
 
-                return new FluxBitmapFont( tex_obj.as<FluxTexture*>() );
-            }
-        );
+            type["set"] = sol::overload(
+                // Original 5-arg version (uses C++ default color)
+                [](FluxBitmapLabel& self, const char* c, int x, int y, int w, int h) {
+                    self.set(c, x, y, w, h);
+                },
+                // NEW 6-arg version: Accepts a Lua table for the color
+                [](FluxBitmapLabel& self, const char* c, int x, int y, int w, int h, sol::table colTable) {
+                    Color4F color;
+                    // Access table by index (Lua indices start at 1)
+                    color.r = colTable.get_or(1, 1.0f);
+                    color.g = colTable.get_or(2, 1.0f);
+                    color.b = colTable.get_or(3, 1.0f);
+                    color.a = colTable.get_or(4, 1.0f);
 
-        type["set"] = sol::overload(
-            // Original 5-arg version (uses C++ default color)
-            [](FluxBitmapFont& self, const char* c, int x, int y, int w, int h) {
-                self.set(c, x, y, w, h);
-            },
-            // NEW 6-arg version: Accepts a Lua table for the color
-            [](FluxBitmapFont& self, const char* c, int x, int y, int w, int h, sol::table colTable) {
-                Color4F color;
-                // Access table by index (Lua indices start at 1)
-                color.r = colTable.get_or(1, 1.0f);
-                color.g = colTable.get_or(2, 1.0f);
-                color.b = colTable.get_or(3, 1.0f);
-                color.a = colTable.get_or(4, 1.0f);
+                    self.set(c, x, y, w, h, color);
+                },
+                // Original C++ signature (keeps it available if you pass a bound Color4F object)
+                &FluxBitmapLabel::set
+            );
+            type["setCaption"] = [](FluxBitmapLabel& self, std::string text) {
+                self.setCaption("%s", text.c_str());
+            };
 
-                self.set(c, x, y, w, h, color);
-            },
-            // Original C++ signature (keeps it available if you pass a bound Color4F object)
-            &FluxBitmapFont::set
-        );
-        type["setCaption"] = [](FluxBitmapFont& self, std::string text) {
-            self.setCaption("%s", text.c_str());
-        };
+        }
+
+        // FluxTTFont
+        {
+            auto type = lua.new_usertype<FluxTTFont>("FluxTTFont");
+            type["new"] = sol::factories(
+                [](const char* filename, sol::optional<uint32_t> size ) {
+                    if (size) return new FluxTTFont(filename, size.value_or(32.f));
+                    else return new FluxTTFont(filename);
+                }
+            );
+
+        }
+        // FluxLabel
+        {
+            auto type = lua.new_usertype<FluxLabel>("FluxLabel",
+                                                          sol::base_classes, sol::bases<FluxRenderObject, FluxBaseObject>()
+            );
+
+            // Use sol::factories with stack_object for maximum debuggability
+            type["new"] = sol::factories(
+                [](sol::stack_object tex_obj ) -> FluxLabel* {
+                    // Check if these are actually the types we expect
+                    if (!tex_obj.is<FluxTTFont*>()) {
+                        throw sol::error("Font Constructor Error: Argument 1 is not a FluxTexture pointer!");
+                    }
+
+                    return new FluxLabel( tex_obj.as<FluxTTFont*>() );
+                }
+            );
+
+            type["set"] = sol::overload(
+                [](FluxLabel& self, const char* caption, float x, float y) {
+                    self.set(caption, Point2F(x,y));
+                },
+                [](FluxLabel& self, const char* caption, float x, float y, sol::table colTable, sol::optional<float> scale) {
+                    Color4F color;
+                    // Access table by index (Lua indices start at 1)
+                    color.r = colTable.get_or(1, 1.0f);
+                    color.g = colTable.get_or(2, 1.0f);
+                    color.b = colTable.get_or(3, 1.0f);
+                    color.a = colTable.get_or(4, 1.0f);
+
+                    self.set(caption, Point2F(x,y), color, scale.value_or(1.f));
+                },
+                &FluxLabel::set
+            );
+            type["setCaption"] = [](FluxLabel& self, std::string text) {
+                self.setCaption("%s", text.c_str());
+            };
+
+        }
     }
-    //==============================================================================
-    void bindFluxTrueTypeFont(sol::state& lua) {
-        auto type = lua.new_usertype<FluxTrueTypeFont>("FluxTrueTypeFont",
-                                                     sol::base_classes, sol::bases<FluxRenderObject, FluxBaseObject>()
-        );
-
-        // Use sol::factories with stack_object for maximum debuggability
-        type["new"] = sol::factories(
-            [](const char* filename, uint32_t fontsize ) -> FluxTrueTypeFont* {
-                return new FluxTrueTypeFont( filename,  fontsize );
-            }
-        );
-
-        type["setCaption"] = [](FluxTrueTypeFont& self, std::string text) {
-            self.setCaption("%s", text.c_str());
-        };
-
-        // void set(
-        //     const char* lCaption,
-        //     Point2F lPos,
-        //     Color4F lColor = cl_White,
-        //     F32     lScale = 1.f
-        // )
-
-
-        type["set"] = sol::overload(
-            // Original 5-arg version (uses C++ default color)
-            [](FluxTrueTypeFont& self, const char* caption, float x, float y) {
-                self.set(caption, Point2F(x,y));
-            },
-            [](FluxTrueTypeFont& self, const char* caption, float x, float y, sol::table colTable, sol::optional<float> scale) {
-                Color4F color;
-                // Access table by index (Lua indices start at 1)
-                color.r = colTable.get_or(1, 1.0f);
-                color.g = colTable.get_or(2, 1.0f);
-                color.b = colTable.get_or(3, 1.0f);
-                color.a = colTable.get_or(4, 1.0f);
-
-                self.set(caption, Point2F(x,y), color, scale.value_or(1.f));
-            },
-            // Original C++ signature (keeps it available if you pass a bound Color4F object)
-            &FluxTrueTypeFont::set
-        );
-    }
+    // //==============================================================================
+    // void bindFluxTrueTypeFont(sol::state& lua) {
+    //     auto type = lua.new_usertype<FluxTrueTypeFont>("FluxTrueTypeFont",
+    //                                                  sol::base_classes, sol::bases<FluxRenderObject, FluxBaseObject>()
+    //     );
+    //
+    //     // Use sol::factories with stack_object for maximum debuggability
+    //     type["new"] = sol::factories(
+    //         [](const char* filename, uint32_t fontsize ) -> FluxTrueTypeFont* {
+    //             return new FluxTrueTypeFont( filename,  fontsize );
+    //         }
+    //     );
+    //
+    //     type["setCaption"] = [](FluxTrueTypeFont& self, std::string text) {
+    //         self.setCaption("%s", text.c_str());
+    //     };
+    //
+    //     // void set(
+    //     //     const char* lCaption,
+    //     //     Point2F lPos,
+    //     //     Color4F lColor = cl_White,
+    //     //     F32     lScale = 1.f
+    //     // )
+    //
+    //
+    // }
     //==============================================================================
     void bindFluxAudioStream(sol::state& lua) {
         // 1. Create usertype with inheritance

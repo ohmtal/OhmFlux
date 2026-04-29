@@ -40,14 +40,14 @@ private:
 	bool mChallengeRunning;
 	bool mFishGoalReached;
 	int mFishGoals[FishTypeCount];
-	FluxBitmapFont* mScoreLabel;
-	FluxBitmapFont* mChallengeTimeLabel;
-	FluxBitmapFont* mFishGoalDisplay[FishTypeCount];
+	FluxBitmapLabel* mScoreLabel;
+	FluxBitmapLabel* mChallengeTimeLabel;
+	FluxBitmapLabel* mFishGoalDisplay[FishTypeCount];
 	void onChallengeKey();
 
 
-	FluxBitmapFont* mLabel1;
-	FluxBitmapFont* mLabel2;
+	FluxBitmapLabel* mLabel1;
+	FluxBitmapLabel* mLabel2;
 
 
 	GuiFishLabel* mFishLabel[FishTypeCount];

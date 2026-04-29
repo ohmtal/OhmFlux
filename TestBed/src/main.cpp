@@ -3,7 +3,7 @@
 // !!! Warning ugly code style ahead !!!
 //-----------------------------------------------------------------------------
 #include <fluxMain.h>
-#include <fonts/fluxBitmapFont.h>
+#include <fonts/fluxBitmapLabel.h>
 #include <render/fluxRender2D.h>
 #include <core/fluxInput.h>
 #include <core/fluxTilemap.h>
@@ -11,7 +11,8 @@
 #include <particle/fluxParticleEmitter.h>
 #include <particle/fluxParticleManager.h>
 #include <particle/fluxParticlePresets.h>
-#include <fonts/fluxTrueTypeFont.h>
+#include <fonts/fluxTTFont.h>
+#include <fonts/fluxLabel.h>
 #include <audio/fluxAudioStream.h>
 #include <utils/fluxScheduler.h>
 #include <lights/fluxLight.h>
@@ -38,8 +39,8 @@ private:
 
     FluxTexture* mFontTex = nullptr;
     FluxTexture* mBackgroundTex = nullptr;
-    FluxBitmapFont* mStatusLabel = nullptr;
-    FluxBitmapFont* mKeyEventLabel = nullptr;
+    FluxBitmapLabel* mStatusLabel = nullptr;
+    FluxBitmapLabel* mKeyEventLabel = nullptr;
 
     // FluxTexture* mBasicGroundTiles = nullptr;
 
@@ -49,7 +50,8 @@ private:
     FluxParticleEmitter* mFireEmitter;
     FluxParticleEmitter* mSparkEmitter;
 
-    FluxTrueTypeFont* mMonoFont;
+    FluxTTFont* mMonoFont;
+    FluxLabel* mLabel;
 
     FluxAudioStream* mTomsGuitarSample = nullptr;
     // FluxAudioStream* mClickSound = nullptr;
@@ -100,10 +102,10 @@ public:
         // mStatusLabel->setLayer(0.05f);
         // mStatusLabel->setColor( cl_Blue );
 
-        mStatusLabel = new FluxBitmapFont(mFontTex, "..STATUS..", {getScreen()->getCenterX(),50}, {26,32} , FontAlign_Center, cl_Blue);
+        mStatusLabel = new FluxBitmapLabel(mFontTex, "..STATUS..", {getScreen()->getCenterX(),50}, {26,32} , FontAlign_Center, cl_Blue);
         queueObject(mStatusLabel);
 
-        mKeyEventLabel  = new FluxBitmapFont(mFontTex, "..KEYS..", {getScreen()->getCenterX(),20}, {26,32} , FontAlign_Center, cl_Blue);
+        mKeyEventLabel  = new FluxBitmapLabel(mFontTex, "..KEYS..", {getScreen()->getCenterX(),20}, {26,32} , FontAlign_Center, cl_Blue);
         queueObject(mKeyEventLabel);
 
         // --- Input Mapping Setup ---
@@ -187,14 +189,15 @@ public:
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         // FluxTrueTypeFont
 
-         mMonoFont = new FluxTrueTypeFont("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 20);
+         mMonoFont = new FluxTTFont("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 20);
+         mLabel = new FluxLabel(mMonoFont);
          if (mMonoFont)
          {
-             mMonoFont->set("Alder Babsack", { 0.f,(F32)getScreen()->getHeight()-20.f }, cl_Crimson, 2.f);
+             mLabel->set("Alder Babsack", { 0.f,(F32)getScreen()->getHeight()-20.f }, cl_Crimson, 2.f);
 
              // mMonoFont->setPos(200,200);
              // mMonoFont->setCaption("Alder Babsack!");
-             queueObject(mMonoFont);
+             queueObject(mLabel);
          }
 
          // FluxAudioStream (ogg)
@@ -311,6 +314,8 @@ public:
         //FIXME does not work anymore ?! ...
         // SAFE_DELETE(mOPL3Controller);
         SAFE_DELETE(mSFXGenerator);
+
+        SAFE_DELETE(mMonoFont);
 
         Parent::Deinitialize();
     }
@@ -432,7 +437,7 @@ public:
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
-        mMonoFont->setCaption("%d fps, mouse grabbed:%d (toogle with right mouse button)", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()));
+        mLabel->setCaption("%d fps, mouse grabbed:%d (toogle with right mouse button)", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()));
 
         const float camSpeed  = 0.1f * getFrameTime();
         const float zoomSpeed = 0.0001f  * getFrameTime();

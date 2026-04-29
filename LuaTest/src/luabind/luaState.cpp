@@ -57,8 +57,7 @@ namespace OhmFlux::Lua {
         bindFluxAudioStream(mLua);
         bindDrawParams2D(mLua);
         bindFluxRenderObject(mLua); // Parent of Font
-        bindFluxBitmapFont(mLua);   // Child of RenderObject
-        bindFluxTrueTypeFont(mLua);
+        bindFluxFonts(mLua);   // Child of RenderObject
         bindFluxMain(mLua);         // Engine
         bindSDLEvents(mLua);
         bindConstants(mLua);

@@ -39,7 +39,8 @@ protected:
 	DrawParams2D mDrawParams;
 
 	// FluxScreen* mScreen;
-	F32 mSpeed, mDirX, mDirY;
+	F32 mSpeed;
+	Point2F mVelocity;
 	S32 mFramesStart, mFramesEnd;
 	S32 mAnimationDelay;
 	S32 mAnimationTime;
@@ -56,8 +57,7 @@ public:
 	// FluxRenderObject(FluxTexture* lTexture, FluxScreen* lScreen, S32 framesStart = 0, S32 framesEnd = 0)
 	: // mScreen(lScreen),
 	 mSpeed(0.0f)
-	, mDirX(0.0f)
-	, mDirY(0.0f)
+	, mVelocity(0.0f,0.0f)
 	, mFramesStart(framesStart)
 	, mFramesEnd(framesEnd)
 	, mAnimationDelay(500)
@@ -95,8 +95,9 @@ public:
 	F32 getRotation() const {return mDrawParams.rotation; }
 	F32 getLayer() const {return mDrawParams.getLayer(); }
 	F32 getSpeed() const { return mSpeed; }
-	F32 getDirX() const {return mDirX; }
-	F32 getDirY() const {return mDirY; }
+	const Point2F getVelocity() { return mVelocity; }
+	F32 getVelocityX() const {return mVelocity.x; }
+	F32 getVelocityY() const {return mVelocity.y; }
 	bool  getFlipX() const { return mDrawParams.flipX; }
 	bool  getFlipY() const { return mDrawParams.flipY; }
 	S32   getFramesStart() const { return mFramesStart; }
@@ -123,8 +124,9 @@ public:
 	void setRotation(const F32& rotation) { mDrawParams.rotation = rotation; }
 	void setLayer(const F32& layer) { mDrawParams.z = layer; }
 	void setSpeed(const F32& speed) { this->mSpeed = speed; }
-	void setDirX(const F32& dirX) { this->mDirX = dirX; }
-	void setDirY(const F32& dirY) { this->mDirY = dirY; }
+	void setVelocity(const Point2F& velo) { this->mVelocity = velo;}
+	void setVelocityX(const F32& dirX) { this->mVelocity.x = dirX; }
+	void setVelocityY(const F32& dirY) { this->mVelocity.y = dirY; }
 	void setFlipX(const bool& flipX) { mDrawParams.flipX = flipX; }
 	void setFlipY(const bool& flipY) { mDrawParams.flipY = flipY; }
 	void setFramesStart(const S32& framesStart)  { mFramesStart = framesStart; }

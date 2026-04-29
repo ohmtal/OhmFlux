@@ -103,8 +103,9 @@ set(ENGINE_SOURCES
     ${ENGINE_DIR}/core/fluxQuadtree.cpp
     ${ENGINE_DIR}/core/fluxCamera.cpp
 
-    ${ENGINE_DIR}/fonts/fluxBitmapFont.cpp
-    ${ENGINE_DIR}/fonts/fluxTrueTypeFont.cpp
+    ${ENGINE_DIR}/fonts/fluxBitmapLabel.cpp
+    ${ENGINE_DIR}/fonts/fluxLabel.cpp
+    ${ENGINE_DIR}/fonts/fluxTTFont.cpp
 
     ${ENGINE_DIR}/grid/basicgrid.cpp
 

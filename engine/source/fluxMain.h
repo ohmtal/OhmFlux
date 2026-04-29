@@ -25,7 +25,7 @@
 #include "core/fluxTexture.h"
 #include "core/fluxScreen.h"
 #include "core/fluxRenderObject.h"
-#include "fonts/fluxBitmapFont.h"
+#include "fonts/fluxBitmapLabel.h"
 #include "audio/fluxAudioStream.h"
 #include "core/fluxQuadtree.h"
 #include "core/fluxCamera.h"

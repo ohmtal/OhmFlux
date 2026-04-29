@@ -13,8 +13,7 @@ namespace OhmFlux::Lua {
     void bindDrawParams2D(sol::state& lua);
     void bindFluxRenderObject(sol::state& lua);
     void bindFluxScreen(sol::state& lua);
-    void bindFluxBitmapFont(sol::state& lua);
-    void bindFluxTrueTypeFont(sol::state& lua);
+    void bindFluxFonts(sol::state& lua);
     void bindFluxAudioStream(sol::state& lua);
     void bindSDLEvents(sol::state& lua);
     void bindConstants(sol::state& lua);

@@ -13,7 +13,7 @@
 #include "core/fluxGlobals.h"
 #include "core/fluxRenderObject.h"
 
-class FluxBitmapFont : public FluxRenderObject
+class FluxBitmapLabel : public FluxRenderObject
 {
     typedef FluxRenderObject Parent;
 protected:
@@ -28,7 +28,7 @@ protected:
 private:
     using Parent::getDrawParams;
 public:
-    FluxBitmapFont(FluxTexture* lTex,
+    FluxBitmapLabel(FluxTexture* lTex,
                     // FluxScreen* lScreen,
                     S32 lStartChar = 32,
                     S32 lEndChar=127)
@@ -43,7 +43,7 @@ public:
     { }
 
     // one liner
-    FluxBitmapFont(FluxTexture* lTex,
+    FluxBitmapLabel(FluxTexture* lTex,
                    const char * lCaption,
                    Point2I  lPos,
                    Point2I  lCharSize,

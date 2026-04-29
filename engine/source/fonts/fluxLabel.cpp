@@ -2,26 +2,15 @@
 // Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-#include "fluxTrueTypeFont.h"
+#include "fluxLabel.h"
 #include "render/fluxRender2D.h"
 #include <stdio.h>
 #include "utils/errorlog.h"
+#include "fluxTTFont.h"
 
-// ImGui Conflict !!
-// #define STB_TRUETYPE_IMPLEMENTATION
-// #define STBTT_def static
-// #include "stb_truetype.h"
-
-// #define STBRP_NODE  MyFont_stbrp_node
-// #define STBRP_RECT  MyFont_stbrp_rect
-// #define STBRP_CONTEXT MyFont_stbrp_context
-//
-// #define STBTT_STATIC
-// #define STB_TRUETYPE_IMPLEMENTATION
-// #include "stb_truetype.h"
 
 namespace STB_Internal {
-    #define STB_TRUETYPE_IMPLEMENTATION
+    // #define STB_TRUETYPE_IMPLEMENTATION
     #include "stb_truetype.h"
 }
 
@@ -34,49 +23,29 @@ namespace STB_Internal {
 //-----------------------------------------------------------------------------
 
 
-FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
+FluxLabel::FluxLabel(FluxTTFont* ttfont)
 : Parent(nullptr)
 {
+    if (!ttfont || !ttfont->getTexture() || !ttfont->getFont()) {
+        Log("[error] FluxLabel invalid TrueType Font Object!");
+        return;
+    }
+    mTTFont = ttfont;
+
     mAlign = FontAlign_Left;
     mIsGuiElement = true;
     mColor = {1.0f, 1.0f, 1.0f, 1.0f};
 
-    // Load TTF file using SDL3 (Works on Android APK assets and Desktop)
-    size_t size;
-    void* ttfData = SDL_LoadFile(filename, &size);
 
-    if (!ttfData) {
-        Log("Can not load font %s: %s", filename, SDL_GetError());
-        return;
-    }
-
-    // Bake to Bitmap
-    // Note: stbtt_BakeFontBitmap does NOT keep a pointer to ttfData,
-    // it only reads it, so we can free ttfData safely after this step.
-    std::vector<unsigned char> alphaBitmap(512 * 512);
-    STB_Internal::stbtt_BakeFontBitmap((unsigned char*)ttfData, 0, (float)fontSize,
-                         alphaBitmap.data(), 512, 512,
-                         32, 95,
-                          reinterpret_cast<STB_Internal::stbtt_bakedchar*>(mFont.chardata)
-    );
-
-    // 3. Free the file buffer immediately after baking
-    SDL_free(ttfData);
-
-    // Create Texture (Atlas)
-    mTexture = new FluxTexture();
-    mTexture->bindOpenGLAlphaDirect(alphaBitmap.data(), 512, 512);
-    setTexture(mTexture);
+    setTexture(mTTFont->getTexture());
 }
 
-FluxTrueTypeFont::~FluxTrueTypeFont(void)
+FluxLabel::~FluxLabel(void)
 {
-    // clean Texture
-    SAFE_DELETE(mTexture);
 }
 
 //-----------------------------------------------------------------------------
-void FluxTrueTypeFont::setCaption(const char *szFormat, ...)
+void FluxLabel::setCaption(const char *szFormat, ...)
 {
     if (!szFormat) return;
     va_list Arg;
@@ -88,9 +57,13 @@ void FluxTrueTypeFont::setCaption(const char *szFormat, ...)
 }
 
 //-----------------------------------------------------------------------------
-void FluxTrueTypeFont::Draw()
+void FluxLabel::Draw()
 {
     if (mCaption[0] == '\0') return;
+    if (!mTTFont || !mTTFont->getFont()) return;
+
+    FontData fontData = *mTTFont->getFont();
+
 
     // Use float for internal calculations to maintain precision
     float startX = (float)getX();
@@ -109,7 +82,7 @@ void FluxTrueTypeFont::Draw()
             {
                 STB_Internal::stbtt_aligned_quad q;
                 STB_Internal::stbtt_GetBakedQuad(
-                    reinterpret_cast<STB_Internal::stbtt_bakedchar*>(mFont.chardata),
+                    reinterpret_cast<STB_Internal::stbtt_bakedchar*>(fontData.chardata),
                     512, 512, mCaption[i] - 32, &tempX, &tempY, &q, 1);
             }
         }
@@ -135,7 +108,7 @@ void FluxTrueTypeFont::Draw()
             // Note: We pass temporary 0,0 to get local offsets, then apply scale and startX
             float nextX = 0, nextY = 0;
             STB_Internal::stbtt_GetBakedQuad(
-                reinterpret_cast<STB_Internal::stbtt_bakedchar*>(mFont.chardata),
+                reinterpret_cast<STB_Internal::stbtt_bakedchar*>(fontData.chardata),
                 512, 512, mCaption[i] - 32, &nextX, &nextY, &q, 1);
 
             DrawParams2D dp;
@@ -171,7 +144,7 @@ void FluxTrueTypeFont::Draw()
 }
 
 //-----------------------------------------------------------------------------
-RectI FluxTrueTypeFont::getRectI() const
+RectI FluxLabel::getRectI() const
 {
     RectI lResult = getDrawParams().getRectI();
     S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
