@@ -203,7 +203,7 @@ namespace OhmFlux::Lua {
         if (mLuaSelf != sol::lua_nil) {
             sol::optional<sol::function> fx = mLuaSelf["onUpdate"];
             if (fx) {
-                fx.value()(mLuaSelf, dt / 1000.f); // lua get the / 1000.f 0.166 instead if 16.6
+                fx.value()(mLuaSelf, dt);
             }
         }
     }

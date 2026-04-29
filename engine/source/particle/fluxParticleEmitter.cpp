@@ -17,7 +17,7 @@ mSpawnTimer(0.0f)
 //-----------------------------------------------------------------------------
 FluxParticleEmitter::~FluxParticleEmitter() {}
 //-----------------------------------------------------------------------------
-void FluxParticleEmitter::update(F32 dt)
+void FluxParticleEmitter::Update(F32 dt)
 {
 
     for (auto& p : mParticles)
@@ -140,7 +140,7 @@ void FluxParticleEmitter::appendParticleVertices
 
 //-----------------------------------------------------------------------------
 //enhanced batch version:
-void FluxParticleEmitter::render()
+void FluxParticleEmitter::Draw()
 {
     if (mParticles.empty()) return;
 

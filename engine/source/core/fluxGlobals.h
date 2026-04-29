@@ -494,7 +494,7 @@ struct FluxSettings
     bool FullScreen  = false;
     bool initialVsync = true; //only used when screen starts
     bool ScaleScreen = true;
-    double updateDt        = 16.666f; //fixed update Dt
+    double updateDt        = 0.016666f; //fixed update Dt
     double frameLimiter = 0.f; //sleep milliseconds
 
     Point2I minWindowSize = { 320, 200 };

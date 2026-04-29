@@ -91,45 +91,6 @@ void FluxAudioStream::FillOggBuffer()
         }
     }
 }
-
-// void FluxAudioStream::FillOggBuffer()
-// {
-//     if (!mIsOgg || !mVorbis || !mStream) return;
-//
-//     // Maintain a 500ms buffer to prevent stuttering
-//     int targetBytes = mSpec.freq * sizeof(float) * mSpec.channels / 2;
-//
-//     // Use Available (what's in the resampler) + Queued (what's waiting)
-//     // to determine if we need more data
-//     while ((SDL_GetAudioStreamAvailable(mStream) + SDL_GetAudioStreamQueued(mStream)) < targetBytes)
-//     {
-//         const int samplesToRead = 1024;
-//         const int totalFloats = samplesToRead * mSpec.channels;
-//
-//         if (mConversionBuffer.size() < (size_t)totalFloats) {
-//             mConversionBuffer.resize(totalFloats);
-//         }
-//
-//         int samplesRead = stb_vorbis_get_samples_float_interleaved(
-//             mVorbis, mSpec.channels, mConversionBuffer.data(), totalFloats
-//         );
-//
-//         if (samplesRead > 0) {
-//             SDL_PutAudioStreamData(mStream, mConversionBuffer.data(),
-//                                    samplesRead * mSpec.channels * sizeof(float));
-//         }
-//         else {
-//             // End of file logic
-//             if (mLooping) {
-//                 stb_vorbis_seek_start(mVorbis);
-//             } else {
-//                 // If we aren't looping and ran out of data, stop and flush
-//                 SDL_FlushAudioStream(mStream);
-//                 break;
-//             }
-//         }
-//     }
-// }
 //-----------------------------------------------------------------------------
 void FluxAudioStream::Update(const double& dt)
 {

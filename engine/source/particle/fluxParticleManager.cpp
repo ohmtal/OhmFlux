@@ -11,21 +11,17 @@ FluxParticleEmitter* FluxParticleManager::addEmitter(const EmitterProperties& pr
     return ptr;
 }
 
-void FluxParticleManager::update(F32 dt) {
+void FluxParticleManager::Update(F32 dt) {
     // Update all emitters
     for (auto it = mEmitters.begin(); it != mEmitters.end(); ) {
-        (*it)->update(dt);
-
-        // Optional: If you add an 'isDead' flag to emitters for one-shots
-        // if ((*it)->isDead()) { it = mEmitters.erase(it); }
-        // else { ++it; }
+        (*it)->Update(dt);
         ++it;
     }
 }
 
-void FluxParticleManager::render() {
+void FluxParticleManager::Draw() {
     for (const auto& emitter : mEmitters) {
-        emitter->render();
+        emitter->Draw();
     }
 }
 

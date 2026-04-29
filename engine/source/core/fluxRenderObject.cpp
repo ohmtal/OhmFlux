@@ -36,8 +36,8 @@ void FluxRenderObject::Update(const double& dt)
 
 
 	if (mSpeed > 0.f && !mVelocity.isZero()  ){
-		mDrawParams.x += mSpeed * mVelocity.x * dt / 1000.f;
-		mDrawParams.y += mSpeed * mVelocity.y * dt / 1000.f;
+		mDrawParams.x += mSpeed * mVelocity.x * dt ;
+		mDrawParams.y += mSpeed * mVelocity.y * dt ;
 	}
 
 

@@ -359,7 +359,7 @@ void FluxMain::Update(const double& dt)
 		if (i < mQueueObjects.size() && mQueueObjects[i] == obj)
 			++i;
 	}
-	ParticleManager.update(dt / 1000.f );
+	ParticleManager.Update(dt);
 }
 //--------------------------------------------------------------------------------------
 
@@ -389,7 +389,7 @@ void FluxMain::Draw() {
 	}
 
 	onDraw();
-	ParticleManager.render();
+	ParticleManager.Draw();
 	/* layers ... end */ 
 	Render2D.renderBatch();
 
@@ -622,7 +622,7 @@ void FluxMain::IterateFrame()
 
 	//  Time Calculation
 	mTickCount = SDL_GetPerformanceCounter();
-	gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency * 1000.0;
+	gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency;
 	//  Delta Time Cap (Prevent logic jumps if browser tab was suspended)
 	if (gFrameTime > 200.0f) gFrameTime = mSettings.updateDt;
 
@@ -632,10 +632,10 @@ void FluxMain::IterateFrame()
 		SDL_Delay((Uint32)(mSettings.frameLimiter - gFrameTime));
 		#endif
 		mTickCount = SDL_GetPerformanceCounter();
-		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency * 1000.0;
+		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency ;
 	}
 
-	gGameTime += (float)gFrameTime / 1000.f;
+	gGameTime += (float)gFrameTime;
 
 	// fps update every 1 second:
 	static double lFpsTimer = 0;
@@ -644,11 +644,20 @@ void FluxMain::IterateFrame()
 	lFpsTimer += gFrameTime;
 	lFrameCounter++;
 
-	if (lFpsTimer >= 1000.0) { // Every 1 second
+	if (lFpsTimer >= 1.0f) { // Every 1 second
 		mFPS = lFrameCounter;
 		lFrameCounter = 0;
-		lFpsTimer -= 1000.0;
+		lFpsTimer -= 1.0f;
+
+		// auto slow down cpu load saving !
+		if (mFPS > 500 && mSettings.frameLimiter < 3.f) {
+			mSettings.frameLimiter += 0.25;
+			Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating Frame-Limiter: %.2f", mFPS,  mSettings.frameLimiter);
+		}
+
 	}
+
+
 
 	// fixed update: >>>>>>>>>>>>>>>>>>>>>>>>>
 	static double accumulator = 0.0;
@@ -657,7 +666,7 @@ void FluxMain::IterateFrame()
 	// 4. Fixed Timestep Loop
 	// Consume time in chunks of exactly 16.66ms.
 	while (accumulator >= mSettings.updateDt) {
-		Update(mSettings.updateDt);
+		Update(mSettings.updateDt );
 		accumulator -= mSettings.updateDt;
 	}
 

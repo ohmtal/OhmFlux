@@ -59,7 +59,7 @@ public:
 		// 1. Use local variables to avoid multiple getter calls
 		float currentX = getX();
 		bool isFlipped = getFlipX();
-		float speed = getSpeed() * static_cast<float>(dt);
+		float speed = getSpeed() * static_cast<float>(dt * 1000.f);
 		float screenWidth = static_cast<float>(getScreen()->getWidth());
 
 		// 2. Consolidate movement logic

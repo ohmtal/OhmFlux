@@ -18,8 +18,8 @@ public:
     // Creates and returns a pointer to an emitter managed by this class
     FluxParticleEmitter* addEmitter(const EmitterProperties& props);
 
-    void update(F32 dt);
-    void render();
+    void Update(F32 dt);
+    void Draw();
 
     // Removes all emitters (useful for scene changes)
     void clear();

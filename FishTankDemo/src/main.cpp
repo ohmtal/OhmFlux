@@ -206,12 +206,12 @@ bool DemoGame::Initialize() {
 		.setRotationSpeedMinMax(1.f, 2.f)
 	)->setPosition({ 400.f ,550.f, 0.10f })->play();
 
-	ParticleManager.addEmitter(
-		ParticlePresets::waterBubblePreset
-		.setTexture(lBubble)
-		.setScaleMinMax( 1.f, 3.f)
-		.setLifeTimeMinMax(6.f,10.f)
-	)->setPosition({ 960.f ,550.f, 0.10f })->play();
+	// ParticleManager.addEmitter(
+	// 	ParticlePresets::waterBubblePreset
+	// 	.setTexture(lBubble)
+	// 	.setScaleMinMax( 1.f, 3.f)
+	// 	.setLifeTimeMinMax(6.f,10.f)
+	// )->setPosition({ 960.f ,550.f, 0.10f })->play();
 
 	//<<< paricles
 
@@ -322,7 +322,7 @@ void DemoGame::Update(const double& dt)
 {
 
 	static float lSpawnTimer = 0;
-	lSpawnTimer += dt / 3000;
+	lSpawnTimer += dt / 3.f;
 	if (lSpawnTimer > 1) {
 		lSpawnTimer -= 1;
 		spawnFish();
@@ -347,14 +347,14 @@ void DemoGame::Update(const double& dt)
 
 	if (mChallengeRunning)
 	{
-		lScoreTimer += dt / 200.f;
+		lScoreTimer += dt * 5.f;
 		if (lScoreTimer > 1) {
 			lScoreTimer -= 1;
 			mScore += mScoreInc;
 			mScoreLabel->setCaption("%06d", mScore);
 		}
 
-		lChallengeTimer += dt / 1000.f;
+		lChallengeTimer += dt ;
 		if (lChallengeTimer > 1) {
 			lChallengeTimer -= 1;
 			mChallengeTime++;

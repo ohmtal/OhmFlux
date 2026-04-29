@@ -78,8 +78,8 @@ public:
     FluxParticleEmitter(const EmitterProperties& props);
     ~FluxParticleEmitter();
 
-    void update(F32 dt);
-    void render();
+    void Update(F32 dt);
+    void Draw();
 
     FluxParticleEmitter*  setPosition( Point3F lPosition ) { mProperties.position = lPosition; return this; };
     Point3F getPosition() const { return mProperties.position; }
