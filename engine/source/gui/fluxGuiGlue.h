@@ -55,6 +55,7 @@ private:
 
     const char* mIniFileName;
 
+    bool mIsShutDown = false;
 
     struct FluxFingerTouchData {
         Uint64 touchStartTime = 0;
@@ -149,6 +150,7 @@ public:
 
 
     void Deinitialize() override {
+        if (mIsShutDown) return;
         // save settings if we dont use ini
         if (mIniFileName == nullptr && SettingsManager().IsInitialized()) {
             size_t out_size;
@@ -160,6 +162,8 @@ public:
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
+
+        mIsShutDown = true;
     }
 
     void setScale(float factor) {

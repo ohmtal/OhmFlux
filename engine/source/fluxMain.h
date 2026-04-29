@@ -97,6 +97,7 @@ public:
 	bool unQueueObject(FluxBaseObject* lObject);
 
 	bool queueDelete(FluxBaseObject* lObject); //<< this rock :D
+	bool CleanQueue();
 
 	FluxQuadtree* GetQuadtree() { return getQuadTreeObject(); }
 

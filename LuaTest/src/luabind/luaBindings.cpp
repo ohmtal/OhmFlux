@@ -2,6 +2,7 @@
 #include <fluxMain.h>
 #include <sol/sol.hpp>
 #include <SDL3/SDL.h>
+#include <fonts/fluxTrueTypeFont.h>
 
 namespace OhmFlux::Lua {
 
@@ -43,9 +44,10 @@ namespace OhmFlux::Lua {
         type["update"] = &FluxMain::Update;
         type["loadTexture"] = sol::overload(
             [](FluxMain& self, const char* f) { return self.loadTexture(f); },
-                                            [](FluxMain& self, const char* f, int c) { return self.loadTexture(f, c); },
-                                            [](FluxMain& self, const char* f, int c, int r) { return self.loadTexture(f, c, r); },
-                                            &FluxMain::loadTexture
+                [](FluxMain& self, const char* f, int c) { return self.loadTexture(f, c); },
+                [](FluxMain& self, const char* f, int c, int r) { return self.loadTexture(f, c, r); },
+                [](FluxMain& self, const char* f, int c, int r, bool transZeroPixel, bool pixelPerfect ) { return self.loadTexture(f, c, r, transZeroPixel, pixelPerfect); },
+                &FluxMain::loadTexture
         );
         type["getScreen"] = &FluxMain::getScreen;
         type["terminateApplication"] = &FluxMain::TerminateApplication;
@@ -109,10 +111,121 @@ namespace OhmFlux::Lua {
                                        // Helpers
                                        "getLayer", &DrawParams2D::getLayer,
                                        "getTexture", &DrawParams2D::getTexture
+
+                                       ,"getRectF",  &DrawParams2D::getRectF
+                                       ,"setRectF",  &DrawParams2D::setRectF
         );
     }
     //==============================================================================
     void bindFluxRenderObject(sol::state& lua) {
+        lua.new_usertype<Point2I>("Point2I",
+                                  sol::constructors<Point2I(), Point2I(float, float)>(),
+                                  "x", &Point2I::x,
+                                  "y", &Point2I::y
+        );
+        lua.new_usertype<Point2F>("Point2F",
+                                  sol::constructors<Point2F(), Point2F(float, float)>(),
+                                  "x", &Point2F::x,
+                                  "y", &Point2F::y,
+
+                                  sol::meta_function::addition, sol::overload(
+                                      [](const Point2F& a, const Point2F& b) { return a + b; },
+                                                                              [](const Point2F& a, float b) { return a + b; }
+                                  ),
+                                  sol::meta_function::subtraction, sol::overload(
+                                      [](const Point2F& a, const Point2F& b) { return a - b; },
+                                                                                 [](const Point2F& a, float b) { return a - b; }
+                                  ),
+                                  sol::meta_function::multiplication, sol::overload(
+                                      [](const Point2F& a, const Point2F& b) { return a * b; },
+                                                                                    [](const Point2F& a, float b) { return a * b; }
+                                  ),
+                                  sol::meta_function::division, sol::overload(
+                                      [](const Point2F& a, const Point2F& b) { return a / b; },
+                                                                              [](const Point2F& a, float b) { return a / b; }
+                                  ),
+
+                                  sol::meta_function::equal_to, &Point2F::operator==,
+                                  "dist", &Point2F::dist,
+                                  "len", &Point2F::len,
+                                  "normalize", &Point2F::normalize,
+                                  "normalized", &Point2F::normalized,
+                                  "dot", &Point2F::dot,
+                                  "cross", &Point2F::cross,
+                                  "toPoint2I", &Point2F::toPoint2I,
+
+                                  // nicer print ;)
+                                  sol::meta_function::to_string, [](const Point2F& p) {
+                                      return "Point2F(" + std::to_string(p.x) + ", " + std::to_string(p.y) + ")";
+                                  }
+        );
+
+        lua.new_usertype<Point3F>("Point3F",
+                                  sol::constructors<Point3F(), Point3F(float, float)>(),
+                                  "x", &Point3F::x,
+                                  "y", &Point3F::y,
+                                  "z", &Point3F::z,
+                                  sol::meta_function::addition,       &Point3F::operator+,
+                                  sol::meta_function::subtraction,    &Point3F::operator-,
+                                  sol::meta_function::multiplication, &Point3F::operator*,
+                                  sol::meta_function::division,       &Point3F::operator/,
+                                  sol::meta_function::equal_to,       &Point3F::operator==
+        );
+
+        lua.new_usertype<RectI>("RectI",
+                                sol::constructors<RectI(), RectI(int, int, int, int )>(),
+                                "x", &RectI::x,
+                                "y", &RectI::y,
+                                "w", &RectI::w,
+                                "h", &RectI::h,
+                                "getPoint", &RectI::getPoint,
+                                "getExtent", &RectI::getExtent,
+                                "pointInRect", &RectI::pointInRect,
+                                "len_x", &RectI::len_x,
+                                "len_y", &RectI::len_y,
+                                "isValidRect", &RectI::isValidRect,
+
+                                "contains", &RectI::contains,
+                                "intersects", &RectI::intersects
+
+
+        );
+
+
+        lua.new_usertype<RectF>("RectF",
+                                sol::constructors<RectF(), RectF(float, float, float, float )>(),
+                                "x", &RectF::x,
+                                "y", &RectF::y,
+                                "w", &RectF::w,
+                                "h", &RectF::h,
+
+                                "getPoint", &RectF::getPoint,
+                                "getExtent", &RectF::getExtent,
+                                "pointInRect", &RectF::pointInRect,
+
+                                "len_x", &RectF::len_x,
+                                "len_y", &RectF::len_y,
+                                "isValidRect", &RectF::isValidRect,
+                                "asRectI", &RectF::asRectI,
+                                "inflate", &RectF::inflate,
+
+                                "contains", &RectF::contains,
+                                "intersects", &RectF::intersects
+
+
+        );
+
+        lua.new_usertype<Color4F>("Color4F",
+                                  sol::constructors<Color4F(), Color4F(float, float, float, float)>(),
+                                  "r", &Color4F::r,
+                                  "g", &Color4F::g,
+                                  "b", &Color4F::b,
+                                  "a", &Color4F::a
+        );
+
+
+
+
         // Register the usertype with its base class
         auto type = lua.new_usertype<FluxRenderObject>("FluxRenderObject",
                                                        sol::base_classes, sol::bases<FluxBaseObject>()
@@ -125,6 +238,12 @@ namespace OhmFlux::Lua {
             },
             [](FluxTexture* tex,  int fs, int fe) {
                 return new FluxRenderObject(tex, fs, fe);
+            },
+            [](FluxTexture* tex,  const RectF rect) -> FluxRenderObject* {
+                FluxRenderObject* result =  new FluxRenderObject(tex);
+                if (!result) return nullptr;
+                result->setRectF(rect);
+                return result;
             }
         );
 
@@ -146,10 +265,15 @@ namespace OhmFlux::Lua {
         // Setters
         type["setX"] = &FluxRenderObject::setX;
         type["setY"] = &FluxRenderObject::setY;
+        type["setPosition"] = &FluxRenderObject::setPosition;
         type["setPos"] = sol::overload(
             sol::resolve<void(const F32&, const F32&)>(&FluxRenderObject::setPos),
                                        sol::resolve<void(Point2F)>(&FluxRenderObject::setPos)
         );
+
+        type["getRectF"] = &FluxRenderObject::getRectF;
+        type["setRectF"] = &FluxRenderObject::setRectF;
+
         type["setLayer"] = &FluxRenderObject::setLayer;
         type["setRotation"] = &FluxRenderObject::setRotation;
         type["setIsGuiElement"] = &FluxRenderObject::setIsGuiElement;
@@ -163,6 +287,18 @@ namespace OhmFlux::Lua {
             sol::resolve<bool(const Point2F&)>(&FluxRenderObject::pointCollide),
                                              sol::resolve<bool(const F32&, const F32&)>(&FluxRenderObject::pointCollide)
         );
+
+        type["getSpeed"] = &FluxRenderObject::getSpeed;
+        type["getDirX"] = &FluxRenderObject::getDirX;
+        type["getDirY"] = &FluxRenderObject::getDirY;
+
+        type["setSpeed"] = &FluxRenderObject::setSpeed;
+        type["setDirX"] = &FluxRenderObject::setDirX;
+        type["setDirY"] = &FluxRenderObject::setDirY;
+        // void setSpeed(const F32& speed) { this->mSpeed = speed; }
+        // void setDirX(const F32& dirX) { this->mDirX = dirX; }
+        // void setDirY(const F32& dirY) { this->mDirY = dirY; }
+
     }
 
     //==============================================================================
@@ -222,6 +358,50 @@ namespace OhmFlux::Lua {
         };
     }
     //==============================================================================
+    void bindFluxTrueTypeFont(sol::state& lua) {
+        auto type = lua.new_usertype<FluxTrueTypeFont>("FluxTrueTypeFont",
+                                                     sol::base_classes, sol::bases<FluxRenderObject, FluxBaseObject>()
+        );
+
+        // Use sol::factories with stack_object for maximum debuggability
+        type["new"] = sol::factories(
+            [](const char* filename, uint32_t fontsize ) -> FluxTrueTypeFont* {
+                return new FluxTrueTypeFont( filename,  fontsize );
+            }
+        );
+
+        type["setCaption"] = [](FluxTrueTypeFont& self, std::string text) {
+            self.setCaption("%s", text.c_str());
+        };
+
+        // void set(
+        //     const char* lCaption,
+        //     Point2F lPos,
+        //     Color4F lColor = cl_White,
+        //     F32     lScale = 1.f
+        // )
+
+
+        type["set"] = sol::overload(
+            // Original 5-arg version (uses C++ default color)
+            [](FluxTrueTypeFont& self, const char* caption, float x, float y) {
+                self.set(caption, Point2F(x,y));
+            },
+            [](FluxTrueTypeFont& self, const char* caption, float x, float y, sol::table colTable, sol::optional<float> scale) {
+                Color4F color;
+                // Access table by index (Lua indices start at 1)
+                color.r = colTable.get_or(1, 1.0f);
+                color.g = colTable.get_or(2, 1.0f);
+                color.b = colTable.get_or(3, 1.0f);
+                color.a = colTable.get_or(4, 1.0f);
+
+                self.set(caption, Point2F(x,y), color, scale.value_or(1.f));
+            },
+            // Original C++ signature (keeps it available if you pass a bound Color4F object)
+            &FluxTrueTypeFont::set
+        );
+    }
+    //==============================================================================
     void bindFluxAudioStream(sol::state& lua) {
         // 1. Create usertype with inheritance
         auto type = lua.new_usertype<FluxAudioStream>("FluxAudioStream",
@@ -269,7 +449,7 @@ namespace OhmFlux::Lua {
         );
 
     }
-    void bindSDLConstants(sol::state& lua) {
+    void bindConstants(sol::state& lua) {
 
         lua["SDL_EVENT_QUIT"] = SDL_EVENT_QUIT;
         lua["SDL_EVENT_KEY_DOWN"] = SDL_EVENT_KEY_DOWN;
@@ -327,6 +507,102 @@ namespace OhmFlux::Lua {
         //     }
         //     setmetatable(protected_table, mt)
         // )");
+
+        sol::table c = lua.create_named_table("color");
+
+//         // 1. Color4F für Lua bekannt machen (einmalig)
+//         lua.new_usertype<Color4F>("Color",
+//                                   sol::constructors<Color4F(), Color4F(float, float, float, float)>(),
+//                                   "r", &Color4F::r,
+//                                   "g", &Color4F::g,
+//                                   "b", &Color4F::b,
+//                                   "a", &Color4F::a
+//         );
+//
+//         // 2. Farbtabelle erstellen
+//         sol::table c = lua.create_named_table("color");
+
+        // Basis Farben
+        c["white"]       = cl_White;
+        c["black"]       = cl_Black;
+        c["red"]         = cl_Red;
+        c["green"]       = cl_Green;
+        c["blue"]        = cl_Blue;
+        c["yellow"]      = cl_Yellow;
+        c["cyan"]        = cl_Cyan;
+        c["magenta"]     = cl_Magenta;
+        c["gray"]        = cl_Gray;
+        c["lightgray"]   = cl_LightGray;
+        c["darkgray"]    = cl_DarkGray;
+        c["orange"]      = cl_Orange;
+        c["purple"]      = cl_Purple;
+        c["brown"]       = cl_Brown;
+        c["lime"]        = cl_Lime;
+        c["pink"]        = cl_Pink;
+
+        // Modern / UI Colors
+        c["crimson"]     = cl_Crimson;
+        c["emerald"]     = cl_Emerald;
+        c["skyblue"]     = cl_SkyBlue;
+        c["slate"]       = cl_Slate;
+        c["gold"]        = cl_Gold;
+        c["transparent"] = cl_Transparent;
+
+        // Ocean Theme
+        c["aquamarine"]  = cl_Aquamarine;
+        c["coral"]       = cl_Coral;
+        c["deepsea"]     = cl_DeepSea;
+        c["seafoam"]     = cl_Seafoam;
+        c["sand"]        = cl_Sand;
+        c["kelp"]        = cl_Kelp;
+
+        // Debug / FX
+        c["neonpink"]     = cl_NeonPink;
+        c["electricblue"] = cl_ElectricBlue;
+        c["acidgreen"]    = cl_AcidGreen;
+        c["glass"]        = cl_Glass;
+        c["shadow"]       = cl_Shadow;
+        c["ghost"]        = cl_Ghost;
+
+//         const Color4F cl_White        = { 1.0f, 1.0f, 1.0f, 1.0f };
+//         const Color4F cl_Black        = { 0.0f, 0.0f, 0.0f, 1.0f };
+//         const Color4F cl_Red          = { 1.0f, 0.0f, 0.0f, 1.0f };
+//         const Color4F cl_Green        = { 0.0f, 1.0f, 0.0f, 1.0f };
+//         const Color4F cl_Blue         = { 0.0f, 0.0f, 1.0f, 1.0f };
+//         const Color4F cl_Yellow       = { 1.0f, 1.0f, 0.0f, 1.0f };
+//         const Color4F cl_Cyan         = { 0.0f, 1.0f, 1.0f, 1.0f };
+//         const Color4F cl_Magenta      = { 1.0f, 0.0f, 1.0f, 1.0f };
+//         const Color4F cl_Gray         = { 0.5f, 0.5f, 0.5f, 1.0f };
+//         const Color4F cl_LightGray    = { 0.75f, 0.75f, 0.75f, 1.0f };
+//         const Color4F cl_DarkGray     = { 0.25f, 0.25f, 0.25f, 1.0f };
+//         const Color4F cl_Orange       = { 1.0f, 0.5f, 0.0f, 1.0f };
+//         const Color4F cl_Purple       = { 0.5f, 0.0f, 0.5f, 1.0f };
+//         const Color4F cl_Brown        = { 0.6f, 0.3f, 0.0f, 1.0f };
+//         const Color4F cl_Lime         = { 0.75f, 1.0f, 0.0f, 1.0f };
+//         const Color4F cl_Pink         = { 1.0f, 0.4f, 0.7f, 1.0f };
+//
+//         //------------------------------------- Some more Colors
+//         const Color4F cl_Crimson      = { 0.86f, 0.08f, 0.24f, 1.0f }; // Modern Alert/Red
+//         const Color4F cl_Emerald      = { 0.16f, 0.71f, 0.44f, 1.0f }; // Pleasant Success/Green
+//         const Color4F cl_SkyBlue      = { 0.53f, 0.81f, 0.98f, 1.0f }; // UI Accent
+//         const Color4F cl_Slate        = { 0.18f, 0.24f, 0.31f, 1.0f }; // Modern Dark Background
+//         const Color4F cl_Gold         = { 1.00f, 0.84f, 0.00f, 1.0f }; // Pickups/Rare items
+//         const Color4F cl_Transparent   = { 0.00f, 0.00f, 0.00f, 0.00f }; // Invisible/Default
+//
+//         const Color4F cl_Aquamarine   = { 0.50f, 1.00f, 0.83f, 1.0f }; // Tropical Water
+//         const Color4F cl_Coral        = { 1.00f, 0.50f, 0.31f, 1.0f }; // Warm Reef color
+//         const Color4F cl_DeepSea      = { 0.00f, 0.08f, 0.20f, 1.0f }; // Background Depths
+//         const Color4F cl_Seafoam      = { 0.60f, 0.85f, 0.75f, 1.0f }; // Bubbles/Foam
+//         const Color4F cl_Sand         = { 0.76f, 0.70f, 0.50f, 1.0f }; // Floor/Dirt
+//         const Color4F cl_Kelp         = { 0.13f, 0.29f, 0.13f, 1.0f }; // Dark Underwater Plant
+//
+//         const Color4F cl_NeonPink     = { 1.00f, 0.00f, 0.50f, 1.0f }; // Physics Hitboxes
+//         const Color4F cl_ElectricBlue = { 0.00f, 1.00f, 1.00f, 1.0f }; // Pathfinding nodes
+//         const Color4F cl_AcidGreen    = { 0.50f, 1.00f, 0.00f, 1.0f }; // Collision triggers
+//
+//         const Color4F cl_Glass        = { 1.00f, 1.00f, 1.00f, 0.25f }; // Semi-transparent White
+//         const Color4F cl_Shadow       = { 0.00f, 0.00f, 0.00f, 0.40f }; // Shadow Overlay
+//         const Color4F cl_Ghost        = { 0.70f, 0.70f, 1.00f, 0.50f }; // Semi-transparent Blue
 
 
     }

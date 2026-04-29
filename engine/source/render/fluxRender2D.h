@@ -24,8 +24,8 @@ struct DrawParams2D {
     F32 x = 0.0f;
     F32 y = 0.0f;
     F32 z = 0.0f;  //layer
-    S32 w = 0;
-    S32 h = 0;
+    F32 w = 0.0f;
+    F32 h = 0.0f;
     F32 rotation = 0.0f; //rotation in degree!
     bool flipX = false;
     bool flipY = false;
@@ -42,12 +42,20 @@ struct DrawParams2D {
     F32 u1 = 1.0f; F32 v1 = 1.0f;
     // <<<
 
-    F32 getWidthF() const { return static_cast<F32>(w); }
-    F32 getHeightF() const { return static_cast<F32>(h); }
+    F32 getWidthF() const { return w; } //static_cast<F32>(w); }
+    F32 getHeightF() const { return h; } // static_cast<F32>(h); }
 
     FluxTexture* getTexture() { return image; }
     F32 getFrame() const { return imgId; }
     F32 getLayer() const { return z; }
+
+    void setRectF(RectF rect) {
+        w = rect.w;
+        h = rect.h;
+        x = rect.x + rect.w * 0.5f;
+        y = rect.y + rect.h * 0.5f;
+    }
+
 
     RectF getRectF() const {
         return {
@@ -62,8 +70,8 @@ struct DrawParams2D {
         return {
             static_cast<S32>(x - (w * 0.5f)),
             static_cast<S32>(y - (h * 0.5f)),
-            w,
-            h
+            static_cast<S32>(w),
+            static_cast<S32>(h)
         };
     }
     DrawParams2D& setPositionAndLayer( Point3F value ) { x=value.x, y=value.y; z=value.z; return *this; }

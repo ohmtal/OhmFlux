@@ -33,6 +33,14 @@ void FluxRenderObject::Update(const double& dt)
 			mAnimationTime = 0;
 		}
 	}
+
+
+	if (mSpeed > 0.f && (mDirX != 0.f || mDirY != 0.f) ){
+		mDrawParams.x += mSpeed * mDirX * dt / 1000.f;
+		mDrawParams.y += mSpeed * mDirY * dt / 1000.f;
+	}
+
+
 }
 //--------------------------------------------------------------------------------------
 void FluxRenderObject::Draw()

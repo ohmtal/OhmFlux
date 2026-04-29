@@ -1,4 +1,3 @@
-#ifdef FALSE // disabled 2026-03-02
 //-----------------------------------------------------------------------------
 // Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
@@ -11,12 +10,15 @@
 
 
 #include "core/fluxRenderObject.h"
-#include "stb_truetype.h"
 #include "core/fluxGlobals.h"
 
+struct FluxBakedChar {
+    unsigned short x0, y0, x1, y1;
+    float xoff, yoff, xadvance;
+};
 
 struct FontData {
-    stbtt_bakedchar chardata[96]; // ASCII 32..126
+    FluxBakedChar chardata[96]; // ASCII 32..126
     // GLuint textureID;
 };
 
@@ -87,4 +89,3 @@ public:
 
 }; //class FluxBitmapFont
 
-#endif

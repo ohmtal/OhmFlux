@@ -166,14 +166,7 @@ bool FluxMain::Initialize()
 	return true;
 }
 //--------------------------------------------------------------------------------------
-void FluxMain::Deinitialize()
-{
-	// Shutdown scheduler
-	dLog("FluxMain: shutdown FluxSchedule");
-	FluxSchedule.shutdown();
-
-
-
+bool FluxMain::CleanQueue(){
 	// Cleanup Game Objects
 	dLog("FluxMain: Cleaning up queued game objects");
 	for (auto* obj : mQueueObjects) {
@@ -189,6 +182,18 @@ void FluxMain::Deinitialize()
 	}
 	mTextureCache.clear();
 
+	return true;
+}
+
+
+//--------------------------------------------------------------------------------------
+void FluxMain::Deinitialize()
+{
+	// Shutdown scheduler
+	dLog("FluxMain: shutdown FluxSchedule");
+	FluxSchedule.shutdown();
+
+	CleanQueue();
 
 	dLog("FluxMain: Cleaning up screen");
 	SAFE_DELETE(g_CurrentScreen);

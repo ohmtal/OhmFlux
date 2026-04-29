@@ -1,4 +1,3 @@
-#ifdef FALSE
 //-----------------------------------------------------------------------------
 // Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
@@ -7,12 +6,33 @@
 #include "render/fluxRender2D.h"
 #include <stdio.h>
 #include "utils/errorlog.h"
+
+// ImGui Conflict !!
+// #define STB_TRUETYPE_IMPLEMENTATION
+// #define STBTT_def static
+// #include "stb_truetype.h"
+
+// #define STBRP_NODE  MyFont_stbrp_node
+// #define STBRP_RECT  MyFont_stbrp_rect
+// #define STBRP_CONTEXT MyFont_stbrp_context
+//
+// #define STBTT_STATIC
+// #define STB_TRUETYPE_IMPLEMENTATION
+// #include "stb_truetype.h"
+
+namespace STB_Internal {
+    #define STB_TRUETYPE_IMPLEMENTATION
+    #include "stb_truetype.h"
+}
+
+
 //-----------------------------------------------------------------------------
 // FIXME need a resource manager to prevent multiple copies of ttf font in
 //       memory. For loaded Textures FluxMain loadTextures does this but
 //       here we push the data directly to FluxTexture
 //
 //-----------------------------------------------------------------------------
+
 
 FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
 : Parent(nullptr)
@@ -34,9 +54,11 @@ FluxTrueTypeFont::FluxTrueTypeFont(const char* filename, U32 fontSize)
     // Note: stbtt_BakeFontBitmap does NOT keep a pointer to ttfData,
     // it only reads it, so we can free ttfData safely after this step.
     std::vector<unsigned char> alphaBitmap(512 * 512);
-    stbtt_BakeFontBitmap((unsigned char*)ttfData, 0, (float)fontSize,
+    STB_Internal::stbtt_BakeFontBitmap((unsigned char*)ttfData, 0, (float)fontSize,
                          alphaBitmap.data(), 512, 512,
-                         32, 95, mFont.chardata);
+                         32, 95,
+                          reinterpret_cast<STB_Internal::stbtt_bakedchar*>(mFont.chardata)
+    );
 
     // 3. Free the file buffer immediately after baking
     SDL_free(ttfData);
@@ -85,8 +107,10 @@ void FluxTrueTypeFont::Draw()
             unsigned char c = (unsigned char)mCaption[i];
             if (c >= 32 && c < 127)
             {
-                stbtt_aligned_quad q;
-                stbtt_GetBakedQuad(mFont.chardata, 512, 512, mCaption[i] - 32, &tempX, &tempY, &q, 1);
+                STB_Internal::stbtt_aligned_quad q;
+                STB_Internal::stbtt_GetBakedQuad(
+                    reinterpret_cast<STB_Internal::stbtt_bakedchar*>(mFont.chardata),
+                    512, 512, mCaption[i] - 32, &tempX, &tempY, &q, 1);
             }
         }
         float totalWidth = tempX * mScale; // Scale the total accumulated width
@@ -104,13 +128,15 @@ void FluxTrueTypeFont::Draw()
         unsigned char c = (unsigned char)mCaption[i];
         if (c >= 32 && c < 127)
         {
-            stbtt_aligned_quad q;
+            STB_Internal::stbtt_aligned_quad q;
             float oldX = currentX;
 
             // Get original quad relative to a 0,0 baseline
             // Note: We pass temporary 0,0 to get local offsets, then apply scale and startX
             float nextX = 0, nextY = 0;
-            stbtt_GetBakedQuad(mFont.chardata, 512, 512, mCaption[i] - 32, &nextX, &nextY, &q, 1);
+            STB_Internal::stbtt_GetBakedQuad(
+                reinterpret_cast<STB_Internal::stbtt_bakedchar*>(mFont.chardata),
+                512, 512, mCaption[i] - 32, &nextX, &nextY, &q, 1);
 
             DrawParams2D dp;
             dp.useUV = true;
@@ -161,4 +187,3 @@ RectI FluxTrueTypeFont::getRectI() const
     return lResult;
 }
 
-#endif

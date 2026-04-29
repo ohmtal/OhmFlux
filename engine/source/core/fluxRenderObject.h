@@ -90,7 +90,8 @@ public:
 	F32 getWidthF() const { return mDrawParams.getWidthF(); }
 	S32 getHeight() const { return mDrawParams.h; }
 	F32 getHeightF() const { return mDrawParams.getHeightF(); }
-	virtual RectI getRectI() const { return mDrawParams.getRectI(); }
+	virtual RectI getRectI() const { return mDrawParams.getRectI(); } //why virtual ?
+	RectF getRectF() const { return mDrawParams.getRectF(); }
 	F32 getRotation() const {return mDrawParams.rotation; }
 	F32 getLayer() const {return mDrawParams.getLayer(); }
 	F32 getSpeed() const { return mSpeed; }
@@ -111,11 +112,13 @@ public:
 		//FIXME update quadtree here
 		// 		<< but then i need to call it twice
 	}
+	void setRectF(const RectF value) { getDrawParams().setRectF(value);}
 	void setSize(const Point2I value) { setWidth(value.x), setHeight(value.y);}
 	void setWidth(const S32& w) { mDrawParams.w = w; }
 	void setHeight(const S32& h) { mDrawParams.h = h; }
 	void setPos(const F32& x, const F32& y) { setX(x); setY(y); }
 	void setPos( const Point2F lPos ) { setX(lPos.x); setY(lPos.y); }
+	void setPosition( const Point2F lPos ) { setPos(lPos); }
 	Point2F getPosition() const { return { mDrawParams.x, mDrawParams.y }; }
 	void setRotation(const F32& rotation) { mDrawParams.rotation = rotation; }
 	void setLayer(const F32& layer) { mDrawParams.z = layer; }

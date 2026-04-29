@@ -6,8 +6,9 @@ local Game = {}
 function Game:Initialize()
     print("Lua: Initializing assets...")
     -- 'app' is the global variable we set in C++ (lua["app"])
-    self.FontMonoTex = app:loadTexture("assets/fonts/monoSpace_13x28.bmp", 10, 10)
+    self.FontMonoTex = app:loadTexture("assets/fonts/source_code_32x60.bmp", 10, 10, true, true)
     self.bgTex = app:loadTexture("assets/background.bmp")
+
 
     local screen = app:getScreen()
 
@@ -19,6 +20,13 @@ function Game:Initialize()
 
     print("Lua: Setup font....")
     self.font = FluxBitmapFont.new(self.FontMonoTex)
+
+    self.MonoFont = FluxTrueTypeFont.new("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 20);
+    if self.MonoFont then
+        self.MonoFont:set("Alder Babsack", Point2F.new( 0, screen:getHeight() -20 ), color.crimson, 2);
+        app:queueObject(self.MonoFont);
+    end
+
     print("Lua: Setup font....2")
     self.font:set("Hello World", 20 , 20 , 26, 32, { 0.9, 0.9, 1., 1.} );
     print("Lua: Setup font....3")

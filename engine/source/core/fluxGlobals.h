@@ -288,6 +288,8 @@ struct Point2F {
     Point2F operator*(const Point2F& v) const { return {x * v.x, y * v.y}; }
     Point2F operator/(const Point2F& v) const { return {x / v.x, y / v.y}; }
 
+    bool operator==(const Point2F& v) const { return (x == v.x && y == v.y); }
+
     // --- Compound Assignment Operators ---
     Point2F& operator+=(F32 v) { x += v; y += v; return *this; }
     Point2F& operator-=(F32 v) { x -= v; y -= v; return *this; }
@@ -360,6 +362,11 @@ struct Point3F {
 
     Point3F operator+(const Point3F& v) const { return {x + v.x, y + v.y, z + v.z}; }
     Point3F operator-(const Point3F& v) const { return {x - v.x, y - v.y, z - v.z}; }
+    Point3F operator*(const Point3F& v) const { return {x * v.x, y * v.y, z * v.z}; }
+    Point3F operator/(const Point3F& v) const { return {x / v.x, y / v.y, z / v.z}; }
+
+    bool operator==(const Point3F& v) const { return (x == v.x && y == v.y && z == v.z); }
+
 
     Point3F& operator+=(const Point2F& v) { x += v.x; y += v.y; return *this; }
 
@@ -414,6 +421,21 @@ struct RectF
         w += amountX * 2;  // Expand width both ways
         h += amountY * 2;  // Expand height both ways
     }
+
+    bool contains(const RectF& other) const {
+        return (other.x >= x &&
+        other.y >= y &&
+        other.x + other.w <= x + w &&
+        other.y + other.h <= y + h);
+    }
+
+    bool intersects(const RectF& other) const {
+        return (x < other.x + other.w &&
+        x + w > other.x &&
+        y < other.y + other.h &&
+        y + h > other.y);
+    }
+
 };
 
 

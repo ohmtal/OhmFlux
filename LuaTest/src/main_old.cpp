@@ -131,6 +131,7 @@ void BindLuaTestGame(sol::state& lua) {
     bindDrawParams2D(lua);
     bindFluxRenderObject(lua); // Parent of Font
     bindFluxBitmapFont(lua);   // Child of RenderObject
+    bindFluxTrueTypeFont(lua);
     bindFluxMain(lua);         // Engine
 
 

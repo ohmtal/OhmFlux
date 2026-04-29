@@ -12,11 +12,10 @@ namespace OhmFlux::Lua {
         typedef FluxMain Parent;
 
         bool mInitialied = false;
-        // This stores the Lua table/object
-        sol::table mLuaSelf;
-
 
         sol::state mLua;
+        sol::table mLuaSelf;
+
         std::string mCurrentScript = "main.lua";
 
         bool initLua();
@@ -29,10 +28,14 @@ namespace OhmFlux::Lua {
         bool LoadScript();
 
         virtual bool Initialize() override;
+        bool LuaInitialize();
+        bool LuaDeInitialize();
         virtual void Update(const double& dt) override;
+        virtual void onDraw() override;
         virtual void onEvent(SDL_Event event) override;
         virtual void onKeyEvent(SDL_KeyboardEvent event) override;
         virtual void onMouseButtonEvent(SDL_MouseButtonEvent event) override;
+
 
     };
 

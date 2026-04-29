@@ -47,6 +47,8 @@ public:
             OnConsoleCommand(console, command_line);
         };
 
+
+        fetchLuaFiles();
         return true;
     }
     // -------------------------------------------------------------------------
@@ -105,7 +107,7 @@ public:
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
 
-        Parent::Deinitialize();
+        // Parent::Deinitialize();
     }
     // -------------------------------------------------------------------------
     virtual void onKeyEvent(SDL_KeyboardEvent event) override {
@@ -132,7 +134,6 @@ public:
 
         Parent::onEvent(event);
     }
-
     // -------------------------------------------------------------------------
     virtual void onDrawTopMost() override {
         Parent::onDrawTopMost();
@@ -141,7 +142,7 @@ public:
         mGuiGlue->DrawBegin();
 
         static bool showConsole = false;
-        static bool showMenu = false;
+        static bool showMenu = true;
 
         if (showMenu) {
             if (ImGui::BeginMainMenuBar()) {
@@ -176,17 +177,35 @@ public:
         if (mGuiGlue->getGuiIO()->KeyCtrl) {
             if (ImGui::IsKeyPressed(ImGuiKey_R)) LoadScript();
         }
-
-
         console.Draw("Lua Console",&showConsole);
 
         // ------
         mGuiGlue->DrawEnd();
-
-
-
     };
+    // -------------------------------------------------------------------------
+    bool fetchLuaFiles() {
+        std::string path = getGamePath() + "assets/";
 
+        try {
+            if (fs::exists(path) && fs::is_directory(path)) {
+                for (const auto& entry : fs::recursive_directory_iterator(path)) {
+                    if (entry.is_regular_file() && entry.path().extension() == ".lua") {
+                        // Full path: luaFiles.push_back(entry.path());
+                        luaFiles.push_back(fs::relative(entry.path(), path));
+
+                    }
+                }
+            }
+        } catch (const fs::filesystem_error& e) {
+            SDL_Log("[error]%s",e.what());
+            return false;
+        }
+        // -------------------------------------------------------------------------
+
+
+
+        return true;
+    }
 
 
 };

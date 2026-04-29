@@ -21,6 +21,9 @@ namespace OhmFlux::Lua {
 
     bool LuaState::LoadScript(){
         if (!mInitialied) return false;
+
+        LuaDeInitialize();
+
         auto result = mLua.safe_script_file( getGamePath() + "assets/" + mCurrentScript, sol::script_pass_on_error);
         if (!result.valid()) {
             sol::error err = result;
@@ -29,6 +32,7 @@ namespace OhmFlux::Lua {
         } else {
             Log("[info] script %s loaded", mCurrentScript.c_str());
             mLua["app"] = this;
+            LuaInitialize();
             return true;
         }
     }
@@ -54,9 +58,10 @@ namespace OhmFlux::Lua {
         bindDrawParams2D(mLua);
         bindFluxRenderObject(mLua); // Parent of Font
         bindFluxBitmapFont(mLua);   // Child of RenderObject
+        bindFluxTrueTypeFont(mLua);
         bindFluxMain(mLua);         // Engine
         bindSDLEvents(mLua);
-        bindSDLConstants(mLua);
+        bindConstants(mLua);
 
 
         mLua.set_function("quit", [&]() { TerminateApplication(); });
@@ -89,18 +94,35 @@ namespace OhmFlux::Lua {
         return true;
     }
     //--------------------------------------------------------------------------
-    bool LuaState::Initialize() {
-        if (!Parent::Initialize()) return false;
+    bool LuaState::LuaDeInitialize() {
+        CleanQueue();
+        if (mLuaSelf.valid() && mLuaSelf != sol::lua_nil) {
+            sol::protected_function lua_init = mLuaSelf["Deinitialize"];
 
-        if (!initLua()) return false;
-        LoadScript();
+            if (!lua_init.valid()) {
+                // Log("[error] CRITICAL: Lua function 'Deinitialize' not found in myLogic table!\n");
+                return false;
+            }
 
+            auto result = lua_init(mLuaSelf);
 
+            if (!result.valid()) {
+                sol::error err = result;
+                Log("[error]  %s\n", err.what());
+                return false;
+            }
+
+            return true;
+        }
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    bool LuaState::LuaInitialize() {
         if (mLuaSelf.valid() && mLuaSelf != sol::lua_nil) {
             sol::protected_function lua_init = mLuaSelf["Initialize"];
 
             if (!lua_init.valid()) {
-                Log("[error] CRITICAL: Lua function 'Initialize' not found in myLogic table!\n");
+                // Log("[error] CRITICAL: Lua function 'Initialize' not found in myLogic table!\n");
                 return false;
             }
 
@@ -113,6 +135,16 @@ namespace OhmFlux::Lua {
             }
             return true;
         }
+        return false;
+    }
+
+    bool LuaState::Initialize() {
+        if (!Parent::Initialize()) return false;
+
+        if (!initLua()) return false;
+        LoadScript();
+
+
         return true;
     }
     //--------------------------------------------------------------------------
@@ -148,11 +180,21 @@ namespace OhmFlux::Lua {
         if (!mInitialied) return;
 
         if (mLuaSelf != sol::lua_nil) {
-            sol::protected_function fx = mLuaSelf["onEvent"];
+            sol::optional<sol::function> fx = mLuaSelf["onEvent"];
             if (fx) {
-                fx(event);
+                fx.value()(mLuaSelf, event);
             }
         }
+    }
+
+    void LuaState::onDraw() {
+        if (mLuaSelf != sol::lua_nil) {
+            sol::optional<sol::function> fx = mLuaSelf["onDraw"];
+            if (fx) {
+                fx.value()(mLuaSelf);
+            }
+        }
+
     }
     //--------------------------------------------------------------------------
     void LuaState::Update(const double& dt) {
