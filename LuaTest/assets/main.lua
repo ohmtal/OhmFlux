@@ -24,8 +24,10 @@ function Game:Initialize()
     self.monoFont = FluxTTFont.new("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 20);
     if self.monoFont then
         self.label = FluxLabel.new(self.monoFont)
-        self.label:set("Alder Babsack", Point2F.new( 0, screen:getHeight() -20 ), color.crimson, 2);
-        app:queueObject(self.label);
+        self.label:setScale(2.0)
+-- using print ;)
+--         self.label:set("Alder Babsack", Point2F.new( 0, screen:getHeight() -20 ), color.crimson, 2);
+--         app:queueObject(self.label);
      end
 
     print("Lua: Setup font....2")
@@ -44,6 +46,8 @@ function Game:Initialize()
     params.z = 1.0
     params.w = screen:getWidth()
     params.h = screen:getHeight()
+
+
 
     -- Member variables of a struct use .
     params.alpha = 0.5
@@ -66,12 +70,29 @@ function Game:Initialize()
     app:queueObject(self.bgMusic)
 
 
+
+    self.testDraw = DrawParams2D.new();
+    self.testDraw:setRectF(RectF.new(0, 300, 40, 40))
+    self.testDraw.image = self.bgTex;
+
+
+    self.screenSize = Point2F.new( app:getScreen():getWidth(),  app:getScreen():getHeight() )
+
     return true
 end
 
 -- Define the update function
 function Game:onUpdate(dt)
---     self.font:setCaption(string.format("Score: %d", score))
+
+    self.testDraw.x = self.testDraw.x + 500 * dt;
+    if (self.testDraw.x > self.screenSize.x) then
+        self.testDraw.x  = 0
+    end
+    self.testDraw.rotation = (self.testDraw.rotation + 1) % 360
+
+    if self.keys and self.keys["W"] then
+        -- Handle continuous movement
+    end
 
 end
 
@@ -94,11 +115,20 @@ end
 
     end
 
-    function Game:onUpdate(dt)
-        if self.keys and self.keys["W"] then
-            -- Handle continuous movement
-        end
-    end
+
+
+--  test without "Game"
+function Game:onDraw()
+    self.label:setColor(color.red)
+    self.label:print(20,100, "TTF print test :)")
+    self.label:setColor(color.blue)
+    self.label:print(20,150, "in blue")
+    self.label:setColor(color.neonpink)
+    self.label:print(20,200, "in neon pink")
+
+    self.testDraw:Draw()
+
+end
 
 
 -- Assign this logic table to the C++ instance's lua_self

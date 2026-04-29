@@ -147,6 +147,7 @@ public:
         if (showMenu) {
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("Window")) {
+                    ImGui::MenuItem("Main Menu", "F10", &showMenu);
                     ImGui::MenuItem("Console", "GraveAccent", &showConsole);
                     ImGui::EndMenu();
                 }

@@ -1,7 +1,6 @@
 -- Create a logic table
 local Pong = {}
 
-
 --  Wall
 local wallThickness = 10
 local screenRect = RectF.new(20, 40, 600, 350)
@@ -28,43 +27,36 @@ local paddleVel = 0.0;
 local paddleSpeed = 250.0;
 local paddle = RectF.new(screenRect.x + screenRect.w - 20.0, (screenRect.y + screenRect.h - paddleSize.w) / 2.0, 5.0, 60.0)
 
--- ----------------------------------------------------------------------------
--- Custom init
-function Pong:Initialize()
+
     print("Pong:Initialize")
     -- Textures
-    self.tex_white = app:loadTexture("assets/texture/white.png")
-    self.tex_black = app:loadTexture("assets/texture/black.png")
+    local tex_white = app:loadTexture("assets/texture/white.png")
+    local tex_black = app:loadTexture("assets/texture/black.png")
 
-    self.gameOver = true
-    self.score = 0
-    self.hiscore = 0
+    local gameOver = true
+    local score = 0
+    local hiscore = 0
 
     -- Render Objects
     for key, wall in pairs(borders) do
-        local tmpWall = FluxRenderObject.new(self.tex_white, wall)
+        local tmpWall = FluxRenderObject.new(tex_white, wall)
         app:queueObject(tmpWall)
     end
 
-    self.paddle = FluxRenderObject.new(self.tex_white, paddle)
-    app:queueObject(self.paddle)
+    local paddleObj = FluxRenderObject.new(tex_white, paddle)
+    app:queueObject(paddleObj)
 
-    self.ball = FluxRenderObject.new(self.tex_white, ball)
-    app:queueObject(self.ball)
+    local ballObj = FluxRenderObject.new(tex_white, ball)
+    app:queueObject(ballObj)
 
-    self.monoFont = FluxTTFont.new("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 32);
-    if self.monoFont then
-        self.label = FluxLabel.new(self.monoFont)
---         self.label:setScale(2.0)
+    local monoFont = FluxTTFont.new("assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf", 32);
+    local label = nil
+
+    if monoFont then
+        label = FluxLabel.new(monoFont)
     end
 
 
-    return true
-end
-
-function Pong:Deinitialize()
-    print("Pong:Deinitialize")
-end
 
 
 -- --------- Collision check -----------
@@ -82,29 +74,32 @@ end
 -- ----------------------------------------------------------------------------
 function Pong:onDraw()
 
+
+
+
      local x = screenRect.x +  screenRect.w + 10
      local y = screenRect.y + wallThickness
-     self.label:setScale(0.5)
-     self.label:setColor(color.gray)
-     self.label:print(x, y, "OHMFLUX PONG SQUASH LUA EDITION ;)")
+     label:setScale(0.5)
+     label:setColor(color.gray)
+     label:print(x, y, "OHMFLUX PONG SQUASH LUA EDITION ;)")
      y = y + 20
-     self.label:print(x, y, string.format("Ball POS: %.2f,%.2f VEL: %.2f, %.2f", ball.x, ball.y, ballVel.x, ballVel.y))
+     label:print(x, y, string.format("Ball POS: %.2f,%.2f VEL: %.2f, %.2f", ball.x, ball.y, ballVel.x, ballVel.y))
 
-     self.label:setScale(1.0)
-     self.label:setColor(color.white)
+     label:setScale(1.0)
+     label:setColor(color.white)
      y = y + 40
-     self.label:print(x, y, string.format("SCORE: %2d    HI: %2d", self.score, self.hiscore))
+     label:print(x, y, string.format("SCORE: %2d    HI: %2d", score, hiscore))
 
-     if (self.gameOver) then
-         self.label:setScale(1.2)
+     if (gameOver) then
+         label:setScale(1.2)
          y = y + 30
-         self.label:setColor(color.red)
-         self.label:print(x, y, "G A M E   O V E R")
+         label:setColor(color.red)
+         label:print(x, y, "G A M E   O V E R")
 
-         self.label:setScale(0.5)
+         label:setScale(0.5)
          y = y + 20
-         self.label:setColor(color.skyblue)
-         self.label:print(x, y, "SPACE = Start, Cursor: Up / Down ")
+         label:setColor(color.skyblue)
+         label:print(x, y, "SPACE = Start, Cursor: Up / Down ")
 
      end
 
@@ -113,8 +108,8 @@ end
 
 -- --------- score up  -----------
 function Pong:doScore(  )
-    self.score = self.score + 1;
-    if self.score > self.hiscore then self.hiscore = self.score end
+    score = score + 1;
+    if score > hiscore then hiscore = score end
     ballSpeed = ballSpeed + 0.15;
 end
 
@@ -122,7 +117,7 @@ end
 function Pong:onUpdate(dt)
 
 --  ball
-    if  not self.gameOver then
+    if  not gameOver then
 
         ball.x = ball.x + ballVel.x * ballSpeed * dt
         ball.y = ball.y + ballVel.y * ballSpeed * dt
@@ -150,7 +145,7 @@ function Pong:onUpdate(dt)
 
 
     if ball.x > screenRect.x + screenRect.w then
-        self.gameOver = true;
+        gameOver = true;
         ball.x, ball.y = screenRect.x + screenRect.w / 2.0, screenRect.y + screenRect.h / 2.0
     end
 
@@ -167,7 +162,7 @@ function Pong:onUpdate(dt)
 
 
 
-    if ballVel.x > 0  and not self.gameOver then
+    if ballVel.x > 0  and not gameOver then
         if checkCollision(ball, paddle) then
             ballVel.x = -ballVel.x
 
@@ -181,8 +176,8 @@ function Pong:onUpdate(dt)
     end
 
     -- update render objects
-    self.paddle:setRectF(paddle)
-    self.ball:setRectF(ball)
+    paddleObj:setRectF(paddle)
+    ballObj:setRectF(ball)
 
 
 
@@ -195,12 +190,12 @@ if (isDown) then print(key, "pressed") end
     self.keys[key] = isDown
 
     if (self.keys["Space"]) then
-        print (" HAAAAAAAALOOOOOOOO?!", self.gameOver)
-        if self.gameOver then
+        print (" HAAAAAAAALOOOOOOOO?!", gameOver)
+        if gameOver then
             print("new round ...")
-            self.score = 0
+            score = 0
             ballSpeed = 1.0
-            self.gameOver = false;
+            gameOver = false;
 --             FIXME playSound(startSound)
 
         end

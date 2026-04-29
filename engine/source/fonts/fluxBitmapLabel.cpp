@@ -27,11 +27,11 @@ void FluxBitmapLabel::setCaption(const char *szFormat, ...)
 //-----------------------------------------------------------------------------
 void FluxBitmapLabel::Draw()
 {
-    S32 x = getX();
-    S32 y = getY();
+    F32 x = getX();
+    F32 y = getY();
 
 
-    S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
+    F32 halfWidth = (getDrawParams().w / 2.f);
 
     if ( mAlign == FontAlign_Center ) {
         x -= halfWidth;

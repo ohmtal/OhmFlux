@@ -89,7 +89,8 @@ namespace OhmFlux::Lua {
     }
     //==============================================================================
     void bindDrawParams2D(sol::state& lua) {
-        lua.new_usertype<DrawParams2D>("DrawParams2D",
+        auto type = lua.new_usertype<DrawParams2D>("DrawParams2D",
+                                       "image", &DrawParams2D::image,
                                        // Position and Layer
                                        "x", &DrawParams2D::x,
                                        "y", &DrawParams2D::y,
@@ -115,7 +116,20 @@ namespace OhmFlux::Lua {
 
                                        ,"getRectF",  &DrawParams2D::getRectF
                                        ,"setRectF",  &DrawParams2D::setRectF
+
+
+
         );
+
+
+        type["Draw"] = [](DrawParams2D& self) {
+            return Render2D.drawSprite(self);
+        };
+        type["setRectF"] = &DrawParams2D::setRectF;
+        type["getRectF"] = &DrawParams2D::getRectF;
+
+
+
     }
     //==============================================================================
     void bindFluxRenderObject(sol::state& lua) {
@@ -386,6 +400,13 @@ namespace OhmFlux::Lua {
                 }
             );
 
+            type["print"] =  sol::overload(
+                [](FluxLabel& self, const char* caption, Point2F pos) { self.Print(caption, pos);}
+               ,[](FluxLabel& self, float x, float y, const char* caption) { self.Print(caption, Point2F(x,y));}
+               ,&FluxLabel::Print
+            );
+
+
             type["set"] = sol::overload(
                 [](FluxLabel& self, const char* caption, float x, float y) {
                     self.set(caption, Point2F(x,y));
@@ -406,6 +427,8 @@ namespace OhmFlux::Lua {
                 self.setCaption("%s", text.c_str());
             };
 
+            type["setColor"] = &FluxLabel::setColor;
+            type["setScale"] = &FluxLabel::setScale;
         }
     }
     // //==============================================================================

@@ -57,11 +57,84 @@ void FluxLabel::setCaption(const char *szFormat, ...)
 }
 
 //-----------------------------------------------------------------------------
+
+const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
+{
+    Point2F result = Point2F(0.f,0.f);
+    if (text[0] == '\0') return result;
+    if (!mTTFont || !mTTFont->getFont()) return result;
+    FontData fontData = *mTTFont->getFont();
+
+
+    float startX = pos.x;
+    float startY = pos.y;
+    float currentX = startX;
+    float currentY = startY;
+
+    S32 lMaxHeight = 0;
+    for (int i = 0; text[i]; ++i)
+    {
+        unsigned char c = (unsigned char)text[i];
+        if (c >= 32 && c < 127)
+        {
+            STB_Internal::stbtt_aligned_quad q;
+            float nextX = 0, nextY = 0;
+            STB_Internal::stbtt_GetBakedQuad(
+                reinterpret_cast<STB_Internal::stbtt_bakedchar*>(fontData.chardata),
+                                             512, 512, text[i] - 32, &nextX, &nextY, &q, 1);
+
+            DrawParams2D dp;
+            dp.useUV = true;
+            dp.image = getTexture();
+            dp.z = getLayer();
+            dp.color = mColor;
+            dp.isGuiElement = mIsGuiElement;
+
+            // Apply Scale to Dimensions
+            dp.w = ((q.x1 - q.x0) * mScale);
+            dp.h = ((q.y1 - q.y0) * mScale);
+
+            if ( dp.h > lMaxHeight )
+                lMaxHeight = dp.h;
+
+            // Apply Scale to Position
+            // q.x0/y0 are offsets from the baseline. We scale the offset and add to current position.
+            dp.x = currentX + (q.x0 * mScale) + (dp.w * 0.5f);
+            dp.y = currentY + (q.y0 * mScale) + (dp.h * 0.5f);
+
+            // UVs remain the same regardless of scale
+            dp.u0 = q.s0; dp.v0 = q.t0;
+            dp.u1 = q.s1; dp.v1 = q.t1;
+
+            Render2D.drawSprite(dp);
+
+            currentX += (nextX * mScale);
+        }
+    }
+    //updateSize
+    result.x = currentX;
+    result.y = lMaxHeight;
+    return result;
+}
+
 void FluxLabel::Draw()
 {
     if (mCaption[0] == '\0') return;
     if (!mTTFont || !mTTFont->getFont()) return;
 
+
+    // dLog("pos is %f, %f, rect is: %f, %f, %f, %f", getPosition().x, getPosition().y
+    //     ,getRectF().x, getRectF().y, getRectF().w, getRectF().h
+    // );
+    // no idea why setRectF is not correct we change it to h/w like before
+
+    Point2F size = Print(mCaption, getPosition(), mAlign);
+
+    getDrawParams().w = size.x;
+    getDrawParams().h = size.y;
+
+
+/*
     FontData fontData = *mTTFont->getFont();
 
 
@@ -71,10 +144,7 @@ void FluxLabel::Draw()
     float currentX = startX;
     float currentY = startY;
 
-    // PRE-PASS: Calculate scaled total width for alignment
-    // eats fps because calculated ecery time
-    // but need it for object width
-    /*if (mAlign != FontAlign_Left)*/ {
+    {
         float tempX = 0, tempY = 0;
         for (int i = 0; mCaption[i]; ++i) {
             unsigned char c = (unsigned char)mCaption[i];
@@ -141,6 +211,7 @@ void FluxLabel::Draw()
         }
     }
     getDrawParams().h = lMaxHeight; //updateSize
+    */
 }
 
 //-----------------------------------------------------------------------------

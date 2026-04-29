@@ -20,7 +20,7 @@ protected:
     S32 mStartChar =  32,
         mEndChar   = 127;
     char  mCaption[256]; // do not change directly !!
-    S32 mCharWidth, mCharHeight;
+    F32 mCharWidth, mCharHeight;
     S32 mTextlen;
     Color4F mColor;
     FontAlign mAlign;
@@ -35,8 +35,8 @@ public:
     : FluxRenderObject(lTex/*, lScreen*/)
     , mStartChar(lStartChar)
     , mEndChar(lEndChar)
-    , mCharWidth(16)
-    , mCharHeight(32)
+    , mCharWidth(16.f)
+    , mCharHeight(32.f)
     , mColor({1.f,1.f,1.f,1.f})
     , mAlign(FontAlign_Left)
     , mIsGuiElement(true)
@@ -91,15 +91,15 @@ public:
     void setAlign(FontAlign lAlign) { mAlign = lAlign; };
     FontAlign getAlign() { return mAlign; };
 
-    void setCharSize(int w, int h)
+    void setCharSize(float w, float h)
     {
         mCharWidth  = w;
         mCharHeight = h;
         // here too !!
         updateSize();
     }
-    int getCharHeight() { return mCharHeight; }
-    int getCharWidth() { return mCharWidth;}
+    float getCharHeight() { return mCharHeight; }
+    float getCharWidth() { return mCharWidth;}
 
 
     void setColor( Color4F lColor)
