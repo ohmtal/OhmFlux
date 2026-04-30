@@ -2,12 +2,13 @@
 // ohmFlux AudiTestBed
 // Reimplementation of better Sound System
 //-----------------------------------------------------------------------------
+#include <SDL3/SDL_main.h>
+
 #include "fluxMain.h"
 #include "gui/fluxGuiGlue.h"
 #include "gui/ImConsole.h"
-
-#include <SDL3/SDL_main.h>
-
+#include "gui/ImFileDialog.h"
+#include "audio/AudioResourceManager.h"
 
 //-----------------------------------------------------------------------------
 // console redirect ....
@@ -26,13 +27,22 @@ class AudioTestBed : public FluxMain
 {
     typedef FluxMain Parent;
     ImConsole console;
+    ImFileDialog fileDialog;
     std::unique_ptr<FluxGuiGlue> mGuiGlue;
+    std::unique_ptr<FluxAudio::AudioResourceManager> mAudioResourceManager;
+
 
 
     // -------------------------------------------------------------------------
     void OnConsoleCommand(ImConsole* console, const char* command_line) {
         std::string cmdLineStr = command_line;
         std::string cmd = FluxStr::getWord(cmdLineStr, 0);
+
+        if (cmd == "list") {
+            for (auto& [key, val] : mAudioResourceManager->getMap()) {
+                Log("%s type:%d size:%d", key.c_str(), (int)val->fileType, (int)val->mRawData.size());
+            }
+        }
 
     }
     // -------------------------------------------------------------------------
@@ -48,10 +58,19 @@ public:
         if (!mGuiGlue->Initialize())
             return false;
 
+        // setting ini here is ok for a testBed
+        mAudioResourceManager = std::make_unique<FluxAudio::AudioResourceManager>();
+        if (!mAudioResourceManager->Initialize())
+            return false;
+
+
         SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
         console.OnCommand = [&](ImConsole* console, const char* command_line) {
             OnConsoleCommand(console, command_line);
         };
+
+        fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3", ".sfx" });
+
 
          return true;
     }
@@ -61,6 +80,7 @@ public:
 
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
+        mAudioResourceManager->Deinitialize();
 
         Parent::Deinitialize();
     }
@@ -102,6 +122,24 @@ public:
     {
 
     } //Draw
+
+    //------------------------------------------------------------------------------
+    void DrawFileBrowser(){
+        if (fileDialog.Draw()) {
+            // LogFMT("File:{} Ext:{}", g_FileDialog.selectedFile, g_FileDialog.selectedExt);
+            if (fileDialog.mSaveMode)
+            {
+                fileDialog.reset();
+            } else {
+                // NOTE: LOAD RESOURCE TEST
+                if (!mAudioResourceManager->add(fileDialog.selectedFile)) {
+                    mGuiGlue->showMessage("Error", "Failed to load File " + fileDialog.selectedFile + " !");
+                } else {
+                    Log("[info] file %s loaded :)", fileDialog.selectedFile.c_str());
+                }
+            }
+        }
+    }
     //--------------------------------------------------------------------------------------
     virtual void onDrawTopMost() override {
         Parent::onDrawTopMost();
@@ -109,13 +147,15 @@ public:
         if (!mGuiGlue) return;
         mGuiGlue->DrawBegin();
 
-        static bool showConsole = false;
+        static bool showConsole = true;
+        static bool showFileBrowser = true;
         static bool showMenu = true;
 
         if (showMenu) {
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("Window")) {
                     ImGui::MenuItem("Main Menu", "F10", &showMenu);
+                    ImGui::MenuItem("Files", "F1", &showFileBrowser);
                     ImGui::MenuItem("Console", "GraveAccent", &showConsole);
                     ImGui::EndMenu();
                 }
@@ -124,8 +164,11 @@ public:
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_F10)) showMenu = !showMenu;
+        if (ImGui::IsKeyPressed(ImGuiKey_F1)) showFileBrowser = !showFileBrowser;
+
         if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
         console.Draw("Console",&showConsole);
+        if (showFileBrowser) DrawFileBrowser();
 
         // ------
         mGuiGlue->DrawEnd();

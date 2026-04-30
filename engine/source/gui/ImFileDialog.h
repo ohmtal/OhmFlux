@@ -427,7 +427,7 @@ public:
                             } else {
                                 if (!isDir)
                                 {
-                                    dLog("Selected File: %s", selectedFile.c_str());
+                                    // dLog("previous Selected File: %s", selectedFile.c_str());
                                     selectedFile = name;
                                     strncpy(fileInput, name.c_str(), sizeof(fileInput));
                                 }

@@ -183,6 +183,12 @@ namespace FluxStr {
         return path.substr(lastSlash + 1);
     }
     //--------------------------------------------------------------------------
+    inline std::string extractFileExt(std::string fileName, bool lowerCase = true) {
+        std::string ext = fileName.substr(fileName.find_last_of(".") + 1);
+        if (lowerCase) ext = toLower(ext);
+        return ext;
+    }
+    //--------------------------------------------------------------------------
     inline std::string sanitizeFilenameWithUnderScores(std::string name)
     {
         std::string result;

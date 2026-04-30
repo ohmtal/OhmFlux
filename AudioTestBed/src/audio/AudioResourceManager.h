@@ -28,24 +28,18 @@
 
 #pragma once
 #include <SDL3/SDL.h>
-#include <unordered_map>
-
-#include <fstream>
-#include <vector>
-#include <string>
-#include <stdexcept>
-#include <type_traits>
-
 
 #include "core/ResourceManagerBase.h"
-#include "utils/errorlog.h"
+#include <unordered_map>
+#include <vector>
+#include <memory>
 
 namespace FluxAudio {
 
+    //FIXME move type to fluxAudio.h when done
+    enum class AudioType { UNKNOWN, WAV, OGG, MP3, SFXStereo };
 
-    enum class AudioType { UNKNOWN, WAV, OGG, MP3 };
-
-    AudioType detectType(const std::vector<uint8_t>& data) {
+    inline AudioType detectType(const std::vector<uint8_t>& data) {
         if (data.size() < 4) return AudioType::UNKNOWN;
 
         // WAV: "RIFF" .... "WAVE"
@@ -58,6 +52,15 @@ namespace FluxAudio {
         if (data[0] == 'I' && data[1] == 'D' && data[2] == '3') return AudioType::MP3;
         if (data[0] == 0xFF && (data[1] & 0xE0) == 0xE0) return AudioType::MP3;
 
+
+        // FluxSFX << SFXGenerator Stereo!
+        if (data.size() < 7) return AudioType::UNKNOWN;
+
+        if (data[0] == 'F' && data[1] == 'l' && data[2] == 'u' && data[3] == 'x'
+            && data[4] == 'S' && data[5] == 'F' && data[6] == 'X'
+        ) return AudioType::SFXStereo;
+
+
         return AudioType::UNKNOWN;
     }
 
@@ -68,9 +71,12 @@ namespace FluxAudio {
        AudioType fileType = AudioType::UNKNOWN;
     };
 
+    // -------------------------------------------------------------------------
     class AudioResourceManager : public OhmFlux::ResourceManagerBase {
         SDL_AudioDeviceID mAudioDevice = 0;
-        std::unordered_map<std::string, AudioResourceData> mResourceMap;
+        // std::unordered_map<std::string, AudioResourceData> mResourceMap;
+        std::unordered_map<std::string, std::unique_ptr<AudioResourceData>> mResourceMap;
+
         bool mInitialized = false;
         bool mShutDown = false;
 
@@ -82,10 +88,16 @@ namespace FluxAudio {
         {}
         ~AudioResourceManager() {}
 
-        bool init();
+        bool Initialize();
         const bool isInitialized() { return mInitialized; }
-        void shutDown();
+        void Deinitialize();
 
+        // Returns a const reference to the map to prevent copies and protect data
+        const std::unordered_map<std::string, std::unique_ptr<AudioResourceData>>& getMap() const {
+            return mResourceMap;
+        }
+
+        // const std::unordered_map<std::string, std::unique_ptr<AudioResourceData>> getMap() { return mResourceMap; }
 
         //-----------------------------------------------------------------------------
         bool add(std::string fileName);
@@ -94,42 +106,7 @@ namespace FluxAudio {
 
     private:
 
-        bool LoadRawFile(AudioResourceData &data) {
-            // Open file at the end to get size immediately
-            std::ifstream ifs(data.fileName, std::ios::binary | std::ios::ate);
-
-            if (!ifs.is_open()) {
-                Log("[error] Load audio resource: Can't open File %s", data.fileName.c_str());
-                return false;
-            }
-
-            try {
-                std::streamsize size = ifs.tellg();
-                ifs.seekg(0, std::ios::beg);
-
-                // Reserve memory and read file content into the vector
-                data.mRawData.resize(static_cast<size_t>(size));
-                if (!ifs.read(reinterpret_cast<char*>(data.mRawData.data()), size)) {
-                    Log("[error] Load audio resource: Failed to read data from %s", data.fileName.c_str());
-                    return false;
-                }
-                ifs.close();
-
-                // Identify file format based on magic bytes
-                data.fileType = detectType(data.mRawData);
-
-                if (data.fileType == AudioType::UNKNOWN) {
-                    Log("[warning] Audio format not recognized for: %s", data.fileName.c_str());
-                    return false;
-                }
-
-                return true;
-
-            } catch (const std::exception& e) {
-                Log("[error] Load audio resource exception: %s", e.what());
-                return false;
-            }
-        }
+        bool LoadRawFile(AudioResourceData &data);
 
 
     }; //class

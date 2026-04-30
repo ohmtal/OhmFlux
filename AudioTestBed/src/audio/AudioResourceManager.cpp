@@ -1,32 +1,46 @@
 //NOTE THIS IS NOT FOR USE ONLY FOR MERGING TO FluxAudio::Manager
 
 #include "AudioResourceManager.h"
+
+#include <vector>
+#include <fstream>
+#include <string>
+#include <stdexcept>
+#include <type_traits>
+
+
+#include "utils/errorlog.h"
+#include "utils/fluxStr.h"
+
 namespace FluxAudio {
     //--------------------------------------------------------------------------
-    bool AudioResourceManager::init() {
+    bool AudioResourceManager::Initialize() {
         mInitialized = true;
         return mInitialized;
     }
     //--------------------------------------------------------------------------
-    void AudioResourceManager::shutDown() {
+    void AudioResourceManager::Deinitialize() {
         if (mShutDown) return;
         mShutDown = true;
 
+
         for (auto& [key, val] : mResourceMap) {
-            val.mRawData.clear();
+            val->mRawData.clear();
         }
         mResourceMap.clear();
         if (mAudioDevice != 0) {
             SDL_CloseAudioDevice(mAudioDevice);
             mAudioDevice = 0;
         }
+
+        mInitialized = false;
     }
     //--------------------------------------------------------------------------
     AudioResourceData* AudioResourceManager::get(std::string fileName, bool noAutoLoad) {
         auto it = mResourceMap.find(fileName);
 
         if (it != mResourceMap.end()) {
-            return &it->second;
+            return it->second.get();
         }
 
         if (noAutoLoad) return nullptr;
@@ -40,7 +54,7 @@ namespace FluxAudio {
             auto it = mResourceMap.find(fileName);
 
             if (it != mResourceMap.end()) {
-                return &it->second;
+                return it->second.get();
             }
         }
 
@@ -51,24 +65,76 @@ namespace FluxAudio {
     {
         if (!isInitialized()) return false;
         if (isBlackListed(fileName)) {
-            SDL_Log("[error] denied eaudio resource - it's blacklisted: %s!", fileName.c_str());
-            return false;
+            Log("[info] audio resource - it's blacklisted: %s!", fileName.c_str());
+            return true; //we have it return true!
         }
 
         if (get(fileName, true) != nullptr) {
-            SDL_Log("[error] denied audio resource -  double load: %s!", fileName.c_str());
+            Log("[info] audio resource -  double load: %s!", fileName.c_str());
+            return true; //we have it return true!
+        }
+
+
+        auto resData = std::make_unique<AudioResourceData>();
+        resData->fileName = fileName;
+
+        if (!LoadRawFile(*resData)) {
+            blacklist(fileName);
             return false;
         }
 
-        AudioResourceData resData;
-        resData.fileName = fileName;
-        LoadRawFile(resData);
-        if (resData.fileType == AudioType::UNKNOWN) return false;
-
-        mResourceMap[fileName] = resData;
+        mResourceMap[fileName] = std::move(resData);
         return true;
+
     }
     //--------------------------------------------------------------------------
+    bool AudioResourceManager::LoadRawFile(AudioResourceData& data) {
+        // Open file at the end to get size immediately
+        std::ifstream ifs(data.fileName, std::ios::binary | std::ios::ate);
+
+        if (!ifs.is_open()) {
+            Log("[error] Load audio resource: Can't open File %s", data.fileName.c_str());
+            return false;
+        }
+
+        try {
+            std::streamsize size = ifs.tellg();
+            ifs.seekg(0, std::ios::beg);
+
+            // Reserve memory and read file content into the vector
+            data.mRawData.resize(static_cast<size_t>(size));
+            if (!ifs.read(reinterpret_cast<char*>(data.mRawData.data()), size)) {
+                Log("[error] Load audio resource: Failed to read data from %s", data.fileName.c_str());
+                return false;
+            }
+            ifs.close();
+
+            // Identify file format based on magic bytes
+            data.fileType = detectType(data.mRawData);
+
+            // Fallback: If detection failed, check file extension for MP3
+            if (data.fileType == AudioType::UNKNOWN) {
+
+                if (FluxStr::extractFileExt(data.fileName, true) == "mp3") {
+                    data.fileType = AudioType::MP3;
+                    Log("[info] Audio type MP3 detected via extension fallback for: %s", data.fileName.c_str());
+                }
+            }
+
+
+            if (data.fileType == AudioType::UNKNOWN) {
+                Log("[warning] Audio format not recognized for: %s", data.fileName.c_str());
+                return false;
+            }
+
+            return true;
+
+        } catch (const std::exception& e) {
+            Log("[error] Load audio resource exception: %s", e.what());
+            return false;
+        }
+    }
+
 
 
 }; //namespace
