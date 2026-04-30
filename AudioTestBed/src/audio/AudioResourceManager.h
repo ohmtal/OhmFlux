@@ -37,7 +37,7 @@
 namespace FluxAudio {
 
     //FIXME move type to fluxAudio.h when done
-    enum class AudioType { UNKNOWN, WAV, OGG, MP3, SFXStereo };
+    enum class AudioType { UNKNOWN, WAV, OGG, MP3, SFX };
 
     inline AudioType detectType(const std::vector<uint8_t>& data) {
         if (data.size() < 4) return AudioType::UNKNOWN;
@@ -58,7 +58,7 @@ namespace FluxAudio {
 
         if (data[0] == 'F' && data[1] == 'l' && data[2] == 'u' && data[3] == 'x'
             && data[4] == 'S' && data[5] == 'F' && data[6] == 'X'
-        ) return AudioType::SFXStereo;
+        ) return AudioType::SFX;
 
 
         return AudioType::UNKNOWN;

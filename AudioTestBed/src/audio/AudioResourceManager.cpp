@@ -114,11 +114,16 @@ namespace FluxAudio {
 
             // Fallback: If detection failed, check file extension for MP3
             if (data.fileType == AudioType::UNKNOWN) {
-
-                if (FluxStr::extractFileExt(data.fileName, true) == "mp3") {
+                std::string ext = FluxStr::extractFileExt(data.fileName, true);
+                if ( ext == "mp3") {
                     data.fileType = AudioType::MP3;
                     Log("[info] Audio type MP3 detected via extension fallback for: %s", data.fileName.c_str());
                 }
+                else if (ext == "sfx" && data.mRawData.size() == 105) {
+                    data.fileType = AudioType::SFX;
+                    Log("[info] Audio type legacy SFX detected via extension fallback for: %s", data.fileName.c_str());
+                }
+
             }
 
 
