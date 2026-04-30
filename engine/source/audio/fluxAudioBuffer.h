@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// AudioBuffer - using float- ThreadSafe
+// Audio(Ring)Buffer - using float - ThreadSafe
 //-----------------------------------------------------------------------------
 #pragma once
 

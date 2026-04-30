@@ -38,7 +38,7 @@ public:
 		else
 			setFlipX(true);
 
-		setSpeed ((float)RandInRange(0.01f, 0.06f));
+		setSpeed ((float)RandInRange(10.0f, 60.0f));
 
 		// Log("Fish (%d) x:%f, y:%f speed:%f",mFishType,  getX(),getY(),getSpeed());
 
@@ -59,7 +59,7 @@ public:
 		// 1. Use local variables to avoid multiple getter calls
 		float currentX = getX();
 		bool isFlipped = getFlipX();
-		float speed = getSpeed() * static_cast<float>(dt * 1000.f);
+		float speed = getSpeed() * static_cast<float>(dt);
 		float screenWidth = static_cast<float>(getScreen()->getWidth());
 
 		// 2. Consolidate movement logic

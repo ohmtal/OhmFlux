@@ -204,7 +204,7 @@ bool DemoGame::Initialize() {
 		.setScaleMinMax( 1.f, 3.f)
 		.setLifeTimeMinMax(6.f,10.f)
 		.setRotationSpeedMinMax(1.f, 2.f)
-	)->setPosition({ 400.f ,550.f, 0.10f })->play();
+	)->setPosition({ 400.f ,550.f, 0.50f })->play();
 
 	// ParticleManager.addEmitter(
 	// 	ParticlePresets::waterBubblePreset

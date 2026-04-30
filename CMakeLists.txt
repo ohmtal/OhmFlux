@@ -455,7 +455,7 @@ if(BUILD_LUATEST)
 endif()
 
 # --- Amana ---
-option(BUILD_AMANA "Build Amana Game" ON)
+option(BUILD_AMANA "Build Amana Game" OFF)
 if(BUILD_AMANA)
     set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
     set(GAME_SOURCES
@@ -487,6 +487,12 @@ endif()
 
 
 
+# --- AudioTestBed ---
+option(BUILD_AUDIOTEST "Build Audio TestBed application" ON)
+
+if(BUILD_AUDIOTEST)
+    add_subdirectory(AudioTestBed)
+endif()
 
 
 # =============================================================================
