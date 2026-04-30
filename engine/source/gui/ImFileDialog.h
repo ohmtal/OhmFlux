@@ -51,14 +51,28 @@
 
 namespace fs = std::filesystem;
 
+
+
 class ImFileDialog {
+
+    struct ListCache {
+        std::string pathStr;
+        std::string name;
+        std::string ext;
+        bool isDir;
+        std::string fileSize;
+        std::string fileDateTime;
+        uintmax_t rawSize;
+        fs::file_time_type rawTime;
+    };
+
 
     std::string mCurrentPath = fs::current_path().string();
     char pathInput[512];
     char fileInput[256] = "";
     std::string mExt = "";
 
-    std::vector<fs::directory_entry> mEntries;
+    std::vector<ListCache>mListCache;
 
     int mSelectedFilterIdx = 0;
     std::vector<std::string> mDefaultFilters = {  };
@@ -80,6 +94,12 @@ public:
     bool mWasOpen = true;
 
 
+
+
+    //--------------------------------------------------------------------------
+    ~ImFileDialog() {
+        mListCache.clear();
+    }
     //--------------------------------------------------------------------------
 
     void setFileName(std::string filename)
@@ -156,8 +176,79 @@ private:
                 }
                 localEntries.push_back(entry);
             }
-            mEntries.swap(localEntries);
         } catch (...) { return false; }
+
+
+        // 2026-04-30 Build ListCache.
+        mListCache.clear();
+        for (const auto& entry : localEntries) {
+            std::error_code ec;
+
+            const auto& path = entry.path();
+            std::string name = path.filename().string();
+
+            ListCache lc;
+
+            lc.pathStr  = path.string();
+            lc.name     = path.filename().string();
+            lc.ext      = path.extension().string();
+            lc.isDir    = entry.is_directory();
+
+            // .... filesize .....
+            if (lc.isDir) {
+                lc.fileSize = "---";
+            } else {
+                uintmax_t size = entry.is_regular_file() ? fs::file_size(entry, ec) : 0;
+                if (!ec)
+                {
+                    if (size < 1024) {
+                        lc.fileSize = std::format("{} B", size);
+                    }
+                    else if (size < 1024 * 1024) {
+                        lc.fileSize = std::format("{:.1f} KB", size / 1024.0f);
+                    }
+                    else if (size < 1024LL * 1024 * 1024) {
+                        lc.fileSize = std::format("{:.1f} MB", size / (1024.0f * 1024.0f));
+                    }
+                    else {
+                        lc.fileSize = std::format("{:.2f} GB", size / (1024.0f * 1024.0f * 1024.0f));
+                    }
+                    lc.rawSize = size;
+                } else {
+                    lc.rawSize = 0;
+                }
+            }
+
+            // ... file last write time ...
+            {
+
+                auto ftime = fs::last_write_time(entry, ec);
+                if (!ec)
+                {
+                    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                        ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now()
+                    );
+                    std::time_t ctime = std::chrono::system_clock::to_time_t(sctp);
+
+                    // Format time string (e.g., YYYY-MM-DD HH:MM)
+                    char time_str[32];
+                    std::strftime(time_str, sizeof(time_str), "%y-%m-%d %H:%M", std::localtime(&ctime));
+                    // ImGui::TextDisabled("%s", time_str);
+
+                    lc.fileDateTime = time_str;
+
+                    lc.rawTime = ftime;
+
+                } else {
+                    lc.fileDateTime = "---";
+                    lc.rawTime = fs::file_time_type();
+                }
+            }
+
+
+            // push ;)
+            mListCache.push_back(lc);
+        }
 
         return true;
     }
@@ -181,6 +272,7 @@ private:
     //--------------------------------------------------------------------------
     void DrawHeader()
     {
+
         //--------- Reload
         if (ImGui::Button("R")) {
             mDirty = true;
@@ -281,9 +373,8 @@ private:
 
     }
     //--------------------------------------------------------------------------
-    // this can be overwritten for your custom icons
-
-    virtual void DrawIcon(fs::directory_entry entry)
+    // this can be overwritten for custom icons
+    virtual void DrawIcon(const bool isDir, const std::string ext)
     {
         const ImVec2 size = { 14.f, 14.f }; // Slightly larger for better visibility
         ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -292,7 +383,7 @@ private:
         ImU32 col = ImGui::GetColorU32(ImGuiCol_Header);
         ImU32 colDarker = ImGui::GetColorU32(ImGuiCol_Tab);
 
-        if (entry.is_directory()) {
+        if (isDir) {
             float tabHeight = size.y * 0.25f;
             float tabWidth = size.x * 0.4f;
             dl->AddRectFilled(
@@ -311,6 +402,7 @@ private:
             ImGui::SameLine();
         }
         else {
+            // using ext ....
             // // Simple file icon (empty rectangle or vertical line)
             // dl->AddRect(pos, { pos.x + size.x, pos.y + size.y }, ImGui::GetColorU32(ImGuiCol_TextDisabled), 1.0f);
             // ImGui::Dummy(size);
@@ -335,22 +427,10 @@ public:
             // ------- Add to gui -------------------
             ImVec2 listSize = ImVec2(-FLT_MIN, -FLT_MIN - 25);
 
-            // if ( mSaveMode ) listSize.y = 200.f;
             ImGuiWindow* window = ImGui::GetCurrentWindow();
-            // if ( window && !window->DockIsActive)
-            //     listSize.y = 200.f;
-
 
             if (ImGui::BeginChild("FileList", listSize)) {
-                // if (ImGui::Selectable("..", false, ImGuiSelectableFlags_AllowDoubleClick)) {
-                //     if (ImGui::IsMouseDoubleClicked(0)) {
-                //         currentPath = fs::path(currentPath).parent_path().string();
-                //         mDirty = true;
-                //     }
-                // }
-                //------------------> NEW TABLE < -----------------------
 
-                // Table flags for professional behavior
                 static ImGuiTableFlags table_flags =
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
                 ImGuiTableFlags_Sortable  | ImGuiTableFlags_ScrollY     | ImGuiTableFlags_RowBg    |
@@ -358,125 +438,118 @@ public:
 
                 if (ImGui::BeginTable("FileBrowserTable", 3, table_flags, ImVec2(0, 0)))
                 {
+                    ImGui::TableSetupScrollFreeze(0, 1);
                     // Column definitions
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthStretch);
                     ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 90.0f);
                     ImGui::TableSetupColumn("Date Modified", ImGuiTableColumnFlags_WidthFixed, 90.0f);
                     ImGui::TableHeadersRow();
 
-                    // --- SORTING LOGIC ---
+                    if (mDirty) {
+                        if (!fetchFiles() ) {
+                            Log("[error] Failed to fetch files !!!");
+                            mDirty = false;
 
+                        }
+                        // mDirty  is reseted after sort
+                    }
+                    // --- SORTING LOGIC ---
                     if (ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs())
                     {
-                        // FORCE update if user clicked header OR if directory changed (mDirty)
-                        if (sort_specs->SpecsDirty || mDirty)
-                        {
-                            if (mDirty) fetchFiles(); // Reload files before sorting
+                        if (sort_specs->SpecsDirty || mDirty) {
 
-                            std::sort(mEntries.begin(), mEntries.end(), [&](const fs::directory_entry& a, const fs::directory_entry& b) {
-                                if (a.is_directory() != b.is_directory()) return a.is_directory(); // Dirs always first
+                            std::sort(mListCache.begin(), mListCache.end(), [&](const ListCache& a, const ListCache& b) {
+                                if (a.isDir != b.isDir) return a.isDir;
 
                                 const ImGuiTableColumnSortSpecs& spec = sort_specs->Specs[0];
-                                bool res = false;
-                                switch (spec.ColumnIndex) {
-                                    case 0: res = a.path().filename().string() < b.path().filename().string(); break;
-                                    case 1: res = (a.is_regular_file() ? fs::file_size(a) : 0) < (b.is_regular_file() ? fs::file_size(b) : 0); break;
-                                    case 2: res = fs::last_write_time(a) < fs::last_write_time(b); break;
-                                }
-                                return (spec.SortDirection == ImGuiSortDirection_Ascending) ? res : !res;
+
+                                bool ascending = (spec.SortDirection == ImGuiSortDirection_Ascending);
+
+                                auto compare = [&]() -> bool {
+                                    switch (spec.ColumnIndex) {
+                                        case 0: return a.name < b.name;
+                                        case 1: return a.rawSize < b.rawSize;
+                                        case 2: return a.rawTime < b.rawTime;
+                                        default: return false;
+                                    }
+                                };
+
+                                bool isSmaller = compare();
+                                bool isGreater = [&]() -> bool {
+                                    switch (spec.ColumnIndex) {
+                                        case 0: return b.name < a.name;
+                                        case 1: return b.rawSize < a.rawSize;
+                                        case 2: return b.rawTime < a.rawTime;
+                                        default: return false;
+                                    }
+                                }();
+
+                                if (ascending) return isSmaller;
+                                return isGreater;
                             });
 
+                            dLog("sort file list ....");
                             sort_specs->SpecsDirty = false;
-                            mDirty = false; // Reset flag after sorting is done
+                            mDirty = false; // << reset here !!!
                         }
                     }
+
+
+
+
                     // --- ROW RENDERING ---
-                    for (const auto& entry : mEntries) {
+                    ImGuiListClipper clipper;
+                    clipper.Begin(mListCache.size());
+                    while (clipper.Step()) for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+                        auto entry = mListCache[row];
+
                         ImGui::TableNextRow();
-
-                        const auto& path = entry.path();
-                        std::string name = path.filename().string();
-                        bool isDir = entry.is_directory();
-
-                        // Column 0: Name and Selection Logic
+                        //  ------------ Column 0: Name and Selection Logic
                         ImGui::TableSetColumnIndex(0);
-                        bool isSelected = (selectedFile == name);
+                        bool isSelected = (selectedFile == entry.name);
+                        ImGuiSelectableFlags sel_flags = ImGuiSelectableFlags_SpanAllColumns; // | ImGuiSelectableFlags_AllowDoubleClick;
 
-                        // Use SpanAllColumns so the selection highlight covers the whole row
-                        ImGuiSelectableFlags sel_flags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick;
-                        // std::string display_name = isDir ? "[D] " + name : name;
+                        DrawIcon(entry.isDir, entry.ext);
 
+                        if (ImGui::Selectable(entry.name.c_str(), isSelected, sel_flags)) {
+                            if (!entry.isDir)
+                            {
+                                selectedFile = entry.name;
+                                strncpy(fileInput, entry.name.c_str(), sizeof(fileInput));
+                            }
 
-                        DrawIcon(entry);
+                        }
 
-                        if (ImGui::Selectable(name.c_str(), isSelected, sel_flags)) {
-                            if (ImGui::IsMouseDoubleClicked(0)) {
-                                if (isDir) {
-                                    mCurrentPath = path.string();
-                                    mDirty = true; // Trigger directory change
-                                } else {
-                                    if (strlen(fileInput) > 0) {
-
-                                        std::string ext = path.extension().string();
-                                        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-                                        selectedFile = (fs::path(mCurrentPath) / fileInput).string();
-                                        selectedExt  = ext;
-                                        result = true;
-                                    }
-                                }
+                        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+                            if (entry.isDir) {
+                                mCurrentPath = entry.pathStr;
+                                mDirty = true; // Trigger directory change
                             } else {
-                                if (!isDir)
-                                {
-                                    // dLog("previous Selected File: %s", selectedFile.c_str());
-                                    selectedFile = name;
-                                    strncpy(fileInput, name.c_str(), sizeof(fileInput));
+                                if (strlen(fileInput) > 0) {
+
+                                    std::string ext = entry.ext;
+                                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                                    selectedFile = (fs::path(mCurrentPath) / fileInput).string();
+                                    selectedExt  = ext;
+                                    result = true;
                                 }
                             }
                         }
-
-                        // Column 1: File Size
+                        // ------------ Column 1: File Size
                         ImGui::TableSetColumnIndex(1);
-                        if (isDir) {
-                            ImGui::TextDisabled("--");
-                        } else {
-                            std::error_code ec;
-                            uintmax_t size = fs::file_size(entry, ec);
-                            if (!ec)
-                            {
-                                if (size < 1024) ImGui::Text("%llu B", static_cast<unsigned long long>(size));
-                                else if (size < 1024 * 1024) ImGui::Text("%.1f KB", size / 1024.0f);
-                                else ImGui::Text("%.1f MB", size / (1024.0f * 1024.0f));
-                            } else {
-                                dLog("[warn] filesize: File does not exists any more... ");
-                                mDirty = true;
-                            }
-                        }
 
-                        // Column 2: Date Modified
+                        float width = ImGui::GetColumnWidth();
+                        float posX = ImGui::GetCursorPosX();
+                        ImGui::SetCursorPosX(posX + width - ImGui::CalcTextSize(entry.fileSize.c_str()).x - ImGui::GetStyle().ItemSpacing.x);
+                        ImGui::TextUnformatted(entry.fileSize.c_str());
+
+                        // ------------ Column 2: Date Modified
                         ImGui::TableSetColumnIndex(2);
+                        ImGui::TextUnformatted(entry.fileDateTime.c_str());
+                        //--------
 
-                        if (!mDirty)
-                        {
-                            std::error_code ec;
-                            auto ftime = fs::last_write_time(entry, ec);
-                            if (!ec)
-                            {
-                                auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-                                    ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now()
-                                );
-                                std::time_t ctime = std::chrono::system_clock::to_time_t(sctp);
+                    } // table loop
 
-                                // Format time string (e.g., YYYY-MM-DD HH:MM)
-                                char time_str[32];
-                                // std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M", std::localtime(&ctime));
-                                std::strftime(time_str, sizeof(time_str), "%y-%m-%d %H:%M", std::localtime(&ctime));
-                                ImGui::TextDisabled("%s", time_str);
-                            } else {
-                                dLog("[warn] file datetime: File does not exists any more...");
-                                mDirty = true;
-                            }
-                        }
-                    }
                     ImGui::EndTable();
                 }
             }
