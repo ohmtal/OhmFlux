@@ -11,6 +11,7 @@
 #include "audio/AudioResourceManager.h"
 #include "audio/AudioInstance.h"
 
+#include "gui/ImFlux.h"
 
 #include <unordered_map>
 
@@ -72,7 +73,7 @@ public:
             OnConsoleCommand(console, command_line);
         };
 
-        fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3", ".sfx" });
+        fileDialog.init( getGamePath(), { ".ogg", ".wav"/*, ".mp3", ".sfx" */});
 
         AudioResourceManager.Initialize(); //FIXME move to Ohmflux
 
@@ -195,11 +196,11 @@ public:
                     if (instance) {
 
                         if (!instance->isPlaying) {
-                            if (ImGui::Button(("Play##" + std::to_string(n)).c_str())) {
+                            if (ImFlux::ButtonFancy(("Play##" + std::to_string(n)).c_str(), ImFlux::SLATE_BUTTON) ) {
                                 if (!instance->Play()) Log("[error] failed to play %s", waveCaption.c_str());
                             }
                         } else {
-                            if (ImGui::Button(("Stop##" + std::to_string(n)).c_str())) {
+                            if (ImFlux::ButtonFancy(("Stop##" + std::to_string(n)).c_str(), ImFlux::BLUE_BUTTON)) {
                                 if (!instance->Stop()) Log("[error] failed to stop %s", waveCaption.c_str());
                             }
                         }

@@ -214,6 +214,7 @@ namespace FluxAudio {
 
             default:
                 Log("[error] AudioInstance::Init Unhandled AudioType %d", (int)resource->fileType);
+                setBad();
                 return false;
         }
         isInitialized = true;
