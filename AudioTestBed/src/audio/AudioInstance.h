@@ -38,9 +38,12 @@ namespace FluxAudio {
         //--------
         // params
         bool doLoop = false;
+        // volume
+        float volume = 1.f;
         // position :
         bool usePosition    = false;
         Point2F position    = {};
+        Point3F box         = {100.f, 100.f, 2.f};
         //--------
         //Resource
         ResourceData* resource = nullptr;
@@ -49,6 +52,10 @@ namespace FluxAudio {
         stb_vorbis* vorbisDecoder = nullptr;
         // we hold the spec
         SDL_AudioSpec srcSpec;
+        SDL_AudioSpec dstSpec;
+
+        // Buffer
+        std::vector<float> mAudioBuffer;
 
         // status
         bool isPlaying    = false; //<< fixme !!
@@ -67,10 +74,14 @@ namespace FluxAudio {
         void setBad();
 
         //-------- Stop / Play
-        bool Stop();
         bool Play();
+        bool Stop();
+
+        //------- Put Data in
+        void Update( Point3F camPos );
 
     private:
+        void fillBuffer();
 
     }; //AudioInstance
 

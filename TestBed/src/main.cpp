@@ -425,7 +425,7 @@ public:
                 {
                     lFinaleMoveVector.y = -1.f;
                 }
-                Render2D.getCamera()->setAutoMove(lFinaleMoveVector, 0.1f);
+                Render2D.getCamera()->setAutoMove(lFinaleMoveVector, 100.f);
             }
             break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
@@ -437,10 +437,10 @@ public:
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
-        mLabel->setCaption("%d fps, mouse grabbed:%d (toogle with right mouse button)", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()));
+        mLabel->setCaption("%d fps, mouse grabbed:%d ,dT:%.4f fT:%.5f", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()), dt, getFrameTime());
 
-        const float camSpeed  = 0.1f * getFrameTime();
-        const float zoomSpeed = 0.0001f  * getFrameTime();
+        const float camSpeed  = 100.f * getFrameTime();
+        const float zoomSpeed = 0.1f  * getFrameTime();
 
 
         // Handle Camera Movement

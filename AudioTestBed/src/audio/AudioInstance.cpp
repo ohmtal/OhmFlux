@@ -168,7 +168,11 @@ namespace FluxAudio {
                 Uint8* wavBuf;
                 SDL_IOStream* io = SDL_IOFromConstMem(resource->mRawData.data(), resource->mRawData.size());
                 if (SDL_LoadWAV_IO(io, true, &srcSpec, &wavBuf, &resource->len)) {
-                    stream = SDL_CreateAudioStream(&srcSpec, nullptr);
+
+                    dstSpec = srcSpec;
+                    dstSpec.format = SDL_AUDIO_F32;
+
+                    stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
                     if (!stream) {
                         Log("[error]Couldn't create audio stream: %s", SDL_GetError());
                         SDL_free(wavBuf);
@@ -204,7 +208,10 @@ namespace FluxAudio {
                 srcSpec.channels = info.channels;
                 srcSpec.freq = info.sample_rate;
 
-                stream = SDL_CreateAudioStream(&srcSpec, nullptr); // Target NULL = SDL konvertiert automatisch zu Device Spec
+                dstSpec = srcSpec;
+
+
+                stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
                 if (!AudioManager.bindStream(stream)) {
                     Log("Failed to bind '%s' stream: %s", resource->fileName.c_str(), SDL_GetError());
                     return false;
@@ -226,6 +233,16 @@ namespace FluxAudio {
         if ( vorbisDecoder ) { stb_vorbis_close(vorbisDecoder); vorbisDecoder = nullptr; }
     }
     //--------------------------------------------------------------------------
+    void AudioInstance::fillBuffer() {
+
+    }
+    //--------------------------------------------------------------------------
+    void AudioInstance::Update( Point3F camPos ) {
+
+        if (!isPlaying) return;
+
+    }
+
 
 
 

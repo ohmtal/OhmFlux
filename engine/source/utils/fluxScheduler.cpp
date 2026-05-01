@@ -97,7 +97,7 @@ void FluxScheduler::update(double dt)
         std::lock_guard<std::recursive_mutex> lock(mMutex);
         for (auto it = mTasks.begin(); it != mTasks.end(); ) {
             // Convert millisecond dt to seconds for comparison with timeRemaining
-            it->timeRemaining -= (dt / 1000.0);
+            it->timeRemaining -= (dt );
 
             if (it->timeRemaining <= 0.0) {
                 if (it->action) {
