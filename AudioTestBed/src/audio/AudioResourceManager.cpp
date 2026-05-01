@@ -14,12 +14,12 @@
 
 namespace FluxAudio {
     //--------------------------------------------------------------------------
-    bool AudioResourceManager::Initialize() {
+    bool ResourceManager::Initialize() {
         mInitialized = true;
         return mInitialized;
     }
     //--------------------------------------------------------------------------
-    void AudioResourceManager::Deinitialize() {
+    void ResourceManager::Deinitialize() {
         if (mShutDown) return;
         mShutDown = true;
 
@@ -36,7 +36,12 @@ namespace FluxAudio {
         mInitialized = false;
     }
     //--------------------------------------------------------------------------
-    AudioResourceData* AudioResourceManager::get(std::string fileName, bool noAutoLoad) {
+    ResourceData* ResourceManager::get(std::string fileName, bool noAutoLoad) {
+        // it can be loaded but added to blacklist (invalid) by AudioInstance!
+        if (isBlackListed(fileName)) {
+            return nullptr;
+        }
+
         auto it = mResourceMap.find(fileName);
 
         if (it != mResourceMap.end()) {
@@ -61,12 +66,12 @@ namespace FluxAudio {
         return nullptr;
     }
     //--------------------------------------------------------------------------
-    bool AudioResourceManager::add(std::string fileName)
+    bool ResourceManager::add(std::string fileName, bool enableLoop , uint8_t maxInstances )
     {
         if (!isInitialized()) return false;
         if (isBlackListed(fileName)) {
             Log("[info] audio resource - it's blacklisted: %s!", fileName.c_str());
-            return true; //we have it return true!
+            return false;
         }
 
         if (get(fileName, true) != nullptr) {
@@ -74,9 +79,10 @@ namespace FluxAudio {
             return true; //we have it return true!
         }
 
-
-        auto resData = std::make_unique<AudioResourceData>();
+        auto resData = std::make_unique<ResourceData>();
         resData->fileName = fileName;
+        resData->enableLoop = enableLoop;
+        resData->maxInstances = maxInstances;
 
         if (!LoadRawFile(*resData)) {
             blacklist(fileName);
@@ -88,7 +94,7 @@ namespace FluxAudio {
 
     }
     //--------------------------------------------------------------------------
-    bool AudioResourceManager::LoadRawFile(AudioResourceData& data) {
+    bool ResourceManager::LoadRawFile(ResourceData& data) {
         // Open file at the end to get size immediately
         std::ifstream ifs(data.fileName, std::ios::binary | std::ios::ate);
 
@@ -125,13 +131,10 @@ namespace FluxAudio {
                 }
 
             }
-
-
             if (data.fileType == AudioType::UNKNOWN) {
                 Log("[warning] Audio format not recognized for: %s", data.fileName.c_str());
                 return false;
             }
-
             return true;
 
         } catch (const std::exception& e) {

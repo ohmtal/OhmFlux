@@ -9,6 +9,11 @@
 #include "gui/ImConsole.h"
 #include "gui/ImFileDialog.h"
 #include "audio/AudioResourceManager.h"
+#include "audio/AudioInstance.h"
+
+
+#include <unordered_map>
+
 
 //-----------------------------------------------------------------------------
 // console redirect ....
@@ -29,7 +34,6 @@ class AudioTestBed : public FluxMain
     ImConsole console;
     ImFileDialog fileDialog;
     std::unique_ptr<FluxGuiGlue> mGuiGlue;
-    std::unique_ptr<FluxAudio::AudioResourceManager> mAudioResourceManager;
 
 
 
@@ -39,13 +43,16 @@ class AudioTestBed : public FluxMain
         std::string cmd = FluxStr::getWord(cmdLineStr, 0);
 
         if (cmd == "list") {
-            for (auto& [key, val] : mAudioResourceManager->getMap()) {
+            for (auto& [key, val] : AudioResourceManager.getMap()) {
                 Log("%s type:%d size:%d", key.c_str(), (int)val->fileType, (int)val->mRawData.size());
             }
         }
 
     }
     // -------------------------------------------------------------------------
+
+    // fixme still have "single" Instance playing ...
+    std::unordered_map<std::string, std::unique_ptr<FluxAudio::AudioInstance>> mInstanceMap;
 
 
 public:
@@ -58,10 +65,6 @@ public:
         if (!mGuiGlue->Initialize())
             return false;
 
-        // setting ini here is ok for a testBed
-        mAudioResourceManager = std::make_unique<FluxAudio::AudioResourceManager>();
-        if (!mAudioResourceManager->Initialize())
-            return false;
 
 
         SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
@@ -71,6 +74,7 @@ public:
 
         fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3", ".sfx" });
 
+        AudioResourceManager.Initialize(); //FIXME move to Ohmflux
 
          return true;
     }
@@ -80,7 +84,6 @@ public:
 
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
-        mAudioResourceManager->Deinitialize();
 
         Parent::Deinitialize();
     }
@@ -132,7 +135,7 @@ public:
                 fileDialog.reset();
             } else {
                 // NOTE: LOAD RESOURCE TEST
-                if (!mAudioResourceManager->add(fileDialog.selectedFile)) {
+                if (!AudioResourceManager.add(fileDialog.selectedFile)) {
                     mGuiGlue->showMessage("Error", "Failed to load File " + fileDialog.selectedFile + " !");
                 } else {
                     Log("[info] file %s loaded :)", fileDialog.selectedFile.c_str());
@@ -140,6 +143,103 @@ public:
             }
         }
     }
+
+
+
+    // FIXME still working with single instance :P
+    FluxAudio::AudioInstance* getAudioInstance(FluxAudio::ResourceData* resource) {
+        if (!resource) return nullptr;
+        auto it = mInstanceMap.find(resource->fileName);
+        if (it != mInstanceMap.end()) {
+            return it->second.get();
+        }
+
+        auto instance = std::make_unique<FluxAudio::AudioInstance>();
+        if (instance->Initialize(resource)) {
+            mInstanceMap[resource->fileName] = std::move(instance);
+            dLog("Playing from new Instance");
+            return mInstanceMap[resource->fileName].get();
+        }
+
+        return nullptr;
+    }
+
+
+    //------------------------------------------------------------------------------
+    void DrawAudioList(bool* p_open) {
+        if (!*p_open) return;
+        ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
+        if (!ImGui::Begin("audio streams", p_open)) { ImGui::End(); return; }
+
+
+        if (ImGui::BeginChild("WaveModule_BOX", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
+            ImGui::Separator();
+
+            // List
+            std::string waveCaption;
+            bool isSelected = false;
+            int n = 0;
+            if (ImGui::BeginListBox("##WaveList", ImVec2(-FLT_MIN, -FLT_MIN))) {
+                for (auto& [filename, resource] : AudioResourceManager.getMap()) {
+
+                    waveCaption = std::format("{:02X} {} {}", n, FluxStr::extractFilename( filename), (int)resource->fileType);
+
+
+                    if (ImGui::Selectable(waveCaption.c_str(), isSelected)) {
+                        // do something on select ?
+                    }
+
+                    FluxAudio::AudioInstance*  instance = getAudioInstance(resource.get());
+
+
+                    if (instance) {
+
+                        if (!instance->isPlaying) {
+                            if (ImGui::Button(("Play##" + std::to_string(n)).c_str())) {
+                                if (!instance->Play()) Log("[error] failed to play %s", waveCaption.c_str());
+                            }
+                        } else {
+                            if (ImGui::Button(("Stop##" + std::to_string(n)).c_str())) {
+                                if (!instance->Stop()) Log("[error] failed to stop %s", waveCaption.c_str());
+                            }
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Checkbox(("Loop##" + std::to_string(n)).c_str(), &instance->doLoop)) {
+                        }
+
+                    }
+
+
+
+                    // if (ImGui::IsItemHovered()) {
+                    //
+                    //     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                    //     }
+                    // } //IsItemHovered
+
+                    // if (isSelected) {
+                    //     ImGui::SetItemDefaultFocus();
+                    //
+                    //     if (ImGui::BeginPopupContextItem("##WavePopup")) {
+                    //         ImGui::TextColored(Color4FIm(cl_SkyBlue), "%s", waveCaption.c_str());
+                    //         ImGui::TextDisabled("%s",mAudioStreams[n]->getFileName().c_str());
+                    //
+                    //         ImGui::Separator();
+                    //         ImGui::EndPopup();
+                    //     }
+                    // }
+
+
+                    n++;
+                } //for auto ...
+                ImGui::EndListBox();
+            }
+        }
+        ImGui::EndChild();
+        ImGui::End();
+
+    }
+
     //--------------------------------------------------------------------------------------
     virtual void onDrawTopMost() override {
         Parent::onDrawTopMost();
@@ -150,12 +250,14 @@ public:
         static bool showConsole = true;
         static bool showFileBrowser = true;
         static bool showMenu = true;
+        static bool showAudioList = true;
 
         if (showMenu) {
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("Window")) {
                     ImGui::MenuItem("Main Menu", "F10", &showMenu);
                     ImGui::MenuItem("Files", "F1", &showFileBrowser);
+                    ImGui::MenuItem("Audio List", "F2", &showAudioList);
                     ImGui::MenuItem("Console", "GraveAccent", &showConsole);
                     ImGui::EndMenu();
                 }
@@ -165,10 +267,13 @@ public:
 
         if (ImGui::IsKeyPressed(ImGuiKey_F10)) showMenu = !showMenu;
         if (ImGui::IsKeyPressed(ImGuiKey_F1)) showFileBrowser = !showFileBrowser;
+        if (ImGui::IsKeyPressed(ImGuiKey_F2)) showAudioList = !showAudioList;
 
         if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
         console.Draw("Console",&showConsole);
         if (showFileBrowser) DrawFileBrowser();
+
+        DrawAudioList(&showAudioList);
 
         // ------
         mGuiGlue->DrawEnd();

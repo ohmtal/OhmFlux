@@ -3,6 +3,7 @@ set(AUDIOTESTBED_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set(GAME_SOURCES
     ${AUDIOTESTBED_DIR}/src/main.cpp
     ${AUDIOTESTBED_DIR}/src/audio/AudioResourceManager.cpp
+    ${AUDIOTESTBED_DIR}/src/audio/AudioInstance.cpp
 )
 
 

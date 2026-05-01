@@ -15,8 +15,8 @@
 #include "core/fluxBaseObject.h"
 #include "utils/errorlog.h"
 
-#define STB_VORBIS_HEADER_ONLY
-#include "stb_vorbis.c"
+
+struct stb_vorbis; //FWD
 
 class FluxAudioStream : public FluxBaseObject
 {
