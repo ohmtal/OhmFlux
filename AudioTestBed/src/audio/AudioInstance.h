@@ -70,6 +70,8 @@ namespace FluxAudio {
         bool Stop();
         bool Play();
 
+    private:
+
     }; //AudioInstance
 
     //--------------------------------------------------------------------------

@@ -53,6 +53,7 @@ namespace FluxAudio {
 
         }
     }
+
     //--------------------------------------------------------------------------
     void AudioInstance::setBad(){
         badData = true;
@@ -67,7 +68,7 @@ namespace FluxAudio {
 
         switch (resource->fileType) {
             case AudioType::WAV: {
-                dLog("playing wav :D");
+                dLog("FIXME BAD IDEA WHEN LOOPING / PANNING AUDIO ... ADD UPDATE like before !!!!!");
 
                 // used for loop / isPlaying and position Panning
                 SDL_SetAudioStreamGetCallback(stream, MyAudioLoopCallback, this);
@@ -81,7 +82,7 @@ namespace FluxAudio {
 
             //............ OGG ..............
             case AudioType::OGG: {
-                dLog("FIXME BAD IDEA WHEN LOOPING AUDIO ... ADD UPDATE like before !!!!!");
+                dLog("FIXME BAD IDEA WHEN LOOPING / PANNING AUDIO ... ADD UPDATE like before !!!!!");
 
                 if (!vorbisDecoder) {
                     Log("[error] Can play ogg decoder not available!");
@@ -101,7 +102,7 @@ namespace FluxAudio {
                         return false;
                     }
                 }
-                SDL_FlushAudioStream(stream);
+                if (!doLoop) SDL_FlushAudioStream(stream);
 
                 stb_vorbis_seek_start(vorbisDecoder);
                 // stb_vorbis_close(vorbisDecoder); //FIXME on STOP ?!
