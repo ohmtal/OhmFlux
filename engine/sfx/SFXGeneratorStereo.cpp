@@ -3,6 +3,11 @@
 // Copyright (c) 2026 XXTH
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+//
+// 2026-05-01 add compiler flag SFX_USE_DSP if you want DSP!
+//            example after configure marco :
+//            target_compile_definitions(SoundStudio PUBLIC SFX_USE_DSP)
+//
 // 2026-02-03 File Version 103 (panning) FIXME export ok playback NOT !!!!
 //                  need a bit sleep ;) maybe tomorrow
 //-----------------------------------------------------------------------------

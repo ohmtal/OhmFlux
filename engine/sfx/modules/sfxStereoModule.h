@@ -8,7 +8,7 @@
 #include <imgui.h>
 #include <SFXGeneratorStereo.h>
 #include <gui/ImFlux.h>
-#include <DSP.h>
+
 #include <algorithm>
 
 #ifdef __EMSCRIPTEN__
@@ -20,6 +20,11 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+#endif
+
+// 2026-05-01 add compiler flag SFX_USE_DSP if you want DSP!
+#ifdef SFX_USE_DSP
+#include <DSP.h>
 #endif
 
 
@@ -44,12 +49,14 @@ private:
         char* filterStrings[3];
     };
 
+    #ifdef SFX_USE_DSP
     // DSP::RingModulator* mRingMod;
     // DSP::VoiceModulator* mVoiceMod;
     // DSP::Delay* mDelay;
     // DSP::Chorus* mChorus;
     DSP::VisualAnalyzer* mVisualAnalyzer;
     DSP::Limiter* mLimiter;
+    #endif
 
 public:
 
@@ -66,14 +73,14 @@ public:
             return false;
 
 
-
+        #ifdef SFX_USE_DSP
         // mVoiceMod = DSP::addEffectToChain<DSP::VoiceModulator>(mSFXGeneratorStereo->getDspEffects(), false);
         // mRingMod  = DSP::addEffectToChain<DSP::RingModulator>(mSFXGeneratorStereo->getDspEffects(), false);
         // mChorus   = DSP::addEffectToChain<DSP::Chorus>(mSFXGeneratorStereo->getDspEffects(), false);
         // mDelay    = DSP::addEffectToChain<DSP::Delay>(mSFXGeneratorStereo->getDspEffects(), false);
         mLimiter = DSP::addEffectToChain<DSP::Limiter>(mSFXGeneratorStereo->getDspEffects(), true);
         mVisualAnalyzer = DSP::addEffectToChain<DSP::VisualAnalyzer>(mSFXGeneratorStereo->getDspEffects(), true);
-
+        #endif
 
 
         return true;
@@ -370,6 +377,8 @@ public:
                 }
                 ImGui::EndChild();
 
+
+                #ifdef SFX_USE_DSP
                 if (ImGui::BeginChild("PREAMP_BOX", ImVec2(-FLT_MIN,65.f) )) {
                     ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
                     ImGui::Dummy(ImVec2(2,0)); ImGui::SameLine();
@@ -400,8 +409,10 @@ public:
                      ImGui::EndGroup(/*2.1*/);
                     ImGui::EndGroup(/*2.2*/);
                     ImGui::EndGroup(/*2*/);
+
                 }
                 ImGui::EndChild();
+                 #endif
 
 
 
@@ -477,7 +488,7 @@ public:
                 FileDialog(fa_export);
             }
 
-
+            #ifdef SFX_USE_DSP
             ImVec2 lVisuSize = ImVec2(lButtonSize.x,lButtonSize.y * 2.f );
             if (ImGui::BeginChild("VisualAnalyzer_BOX", ImVec2(lVisuSize.x, lVisuSize.y * 3.2f ) )) {
                 // invisible nearly ... ImFlux::GradientBox(ImVec2(-FLT_MIN, -FLT_MIN),0.f);
@@ -500,6 +511,7 @@ public:
 
             }
             ImGui::EndChild();
+            #endif
 
 
 

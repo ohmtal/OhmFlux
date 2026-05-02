@@ -443,6 +443,7 @@ if(BUILD_TESTBED)
         ${SFX_SOURCES}
 
     )
+
     configure_demo_target(TestBed ${TESTBED_DIR} "${TESTBED_DIR}/assets@assets" "${GAME_SOURCES}")
 endif()
 
@@ -482,7 +483,9 @@ if(BUILD_SOUNDSTUDIO)
         ${SFX_SOURCES}
 
     )
+
     configure_demo_target(SoundStudio ${SOUNDSTUDIO_DIR} "${SOUNDSTUDIO_DIR}/assets@assets" "${APP_SOURCES}")
+    target_compile_definitions(SoundStudio PUBLIC SFX_USE_DSP)
 endif()
 
 
