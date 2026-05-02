@@ -23,7 +23,7 @@
 #include "AudioResourceManager.h"
 #include <core/fluxGlobals.h>
 #include <core/fluxBaseObject.h>
-
+#include <miniaudio.h>
 
 //----
 #include "utils/errorlog.h"
@@ -47,12 +47,6 @@ namespace FluxAudio {
         //--------
         //Resource
         ResourceData* resource = nullptr;
-        // decoder / steam
-        SDL_AudioStream* stream = nullptr;
-        stb_vorbis* vorbisDecoder = nullptr;
-        // we hold the spec
-        SDL_AudioSpec srcSpec;
-        SDL_AudioSpec dstSpec;
 
 
         // status
@@ -86,11 +80,20 @@ namespace FluxAudio {
             return (float)mSamplePos / (float)mSampleLen;
         }
     private:
+
+        // decoder / steam
+        SDL_AudioStream* stream = nullptr;
+        stb_vorbis* vorbisDecoder = nullptr;
+        ma_decoder maDecoder;
+
+        // we hold the spec
+        SDL_AudioSpec srcSpec;
+        SDL_AudioSpec dstSpec;
+
+
         // Buffer
         size_t mSamplePos = 0;
         size_t mSampleLen = 0;
-
-
         std::vector<float> mAudioBuffer;
         bool fillBuffer();
     }; //AudioInstance

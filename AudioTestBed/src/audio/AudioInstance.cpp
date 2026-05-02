@@ -5,6 +5,9 @@
 #undef STB_VORBIS_HEADER_ONLY
 #include <stb_vorbis.c>
 
+#define MA_NO_DEVICE_IO
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
 
 namespace FluxAudio {
 
@@ -54,6 +57,18 @@ namespace FluxAudio {
                 stb_vorbis_seek_start(vorbisDecoder);
                 break;
             }
+
+            case AudioType::MP3: {
+                if (!maDecoder.pBackend) return false;
+                ma_result res = ma_decoder_seek_to_pcm_frame(&maDecoder, 0);
+                if (res != MA_SUCCESS) {
+                    Log("[error] Audio: MP3 Seek failed (%s)", resource->fileName.c_str());
+                    return false;
+                }
+                mSamplePos = 0;
+                break;
+            }
+
             default:
                 return false;
         }
@@ -100,6 +115,7 @@ namespace FluxAudio {
                 dstSpec.format = SDL_AUDIO_F32;
 
 
+                //NOTE: dstSpec is correct since it's converted to this!
                 stream = SDL_CreateAudioStream( &dstSpec, nullptr);
                 // stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
                 if (!stream) {
@@ -152,6 +168,41 @@ namespace FluxAudio {
                 break;
             }
 
+            // ............ MP3 (miniaudio) ..............
+            case AudioType::MP3: {
+                ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 0, 0);
+
+                ma_result res = ma_decoder_init_memory(resource->mRawData.data(), resource->mRawData.size(), &config, &maDecoder);
+
+                if (res != MA_SUCCESS) {
+                    Log("[error] Audio: Failed to open MP3: %s", resource->fileName.c_str());
+                    setBad();
+                    return false;
+                }
+
+                srcSpec.format   = SDL_AUDIO_F32;
+                srcSpec.channels = maDecoder.outputChannels;
+                srcSpec.freq     = maDecoder.outputSampleRate;
+
+                dstSpec = srcSpec;
+
+                stream = SDL_CreateAudioStream(&srcSpec, nullptr);
+                if (!AudioManager.bindStream(stream)) {
+                    Log("[error] Audio: Failed to bind '%s' stream: %s", resource->fileName.c_str(), SDL_GetError());
+                    ma_decoder_uninit(&maDecoder);
+                    return false;
+                }
+
+                mSamplePos = 0;
+                ma_uint64 totalFrames;
+                ma_decoder_get_length_in_pcm_frames(&maDecoder, &totalFrames);
+                mSampleLen = (uint32_t)totalFrames;
+
+                dLog("MP3 SAMPLE LEN = %d", (int)mSampleLen);
+                break;
+            }
+
+
             default:
                 Log("[error] AudioInstance::Init Unhandled AudioType %d", (int)resource->fileType);
                 setBad();
@@ -164,6 +215,8 @@ namespace FluxAudio {
     AudioInstance::~AudioInstance( ) {
         if ( stream ) { SDL_DestroyAudioStream(stream); stream = nullptr; }
         if ( vorbisDecoder ) { stb_vorbis_close(vorbisDecoder); vorbisDecoder = nullptr; }
+        if ( maDecoder.pBackend ) {ma_decoder_uninit(&maDecoder); }
+
     }
     //--------------------------------------------------------------------------
     bool AudioInstance::fillBuffer() {
@@ -237,6 +290,36 @@ namespace FluxAudio {
                 break;
             }
 
+            // .......... MP3 (miniaudio) .............
+            case AudioType::MP3: {
+                if (mAudioBuffer.size() != CHUNK_SIZE * dstSpec.channels) {
+                    mAudioBuffer.resize(CHUNK_SIZE * dstSpec.channels);
+                }
+
+                ma_uint64 framesRead = 0;
+                ma_result res = ma_decoder_read_pcm_frames(&maDecoder, mAudioBuffer.data(), CHUNK_SIZE, &framesRead);
+
+                if (framesRead == 0) {
+                    if (doLoop) {
+                        ma_decoder_seek_to_pcm_frame(&maDecoder, 0);
+                        res = ma_decoder_read_pcm_frames(&maDecoder, mAudioBuffer.data(), CHUNK_SIZE, &framesRead);
+                    } else {
+                        return false; // EOF
+                    }
+                }
+
+                if (framesRead < CHUNK_SIZE) {
+                    mAudioBuffer.resize(framesRead * dstSpec.channels);
+                }
+
+                ma_uint64 currentFrame;
+                ma_decoder_get_cursor_in_pcm_frames(&maDecoder, &currentFrame);
+                mSamplePos = (uint32_t)currentFrame;
+                // dLog("MP3 %d of %d, %f played",  (int)mSamplePos, (int)mSampleLen, getProgress());
+
+                break;
+            }
+
             default:
                 return false;
         }
@@ -268,11 +351,7 @@ namespace FluxAudio {
                 }
             }
         }
-
-
     }
-
-
 
 
 }; //namespace
