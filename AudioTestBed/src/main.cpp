@@ -199,11 +199,30 @@ public:
 
 
                     if (instance) {
+                        float progress = instance->getProgress();
                         ImGui::PushID(instance);
                         if (!instance->isPlaying) {
                             if (ImFlux::ButtonFancy("Play" , ImFlux::SLATE_BUTTON) ) {
                                 if (!instance->Play()) Log("[error] failed to play %s", waveCaption.c_str());
                             }
+                            if (progress > 0.0f ) {
+                                ImGui::SameLine();
+                                if (ImFlux::ButtonFancy("Resume" , ImFlux::SLATE_BUTTON) ) {
+                                    if (!instance->Resume()) Log("[error] failed to play %s", waveCaption.c_str());
+                                }
+                            }
+
+                            ImGui::SameLine();
+                            if (ImFlux::ButtonFancy("DEL", ImFlux::RED_BUTTON)) {
+
+                                std::string key = filename;
+                                FluxSchedule.add(0.0, nullptr, [key, this]()
+                                {
+                                    mInstanceMap.erase(key);
+                                    AudioResourceManager.remove(key);
+                                });
+                            }
+
                         } else {
                             if (ImFlux::ButtonFancy("Stop", ImFlux::BLUE_BUTTON)) {
                                 if (!instance->Stop()) Log("[error] failed to stop %s", waveCaption.c_str());
@@ -216,9 +235,13 @@ public:
                         if (ImGui::SliderFloat("Vol" , &instance->volume, 0.1f, 1.f)) {
 
                         }
-                        if (instance->isPlaying) {
-                            ImGui::ProgressBar( instance->getProgress());
+
+                        // if (instance->isPlaying)
+                        {
+                            ImGui::ProgressBar( progress);
                         }
+
+
 
                         ImGui::PopID();
                     }

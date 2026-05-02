@@ -25,7 +25,9 @@ namespace FluxAudio {
        bool enableLoop      = false;  // default for instance
        uint8_t maxInstances = 1;      // manager should check this to decide to spawn a new instance
 
-       // WAV handling on load it will be stripped
+       // WAV handling:
+       //     on load it will be stripped
+       //     but i need to keep the Spec for convert
        SDL_AudioSpec wavSrcSpec;
 
     };
@@ -70,11 +72,15 @@ namespace FluxAudio {
             return mResourceMap;
         }
 
-        // const std::unordered_map<std::string, std::unique_ptr<AudioResourceData>> getMap() { return mResourceMap; }
 
         //-----------------------------------------------------------------------------
         bool add(std::string fileName, bool enableLoop = false, uint8_t maxInstances = 1);
         ResourceData* get(std::string fileName, bool noAutoLoad = false);
+
+        bool remove(std::string fileName) {
+            mResourceMap.erase(fileName);
+            return true;
+        }
 
 
     private:
