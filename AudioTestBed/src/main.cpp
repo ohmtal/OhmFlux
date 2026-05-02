@@ -144,7 +144,7 @@ public:
                 if (!AudioResourceManager.add(fileDialog.selectedFile)) {
                     mGuiGlue->showMessage("Error", "Failed to load File " + fileDialog.selectedFile + " !");
                 } else {
-                    Log("[info] file %s loaded :)", fileDialog.selectedFile.c_str());
+                    Log("[info] file %s loaded.", fileDialog.selectedFile.c_str());
                 }
             }
         }
@@ -199,20 +199,28 @@ public:
 
 
                     if (instance) {
-
+                        ImGui::PushID(instance);
                         if (!instance->isPlaying) {
-                            if (ImFlux::ButtonFancy(("Play##" + std::to_string(n)).c_str(), ImFlux::SLATE_BUTTON) ) {
+                            if (ImFlux::ButtonFancy("Play" , ImFlux::SLATE_BUTTON) ) {
                                 if (!instance->Play()) Log("[error] failed to play %s", waveCaption.c_str());
                             }
                         } else {
-                            if (ImFlux::ButtonFancy(("Stop##" + std::to_string(n)).c_str(), ImFlux::BLUE_BUTTON)) {
+                            if (ImFlux::ButtonFancy("Stop", ImFlux::BLUE_BUTTON)) {
                                 if (!instance->Stop()) Log("[error] failed to stop %s", waveCaption.c_str());
                             }
                         }
                         ImGui::SameLine();
-                        if (ImGui::Checkbox(("Loop##" + std::to_string(n)).c_str(), &instance->doLoop)) {
+                        if (ImGui::Checkbox("Loop" , &instance->doLoop)) {
+                        }
+                        ImGui::SameLine();ImGui::SetNextItemWidth(70.f);
+                        if (ImGui::SliderFloat("Vol" , &instance->volume, 0.1f, 1.f)) {
+
+                        }
+                        if (instance->isPlaying) {
+                            ImGui::ProgressBar( instance->getProgress());
                         }
 
+                        ImGui::PopID();
                     }
 
 

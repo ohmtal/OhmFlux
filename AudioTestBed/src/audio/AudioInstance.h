@@ -62,6 +62,7 @@ namespace FluxAudio {
         bool badData = false;
 
 
+
         //-------- Initialize
         bool Initialize( ResourceData* lResource);
         bool Initialize(std::string fileName);
@@ -79,9 +80,17 @@ namespace FluxAudio {
         //------- Put Data in
         void Update( const double& dt, Point3F* camPos = nullptr );
 
+
+        float getProgress() {
+            if (mSampleLen == 0) return 0.f;
+            return (float)mSamplePos / (float)mSampleLen;
+        }
     private:
         // Buffer
-        size_t wavOffset = 0;
+        size_t mSamplePos = 0;
+        size_t mSampleLen = 0;
+
+
         std::vector<float> mAudioBuffer;
         bool fillBuffer();
     }; //AudioInstance

@@ -46,7 +46,7 @@ namespace FluxAudio {
         SDL_ClearAudioStream(stream);
         switch (resource->fileType) {
             case AudioType::WAV: {
-                wavOffset = 0;
+                mSamplePos = 0;
                 break;
             }
             case AudioType::OGG: {
@@ -99,7 +99,9 @@ namespace FluxAudio {
                 dstSpec = srcSpec;
                 dstSpec.format = SDL_AUDIO_F32;
 
-                stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
+
+                stream = SDL_CreateAudioStream( &dstSpec, nullptr);
+                // stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
                 if (!stream) {
                     Log("[error]Couldn't create audio stream: %s", SDL_GetError());
                     return false;
@@ -111,6 +113,10 @@ namespace FluxAudio {
                     stream = nullptr;
                     return false;
                 }
+
+                mSamplePos = 0;
+                mSampleLen = resource->mRawData.size();
+
                 break;
             }
             //............ OGG ..............
@@ -132,11 +138,17 @@ namespace FluxAudio {
                 dstSpec = srcSpec;
 
 
-                stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
+                // stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
+                stream = SDL_CreateAudioStream(&srcSpec, nullptr);
                 if (!AudioManager.bindStream(stream)) {
                     Log("Failed to bind '%s' stream: %s", resource->fileName.c_str(), SDL_GetError());
                     return false;
                 }
+
+                mSamplePos = 0;
+                mSampleLen = stb_vorbis_stream_length_in_samples(vorbisDecoder);
+                dLog("SAMPLE LEN = %d", (int)mSampleLen);
+
                 break;
             }
 
@@ -161,78 +173,27 @@ namespace FluxAudio {
 
         switch (resource->fileType) {
 
-            // case AudioType::WAV: {
-            //     const int CHUNK_SAMPLES = 4096; // Samples pro Kanal
-            //     int numChannels = srcSpec.channels;
-            //     size_t totalSamplesToRead = CHUNK_SAMPLES * numChannels;
-            //
-            //     mAudioBuffer.resize(totalSamplesToRead);
-            //
-            //     size_t bytesToRead = totalSamplesToRead * sizeof(int16_t);
-            //
-            //     if (wavOffset + bytesToRead > resource->mRawData.size()) {
-            //         bytesToRead = resource->mRawData.size() - wavOffset;
-            //         mAudioBuffer.resize(bytesToRead / sizeof(int16_t));
-            //     }
-            //
-            //     const int16_t* sourcePtr = reinterpret_cast<const int16_t*>(resource->mRawData.data() + wavOffset);
-            //
-            //     for (size_t i = 0; i < mAudioBuffer.size(); ++i) {
-            //         // S16 Range ist -32768 bis 32767. Wir teilen durch 32768.0, um auf float -1.0 bis 1.0 zu kommen.
-            //         mAudioBuffer[i] = static_cast<float>(sourcePtr[i]) / 32768.0f;
-            //     }
-            //
-            //     wavOffset += bytesToRead;
-            //     break;
-            // }
-
-
-//lol hours spend for nothing ...
-            // case AudioType::WAV: {
-            //     int bytesPerSample = SDL_AUDIO_BYTESIZE(srcSpec.format);
-            //     size_t chunkBytes = CHUNK_SIZE * srcSpec.channels * bytesPerSample;
-            //
-            //     if (wavOffset >= resource->mRawData.size()) {
-            //         if (doLoop) {
-            //             wavOffset = 0;
-            //         } else {
-            //             return false;
-            //         }
-            //     }
-            //     if (wavOffset + chunkBytes > resource->mRawData.size()) {
-            //         chunkBytes = resource->mRawData.size() - wavOffset;
-            //     }
-            //     if (!SDL_PutAudioStreamData(stream, resource->mRawData.data() + wavOffset, (int)chunkBytes)) {
-            //         return false;
-            //     }
-            //     wavOffset += chunkBytes;
-            //     dLog("WAV wavOffset: %d", (int)wavOffset);
-            //     break;
-            // }
             case AudioType::WAV: {
                 if (mAudioBuffer.size() != CHUNK_SIZE * dstSpec.channels) {
                     mAudioBuffer.resize(CHUNK_SIZE * dstSpec.channels);
                 }
 
-                if (wavOffset >= resource->mRawData.size()) {
-                    if (doLoop) wavOffset = 0;
+                if (mSamplePos >= resource->mRawData.size()) {
+                    if (doLoop) mSamplePos = 0;
                     else return false;
                 }
 
                 int bytesPerSampleSource = SDL_AUDIO_BYTESIZE(srcSpec.format);
                 size_t bytesToReadFromSource = CHUNK_SIZE * srcSpec.channels * bytesPerSampleSource;
 
-                if (wavOffset + bytesToReadFromSource > resource->mRawData.size()) {
-                    bytesToReadFromSource = resource->mRawData.size() - wavOffset;
+                if (mSamplePos + bytesToReadFromSource > resource->mRawData.size()) {
+                    bytesToReadFromSource = resource->mRawData.size() - mSamplePos;
                 }
-
-
-                // bytesToReadFromSource = resource->mRawData.size(); //TEST: suck all in
 
                 Uint8* tempDst = nullptr;
                 int outLen = 0;
 
-                if (SDL_ConvertAudioSamples(&srcSpec, resource->mRawData.data() + wavOffset, (int)bytesToReadFromSource,
+                if (SDL_ConvertAudioSamples(&srcSpec, resource->mRawData.data() + mSamplePos, (int)bytesToReadFromSource,
                     &dstSpec, &tempDst, &outLen))
                 {
                     mAudioBuffer.assign((float*)tempDst, (float*)(tempDst + outLen));
@@ -241,12 +202,14 @@ namespace FluxAudio {
                     return false;
                 }
 
-                wavOffset += bytesToReadFromSource;
+                mSamplePos += bytesToReadFromSource;
 
-                dLog("WAV wavOffset: %d", (int)wavOffset);
+                // dLog("WAV wavOffset: %d", (int)wavOffset);
 
                 break;
             }
+
+            // .......... OGG .............
             case AudioType::OGG: {
                 if (mAudioBuffer.size() != CHUNK_SIZE * dstSpec.channels) {
                     mAudioBuffer.resize(CHUNK_SIZE * dstSpec.channels);
@@ -269,7 +232,8 @@ namespace FluxAudio {
                     mAudioBuffer.resize(samplesRead * dstSpec.channels);
                 }
 
-                // dLog("OGG samplesRead: %d", samplesRead);
+                mSamplePos = stb_vorbis_get_sample_offset(vorbisDecoder);
+                // dLog("OGG samplesRead: %d, %d of %d, %f played", samplesRead, (int)mSamplePos, (int)mSampleLen, getProgress());
                 break;
             }
 
@@ -287,12 +251,12 @@ namespace FluxAudio {
         if (SDL_GetAudioStreamQueued(stream) < targetQueueSize) {
             if ( fillBuffer() ) {
 
-                if ( dstSpec.format == SDL_AUDIO_F32 ) {
-                    for (auto& sample : mAudioBuffer) {
-                        dLog("sample: %f", sample);
-                        sample *= volume;
-                    }
+
+                for (auto& sample : mAudioBuffer) {
+                    // dLog("sample: %f", sample);
+                    sample *= volume;
                 }
+
 
                 SDL_PutAudioStreamData(stream, mAudioBuffer.data(), mAudioBuffer.size() * sizeof(float));
 
