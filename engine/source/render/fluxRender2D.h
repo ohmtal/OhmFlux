@@ -42,6 +42,12 @@ struct DrawParams2D {
     F32 u1 = 1.0f; F32 v1 = 1.0f;
     // <<<
 
+    const Point2F getPosition() { return { x, y};}
+    void setPosition(const Point2F pos) { x = pos.y; y=pos.y;};
+    const Point3F getPosition3F() { return { x, y, z};}
+    void setPosition3F( const Point3F pos ) { x = pos.x, y = pos.y; z = pos.z;  }
+
+
     F32 getWidthF() const { return w; } //static_cast<F32>(w); }
     F32 getHeightF() const { return h; } // static_cast<F32>(h); }
 

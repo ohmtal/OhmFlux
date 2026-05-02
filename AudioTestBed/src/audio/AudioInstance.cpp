@@ -400,7 +400,7 @@ namespace FluxAudio {
                     // dLog("sample: %f", sample);
                     sample *= volume;
                 }
-
+                if (OnAudioProcess) OnAudioProcess(mAudioBuffer.data(),mAudioBuffer.size());
 
                 SDL_PutAudioStreamData(stream, mAudioBuffer.data(), mAudioBuffer.size() * sizeof(float));
 

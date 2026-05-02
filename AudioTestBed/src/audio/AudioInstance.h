@@ -25,7 +25,7 @@
 #include <core/fluxBaseObject.h>
 #include <miniaudio.h>
 #include "SFXGeneratorStereo.h"
-
+#include <functional>
 //----
 #include "utils/errorlog.h"
 
@@ -43,7 +43,8 @@ namespace FluxAudio {
         float volume = 1.f;
         // position :
         bool usePosition    = false;
-        Point2F position    = {};
+        Point3F position    = {};
+        // in 2d it is x,y,cam zoom
         Point3F box         = {100.f, 100.f, 2.f};
         //--------
         //Resource
@@ -80,6 +81,11 @@ namespace FluxAudio {
             if (mSampleLen == 0) return 0.f;
             return (float)mSamplePos / (float)mSampleLen;
         }
+
+        // float* buffer, size_t numSamples
+        std::function<void(const float*, size_t)> OnAudioProcess = nullptr;
+
+        const SDL_AudioSpec getSpec() { return dstSpec; }
     private:
 
         // decoder / steam

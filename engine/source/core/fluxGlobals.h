@@ -367,8 +367,11 @@ struct Point3F {
 
     bool operator==(const Point3F& v) const { return (x == v.x && y == v.y && z == v.z); }
 
-
     Point3F& operator+=(const Point2F& v) { x += v.x; y += v.y; return *this; }
+
+    F32 dot(const Point3F& v) const { return (x * v.x + y * v.y + z * v.z); }
+
+    Point2F toPoint2F() const { return { x,y}; }
 
 };
 //------------------------------------- Rects

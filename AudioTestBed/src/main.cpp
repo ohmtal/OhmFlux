@@ -205,23 +205,13 @@ public:
                             if (ImFlux::ButtonFancy("Play" , ImFlux::SLATE_BUTTON) ) {
                                 if (!instance->Play()) Log("[error] failed to play %s", waveCaption.c_str());
                             }
-                            if (progress > 0.0f ) {
+                            if (progress > 0.0f && progress < 0.99f ) {
                                 ImGui::SameLine();
                                 if (ImFlux::ButtonFancy("Resume" , ImFlux::SLATE_BUTTON) ) {
                                     if (!instance->Resume()) Log("[error] failed to play %s", waveCaption.c_str());
                                 }
                             }
 
-                            ImGui::SameLine();
-                            if (ImFlux::ButtonFancy("DEL", ImFlux::RED_BUTTON)) {
-
-                                std::string key = filename;
-                                FluxSchedule.add(0.0, nullptr, [key, this]()
-                                {
-                                    mInstanceMap.erase(key);
-                                    AudioResourceManager.remove(key);
-                                });
-                            }
 
                         } else {
                             if (ImFlux::ButtonFancy("Stop", ImFlux::BLUE_BUTTON)) {
@@ -234,6 +224,19 @@ public:
                         ImGui::SameLine();ImGui::SetNextItemWidth(70.f);
                         if (ImGui::SliderFloat("Vol" , &instance->volume, 0.1f, 1.f)) {
 
+                        }
+
+                        if (!instance->isPlaying) {
+                            ImGui::SameLine();
+                            if (ImFlux::ButtonFancy("DEL", ImFlux::RED_BUTTON)) {
+
+                                std::string key = filename;
+                                FluxSchedule.add(0.0, nullptr, [key, this]()
+                                {
+                                    mInstanceMap.erase(key);
+                                    AudioResourceManager.remove(key);
+                                });
+                            }
                         }
 
                         // if (instance->isPlaying)
