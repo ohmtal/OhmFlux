@@ -69,6 +69,13 @@ namespace FluxAudio {
                 break;
             }
 
+            case AudioType::SFX: {
+                if (!mSFXGen) return false;
+                mSFXGen->PlaySample();
+                mSamplePos = 0;
+                break;
+            }
+
             default:
                 return false;
         }
@@ -105,6 +112,7 @@ namespace FluxAudio {
     bool AudioInstance::Initialize(ResourceData* lResource) {
         if (badData) return false;
         if (resource) return false; // we have a resource!
+        if (isInitialized) return false;
         resource = lResource;
         doLoop = resource->enableLoop; //preset default
         switch (resource->fileType) {
@@ -202,6 +210,34 @@ namespace FluxAudio {
                 break;
             }
 
+            // ........ SFX .............
+            case AudioType::SFX: {
+                mSFXGen = new SFXGeneratorStereo();
+                if (!mSFXGen->LoadFromMemory(resource->mRawData)) {
+                    Log("[error] Audio SFX. Failed to load data.");
+                }
+
+                srcSpec.format = SDL_AUDIO_F32;
+                srcSpec.channels = 2;
+                srcSpec.freq =  44100 ;
+                dstSpec = srcSpec;
+
+                // stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
+                stream = SDL_CreateAudioStream(&srcSpec, nullptr);
+                if (!AudioManager.bindStream(stream)) {
+                    Log("Failed to bind '%s' stream: %s", resource->fileName.c_str(), SDL_GetError());
+                    return false;
+                }
+
+                mSamplePos = 0;
+                mSampleLen = mSFXGen->getSyntFrames();
+
+
+
+                break;
+            }
+
+
 
             default:
                 Log("[error] AudioInstance::Init Unhandled AudioType %d", (int)resource->fileType);
@@ -215,7 +251,8 @@ namespace FluxAudio {
     AudioInstance::~AudioInstance( ) {
         if ( stream ) { SDL_DestroyAudioStream(stream); stream = nullptr; }
         if ( vorbisDecoder ) { stb_vorbis_close(vorbisDecoder); vorbisDecoder = nullptr; }
-        if ( maDecoder.pBackend ) {ma_decoder_uninit(&maDecoder); }
+        if ( maDecoder.pBackend ) {ma_decoder_uninit(&maDecoder); maDecoder.pBackend=nullptr; }
+        if ( mSFXGen ) { SAFE_DELETE(mSFXGen); mSFXGen = nullptr; }
 
     }
     //--------------------------------------------------------------------------
@@ -319,7 +356,31 @@ namespace FluxAudio {
 
                 break;
             }
+            case AudioType::SFX: {
+                if (!mSFXGen) return false;
 
+                if ( !mSFXGen->mState.playing_sample ) {
+                    if (doLoop)  { mSFXGen->PlaySample();  mSamplePos = 0; }
+                    else return false; //DONE
+                }
+
+                int framesToRead = CHUNK_SIZE;
+                int remainingFrames = mSampleLen - mSamplePos;
+                if ( framesToRead >  remainingFrames  )
+                    framesToRead = remainingFrames;
+
+
+                if (mAudioBuffer.size() != framesToRead * dstSpec.channels) {
+                    mAudioBuffer.resize(framesToRead * dstSpec.channels);
+                }
+
+                mSFXGen->SynthSample(framesToRead, mAudioBuffer.data());
+                mSamplePos += framesToRead;
+
+                break;
+            }
+
+            // ....... UNKNOWN ........
             default:
                 return false;
         }

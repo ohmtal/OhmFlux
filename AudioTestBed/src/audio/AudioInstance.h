@@ -6,9 +6,9 @@
 //-----------------------------------------------------------------------------
 // Audio Renderer prototype
 // [ ] Initialize / Play
-//  [ ] Wav
-//  [ ] OGG
-//  [ ] MP3
+//  [X] Wav
+//  [X] OGG
+//  [X] MP3
 //  [ ] SFX
 // [ ] DSP::Processors::Panning3D
 // [ ] FluxAudio::Manager handle list of instances
@@ -24,6 +24,7 @@
 #include <core/fluxGlobals.h>
 #include <core/fluxBaseObject.h>
 #include <miniaudio.h>
+#include "SFXGeneratorStereo.h"
 
 //----
 #include "utils/errorlog.h"
@@ -85,6 +86,8 @@ namespace FluxAudio {
         SDL_AudioStream* stream = nullptr;
         stb_vorbis* vorbisDecoder = nullptr;
         ma_decoder maDecoder;
+
+        SFXGeneratorStereo*  mSFXGen = nullptr;
 
         // we hold the spec
         SDL_AudioSpec srcSpec;

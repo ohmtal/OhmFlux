@@ -19,7 +19,9 @@
 #include <cstring>
 #include <mutex>
 
+#ifdef SFX_USE_DSP
 #include <DSP.h>
+#endif
 
 #ifdef FLUX_ENGINE
 #include <imgui.h>
@@ -294,7 +296,9 @@ protected:
     bool saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate);
 
     //Effects
+#ifdef SFX_USE_DSP
     std::vector<std::unique_ptr<DSP::Effect>> mDspEffects;
+#endif
 
 
 public:
@@ -322,6 +326,11 @@ public:
 
     void PlaySample();
     bool LoadSettings(const char* filename, bool allowLegacy = true);
+
+    bool LoadFromStream(std::istream& is, bool allowLegacy = true);
+    bool LoadFromMemory(const std::vector<uint8_t>& data, bool allowLegacy = true);
+
+
     bool SaveSettings(const char* filename);
     std::string getErrors() { return mErrors; }
 
@@ -340,6 +349,7 @@ public:
     void AddPanning(bool doLock = true);
 
     // moderisation WAV
+    int getSyntFrames(); // frames to generate by synt
     bool exportToWav(const std::string& filename, float* progressOut, bool applyEffects = true);
 
     void attachAudio();
@@ -373,10 +383,11 @@ public:
         return false;
     }
 
-
+#ifdef SFX_USE_DSP
     std::vector<std::unique_ptr<DSP::Effect>>& getDspEffects() {
         return mDspEffects;
     }
+#endif
 
 
 private:

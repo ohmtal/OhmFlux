@@ -73,7 +73,7 @@ public:
             OnConsoleCommand(console, command_line);
         };
 
-        fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3" /*, ".sfx" */});
+        fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3" , ".sfx" });
 
         AudioResourceManager.Initialize(); //FIXME move to Ohmflux
 

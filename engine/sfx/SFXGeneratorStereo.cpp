@@ -16,6 +16,7 @@
 #include <string>
 #include <stdexcept>
 #include <type_traits>
+#include <format>
 
 
 #ifdef FLUX_ENGINE
@@ -158,79 +159,140 @@ void SFXGeneratorStereo::ResetParamsNoLock()
 
 }
 //-----------------------------------------------------------------------------
-bool SFXGeneratorStereo::LoadSettings(const char* filename, bool allowLegacy)
-{
-
-    mErrors = "";
-    std::ifstream ifs; //(filePath, std::ios::binary);
-    ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-
+bool SFXGeneratorStereo::LoadFromStream(std::istream& is, bool allowLegacy) {
     try {
-        ifs.open(filename, std::ios::binary);
-        if (!ifs.is_open()) {
-            addError(std::format("Can't open File {} for read.", filename));
-            return false;
-        }
-
-        // // Read and verify identifier
         char identifierBuffer[FluxSFX::FILE_IDENTIFIER_SIZE];
         bool hasIdentifier = true;
-        try {
-            ifs.read(identifierBuffer, FluxSFX::FILE_IDENTIFIER_SIZE);
-            if (std::memcmp(identifierBuffer, FluxSFX::FILE_IDENTIFIER, FluxSFX::FILE_IDENTIFIER_SIZE) != 0) {
-                hasIdentifier = false;
-            }
-        } catch (const std::ios_base::failure&) {
+
+        is.read(identifierBuffer, FluxSFX::FILE_IDENTIFIER_SIZE);
+        if (is.gcount() != FluxSFX::FILE_IDENTIFIER_SIZE ||
+            std::memcmp(identifierBuffer, FluxSFX::FILE_IDENTIFIER, FluxSFX::FILE_IDENTIFIER_SIZE) != 0) {
             hasIdentifier = false;
-        }
-
-        if (!hasIdentifier) {
-            if (!allowLegacy) {
-                addError("File Identifier mismatch.");
-                return false;
             }
-            // Clear error state and rewind to the very beginning
-            ifs.clear();
-            ifs.seekg(0, std::ios::beg);
 
-            // Peek at the version byte without advancing the pointer too far
-            int lVersion = 0;
-            ifs.read(reinterpret_cast<char*>(&lVersion), sizeof(int));
+            if (!hasIdentifier) {
+                if (!allowLegacy) {
+                    addError("File Identifier mismatch.");
+                    return false;
+                }
+                is.clear();
+                is.seekg(0, std::ios::beg);
 
-            if (lVersion < 100 || lVersion > 103) {
-                addError(std::format("Invalid Legacy Version: {}", lVersion));
-                return false;
+                int lVersion = 0;
+                is.read(reinterpret_cast<char*>(&lVersion), sizeof(int));
+
+                if (lVersion < 100 || lVersion > 103) {
+                    addError(std::format("Invalid Legacy Version: {}", lVersion));
+                    return false;
+                }
+                std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+                return mParams.loadLegacy(is, lVersion);
             }
+
             std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-            bool success = mParams.loadLegacy(ifs, lVersion);
-            if (!success) addError("Failed to load legacy file!");
-            return success;
-        }
+            return mParams.setBinary(is);
 
-        std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-        bool success = mParams.setBinary(ifs);
-        if (!success) addError("Failed to load file!");
-        return success;
-
-    } catch (const std::ios_base::failure& e) {
-        // If we catch this, it's because a read_binary or read_vector failed
-        if (ifs.eof()) {
-            addError("Unexpected End of File: The file is truncated.");
-        } else {
-            addError(std::format("I/O failure: {}", e.what()));
-        }
-        return false;
-    } catch (const std::bad_alloc&) {
-        addError("File requested too much memory (possible corruption).");
-        return false;
     } catch (const std::exception& e) {
-        addError(std::format("General error: {}", e.what()));
+        addError(std::format("Load error: {}", e.what()));
         return false;
     }
-
-    // i should never get here ...
-    return false;
 }
+//-----------------------------------------------------------------------------
+bool SFXGeneratorStereo::LoadFromMemory(const std::vector<uint8_t>& data, bool allowLegacy) {
+    mErrors = "";
+    if (data.empty()) return false;
+
+    std::string_view sv(reinterpret_cast<const char*>(data.data()), data.size());
+    std::istringstream iss(std::string(sv), std::ios::binary);
+
+    return LoadFromStream(iss, allowLegacy);
+}
+//-----------------------------------------------------------------------------
+bool SFXGeneratorStereo::LoadSettings(const char* filename, bool allowLegacy) {
+    mErrors = "";
+    std::ifstream ifs(filename, std::ios::binary);
+    if (!ifs.is_open()) {
+        addError(std::format("Can't open File {} for read.", filename));
+        return false;
+    }
+    ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+
+    return LoadFromStream(ifs, allowLegacy);
+}
+//-----------------------------------------------------------------------------
+// bool SFXGeneratorStereo::LoadSettings(const char* filename, bool allowLegacy)
+// {
+//
+//     mErrors = "";
+//     std::ifstream ifs; //(filePath, std::ios::binary);
+//     ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+//
+//     try {
+//         ifs.open(filename, std::ios::binary);
+//         if (!ifs.is_open()) {
+//             addError(std::format("Can't open File {} for read.", filename));
+//             return false;
+//         }
+//
+//         // // Read and verify identifier
+//         char identifierBuffer[FluxSFX::FILE_IDENTIFIER_SIZE];
+//         bool hasIdentifier = true;
+//         try {
+//             ifs.read(identifierBuffer, FluxSFX::FILE_IDENTIFIER_SIZE);
+//             if (std::memcmp(identifierBuffer, FluxSFX::FILE_IDENTIFIER, FluxSFX::FILE_IDENTIFIER_SIZE) != 0) {
+//                 hasIdentifier = false;
+//             }
+//         } catch (const std::ios_base::failure&) {
+//             hasIdentifier = false;
+//         }
+//
+//         if (!hasIdentifier) {
+//             if (!allowLegacy) {
+//                 addError("File Identifier mismatch.");
+//                 return false;
+//             }
+//             // Clear error state and rewind to the very beginning
+//             ifs.clear();
+//             ifs.seekg(0, std::ios::beg);
+//
+//             // Peek at the version byte without advancing the pointer too far
+//             int lVersion = 0;
+//             ifs.read(reinterpret_cast<char*>(&lVersion), sizeof(int));
+//
+//             if (lVersion < 100 || lVersion > 103) {
+//                 addError(std::format("Invalid Legacy Version: {}", lVersion));
+//                 return false;
+//             }
+//             std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+//             bool success = mParams.loadLegacy(ifs, lVersion);
+//             if (!success) addError("Failed to load legacy file!");
+//             return success;
+//         }
+//
+//         std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+//         bool success = mParams.setBinary(ifs);
+//         if (!success) addError("Failed to load file!");
+//         return success;
+//
+//     } catch (const std::ios_base::failure& e) {
+//         // If we catch this, it's because a read_binary or read_vector failed
+//         if (ifs.eof()) {
+//             addError("Unexpected End of File: The file is truncated.");
+//         } else {
+//             addError(std::format("I/O failure: {}", e.what()));
+//         }
+//         return false;
+//     } catch (const std::bad_alloc&) {
+//         addError("File requested too much memory (possible corruption).");
+//         return false;
+//     } catch (const std::exception& e) {
+//         addError(std::format("General error: {}", e.what()));
+//         return false;
+//     }
+//
+//     // i should never get here ...
+//     return false;
+// }
 //-----------------------------------------------------------------------------
 bool SFXGeneratorStereo::SaveSettings(const char* filename)
 {
@@ -552,15 +614,11 @@ void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
             mState.pan_ramp = -mState.pan_ramp; // back
         }
 
-        // mState.pan += mState.pan_ramp;
-        // if (mState.pan < -1.0f) mState.pan = -1.0f;
-        // if (mState.pan > 1.0f)  mState.pan = 1.0f;
-
 
         float panL = 0.5f * (1.0f - mState.pan);
         float panR = 0.5f * (1.0f + mState.pan);
 
-        // Part 4: Output
+
         if (stereoBuffer != nullptr) {
             stereoBuffer[i * 2]     = ssample * panL;
             stereoBuffer[i * 2 + 1] = ssample * panR;
@@ -908,9 +966,11 @@ void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream*
             std::vector<float> stereoBuffer(frames_needed * 2, 0.0f);
             gen->SynthSample(frames_needed, stereoBuffer.data());
 
+#ifdef SFX_USE_DSP
             for (auto& effect : gen->mDspEffects) {
                 effect->process(stereoBuffer.data(), frames_needed * 2, 2);
             }
+#endif
 
             // SDL_PutAudioStreamData(stream, stereoBuffer.data(), additional_amount);
             SDL_PutAudioStreamData(stream, stereoBuffer.data(), frames_needed * 2 * sizeof(float));
@@ -919,21 +979,36 @@ void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream*
 }
 
 //------------------------------------------------------------------------------
+int SFXGeneratorStereo::getSyntFrames() {
+    int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
+    int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
+    int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
+    return attack + sustain + decay + 100;
+}
+
 bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progressOut, bool applyEffects) {
     detachAudio();
     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
+
+    #ifndef SFX_USE_DSP
+        applyEffects = false;
+    #endif
 
     int sampleRate = 44100;
     int chunkSize = 1024;
 
     // 1. Synth Duration
-    int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
-    int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
-    int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
-    int synthFrames = attack + sustain + decay + 100;
+    // int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
+    // int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
+    // int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
+    // int synthFrames = attack + sustain + decay + 100;
+
+    int synthFrames = getSyntFrames();
 
     // 2. Calculate Tail Duration (Dynamic)
     int tailFrames = 0;
+
+    #ifdef SFX_USE_DSP
     if (applyEffects) {
         float maxTailSec = 0.0f;
         for (auto& effect : mDspEffects) {
@@ -942,6 +1017,7 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
         maxTailSec = std::min(maxTailSec, 10.0f); // Cap at 10s
         tailFrames = static_cast<int>(maxTailSec * sampleRate);
     }
+    #endif
 
     int totalFrames = synthFrames + tailFrames;
 
@@ -961,7 +1037,7 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
         if (framesProcessed < synthFrames && mState.playing_sample) {
             this->SynthSample(toWrite, &f32ExportBuffer[framesProcessed * 2]);
         } else {
-            // We are in the Tail area: just "process" silence (do nothing, buffer is already 0)
+            // We are in the Tail area: just "process" si/*len*/ce (do nothing, buffer is already 0)
         }
 
         framesProcessed += toWrite;
@@ -973,6 +1049,7 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
     }
 
     // 6. Apply Effects to the WHOLE buffer (including the silent tail)
+    #ifdef SFX_USE_DSP
     if (applyEffects) {
         if (progressOut) *progressOut = 0.75f;
 
@@ -985,6 +1062,7 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
         DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
         if (progressOut) *progressOut = 0.90f;
     }
+    #endif
 
     if (progressOut) *progressOut = 1.0f;
 
