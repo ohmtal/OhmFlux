@@ -89,6 +89,24 @@ namespace FluxAudio {
             return false;
         }
 
+        // convert raw wav to directly usable
+        if ( resData->fileType == AudioType::WAV ) {
+            Uint8* wavBuf;
+            Uint32 wavLen;
+            SDL_IOStream* io = SDL_IOFromConstMem(resData->mRawData.data(), resData->mRawData.size());
+
+            if (SDL_LoadWAV_IO(io, true, &resData->wavSrcSpec, &wavBuf, &wavLen)) {
+                resData->mRawData.assign(wavBuf, wavBuf + wavLen);
+                SDL_free(wavBuf);
+            } else {
+                blacklist(fileName);
+                SDL_free(wavBuf);
+                Log("[error] Failed to load Wave %s", fileName.c_str());
+                return false;
+            }
+        }
+
+
         mResourceMap[fileName] = std::move(resData);
         return true;
 

@@ -40,7 +40,7 @@ namespace FluxAudio {
             mAudioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
 
             if (SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &mOutputSpec, nullptr)) {
-                Log("[info] Audio output Hardware: %d Hz, %d Channels, Format id: %d ", mOutputSpec.freq, mOutputSpec.channels, mOutputSpec.format);
+                Log("[info] Audio output Hardware: %d Hz, %d Channels", mOutputSpec.freq, mOutputSpec.channels);
             }
             Log("Init Audiomanager ID:%d.", mAudioDevice);
 

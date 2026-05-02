@@ -21,10 +21,12 @@ namespace FluxAudio {
        std::string fileName = "";
        std::vector<uint8_t> mRawData =  {};
        AudioType fileType = AudioType::UNKNOWN;
-       Uint32 len = 0; //required for wav data
 
        bool enableLoop      = false;  // default for instance
        uint8_t maxInstances = 1;      // manager should check this to decide to spawn a new instance
+
+       // WAV handling on load it will be stripped
+       SDL_AudioSpec wavSrcSpec;
 
     };
 

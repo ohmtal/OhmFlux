@@ -54,8 +54,6 @@ namespace FluxAudio {
         SDL_AudioSpec srcSpec;
         SDL_AudioSpec dstSpec;
 
-        // Buffer
-        std::vector<float> mAudioBuffer;
 
         // status
         bool isPlaying    = false; //<< fixme !!
@@ -76,13 +74,16 @@ namespace FluxAudio {
         //-------- Stop / Play
         bool Play();
         bool Stop();
+        bool Resume();
 
         //------- Put Data in
-        void Update( Point3F camPos );
+        void Update( const double& dt, Point3F* camPos = nullptr );
 
     private:
-        void fillBuffer();
-
+        // Buffer
+        size_t wavOffset = 0;
+        std::vector<float> mAudioBuffer;
+        bool fillBuffer();
     }; //AudioInstance
 
     //--------------------------------------------------------------------------

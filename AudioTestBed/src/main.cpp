@@ -118,6 +118,11 @@ public:
     void Update(const double& dt) override
     {
 
+        // update audio instances
+        for (auto& [filename, instance] : mInstanceMap) {
+            instance->Update(dt, nullptr);
+        }
+
 
         Parent::Update(dt);
     }
@@ -145,7 +150,7 @@ public:
         }
     }
 
-
+    // -------------------------------------------------------------------------
 
     // FIXME still working with single instance :P
     FluxAudio::AudioInstance* getAudioInstance(FluxAudio::ResourceData* resource) {

@@ -32,29 +32,6 @@ namespace FluxAudio {
     }
 
     //--------------------------------------------------------------------------
-    void SDLCALL MyAudioLoopCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
-        if (!userdata) return;
-        AudioInstance* instance = (AudioInstance*)userdata;
-        if (!instance) return;
-
-        if ( additional_amount > 0 ) {
-            // SDL_PutAudioStreamData(stream, data->buffer, data->len);
-            if ( instance->doLoop ) {
-                // switch (instance->resource->fileType) {
-                //     case AudioType::WAV:
-                //         break;
-                //     case AudioType::
-                // }
-                // SDL_PutAudioStreamDataNoCopy(stream,  instance->resource->mRawData.data(), instance->resource->len, NULL, nullptr);
-                instance->Play();
-            } else {
-                instance->Stop();
-            }
-
-        }
-    }
-
-    //--------------------------------------------------------------------------
     void AudioInstance::setBad(){
         badData = true;
         if (resource) {
@@ -66,89 +43,42 @@ namespace FluxAudio {
     bool AudioInstance::Play() {
         if (!resource || !stream || badData || !isInitialized ) return false;
 
+        SDL_ClearAudioStream(stream);
         switch (resource->fileType) {
             case AudioType::WAV: {
-                dLog("FIXME BAD IDEA WHEN LOOPING / PANNING AUDIO ... ADD UPDATE like before !!!!!");
-
-                // used for loop / isPlaying and position Panning
-                SDL_SetAudioStreamGetCallback(stream, MyAudioLoopCallback, this);
-
-                if (!SDL_PutAudioStreamDataNoCopy(stream,  resource->mRawData.data(), resource->len, NULL, nullptr)) {
-                    Log("[error] failed to play %s ERROR:%s", resource->fileName.c_str(), SDL_GetError());
-                    return false;
-                }
+                wavOffset = 0;
                 break;
             }
-
-            //............ OGG ..............
             case AudioType::OGG: {
-                dLog("FIXME BAD IDEA WHEN LOOPING / PANNING AUDIO ... ADD UPDATE like before !!!!!");
-
-                if (!vorbisDecoder) {
-                    Log("[error] Can play ogg decoder not available!");
-                    return false;
-                }
-
-                SDL_SetAudioStreamGetCallback(stream, MyAudioLoopCallback, this);
-
-                const int chunkSamples = 4096;
-                std::vector<float> floatBuffer(chunkSamples * srcSpec.channels);
-
-                int samplesRead = 0;
-                while ((samplesRead = stb_vorbis_get_samples_float_interleaved(vorbisDecoder, srcSpec.channels, floatBuffer.data(), floatBuffer.size())) > 0) {
-                    int byteSize = samplesRead * srcSpec.channels * sizeof(float);
-                    if (!SDL_PutAudioStreamData(stream, floatBuffer.data(), byteSize)) {
-                        Log("[error] SDL_PutAudioStreamData failed: %s", SDL_GetError());
-                        return false;
-                    }
-                }
-                if (!doLoop) SDL_FlushAudioStream(stream);
-
+                if (!vorbisDecoder) return false;
                 stb_vorbis_seek_start(vorbisDecoder);
-                // stb_vorbis_close(vorbisDecoder); //FIXME on STOP ?!
-                // vorbisDecoder = nullptr;
-
                 break;
             }
-
-            //
-            //                 case AudioType::MP3:
-            //                     // Using miniaudio to decode from memory
-            //                     ma_decoder_init_memory(res->mRawData.data(), res->mRawData.size(), nullptr, &slot.mp3Decoder);
-            //                     break;
-            //                 case AudioType::SFX:
-            //                     break;
-
             default:
-                Log("[error] AudioInstance::Play Unhandled AudioType %d", (int)resource->fileType);
                 return false;
         }
+
+        AudioManager.bindStream(stream);
         isPlaying = true;
-        return true;
+        return isPlaying;
     }
     //--------------------------------------------------------------------------
     bool AudioInstance::Stop() {
         if (!resource || !stream || badData || !isInitialized ) return false;
-        dLog("Stop playing ...");
-        SDL_ClearAudioStream(stream);
-        SDL_SetAudioStreamGetCallback(stream, nullptr, nullptr);
-        switch (resource->fileType) {
+        if (!isPlaying) return false;
 
-            case AudioType::OGG:
-                // if (vorbisDecoder) {
-                //     stb_vorbis_close(vorbisDecoder);
-                //     vorbisDecoder = nullptr;
-                // }
-
-            default: {
-
-            }
-
-        };
-        SDL_ClearAudioStream(stream);
         isPlaying = false;
 
-        return true;
+        return AudioManager.unBindStream(stream);
+    }
+    //--------------------------------------------------------------------------
+    bool AudioInstance::Resume() {
+        if (!resource || !stream || badData || !isInitialized ) return false;
+        if (isPlaying) return false;
+
+        isPlaying=true;
+        return AudioManager.bindStream(stream);
+
     }
     //--------------------------------------------------------------------------
     bool AudioInstance::Initialize(std::string fileName){
@@ -165,30 +95,21 @@ namespace FluxAudio {
         switch (resource->fileType) {
             case AudioType::WAV: {
 
-                Uint8* wavBuf;
-                SDL_IOStream* io = SDL_IOFromConstMem(resource->mRawData.data(), resource->mRawData.size());
-                if (SDL_LoadWAV_IO(io, true, &srcSpec, &wavBuf, &resource->len)) {
+                srcSpec = resource->wavSrcSpec;
+                dstSpec = srcSpec;
+                dstSpec.format = SDL_AUDIO_F32;
 
-                    dstSpec = srcSpec;
-                    dstSpec.format = SDL_AUDIO_F32;
+                stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
+                if (!stream) {
+                    Log("[error]Couldn't create audio stream: %s", SDL_GetError());
+                    return false;
+                }
 
-                    stream = SDL_CreateAudioStream(&srcSpec, &dstSpec);
-                    if (!stream) {
-                        Log("[error]Couldn't create audio stream: %s", SDL_GetError());
-                        SDL_free(wavBuf);
-                        return false;
-                    }
-
-                    if (!AudioManager.bindStream(stream)) {
-                        Log("Failed to bind '%s' stream to device: %s", resource->fileName.c_str(), SDL_GetError());
-                        SDL_DestroyAudioStream(stream);
-                        stream = nullptr;
-                        SDL_free(wavBuf);
-                        return false;
-                    }
-                    SDL_free(wavBuf);
-                } else {
-                    setBad();
+                if (!AudioManager.bindStream(stream)) {
+                    Log("Failed to bind '%s' stream to device: %s", resource->fileName.c_str(), SDL_GetError());
+                    SDL_DestroyAudioStream(stream);
+                    stream = nullptr;
+                    return false;
                 }
                 break;
             }
@@ -228,18 +149,162 @@ namespace FluxAudio {
         return true;
     }
     //--------------------------------------------------------------------------
-    AudioInstance::~AudioInstance() {
+    AudioInstance::~AudioInstance( ) {
         if ( stream ) { SDL_DestroyAudioStream(stream); stream = nullptr; }
         if ( vorbisDecoder ) { stb_vorbis_close(vorbisDecoder); vorbisDecoder = nullptr; }
     }
     //--------------------------------------------------------------------------
-    void AudioInstance::fillBuffer() {
+    bool AudioInstance::fillBuffer() {
+        if (!resource || resource->mRawData.empty()) return false;
 
+        const int CHUNK_SIZE = 4096;
+
+        switch (resource->fileType) {
+
+            // case AudioType::WAV: {
+            //     const int CHUNK_SAMPLES = 4096; // Samples pro Kanal
+            //     int numChannels = srcSpec.channels;
+            //     size_t totalSamplesToRead = CHUNK_SAMPLES * numChannels;
+            //
+            //     mAudioBuffer.resize(totalSamplesToRead);
+            //
+            //     size_t bytesToRead = totalSamplesToRead * sizeof(int16_t);
+            //
+            //     if (wavOffset + bytesToRead > resource->mRawData.size()) {
+            //         bytesToRead = resource->mRawData.size() - wavOffset;
+            //         mAudioBuffer.resize(bytesToRead / sizeof(int16_t));
+            //     }
+            //
+            //     const int16_t* sourcePtr = reinterpret_cast<const int16_t*>(resource->mRawData.data() + wavOffset);
+            //
+            //     for (size_t i = 0; i < mAudioBuffer.size(); ++i) {
+            //         // S16 Range ist -32768 bis 32767. Wir teilen durch 32768.0, um auf float -1.0 bis 1.0 zu kommen.
+            //         mAudioBuffer[i] = static_cast<float>(sourcePtr[i]) / 32768.0f;
+            //     }
+            //
+            //     wavOffset += bytesToRead;
+            //     break;
+            // }
+
+
+//lol hours spend for nothing ...
+            // case AudioType::WAV: {
+            //     int bytesPerSample = SDL_AUDIO_BYTESIZE(srcSpec.format);
+            //     size_t chunkBytes = CHUNK_SIZE * srcSpec.channels * bytesPerSample;
+            //
+            //     if (wavOffset >= resource->mRawData.size()) {
+            //         if (doLoop) {
+            //             wavOffset = 0;
+            //         } else {
+            //             return false;
+            //         }
+            //     }
+            //     if (wavOffset + chunkBytes > resource->mRawData.size()) {
+            //         chunkBytes = resource->mRawData.size() - wavOffset;
+            //     }
+            //     if (!SDL_PutAudioStreamData(stream, resource->mRawData.data() + wavOffset, (int)chunkBytes)) {
+            //         return false;
+            //     }
+            //     wavOffset += chunkBytes;
+            //     dLog("WAV wavOffset: %d", (int)wavOffset);
+            //     break;
+            // }
+            case AudioType::WAV: {
+                if (mAudioBuffer.size() != CHUNK_SIZE * dstSpec.channels) {
+                    mAudioBuffer.resize(CHUNK_SIZE * dstSpec.channels);
+                }
+
+                if (wavOffset >= resource->mRawData.size()) {
+                    if (doLoop) wavOffset = 0;
+                    else return false;
+                }
+
+                int bytesPerSampleSource = SDL_AUDIO_BYTESIZE(srcSpec.format);
+                size_t bytesToReadFromSource = CHUNK_SIZE * srcSpec.channels * bytesPerSampleSource;
+
+                if (wavOffset + bytesToReadFromSource > resource->mRawData.size()) {
+                    bytesToReadFromSource = resource->mRawData.size() - wavOffset;
+                }
+
+
+                // bytesToReadFromSource = resource->mRawData.size(); //TEST: suck all in
+
+                Uint8* tempDst = nullptr;
+                int outLen = 0;
+
+                if (SDL_ConvertAudioSamples(&srcSpec, resource->mRawData.data() + wavOffset, (int)bytesToReadFromSource,
+                    &dstSpec, &tempDst, &outLen))
+                {
+                    mAudioBuffer.assign((float*)tempDst, (float*)(tempDst + outLen));
+                    SDL_free(tempDst);
+                } else {
+                    return false;
+                }
+
+                wavOffset += bytesToReadFromSource;
+
+                dLog("WAV wavOffset: %d", (int)wavOffset);
+
+                break;
+            }
+            case AudioType::OGG: {
+                if (mAudioBuffer.size() != CHUNK_SIZE * dstSpec.channels) {
+                    mAudioBuffer.resize(CHUNK_SIZE * dstSpec.channels);
+                }
+
+                int samplesRead = stb_vorbis_get_samples_float_interleaved(
+                    vorbisDecoder, dstSpec.channels, mAudioBuffer.data(), (int)mAudioBuffer.size());
+
+                if (samplesRead <= 0) {
+                    if (doLoop) {
+                        stb_vorbis_seek_start(vorbisDecoder);
+                        samplesRead = stb_vorbis_get_samples_float_interleaved(
+                            vorbisDecoder, dstSpec.channels, mAudioBuffer.data(), (int)mAudioBuffer.size());
+                    } else {
+                        return false; // EOF
+                    }
+                }
+
+                if (samplesRead < CHUNK_SIZE) {
+                    mAudioBuffer.resize(samplesRead * dstSpec.channels);
+                }
+
+                // dLog("OGG samplesRead: %d", samplesRead);
+                break;
+            }
+
+            default:
+                return false;
+        }
+        return true;
     }
     //--------------------------------------------------------------------------
-    void AudioInstance::Update( Point3F camPos ) {
-
+    void AudioInstance::Update( const double& dt, Point3F* camPos ) {
         if (!isPlaying) return;
+
+        // 0.1 = 100ms
+        const int targetQueueSize = (int)(dstSpec.freq * dstSpec.channels * sizeof(float) * 0.1f);
+        if (SDL_GetAudioStreamQueued(stream) < targetQueueSize) {
+            if ( fillBuffer() ) {
+
+                if ( dstSpec.format == SDL_AUDIO_F32 ) {
+                    for (auto& sample : mAudioBuffer) {
+                        dLog("sample: %f", sample);
+                        sample *= volume;
+                    }
+                }
+
+                SDL_PutAudioStreamData(stream, mAudioBuffer.data(), mAudioBuffer.size() * sizeof(float));
+
+            } else {
+                SDL_FlushAudioStream(stream);
+                if (SDL_GetAudioStreamQueued(stream) == 0) {
+                    isPlaying = false;
+                    dLog("Sound finished playing.");
+                }
+            }
+        }
+
 
     }
 
