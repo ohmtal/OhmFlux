@@ -112,54 +112,115 @@ namespace FluxAudio {
 
     }
     //--------------------------------------------------------------------------
+    // now with preload
     bool ResourceManager::LoadRawFile(ResourceData& data) {
-        // Open file at the end to get size immediately
         std::ifstream ifs(data.fileName, std::ios::binary | std::ios::ate);
-
         if (!ifs.is_open()) {
             Log("[error] Load audio resource: Can't open File %s", data.fileName.c_str());
             return false;
         }
-
         try {
-            std::streamsize size = ifs.tellg();
+            std::streamsize fileSize = ifs.tellg();
             ifs.seekg(0, std::ios::beg);
+            // preload 1024 bytes for header check
+            size_t headerSize = std::min(static_cast<size_t>(fileSize), size_t(1024));
+            std::vector<uint8_t> header(headerSize);
+            ifs.read(reinterpret_cast<char*>(header.data()), headerSize);
 
-            // Reserve memory and read file content into the vector
-            data.mRawData.resize(static_cast<size_t>(size));
-            if (!ifs.read(reinterpret_cast<char*>(data.mRawData.data()), size)) {
-                Log("[error] Load audio resource: Failed to read data from %s", data.fileName.c_str());
-                return false;
-            }
-            ifs.close();
+            // Detect type from header
+            data.fileType = detectType(header);
 
-            // Identify file format based on magic bytes
-            data.fileType = detectType(data.mRawData);
-
-            // Fallback: If detection failed, check file extension for MP3
+            // Handle Fallbacks (Extensions) if still UNKNOWN
             if (data.fileType == AudioType::UNKNOWN) {
-                std::string ext = FluxStr::extractFileExt(data.fileName, true);
-                if ( ext == "mp3") {
-                    data.fileType = AudioType::MP3;
-                    Log("[info] Audio type MP3 detected via extension fallback for: %s", data.fileName.c_str());
+                if (data.fileType == AudioType::UNKNOWN) {
+                    std::string ext = FluxStr::extractFileExt(data.fileName, true);
+                    if ( ext == "mp3") {
+                        data.fileType = AudioType::MP3;
+                        Log("[info] Audio type MP3 detected via extension fallback for: %s", data.fileName.c_str());
+                    }
+                    else if (ext == "sfx" && data.mRawData.size() == 105) {
+                        data.fileType = AudioType::SFX;
+                        Log("[info] Audio type legacy SFX detected via extension fallback for: %s", data.fileName.c_str());
+                    } else if (ext == "flac") {
+                        data.fileType = AudioType::FLAC;
+                    }
                 }
-                else if (ext == "sfx" && data.mRawData.size() == 105) {
-                    data.fileType = AudioType::SFX;
-                    Log("[info] Audio type legacy SFX detected via extension fallback for: %s", data.fileName.c_str());
-                }
-
             }
+            // Check type is set ...
             if (data.fileType == AudioType::UNKNOWN) {
                 Log("[warning] Audio format not recognized for: %s", data.fileName.c_str());
                 return false;
             }
+
+            // Read the rest only if needed
+            data.mRawData.resize(static_cast<size_t>(fileSize));
+            // Copy already read header
+            std::memcpy(data.mRawData.data(), header.data(), headerSize);
+            // Read the remainder of the file
+            if (fileSize > headerSize) {
+                ifs.read(reinterpret_cast<char*>(data.mRawData.data() + headerSize), fileSize - headerSize);
+            }
+
             return true;
 
         } catch (const std::exception& e) {
             Log("[error] Load audio resource exception: %s", e.what());
             return false;
         }
+
     }
+
+    // prior: tested but load the complete file before it check the header!
+    // bool ResourceManager::LoadRawFile(ResourceData& data) {
+    //     // Open file at the end to get size immediately
+    //     std::ifstream ifs(data.fileName, std::ios::binary | std::ios::ate);
+    //
+    //     if (!ifs.is_open()) {
+    //         Log("[error] Load audio resource: Can't open File %s", data.fileName.c_str());
+    //         return false;
+    //     }
+    //
+    //     try {
+    //         std::streamsize size = ifs.tellg();
+    //         ifs.seekg(0, std::ios::beg);
+    //
+    //         // Reserve memory and read file content into the vector
+    //         data.mRawData.resize(static_cast<size_t>(size));
+    //         if (!ifs.read(reinterpret_cast<char*>(data.mRawData.data()), size)) {
+    //             Log("[error] Load audio resource: Failed to read data from %s", data.fileName.c_str());
+    //             return false;
+    //         }
+    //         ifs.close();
+    //
+    //         // Identify file format based on magic bytes
+    //         data.fileType = detectType(data.mRawData);
+    //
+    //         // Fallback: If detection failed, check file extension for MP3
+    //         if (data.fileType == AudioType::UNKNOWN) {
+    //             std::string ext = FluxStr::extractFileExt(data.fileName, true);
+    //             if ( ext == "mp3") {
+    //                 data.fileType = AudioType::MP3;
+    //                 Log("[info] Audio type MP3 detected via extension fallback for: %s", data.fileName.c_str());
+    //             }
+    //             else if (ext == "sfx" && data.mRawData.size() == 105) {
+    //                 data.fileType = AudioType::SFX;
+    //                 Log("[info] Audio type legacy SFX detected via extension fallback for: %s", data.fileName.c_str());
+    //             } else if (ext == "flac") {
+    //                 data.fileType = AudioType::FLAC;
+    //             }
+    //
+    //         }
+    //         if (data.fileType == AudioType::UNKNOWN) {
+    //             Log("[warning] Audio format not recognized for: %s", data.fileName.c_str());
+    //             return false;
+    //         }
+    //         return true;
+    //
+    //     } catch (const std::exception& e) {
+    //         Log("[error] Load audio resource exception: %s", e.what());
+    //         return false;
+    //     }
+    // }
 
 
 

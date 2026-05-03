@@ -368,7 +368,9 @@ bool FluxScreen::setIcon(const char* lFilename)
 		return false;
 	}
 
-	if( (Icon = SDL_LoadBMP(lIconFilename.c_str())) == nullptr)
+	// ifdef this since it was added in SDL 3.4 .. windows ?
+	// if( (Icon = SDL_LoadBMP(lIconFilename.c_str())) == nullptr)
+	if( (Icon = SDL_LoadSurface(lIconFilename.c_str())) == nullptr)
 	{
 		Log("[error]Unable to load icon: %s", SDL_GetError() );
 		return false;
@@ -406,7 +408,9 @@ bool FluxScreen::setCursor(const char* lFilename,  int hot_x, int hot_y)
 
 
 	SDL_Surface *myCursor;
-	if( (myCursor = SDL_LoadBMP(lCursorFilename.c_str())) == nullptr)
+	// ifdef this since it was added in SDL 3.4 .. windows ?
+	// 	if( (myCursor = SDL_LoadBMP(lCursorFilename.c_str())) == nullptr)
+	if( (myCursor = SDL_LoadSurface(lCursorFilename.c_str())) == nullptr)
 	{
 		Log("Unable to load cursor: %s", SDL_GetError() );
 		return false;

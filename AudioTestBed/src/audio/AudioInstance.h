@@ -2,16 +2,24 @@
 // Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Audio Renderer FIXME rename to AudioInstance!
-//-----------------------------------------------------------------------------
 // Audio Renderer prototype
 // [ ] Initialize / Play
 //  [X] Wav
 //  [X] OGG
 //  [X] MP3
-//  [ ] SFX
+//  [X] SFX
+//  [ ] FLAC
 // [ ] DSP::Processors::Panning3D
 // [ ] FluxAudio::Manager handle list of instances
+//-----------------------------------------------------------------------------
+// NOTE: MiniAudio rocks
+// I could have used miniaudio for WAV and OGG too but since i did WAV and OGG
+// first I keep what i added and tested before.
+//
+// This would be the key to use OGG with miniaudio and stb_vorbis:
+// #define MA_HAS_VORBIS
+// #include "stb_vorbis.c"
+// #include "miniaudio.h"
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -33,7 +41,6 @@ struct stb_vorbis; //FWD
 
 namespace FluxAudio {
 
-    void SDLCALL MyAudioLoopCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount); //fwd
 
     struct AudioInstance {
         //--------
@@ -84,8 +91,13 @@ namespace FluxAudio {
 
         // float* buffer, size_t numSamples
         std::function<void(const float*, size_t)> OnAudioProcess = nullptr;
-
         const SDL_AudioSpec getSpec() { return dstSpec; }
+
+        //events
+        std::function<void()> OnStreamEnds = nullptr;
+        std::function<void(std::string)> OnFatalError = nullptr;
+
+
     private:
 
         // decoder / steam

@@ -507,8 +507,8 @@ struct FluxSettings
     const char* Version;
 
     // 2026-02-19 : automaticly try to load in subdirectory
-    const char* IconFilename;     // must be an .bmp image!
-    const char* CursorFilename;   // must be an .bmp image!
+    const char* IconFilename;     // must be an .bmp or .png (SDL 3.4) image!
+    const char* CursorFilename;   // must be an .bmp or .png (SDL 3.4) image!
     S32 cursorHotSpotX = 0;       // offset for mousepointer click position X
     S32 cursorHotSpotY = 0;       // offset for mousepointer click position Y
     bool useQuadTree    = false;

@@ -43,19 +43,19 @@
 ## 📎 Libraries used in this project: 
 - OpenGL
 - Glew
-- SDL3
+- SDL3 ( require version 3.4 or higher! ) 
 - ImGui
-- Box2D
 - nlohmann json 
 - stb
-- ymfm
 - miniaudio
+- ymfm
+- Box2D
 
 ---
 
 ## 🏗 Build Instructions (Native Desktop)
 
-Requires a C++20 compiler, **SDL3**, and **GLEW**.
+Requires a C++20 compiler and **GLEW** installed:
 
 ```shell
 # 1. Configure the project

@@ -73,7 +73,7 @@ public:
             OnConsoleCommand(console, command_line);
         };
 
-        fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3" , ".sfx" });
+        fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3" , ".sfx", ".flac"});
 
         AudioResourceManager.Initialize(); //FIXME move to Ohmflux
 
@@ -329,7 +329,7 @@ int main(int argc, char* argv[])
     game->mSettings.Company = "Ohmflux";
     game->mSettings.Caption = "AudioTestBed";
     game->mSettings.enableLogFile = true;
-    // game->mSettings.IconFilename = "assets/particles/Skull2.bmp";
+    game->mSettings.IconFilename = "assets/icon.png";
     // game->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";
     // game->mSettings.cursorHotSpotX = 10;
     // game->mSettings.cursorHotSpotY = 10;
