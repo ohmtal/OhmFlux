@@ -455,17 +455,6 @@ if(BUILD_LUATEST)
     add_subdirectory(LuaTest)
 endif()
 
-# --- Amana ---
-option(BUILD_AMANA "Build Amana Game" OFF)
-if(BUILD_AMANA)
-    set(AMANA_DIR "${CMAKE_CURRENT_LIST_DIR}/Amana")
-    set(GAME_SOURCES
-        "${AMANA_DIR}/src/main.cpp"
-        "${AMANA_DIR}/src/amanaGame.cpp"
-        "${AMANA_DIR}/src/globalResources.cpp"
-    )
-    configure_demo_target(Amana ${AMANA_DIR} "${AMANA_DIR}/assets@assets" "${GAME_SOURCES}")
-endif()
 
 # --- SOUNDSTUDIO ---
 option(BUILD_SOUNDSTUDIO "Build SoundStudio application" OFF)
