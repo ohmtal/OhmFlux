@@ -138,9 +138,11 @@ namespace FluxAudio {
                         data.fileType = AudioType::MP3;
                         Log("[info] Audio type MP3 detected via extension fallback for: %s", data.fileName.c_str());
                     }
-                    else if (ext == "sfx" && data.mRawData.size() == 105) {
+                    else if (ext == "sfx" && fileSize < 200) {
+                        // && data.mRawData.size() == 105 was version 102 ...
+                        // sfxGenerator have to check this - i only make sure it's a small file!
                         data.fileType = AudioType::SFX;
-                        Log("[info] Audio type legacy SFX detected via extension fallback for: %s", data.fileName.c_str());
+                        Log("[info] Audio type legacy SFX detected via extension fallback for: %s (size: %d)", data.fileName.c_str(), (int)data.mRawData.size());
                     } else if (ext == "flac") {
                         data.fileType = AudioType::FLAC;
                     }
