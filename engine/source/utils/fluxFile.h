@@ -22,6 +22,10 @@
 
 class FluxFile {
 public:
+    static bool Exists(const std::string& path) {
+          return SDL_GetPathInfo(path.c_str(), NULL);
+    }
+
     // Loads a file into a vector of strings
     static bool LoadTextFile(const std::string& path, std::vector<std::string>& outLines) {
         size_t size;
@@ -69,7 +73,7 @@ public:
 
 
 
-    bool SaveBufferToFile(const char* filename, const uint8_t* data, size_t size) {
+   static bool SaveBufferToFile(const char* filename, const uint8_t* data, size_t size) {
         // Desktop: Standard file write
         FILE* file = fopen(filename, "wb");
         if (!file) return false;

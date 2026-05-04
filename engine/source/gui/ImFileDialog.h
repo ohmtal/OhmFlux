@@ -93,7 +93,7 @@ public:
     std::string mUserData = "";
     bool mWasOpen = true;
 
-
+    std::map<std::string /*caption*/, std::string /*path*/> mCustomQuckPathes;
 
 
     //--------------------------------------------------------------------------
@@ -294,6 +294,14 @@ private:
                     ImGui::CloseCurrentPopup();
                 }
             };
+            if ( mCustomQuckPathes.size() > 0 ) {
+
+                for (auto& [caption,path] : mCustomQuckPathes) {
+                    if (ImGui::Selectable(caption.c_str())) selectPath(path);
+                }
+                ImGui::Separator();
+            }
+
             if (ImGui::Selectable("App Directory"))  selectPath(getGamePath());
             if (ImGui::Selectable("Home"))           selectPath(getHomePath());
             if (ImGui::Selectable("Desktop"))        selectPath(getDesktopPath());
@@ -302,6 +310,8 @@ private:
             if (ImGui::Selectable("Music"))          selectPath(getMusicPath());
             if (ImGui::Selectable("Pictures"))       selectPath(getPicturesPath());
             if (ImGui::Selectable("Videos"))         selectPath(getVideosPath());
+
+
 
             ImGui::EndPopup();
         }

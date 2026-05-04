@@ -42,36 +42,36 @@ namespace FluxStr {
     }
     //--------------------------------------------------------------------------
     // Returns the number of words separated by spaces
-    inline int getWordCount(std::string_view str) {
+    inline int getWordCount(std::string_view str, char delimiter = ' ') {
         int count = 0;
-        size_t pos = str.find_first_not_of(' ');
+        size_t pos = str.find_first_not_of(delimiter);
 
         while (pos != std::string_view::npos) {
             count++;
-            pos = str.find(' ', pos);             // Find next space
-            pos = str.find_first_not_of(' ', pos); // Skip extra spaces
+            pos = str.find(delimiter, pos);             // Find next space
+            pos = str.find_first_not_of(delimiter, pos); // Skip extra spaces
         }
         return count;
     }
     //--------------------------------------------------------------------------
     // Helper to find the start/end bounds of a word index
-    inline std::string getWords(std::string_view text, int index, int endIndex = 999999) {
+    inline std::string getWords(std::string_view text, int index, int endIndex = 999999,  char delimiter = ' ') {
         size_t startPos = std::string_view::npos;
         size_t endPos = std::string_view::npos;
         int count = 0;
 
-        size_t cur = text.find_first_not_of(' ');
+        size_t cur = text.find_first_not_of(delimiter);
         while (cur != std::string_view::npos) {
             if (count == index) startPos = cur;
 
-            size_t nextSpace = text.find(' ', cur);
+            size_t nextSpace = text.find(delimiter, cur);
             if (count == endIndex) {
                 endPos = nextSpace;
                 break;
             }
 
             count++;
-            cur = text.find_first_not_of(' ', nextSpace);
+            cur = text.find_first_not_of(delimiter, nextSpace);
             if (cur == std::string_view::npos) endPos = text.size(); // End of string
         }
 
@@ -81,30 +81,30 @@ namespace FluxStr {
         return std::string(text.substr(startPos, endPos - startPos));
     }
     //--------------------------------------------------------------------------
-    inline std::string setWord(std::string text, int index, std::string_view replace) {
+    inline std::string setWord(std::string text, int index, std::string_view replace , char delimiter = ' ') {
         int count = 0;
-        size_t start = text.find_first_not_of(' ');
+        size_t start = text.find_first_not_of(delimiter);
 
         while (start != std::string::npos) {
-            size_t end = text.find(' ', start);
+            size_t end = text.find(delimiter, start);
             if (count == index) {
                 // Replace the segment [start, end) with replace string
                 text.replace(start, (end == std::string::npos ? text.size() : end) - start, replace);
                 return text;
             }
             count++;
-            start = text.find_first_not_of(' ', end);
+            start = text.find_first_not_of(delimiter, end);
         }
         return text; // Return original if index not found
     }
     //--------------------------------------------------------------------------
-    inline std::string removeWord(std::string text, int index) {
+    inline std::string removeWord(std::string text, int index , char delimiter = ' ') {
         int count = 0;
-        size_t start = text.find_first_not_of(' ');
+        size_t start = text.find_first_not_of(delimiter);
 
         while (start != std::string::npos) {
-            size_t nextSpace = text.find(' ', start);
-            size_t nextWord = text.find_first_not_of(' ', nextSpace);
+            size_t nextSpace = text.find(delimiter, start);
+            size_t nextWord = text.find_first_not_of(delimiter, nextSpace);
 
             if (count == index) {
                 // Remove from start of this word to start of next word (to clean up spaces)
@@ -119,12 +119,12 @@ namespace FluxStr {
     }
     //--------------------------------------------------------------------------
     // Returns the word at index 'no' (0-based). Returns empty string if not found.
-    inline std::string getWord(std::string_view str, int no) {
+    inline std::string getWord(std::string_view str, int no , char delimiter = ' ') {
         int count = 0;
-        size_t start = str.find_first_not_of(' ');
+        size_t start = str.find_first_not_of(delimiter);
 
         while (start != std::string_view::npos) {
-            size_t end = str.find(' ', start);
+            size_t end = str.find(delimiter, start);
 
             if (count == no) {
                 // Found the index; return as a new std::string
@@ -132,7 +132,7 @@ namespace FluxStr {
             }
 
             count++;
-            start = str.find_first_not_of(' ', end);
+            start = str.find_first_not_of(delimiter, end);
         }
         return "";
     }

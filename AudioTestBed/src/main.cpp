@@ -10,6 +10,7 @@
 #include "gui/ImFileDialog.h"
 #include "audio/AudioResourceManager.h"
 #include "audio/AudioInstance.h"
+#include "utils/fluxFile.h"
 
 #include "gui/ImFlux.h"
 
@@ -101,6 +102,23 @@ public:
         };
 
         fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3" , ".sfx", ".flac"});
+
+
+        {
+            std::string listFile = mSettings.getPrefsPath() + "/pathes.list" ;
+            dLog("[info]try to load extra pathes from: %s ", listFile.c_str());
+            std::string key, value;
+            if (FluxFile::Exists(listFile )) {
+                std::vector<std::string> lines ;
+                FluxFile::LoadTextFile(listFile, lines);
+                for (auto& line: lines) {
+                    if (FluxStr::getWordCount(line, ';') == 2) {
+                        fileDialog.mCustomQuckPathes[FluxStr::getWord(line,0,';')] = FluxStr::getWord(line,1, ';');
+                    }
+
+                }
+            }
+        }
 
         AudioResourceManager.Initialize(); //FIXME move to Ohmflux
 
@@ -372,7 +390,7 @@ int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
     AudioTestBed* game = new AudioTestBed();
-    game->mSettings.Company = "Ohmflux";
+    game->mSettings.Company = "Ohmtal";
     game->mSettings.Caption = "AudioTestBed";
     game->mSettings.enableLogFile = true;
     game->mSettings.IconFilename = "assets/icon.png";
