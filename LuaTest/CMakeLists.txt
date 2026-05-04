@@ -24,10 +24,11 @@ FetchContent_Declare(
     GIT_TAG v3.5.0
 )
 
+set(SOL2_BUILD_LUA OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(lua sol2)
 
 ### lua
-add_library(lua
+add_library(lua STATIC
   ${lua_SOURCE_DIR}/lapi.c
   ${lua_SOURCE_DIR}/lauxlib.c
   ${lua_SOURCE_DIR}/lbaselib.c
@@ -65,16 +66,17 @@ add_library(lua
 )
 add_library(lua::lua ALIAS lua)
 
-if (WIN32)
-  target_compile_definitions(lua PRIVATE LUA_USE_WINDOWS)
-endif()
+# if (WIN32)
+#   target_compile_definitions(lua PRIVATE LUA_USE_WINDOWS)
+# endif()
+#
+# target_include_directories(lua PUBLIC lua)
+# if (UNIX)
+#   target_compile_definitions(lua PRIVATE LUA_USE_LINUX)
+#   target_link_libraries(lua PRIVATE dl)
+# endif()
 
-target_include_directories(lua PUBLIC lua)
-if (UNIX)
-  target_compile_definitions(lua PRIVATE LUA_USE_LINUX)
-  target_link_libraries(lua PRIVATE dl)
-endif()
-
+target_include_directories(lua PUBLIC ${lua_SOURCE_DIR})
 
 configure_project_target(LuaTest ${LUATEST_DIR} "${LUATEST_DIR}/assets@assets" "${GAME_SOURCES}")
 
