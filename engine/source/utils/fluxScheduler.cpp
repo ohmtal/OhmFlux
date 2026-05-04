@@ -35,6 +35,10 @@ FluxScheduler::TaskID FluxScheduler::add(double lDelaySeconds, FluxBaseObject* l
     return lNewId;
 }
 
+FluxScheduler::TaskID FluxScheduler::callDeferred(std::function<void()> lAction) {
+    return add(0.1f, nullptr, lAction, false);
+}
+
 FluxScheduler::TaskID FluxScheduler::addTicker(double lDelaySeconds, FluxBaseObject* lOwner, std::function<void()> lAction){
     return add(lDelaySeconds, lOwner, lAction, true);
 }

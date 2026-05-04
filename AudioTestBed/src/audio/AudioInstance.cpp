@@ -114,7 +114,7 @@ namespace FluxAudio {
     //--------------------------------------------------------------------------
     bool AudioInstance::Initialize(ResourceData* lResource) {
         if (badData) return false;
-        if (resource) return false; // we have a resource!
+        // allow resource overwrite ! if (resource) return false; // we have a resource!
         if (isInitialized) return false;
         resource = lResource;
         doLoop = resource->enableLoop; //preset default
@@ -226,6 +226,9 @@ namespace FluxAudio {
                     if (OnFatalError) OnFatalError("Failed to load SFX Data.");
                 }
 
+
+
+
                 srcSpec.format = SDL_AUDIO_F32;
                 srcSpec.channels = 2;
                 srcSpec.freq =  44100 ;
@@ -241,6 +244,11 @@ namespace FluxAudio {
                 mSamplePos = 0;
                 mSampleLen = mSFXGen->getSyntFrames();
 
+                if ( mAutoConvertSfxToWav ) {
+                    FluxSchedule.callDeferred([this](){
+                        this->ConvertToWav();
+                    });
+                }
 
 
                 break;
@@ -399,21 +407,19 @@ namespace FluxAudio {
         return true;
     }
     //--------------------------------------------------------------------------
-    void AudioInstance::Update( const double& dt, Point3F* camPos ) {
+    // void AudioInstance::Update( const double& dt, Point3F* camPos ) {
+    void AudioInstance::UpdateStream() {
         if (!isPlaying) return;
 
-        // 0.1 = 100ms
-        const int targetQueueSize = (int)(dstSpec.freq * dstSpec.channels * sizeof(float) * 0.1f);
+        const float cacheSec = 0.250f; //was 0.1 => 100
+        const int targetQueueSize = (int)(dstSpec.freq * dstSpec.channels * sizeof(float) * cacheSec);
         if (SDL_GetAudioStreamQueued(stream) < targetQueueSize) {
             if ( fillBuffer() ) {
-
-
                 for (auto& sample : mAudioBuffer) {
                     // dLog("sample: %f", sample);
                     sample *= volume;
                 }
                 if (OnAudioProcess) OnAudioProcess(mAudioBuffer.data(),mAudioBuffer.size());
-
                 SDL_PutAudioStreamData(stream, mAudioBuffer.data(), mAudioBuffer.size() * sizeof(float));
 
             } else {
@@ -426,6 +432,44 @@ namespace FluxAudio {
             }
         }
     }
+    //--------------------------------------------------------------------------
+    bool AudioInstance::ConvertToWav() {
+        if (!resource || resource->mRawData.empty()) return false;
+        if ( isPlaying ) {
+            Log("[error] ConvertToWav only allowed when not playing!");
+            if (OnFatalError) OnFatalError("ConvertToWav only allowed when not playing!");
+            return false;
+        }
+        switch (resource->fileType) {
+            case AudioType::SFX: {
+                if (!mSFXGen) {
+                    Log("[error] Convert SFX To WAV: SFX Generator not Initialized!");
+                    if (OnFatalError) OnFatalError("Convert SFX To WAV: SFX Generator not Initialized!");
+                    return false;
+                }
+                resource->fileType = FluxAudio::AudioType::WAV;
+                resource->wavSrcSpec = mSFXGen->getSpec();
+                std::vector<float> f32ExportBuffer;
+                mSFXGen->exportToBuffer(f32ExportBuffer, nullptr, false);
+                resource->mRawData.resize(f32ExportBuffer.size() * sizeof(float));
+                std::memcpy(resource->mRawData.data(), f32ExportBuffer.data(), resource->mRawData.size());
+                // no need to reinitialize since both are F32 but i need to update the len:
+                mSampleLen = resource->mRawData.size();
+                mSamplePos = 0;
 
+                // finally delete the mSFXGen
+                SAFE_DELETE(mSFXGen);
+                mSFXGen = nullptr;
 
+                Log("[info] SFX converted to wav (%s)", resource->fileName.c_str());
+                return true;
+
+            }
+            default:
+                // i also could do this on other formats using miniaudio but why.
+                Log("[warn] ConvertToWav unsupported Audioformat.");
+                return false;
+        }
+
+    }
 }; //namespace

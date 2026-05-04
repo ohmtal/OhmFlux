@@ -57,6 +57,8 @@ namespace FluxAudio {
         //Resource
         ResourceData* resource = nullptr;
 
+        // save cpu power
+        bool mAutoConvertSfxToWav = true;
 
         // status
         bool isPlaying    = false; //<< fixme !!
@@ -81,7 +83,8 @@ namespace FluxAudio {
         bool Resume();
 
         //------- Put Data in
-        void Update( const double& dt, Point3F* camPos = nullptr );
+        // void Update( const double& dt, Point3F* camPos = nullptr );
+        void UpdateStream();
 
 
         float getProgress() {
@@ -97,6 +100,8 @@ namespace FluxAudio {
         std::function<void()> OnStreamEnds = nullptr;
         std::function<void(std::string)> OnFatalError = nullptr;
 
+
+        bool ConvertToWav();
 
     private:
 

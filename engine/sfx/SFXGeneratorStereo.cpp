@@ -3,13 +3,13 @@
 // Copyright (c) 2026 XXTH
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// 2026-05-04 export to buffer and a bit source cleanup
 //
 // 2026-05-01 add compiler flag SFX_USE_DSP if you want DSP!
 //            example after configure marco :
 //            target_compile_definitions(SoundStudio PUBLIC SFX_USE_DSP)
 //
-// 2026-02-03 File Version 103 (panning) FIXME export ok playback NOT !!!!
-//                  need a bit sleep ;) maybe tomorrow
+// 2026-02-03 File Version 103 (panning)
 //-----------------------------------------------------------------------------
 
 #include "SFXGeneratorStereo.h"
@@ -32,6 +32,153 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
 #endif
+
+//-----------------------------------------------------------------------------
+// SFXParams
+//-----------------------------------------------------------------------------
+void SFXGeneratorStereo::SFXParams::setName(std::string lName){
+    memset(name, 0, sizeof(name));
+    strncpy(name, lName.c_str(), 31);
+}
+
+void SFXGeneratorStereo::SFXParams::getBinary(std::ostream& os) const{
+    uint8_t ver = CURRENT_VERSION;
+    os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
+    os.write(reinterpret_cast<const char*>(this), sizeof(SFXParams));
+}
+
+bool SFXGeneratorStereo::SFXParams::setBinary(std::istream& is){
+    uint8_t fileVersion = 0;
+    is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+    if (fileVersion == CURRENT_VERSION) {
+        is.read(reinterpret_cast<char*>(this), sizeof(SFXParams));
+        if (!validate()) {
+            *this = SFXParams(); // reset to default
+            is.setstate(std::ios::failbit);
+            return false;
+        }
+    }
+    return  is.good();
+}
+
+bool SFXGeneratorStereo::SFXParams::validate() {
+    // Basic Range Checks
+    if (wave_type < 0 || wave_type > 3){
+        addError(std::format( "wave_type out of bounds: {}",sound_vol));
+        return false;
+    }
+    if (sound_vol < 0.0f || sound_vol > 1.0f) {
+        addError(std::format( "sound_vol out of bounds: {}",sound_vol));
+        return false;
+    }
+
+    // Safety Checks for Audio Engine (Prevent NaN or Infinity)
+    // Frequency should be positive (0.0 to 1.0 is your typical normalized range)
+    p_base_freq = std::abs(p_base_freq);
+    if (p_base_freq < 0.0f || p_base_freq > 1.0f)
+    {
+        addError(std::format( "p_base_freq out of bounds: {}",p_base_freq));
+        return false;
+    }
+
+
+    // Filter Resonance should not be too high to avoid feedback loops/explosions
+    p_lpf_resonance = std::abs(p_lpf_resonance);
+    if (p_lpf_resonance < 0.0f || p_lpf_resonance > 1.0f) {
+        addError(std::format( "p_lpf_resonance out of bounds: {} ",p_lpf_resonance));
+        return false;
+    }
+
+    // 3. Panning Safety (Ensure it stays within stereo bounds)
+    if (p_pan < -1.0f || p_pan > 1.0f) {
+        addError(std::format( "p_pan out of bounds: {}",p_pan));
+        return false;
+    }
+
+    // 4. Sanity check for strings (ensure name is null-terminated)
+    // Even if corruption happened, this prevents string-reading crashes
+    bool hasNull = false;
+    for (int i = 0; i < 32; ++i) {
+        if (name[i] == '\0') { hasNull = true; break; }
+    }
+    if (!hasNull) name[31] = '\0'; // Force termination
+
+    return true;
+}
+
+bool SFXGeneratorStereo::SFXParams::loadLegacy(std::istream& is, uint8_t version) {
+    // Reset to defaults first
+    *this = SFXParams();
+
+    // legacy check for version number
+    if (version < 100 || version > 103) {
+        return false;
+    }
+    is.read(reinterpret_cast<char*>(&wave_type), sizeof(int));
+    if (version >= 102) {
+        is.read(reinterpret_cast<char*>(&sound_vol), sizeof(float));
+    }
+
+    is.read(reinterpret_cast<char*>(&p_base_freq), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_freq_limit), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_freq_ramp), sizeof(float));
+
+    if (version >= 101) {
+        is.read(reinterpret_cast<char*>(&p_freq_dramp), sizeof(float));
+    }
+
+    is.read(reinterpret_cast<char*>(&p_duty), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_duty_ramp), sizeof(float));
+
+    is.read(reinterpret_cast<char*>(&p_vib_strength), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_vib_speed), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_vib_delay), sizeof(float));
+
+    is.read(reinterpret_cast<char*>(&p_env_attack), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_env_sustain), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_env_decay), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_env_punch), sizeof(float));
+
+    // Note: old bool might have been saved as 1 or 4 bytes depending on platform
+    // If it was 'fread(&filter_on, 1, sizeof(bool), file)', this is fine:
+    is.read(reinterpret_cast<char*>(&filter_on), sizeof(bool));
+
+    is.read(reinterpret_cast<char*>(&p_lpf_resonance), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_lpf_freq), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_lpf_ramp), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_hpf_freq), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_hpf_ramp), sizeof(float));
+
+    is.read(reinterpret_cast<char*>(&p_pha_offset), sizeof(float));
+    is.read(reinterpret_cast<char*>(&p_pha_ramp), sizeof(float));
+
+    is.read(reinterpret_cast<char*>(&p_repeat_speed), sizeof(float));
+
+    if (version >= 101) {
+        is.read(reinterpret_cast<char*>(&p_arp_speed), sizeof(float));
+        is.read(reinterpret_cast<char*>(&p_arp_mod), sizeof(float));
+    }
+
+    if (version >= 103) {
+        is.read(reinterpret_cast<char*>(&p_pan), sizeof(float));
+        is.read(reinterpret_cast<char*>(&p_pan_ramp), sizeof(float));
+        is.read(reinterpret_cast<char*>(&p_pan_speed), sizeof(float));
+    }
+
+    // version 104
+    memset(name, 0, sizeof(name));
+    strncpy(name, "Legacy SFX", 31);
+
+    if (!validate()) {
+        *this = SFXParams(); // reset to default
+        is.setstate(std::ios::failbit);
+        return false;
+    }
+
+
+    return is.good();
+}
+//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 // A helper function for random numbers
 int SFXGeneratorStereo::rnd(int n) {
@@ -54,6 +201,11 @@ SFXGeneratorStereo::SFXGeneratorStereo():
 {
 
     SFXGeneratorStereo::mErrors = "";
+
+    mSpec.format = SDL_AUDIO_F32;
+    mSpec.channels = 2;
+    mSpec.freq =  44100 ;
+
 
     master_vol = 0.5f;
     // sound_vol = 0.5f;
@@ -225,80 +377,6 @@ bool SFXGeneratorStereo::LoadSettings(const char* filename, bool allowLegacy) {
     return LoadFromStream(ifs, allowLegacy);
 }
 //-----------------------------------------------------------------------------
-// bool SFXGeneratorStereo::LoadSettings(const char* filename, bool allowLegacy)
-// {
-//
-//     mErrors = "";
-//     std::ifstream ifs; //(filePath, std::ios::binary);
-//     ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-//
-//     try {
-//         ifs.open(filename, std::ios::binary);
-//         if (!ifs.is_open()) {
-//             addError(std::format("Can't open File {} for read.", filename));
-//             return false;
-//         }
-//
-//         // // Read and verify identifier
-//         char identifierBuffer[FluxSFX::FILE_IDENTIFIER_SIZE];
-//         bool hasIdentifier = true;
-//         try {
-//             ifs.read(identifierBuffer, FluxSFX::FILE_IDENTIFIER_SIZE);
-//             if (std::memcmp(identifierBuffer, FluxSFX::FILE_IDENTIFIER, FluxSFX::FILE_IDENTIFIER_SIZE) != 0) {
-//                 hasIdentifier = false;
-//             }
-//         } catch (const std::ios_base::failure&) {
-//             hasIdentifier = false;
-//         }
-//
-//         if (!hasIdentifier) {
-//             if (!allowLegacy) {
-//                 addError("File Identifier mismatch.");
-//                 return false;
-//             }
-//             // Clear error state and rewind to the very beginning
-//             ifs.clear();
-//             ifs.seekg(0, std::ios::beg);
-//
-//             // Peek at the version byte without advancing the pointer too far
-//             int lVersion = 0;
-//             ifs.read(reinterpret_cast<char*>(&lVersion), sizeof(int));
-//
-//             if (lVersion < 100 || lVersion > 103) {
-//                 addError(std::format("Invalid Legacy Version: {}", lVersion));
-//                 return false;
-//             }
-//             std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-//             bool success = mParams.loadLegacy(ifs, lVersion);
-//             if (!success) addError("Failed to load legacy file!");
-//             return success;
-//         }
-//
-//         std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-//         bool success = mParams.setBinary(ifs);
-//         if (!success) addError("Failed to load file!");
-//         return success;
-//
-//     } catch (const std::ios_base::failure& e) {
-//         // If we catch this, it's because a read_binary or read_vector failed
-//         if (ifs.eof()) {
-//             addError("Unexpected End of File: The file is truncated.");
-//         } else {
-//             addError(std::format("I/O failure: {}", e.what()));
-//         }
-//         return false;
-//     } catch (const std::bad_alloc&) {
-//         addError("File requested too much memory (possible corruption).");
-//         return false;
-//     } catch (const std::exception& e) {
-//         addError(std::format("General error: {}", e.what()));
-//         return false;
-//     }
-//
-//     // i should never get here ...
-//     return false;
-// }
-//-----------------------------------------------------------------------------
 bool SFXGeneratorStereo::SaveSettings(const char* filename)
 {
     mErrors = "";
@@ -324,73 +402,6 @@ bool SFXGeneratorStereo::SaveSettings(const char* filename)
         return false;
     }
 }
-//-----------------------------------------------------------------------------
-// obsolete
-// bool SFXGeneratorStereo::loadSettings(std::istream& is, uint8_t version) {
-//
-//     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-//
-//
-//     FILE* file=fopen(filename, "rb");
-//     if(!file)
-//         return false;
-//
-//     int version=0;
-//     fread(&version, 1, sizeof(int), file);
-//     if( version != 100 && version != 101 && version != 102 && version != 103 )
-//         return false;
-//
-//     fread(&mParams.wave_type, 1, sizeof(int), file);
-//
-//     mParams.sound_vol=0.5f;
-//     if(version>=102)
-//         fread(&mParams.sound_vol, 1, sizeof(float), file);
-//
-//     fread(&mParams.p_base_freq, 1, sizeof(float), file);
-//     fread(&mParams.p_freq_limit, 1, sizeof(float), file);
-//     fread(&mParams.p_freq_ramp, 1, sizeof(float), file);
-//     if(version>=101)
-//         fread(&mParams.p_freq_dramp, 1, sizeof(float), file);
-//     fread(&mParams.p_duty, 1, sizeof(float), file);
-//     fread(&mParams.p_duty_ramp, 1, sizeof(float), file);
-//
-//     fread(&mParams.p_vib_strength, 1, sizeof(float), file);
-//     fread(&mParams.p_vib_speed, 1, sizeof(float), file);
-//     fread(&mParams.p_vib_delay, 1, sizeof(float), file);
-//
-//     fread(&mParams.p_env_attack, 1, sizeof(float), file);
-//     fread(&mParams.p_env_sustain, 1, sizeof(float), file);
-//     fread(&mParams.p_env_decay, 1, sizeof(float), file);
-//     fread(&mParams.p_env_punch, 1, sizeof(float), file);
-//
-//     fread(&mParams.filter_on, 1, sizeof(bool), file);
-//     fread(&mParams.p_f_resonance, 1, sizeof(float), file);
-//     fread(&mParams.p_lpf_freq, 1, sizeof(float), file);
-//     fread(&mParams.p_lpf_ramp, 1, sizeof(float), file);
-//     fread(&mParams.p_hpf_freq, 1, sizeof(float), file);
-//     fread(&mParams.p_hpf_ramp, 1, sizeof(float), file);
-//
-//     fread(&mParams.p_pha_offset, 1, sizeof(float), file);
-//     fread(&mParams.p_pha_ramp, 1, sizeof(float), file);
-//
-//     fread(&mParams.p_repeat_speed, 1, sizeof(float), file);
-//
-//     if(version>=101)
-//     {
-//         fread(&mParams.p_arp_speed, 1, sizeof(float), file);
-//         fread(&mParams.p_arp_mod, 1, sizeof(float), file);
-//     }
-//
-//     if (version >= 103 ) { //panning
-//         dLog("reading Version 103 params!");
-//         fread(&mParams.p_pan, sizeof(float), 1, file);
-//         fread(&mParams.p_pan_ramp, sizeof(float), 1, file);
-//         fread(&mParams.p_pan_speed, sizeof(float), 1, file);
-//     }
-//
-//     fclose(file);
-//     return true;
-// }
 //-----------------------------------------------------------------------------
 void SFXGeneratorStereo::ResetSample(bool restart)
 {
@@ -590,8 +601,6 @@ void SFXGeneratorStereo::SynthSample(int length, float* stereoBuffer) {
         return;
     }
 
-
-    // double lock !! std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
 
     for (int i = 0; i < length; i++) {
         if (!mState.playing_sample) break;
@@ -927,32 +936,6 @@ void SFXGeneratorStereo::AddPanning(bool doLock) {
 //------------------------------------------------------------------------------
 // --- SDL
 //------------------------------------------------------------------------------
-// void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
-// {
-//     if (!userdata) return;
-//     auto* gen = static_cast<SFXGeneratorStereo*>(userdata);
-//
-//     if (!gen)
-//         return;
-//
-//     int frames_needed = additional_amount / (sizeof(float) * 2);
-//
-//
-//     if (frames_needed > 0)
-//     {
-//         std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
-//         if (gen->mState.playing_sample) {
-//             std::vector<float> stereoBuffer(frames_needed * 2, 0.0f);
-//             gen->SynthSample(frames_needed, stereoBuffer.data());
-//
-//             for (auto& effect : gen->mDspEffects) {
-//                 effect->process(stereoBuffer.data(), frames_needed * 2);
-//             }
-//
-//             SDL_PutAudioStreamData(stream, stereoBuffer.data(), additional_amount);
-//         }
-//     }
-// }
 void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount)
 {
     if (!userdata) return;
@@ -971,11 +954,11 @@ void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream*
             std::vector<float> stereoBuffer(frames_needed * 2, 0.0f);
             gen->SynthSample(frames_needed, stereoBuffer.data());
 
-#ifdef SFX_USE_DSP
+            #ifdef SFX_USE_DSP
             for (auto& effect : gen->mDspEffects) {
                 effect->process(stereoBuffer.data(), frames_needed * 2, 2);
             }
-#endif
+            #endif
 
             // SDL_PutAudioStreamData(stream, stereoBuffer.data(), additional_amount);
             SDL_PutAudioStreamData(stream, stereoBuffer.data(), frames_needed * 2 * sizeof(float));
@@ -991,28 +974,8 @@ int SFXGeneratorStereo::getSyntFrames() {
     return attack + sustain + decay + 100;
 }
 
-bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progressOut, bool applyEffects) {
-    detachAudio();
-    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
-
-    #ifndef SFX_USE_DSP
-        applyEffects = false;
-    #endif
-
-    int sampleRate = 44100;
-    int chunkSize = 1024;
-
-    // 1. Synth Duration
-    // int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
-    // int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
-    // int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
-    // int synthFrames = attack + sustain + decay + 100;
-
-    int synthFrames = getSyntFrames();
-
-    // 2. Calculate Tail Duration (Dynamic)
+int SFXGeneratorStereo::getTailFrames(bool applyEffects) {
     int tailFrames = 0;
-
     #ifdef SFX_USE_DSP
     if (applyEffects) {
         float maxTailSec = 0.0f;
@@ -1020,16 +983,27 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
             maxTailSec = std::max(maxTailSec, effect->getTailLengthSeconds());
         }
         maxTailSec = std::min(maxTailSec, 10.0f); // Cap at 10s
-        tailFrames = static_cast<int>(maxTailSec * sampleRate);
+        tailFrames = static_cast<int>(maxTailSec * mSpec.freq);
     }
     #endif
+    return tailFrames;
+}
 
-    int totalFrames = synthFrames + tailFrames;
+int SFXGeneratorStereo::getTotalFrames(bool applyEffects) {
+    return getSyntFrames() + getTailFrames(applyEffects);
+}
+//------------------------------------------------------------------------------
+void SFXGeneratorStereo::exportToBuffer(std::vector<float>& exportBuffer, float* progressOut,  bool applyEffects) {
+    std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
 
-    // 3. Allocate Buffer (Pre-filled with 0.0f)
-    std::vector<float> f32ExportBuffer(totalFrames * 2, 0.0f);
+    int chunkSize = 1024;
+    int synthFrames = getSyntFrames();
+    int totalFrames = getTotalFrames(applyEffects);
 
-    // 4. Reset Generator
+    //check buffer size and fill with silence:
+    if (exportBuffer.size() != totalFrames * 2) exportBuffer.resize(totalFrames * 2);
+    std::fill(exportBuffer.begin(), exportBuffer.end(), 0.f);
+
     ResetSample(false);
     mState.playing_sample = true;
 
@@ -1040,7 +1014,7 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
 
         // Only call SynthSample as long as the synth is actually playing
         if (framesProcessed < synthFrames && mState.playing_sample) {
-            this->SynthSample(toWrite, &f32ExportBuffer[framesProcessed * 2]);
+            this->SynthSample(toWrite, &exportBuffer[framesProcessed * 2]);
         } else {
             // We are in the Tail area: just "process" si/*len*/ce (do nothing, buffer is already 0)
         }
@@ -1060,78 +1034,95 @@ bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progres
 
         for (auto& effect : this->mDspEffects) {
             // This now processes the tail where the echoes will appear
-            effect->process(f32ExportBuffer.data(), totalFrames * 2, 2);
+            effect->process(exportBuffer.data(), totalFrames * 2, 2);
         }
 
         if (progressOut) *progressOut = 0.85f;
-        DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
+        DSP::normalizeBuffer(exportBuffer.data(), exportBuffer.size(), mParams.sound_vol); //0.98f);
         if (progressOut) *progressOut = 0.90f;
     }
     #endif
 
     if (progressOut) *progressOut = 1.0f;
 
+}
+//------------------------------------------------------------------------------
+bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progressOut, bool applyEffects) {
+    detachAudio();
+
+    #ifndef SFX_USE_DSP
+    applyEffects = false;
+    #endif
+
+    std::vector<float> f32ExportBuffer;
+    exportToBuffer(f32ExportBuffer, progressOut, applyEffects);
+
     attachAudio();
-    return saveWavFile(filename, f32ExportBuffer, sampleRate);
+    return saveWavFile(filename, f32ExportBuffer, mSpec.freq);
 }
 
-// bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progressOut, bool applyEffects ) {
+// old function i keep it until i tested it more ;)
+// bool SFXGeneratorStereo::exportToWav(const std::string& filename, float* progressOut, bool applyEffects) {
 //     detachAudio();
 //     std::lock_guard<std::recursive_mutex> lock(mParamsMutex);
 //
+//     #ifndef SFX_USE_DSP
+//         applyEffects = false;
+//     #endif
 //
-//     // 1. Calculate total duration from envelope
-//     int attack = (int)(mParams.p_env_attack * mParams.p_env_attack * 100000.0f);
-//     int sustain = (int)(mParams.p_env_sustain * mParams.p_env_sustain * 100000.0f);
-//     int decay = (int)(mParams.p_env_decay * mParams.p_env_decay * 100000.0f);
-//
-//     int totalFrames = attack + sustain + decay + 100;
-//
-//     int sampleRate = 44100;
 //     int chunkSize = 1024;
+//     int synthFrames = getSyntFrames();
+//     int totalFrames = getTotalFrames(applyEffects);
 //
-//     // 2. Allocate Stereo Float Buffer (Size: Frames * 2)
+//     // 3. Allocate Buffer (Pre-filled with 0.0f)
 //     std::vector<float> f32ExportBuffer(totalFrames * 2, 0.0f);
 //
-//     // 3. Reset Generator State
+//     // 4. Reset Generator
 //     ResetSample(false);
 //     mState.playing_sample = true;
 //
+//     // 5. Processing Loop
 //     int framesProcessed = 0;
-//     while (framesProcessed < totalFrames && mState.playing_sample) {
+//     while (framesProcessed < totalFrames) {
 //         int toWrite = std::min(chunkSize, totalFrames - framesProcessed);
 //
-//         this->SynthSample(toWrite, &f32ExportBuffer[framesProcessed * 2]);
+//         // Only call SynthSample as long as the synth is actually playing
+//         if (framesProcessed < synthFrames && mState.playing_sample) {
+//             this->SynthSample(toWrite, &f32ExportBuffer[framesProcessed * 2]);
+//         } else {
+//             // We are in the Tail area: just "process" si/*len*/ce (do nothing, buffer is already 0)
+//         }
+//
 //         framesProcessed += toWrite;
+//
 //         if (progressOut) {
-//             // *progressOut = (float)framesProcessed / (float)totalFrames;
 //             float progressScale = applyEffects ? 0.70f : 1.0f;
-//             *progressOut = (float)framesProcessed / (float)totalFrames * progressScale;
+//             *progressOut = ((float)framesProcessed / (float)totalFrames) * progressScale;
 //         }
 //     }
 //
-//     // 4. Effects
+//     // 6. Apply Effects to the WHOLE buffer (including the silent tail)
+//     #ifdef SFX_USE_DSP
 //     if (applyEffects) {
 //         if (progressOut) *progressOut = 0.75f;
 //
-//         // Apply DSP directly to the master float buffer
 //         for (auto& effect : this->mDspEffects) {
-//             effect->process(f32ExportBuffer.data(), f32ExportBuffer.size());
+//             // This now processes the tail where the echoes will appear
+//             effect->process(f32ExportBuffer.data(), totalFrames * 2, 2);
 //         }
-//         if (progressOut) *progressOut = 0.85f;
 //
-//         // Normalize
+//         if (progressOut) *progressOut = 0.85f;
 //         DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
 //         if (progressOut) *progressOut = 0.90f;
 //     }
+//     #endif
+//
 //     if (progressOut) *progressOut = 1.0f;
 //
 //     attachAudio();
-//     // Resize to actual frames written (multiplied by 2 for stereo)
-//     f32ExportBuffer.resize(framesProcessed * 2);
-//
-//     return saveWavFile(filename, f32ExportBuffer, sampleRate);
+//     return saveWavFile(filename, f32ExportBuffer, mSpec.freq);
 // }
+
 //------------------------------------------------------------------------------
 bool SFXGeneratorStereo::saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate)  {
     // Open the file for writing using SDL3's IO system
@@ -1198,11 +1189,8 @@ bool SFXGeneratorStereo::initSDLAudio()
         return false;
     }
 
-    SDL_AudioSpec spec;
-    spec.format = SDL_AUDIO_F32;
-    spec.channels = 2;
-    spec.freq =  44100 ;
-    mStream = SDL_CreateAudioStream(&spec, &spec);
+
+    mStream = SDL_CreateAudioStream(&mSpec, &mSpec);
 
 
     if (!mStream)
@@ -1235,4 +1223,84 @@ bool SFXGeneratorStereo::initSDLAudio()
     Log("SFXGeneratorStereo initialized..");
     return true;
 }
+//------------------------------------------------------------------------------
+// Gui elements when using OhmFlux (ImFlux)
+//------------------------------------------------------------------------------
+#ifdef FLUX_ENGINE
+void SFXGeneratorStereo::DrawWaveIcon(ImDrawList* draw_list, ImVec2 center, float size, int type, ImU32 color) {
+    float h = size * 0.4f; // Half height
+    float w = size * 0.6f; // Width of the icon
 
+    if (type == 0) { // SQUARE
+        ImVec2 pts[4] = {
+            center + ImVec2(-w/2, h/2), center + ImVec2(-w/2, -h/2),
+            center + ImVec2(0, -h/2), center + ImVec2(0, h/2)
+        };
+        draw_list->AddPolyline(pts, 4, color, 0, 2.0f);
+        // Add the second half of the square wave
+        ImVec2 pts2[3] = { center + ImVec2(0, h/2), center + ImVec2(w/2, h/2), center + ImVec2(w/2, -h/2) };
+        draw_list->AddPolyline(pts2, 3, color, 0, 2.0f);
+    }
+    else if (type == 1) { // SAWTOOTH
+        ImVec2 pts[3] = { center + ImVec2(-w/2, h/2), center + ImVec2(w/2, -h/2), center + ImVec2(w/2, h/2) };
+        draw_list->AddPolyline(pts, 3, color, 0, 2.0f);
+    }
+    else if (type == 2) { // SINE
+        const int segments = 16;
+        for (int n = 0; n < segments; n++) {
+            float t1 = (float)n / segments;
+            float t2 = (float)(n + 1) / segments;
+            ImVec2 p1 = center + ImVec2(-w/2 + t1*w, sinf(t1 * 6.28f) * -h);
+            ImVec2 p2 = center + ImVec2(-w/2 + t2*w, sinf(t2 * 6.28f) * -h);
+            draw_list->AddLine(p1, p2, color, 2.0f);
+        }
+    }
+    else if (type == 3) { // NOISE (Random jagged lines)
+        for (int i = 0; i < 8; i++) {
+            float x1 = -w/2 + (w/8.0f)*i;
+            float x2 = -w/2 + (w/8.0f)*(i+1);
+            draw_list->AddLine(center + ImVec2(x1, (i%2==0?h:-h)*0.5f),
+                               center + ImVec2(x2, (i%2==0?-h:h)*0.5f), color, 1.5f);
+        }
+    }
+}
+
+bool SFXGeneratorStereo::DrawWaveButton(const char* label, int wave_type) {
+
+    bool is_selected = mParams.wave_type == wave_type;
+
+    ImVec2 size = ImVec2(45, 45); // Fixed round size
+    float rounding = size.x * 0.5f;
+
+    // Use your ButtonFancy logic here...
+    ImGui::PushID(wave_type);
+    bool pressed = ImGui::InvisibleButton(label, size);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImRect bb(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+
+
+
+    // Background & Bevel
+    if (is_selected) {
+        // Your "Deep" recessed effect
+        dl->AddRectFilled(bb.Min, bb.Max, IM_COL32(20, 20, 25, 255), rounding);
+        dl->AddRect(bb.Min, bb.Max, IM_COL32(0, 0, 0, 100), rounding, 0, 2.0f);
+
+    } else {
+        dl->AddRectFilled(bb.Min, bb.Max, IM_COL32(50, 50, 60, 255), rounding);
+        // Outer light bevel
+        dl->AddRect(bb.Min, bb.Max, IM_COL32(255, 255, 255, 30), rounding);
+    }
+
+    // Draw the icon
+    ImU32 icon_col = is_selected ? IM_COL32(0, 255, 180, 255) : IM_COL32(200, 200, 200, 255);
+    DrawWaveIcon(dl, bb.GetCenter(), size.x, wave_type, icon_col);
+
+    if (pressed) mParams.wave_type = wave_type;
+
+    ImFlux::Hint(label);
+
+    ImGui::PopID();
+    return pressed;
+}
+#endif

@@ -28,6 +28,30 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
     snprintf(lBuffer, sizeof(lBuffer), "%s", message);
     console->AddLog("%s", message);
 }
+
+//--------------------------------------------------------------------------------------
+struct StreamWorkerThreadData {
+    std::unordered_map<std::string, std::unique_ptr<FluxAudio::AudioInstance>>* instanceMap;
+    SDL_AtomicInt running;
+};
+
+// SDL_Thread test:
+int SDLCALL streamWorkerThread(void* userData) {
+    auto* data = static_cast<StreamWorkerThreadData*>(userData);
+    if (!data || !data->instanceMap) return -1;
+
+    while (SDL_GetAtomicInt(&data->running)) {
+        for (auto& [filename, instance] : *(data->instanceMap)) {
+            if (instance) {
+                instance->UpdateStream();
+            }
+        }
+
+        SDL_Delay(32);
+    }
+
+    return 0;
+}
 //-----------------------------------------------------------------------------
 class AudioTestBed : public FluxMain
 {
@@ -56,6 +80,9 @@ class AudioTestBed : public FluxMain
     std::unordered_map<std::string, std::unique_ptr<FluxAudio::AudioInstance>> mInstanceMap;
 
 
+     SDL_Thread* mWorkerThreadID = nullptr;
+     StreamWorkerThreadData mWorkerThreadData;
+
 public:
     bool Initialize() override
     {
@@ -77,6 +104,11 @@ public:
 
         AudioResourceManager.Initialize(); //FIXME move to Ohmflux
 
+
+        mWorkerThreadData = { &mInstanceMap, {1} }; // Start with running = 1
+        mWorkerThreadID = SDL_CreateThread(streamWorkerThread, "AudioWorker", &mWorkerThreadData);
+
+
          return true;
     }
     //--------------------------------------------------------------------------------------
@@ -85,6 +117,10 @@ public:
 
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
+
+        // stop thread
+        SDL_SetAtomicInt(&mWorkerThreadData.running, 0);
+        SDL_WaitThread( mWorkerThreadID, NULL );
 
         Parent::Deinitialize();
     }
@@ -119,9 +155,10 @@ public:
     {
 
         // update audio instances
-        for (auto& [filename, instance] : mInstanceMap) {
-            instance->Update(dt, nullptr);
-        }
+        // for (auto& [filename, instance] : mInstanceMap) {
+        //     // instance->Update(dt, nullptr);
+        //     instance->UpdateStream();
+        // }
 
 
         Parent::Update(dt);
@@ -227,6 +264,15 @@ public:
                         }
 
                         if (!instance->isPlaying) {
+                            ImGui::SameLine();
+                            if ( instance->resource->fileType == FluxAudio::AudioType::SFX ) {
+                                if (ImFlux::ButtonFancy("2WAV", ImFlux::YELLOW_BUTTON)) {
+                                    if (!instance->ConvertToWav()) {
+                                        mGuiGlue->showMessage("ERROR","Failed to convert to Wav!");
+                                    }
+                                }
+                            }
+
                             ImGui::SameLine();
                             if (ImFlux::ButtonFancy("DEL", ImFlux::RED_BUTTON)) {
 

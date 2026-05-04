@@ -42,6 +42,7 @@ class SFXGeneratorStereo
     inline static std::string mErrors = "";
     static void addError(std::string error) { mErrors += error + "\n"; }
 
+    SDL_AudioSpec mSpec;
 
 public:
     // Parameters that define the sound
@@ -93,152 +94,13 @@ public:
 
         auto operator<=>(const SFXParams&) const = default; //C++20 lazy way
 
-        void setName(std::string lName) {
-            memset(name, 0, sizeof(name));
-            strncpy(name, lName.c_str(), 31);
-        }
-
+        void setName(std::string lName);
         // new file format
-        void getBinary(std::ostream& os) const {
-            uint8_t ver = CURRENT_VERSION;
-            os.write(reinterpret_cast<const char*>(&ver), sizeof(ver));
-            os.write(reinterpret_cast<const char*>(this), sizeof(SFXParams));
-        }
-
-        bool setBinary(std::istream& is) {
-            uint8_t fileVersion = 0;
-            is.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
-            if (fileVersion == CURRENT_VERSION) {
-                is.read(reinterpret_cast<char*>(this), sizeof(SFXParams));
-                if (!validate()) {
-                    *this = SFXParams(); // reset to default
-                    is.setstate(std::ios::failbit);
-                    return false;
-                }
-            }
-            return  is.good();
-        }
-
-
-
-        bool validate() {
-            // Basic Range Checks
-            if (wave_type < 0 || wave_type > 3){
-                addError(std::format( "wave_type out of bounds: {}",sound_vol));
-                return false;
-            }
-            if (sound_vol < 0.0f || sound_vol > 1.0f) {
-                addError(std::format( "sound_vol out of bounds: {}",sound_vol));
-                return false;
-            }
-
-            // Safety Checks for Audio Engine (Prevent NaN or Infinity)
-            // Frequency should be positive (0.0 to 1.0 is your typical normalized range)
-            p_base_freq = std::abs(p_base_freq);
-            if (p_base_freq < 0.0f || p_base_freq > 1.0f)
-            {
-                addError(std::format( "p_base_freq out of bounds: {}",p_base_freq));
-                return false;
-            }
-
-
-            // Filter Resonance should not be too high to avoid feedback loops/explosions
-            p_lpf_resonance = std::abs(p_lpf_resonance);
-            if (p_lpf_resonance < 0.0f || p_lpf_resonance > 1.0f) {
-                addError(std::format( "p_lpf_resonance out of bounds: {} ",p_lpf_resonance));
-                return false;
-            }
-
-            // 3. Panning Safety (Ensure it stays within stereo bounds)
-            if (p_pan < -1.0f || p_pan > 1.0f) {
-                addError(std::format( "p_pan out of bounds: {}",p_pan));
-                return false;
-            }
-
-            // 4. Sanity check for strings (ensure name is null-terminated)
-            // Even if corruption happened, this prevents string-reading crashes
-            bool hasNull = false;
-            for (int i = 0; i < 32; ++i) {
-                if (name[i] == '\0') { hasNull = true; break; }
-            }
-            if (!hasNull) name[31] = '\0'; // Force termination
-
-            return true;
-        }
-
+        void getBinary(std::ostream& os) const;
+        bool setBinary(std::istream& is);
+        bool validate();
         // This is now a static helper inside the struct to handle old versions
-        bool loadLegacy(std::istream& is, uint8_t version) {
-            // Reset to defaults first
-            *this = SFXParams();
-
-            // legacy check for version number
-            if (version < 100 || version > 103) {
-                return false;
-            }
-            is.read(reinterpret_cast<char*>(&wave_type), sizeof(int));
-            if (version >= 102) {
-                is.read(reinterpret_cast<char*>(&sound_vol), sizeof(float));
-            }
-
-            is.read(reinterpret_cast<char*>(&p_base_freq), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_freq_limit), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_freq_ramp), sizeof(float));
-
-            if (version >= 101) {
-                is.read(reinterpret_cast<char*>(&p_freq_dramp), sizeof(float));
-            }
-
-            is.read(reinterpret_cast<char*>(&p_duty), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_duty_ramp), sizeof(float));
-
-            is.read(reinterpret_cast<char*>(&p_vib_strength), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_vib_speed), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_vib_delay), sizeof(float));
-
-            is.read(reinterpret_cast<char*>(&p_env_attack), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_env_sustain), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_env_decay), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_env_punch), sizeof(float));
-
-            // Note: old bool might have been saved as 1 or 4 bytes depending on platform
-            // If it was 'fread(&filter_on, 1, sizeof(bool), file)', this is fine:
-            is.read(reinterpret_cast<char*>(&filter_on), sizeof(bool));
-
-            is.read(reinterpret_cast<char*>(&p_lpf_resonance), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_lpf_freq), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_lpf_ramp), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_hpf_freq), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_hpf_ramp), sizeof(float));
-
-            is.read(reinterpret_cast<char*>(&p_pha_offset), sizeof(float));
-            is.read(reinterpret_cast<char*>(&p_pha_ramp), sizeof(float));
-
-            is.read(reinterpret_cast<char*>(&p_repeat_speed), sizeof(float));
-
-            if (version >= 101) {
-                is.read(reinterpret_cast<char*>(&p_arp_speed), sizeof(float));
-                is.read(reinterpret_cast<char*>(&p_arp_mod), sizeof(float));
-            }
-
-            if (version >= 103) {
-                is.read(reinterpret_cast<char*>(&p_pan), sizeof(float));
-                is.read(reinterpret_cast<char*>(&p_pan_ramp), sizeof(float));
-                is.read(reinterpret_cast<char*>(&p_pan_speed), sizeof(float));
-            }
-
-            // version 104
-            memset(name, 0, sizeof(name));
-            strncpy(name, "Legacy SFX", 31);
-
-            if (!validate()) {
-                *this = SFXParams(); // reset to default
-                is.setstate(std::ios::failbit);
-                return false;
-            }
-
-
-            return is.good();
-        }
+        bool loadLegacy(std::istream& is, uint8_t version);
     };
 
     // State variables used during sound generation
@@ -349,14 +211,15 @@ public:
     void AddPanning(bool doLock = true);
 
     // moderisation WAV
+    const SDL_AudioSpec getSpec() { return mSpec;}
+    int getTotalFrames(bool applyEffects); // total frames
     int getSyntFrames(); // frames to generate by synt
+    int getTailFrames(bool applyEffects); // frames to generate by DSP
     bool exportToWav(const std::string& filename, float* progressOut, bool applyEffects = true);
+    void exportToBuffer(std::vector<float>& exportBuffer, float* progressOut, bool applyEffects);
 
     void attachAudio();
     void detachAudio();
-
-
-public:
 
     //------------------------------------------------------------------------------
     // --- SDL
@@ -389,7 +252,6 @@ public:
     }
 #endif
 
-
 private:
     int rnd(int n);
     float frnd(float range);
@@ -399,84 +261,8 @@ private:
 
 public:
 #ifdef FLUX_ENGINE
-    void DrawWaveIcon(ImDrawList* draw_list, ImVec2 center, float size, int type, ImU32 color) {
-        float h = size * 0.4f; // Half height
-        float w = size * 0.6f; // Width of the icon
-
-        if (type == 0) { // SQUARE
-            ImVec2 pts[4] = {
-                center + ImVec2(-w/2, h/2), center + ImVec2(-w/2, -h/2),
-                center + ImVec2(0, -h/2), center + ImVec2(0, h/2)
-            };
-            draw_list->AddPolyline(pts, 4, color, 0, 2.0f);
-            // Add the second half of the square wave
-            ImVec2 pts2[3] = { center + ImVec2(0, h/2), center + ImVec2(w/2, h/2), center + ImVec2(w/2, -h/2) };
-            draw_list->AddPolyline(pts2, 3, color, 0, 2.0f);
-        }
-        else if (type == 1) { // SAWTOOTH
-            ImVec2 pts[3] = { center + ImVec2(-w/2, h/2), center + ImVec2(w/2, -h/2), center + ImVec2(w/2, h/2) };
-            draw_list->AddPolyline(pts, 3, color, 0, 2.0f);
-        }
-        else if (type == 2) { // SINE
-            const int segments = 16;
-            for (int n = 0; n < segments; n++) {
-                float t1 = (float)n / segments;
-                float t2 = (float)(n + 1) / segments;
-                ImVec2 p1 = center + ImVec2(-w/2 + t1*w, sinf(t1 * 6.28f) * -h);
-                ImVec2 p2 = center + ImVec2(-w/2 + t2*w, sinf(t2 * 6.28f) * -h);
-                draw_list->AddLine(p1, p2, color, 2.0f);
-            }
-        }
-        else if (type == 3) { // NOISE (Random jagged lines)
-            for (int i = 0; i < 8; i++) {
-                float x1 = -w/2 + (w/8.0f)*i;
-                float x2 = -w/2 + (w/8.0f)*(i+1);
-                draw_list->AddLine(center + ImVec2(x1, (i%2==0?h:-h)*0.5f),
-                            center + ImVec2(x2, (i%2==0?-h:h)*0.5f), color, 1.5f);
-            }
-        }
-    }
-    //--------------------------------------------------------------------------
-    bool DrawWaveButton(const char* label, int wave_type) {
-
-        bool is_selected = mParams.wave_type == wave_type;
-
-        ImVec2 size = ImVec2(45, 45); // Fixed round size
-        float rounding = size.x * 0.5f;
-
-        // Use your ButtonFancy logic here...
-        ImGui::PushID(wave_type);
-        bool pressed = ImGui::InvisibleButton(label, size);
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-        ImRect bb(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-
-
-
-        // Background & Bevel
-        if (is_selected) {
-            // Your "Deep" recessed effect
-            dl->AddRectFilled(bb.Min, bb.Max, IM_COL32(20, 20, 25, 255), rounding);
-            dl->AddRect(bb.Min, bb.Max, IM_COL32(0, 0, 0, 100), rounding, 0, 2.0f);
-
-        } else {
-            dl->AddRectFilled(bb.Min, bb.Max, IM_COL32(50, 50, 60, 255), rounding);
-            // Outer light bevel
-            dl->AddRect(bb.Min, bb.Max, IM_COL32(255, 255, 255, 30), rounding);
-        }
-
-        // Draw the icon
-        ImU32 icon_col = is_selected ? IM_COL32(0, 255, 180, 255) : IM_COL32(200, 200, 200, 255);
-        DrawWaveIcon(dl, bb.GetCenter(), size.x, wave_type, icon_col);
-
-        if (pressed) mParams.wave_type = wave_type;
-
-        ImFlux::Hint(label);
-
-        ImGui::PopID();
-        return pressed;
-    }
-
-
+    void DrawWaveIcon(ImDrawList* draw_list, ImVec2 center, float size, int type, ImU32 color);
+    bool DrawWaveButton(const char* label, int wave_type);
 #endif //FLUX_ENGINE
 };
 

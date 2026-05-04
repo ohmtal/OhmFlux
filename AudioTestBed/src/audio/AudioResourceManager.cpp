@@ -11,6 +11,8 @@
 
 #include "utils/errorlog.h"
 #include "utils/fluxStr.h"
+#include "SFXGeneratorStereo.h"
+
 
 namespace FluxAudio {
     //--------------------------------------------------------------------------
@@ -105,7 +107,6 @@ namespace FluxAudio {
                 return false;
             }
         }
-
 
         mResourceMap[fileName] = std::move(resData);
         return true;

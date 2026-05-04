@@ -79,6 +79,10 @@ public:
     // TaskID add(double lDelaySeconds, void* lOwner, std::function<void()> lAction);
     TaskID add(double lDelaySeconds, FluxBaseObject* lOwner, std::function<void()> lAction, bool ticker = false);
 
+
+    TaskID callDeferred(std::function<void()> lAction);
+
+
     TaskID addTicker(double lDelaySeconds, FluxBaseObject* lOwner, std::function<void()> lAction);
 
     // extend the time of a running schedule, if not found false is returned
