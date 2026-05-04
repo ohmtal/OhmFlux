@@ -2,6 +2,7 @@
 ## by T.Hühn (XXTH) 2026
 https://github.com/ohmtal
 
+Header only implementation. 
 I have some optional ImGui / OhmFlux UI-Stuff included. 
 But it basically can be used in every Project. 
 

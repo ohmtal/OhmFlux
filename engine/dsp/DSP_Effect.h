@@ -4,8 +4,7 @@
 //-----------------------------------------------------------------------------
 // Digital Sound Processing : Base class Effect
 //-----------------------------------------------------------------------------
-// TODO: move templates out to a not file
-//-----------------------------------------------------------------------------
+
 #pragma once
 #include <cstdint>
 #include <string>
@@ -19,12 +18,11 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <gui/ImFlux.h>
-#include "DSP_tools.h"
 #include <utils/errorlog.h>
 #endif
 
 #include "DSP_Math.h"
-
+#include "DSP_tools.h"
 
 namespace DSP {
 
