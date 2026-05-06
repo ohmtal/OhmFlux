@@ -122,11 +122,11 @@ namespace ImFlux {
         float spacing = 2.0f;
 
         for (int i = 0; i < ledCount; i++) {
-            // 1. Calculate the threshold for this specific LED
+            // Calculate the threshold for this specific LED
             float ledThreshold = (float)i / (float)ledCount;
             bool isLit = (value > ledThreshold);
 
-            // 2. Determine Color based on position in the ladder
+            // Determine Color based on position in the ladder
             ImU32 led_col;
             float positionFactor = (float)i / (float)ledCount;
 
@@ -143,7 +143,7 @@ namespace ImFlux {
                 led_col = isLit ? IM_COL32(255, 40, 40, 255) : IM_COL32(60, 10, 10, 255);
             }
 
-            // 3. Draw the LED segment
+            // Draw the LED segment
             ImVec2 p_min = ImVec2(pos.x + i * (ledSquare.x + spacing), pos.y);
             ImVec2 p_max = ImVec2(p_min.x + ledSquare.x, p_min.y + ledSquare.y);
 
@@ -157,7 +157,7 @@ namespace ImFlux {
             }
         }
 
-        // 4. Advance Cursor correctly
+        // Advance Cursor
         float totalWidth = ledCount * (ledSquare.x + spacing);
         ImGui::Dummy(ImVec2(totalWidth, ledSquare.y));
     }
@@ -207,7 +207,7 @@ namespace ImFlux {
         //  Update Ballistics if holdttime set
         if (state.holdTime > 0.01f)  state.update(value, dt);
 
-        // 2. Calculate Total Dimensions
+        // Calculate Total Dimensions
         float totalW = state.vertical ? state.ledSquare.x : (state.ledCount * (state.ledSquare.x + spacing));
         float totalH = state.vertical ? (state.ledCount * (state.ledSquare.y + spacing)) : state.ledSquare.y;
 
@@ -217,7 +217,7 @@ namespace ImFlux {
             bool isLit = (value >= ledThreshold);
             bool isPeak = (state._peak >= ledThreshold) && !isLit;
 
-            // 3. 90s Color Grading
+            // Color Grading
             ImU32 led_col;
             float posFactor = (float)i / (float)state.ledCount;
             if (posFactor < 0.7f)      led_col = isLit ? IM_COL32(0, 255, 100, 255) : IM_COL32(0, 45, 20, 255);
@@ -227,7 +227,7 @@ namespace ImFlux {
             if (isPeak) led_col = (posFactor < 0.7f) ? IM_COL32(0, 255, 100, 255) :
                 (posFactor < 0.9f) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 0, 50, 255);
 
-            // 4. Position Logic (Vertical vs Horizontal)
+            // Position Logic (Vertical vs Horizontal)
             ImVec2 p_min, p_max;
             if (state.vertical) {
                 // Vertical: Stack from bottom to top (Y decreases)
@@ -247,7 +247,7 @@ namespace ImFlux {
             }
         }
 
-        // 5. Advance ImGui Cursor
+        // Advance ImGui Cursor
         ImGui::Dummy(ImVec2(totalW, totalH));
     }
 
@@ -265,7 +265,7 @@ namespace ImFlux {
         float totalWidth = ledCount * (ledSquare.x + spacing) - spacing;
 
         // Center the bar horizontally relative to the available content region
-        float availWidth = ImGui::GetContentRegionAvail().x;
+        // float availWidth = ImGui::GetContentRegionAvail().x;
         float startX = ImGui::GetCursorScreenPos().x; // center optinal ?  + (availWidth - totalWidth) * 0.5f;
         float startY = ImGui::GetCursorScreenPos().y;
 
@@ -273,7 +273,7 @@ namespace ImFlux {
         // Using (ledCount - 1) so 1.0f hits the very last LED
         int targetIdx = (int)(targetValue * (ledCount - 1) + 0.5f);
         int needleIdx = (int)(value * (ledCount - 1) + 0.5f);
-//
+
 
         for (int i = 0; i < ledCount; i++) {
             bool isLit = (i == needleIdx);
@@ -299,8 +299,6 @@ namespace ImFlux {
             }
         }
 
-
-        // optinal center ImGui::Dummy(ImVec2(availWidth, ledSquare.y));
         ImGui::Dummy(ImVec2(totalWidth, ledSquare.y));
     }
 

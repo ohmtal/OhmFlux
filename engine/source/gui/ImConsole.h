@@ -1,5 +1,5 @@
 // dear imgui, v1.92.5
-// (from demo code)
+// (XXTH : modified base on the demo code)
 //-----------------------------------------------------------------------------
 // : Redirct commands:
 // mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };

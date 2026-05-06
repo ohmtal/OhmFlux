@@ -23,7 +23,6 @@ struct FluxBakedChar {
 
 struct FontData {
     FluxBakedChar chardata[96]; // ASCII 32..126
-    // GLuint textureID;
 };
 
 
@@ -42,5 +41,4 @@ public:
     ~FluxTTFont();
 
 
-}; //class FluxBitmapFont
-
+};

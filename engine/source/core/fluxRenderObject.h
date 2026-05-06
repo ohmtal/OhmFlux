@@ -19,8 +19,6 @@
 #include "fluxGlue.h"
 
 
-
-
 // Forward declarations
 class FluxQuadtree;
 struct FluxNode; // If you made Node a standalone struct or public
@@ -30,15 +28,7 @@ class FluxRenderObject : public FluxBaseObject
 {
 
 protected:
-	// F32 mX,mY,mLayer, mRotation;
-	// S32 mWidth, mHeight;
-	// FluxTexture* mTexture;
-	// bool mFlipX, mFlipY;
-	// S32 mFrame; //Textureframe
-	// bool mIsGuiElement;
 	DrawParams2D mDrawParams;
-
-	// FluxScreen* mScreen;
 	F32 mSpeed;
 	Point2F mVelocity;
 	S32 mFramesStart, mFramesEnd;
@@ -54,8 +44,7 @@ private:
 public:
 
 	FluxRenderObject(FluxTexture* lTexture, S32 framesStart = 0, S32 framesEnd = 0)
-	// FluxRenderObject(FluxTexture* lTexture, FluxScreen* lScreen, S32 framesStart = 0, S32 framesEnd = 0)
-	: // mScreen(lScreen),
+	:
 	 mSpeed(0.0f)
 	, mVelocity(0.0f,0.0f)
 	, mFramesStart(framesStart)

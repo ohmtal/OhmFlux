@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2024 Thomas Hühn (XXTH) 
+// Copyright (c) 2026 Thomas Hühn (XXTH)
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
 #include "fluxLabel.h"
@@ -122,96 +122,10 @@ void FluxLabel::Draw()
     if (mCaption[0] == '\0') return;
     if (!mTTFont || !mTTFont->getFont()) return;
 
-
-    // dLog("pos is %f, %f, rect is: %f, %f, %f, %f", getPosition().x, getPosition().y
-    //     ,getRectF().x, getRectF().y, getRectF().w, getRectF().h
-    // );
-    // no idea why setRectF is not correct we change it to h/w like before
-
     Point2F size = Print(mCaption, getPosition(), mAlign);
 
     getDrawParams().w = size.x;
     getDrawParams().h = size.y;
-
-
-/*
-    FontData fontData = *mTTFont->getFont();
-
-
-    // Use float for internal calculations to maintain precision
-    float startX = (float)getX();
-    float startY = (float)getY();
-    float currentX = startX;
-    float currentY = startY;
-
-    {
-        float tempX = 0, tempY = 0;
-        for (int i = 0; mCaption[i]; ++i) {
-            unsigned char c = (unsigned char)mCaption[i];
-            if (c >= 32 && c < 127)
-            {
-                STB_Internal::stbtt_aligned_quad q;
-                STB_Internal::stbtt_GetBakedQuad(
-                    reinterpret_cast<STB_Internal::stbtt_bakedchar*>(fontData.chardata),
-                    512, 512, mCaption[i] - 32, &tempX, &tempY, &q, 1);
-            }
-        }
-        float totalWidth = tempX * mScale; // Scale the total accumulated width
-        if (mAlign == FontAlign_Center) currentX -= (totalWidth * 0.5f);
-        else if (mAlign == FontAlign_Right) currentX -= totalWidth;
-
-        // hack in Object width
-        getDrawParams().w = totalWidth; //updateSize
-    }
-
-    S32 lMaxHeight = 0;
-    // 2. DRAW-PASS
-    for (int i = 0; mCaption[i]; ++i)
-    {
-        unsigned char c = (unsigned char)mCaption[i];
-        if (c >= 32 && c < 127)
-        {
-            STB_Internal::stbtt_aligned_quad q;
-            float oldX = currentX;
-
-            // Get original quad relative to a 0,0 baseline
-            // Note: We pass temporary 0,0 to get local offsets, then apply scale and startX
-            float nextX = 0, nextY = 0;
-            STB_Internal::stbtt_GetBakedQuad(
-                reinterpret_cast<STB_Internal::stbtt_bakedchar*>(fontData.chardata),
-                512, 512, mCaption[i] - 32, &nextX, &nextY, &q, 1);
-
-            DrawParams2D dp;
-            dp.useUV = true;
-            dp.image = getTexture();
-            dp.z = getLayer();
-            dp.color = mColor;
-            dp.isGuiElement = mIsGuiElement;
-
-            // Apply Scale to Dimensions
-            dp.w = (S32)((q.x1 - q.x0) * mScale);
-            dp.h = (S32)((q.y1 - q.y0) * mScale);
-
-            if ( dp.h > lMaxHeight )
-                lMaxHeight = dp.h;
-
-            // Apply Scale to Position
-            // q.x0/y0 are offsets from the baseline. We scale the offset and add to current position.
-            dp.x = currentX + (q.x0 * mScale) + (dp.w * 0.5f);
-            dp.y = currentY + (q.y0 * mScale) + (dp.h * 0.5f);
-
-            // UVs remain the same regardless of scale
-            dp.u0 = q.s0; dp.v0 = q.t0;
-            dp.u1 = q.s1; dp.v1 = q.t1;
-
-            Render2D.drawSprite(dp);
-
-            // Advance the cursor by the scaled character width
-            currentX += (nextX * mScale);
-        }
-    }
-    getDrawParams().h = lMaxHeight; //updateSize
-    */
 }
 
 //-----------------------------------------------------------------------------

@@ -39,7 +39,7 @@ public:
 private:
     Node* root;
 
-    // Helper functions for internal logic
+    // Helper functions
     void clear(Node* node);
     void split(Node* node);
     int getIndex(Node* node, FluxRenderObject* obj);

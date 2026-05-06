@@ -48,9 +48,6 @@ struct EmitterProperties
 
     FluxTexture* texture = nullptr;
 
-    // with this you can create a evil magic line to update
-    // parameters from a Template
-    // see also fluxParticlePresets.h
     EmitterProperties& setSpawnRate( F32 lValue ) { spawnRate = lValue; return *this;}
     EmitterProperties& setMaxParticle( F32 lValue ) { maxParticles = lValue; return *this;}
     EmitterProperties& setPlayOnce( bool lValue ) { playOnce = lValue; return *this;}

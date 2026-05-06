@@ -54,50 +54,6 @@ void FluxParticleEmitter::Update(F32 dt)
         mActive = false;
     }
 }
-
-// void FluxParticleEmitter::update(F32 dt)
-// {
-//     // 1. Update and Clean up particles using Swap-and-Pop (O(1) deletion)
-//     for (size_t i = 0; i < mParticles.size(); )
-//     {
-//         mParticles[i].update(dt);
-//
-//         if (mParticles[i].lifeRemaining <= 0.0f)
-//         {
-//             // Move last element to current position and shrink
-//             mParticles[i] = mParticles.back();
-//             mParticles.pop_back();
-//             // Don't increment i; check the swapped particle next iteration
-//         }
-//         else
-//         {
-//             ++i;
-//         }
-//     }
-//
-//     if ( !mActive ) {
-//         return;
-//     }
-//
-//     // 2. Spawn new particles
-//     if (mParticles.size() < mProperties.maxParticles)
-//     {
-//         mSpawnTimer += dt;
-//         F32 spawnInterval = 1.0f / mProperties.spawnRate;
-//
-//         while (mSpawnTimer >= spawnInterval)
-//         {
-//             if (mParticles.size() >= mProperties.maxParticles) {
-//                 if (mProperties.playOnce)
-//                     mActive = false;
-//                 break;
-//             }
-//
-//             emitParticle();
-//             mSpawnTimer -= spawnInterval;
-//         }
-//     }
-// }
 //-----------------------------------------------------------------------------
 void FluxParticleEmitter::appendParticleVertices
 (

@@ -55,15 +55,6 @@ FluxMain::~FluxMain() {
 
 }
 
-// FluxMain* FluxMain::_instance = nullptr;
-
-// FluxMain* FluxMain::Instance() {
-// 	static_assert(std::is_default_constructible<FluxMain>::value,
-// 				  "FluxMain must have a default constructor to be a Singleton");
-// 	static FluxMain instance;
-// 	return & instance;
-// }
-
 
 //--------------------------------------------------------------------------------------
 bool FluxMain::Initialize()

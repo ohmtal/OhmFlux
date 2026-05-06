@@ -8,14 +8,6 @@
 #include "core/fluxGlobals.h"
 #include "platform/fluxGL.h"
 
-//2026-03-03 why was this here ??
-// #ifdef __EMSCRIPTEN__
-// 	#include <emscripten.h>
-// 	#include <emscripten/em_js.h>
-// #endif
-
-#include <SDL3/SDL.h>
-
 #include <vector>
 #include "core/fluxGlobals.h"
 #include "core/fluxTexture.h"
@@ -65,14 +57,14 @@ SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
   int width, height, channels;
   size_t fileSize;
 
-  // 1. Read from APK/Filesystem
+  // Read
   void* buffer = SDL_LoadFile(filename, &fileSize);
   if (!buffer) {
     SDL_Log("[error] SDL_LoadFile failed for %s: %s", filename, SDL_GetError());
     return nullptr;
   }
 
-  // 2. Decode via STB (Force 4 channels for RGBA)
+  // Decode via STB
   unsigned char* data = stbi_load_from_memory(
     (unsigned char*)buffer, (int)fileSize, &width, &height, &channels, 4
   );
@@ -85,8 +77,7 @@ SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
     return nullptr;
   }
 
-  // 3. Create non-owning wrapper
-  // In SDL3, we use SDL_PIXELFORMAT_RGBA32 for stbi's 4-channel output
+  // Create non-owning wrapper
   SDL_Surface* tempSurface = SDL_CreateSurfaceFrom(
     width, height, SDL_PIXELFORMAT_RGBA32, data, width * 4
   );
@@ -97,11 +88,11 @@ SDL_Surface* FluxTexture::loadWithSTB(const char* filename) {
     return nullptr;
   }
 
-  // 4. Create an owning copy
+  // Create an owning copy
   // This allows us to free the 'data' pointer immediately
   SDL_Surface* finalSurface = SDL_DuplicateSurface(tempSurface);
 
-  // 5. Cleanup
+  // Cleanup
   SDL_DestroySurface(tempSurface);
   stbi_image_free(data);
 
@@ -116,7 +107,6 @@ bool FluxTexture::loadTextureDirect(const char* filename)
   int width, height, channels;
   size_t fileSize;
 
-  // SDL_LoadFile handles the Android APK 'assets/' abstraction for you
   void* buffer = SDL_LoadFile(filename, &fileSize);
 
   if (!buffer) {
@@ -124,7 +114,6 @@ bool FluxTexture::loadTextureDirect(const char* filename)
     return false;
   }
 
-  // STB now reads from the memory buffer SDL successfully pulled from the APK
   unsigned char* data = stbi_load_from_memory(
     (unsigned char*)buffer,
                                               (int)fileSize,
@@ -132,7 +121,6 @@ bool FluxTexture::loadTextureDirect(const char* filename)
                                               4 // STBI_rgb_alpha
   );
 
-  // Free the raw file data immediately after STB decodes it
   SDL_free(buffer);
 
   if (!data) {
@@ -143,10 +131,8 @@ bool FluxTexture::loadTextureDirect(const char* filename)
   mFileName = filename;
   setSize(width, height);
 
-  // Bind to OpenGL VRAM
   bindOpenGLDirect(data, width, height);
 
-  // Free the decoded RAM pixels
   stbi_image_free(data);
 
   mLoaded = true;
@@ -157,12 +143,11 @@ bool FluxTexture::loadTextureDirect(const char* filename)
 //------------------------------------------------------------------------------
 bool FluxTexture::loadTexture(const char* filename, bool setColorKeyAtZeroPixel)
 {
-  // Try STB (which uses your new SDL_LoadFile logic)
   SDL_Surface* lSurface = loadWithSTB(filename);
 
-  // Fallback to BMP (In SDL3, SDL_LoadBMP uses SDL_IO internally, so it works with APKs)
   if (!lSurface) {
-    lSurface = SDL_LoadBMP(filename);
+    // lSurface = SDL_LoadBMP(filename); //pre SDL 3.4
+    lSurface = SDL_LoadSurface(filename);
   }
 
   if (!lSurface) {
@@ -208,7 +193,7 @@ void FluxTexture::bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h)
 {
   if (!pixels) return;
 
-  // 1. Create a temporary RGBA buffer (Emscripten needs explicit Alpha)
+  // Create a temporary RGBA buffer (Emscripten needs explicit Alpha)
   std::vector<unsigned char> rgba(w * h * 4);
   for (int i = 0; i < w * h; ++i) {
     rgba[i * 4 + 0] = 255;    // R (White)
@@ -220,19 +205,15 @@ void FluxTexture::bindOpenGLAlphaDirect(unsigned char* pixels, int w, int h)
   if (mHandle == 0) glGenTextures(1, &mHandle);
   glBindTexture(GL_TEXTURE_2D, mHandle);
 
-  // 2. Upload as RGBA (Works everywhere including WebGL)
+  // Upload as RGBA (Works everywhere including WebGL)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
 
   // Remove the swizzleMask calls as they will cause GL errors on Emscripten/WebGL
-
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
-
-
-
 //------------------------------------------------------------------------------
 void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
 {
@@ -246,11 +227,11 @@ void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
   if (mHandle == 0) glGenTextures(1, &mHandle);
   glBindTexture(GL_TEXTURE_2D, mHandle);
 
-  // 1. Tiling
+  // Tiling
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-  // 2. Filtering
+  // Filtering
   if (mUseTrilinearFiltering) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -259,10 +240,10 @@ void FluxTexture::bindOpenGLDirect(unsigned char* pixels, int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   }
 
-  // 3. Upload DIRECTLY from STB buffer (This is the only copy: RAM -> VRAM)
+  // Upload DIRECTLY from STB
   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
-  // 4. Mipmaps
+  // Mipmaps
   if (mUseTrilinearFiltering) {
     glGenerateMipmap(GL_TEXTURE_2D);
     #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
@@ -374,12 +355,8 @@ void FluxTexture::setParts(const int& cols, const int& rows) {
 
      mTexturePosition.push_back( position );
    }
-
-
-
 }
 //------------------------------------------------------------------------------
-
 bool FluxTexture::getTextureRectById( Uint32 lImgId, Point2F& position, Point2F& size )
 {
   position = { 0.f, 0.f };
@@ -392,13 +369,9 @@ bool FluxTexture::getTextureRectById( Uint32 lImgId, Point2F& position, Point2F&
     size = mTexSize;
     return true;
   }
-
-
-  lImgId =  lImgId % mTexturePosition.size() ; //failsave imgid
+  lImgId =  lImgId % mTexturePosition.size() ;
   position = mTexturePosition.at(lImgId);
   return true;
-
-
 }
 //------------------------------------------------------------------------------
 void FluxTexture::setManual(GLuint handle, int w, int h)
@@ -410,26 +383,23 @@ void FluxTexture::setManual(GLuint handle, int w, int h)
   mW = w;
   mH = h;
   mTexSize = { (float)w, (float)h };
-  mLoaded = true; // Prevents the destructor from being confused
+  mLoaded = true;
 }
 //------------------------------------------------------------------------------
 void FluxTexture::setUseTrilinearFiltering()
 {
   mUseTrilinearFiltering = true;
   if (mLoaded && mHandle) {
-    // 1. Bind the existing texture ID
+    // Bind the existing texture ID
     glBindTexture(GL_TEXTURE_2D, mHandle);
 
-    // 2. Set the Trilinear Filtering parameters
+    // Set the Trilinear Filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-    // 3. Ensure Mipmaps are generated
-    // Trilinear filtering REQUIRES mipmaps to work.
-    // If you didn't generate them during the first load, call this once:
+    // Ensure Mipmaps are generated
     glGenerateMipmap(GL_TEXTURE_2D);
   }
-
 }
 //------------------------------------------------------------------------------
 // Atlas generation
@@ -442,14 +412,14 @@ void FluxTexture::addToAtlas(const std::string& filename)
 void FluxTexture::generateAtlas(int maxRows, bool setColorKeyAtZeroPixel, bool usePixelPerfect) {
   if (mPendingFiles.empty()) return;
 
-  // 1. Get uniform dimensions using your existing Android-safe helper
+  // Get uniform dimensions using your existing Android-safe helper
   SDL_Surface* firstSurf = loadWithSTB(mPendingFiles[0].c_str());
   if (!firstSurf) return;
   int imgW = firstSurf->w;
   int imgH = firstSurf->h;
   SDL_DestroySurface(firstSurf);
 
-  // 2. Calculate Grid Layout
+  // Calculate Grid Layout
   int totalImages = (int)mPendingFiles.size();
   mRows = std::min(totalImages, maxRows);
   mCols = (totalImages + mRows - 1) / mRows; // Ceiling division
@@ -457,7 +427,7 @@ void FluxTexture::generateAtlas(int maxRows, bool setColorKeyAtZeroPixel, bool u
   // Set total atlas size
   setSize(mCols * imgW, mRows * imgH);
 
-  // 3. Initialize OpenGL Texture
+  // Initialize OpenGL Texture
   glGenTextures(1, &mHandle);
   glBindTexture(GL_TEXTURE_2D, mHandle);
 
@@ -474,12 +444,11 @@ void FluxTexture::generateAtlas(int maxRows, bool setColorKeyAtZeroPixel, bool u
   // Allocate empty GPU canvas
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mW, mH, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-  // 4. Load and Stitch
+  // Load and Stitch
   for (int i = 0; i < totalImages; ++i) {
     int col = i % mCols;
     int row = i / mCols;
 
-    // Use your loadWithSTB logic to ensure Android/APK compatibility
     SDL_Surface* lSurface = loadWithSTB(mPendingFiles[i].c_str());
     if (lSurface) {
       SDL_Surface* finalSurface = nullptr;
@@ -510,7 +479,7 @@ void FluxTexture::generateAtlas(int maxRows, bool setColorKeyAtZeroPixel, bool u
     }
   }
 
-  // 5. Finalize
+  // Finalize
   if (mUseTrilinearFiltering) {
     glGenerateMipmap(GL_TEXTURE_2D);
   }
@@ -535,11 +504,11 @@ bool FluxTexture::savePNGToFile(const char* filename)
 {
   if (!mLoaded || mHandle == 0) return false;
 
-  // 1. Create a buffer to hold the pixel data
+  // Create a buffer to hold the pixel data
   int channels = 4; // RGBA
   std::vector<unsigned char> pixels(mW * mH * channels);
 
-  // 2. Read pixels from GPU
+  // Read pixels from GPU
   // On Android/GLES, glGetTexImage is not available, so we use an FBO
   GLuint fbo;
   glGenFramebuffers(1, &fbo);
@@ -554,10 +523,10 @@ bool FluxTexture::savePNGToFile(const char* filename)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glDeleteFramebuffers(1, &fbo);
 
-  // 3. Flip pixels vertically (OpenGL is bottom-to-top, PNG is top-to-bottom)
+  // Flip pixels vertically (OpenGL is bottom-to-top, PNG is top-to-bottom)
   stbi_flip_vertically_on_write(true);
 
-  // 4. Save to file using STB
+  // Save to file using STB
   // Note: On Android, saving to the app's internal storage or SD card
   // requires a path where the app has write permissions (e.g., SDL_GetPrefPath)
   int success = stbi_write_png(filename, mW, mH, channels, pixels.data(), mW * channels);

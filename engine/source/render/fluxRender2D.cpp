@@ -379,11 +379,8 @@ void FluxRender2D::renderLights()
         activeLightCount++;
     }
 
-    // glUniform3fv(mDefaultShader.getUniformLocation("uLightPos"), activeLightCount, lightPositions);
     mDefaultShader.setVec3Array("uLightPos", lightPositions, activeLightCount);
-    // glUniform4fv(mDefaultShader.getUniformLocation("uLightColor"), activeLightCount, lightColors);
     mDefaultShader.setVec4Array("uLightColor", lightColors, activeLightCount);
-    // glUniform1fv(mDefaultShader.getUniformLocation("uLightRadius"), activeLightCount, lightRadii);
     mDefaultShader.setFloatArray("uLightRadius", lightRadii, activeLightCount );
 
 
@@ -391,16 +388,13 @@ void FluxRender2D::renderLights()
 #else
 
     for (size_t i = 0; i < lights.size(); ++i) {
-        //  Safety check: Stop if we've filled the shader's available slots
         if (activeLightCount >= MAX_LIGHTS) {
             break;
         }
-
         //  Frustum/Visibility Culling
         if (!checkAABBIntersectionF(view, lights[i].getRectF())) {
             continue;
         }
-
         //  Pass data using the activeLightCount index, NOT the loop index i
         std::string lightPrefix = "uLights[" + std::to_string(activeLightCount) + "]";
 
@@ -633,7 +627,7 @@ void FluxRender2D::renderBatch()
     // enhanced version for customRenderCallback
     for (auto& cmd : mCommandList)
     {
-        // 1. Determine if we need to flush the current sprite buffer
+        // Determine if we need to flush the current sprite buffer
         // We flush if:
         // - The next command is a custom callback (particle system)
         // - The texture/GUI mode changed
@@ -656,7 +650,7 @@ void FluxRender2D::renderBatch()
             currentGuiMode = cmd.isGui;
         }
 
-        // 2. Now handle the command
+        // Now handle the command
         if (cmd.customRenderCallback)
         {
             // Execute the particle system draw call directly
@@ -668,32 +662,13 @@ void FluxRender2D::renderBatch()
             appendSpriteToBuffer(_VertexBuffer, cmd.params);
         }
     }
-    // version without customRenderCallback
-    // for (auto& cmd : mCommandList)
-    // {
-    //     bool bufferFull = (_VertexBuffer.size() >= 16000);
-    //     // If texture or GUI mode changes, we MUST draw the current accumulated vertices
-    //     if ( cmd.textureHandle != currentTex
-    //          || cmd.isGui != currentGuiMode
-    //          || bufferFull
-    //         )
-    //     {
-    //         renderCurrentBuffer(_VertexBuffer, currentTex, currentGuiMode);
-    //         _VertexBuffer.clear();
-    //         currentTex = cmd.textureHandle;
-    //         currentGuiMode = cmd.isGui;
-    //     }
-    //
-    //     // Calculate the 4 vertices for this sprite (apply rotation, scale, flip, UVs here)
-    //     appendSpriteToBuffer(_VertexBuffer, cmd.params);
-    // }
 
     // Final flush
     renderCurrentBuffer(_VertexBuffer, currentTex, currentGuiMode);
     mCommandList.clear();
 
     // ------------ Primitives ------------------
-    // 2. Render all Scheduled Primitives (Lines, Circles)
+    // Render all Scheduled Primitives (Lines, Circles)
     // Because this happens AFTER the sprites, they appear ON TOP.
 
     for (const auto& prim : mPrimitiveList) {
@@ -706,4 +681,3 @@ void FluxRender2D::renderBatch()
     mPrimitiveList.clear(); // Clear for next frame
 
 }
-

@@ -180,16 +180,6 @@ namespace ImFlux {
             pos.x += digit_w + spacing;
         }
 
-        // for (int i = 0; buf[i] != '\0'; i++) {
-        //     if (buf[i] == '.') {
-        //         // Tiny fading dot
-        //         dl->AddCircleFilled({pos.x - spacing * 0.4f, pos.y + height}, height * 0.06f, color);
-        //         continue;
-        //     }
-        //     DrawLCDDigitDelayed(dl, pos, buf[i] - '0', height, color);
-        //     pos.x += digit_w + spacing;
-        // }
-
         ImGui::Dummy(ImVec2((digit_w + spacing) * strlen(buf), height));
 
         ImFlux::Hint(label);

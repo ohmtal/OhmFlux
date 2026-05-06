@@ -88,8 +88,7 @@ namespace ImFlux {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
-        // 1. Setup ID and Bounding Box
-
+        // Setup ID and Bounding Box
         const ImGuiID id = window->GetID((std::string("##Tooltip") + tooltip).c_str()); // Use tooltip or a unique string as ID
         ImVec2 pos = ImGui::GetCursorScreenPos();
         // looks stupid if animated and non animated in a row, but ....
@@ -97,17 +96,17 @@ namespace ImFlux {
         ImVec2 size(maxRadius * 2.0f, maxRadius * 2.0f);
         ImRect bb(pos, pos + size);
 
-        // 2. Register Item
+        // Register Item
         if (!embed) {
             ImGui::ItemSize(bb);
             if (!ImGui::ItemAdd(bb, id)) return false;
         }
 
-        // 3. Handle Interactions (Click)
+        // Handle Interactions (Click)
         bool hovered, held;
         bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
 
-        // 4. Drawing Logic (Same as before)
+        // Drawing Logic
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImVec2 center = pos + ImVec2(maxRadius, maxRadius);
 
@@ -230,6 +229,4 @@ namespace ImFlux {
 
         return pressed;
     }
-
-//------------------------------------------------------------------------------
 };

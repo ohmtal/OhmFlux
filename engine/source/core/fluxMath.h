@@ -59,16 +59,6 @@ inline void createOrthoMatrix(float left, float right, float bottom, float top, 
     m[15] = 1.0f;
 }
 
-// inline void createOrthoMatrix(float left, float right, float bottom, float top, float near, float far, float* m) {
-//     for(int i = 0; i < 16; i++) m[i] = 0.0f;
-//     m[0]  = 2.0f / (right - left);
-//     m[5]  = 2.0f / (top - bottom);
-//     m[10] = -2.0f / (far - near);
-//     m[12] = -(right + left) / (right - left);
-//     m[13] = -(top + bottom) / (top - bottom);
-//     m[14] = -(far + near) / (far - near);
-//     m[15] = 1.0f;
-// }
 
 // Handles your rotation and position
 inline void calculateModelMatrix(float x, float y, float z, float angleDeg, float scaleX, float scaleY, float* m) {

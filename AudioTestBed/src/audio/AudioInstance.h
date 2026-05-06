@@ -8,7 +8,7 @@
 //  [X] OGG
 //  [X] MP3
 //  [X] SFX
-//  [ ] FLAC
+//  [X] FLAC
 // [ ] DSP::Processors::Panning3D
 // [ ] FluxAudio::Manager handle list of instances
 //-----------------------------------------------------------------------------

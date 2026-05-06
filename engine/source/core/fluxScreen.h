@@ -113,9 +113,6 @@ public:
 		mWindowMaximized = (SDL_GetWindowFlags(mWindow) & SDL_WINDOW_MAXIMIZED) != 0;
 	}
 
-
-
-
 };
 
 #endif //_FLUXSCREEN_H_

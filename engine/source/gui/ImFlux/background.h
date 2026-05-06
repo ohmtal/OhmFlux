@@ -42,16 +42,13 @@ namespace ImFlux {
 
 
     inline void GradientBoxDL(GradientParams gp, ImDrawList* dl = nullptr) {
-        // 1. Fallback for DrawList (Get current window if none provided)
         if (dl == nullptr) dl = ImGui::GetWindowDrawList();
 
-        // 2. Fallback for Position (Use current cursor screen position if 0,0)
         ImVec2 start_p = gp.pos;
         if (start_p.x == 0.0f && start_p.y == 0.0f) {
             start_p = ImGui::GetCursorScreenPos();
         }
 
-        // 3. Fallback for Size (Fill available region if size is 0 or negative)
         ImVec2 size = gp.size;
         if (size.x <= 0.0f) size.x = ImGui::GetContentRegionAvail().x;
         if (size.y <= 0.0f) size.y = ImGui::GetContentRegionAvail().y;
@@ -59,7 +56,6 @@ namespace ImFlux {
         ImVec2 max_p = ImVec2(start_p.x + size.x, start_p.y + size.y);
 
         if (gp.inset) {
-            // --- Inset State (Hole/Cavity effect) ---
             // Main gradient background
             dl->AddRectFilledMultiColor(start_p, max_p, gp.col_top, gp.col_top, gp.col_bot, gp.col_bot);
 

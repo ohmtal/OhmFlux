@@ -117,7 +117,7 @@ class BasicGrid
 
 public:
 	BasicGrid();
-	~BasicGrid();
+	virtual ~BasicGrid();
 
 private:
 	F32 mSquareSize;
@@ -188,9 +188,6 @@ public:
    S32 getNodesY() const { return mNodesY; }
 
    virtual void init(RectI lArea, F32 lSquareSize = 8);
-   
-
-
    
 };
 

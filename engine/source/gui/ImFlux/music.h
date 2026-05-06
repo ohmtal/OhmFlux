@@ -176,7 +176,7 @@ namespace ImFlux {
         // Main Pad Body
         draw_list->AddRectFilled(bb.Min, bb.Max, pad_col, 4.0f);
 
-        // 3. Draw Centered Text
+        // Draw Centered Text
         ImVec2 text_size = ImGui::CalcTextSize(label);
         ImVec2 text_pos = bb.Min + (size - text_size) * 0.5f;
         draw_list->AddText(text_pos, ImFlux::GetContrastColorU32(pad_col) , label);
@@ -239,7 +239,7 @@ namespace ImFlux {
 
         // draw_list->AddRectFilled(bb.Min, bb.Max, pad_col, 4.0f);
 
-        // 3. Draw Centered Text
+        // Draw Centered Text
         ImVec2 text_size = ImGui::CalcTextSize(label);
         ImVec2 text_pos = bb.Min + (size - text_size) * 0.5f;
         draw_list->AddText(text_pos, ImFlux::GetContrastColorU32(pad_col) , label);

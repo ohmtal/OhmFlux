@@ -25,7 +25,6 @@ public:
     void use();
     void unload();
 
-    // Setters for Uniforms (C++17 optimized)
     void setMat4(const std::string& name, const float* matrix);
     void setVec4(const std::string& name, const Color4F& color);
     void setVec2(const std::string& name, float x, float y);

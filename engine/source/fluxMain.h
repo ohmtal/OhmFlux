@@ -40,9 +40,6 @@ protected:
 	// static FluxMain* _instance;
 
 private:
-	// FluxScreen* mScreen;
-	// std::vector<FluxTexture*> mTextures;
-
 	// added prevent of multiple Texture loadings.
 	// this open a more lazy way of creating objects like
 	// FluxBitmapFont's and FluxRenderObject's '
@@ -67,15 +64,6 @@ private:
 public:
 	FluxMain();
 	~FluxMain();
-
-	// fake singelton
-	// 2025-12-28 removed AGAIN i did only need this for getScreen so i added this as global variable
-	// static FluxMain* Instance() {
-	// 	// Optional: add your assert here to ensure a game was created
-	// 	assert(_instance != nullptr && "No game instance created! Did you call new [YourGameClass]()?");
-	// 	return _instance;
-	// }
-
 
 	// FluxScreen* getScreen() { return mScreen; }
 	FluxScreen* getScreen() { return getScreenObject(); }

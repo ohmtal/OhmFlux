@@ -56,7 +56,7 @@ namespace ImFlux {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         if (window->SkipItems) return false;
 
-        // 1. Calculate actual size if -FLT_MIN or 0.0f is passed
+        // Calculate actual size if -FLT_MIN or 0.0f is passed
         ImVec2 lSize = params.size;
         if (lSize.x <= 0.0f) lSize.x = ImGui::GetContentRegionAvail().x + lSize.x; // Handles -FLT_MIN (full width)
         if (lSize.y <= 0.0f) lSize.y = ImGui::GetFrameHeight(); // Fallback for height if not specified
@@ -201,7 +201,7 @@ inline bool ColoredButton(const char* label, ImU32 color, ImVec2 size) {
     ImDrawList* dl = window->DrawList;
     const float rounding = ImGui::GetStyle().FrameRounding;
 
-    // 1. Interaction & Pulse Logic
+    // Interaction & Pulse Logic
     ImU32 baseCol = color;
     if (held) {
         // Darken when clicked
@@ -214,11 +214,10 @@ inline bool ColoredButton(const char* label, ImU32 color, ImVec2 size) {
         baseCol = ImGui::ColorConvertFloat4ToU32(ImVec4(c.x * boost, c.y * boost, c.z * boost, c.w));
     }
 
-    // 2. Main Body (Respects FrameRounding)
+    // Main Body (Respects FrameRounding)
     dl->AddRectFilled(bb.Min, bb.Max, baseCol, rounding);
 
-    // 3. Hardware Bevel Logic
-    // We draw two concentric rounded rectangles to simulate the 3D edge without line-bleeding
+    // Hardware Bevel Logic
     if (rounding > 0.0f) {
         // Highlight top-left arc
         dl->AddRect(bb.Min, bb.Max, IM_COL32(255, 255, 255, 45), rounding, 0, 1.0f);
@@ -226,16 +225,14 @@ inline bool ColoredButton(const char* label, ImU32 color, ImVec2 size) {
         dl->AddRect(bb.Min + ImVec2(1,1), bb.Max - ImVec2(1,1), IM_COL32(0, 0, 0, 40), rounding, 0, 1.0f);
     }
 
-    // 4. Glossy Overlay
-    // Note: AddRectFilledMultiColor is always rectangular.
-    // We draw it slightly inset or on top half to simulate a glass reflection.
+    // Glossy Overlay
     dl->AddRectFilledMultiColor(
         bb.Min + ImVec2(rounding * 0.2f, 0), ImVec2(bb.Max.x - rounding * 0.2f, bb.Min.y + size.y * 0.5f),
                                 IM_COL32(255, 255, 255, 50), IM_COL32(255, 255, 255, 50),
                                 IM_COL32(255, 255, 255, 0),  IM_COL32(255, 255, 255, 0)
     );
 
-    // 5. Centered Shadowed Text
+    // Centered Shadowed Text
     ImVec2 textSize = ImGui::CalcTextSize(label);
     ImVec2 textPos = bb.Min + (size - textSize) * 0.5f;
 
@@ -244,7 +241,7 @@ inline bool ColoredButton(const char* label, ImU32 color, ImVec2 size) {
     // Draw Main Text
     dl->AddText(textPos, IM_COL32_WHITE, label);
 
-    // 6. External Pulse Border (Only on Hover)
+    // External Pulse Border (Only on Hover)
     if (hovered && !held) {
         float p = (sinf((float)ImGui::GetTime() * 10.0f) * 0.5f) + 0.5f;
         dl->AddRect(bb.Min - ImVec2(0.5f, 0.5f), bb.Max + ImVec2(0.5f, 0.5f),
@@ -263,7 +260,7 @@ inline bool FaderButton(const char* label, ImVec2 size) {
     ImGui::PushID(label);
     ImGuiID id = window->GetID("##cap");
 
-    // 1. Setup Hitbox
+    // Setup Hitbox
     const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
     ImGui::ItemSize(bb);
     if (!ImGui::ItemAdd(bb, id)) {
@@ -271,11 +268,11 @@ inline bool FaderButton(const char* label, ImVec2 size) {
         return false;
     }
 
-    // 2. Interaction
+    // Interaction
     bool hovered, held;
     bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
 
-    // 3. Drawing (The Hardware Look)
+    // Drawing (The Hardware Look)
     ImDrawList* dl = window->DrawList;
 
     // Shadow for depth
@@ -315,8 +312,5 @@ inline bool FaderButton(const char* label, ImVec2 size) {
     ImGui::PopID();
     return pressed;
 }
-
-
-
 //------------------------------------------------------------------------------
 } //namespace

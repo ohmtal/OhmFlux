@@ -18,8 +18,8 @@
 
 class FluxTilemap : public FluxBaseObject {
 private:
-    BasicGrid* mGrid;          // Logic/Pathfinding
-    FluxTexture* mAtlas;      // Visuals
+    BasicGrid* mGrid = nullptr;          // Logic/Pathfinding
+    FluxTexture* mAtlas = nullptr;      // Visuals
 
     U32 mMaxLayers = 1;
 
@@ -41,6 +41,7 @@ public:
     //--------------------------------------------------------------------------
     ~FluxTilemap() {
         SAFE_DELETE(mGrid);
+        mGrid = nullptr;
     }
     //--------------------------------------------------------------------------
     void setAtlas ( FluxTexture* lAtlas ) {

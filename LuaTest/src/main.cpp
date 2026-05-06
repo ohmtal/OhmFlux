@@ -4,7 +4,6 @@
 #include <gui/ImConsole.h>
 #include "luabind/luaBindings.h"
 #include "luabind/luaState.h"
-#include <sol/sol.hpp>
 #include <SDL3/SDL.h>
 
 #include <format>

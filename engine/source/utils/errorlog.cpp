@@ -55,12 +55,6 @@ int Log(const char *szFormat, ...)
 
 	targetStr[sizeof(targetStr) - 1] = '\0';
 
-	// old without datetime
-	// va_list Arg;
-	// va_start(Arg, szFormat);
-	// SDL_vsnprintf(targetStr, sizeof(targetStr), szFormat, Arg);
-	// va_end(Arg);
-	// targetStr[sizeof(targetStr) - 1] = '\0';
 
 	if (ErrorLog)
 	{

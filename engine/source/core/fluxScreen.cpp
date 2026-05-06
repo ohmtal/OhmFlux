@@ -239,7 +239,7 @@ bool FluxScreen::init()
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		// Smoothing (Optional)
+		// Smoothing
 		// glEnable(GL_LINE_SMOOTH);
 		// glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
@@ -251,7 +251,6 @@ bool FluxScreen::init()
 	} else {
 		Log("Error ScreenMode %d not implemented !", mScreenMode);
 	}
-
 
 	// Set the projection once (or when window resizes)
 	// createOrthoMatrix(0.0f, getWidth(), getHeight(), 0.0f, -100.0f, 100.0f, mOrtho);

@@ -33,18 +33,5 @@ int LogFMT(std::string_view fmt, Args&&... args) {
     return _LogFMT(fmt, std::make_format_args(args...));
 }
 
-// template<typename... Args>
-// int LogFMT(std::string_view fmt, Args&&... args) {
-//     try {
-//         // Modern C++20 formatting
-//         std::string s = std::vformat(fmt, std::make_format_args(args...));
-//
-//         // Pass the already-formatted string to your existing C-style Log
-//         // This avoids duplicating the file/console logging logic
-//         return Log("%s", s.c_str());
-//     } catch (const std::format_error& e) {
-//         return Log("LogFMT Error: %s", e.what());
-//     }
-// }
 
 #endif //_ERRORLOG_H

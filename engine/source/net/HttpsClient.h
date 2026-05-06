@@ -49,27 +49,7 @@ namespace FluxNet {
         std::string getContentData() const { return mContentData;}
         //--------------------------------------------------------------------------
         std::string getHeaderValue(std::string key) const {
-
             return NetTools::getHeaderValue(mHeaderData, key);
-
-            // if (!key.empty() && key.back() == ':') key.pop_back();
-            // std::string lowerKey = key;
-            // std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
-            //
-            // std::string headerBlock = mHeaderData;
-            // std::transform(headerBlock.begin(), headerBlock.end(), headerBlock.begin(), ::tolower);
-            //
-            // size_t keyPos = headerBlock.find(lowerKey + ":");
-            // if (keyPos != std::string::npos) {
-            //     size_t valueStart = keyPos + lowerKey.length() + 1;
-            //     while (valueStart < mHeaderData.length() && std::isspace(mHeaderData[valueStart])) {
-            //         valueStart++;
-            //     }
-            //     size_t valueEnd = mHeaderData.find("\r\n", valueStart);
-            //     if (valueEnd == std::string::npos) valueEnd = mHeaderData.length();
-            //     return mHeaderData.substr(valueStart, valueEnd - valueStart);
-            // }
-            // return "";
         }
         //--------------------------------------------------------------------------
         std::string getContentType() const {

@@ -74,7 +74,6 @@ public:
 
 
    static bool SaveBufferToFile(const char* filename, const uint8_t* data, size_t size) {
-        // Desktop: Standard file write
         FILE* file = fopen(filename, "wb");
         if (!file) return false;
         fwrite(data, 1, size, file);

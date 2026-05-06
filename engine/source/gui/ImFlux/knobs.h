@@ -103,15 +103,15 @@ namespace ImFlux {
         float fraction = (*v - v_min) / (v_max - v_min);
         float angle = (fraction * 1.5f * IM_PI) + (0.75f * IM_PI);
 
-        // 1. Body & Depth
+        // Body & Depth
         dl->AddCircleFilled(center, ks.radius, ks.bg_outer);
         dl->AddCircleFilled(center, ks.radius - 2.0f, ks.bg_inner);
         dl->AddCircle(center, ks.radius, ks.shadow, 32, 1.5f);
 
-        // 2. Glossy top glare
+        // Glossy top glare
         dl->AddCircleFilled(center - ImVec2(0, ks.radius * 0.3f), ks.radius * 0.6f, ks.glare);
 
-        // 3. Neon Value Arc
+        // Neon Value Arc
         ImU32 current_arc_col = is_active ? ks.active : (is_hovered ? ModifyRGB(ks.active, 1.2f) : ks.active);
         // Background track
         dl->PathArcTo(center, ks.radius - 3.0f, 0.75f * IM_PI, 2.25f * IM_PI, 20);
@@ -120,12 +120,12 @@ namespace ImFlux {
         dl->PathArcTo(center, ks.radius - 3.0f, 0.75f * IM_PI, angle, 20);
         dl->PathStroke(current_arc_col, 0, 3.0f);
 
-        // 4. Indicator Needle
+        // Indicator Needle
         ImVec2 n_start = center + ImVec2(cosf(angle) * (ks.radius * 0.45f), sinf(angle) * (ks.radius * 0.45f));
         ImVec2 n_end   = center + ImVec2(cosf(angle) * (ks.radius - 2.5f), sinf(angle) * (ks.radius - 2.5f));
         dl->AddLine(n_start, n_end, ks.needle, 2.0f);
 
-        // 5. Final Outer Rim Light
+        // Final Outer Rim Light
         dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
 
         if (is_hovered) ImGui::SetTooltip("%s: %.2f", label, *v);
@@ -182,7 +182,7 @@ namespace ImFlux {
         dl->AddCircleFilled(center, knob_radius - 1.5f, ks.bg_inner);
         dl->AddCircleFilled(center - ImVec2(0, knob_radius * 0.3f), knob_radius * 0.5f, ks.glare);
 
-        // 3. LED Ring
+        // LED Ring
         const float start_angle = 0.75f * IM_PI;
         const float end_angle   = 2.25f * IM_PI;
         const float led_track_radius = ks.radius - 4.0f;
@@ -205,13 +205,13 @@ namespace ImFlux {
             dl->AddCircleFilled(led_pos, 2.0f, led_col);
         }
 
-        // 4. Indicator Needle (On the knob body)
+        // Indicator Needle (On the knob body)
         float needle_ang = start_angle + fraction * (end_angle - start_angle);
         ImVec2 n_start = center + ImVec2(cosf(needle_ang) * (knob_radius * 0.3f), sinf(needle_ang) * (knob_radius * 0.3f));
         ImVec2 n_end   = center + ImVec2(cosf(needle_ang) * (knob_radius - 2.0f), sinf(needle_ang) * (knob_radius - 2.0f));
         dl->AddLine(n_start, n_end, ks.needle, 2.0f);
 
-        // 5. Bevel Light (Top edge of the housing)
+        // Bevel Light (Top edge of the housing)
         dl->AddCircle(center, ks.radius, ks.bevel, 32, 1.0f);
 
         if (is_hovered) ImGui::SetTooltip("%s: %.2f", label, *v);
@@ -236,7 +236,7 @@ namespace ImFlux {
         bool is_hovered = ImGui::IsItemHovered();
         ImGuiIO& io = ImGui::GetIO();
 
-        // 1. SCROLL WHEEL (Hold Shift for fine-tuning)
+        // SCROLL WHEEL (Hold Shift for fine-tuning)
         if (is_hovered && io.MouseWheel != 0) {
             float wheel_speed = (v_max - v_min) * 0.05f; // 5% of range per notch
             if (io.KeyShift) wheel_speed *= 0.1f;        // 0.5% if Shift is held
@@ -245,7 +245,7 @@ namespace ImFlux {
             value_changed = true;
         }
 
-        // 2. DRAG (Hold Shift for fine-tuning)
+        // DRAG (Hold Shift for fine-tuning)
         if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             float drag_delta = -io.MouseDelta.y;
             if (drag_delta != 0.0f) {
@@ -295,7 +295,7 @@ namespace ImFlux {
         bool is_hovered = ImGui::IsItemHovered();
         ImGuiIO& io = ImGui::GetIO();
 
-        // 1. SCROLL WHEEL (Hold Shift for fine-tuning)
+        // SCROLL WHEEL (Hold Shift for fine-tuning)
         if (is_hovered && io.MouseWheel != 0) {
             float wheel_speed = (v_max - v_min) * 0.05f; // 5% of range per notch
             if (io.KeyShift) wheel_speed *= 0.1f;        // 0.5% if Shift is held
@@ -304,7 +304,7 @@ namespace ImFlux {
             value_changed = true;
         }
 
-        // 2. DRAG (Hold Shift for fine-tuning)
+        // DRAG (Hold Shift for fine-tuning)
         if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
             float drag_delta = -io.MouseDelta.y;
             if (drag_delta != 0.0f) {
@@ -455,10 +455,5 @@ namespace ImFlux {
 
         return value_changed;
     }
-
-
-
-
-
 
 }//namespace

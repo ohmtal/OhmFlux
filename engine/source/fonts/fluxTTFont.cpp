@@ -7,13 +7,11 @@
 #include <stdio.h>
 #include "utils/errorlog.h"
 
-
+// Need this because ImGui also implemen t TrueType:
 namespace STB_Internal {
     #define STB_TRUETYPE_IMPLEMENTATION
     #include "stb_truetype.h"
 }
-
-
 
 
 FluxTTFont::FluxTTFont(const char* filename, U32 fontSize)

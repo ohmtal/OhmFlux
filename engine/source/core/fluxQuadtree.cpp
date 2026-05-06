@@ -144,24 +144,22 @@ void FluxQuadtree::updateObject(FluxRenderObject* obj)
         return;
     }
 
-    // 1. Check if the object still fits in its current node
+    // Check if the object still fits in its current node
     if (currentNode->bounds.contains(obj->getRectI())) {
-        // Optimization: It's still inside, but check if it can move DOWN
-        // to a child for better precision (optional).
         return;
     }
 
-    // 2. It moved out. Remove it from current node.
+    // It moved out. Remove it from current node.
     auto& objs = currentNode->objects;
     objs.erase(std::remove(objs.begin(), objs.end(), obj), objs.end());
 
-    // 3. Move UP the tree until we find a parent that contains the new position
+    // Move UP the tree until we find a parent that contains the new position
     Node* ancestor = currentNode->parent;
     while (ancestor != nullptr && !ancestor->bounds.contains(obj->getRectI())) {
         ancestor = ancestor->parent;
     }
 
-    // 4. Re-insert from the common ancestor (or root if it left the world)
+    // Re-insert from the common ancestor (or root if it left the world)
     if (ancestor) {
         insert(ancestor, obj);
     } else {
@@ -174,14 +172,14 @@ void FluxQuadtree::removeObject(FluxRenderObject* obj)
     Node* currentNode = static_cast<Node*>(obj->getQuadNode());
     if (!currentNode) return;
 
-    // 1. Remove the object from this node's vector
+    // Remove the object from this node's vector
     auto& objs = currentNode->objects;
     objs.erase(std::remove(objs.begin(), objs.end(), obj), objs.end());
 
-    // 2. Clear the object's back-reference to the tree
+    // Clear the object's back-reference to the tree
     obj->setQuadNode(nullptr);
 
-    // 3. Optional: Try to collapse the tree upwards
+    // Optional: Try to collapse the tree upwards
     checkAndCollapse(currentNode);
 }
 //------------------------------------------------------------------------------
@@ -213,7 +211,6 @@ void FluxQuadtree::checkAndCollapse(Node* node) {
  * return the object which is at lPos sorted by layer (z)
  */
 
-
 bool FluxQuadtree::rayCast(FluxRenderObject* &foundObject, const Point2I& lPos, bool onlyGui) {
     foundObject = nullptr;
     RectI clickArea = {lPos.x, lPos.y, 1, 1};
@@ -228,7 +225,7 @@ void FluxQuadtree::rayCastRecursive(Node* node, FluxRenderObject* &bestMatch, co
 
     Point2I clickPt = lRect.getPoint();
 
-    // 1. Check objects in this node
+    // Check objects in this node
     for (FluxRenderObject* obj : node->objects) {
         if (onlyGui && !obj->getIsGuiElement()) continue;
 
@@ -240,7 +237,7 @@ void FluxQuadtree::rayCastRecursive(Node* node, FluxRenderObject* &bestMatch, co
         }
     }
 
-    // 2. Recurse into children
+    // Recurse into children
     if (node->children[0]) { // Only recurse if the node has been split
         for (int i = 0; i < 4; ++i) {
             rayCastRecursive(node->children[i], bestMatch, lRect, onlyGui);
@@ -275,4 +272,3 @@ std::vector<FluxRenderObject*> FluxQuadtree::rayCastList(const Point2I& lPos, bo
     return hitList;
 }
 //------------------------------------------------------------------------------
-

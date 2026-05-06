@@ -166,44 +166,4 @@ private:
     }
     // -------------------------------------------------------------------------
 
-    void SortedKeyboard() {
-        const std::vector<std::string> keys = {
-            "A", "B", "C", "D", "E", "F",
-            "G", "H", "I", "J", "K", "L",
-            "M", "N", "O", "P", "Q", "R",
-            "S", "T", "U", "V", "W", "X",
-            "Y", "Z", "0", "1", "2", "3",
-            "4", "5", "6", "7", "8", "9",
-            "SPACE", "BACKSPACE", "CLEAR", "CANCEL", "ENTER"
-        };
-
-        if (!mInputBuffer) return;
-        std::string& inputBuffer = *mInputBuffer;
-
-        ImGui::Begin("Virtual Keyboard", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-        ImGui::Text("Text: %s", inputBuffer.c_str());
-        ImGui::Separator();
-
-        int columns = 6;
-        for (int i = 0; i < keys.size(); i++) {
-            if (ImGui::Button(keys[i].c_str(), ImVec2(30, 30)* mScale)) {
-                if (keys[i] == "SPACE") inputBuffer += " ";
-                else if (keys[i] == "BACKSPACE") {
-                    if (!inputBuffer.empty()) inputBuffer.pop_back();
-                }
-                else if (keys[i] == "CLEAR") inputBuffer.clear();
-                else if (keys[i] == "CANCEL") { Close(false); }
-                else if (keys[i] == "ENTER") { Close(true); }
-                else inputBuffer += keys[i];
-            }
-
-            if ((i + 1) % columns != 0) ImGui::SameLine();
-        }
-
-        ImGui::End();
-    }
-};
-
-
 };
