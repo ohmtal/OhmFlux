@@ -7,10 +7,20 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 namespace FluxStr {
+    //--------------------------------------------------------------------------
+    static constexpr std::string_view whitespaces = " \t\r\n";
+    //--------------------------------------------------------------------------
+    inline std::string trim(std::string_view str, bool bothEnds = true) {
+        size_t start = bothEnds ? str.find_first_not_of(whitespaces) : 0;
+        if (start == std::string_view::npos) return "";
 
+        size_t end = str.find_last_not_of(whitespaces);
 
+        return std::string(str.substr(start, end - start + 1));
+    }
     //--------------------------------------------------------------------------
     inline std::string truncate(std::string str, size_t width, bool addPoints = true) {
         if (addPoints && width < 4) return str;
@@ -42,7 +52,7 @@ namespace FluxStr {
     }
     //--------------------------------------------------------------------------
     // Returns the number of words separated by spaces
-    inline int getWordCount(std::string_view str, char delimiter = ' ') {
+    inline int getWordCount(std::string_view str, const char delimiter = ' ') {
         int count = 0;
         size_t pos = str.find_first_not_of(delimiter);
 
@@ -55,7 +65,7 @@ namespace FluxStr {
     }
     //--------------------------------------------------------------------------
     // Helper to find the start/end bounds of a word index
-    inline std::string getWords(std::string_view text, int index, int endIndex = 999999,  char delimiter = ' ') {
+    inline std::string getWords(std::string_view text, int index, int endIndex = 999999,  const char delimiter = ' ') {
         size_t startPos = std::string_view::npos;
         size_t endPos = std::string_view::npos;
         int count = 0;
@@ -81,7 +91,7 @@ namespace FluxStr {
         return std::string(text.substr(startPos, endPos - startPos));
     }
     //--------------------------------------------------------------------------
-    inline std::string setWord(std::string text, int index, std::string_view replace , char delimiter = ' ') {
+    inline std::string setWord(std::string text, int index, std::string_view replace ,const  char delimiter = ' ') {
         int count = 0;
         size_t start = text.find_first_not_of(delimiter);
 
@@ -98,7 +108,7 @@ namespace FluxStr {
         return text; // Return original if index not found
     }
     //--------------------------------------------------------------------------
-    inline std::string removeWord(std::string text, int index , char delimiter = ' ') {
+    inline std::string removeWord(std::string text, int index , const char delimiter = ' ') {
         int count = 0;
         size_t start = text.find_first_not_of(delimiter);
 
@@ -119,7 +129,7 @@ namespace FluxStr {
     }
     //--------------------------------------------------------------------------
     // Returns the word at index 'no' (0-based). Returns empty string if not found.
-    inline std::string getWord(std::string_view str, int no , char delimiter = ' ') {
+    inline std::string getWord(std::string_view str, int no , const char delimiter = ' ') {
         int count = 0;
         size_t start = str.find_first_not_of(delimiter);
 
@@ -137,7 +147,7 @@ namespace FluxStr {
         return "";
     }
     //--------------------------------------------------------------------------
-    inline std::vector<std::string_view> Tokenize(std::string_view str, char delimiter = ' ') {
+    inline std::vector<std::string_view> Tokenize(std::string_view str, const char delimiter = ' ') {
         std::vector<std::string_view> tokens;
         size_t start = 0;
         size_t end = str.find(delimiter);
