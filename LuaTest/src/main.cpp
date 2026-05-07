@@ -72,6 +72,10 @@ public:
             return;
         }
 
+        if (cmd == "version") {
+            Log("Lua Version: %s" , LUA_RELEASE );
+            return;
+        }
 
         // Lua commands:
         try {

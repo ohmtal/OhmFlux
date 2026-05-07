@@ -1,9 +1,3 @@
-
-#define SOL_ALL_SAFETIES_ON 1
-#define SOL_LUA_VERSION 504
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
 #include <sol/sol.hpp>
 
 #include "luaState.h"
@@ -45,6 +39,9 @@ namespace OhmFlux::Lua {
     }
     //--------------------------------------------------------------------------
     bool LuaState::initLua() {
+
+        Log("Init Lua Version: %s" , LUA_RELEASE );
+
         mLua.open_libraries(
             sol::lib::base
             ,sol::lib::package

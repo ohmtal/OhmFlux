@@ -3,12 +3,6 @@
  *
  */
 #pragma once
-
-#define SOL_ALL_SAFETIES_ON 1
-#define SOL_LUA_VERSION 504
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
 #include <sol/sol.hpp>
 
 
