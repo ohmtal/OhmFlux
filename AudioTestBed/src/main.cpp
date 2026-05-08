@@ -24,6 +24,7 @@ struct RecordingData {
      std::unique_ptr<FluxAudio::AudioBuffer> mBuffer;
      bool active = false; //atomic ?
 
+     SDL_AudioSpec mSpec;
      size_t mWritten = 0;
      size_t mWriteCount = 0;
 
@@ -47,18 +48,19 @@ void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *
         size_t numSamples = buflen / sizeof(float);
 
         // silence right channel test:
-        int channel = 0;
-        for(size_t i = 0; i < numSamples; ++i) {
-            float s = buffer[i];
-            if (channel == 1) s = 0.f;
-            rData->mBuffer->push(&s, 1);
-            if (++channel >= spec->channels) channel = 0;
-        }
-        // rData->mBuffer->push(buffer, numSamples);
+        // int channel = 0;
+        // for(size_t i = 0; i < numSamples; ++i) {
+        //     float s = buffer[i];
+        //     if (channel == 1) s = 0.f;
+        //     rData->mBuffer->push(&s, 1);
+        //     if (++channel >= spec->channels) channel = 0;
+        // }
+        rData->mBuffer->push(buffer, numSamples);
 
         rData->mWritten += numSamples;
         if (rData->mWritten >=  rData->mWriteCount)
         {
+            rData->mSpec = *spec;
             rData->active = false;
             if (rData->OnRecordingDone) rData->OnRecordingDone();
 
@@ -294,7 +296,7 @@ public:
         std::string idStr = std::format("mix_{}", AudioResourceManager.getMap().size());
         resData->fileName = idStr;
         resData->fileType = FluxAudio::AudioType::WAV;
-        resData->wavSrcSpec = AudioManager.getAudioSpec();
+        resData->wavSrcSpec = mRecordingData.mSpec;
         resData->mRawData.resize(availableFloats * sizeof(float));
         mRecordingData.mBuffer->peek(reinterpret_cast<float*>(resData->mRawData.data()), availableFloats);
         AudioResourceManager.add(idStr, std::move(resData));
@@ -352,24 +354,27 @@ public:
     //------------------------------------------------------------------------------
     void DrawAudioList(bool* p_open) {
         if (!*p_open) return;
+
+        static float recordingLen = 0.f;
+
         ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("audio streams", p_open)) { ImGui::End(); return; }
 
         ImGui::TextUnformatted("Mix Audio Sources (where loop enabled!)");
         if (ImFlux::ButtonFancy("Record", ImFlux::YELLOW_BUTTON)) {
-               if (!mRecordingData.active) StartRecording();
+               if (!mRecordingData.active) StartRecording(recordingLen);
         }
         ImGui::SameLine();
         if (ImFlux::ButtonFancy("PLAYRING", ImFlux::BLUE_BUTTON)) {
             if (mRecordingData.active) return;
 
-            static SDL_AudioSpec spec = AudioManager.getAudioSpec();
+            // static SDL_AudioSpec spec = AudioManager.getAudioSpec();
 
-            static SDL_AudioStream* testStream = SDL_CreateAudioStream(&spec, nullptr);
+            static SDL_AudioStream* testStream = SDL_CreateAudioStream(&mRecordingData.mSpec, nullptr);
             AudioManager.bindStream(testStream);
             SDL_ClearAudioStream(testStream);
 
-            dLog("SPEC: %d, %d, %d", spec.format, spec.freq, spec.channels);
+            dLog("SPEC: %02X, %d, %d", mRecordingData.mSpec.format, mRecordingData.mSpec.freq, mRecordingData.mSpec.channels);
 
             size_t totalFloats = mRecordingData.mBuffer->getAvailableForRead();
             if (totalFloats > 0) {
@@ -377,17 +382,20 @@ public:
                 mRecordingData.mBuffer->peek(testData.data(), totalFloats);
 
 
-                int counter = 0;
-                for (size_t i = 0; i < totalFloats - 1; i++) {
-                    if (counter++ % 50 == 0) {
-                        printf("Left: %f | Right: %f\n", testData[i], testData[i+1]);
-                    }
-                }
+                // int counter = 0;
+                // for (size_t i = 0; i < totalFloats - 1; i++) {
+                //     if (counter++ % 50 == 0) {
+                //         printf("Left: %f | Right: %f\n", testData[i], testData[i+1]);
+                //     }
+                // }
 
                 SDL_PutAudioStreamData(testStream, testData.data(), (int)(testData.size() * sizeof(float)));
                 dLog("Playring: %zu Samples", totalFloats);
             }
         }
+        ImGui::SameLine();
+        ImGui::InputFloat("Sec:", &recordingLen);
+
 
         ImGui::TextDisabled("Buffer left: %d", (int)mRecordingData.mBuffer->getAvailableForWrite());
 
