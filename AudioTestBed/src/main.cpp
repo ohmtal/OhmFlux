@@ -323,7 +323,7 @@ public:
         uint32_t maxFrames = 0;
         if (fixedSec == 0.f) {
             for (auto& [filename, instance] : mInstanceMap) {
-                if ( !instance->doRecord ) continue;
+                if ( !instance->doAutoPlay ) continue;
                 maxFrames = std::max(maxFrames, (uint32_t)instance->getFrames());
                 instance->Stop();
             }
@@ -357,7 +357,7 @@ public:
 
 
         for (auto& [filename, instance] : mInstanceMap) {
-            if ( !instance->doRecord ) continue;
+            if ( !instance->doAutoPlay ) continue;
             // NOT instance->doLoop = true;
             instance->Play();
         }
@@ -403,15 +403,16 @@ public:
                  , FluxAudio::to_string(mAudioRecorder.mSpec.format)
             );
 
-            // max 5 sec
-            size_t fiveSec = (size_t)( 5 *mAudioRecorder.mSpec.freq );
-            size_t totalFloats = std::min(mAudioRecorder.mBuffer->getAvailableForRead(), fiveSec);
+            // max X sec
+            size_t peekTime = (size_t)( 10 * mAudioRecorder.mSpec.freq *  mAudioRecorder.mSpec.channels);
+            size_t totalFloats = std::min(mAudioRecorder.mBuffer->getAvailableForRead(), peekTime);
             if (totalFloats > 0) {
                 std::vector<float> testData(totalFloats);
                 mAudioRecorder.mBuffer->peek(testData.data(), totalFloats);
 
                 //fade out FIXME add to DSP ? or at least to FluxAudio
-                size_t fadeSamples = mAudioRecorder.mSpec.freq * mAudioRecorder.mSpec.channels;
+                const float fadeSec = 0.5f;
+                size_t fadeSamples = (size_t)(fadeSec * mAudioRecorder.mSpec.freq * mAudioRecorder.mSpec.channels);
                 if (totalFloats >= fadeSamples) {
                     size_t startIdx = totalFloats - fadeSamples;
                     for (size_t i = 0; i < fadeSamples; i++) {
@@ -419,7 +420,18 @@ public:
                         float gain = 1.0f - progress;
                         testData[startIdx + i] *= gain;
                     }
+
+                    // fade in test...
+                    for (size_t i = 0; i < fadeSamples; i++) {
+                        float progress = (float)i / (float)(fadeSamples - 1);
+                        float gain = progress;
+                        testData[i] *= gain;
+                    }
+
                 }
+
+
+
 
                 // float reduceFactor = 1.f /  mAudioRecorder.mSpec.freq;
                 // if ( totalFloats > mAudioRecorder.mSpec.freq ) {
@@ -495,7 +507,7 @@ public:
                         if (ImGui::Checkbox("Loop" , &instance->doLoop)) {
                         }
                         ImGui::SameLine();
-                        if (ImGui::Checkbox("Rec" , &instance->doRecord)) {
+                        if (ImGui::Checkbox("AutoPlay" , &instance->doAutoPlay)) {
                         }
                         ImGui::SameLine();ImGui::SetNextItemWidth(70.f);
                         if (ImGui::SliderFloat("Vol" , &instance->volume, 0.1f, 1.f)) {

@@ -78,7 +78,7 @@ namespace FluxAudio {
         bool badData = false;
 
 
-        bool doRecord = false; // for mixing ..
+        bool doAutoPlay = false; // for mixing (recording) and play all
 
         //-------- Initialize
         bool Initialize( ResourceData* lResource);
