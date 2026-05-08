@@ -34,7 +34,7 @@ public:
     size_t getCapacity() const { return mBuffer.size(); }
     // -------------------------------------------------------------------------
     void push(const float* data, size_t count) {
-        if (count == 0) return;
+        if (count == 0 || mBuffer.size() == 0) return;
         std::lock_guard<std::recursive_mutex> lock(mMutex);
 
         if (count > mBuffer.size()) {
