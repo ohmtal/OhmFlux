@@ -75,6 +75,13 @@ namespace FluxAudio {
 
         //-----------------------------------------------------------------------------
         bool add(std::string fileName, bool enableLoop = false, uint8_t maxInstances = 1);
+
+        bool add(std::string fileName, std::unique_ptr<ResourceData> resData) {
+            if (get(fileName, true)) return false;
+            mResourceMap[fileName] = std::move(resData);
+            return true;
+        }
+
         ResourceData* get(std::string fileName, bool noAutoLoad = false);
 
         bool remove(std::string fileName) {

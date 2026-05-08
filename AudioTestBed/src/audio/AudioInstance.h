@@ -21,6 +21,17 @@
 // #include "stb_vorbis.c"
 // #include "miniaudio.h"
 //-----------------------------------------------------------------------------
+// for mixed recording
+// int bytesPerFrame = (SDL_AUDIO_BITSIZE(dstSpec.format) / 8) * dstSpec.channels;
+// wavFrames = mRawData.size() / bytesPerFrame;
+// double durationWav = wavFrames / dstSpec.freq;
+//
+// double durationOgg = (double)mSampleLen / vorbisDecoder->sample_rate;
+// double durationMp3 = (double)totalFrames / maDecoder.outputSampleRate;
+// ----
+// double minDuration = std::min({durationWav, durationOgg, durationMp3});
+// uint32_t totalMixedFrames = (uint32_t)(minDuration * dstSpec.freq);
+//-----------------------------------------------------------------------------
 #pragma once
 
 #include "SDL3/SDL.h"
@@ -67,6 +78,7 @@ namespace FluxAudio {
         bool badData = false;
 
 
+        bool doRecord = false; // for mixing ..
 
         //-------- Initialize
         bool Initialize( ResourceData* lResource);
@@ -86,6 +98,12 @@ namespace FluxAudio {
         // void Update( const double& dt, Point3F* camPos = nullptr );
         void UpdateStream();
 
+        const double getSampleDuration() { return mSampleDuration; }
+        const size_t getFrames();
+
+        const size_t getOutOutFrames() {
+            return (size_t)(mSampleDuration * AudioManager.getAudioSpec().freq);
+        }
 
         float getProgress() {
             if (mSampleLen == 0) return 0.f;
@@ -102,6 +120,7 @@ namespace FluxAudio {
 
 
         bool ConvertToWav();
+
 
     private:
 
@@ -120,6 +139,14 @@ namespace FluxAudio {
         // Buffer
         size_t mSamplePos = 0;
         size_t mSampleLen = 0;
+        double mSampleDuration = 0; // sample len in secounds
+
+
+        int mBytesPerFrame = 0;
+        size_t mWavFrames = 0; //special for wav
+
+        void setSampleLenAndDuration();
+
         std::vector<float> mAudioBuffer;
         bool fillBuffer();
     }; //AudioInstance

@@ -10,11 +10,19 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <array>
+#include <string_view>
 
 namespace FluxAudio {
 
     enum class AudioType { UNKNOWN, WAV, MP3, OGG, FLAC, SFX };
 
+    constexpr std::array<std::string_view, 6> AudioTypeNames = {
+        "UNKNOWN", "WAV", "MP3", "OGG", "FLAC", "SFX"
+    };
+    constexpr std::string_view to_string(AudioType type) {
+        return AudioTypeNames[static_cast<std::size_t>(type)];
+    }
 
     // should be perfect now:
     inline AudioType detectType(const std::vector<uint8_t>& data) {

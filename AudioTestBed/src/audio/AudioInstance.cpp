@@ -34,6 +34,7 @@ namespace FluxAudio {
         }
     }
 
+
     //--------------------------------------------------------------------------
     void AudioInstance::setBad(){
         badData = true;
@@ -142,8 +143,14 @@ namespace FluxAudio {
                     return false;
                 }
 
-                mSamplePos = 0;
-                mSampleLen = resource->mRawData.size();
+                setSampleLenAndDuration();
+
+                // mSamplePos = 0;
+                // mSampleLen = resource->mRawData.size();
+                // int bytesPerFrame = (SDL_AUDIO_BITSIZE(dstSpec.format) / 8) * dstSpec.channels;
+                // double wavFrames = mSampleLen / bytesPerFrame;
+                // mSampleDuration =  wavFrames / dstSpec.freq;
+
 
                 break;
             }
@@ -173,8 +180,8 @@ namespace FluxAudio {
                     return false;
                 }
 
-                mSamplePos = 0;
-                mSampleLen = stb_vorbis_stream_length_in_samples(vorbisDecoder);
+                setSampleLenAndDuration();
+
                 dLog("SAMPLE LEN = %d", (int)mSampleLen);
 
                 break;
@@ -209,10 +216,7 @@ namespace FluxAudio {
                     return false;
                 }
 
-                mSamplePos = 0;
-                ma_uint64 totalFrames;
-                ma_decoder_get_length_in_pcm_frames(&maDecoder, &totalFrames);
-                mSampleLen = (uint32_t)totalFrames;
+                setSampleLenAndDuration();
 
                 dLog("MP3/FLAC SAMPLE LEN = %d", (int)mSampleLen);
                 break;
@@ -226,9 +230,6 @@ namespace FluxAudio {
                     if (OnFatalError) OnFatalError("Failed to load SFX Data.");
                 }
 
-
-
-
                 srcSpec.format = SDL_AUDIO_F32;
                 srcSpec.channels = 2;
                 srcSpec.freq =  44100 ;
@@ -241,8 +242,7 @@ namespace FluxAudio {
                     return false;
                 }
 
-                mSamplePos = 0;
-                mSampleLen = mSFXGen->getSyntFrames();
+                setSampleLenAndDuration();
 
                 if ( mAutoConvertSfxToWav ) {
                     FluxSchedule.callDeferred([this](){
@@ -454,8 +454,7 @@ namespace FluxAudio {
                 resource->mRawData.resize(f32ExportBuffer.size() * sizeof(float));
                 std::memcpy(resource->mRawData.data(), f32ExportBuffer.data(), resource->mRawData.size());
                 // no need to reinitialize since both are F32 but i need to update the len:
-                mSampleLen = resource->mRawData.size();
-                mSamplePos = 0;
+                setSampleLenAndDuration();
 
                 // finally delete the mSFXGen
                 SAFE_DELETE(mSFXGen);
@@ -472,4 +471,86 @@ namespace FluxAudio {
         }
 
     }
+    // -------------------------------------------------------------------------
+    const size_t AudioInstance::getFrames() {
+        if (!isInitialized) return false;
+        switch (resource->fileType) {
+            case AudioType::WAV: {
+                return mWavFrames;
+                break;
+            }
+            case AudioType::OGG:
+            case AudioType::MP3:
+            case AudioType::FLAC:
+            case AudioType::SFX:
+            {
+                // all this formats use frames as sampleLen
+                return mSampleLen;
+                break;
+            }
+            default: {
+                Log("Invalid AudioType (%d) in AudioInstance::getFrames", (int)resource->fileType);
+                return 0;
+                break;
+            }
+        }
+        return 0;
+    }
+
+    void AudioInstance::setSampleLenAndDuration() {
+
+        mSamplePos = 0;
+        mBytesPerFrame = (SDL_AUDIO_BITSIZE(dstSpec.format) / 8) * dstSpec.channels;
+        int outputBytesPerFrames = (SDL_AUDIO_BITSIZE(AudioManager.getAudioSpec().format) / 8) * AudioManager.getAudioSpec().channels;
+
+        switch (resource->fileType) {
+            case AudioType::WAV: {
+                mSampleLen = resource->mRawData.size();
+                mWavFrames = resource->mRawData.size() / mBytesPerFrame;
+                mSampleDuration =  (double)mWavFrames / dstSpec.freq;
+
+                break;
+            }
+            case AudioType::OGG: {
+                if (!vorbisDecoder) {
+                     if (OnFatalError)  OnFatalError("missing vorbisDecoder");
+                     return;
+                }
+
+                mSampleLen = stb_vorbis_stream_length_in_samples(vorbisDecoder);
+                mSampleDuration = (double)mSampleLen / vorbisDecoder->sample_rate;
+
+                break;
+            }
+            case AudioType::MP3:
+            case AudioType::FLAC: {
+
+                if (!maDecoder.pBackend) {
+                  if (OnFatalError) OnFatalError("miniaudio Decoder");
+                  return;
+                }
+                ma_uint64 totalFrames;
+                ma_decoder_get_length_in_pcm_frames(&maDecoder, &totalFrames);
+                mSampleLen = (uint32_t)totalFrames;
+                mSampleDuration = (double)mSampleLen / maDecoder.outputSampleRate;
+
+                break;
+            }
+            case AudioType::SFX: {
+                mSampleLen = mSFXGen->getSyntFrames();
+                mSampleDuration =  (double)mSampleLen / dstSpec.freq;
+
+                break;
+            }
+            default: {
+                if (OnFatalError)  OnFatalError("setSampleLenAndDuration unknown audio filetype!");
+                break;
+            }
+        }
+
+        dLog("SampleDuration %.2f", mSampleDuration);
+
+    }
+
+
 }; //namespace

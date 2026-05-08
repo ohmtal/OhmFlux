@@ -83,6 +83,26 @@ public:
         return actualRead;
     }
     // -------------------------------------------------------------------------
+    // like pop but keep the data
+    size_t peek(float* out, size_t requestedSize) {
+        std::lock_guard<std::recursive_mutex> lock(mMutex);
+
+        size_t actualRead = std::min(requestedSize, mFullCount);
+        if (actualRead == 0) return 0;
+
+        size_t dataToEnd = mBuffer.size() - mTail;
+        size_t firstPart = std::min(actualRead, dataToEnd);
+        size_t secondPart = actualRead - firstPart;
+
+        std::memcpy(out, &mBuffer[mTail], firstPart * sizeof(float));
+
+        if (secondPart > 0) {
+            std::memcpy(out + firstPart, mBuffer.data(), secondPart * sizeof(float));
+        }
+
+        return actualRead;
+    }
+    // -------------------------------------------------------------------------
     // get Available for read!
     size_t getAvailableForRead() {
         std::lock_guard<std::recursive_mutex> lock(mMutex);
