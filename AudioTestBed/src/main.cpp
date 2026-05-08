@@ -21,6 +21,7 @@
 
 //-----------------------------------------------------------------------------
 namespace FluxAudio  {
+    constexpr float MAX_RECORDING_SECONDS = 600.0f; //10 mimutes
     struct AudioRecorder {
         std::unique_ptr<FluxAudio::AudioBuffer> mBuffer;
         bool active = false; //atomic ?
@@ -35,6 +36,10 @@ namespace FluxAudio  {
         AudioRecorder( ) {
             //Init with 512kb buffer
             mBuffer = std::make_unique<FluxAudio::AudioBuffer>(512 * 1024);
+        }
+
+        void stop() {
+            requestStop = true;
         }
 
         bool RecordChunk(const SDL_AudioSpec *spec, float *buffer, int buflen) {
@@ -206,6 +211,8 @@ public:
     //--------------------------------------------------------------------------------------
     void Deinitialize() override
     {
+        mAudioRecorder.stop();
+        while (mAudioRecorder.active) {} //wait for recording thread
 
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
@@ -452,7 +459,7 @@ public:
         }
         ImGui::SameLine();
         ImGui::SetNextItemWidth(60.f);
-        ImGui::InputFloat("Sec:", &recordingLen);
+        if (ImGui::InputFloat("Sec:", &recordingLen)) recordingLen = std::min(recordingLen, FluxAudio::MAX_RECORDING_SECONDS);
 
 
         ImGui::TextDisabled("Buffer left: %d", (int)mAudioRecorder.mBuffer->getAvailableForWrite());
