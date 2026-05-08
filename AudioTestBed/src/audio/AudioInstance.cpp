@@ -501,7 +501,6 @@ namespace FluxAudio {
 
         mSamplePos = 0;
         mBytesPerFrame = (SDL_AUDIO_BITSIZE(dstSpec.format) / 8) * dstSpec.channels;
-        int outputBytesPerFrames = (SDL_AUDIO_BITSIZE(AudioManager.getAudioSpec().format) / 8) * AudioManager.getAudioSpec().channels;
 
         switch (resource->fileType) {
             case AudioType::WAV: {

@@ -101,9 +101,9 @@ namespace FluxAudio {
         const double getSampleDuration() { return mSampleDuration; }
         const size_t getFrames();
 
-        const size_t getOutOutFrames() {
-            return (size_t)(mSampleDuration * AudioManager.getAudioSpec().freq);
-        }
+        // const size_t getOutOutFrames() {
+        //     return (size_t)(mSampleDuration * AudioManager.getAudioSpec().freq);
+        // }
 
         float getProgress() {
             if (mSampleLen == 0) return 0.f;

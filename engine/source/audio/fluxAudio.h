@@ -11,6 +11,22 @@
 
 namespace FluxAudio {
 
+
+    inline const char* to_string(SDL_AudioFormat format) {
+        switch (format) {
+            case SDL_AUDIO_UNKNOWN: return "Unknown";
+            case SDL_AUDIO_U8: return "Unsigned 8-bit";
+            case SDL_AUDIO_S8: return "Signed 8-bit";
+            case SDL_AUDIO_S16LE: return "Signed 16-bit Little Endian";
+            case SDL_AUDIO_S16BE: return "Signed 16-bit Big Endian";
+            case SDL_AUDIO_S32LE: return "Signed 32-bit Little Endian";
+            case SDL_AUDIO_S32BE: return "Signed 32-bit Big Endian";
+            case SDL_AUDIO_F32LE: return "32-bit Floating Point Little Endian";
+            case SDL_AUDIO_F32BE: return "32-bit Floating Point Big Endian";
+            default: return "Invalid Format";
+        }
+    }
+
     class Manager {
     private:
         Manager() : mAudioDevice(0) {}
@@ -40,7 +56,12 @@ namespace FluxAudio {
             mAudioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
 
             if (SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &mOutputSpec, nullptr)) {
-                Log("[info] Audio output Hardware: %d Hz, %d Channels, Format: 0x%x", mOutputSpec.freq, mOutputSpec.channels, mOutputSpec.format);
+                Log("[info] Audio output Hardware: %d Hz, %d Channels, Format: 0x%x (%s)"
+                    , mOutputSpec.freq
+                    , mOutputSpec.channels
+                    , mOutputSpec.format
+                    , to_string(mOutputSpec.format)
+                );
             }
             Log("Init Audiomanager ID:%d.", mAudioDevice);
 

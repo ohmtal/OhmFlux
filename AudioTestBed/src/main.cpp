@@ -20,51 +20,66 @@
 #include <atomic>
 
 //-----------------------------------------------------------------------------
-struct RecordingData {
-     std::unique_ptr<FluxAudio::AudioBuffer> mBuffer;
-     bool active = false; //atomic ?
+namespace FluxAudio  {
+    struct AudioRecorder {
+        std::unique_ptr<FluxAudio::AudioBuffer> mBuffer;
+        bool active = false; //atomic ?
+        bool requestStop = false;
 
-     SDL_AudioSpec mSpec;
-     size_t mWritten = 0;
-     size_t mWriteCount = 0;
+        SDL_AudioSpec mSpec;
+        size_t mWritten = 0;
+        size_t mWriteCount = 0;
 
-     std::function<void()> OnRecordingDone = nullptr;
+        std::function<void()> OnRecordingDone = nullptr;
 
-     RecordingData( ) {
-        mBuffer = std::make_unique<FluxAudio::AudioBuffer>(0);
-    }
+        AudioRecorder( ) {
+            //Init with 512kb buffer
+            mBuffer = std::make_unique<FluxAudio::AudioBuffer>(512 * 1024);
+        }
 
-};
+        bool RecordChunk(const SDL_AudioSpec *spec, float *buffer, int buflen) {
+            if (!spec || !buffer || buflen < 1) return false;
+            if (!active) return false;
+
+            size_t numSamples = buflen / sizeof(float);
+            mBuffer->push(buffer, numSamples);
+
+            mWritten += numSamples;
+            if (mWritten >=  mWriteCount || requestStop)
+            {
+                mSpec = *spec;
+                active = false;
+                requestStop = false;
+                if (OnRecordingDone) OnRecordingDone();
+
+            }
+            return true;
+        }
+    };
+}
 
 // Recording
 void SDLCALL FinalMixCallback(void *userdata, const SDL_AudioSpec *spec, float *buffer, int buflen) {
     if (!userdata || !spec || !buffer || buflen < 1) return;
-    auto* rData = static_cast<RecordingData*>(userdata);
+    auto* rData = static_cast<FluxAudio::AudioRecorder*>(userdata);
     if (!rData  ) return;
 
 
-    if ( spec->format == SDL_AUDIO_F32 && rData->active)
+    if ( spec->format == SDL_AUDIO_F32 )
     {
-        size_t numSamples = buflen / sizeof(float);
-
-        // silence right channel test:
-        // int channel = 0;
-        // for(size_t i = 0; i < numSamples; ++i) {
-        //     float s = buffer[i];
-        //     if (channel == 1) s = 0.f;
-        //     rData->mBuffer->push(&s, 1);
-        //     if (++channel >= spec->channels) channel = 0;
+        rData->RecordChunk(spec, buffer, buflen);
+        // size_t numSamples = buflen / sizeof(float);
+        // rData->mBuffer->push(buffer, numSamples);
+        //
+        // rData->mWritten += numSamples;
+        // if (rData->mWritten >=  rData->mWriteCount || rData->requestStop)
+        // {
+        //     rData->mSpec = *spec;
+        //     rData->active = false;
+        //     rData->requestStop = false;
+        //     if (rData->OnRecordingDone) rData->OnRecordingDone();
+        //
         // }
-        rData->mBuffer->push(buffer, numSamples);
-
-        rData->mWritten += numSamples;
-        if (rData->mWritten >=  rData->mWriteCount)
-        {
-            rData->mSpec = *spec;
-            rData->active = false;
-            if (rData->OnRecordingDone) rData->OnRecordingDone();
-
-        }
     }
 }
 
@@ -117,7 +132,7 @@ class AudioTestBed : public FluxMain
     ImFileDialog fileDialog;
     std::unique_ptr<FluxGuiGlue> mGuiGlue;
 
-    RecordingData mRecordingData;
+    FluxAudio::AudioRecorder mAudioRecorder;
 
 
     // -------------------------------------------------------------------------
@@ -184,7 +199,7 @@ public:
         mWorkerThreadID = SDL_CreateThread(streamWorkerThread, "AudioWorker", &mWorkerThreadData);
 
 
-        mRecordingData.OnRecordingDone = [this]() { this->OnRecordingDone(); };
+        mAudioRecorder.OnRecordingDone = [this]() { this->OnRecordingDone(); };
 
          return true;
     }
@@ -291,49 +306,50 @@ public:
             instance->Stop();
         }
 
-        size_t availableFloats = mRecordingData.mBuffer->getAvailableForRead();
+        size_t availableFloats = mAudioRecorder.mBuffer->getAvailableForRead();
         auto resData = std::make_unique<FluxAudio::ResourceData>();
         std::string idStr = std::format("mix_{}", AudioResourceManager.getMap().size());
         resData->fileName = idStr;
         resData->fileType = FluxAudio::AudioType::WAV;
-        resData->wavSrcSpec = mRecordingData.mSpec;
+        resData->wavSrcSpec = mAudioRecorder.mSpec;
         resData->mRawData.resize(availableFloats * sizeof(float));
-        mRecordingData.mBuffer->peek(reinterpret_cast<float*>(resData->mRawData.data()), availableFloats);
+        mAudioRecorder.mBuffer->peek(reinterpret_cast<float*>(resData->mRawData.data()), availableFloats);
         AudioResourceManager.add(idStr, std::move(resData));
 
     }
     //------------------------------------------------------------------------------
      void StartRecording( float fixedSec = 0.f) {
+         //FIXME i guess AudioManager.getAudioSpec() is wrong!
         uint32_t maxFrames = 0;
         if (fixedSec == 0.f) {
             for (auto& [filename, instance] : mInstanceMap) {
                 if ( !instance->doRecord ) continue;
-                maxFrames = std::max(maxFrames, (uint32_t)instance->getOutOutFrames());
+                maxFrames = std::max(maxFrames, (uint32_t)instance->getFrames());
                 instance->Stop();
             }
-            if ( maxFrames == 0 ) return;
-            maxFrames *= 2; //raise
+            // maxFrames *= 2; //raise
         } else {
             maxFrames = size_t(fixedSec * AudioManager.getAudioSpec().freq);
         }
 
         if ( maxFrames == 0 ) return;
 
-        mRecordingData.mWritten = 0;
-        mRecordingData.mWriteCount = maxFrames * AudioManager.getAudioSpec().channels;
+        mAudioRecorder.requestStop = false;
+        mAudioRecorder.mWritten = 0;
+        mAudioRecorder.mWriteCount = maxFrames * AudioManager.getAudioSpec().channels;
         // make the buffer bigger ;)
         size_t minBufferSize = std::max( (size_t)(maxFrames * AudioManager.getAudioSpec().channels + 100000), (size_t)(512*1024));
-        if ( mRecordingData.mBuffer->getCapacity() <  minBufferSize ) {
-            mRecordingData.mBuffer->setCapacity(minBufferSize);
+        if ( mAudioRecorder.mBuffer->getCapacity() <  minBufferSize ) {
+            mAudioRecorder.mBuffer->setCapacity(minBufferSize);
         } else {
-            mRecordingData.mBuffer->clear();
+            mAudioRecorder.mBuffer->clear();
         }
 
 
 
         SDL_SetAtomicInt(&mWorkerThreadData.locked, 1);
 
-        if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, &mRecordingData)) {
+        if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, &mAudioRecorder)) {
             dLog("[error] can NOT open PostMix Device !!! %s", SDL_GetError());
         } else {
             Log("[info] PostMix Callback installed.");
@@ -342,10 +358,10 @@ public:
 
         for (auto& [filename, instance] : mInstanceMap) {
             if ( !instance->doRecord ) continue;
-            instance->doLoop = true;
+            // NOT instance->doLoop = true;
             instance->Play();
         }
-        mRecordingData.active = true;
+        mAudioRecorder.active = true;
 
         SDL_SetAtomicInt(&mWorkerThreadData.locked, 0);
 
@@ -361,44 +377,73 @@ public:
         ImGui::SetNextWindowSize(ImVec2(200, 600), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("audio streams", p_open)) { ImGui::End(); return; }
 
-        ImGui::TextUnformatted("Mix Audio Sources (where loop enabled!)");
-        if (ImFlux::ButtonFancy("Record", ImFlux::YELLOW_BUTTON)) {
-               if (!mRecordingData.active) StartRecording(recordingLen);
+        if (
+            !mAudioRecorder.active ? ImFlux::ButtonFancy("Record", ImFlux::YELLOW_BUTTON)
+            : ImFlux::ButtonFancy("STOP", ImFlux::RED_BUTTON)
+
+        ) {
+               if (!mAudioRecorder.active) StartRecording(recordingLen);
+               else mAudioRecorder.requestStop = true;
+
         }
         ImGui::SameLine();
-        if (ImFlux::ButtonFancy("PLAYRING", ImFlux::BLUE_BUTTON)) {
-            if (mRecordingData.active) return;
+        if (ImFlux::ButtonFancy("Peek", ImFlux::BLUE_BUTTON)) {
+            if (mAudioRecorder.active) return;
 
             // static SDL_AudioSpec spec = AudioManager.getAudioSpec();
 
-            static SDL_AudioStream* testStream = SDL_CreateAudioStream(&mRecordingData.mSpec, nullptr);
+            static SDL_AudioStream* testStream = SDL_CreateAudioStream(&mAudioRecorder.mSpec, nullptr);
             AudioManager.bindStream(testStream);
             SDL_ClearAudioStream(testStream);
 
-            dLog("SPEC: %02X, %d, %d", mRecordingData.mSpec.format, mRecordingData.mSpec.freq, mRecordingData.mSpec.channels);
+            dLog(" RECORDER SPEC: SampleRate: %d, Channels:%d, Format: %02X (%s)"
+                 , mAudioRecorder.mSpec.freq
+                 , mAudioRecorder.mSpec.channels
+                 , mAudioRecorder.mSpec.format
+                 , FluxAudio::to_string(mAudioRecorder.mSpec.format)
+            );
 
-            size_t totalFloats = mRecordingData.mBuffer->getAvailableForRead();
+            // max 5 sec
+            size_t fiveSec = (size_t)( 5 *mAudioRecorder.mSpec.freq );
+            size_t totalFloats = std::min(mAudioRecorder.mBuffer->getAvailableForRead(), fiveSec);
             if (totalFloats > 0) {
                 std::vector<float> testData(totalFloats);
-                mRecordingData.mBuffer->peek(testData.data(), totalFloats);
+                mAudioRecorder.mBuffer->peek(testData.data(), totalFloats);
 
+                //fade out FIXME add to DSP ? or at least to FluxAudio
+                size_t fadeSamples = mAudioRecorder.mSpec.freq * mAudioRecorder.mSpec.channels;
+                if (totalFloats >= fadeSamples) {
+                    size_t startIdx = totalFloats - fadeSamples;
+                    for (size_t i = 0; i < fadeSamples; i++) {
+                        float progress = (float)i / (float)(fadeSamples - 1);
+                        float gain = 1.0f - progress;
+                        testData[startIdx + i] *= gain;
+                    }
+                }
 
-                // int counter = 0;
-                // for (size_t i = 0; i < totalFloats - 1; i++) {
-                //     if (counter++ % 50 == 0) {
-                //         printf("Left: %f | Right: %f\n", testData[i], testData[i+1]);
+                // float reduceFactor = 1.f /  mAudioRecorder.mSpec.freq;
+                // if ( totalFloats > mAudioRecorder.mSpec.freq ) {
+                //     size_t j = 0;
+                //     for (size_t i = totalFloats - mAudioRecorder.mSpec.freq; i < totalFloats; i++ ) {
+                //         if ((i % mAudioRecorder.mSpec.channels) == 0) {
+                //             j++;
+                //         }
+                //         testData[i] -= (float) j * reduceFactor;
+                //
                 //     }
                 // }
+
 
                 SDL_PutAudioStreamData(testStream, testData.data(), (int)(testData.size() * sizeof(float)));
                 dLog("Playring: %zu Samples", totalFloats);
             }
         }
         ImGui::SameLine();
+        ImGui::SetNextItemWidth(60.f);
         ImGui::InputFloat("Sec:", &recordingLen);
 
 
-        ImGui::TextDisabled("Buffer left: %d", (int)mRecordingData.mBuffer->getAvailableForWrite());
+        ImGui::TextDisabled("Buffer left: %d", (int)mAudioRecorder.mBuffer->getAvailableForWrite());
 
         if (ImGui::BeginChild("WaveModule_BOX", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
             ImGui::Separator();
@@ -426,7 +471,7 @@ public:
 
 
 
-                    if (instance && !mRecordingData.active) {
+                    if (instance ) {
                         float progress = instance->getProgress();
                         ImGui::PushID(instance);
                         if (!instance->isPlaying) {
