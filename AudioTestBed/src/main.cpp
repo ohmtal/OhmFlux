@@ -315,6 +315,7 @@ public:
 
         size_t availableFloats = mAudioRecorder.mBuffer->getAvailableForRead();
         auto resData = std::make_unique<FluxAudio::ResourceData>();
+        //FIXME name is not unique !!!
         std::string idStr = std::format("mix_{}", AudioResourceManager.getMap().size());
         resData->fileName = idStr;
         resData->fileType = FluxAudio::AudioType::WAV;
