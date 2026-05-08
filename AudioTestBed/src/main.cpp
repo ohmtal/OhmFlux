@@ -309,6 +309,7 @@ public:
             for (auto& [filename, instance] : mInstanceMap) {
                 if ( !instance->doRecord ) continue;
                 maxFrames = std::max(maxFrames, (uint32_t)instance->getOutOutFrames());
+                instance->Stop();
             }
             if ( maxFrames == 0 ) return;
             maxFrames *= 2; //raise
