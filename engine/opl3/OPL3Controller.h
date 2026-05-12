@@ -23,6 +23,7 @@
 #include <array>
 #include <mutex>
 #include <memory>
+#include <thread>
 
 #include <errorlog.h>
 
@@ -97,11 +98,13 @@ private:
     OplChip::output_data mOutput;
 
 
+    const int cSampleRate = 44100;
+
     uint32_t mOutputSampleRate;
     // YMFMInterface mInterface;
 
     double m_pos = 0.0;
-    double m_step = 49716.0 / 44100.0; // Ratio of OPL rate to SDL rate
+    double m_step = 49716.0 / (double) cSampleRate; // Ratio of OPL rate to SDL rate
 
 
     // ---------- SDL3 ----------------
@@ -128,10 +131,10 @@ private:
 
     // ------- audio_callback and buffers ----------
 
-    static constexpr int MAX_FRAMES = 2048;
+    static constexpr int MAX_FRAMES = 512;
     std::vector<float> mF32Buffer;
 
-    const int SILENCE_THRESHOLD = 44100 * 20; //raised * 20 because of reverb ...
+    const int SILENCE_THRESHOLD = cSampleRate * 20; //raised * 20 because of reverb ...
     std::atomic<bool> mIsSilent{true};
     std::atomic<int> mSilenceCounter{0};
 
@@ -206,8 +209,15 @@ public:
         return mDspEffects;
     }
 
+
+
     // ---------- SDL3 ----------------
-    static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
+    std::thread mDecoderThread;
+    std::atomic<bool> mDecoderThreadRunning{true};
+    void DecoderWorker();
+
+
+    // static void SDLCALL audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount);
     SDL_AudioStream* getAudioStream() { return mStream; }
     float getVolume() {
         if (mStream) {
@@ -355,6 +365,9 @@ public:
     // ------ export -------------
     void detachAudio();
     void attachAudio();
+
+    void exportToBuffer(SongData &sd, std::vector<float>& exportBuffer, float* progressOut, bool applyEffects);
+
     bool exportToWav(SongData &sd, const std::string& filename, float* progressOut = nullptr, bool applyEffects = false);
 
 

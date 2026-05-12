@@ -31,6 +31,8 @@ OPL3Controller::OPL3Controller(){
 }
 //------------------------------------------------------------------------------
 OPL3Controller::~OPL3Controller(){
+    stopSong();
+    detachAudio();
     if (mStream) {
         SDL_FlushAudioStream(mStream);
         SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
@@ -44,78 +46,74 @@ OPL3Controller::~OPL3Controller(){
     }
 }
 //------------------------------------------------------------------------------
-void SDLCALL OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
-    auto* controller = static_cast<OPL3Controller*>(userdata);
-    if (!controller || additional_amount <= 0) return;
+void OPL3Controller::DecoderWorker() {
 
-    // Calculate frames (F32 Stereo = 8 bytes per frame)
-    int framesNeeded = additional_amount / 8;
-    const int MAX_FRAMES = 2048;
-    if (framesNeeded > MAX_FRAMES) framesNeeded = MAX_FRAMES;
-    int totalSamples = framesNeeded * 2;
+    const float cacheSec = 0.250f;
+    const int targetQueueSize = (int)(cSampleRate * 2 * sizeof(float) * cacheSec);
+    OPL3Controller* controller = this;
 
-    // Use the pre-allocated member buffer from your class
-    // This avoids creating 16KB-24KB on the stack every callback
-    float* f32Buffer = controller->mF32Buffer.data();
+    while (mDecoderThreadRunning.load()) {
+        if (SDL_GetAudioStreamQueued(mStream) < targetQueueSize) {
+            int totalSamples = MAX_FRAMES * 2;
+            float* f32Buffer = controller->mF32Buffer.data();
 
-    // Fill Buffer
-    {
-        std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
-        // Note: We call the NEW float version of fillBuffer
-        controller->fillBuffer(f32Buffer, framesNeeded);
-    }
-
-
-    // DSP Effects
-    if (controller->isAnyVoiceActive())
-    {
-        for (auto& effect : controller->mDspEffects) {
-            effect->process(f32Buffer, totalSamples, 2);
+            // Fill Buffer
+            {
+                std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
+                controller->fillBuffer(f32Buffer, MAX_FRAMES);
+            }
+            // DSP Effects
+            if (controller->isAnyVoiceActive())
+            {
+                for (auto& effect : controller->mDspEffects) {
+                    effect->process(f32Buffer, totalSamples, 2);
+                }
+            }
+            SDL_PutAudioStreamData(mStream, f32Buffer, MAX_FRAMES * 8);
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+
     }
 
-    // Send to SDL3
-    SDL_PutAudioStreamData(stream, f32Buffer, framesNeeded * 8);
 
 }
-
+//------------------------------------------------------------------------------
+// 2026-05-13 replaced by DecoderWorker!
 // void SDLCALL OPL3Controller::audio_callback(void* userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
 //     auto* controller = static_cast<OPL3Controller*>(userdata);
-//     if ( !controller || additional_amount == 0 ) return;
+//     if (!controller || additional_amount <= 0) return;
 //
-//     // 1. SDL3 additional_amount is in BYTES.
-//     // For F32 Stereo: 1 frame = 8 bytes.
+//     // Calculate frames (F32 Stereo = 8 bytes per frame)
 //     int framesNeeded = additional_amount / 8;
-//
-//     // Use a fixed size or std::vector for the intermediate buffers
-//     // 2048 frames * 2 channels = 4096 samples
-//     const int MAX_FRAMES = 2048;
 //     if (framesNeeded > MAX_FRAMES) framesNeeded = MAX_FRAMES;
+//     int totalSamples = framesNeeded * 2;
 //
-//     int16_t s16Buffer[MAX_FRAMES * 2];
-//     float f32Buffer[MAX_FRAMES * 2];
+//     // dLog("[warn] frames needed: %d, additional_amount: %d, total_amount:%d", framesNeeded, additional_amount, total_amount);
 //
+//     // Use the pre-allocated member buffer from your class
+//     // This avoids creating 16KB-24KB on the stack every callback
+//     float* f32Buffer = controller->mF32Buffer.data();
+//
+//     // Fill Buffer
 //     {
 //         std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
-//         // Fill using your legacy int16_t logic
-//         controller->fillBuffer(s16Buffer, framesNeeded);
+//         // Note: We call the NEW float version of fillBuffer
+//         controller->fillBuffer(f32Buffer, framesNeeded);
 //     }
 //
-//     // 2. Convert S16 legacy data to F32 for the DSP effects
-//     int totalSamples = framesNeeded * 2;
-//     const float inv32768 = 1.0f / 32768.0f;
-//     for (int i = 0; i < totalSamples; ++i) {
-//         f32Buffer[i] = s16Buffer[i] * inv32768;
+//
+//     // DSP Effects
+//     if (controller->isAnyVoiceActive())
+//     {
+//         for (auto& effect : controller->mDspEffects) {
+//             effect->process(f32Buffer, totalSamples, 2);
+//         }
 //     }
 //
-//     // DSP
-//     for (auto& effect : controller->mDspEffects) {
-//         effect->process(f32Buffer, totalSamples);
-//     }
-//
-//     // 4. Put the processed FLOAT data into the stream
-//     // The byte size is framesNeeded * 8 (or totalSamples * 4)
+//     // Send to SDL3
 //     SDL_PutAudioStreamData(stream, f32Buffer, framesNeeded * 8);
+//
 // }
 //
 
@@ -131,7 +129,7 @@ bool OPL3Controller::initController()
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_F32;  // SDL_AUDIO_S16;
     spec.channels = 2;
-    spec.freq = 44100;
+    spec.freq = cSampleRate;
     mStream = SDL_CreateAudioStream(&spec, &spec);
 
 
@@ -141,7 +139,12 @@ bool OPL3Controller::initController()
         Log("SDL_OpenAudioDeviceStream failed: %s", SDL_GetError());
         return false;
     }
-    SDL_SetAudioStreamGetCallback(mStream, OPL3Controller::audio_callback, this);
+
+    // start DecoderWorker
+    mDecoderThreadRunning.store( true );
+    mDecoderThread = std::thread([this]() { DecoderWorker(); });
+
+    // SDL_SetAudioStreamGetCallback(mStream, OPL3Controller::audio_callback, this);
 
 
     #ifdef FLUX_ENGINE
@@ -163,7 +166,7 @@ bool OPL3Controller::initController()
 
     SDL_ResumeAudioStreamDevice(mStream);
 
-    m_step = mOutputSampleRate / spec.freq;
+    m_step = (double)mOutputSampleRate / (double)cSampleRate;
 
     // Digital post processing
     //------------------------
@@ -256,10 +259,10 @@ void OPL3Controller::fillBuffer(float* buffer, int total_frames)
     const float inv32768 = 1.0f / 32768.0f;
     int buffer_offset = 0;
 
-    if (!isAnyVoiceActive() && !mTrackerState.playing) {
-        std::memset(buffer, 0, total_frames * sizeof(float) * 2);
-        return;
-    }
+    // if (!isAnyVoiceActive() && !mTrackerState.playing) {
+    //     std::memset(buffer, 0, total_frames * sizeof(float) * 2);
+    //     return;
+    // }
 
     // If not playing a song, but manual notes are active
     if (!mTrackerState.playing) {
@@ -1406,7 +1409,7 @@ bool OPL3Controller::playSong(opl3::SongData& songData, bool loop )  {
 
 
     // Calculate timing
-    double hostRate = 44100.0;
+    double hostRate = (double) cSampleRate;
 
     // orig: double ticks_per_sec = songData.bpm * 0.4;
 
@@ -1564,32 +1567,32 @@ bool OPL3Controller::songValid(const opl3::SongData& songData) {
     return true;
 }
 //------------------------------------------------------------------------------
-bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename, float* progressOut, bool applyEffects) {
-    detachAudio();
-    dLog("[info] OPL3Controller::exportToWav (Optimized Float Pipeline)...");
+void OPL3Controller::exportToBuffer(SongData &sd, std::vector<float>& exportBuffer, float* progressOut, bool applyEffects) {
+
+    dLog("[info] OPL3Controller::exportToBuffer (Optimized Float Pipeline)...");
 
     playSong(sd, false);
 
-    // 1. Calculate dimensions
+    // Calculate dimensions
     uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerRow;
     uint32_t totalFrames = static_cast<uint32_t>(total_ticks * mTrackerState.samples_per_tick);
-    int sampleRate = 44100;
     int chunkSize = 4096;
 
-    // 2. Allocate FLOAT buffer for the entire export
-    // This is the "Working Master" buffer
-    std::vector<float> f32ExportBuffer(totalFrames * 2);
+    // Check buffer size and fill with silence:
+    if (exportBuffer.size() != totalFrames * 2) exportBuffer.resize(totalFrames * 2);
+    std::fill(exportBuffer.begin(), exportBuffer.end(), 0.f);
+
     int framesProcessed = 0;
 
     mTrackerState.sample_accumulator = 0;
     m_pos = 0;
 
-    // 3. Generation Loop
+    //  Generation Loop
     while (framesProcessed < totalFrames) {
         int toWrite = std::min(chunkSize, (int)(totalFrames - framesProcessed));
 
         // Use the new FLOAT fillBuffer directly
-        this->fillBuffer(&f32ExportBuffer[framesProcessed * 2], toWrite);
+        this->fillBuffer(&exportBuffer[framesProcessed * 2], toWrite);
 
         framesProcessed += toWrite;
 
@@ -1607,22 +1610,89 @@ bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename
 
         // Apply DSP directly to the master float buffer
         for (auto& effect : this->mDspEffects) {
-            effect->process(f32ExportBuffer.data(), f32ExportBuffer.size(), 2);
+            effect->process(exportBuffer.data(), exportBuffer.size(), 2);
         }
         if (progressOut) *progressOut = 0.85f;
 
         // Normalize
-        DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
+        DSP::normalizeBuffer(exportBuffer.data(), exportBuffer.size(), 0.98f);
         if (progressOut) *progressOut = 0.90f;
     }
 
     if (progressOut) *progressOut = 1.0f;
 
-    attachAudio();
-
-
-    return saveWavFile(filename, f32ExportBuffer, sampleRate);
 }
+//------------------------------------------------------------------------------
+bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename, float* progressOut, bool applyEffects) {
+    detachAudio();
+
+    std::vector<float> f32ExportBuffer;
+    exportToBuffer(sd, f32ExportBuffer, progressOut, applyEffects);
+
+    attachAudio();
+    return saveWavFile(filename, f32ExportBuffer, cSampleRate);
+
+}
+
+// bool OPL3Controller::exportToWav(opl3::SongData& sd, const std::string& filename, float* progressOut, bool applyEffects) {
+//     detachAudio();
+//     dLog("[info] OPL3Controller::exportToWav (Optimized Float Pipeline)...");
+//
+//     playSong(sd, false);
+//
+//     // 1. Calculate dimensions
+//     uint32_t total_ticks = sd.getTotalRows() * sd.ticksPerRow;
+//     uint32_t totalFrames = static_cast<uint32_t>(total_ticks * mTrackerState.samples_per_tick);
+//     int sampleRate = 44100;
+//     int chunkSize = 4096;
+//
+//     // 2. Allocate FLOAT buffer for the entire export
+//     // This is the "Working Master" buffer
+//     std::vector<float> f32ExportBuffer(totalFrames * 2);
+//     int framesProcessed = 0;
+//
+//     mTrackerState.sample_accumulator = 0;
+//     m_pos = 0;
+//
+//     // 3. Generation Loop
+//     while (framesProcessed < totalFrames) {
+//         int toWrite = std::min(chunkSize, (int)(totalFrames - framesProcessed));
+//
+//         // Use the new FLOAT fillBuffer directly
+//         this->fillBuffer(&f32ExportBuffer[framesProcessed * 2], toWrite);
+//
+//         framesProcessed += toWrite;
+//
+//         if (progressOut) {
+//             float progressScale = applyEffects ? 0.70f : 1.0f;
+//             *progressOut = (float)framesProcessed / (float)totalFrames * progressScale;
+//         }
+//     }
+//
+//     this->stopSong(true);
+//
+//     // 4. Processing Phase
+//     if (applyEffects) {
+//         if (progressOut) *progressOut = 0.75f;
+//
+//         // Apply DSP directly to the master float buffer
+//         for (auto& effect : this->mDspEffects) {
+//             effect->process(f32ExportBuffer.data(), f32ExportBuffer.size(), 2);
+//         }
+//         if (progressOut) *progressOut = 0.85f;
+//
+//         // Normalize
+//         DSP::normalizeBuffer(f32ExportBuffer.data(), f32ExportBuffer.size(), 0.98f);
+//         if (progressOut) *progressOut = 0.90f;
+//     }
+//
+//     if (progressOut) *progressOut = 1.0f;
+//
+//     attachAudio();
+//
+//
+//     return saveWavFile(filename, f32ExportBuffer, sampleRate);
+// }
 //------------------------------------------------------------------------------
 bool OPL3Controller::saveWavFile(const std::string& filename, const std::vector<float>& data, int sampleRate)  {
     // Open the file for writing using SDL3's IO system
@@ -1671,11 +1741,21 @@ bool OPL3Controller::saveWavFile(const std::string& filename, const std::vector<
 //------------------------------------------------------------------------------
 void OPL3Controller::detachAudio(){
     SDL_PauseAudioStreamDevice(mStream);
-    SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
+    // SDL_SetAudioStreamGetCallback(mStream, NULL, NULL);
+
+    // stop DecoderWorker
+    mDecoderThreadRunning.store( false );
+    if (mDecoderThread.joinable()) {
+        mDecoderThread.join();
+    }
+
 }
 
 void OPL3Controller::attachAudio(){
-    SDL_SetAudioStreamGetCallback(mStream, OPL3Controller::audio_callback, this);
+    // start DecoderWorker
+    mDecoderThreadRunning.store( true );
+
+    // SDL_SetAudioStreamGetCallback(mStream, OPL3Controller::audio_callback, this);
     SDL_ResumeAudioStreamDevice(mStream);
 }
 //------------------------------------------------------------------------------

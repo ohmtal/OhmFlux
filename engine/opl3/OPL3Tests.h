@@ -30,8 +30,7 @@ public:
         // using OplChip = ymfm::ymf262; //OPL3
         ymfm::ymf262::output_data& output = mController->getOutPut();
 
-        SDL_PauseAudioStreamDevice(stream);
-        SDL_SetAudioStreamGetCallback(stream, NULL, NULL);
+        mController->detachAudio();
 
         // 1. Hard Reset
         // mChip->reset();
@@ -66,8 +65,7 @@ public:
                output.data[3]);
 
         // rebind the audio stream!
-        SDL_SetAudioStreamGetCallback(stream, OPL3Controller::audio_callback, this);
-        SDL_ResumeAudioStreamDevice(stream);
+        mController->attachAudio();
 
 
     }
