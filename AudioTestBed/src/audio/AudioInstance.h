@@ -43,10 +43,15 @@
 #include <core/fluxGlobals.h>
 #include <core/fluxBaseObject.h>
 #include <miniaudio.h>
+
+
+#ifdef AUDIO_PORT_SFX
 #include "SFXGeneratorStereo.h"
-#include <functional>
-//----
+#endif
+
+
 #include "utils/errorlog.h"
+#include <functional>
 
 struct stb_vorbis; //FWD
 
@@ -68,8 +73,10 @@ namespace FluxAudio {
         //Resource
         ResourceData* resource = nullptr;
 
+        #ifdef AUDIO_PORT_SFX
         // save cpu power
         bool mAutoConvertSfxToWav = true;
+        #endif
 
         // status
         bool isPlaying    = false; //<< fixme !!
@@ -129,7 +136,9 @@ namespace FluxAudio {
         stb_vorbis* vorbisDecoder = nullptr;
         ma_decoder maDecoder;
 
+        #ifdef AUDIO_PORT_SFX
         SFXGeneratorStereo*  mSFXGen = nullptr;
+        #endif
 
         // we hold the spec
         SDL_AudioSpec srcSpec;

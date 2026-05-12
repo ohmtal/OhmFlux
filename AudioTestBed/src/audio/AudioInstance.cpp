@@ -73,12 +73,14 @@ namespace FluxAudio {
                 break;
             }
 
+            #ifdef AUDIO_PORT_SFX
             case AudioType::SFX: {
                 if (!mSFXGen) return false;
                 mSFXGen->PlaySample();
                 mSamplePos = 0;
                 break;
             }
+            #endif
 
             default:
                 return false;
@@ -223,6 +225,7 @@ namespace FluxAudio {
             }
 
             // ........ SFX .............
+            #ifdef AUDIO_PORT_SFX
             case AudioType::SFX: {
                 mSFXGen = new SFXGeneratorStereo();
                 if (!mSFXGen->LoadFromMemory(resource->mRawData)) {
@@ -253,6 +256,7 @@ namespace FluxAudio {
 
                 break;
             }
+            #endif
 
 
 
@@ -270,8 +274,9 @@ namespace FluxAudio {
         if ( stream ) { SDL_DestroyAudioStream(stream); stream = nullptr; }
         if ( vorbisDecoder ) { stb_vorbis_close(vorbisDecoder); vorbisDecoder = nullptr; }
         if ( maDecoder.pBackend ) {ma_decoder_uninit(&maDecoder); maDecoder.pBackend=nullptr; }
+        #ifdef AUDIO_PORT_SFX
         if ( mSFXGen ) { SAFE_DELETE(mSFXGen); mSFXGen = nullptr; }
-
+        #endif
     }
     //--------------------------------------------------------------------------
     bool AudioInstance::fillBuffer() {
@@ -376,6 +381,7 @@ namespace FluxAudio {
 
                 break;
             }
+            #ifdef AUDIO_PORT_SFX
             case AudioType::SFX: {
                 if (!mSFXGen) return false;
 
@@ -399,6 +405,7 @@ namespace FluxAudio {
 
                 break;
             }
+            #endif
 
             // ....... UNKNOWN ........
             default:
@@ -441,6 +448,8 @@ namespace FluxAudio {
             return false;
         }
         switch (resource->fileType) {
+
+            #ifdef AUDIO_PORT_SFX
             case AudioType::SFX: {
                 if (!mSFXGen) {
                     Log("[error] Convert SFX To WAV: SFX Generator not Initialized!");
@@ -464,6 +473,8 @@ namespace FluxAudio {
                 return true;
 
             }
+            #endif
+
             default:
                 // i also could do this on other formats using miniaudio but why.
                 Log("[warn] ConvertToWav unsupported Audioformat.");
@@ -535,12 +546,14 @@ namespace FluxAudio {
 
                 break;
             }
+            #ifdef AUDIO_PORT_SFX
             case AudioType::SFX: {
                 mSampleLen = mSFXGen->getSyntFrames();
                 mSampleDuration =  (double)mSampleLen / dstSpec.freq;
 
                 break;
             }
+            #endif
             default: {
                 if (OnFatalError)  OnFatalError("setSampleLenAndDuration unknown audio filetype!");
                 break;
