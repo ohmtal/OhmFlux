@@ -44,6 +44,8 @@ class SFXGeneratorStereo
 
     SDL_AudioSpec mSpec;
 
+    std::vector<float>mAudioBuffer;
+
 public:
     // Parameters that define the sound
     struct SFXParams

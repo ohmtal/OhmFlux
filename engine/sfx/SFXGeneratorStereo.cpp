@@ -948,20 +948,26 @@ void SDLCALL SFXGeneratorStereo::audio_callback(void* userdata, SDL_AudioStream*
 
     if (frames_needed > 0)
     {
+        int totalFrames = frames_needed * 2;
         std::lock_guard<std::recursive_mutex> lock(gen->mParamsMutex);
         // if (gen->mState.playing_sample)
         {
-            std::vector<float> stereoBuffer(frames_needed * 2, 0.0f);
-            gen->SynthSample(frames_needed, stereoBuffer.data());
+
+            if (gen->mAudioBuffer.size() < totalFrames) {
+                gen->mAudioBuffer.resize(totalFrames);
+                std::fill(gen->mAudioBuffer.begin(), gen->mAudioBuffer.end(), 0.f);
+            }
+
+            gen->SynthSample(frames_needed, gen->mAudioBuffer.data());
 
             #ifdef SFX_USE_DSP
             for (auto& effect : gen->mDspEffects) {
-                effect->process(stereoBuffer.data(), frames_needed * 2, 2);
+                effect->process(gen->mAudioBuffer.data(), totalFrames, 2);
             }
             #endif
 
             // SDL_PutAudioStreamData(stream, stereoBuffer.data(), additional_amount);
-            SDL_PutAudioStreamData(stream, stereoBuffer.data(), frames_needed * 2 * sizeof(float));
+            SDL_PutAudioStreamData(stream, gen->mAudioBuffer.data(), totalFrames * sizeof(float));
         }
     }
 }
