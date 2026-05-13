@@ -302,7 +302,7 @@ public:
     void setFrequency(uint8_t channel, uint16_t fnum, uint8_t octave);
     void setFrequencyLinear(uint8_t channel, float linearFreq);
 
-    bool isAnyVoiceActive() { return !mIsSilent.load(); }
+    bool isAnyVoiceActive() { return !mIsSilent/*.load()*/; }
 
 
 

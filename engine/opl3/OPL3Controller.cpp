@@ -55,8 +55,10 @@ void OPL3Controller::DecoderWorker() {
     int totalFrames = MAX_FRAMES;
     int totalSamples = totalFrames * 2;
     float* f32Buffer = controller->mF32Buffer.data();
+    bool active = false;
 
     while (mDecoderThreadRunning.load()) {
+        active = controller->isAnyVoiceActive();
         if (SDL_GetAudioStreamQueued(mStream) < targetQueueSize) {
 
             // Fill Buffer
@@ -65,7 +67,7 @@ void OPL3Controller::DecoderWorker() {
                 controller->fillBuffer(f32Buffer, totalFrames);
             }
             // DSP Effects
-            if (controller->isAnyVoiceActive())
+            if (active)
             {
                 for (auto& effect : controller->mDspEffects) {
                     effect->process(f32Buffer, totalSamples, 2);
@@ -76,7 +78,10 @@ void OPL3Controller::DecoderWorker() {
            std::this_thread::sleep_for(std::chrono::milliseconds( 25 ));
         }
 
-        // if (!controller->isAnyVoiceActive()) std::this_thread::sleep_for(std::chrono::milliseconds( 90 ));
+        if (!active) {
+            std::this_thread::sleep_for(std::chrono::milliseconds( 100 ));
+            // dLog("Long sleep");
+        }
 
 
     } //while ...
