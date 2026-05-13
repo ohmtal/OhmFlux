@@ -46,21 +46,23 @@ OPL3Controller::~OPL3Controller(){
     }
 }
 //------------------------------------------------------------------------------
+// mhh switched to push but voiceactive check is gone ... and higher load
 void OPL3Controller::DecoderWorker() {
 
-    const float cacheSec = 0.250f;
+    const float cacheSec = 0.100f;
     const int targetQueueSize = (int)(cSampleRate * 2 * sizeof(float) * cacheSec);
     OPL3Controller* controller = this;
+    int totalFrames = MAX_FRAMES;
+    int totalSamples = totalFrames * 2;
+    float* f32Buffer = controller->mF32Buffer.data();
 
     while (mDecoderThreadRunning.load()) {
         if (SDL_GetAudioStreamQueued(mStream) < targetQueueSize) {
-            int totalSamples = MAX_FRAMES * 2;
-            float* f32Buffer = controller->mF32Buffer.data();
 
             // Fill Buffer
             {
                 std::lock_guard<std::recursive_mutex> lock(controller->mDataMutex);
-                controller->fillBuffer(f32Buffer, MAX_FRAMES);
+                controller->fillBuffer(f32Buffer, totalFrames);
             }
             // DSP Effects
             if (controller->isAnyVoiceActive())
@@ -71,10 +73,13 @@ void OPL3Controller::DecoderWorker() {
             }
             SDL_PutAudioStreamData(mStream, f32Buffer, MAX_FRAMES * 8);
         } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+           std::this_thread::sleep_for(std::chrono::milliseconds( 25 ));
         }
 
-    }
+        // if (!controller->isAnyVoiceActive()) std::this_thread::sleep_for(std::chrono::milliseconds( 90 ));
+
+
+    } //while ...
 
 
 }
