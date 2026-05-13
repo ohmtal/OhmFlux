@@ -59,9 +59,7 @@ struct VirtualKeyBoard {
     void Draw() {
         if (!mVisible || mInputBuffer == nullptr ) return;
         switch (mMode) {
-            case VirtualKeyBoardMode::Sorted:
-                SortedKeyboard();
-                break;
+
 
             case VirtualKeyBoardMode::Qwerty:
             case VirtualKeyBoardMode::Qwertz:
@@ -167,3 +165,4 @@ private:
     // -------------------------------------------------------------------------
 
 };
+}
