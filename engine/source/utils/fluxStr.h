@@ -8,6 +8,7 @@
 
 #include <string>
 #include <string_view>
+#include <charconv>
 
 namespace FluxStr {
     //--------------------------------------------------------------------------
@@ -145,6 +146,29 @@ namespace FluxStr {
             start = str.find_first_not_of(delimiter, end);
         }
         return "";
+    }
+
+    //--------------------------------------------------------------------------
+    // base = 10 => Dezimalsystem
+    [[nodiscard]] inline int strToInt(std::string_view str, const int defaultValue = 0, const int base = 10) noexcept {
+        int value = 0;
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value, base);
+        if (ec != std::errc{}) {
+            return defaultValue; 
+        }
+        return value;
+    }
+    //--------------------------------------------------------------------------
+    [[nodiscard]] inline float strToFloat(std::string_view str, const float defaultValue = 0.0f) noexcept {
+        float value = 0.0f;
+
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+
+        if (ec != std::errc{}) {
+            return defaultValue;
+        }
+
+        return value;
     }
     //--------------------------------------------------------------------------
     inline std::vector<std::string_view> Tokenize(std::string_view str, const char delimiter = ' ') {
