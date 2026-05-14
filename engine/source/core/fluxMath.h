@@ -9,9 +9,11 @@
 #include <math.h>
 #include <cassert>
 #include <random>
+#include <numeric>
 #include <algorithm>
 
 #include "core/fluxGlobals.h"
+
 
 namespace FluxMath {
 
