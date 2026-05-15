@@ -149,7 +149,7 @@ namespace FluxStr {
     }
 
     //--------------------------------------------------------------------------
-    // base = 10 => Dezimalsystem
+    // base = 10 => decimal, you can also use base=FF for hex :)
     [[nodiscard]] inline int strToInt(std::string_view str, const int defaultValue = 0, const int base = 10) noexcept {
         int value = 0;
         auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value, base);
@@ -159,17 +159,30 @@ namespace FluxStr {
         return value;
     }
     //--------------------------------------------------------------------------
-    [[nodiscard]] inline float strToFloat(std::string_view str, const float defaultValue = 0.0f) noexcept {
-        float value = 0.0f;
+    [[nodiscard]] inline float strToFloat(const std::string str, const float defaultValue = 0.0f) noexcept {
 
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+        char* endPtr = nullptr;
 
-        if (ec != std::errc{}) {
+        float value = std::strtof(str.c_str(), &endPtr);
+
+        if (endPtr == str.c_str() ) {
             return defaultValue;
         }
 
         return value;
     }
+
+    // [[nodiscard]] inline float strToFloat(std::string_view str, const float defaultValue = 0.0f) noexcept {
+    //     float value = 0.0f;
+    //
+    //     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+    //
+    //     if (ec != std::errc{}) {
+    //         return defaultValue;
+    //     }
+    //
+    //     return value;
+    // }
     //--------------------------------------------------------------------------
     inline std::vector<std::string_view> Tokenize(std::string_view str, const char delimiter = ' ') {
         std::vector<std::string_view> tokens;
