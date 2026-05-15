@@ -74,7 +74,7 @@ namespace DSP {
         }
 
 
-        DrumKitData customData;
+        DrumKitData customData = {};
         // with customdata !!!
         std::vector<std::shared_ptr<IPreset>> getPresets() const override {
             std::vector<std::shared_ptr<IPreset>> list;
