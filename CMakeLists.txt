@@ -502,6 +502,13 @@ if(BUILD_AUDIOTEST)
     add_subdirectory(AudioTestBed)
 endif()
 
+# --- KorkTestBed ---
+option(BUILD_KORKTEST "Build KorkTestBed application" ON)
+
+if(BUILD_KORKTEST)
+    add_subdirectory(KorkTest)
+endif()
+
 
 # =============================================================================
 # <<<<< PROJECTS SECTION
