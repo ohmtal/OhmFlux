@@ -3,18 +3,16 @@
 //------------------------------------------------------------------------------
 #pragma once
 
-#include <string>
-#include <vector>
-#include <cstdint>
+// #include <string>
+// #include <vector>
+// #include <cstdint>
 
 namespace ByteEncoder {
-
-
     struct Base64 {
         static inline const char* lut = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
         // ... encode
-        std::string encode(const unsigned char* data, uint32_t len) {
+        std::string encode(const unsigned char* data, uint32_t len); /*{
             std::string out;
             out.reserve(((len + 2) / 3) * 4);
             for (uint32_t i = 0; i < len; i += 3) {
@@ -25,17 +23,17 @@ namespace ByteEncoder {
                 out.push_back(i + 2 < len ? lut[val & 0x3F] : '=');
             }
             return out;
-        }
+        }*/
 
         // ... encode with string stream
-        std::string encode(const std::stringstream& stream) {
+        std::string encode(const std::stringstream& stream);  /*{
             std::string buffer = stream.str(); // Inhalt als String kopieren
             return encode(reinterpret_cast<const unsigned char*>(buffer.data()),
                           static_cast<uint32_t>(buffer.size()));
-        }
+        }*/
 
         // ... decode
-        uint32_t decode(const std::string& input, unsigned char* output) {
+        uint32_t decode(const std::string& input, unsigned char* output); /*{
             static const std::vector<int> rev_lut = [](){
                 std::vector<int> v(256, -1);
                 for (int i = 0; i < 64; i++) v[lut[i]] = i;
@@ -52,10 +50,10 @@ namespace ByteEncoder {
                 }
             }
             return count;
-        }
+        }*/
 
         // ... encode with string stream
-        bool decode(const std::string& input, std::stringstream& output) {
+        bool decode(const std::string& input, std::stringstream& output); /*{
             // validate len
             if (input.empty() || (input.length() % 4 != 0)) {
                 return false;
@@ -68,7 +66,7 @@ namespace ByteEncoder {
                 output.seekg(0);
             }
             return true;
-        }
+        }*/
 
 
     }; //Base64

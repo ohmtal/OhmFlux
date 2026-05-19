@@ -116,9 +116,25 @@ set(ENGINE_SOURCES
     ${ENGINE_DIR}/render/fluxRender2D.cpp
     ${ENGINE_DIR}/render/fluxShader.cpp
 
-    ${ENGINE_DIR}/utils/fluxScheduler.cpp
+    # --- util --- with headers
+    ${ENGINE_DIR}/utils/byteEncoder.h
+    ${ENGINE_DIR}/utils/byteEncoder.cpp
+
     ${ENGINE_DIR}/utils/errorlog.h
     ${ENGINE_DIR}/utils/errorlog.cpp
+
+    ${ENGINE_DIR}/utils/FileSearcher.h
+    ${ENGINE_DIR}/utils/fluxDirectory.h
+    ${ENGINE_DIR}/utils/fluxFile.h
+
+    ${ENGINE_DIR}/utils/fluxGarbageCollection.h
+
+    ${ENGINE_DIR}/utils/fluxScheduler.h
+    ${ENGINE_DIR}/utils/fluxScheduler.cpp
+
+    ${ENGINE_DIR}/utils/fluxSettingsManager.h
+
+    ${ENGINE_DIR}/utils/fluxStr.h
 
     #  --- stb ---
     ${STB_DIR}/flux_stb_impl.cpp

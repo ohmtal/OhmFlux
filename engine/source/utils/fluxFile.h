@@ -20,12 +20,13 @@
 #include <sstream>
 
 
-class FluxFile {
-public:
+namespace FluxFile {
+
+    // --------------------------------------------------------------------------
     static bool Exists(const std::string& path) {
           return SDL_GetPathInfo(path.c_str(), NULL);
     }
-
+    // --------------------------------------------------------------------------
     // Loads a file into a vector of strings
     static bool LoadTextFile(const std::string& path, std::vector<std::string>& outLines) {
         size_t size;
@@ -44,7 +45,7 @@ public:
         }
         return true;
     }
-
+    // --------------------------------------------------------------------------
     // load into a string
     static bool LoadTextFile(const std::string& path, std::string& outString) {
         size_t size;
@@ -56,7 +57,7 @@ public:
 
         return true;
     }
-
+    // --------------------------------------------------------------------------
     // Saves a vector of strings
     static bool SaveTextFile(const std::string& path, const std::vector<std::string>& lines) {
         SDL_IOStream* io = SDL_IOFromFile(path.c_str(), "w");
@@ -70,9 +71,7 @@ public:
         SDL_CloseIO(io);
         return true;
     }
-
-
-
+   // --------------------------------------------------------------------------
    static bool SaveBufferToFile(const char* filename, const uint8_t* data, size_t size) {
         FILE* file = fopen(filename, "wb");
         if (!file) return false;
@@ -80,6 +79,8 @@ public:
         fclose(file);
         return true;
     }
-};
+    // --------------------------------------------------------------------------
+
+} // namespace
 
 

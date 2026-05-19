@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <atomic>
 
+
 //-----------------------------------------------------------------------------
 namespace FluxAudio  {
     constexpr float MAX_RECORDING_SECONDS = 600.0f; //10 mimutes
