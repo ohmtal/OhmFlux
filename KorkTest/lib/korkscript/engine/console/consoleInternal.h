@@ -60,7 +60,8 @@ namespace KorkApi
 ///
 /// Namespaces are used for dispatching calls in the console system.
 
-extern char *typeValueEmpty;
+// XXTH changed to const
+extern const char *typeValueEmpty;
 class ExprEvalState;
 
 enum EvalConstants {

@@ -4113,6 +4113,8 @@ bool KorkApi::VmInternal::getCurrentFiberFileLine(StringTableEntry* outFile, U32
    
    *outFile = block->name;
    *outLine = line;
+
+   return true; //XXTH
 }
 
 KorkApi::FiberFrameInfo KorkApi::Vm::getCurrentFiberFrameInfo(S32 frameId)

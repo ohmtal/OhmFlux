@@ -189,6 +189,8 @@ bool getFileTimes(const char *filePath, FileTime *createTime, FileTime *modifyTi
 
 bool isFile(const char *pFilePath)
 {
+   //XXTH FIXME (exec)
+   return true;
    return false;
 }
 

@@ -80,7 +80,7 @@ public:
         // Lua commands:
         try {
             if (!getLua()) {
-                SDL_Log("[error] failed to get LuaState!");
+                Log("[error] failed to get LuaState!");
                 return;
             }
             auto result =  getLua()->safe_script(cmdLineStr, sol::script_pass_on_error);
@@ -201,7 +201,7 @@ public:
                 }
             }
         } catch (const fs::filesystem_error& e) {
-            SDL_Log("[error]%s",e.what());
+            Log("[error]%s",e.what());
             return false;
         }
         // -------------------------------------------------------------------------

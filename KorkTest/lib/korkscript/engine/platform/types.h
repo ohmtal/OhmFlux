@@ -185,9 +185,15 @@ inline U32 endianSwap(const U32 in_swap)
 
 #define BIT(x) (1 << (x))                       ///< Returns value with bit x set (2^x)
 
-#ifndef Offset
-#define Offset(x, cls) offsetof(cls, x)
-#endif
+// #ifndef Offset
+// #define Offset(x, cls) offsetof(cls, x)
+// #endif
+
+// XXTH
+   #ifndef Offset
+   #define Offset(x, cls) \
+   ((size_t) &((cls*)0x1000)->x - 0x1000)
+   #endif
 
 inline dsize_t dAlignSize(const dsize_t size, const U16 alignment)
 {

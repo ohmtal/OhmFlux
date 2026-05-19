@@ -71,7 +71,7 @@ if (true #[[ENABLE_KS]])
       ${KS_PATH}/torqueSim/sim/simFiberManager.cc
       ${KS_PATH}/torqueSim/sim/simFiberManager.h
       ${KS_PATH}/torqueSim/sim/simManager.cc
-      ${KS_PATH}/torqueSim/platform/basicPlatformProcess.cc
+      # XXTH ${KS_PATH}/torqueSim/platform/basicPlatformProcess.cc
       ${KS_PATH}/torqueSim/platform/platformFileIO.cc
       ${KS_PATH}/torqueSim/platform/platformStrings.cc
       ${KS_PATH}/torqueSim/platform/platformThread.cc
@@ -89,6 +89,13 @@ set(PROJECT_SOURCES
     ${TORQUESIM_SRCS}
     # --- custom sources ---
     ${KORK_DIR}/src/main.cpp
+    ${KORK_DIR}/src/myPlatformProcess.cc
+
+    ${KORK_DIR}/src/totp/base32.cc
+    ${KORK_DIR}/src/totp/base32.h
+    ${KORK_DIR}/src/totp/hmac-sha1.cc
+    ${KORK_DIR}/src/totp/hmac-sha1.h
+    ${KORK_DIR}/src/totp/totp.cc
 
 )
 

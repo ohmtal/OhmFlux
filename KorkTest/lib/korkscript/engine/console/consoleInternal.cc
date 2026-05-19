@@ -265,7 +265,8 @@ const char *Dictionary::tabComplete(const char *prevText, S32 baseLen, bool fFor
 }
 
 
-char *typeValueEmpty = "";
+// XXTH changed to const
+const char *typeValueEmpty = "";
 
 Dictionary::Entry::Entry(StringTableEntry in_name)
 {

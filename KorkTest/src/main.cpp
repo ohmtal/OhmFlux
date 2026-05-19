@@ -1,14 +1,18 @@
 //-----------------------------------------------------------------------------
-// ohmFlux AudiTestBed
-// Reimplementation of better Sound System
+// ohmFlux KorkScript Testing
+// Issues:
+//  [ ] myPlatfromProcess needs to be filled
+//  [ ] Script parse error when using id like : 1029.dump();
+//       ==> Error parsing ("; expected"; token is dump) at 1:5
+//       << error is from astGen.processTokens() cause a exception
 //-----------------------------------------------------------------------------
 #include <SDL3/SDL_main.h>
 
 #include "fluxMain.h"
 #include "gui/fluxGuiGlue.h"
 #include "gui/ImConsole.h"
+#include "gui/ImFileDialog.h"
 
-// #include "gui/ImFileDialog.h"
 // #include "utils/fluxFile.h"
 // #include "core/fluxMath.h"
 // #include "gui/ImFlux.h"
@@ -16,13 +20,18 @@
 
 #include "platform/platform.h"
 #include "console/console.h"
+#include "console/consoleTypes.h"
 #include "sim/simBase.h"
 #include "sim/dynamicTypes.h"
 #include "core/fileStream.h"
 
-class Player : public SimObject
+class Player : public SimObject, public FluxBaseObject
 {
     typedef SimObject Parent;
+
+    bool mShielded = false;
+    bool mSitting = false;
+    S32  mReqUInt = 0;
 
 public:
 
@@ -37,7 +46,16 @@ public:
     {
         Parent::initPersistFields();
         // Does not have the default types like TypeS32 :(
-        // addField("position", TypeReqUInt, Offset(mPosition, Player));
+        addField("ReqUInt", TypeReqUInt, Offset(mReqUInt, Player));
+
+        addField("Shielded", TypeBool,     Offset(mShielded, Player)        );
+        addField("Sitting",	 TypeBool,     Offset(mSitting, Player)        );
+
+    }
+
+    bool onAdd() override {
+        Log("Player %d added.", getId());
+        return Parent::onAdd();
     }
 
     DECLARE_CONOBJECT(Player);
@@ -77,17 +95,21 @@ class KorkTestBed : public FluxMain
     ImConsole console;
     // ImFileDialog fileDialog;
 
+    std::vector<fs::path> scriptFiles;
+
     std::unique_ptr<FluxGuiGlue> mGuiGlue;
 
 
 
     // -------------------------------------------------------------------------
     void OnConsoleCommand(ImConsole* console, const char* command_line) {
-        // std::string cmdLineStr = command_line;
+        std::string cmdLineStr = command_line;
         // std::string cmd = FluxStr::getWord(cmdLineStr, 0);
 
-        //FIXME call torque script
-        Con::evaluatef(command_line);
+        // add (); this may fail on "bla() ;" but i dont care ;)
+        if (!cmdLineStr.ends_with(");")) cmdLineStr += "();";
+
+        Con::evaluatef(cmdLineStr.c_str());
 
     }
     // -------------------------------------------------------------------------
@@ -109,6 +131,7 @@ public:
         console.OnCommand = [&](ImConsole* console, const char* command_line) {
             OnConsoleCommand(console, command_line);
         };
+
 
         // fileDialog.init( getGamePath(), { ".ogg", ".wav", ".mp3" , ".sfx", ".flac"});
         // {
@@ -133,8 +156,13 @@ public:
         Con::init();
         Sim::init();
         Con::addConsumer(MyLogger, NULL);
-        Con::evaluatef("echo(\"Testing kork script... ...\");");
+        Con::evaluatef( R"(
+            echo("Testing kork script with OhmFlux ...");
+            exec("assets/main.cs");
+        )");
         // <<<<
+
+        fetchScriptFiles();
 
 
         return true;
@@ -224,6 +252,24 @@ public:
                     ImGui::MenuItem("Console", "GraveAccent", &showConsole);
                     ImGui::EndMenu();
                 }
+                if (ImGui::BeginMenu("Scripts")) {
+                    //FIXME current script ?!
+                    // if (ImGui::MenuItem(std::format("Hot Reload {}", getScript()).c_str(),"CTRL+R")) {
+                    //     LoadScript();
+                    // }
+                    ImGui::SeparatorText("Files");
+                    bool selected = false;
+                    for (const auto& f : scriptFiles) {
+                        // selected = getScript() == f.string();
+                        if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
+                            // setScript(f.string());
+                            std::string cmd = std::format("exec(\"assets/{}\");", f.string());
+                            // Log("Loading with command: %s", cmd.c_str());
+                            Con::evaluate(cmd.c_str());
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
                 ImGui::EndMainMenuBar();
             }
         }
@@ -235,6 +281,30 @@ public:
         // ------
         mGuiGlue->DrawEnd();
     };
+
+
+    bool fetchScriptFiles() {
+        std::string path = getGamePath() + "assets/";
+        scriptFiles.clear();
+        try {
+            if (fs::exists(path) && fs::is_directory(path)) {
+                for (const auto& entry : fs::recursive_directory_iterator(path)) {
+                    if (entry.is_regular_file()
+                        &&  ( entry.path().extension() == ".cs" || entry.path().extension() == ".tscript")
+
+                    ) {
+                        // Full path: luaFiles.push_back(entry.path());
+                        scriptFiles.push_back(fs::relative(entry.path(), path));
+
+                    }
+                }
+            }
+        } catch (const fs::filesystem_error& e) {
+            Log("[error]%s",e.what());
+            return false;
+        }
+        return true;
+    }
 
 };
 //--------------------------------------------------------------------------------------

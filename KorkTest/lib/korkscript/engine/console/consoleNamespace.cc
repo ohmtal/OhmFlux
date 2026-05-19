@@ -278,9 +278,13 @@ Namespace *NamespaceState::find(StringTableEntry name, StringTableEntry package)
 
 Namespace *NamespaceState::lookup(StringTableEntry name, StringTableEntry package)
 {
-   for(Namespace *walk = mNamespaceList; walk; walk = walk->mNext)
-      if(walk->mName == name && walk->mPackage == package)
-         return walk;
+
+   for(Namespace *walk = mNamespaceList; walk; walk = walk->mNext) {
+         if(walk->mName == name && walk->mPackage == package)
+               return walk;
+   }
+   //XXTH
+   return nullptr;
 }
 
 bool Namespace::unlinkClass(Namespace *parent)
