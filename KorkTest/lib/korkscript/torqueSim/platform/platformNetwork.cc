@@ -189,7 +189,7 @@ typedef int SOCKET;
 
 #define closesocket close
 
-#elif defined( TORQUE_OS_LINUX )
+#elif defined(__unix__) || defined(__unix) || defined(__FreeBSD__) || defined(TORQUE_OS_LINUX) //XXTH
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -1661,7 +1661,8 @@ Net::Error Net::send(NetSocket handleFd, const U8 *buffer, S32 bufferSize, S32 *
    if (socketFd == InvalidSocketHandle)
       return NotASocket;
    
-#if defined( TORQUE_OS_LINUX )
+// #if defined( /*TORQUE_OS_LINUX*/ __UNIX__ ) //XXTH
+#if defined(__unix__) || defined(__unix) || defined(__FreeBSD__) || defined(TORQUE_OS_LINUX)
    // Poll for write status.  this blocks.  should really
    // do this in a separate thread or set it up so that the data can
    // get queued and sent later

@@ -503,7 +503,7 @@ if(BUILD_AUDIOTEST)
 endif()
 
 # --- KorkTestBed ---
-option(BUILD_KORKTEST "Build KorkTestBed application" ON)
+option(BUILD_KORKTEST "Build KorkTestBed application" OFF)
 
 if(BUILD_KORKTEST)
     add_subdirectory(KorkTest)
