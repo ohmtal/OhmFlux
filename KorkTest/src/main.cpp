@@ -25,6 +25,8 @@
 #include "sim/dynamicTypes.h"
 #include "core/fileStream.h"
 
+
+
 class Player : public SimObject, public FluxBaseObject
 {
     typedef SimObject Parent;
@@ -107,10 +109,10 @@ class KorkTestBed : public FluxMain
         // std::string cmd = FluxStr::getWord(cmdLineStr, 0);
 
         // add (); this may fail on "bla() ;" but i dont care ;)
-        // if (!cmdLineStr.ends_with(");")) cmdLineStr += "();";
-        //
-        // Con::evaluatef(cmdLineStr.c_str());
-        Con::evaluate(command_line);
+        if (!cmdLineStr.ends_with(");")) cmdLineStr += "();";
+
+        Con::evaluatef(cmdLineStr.c_str());
+
 
     }
     // -------------------------------------------------------------------------

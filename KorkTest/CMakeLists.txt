@@ -97,8 +97,12 @@ set(PROJECT_SOURCES
     ${KORK_DIR}/src/totp/hmac-sha1.h
     ${KORK_DIR}/src/totp/totp.cc
 
+    # testing math from OGE/Torque2D
+    # too many changes needed ... ${KORK_DIR}/src/math/mathTypes.cc
+
 )
 
 
 configure_project_target(KorkTestBed ${KORK_DIR} "${KORK_DIR}/assets@assets" "${PROJECT_SOURCES}")
+target_include_directories(KorkTestBed PRIVATE ${KORK_DIR}/src)
 target_include_directories(KorkTestBed PRIVATE ${KS_INCLUDES})
