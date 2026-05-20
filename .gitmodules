@@ -1,3 +1,3 @@
 [submodule "KorkTest/lib/korkscript"]
 	path = KorkTest/lib/korkscript
-	url = git@github.com:ohmtal/korkscript.git
+	url = https://github.com/ohmtal/korkscript.git
