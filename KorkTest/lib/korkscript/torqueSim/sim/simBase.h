@@ -95,7 +95,7 @@ class Namespace;
 class BitStream;
 class Stream;
 
-typedef U32 SimTime;
+typedef U64 SimTime; //XXTH U32 => U64!
 // END TMP T2D BLOCK
 typedef U32 SimObjectId;
 

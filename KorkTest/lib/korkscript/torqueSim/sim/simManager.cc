@@ -290,7 +290,7 @@ void advanceTime(SimTime delta)
     @return the time in ticks since the engine was started.
     @sa getRealTime
 */
-U32 getCurrentTime()
+U64 getCurrentTime()
 {
    if(gEventQueueMutex)
       Mutex::lockMutex(gEventQueueMutex);
@@ -303,7 +303,7 @@ U32 getCurrentTime()
    return t;
 }
 
-U32 getTargetTime()
+U64 getTargetTime()
 {
    return gTargetTime;
 }

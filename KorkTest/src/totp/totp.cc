@@ -99,6 +99,9 @@ namespace TOTP
 
  */
 
+ConsoleFunctionGroupBegin(TwoFactorAuth, "Two Factor Authentication functions");
+
+
 ConsoleFunction(getTotpCode, S32, 2, 2, "get TOTP by secret ")
 {
     const char* secret = argv[1]; 
@@ -126,3 +129,4 @@ ConsoleFunction(getTotpValidate, bool, 3, 3, "vaidate a TOTP code by secret")
 
 	return TOTP::validate(secret,code,3);
 }
+ConsoleFunctionGroupEnd(TwoFactorAuth);

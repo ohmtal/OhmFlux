@@ -4,56 +4,79 @@
 //
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// XXTH: Using SDL3 to start ....
 // ORIG: torqueSim/platform/basicPlatformProcess.cc
 //-----------------------------------------------------------------------------
-// XXTH:
-// [X] isFile << needed for exec()
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "platform/platform.h"
-#include "platform/platformProcess.h"
-#include "platform/platformFileIO.h"
-#include "platform/threads/thread.h"
-#include "platform/threads/mutex.h"
-#include "platform/threads/semaphore.h"
-#include "core/stringTable.h"
-#include "core/safeDelete.h"
+// ~~~ 1. remove unused includes... ~~~
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include "platform/platform.h"
+// #include "platform/platformProcess.h"
+// #include "platform/platformFileIO.h"
+// #include "platform/threads/thread.h"
+// #include "platform/threads/mutex.h"
+// #include "platform/threads/semaphore.h"
+// #include "core/stringTable.h"
+// #include "core/safeDelete.h"
+//
+// #include <mutex>
+// #include <string>
+//
+// #ifdef TORQUE_USE_STD_FILESYSTEM
+// #include <filesystem>
+// namespace fs = std::filesystem;
+// #endif
 
-#include <mutex>
-#include <string>
-
-#ifdef TORQUE_USE_STD_FILESYSTEM
-#include <filesystem>
-namespace fs = std::filesystem;
-#endif
-
-
-
+// ~~~ 1. add includes... ~~~
+#include <SDL3/SDL.h>
 #include <console/console.h>
-#include "utils/fluxFile.h"
+#include <platform/platformProcess.h>
 
 
 namespace Platform
 {
-
    //---------------------------------------------------------------------------
+   bool isFile(const char *pFilePath) {
+      if (!pFilePath) {
+         return false;
+      }
+      SDL_PathInfo info;
+      // Returns true on success, false on failure (e.g., path doesn't exist)
+      if (SDL_GetPathInfo(pFilePath, &info)) {
+         return (info.type == SDL_PATHTYPE_FILE);
+      }
 
-   bool isFile(const char *pFilePath)
-   {
-      return FluxFile::Exists(pFilePath);
-
+      return false;
    }
    //---------------------------------------------------------------------------
-   U32 getTime( void )
+   // U32 => U64!
+   U64 getTime( void )
    {
-      time_t long_time;
-      time( &long_time );
-      return long_time;
+      SDL_Time nanoSeconds;
+      if (SDL_GetCurrentTime(&nanoSeconds)) {
+         return (U64)(nanoSeconds / SDL_NS_PER_SECOND);
+      }
+      Con::warnf("%s failed!", __func__);
+      return 0;
    }
    //---------------------------------------------------------------------------
+   // U32 => U64!
+   U64 getRealMilliseconds( void )
+   {
+      SDL_Time nanoSeconds;
+      if (SDL_GetCurrentTime(&nanoSeconds)) {
+         return (U64)(nanoSeconds / SDL_NS_PER_MS);
+      }
+      Con::warnf("%s failed!", __func__);
+      return 0;
+   }
 
-void init()
+   //---------------------------------------------------------------------------
+   //---------------------------------------------------------------------------
+   //TODO: ... lot of ... just in time :P ...
+   //---------------------------------------------------------------------------
+   void init()
 {
    Con::warnf("%s not implemented", __func__);
 }
@@ -101,18 +124,13 @@ StringTableEntry getUserDataDirectory()
 }
 
 
-
-U32 getVirtualMilliseconds( void )
+// XXTH U64!
+U64 getVirtualMilliseconds( void )
 {
    Con::warnf("%s not implemented", __func__);
    return 0;
 }
 
-U32 getRealMilliseconds( void )
-{
-   Con::warnf("%s not implemented", __func__);
-   return 0;
-}
 
 void advanceTime(U32 delta)
 {

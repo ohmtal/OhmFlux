@@ -73,8 +73,12 @@ ConsoleMethod(Player, jump, void, 2, 2, "")
 //------------------------------------------------------------------------------
 void MyLogger(U32 level, const char *consoleLine, void*)
 {
-    // Log("[%d] %s", level, consoleLine);
-    Log("%s", consoleLine);
+    switch (level) {
+        case 1: Log("[warn] %s",  consoleLine); break;
+        case 2: Log("[error] %s",  consoleLine); break;
+        default: Log("%s",  consoleLine); break;
+    }
+
 }
 
 //-----------------------------------------------------------------------------
@@ -208,6 +212,14 @@ public:
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
+
+        // advance Torque Time for schedule
+        static U32 lastTick = 0;
+        Sim::advanceTime(SDL_GetTicks() - lastTick);
+        lastTick = SDL_GetTicks();
+        // ----
+
+
 
 
         Parent::Update(dt);

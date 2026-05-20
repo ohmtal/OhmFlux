@@ -6,8 +6,14 @@ if (!isObject($player)) {
   echo("$player created");
 }
 
+function Player::bar(%this) {
+  echo("getSimTime:" SPC getSimTime());
+  %this.schedule(5000, foo);
+}
+
 function Player::foo(%this) {
-    echo(%this@".foo!");
+    echo(%this@".foo!" SPC getSimTime());
+
 }
 //------------------------------
 // TOTP (2FA):
