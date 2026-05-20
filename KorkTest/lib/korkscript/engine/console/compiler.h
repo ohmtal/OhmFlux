@@ -358,7 +358,18 @@ public:
    
 public:
 
-   CodeStream(Compiler::Resources* res) : mCode(0), mCodeHead(nullptr), mCodePos(0), mFilename(nullptr), mResources(res), mSwitchScopeDepth(0)
+   CodeStream(Compiler::Resources* res) :
+      mCode(0)
+      ,mCodeHead(nullptr)
+      ,mCodePos(0)
+      ,mSwitchScopeDepth(0)
+      ,mFilename(nullptr)
+
+      ,mCurrentReturnType(0) //XXTH added
+      ,mNumFuncCalls(0)  //XXTH CRITICAL!!!!!!!s
+
+      ,mResources(res)
+
    {
    }
    

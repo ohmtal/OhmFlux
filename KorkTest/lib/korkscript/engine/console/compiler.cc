@@ -567,6 +567,15 @@ void CodeStream::emitCodeStream(U32 *size, U32 **stream, U32 **lineBreaks, U32* 
    
    // Dump func calls
    mNumFuncCalls++; // reserve 0
+   //XXTH sanity ! no idea who high this should be but it killed my freebsd machine
+   // because it was no initialized and way to high!
+   if (mNumFuncCalls > 1000) {
+      AssertFatal(false, "numFuncCalls way too high ?! \n");
+      return;
+   }
+
+
+   //<<< XXTH
    *numFuncCalls = mNumFuncCalls;
    *funcCallsPtr = KorkApi::VMem::NewArray<void*>(mNumFuncCalls);
    memset(*funcCallsPtr, '\0', sizeof(void*) * mNumFuncCalls);
@@ -588,7 +597,7 @@ void CodeStream::reset()
    mFixLoopStack.clear();
    mFixList.clear();
    mBreakLines.clear();
-   
+
    // Pop down to one code block
    CodeData *itr = mCode ? mCode->next : nullptr;
    while (itr != nullptr)

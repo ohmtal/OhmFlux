@@ -107,9 +107,10 @@ class KorkTestBed : public FluxMain
         // std::string cmd = FluxStr::getWord(cmdLineStr, 0);
 
         // add (); this may fail on "bla() ;" but i dont care ;)
-        if (!cmdLineStr.ends_with(");")) cmdLineStr += "();";
-
-        Con::evaluatef(cmdLineStr.c_str());
+        // if (!cmdLineStr.ends_with(");")) cmdLineStr += "();";
+        //
+        // Con::evaluatef(cmdLineStr.c_str());
+        Con::evaluate(command_line);
 
     }
     // -------------------------------------------------------------------------
