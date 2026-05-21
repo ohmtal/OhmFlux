@@ -640,10 +640,23 @@ void FluxMain::IterateFrame()
 		lFrameCounter = 0;
 		lFpsTimer -= 1.0f;
 
-		// auto slow down cpu load saving !
-		if (mFPS > 500 && mSettings.frameLimiter < 3.f) {
-			mSettings.frameLimiter += 0.25;
-			Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating Frame-Limiter: %.2f", mFPS,  mSettings.frameLimiter);
+		// auto slow down cpu load saving - it's usually lower then maxFPS !
+		if ( mSettings.maxFPS > 0 && mFPS >= mSettings.maxFPS && mSettings.frameLimiter < 3.f) {
+			if (mSettings.frameLimiter < 1.f) {
+				mSettings.frameLimiter = 1.f;
+				Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating", mFPS);
+			}
+			else {
+				mSettings.frameLimiter += 0.5;
+			}
+
+		} else if ( mFPS < 25 && mSettings.frameLimiter > 0.f) {
+			if (mSettings.maxFPS < 60)  {
+				mSettings.maxFPS = 60;
+			}
+			Log("[info] Low FPS (%d) detected ... set frameLimiter to ZERO.", mFPS);
+			mSettings.frameLimiter = 0;
+			// FIXME call a low fps event ?! not every sek but we may handle this ....
 		}
 
 	}
@@ -654,23 +667,19 @@ void FluxMain::IterateFrame()
 	static double accumulator = 0.0;
 	accumulator += gFrameTime;
 
-	// 4. Fixed Timestep Loop
-	// Consume time in chunks of exactly 16.66ms.
 	while (accumulator >= mSettings.updateDt) {
-		Update(mSettings.updateDt );
-		accumulator -= mSettings.updateDt;
+		Update( accumulator );
+		accumulator = 0; //-= mSettings.updateDt;
 	}
 
 	//  Render
 	if ( gAppStatus.Visible ) {
 		Draw();
 		SDL_GL_SwapWindow(getScreen()->getWindow());
-	} else {
+	} else if (mSettings.frameLimiter < 32.f){
 		#ifndef __EMSCRIPTEN__
-		SDL_Delay((Uint32)(32.f - gFrameTime));
+		SDL_Delay(16); // ~60fps
 		#endif
-		mTickCount = SDL_GetPerformanceCounter();
-		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency ;
 	}
 
 
