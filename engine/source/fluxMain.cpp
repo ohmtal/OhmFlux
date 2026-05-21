@@ -667,9 +667,10 @@ void FluxMain::IterateFrame()
 		SDL_GL_SwapWindow(getScreen()->getWindow());
 	} else {
 		#ifndef __EMSCRIPTEN__
-		SDL_Delay((Uint32)(16.f - gFrameTime));
+		SDL_Delay((Uint32)(32.f - gFrameTime));
 		#endif
-
+		mTickCount = SDL_GetPerformanceCounter();
+		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency ;
 	}
 
 
