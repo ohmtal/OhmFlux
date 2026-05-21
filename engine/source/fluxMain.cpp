@@ -503,10 +503,11 @@ void FluxMain::IterateFrame()
 				gAppStatus.Visible = false;
 				break;
 			case SDL_EVENT_WINDOW_MINIMIZED:
-				if (mSettings.PauseMainThreadOnWindowMinimized) {
-					dLog("[warn]go into pause....");
+				// 2026-05-21 ignore this flag if minimized we skip render!
+				// if (mSettings.PauseMainThreadOnWindowMinimized) {
+					// dLog("[warn]go into pause....");
 					gAppStatus.Visible = false;
-				}
+				// }
 				break;
 			case SDL_EVENT_WINDOW_RESTORED:
 				gAppStatus.Visible = true;
@@ -601,10 +602,9 @@ void FluxMain::IterateFrame()
 		return;
 	}
 
-	// Handle Visibility/Pause
-	if (!gAppStatus.Visible || gAppStatus.Paused) {
+	// Handle Pause
+	if (gAppStatus.Paused) {
 		#ifndef __EMSCRIPTEN__
-		// Only block on native desktop; Web must never block
 		SDL_WaitEventTimeout(nullptr, 100);
 		#endif
 		mLastTick = SDL_GetPerformanceCounter();
@@ -662,8 +662,11 @@ void FluxMain::IterateFrame()
 	}
 
 	//  Render
-	Draw();
-	SDL_GL_SwapWindow(getScreen()->getWindow());
+	if ( gAppStatus.Visible ) {
+		Draw();
+		SDL_GL_SwapWindow(getScreen()->getWindow());
+	}
+
 
 	//  Update LastTick AFTER the frame is finished
 	mLastTick = mTickCount;
