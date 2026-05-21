@@ -59,17 +59,12 @@ namespace DSP {
         virtual void process(float* buffer, int numSamples, int numChannels) override {
             if (!mEnabled) return;
 
-            // Process in frames to handle interleaving correctly
             for (int i = 0; i < numSamples; i += numChannels) {
                 float monoSum = 0.0f;
-                // 1. Sum all channels in the current frame
                 for (int c = 0; c < numChannels; ++c) {
-                    //NOTE: Added * 0.85f to match limiter
-                    monoSum += buffer[i + c];// * 0.85f;
+                    monoSum += buffer[i + c];
                 }
-                // 2. Average the sum to keep the level consistent
                 monoSum /= static_cast<float>(numChannels);
-                // 3. Capture into the circular buffer
                 mCaptureBuffer[mWriteIdx] = monoSum;
                 mWriteIdx = (mWriteIdx + 1) % mFFT_SIZE;
             }

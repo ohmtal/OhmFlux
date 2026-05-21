@@ -96,9 +96,7 @@ namespace DSP {
                 int channel = 0;
                 for (int i = 0; i < numSamples; i++) {
                     //
-                    //NOTE * 0.55 with distortion it goes over 1.0 also if limiter is on
-                    // this match the limiter settings!
-                    float sample = buffer[i];// * 0.85f;
+                    float sample = buffer[i];
 
                     // Safety check
                     if (!std::isfinite(sample)) sample = 0.0f;
