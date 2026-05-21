@@ -665,6 +665,11 @@ void FluxMain::IterateFrame()
 	if ( gAppStatus.Visible ) {
 		Draw();
 		SDL_GL_SwapWindow(getScreen()->getWindow());
+	} else {
+		#ifndef __EMSCRIPTEN__
+		SDL_Delay((Uint32)(16.f - gFrameTime));
+		#endif
+
 	}
 
 
