@@ -607,13 +607,13 @@ inline void dumpPathes(FluxSettings* settings=nullptr) {
 
 
 //-----------------------------------------------------------------------------
-extern float gFrameTime;
-extern float gGameTime;
+extern double gFrameTime;
+extern double gGameTime;
 
-inline float getFrameTime() {
+inline const double getFrameTime() {
     return gFrameTime;
 }
-inline float getGameTime() {
+inline const double getGameTime() {
     return gGameTime;
 }
 //-----------------------------------------------------------------------------

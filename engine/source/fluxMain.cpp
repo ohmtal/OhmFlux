@@ -24,8 +24,8 @@
 #include "particle/fluxParticleManager.h"
 #include "utils/fluxScheduler.h"
 
-float gFrameTime = 0.f; // we need that Global for timming
-float gGameTime  = 0.f;
+double gFrameTime = 0.f; // we need that Global for timming
+double gGameTime  = 0.f;
 
 extern FluxQuadtree* g_CurrentQuadTree;
 //--------------------------------------------------------------------------------------
@@ -626,7 +626,7 @@ void FluxMain::IterateFrame()
 		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency ;
 	}
 
-	gGameTime += (float)gFrameTime;
+	gGameTime += (double)gFrameTime;
 
 	// fps update every 1 second:
 	static double lFpsTimer = 0;
