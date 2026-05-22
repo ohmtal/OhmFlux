@@ -19,7 +19,7 @@ ConsoleFunction(getScreenHeight, ConsoleInt, 1,1, "") {
 }
 
 ConsoleFunction(setVSync, void, 2,2, "") {
-    return getScreenObject()->setVSync(dAtob(argv[2]));
+    return getScreenObject()->setVSync(dAtob(argv[1]));
 }
 
 //------------------------------------------------------------------------------

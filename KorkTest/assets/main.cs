@@ -17,6 +17,19 @@ function clean() {
 }
 
 if (!isObject($sprite)) {
+    $texBack = new Texture() {
+    Texture = "assets/texture/nebulapurple_sky_back.png";
+
+  };
+  $background = new Sprite() {
+    Texture = $texBack;
+    x = getScreenWidth() / 2.0;
+    y = getScreenHeight() / 2.0;
+    w = getScreenWidth();
+    h = getScreenHeight();
+  };
+
+
   $texFaces = new Texture() {
     Texture = "assets/texture/faces.png";
     TexCols = 13;
