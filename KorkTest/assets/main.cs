@@ -10,11 +10,21 @@ echo ("[ ] Add collision or better Box2D");
 echo ("------------------------------");
 
 //------------------------------
-// ---- player test ------
+function clean() {
+  $sprite.delete();
+  $texFaces.delete();
+}
+
 if (!isObject($sprite)) {
-  $sprite = new Sprite() {
+  $texFaces = new Texture() {
     Texture = "assets/texture/faces.png";
     TexCols = 13;
+  };
+
+  $texFaces.dump();
+
+  $sprite = new Sprite() {
+    Texture = $texFaces;
     x = 100;
     y = 100;
     w = 64;
@@ -24,6 +34,8 @@ if (!isObject($sprite)) {
 
   echo("$sprite created");
 }
+
+
 
 function Sprite::bar(%this) {
   echo("getSimTime:" SPC getSimTime());

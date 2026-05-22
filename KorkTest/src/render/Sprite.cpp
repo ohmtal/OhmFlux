@@ -1,19 +1,31 @@
 #include "Sprite.h"
 #include "appMain.h"
 #include <platform/platformString.h>
+#include "Texture.h"
 
 namespace KorkFlux {
 
     IMPLEMENT_CONOBJECT(Sprite);
     // ------------------------------------------------------------------------.
+    bool Sprite::setTextureBySimID(U32 texSimID) {
+        mTextureSimID = 0; //reset
+
+        if (texSimID == 0) return false;
+
+        Texture* simTex = (Texture*)Sim::findObject(texSimID);
+        if (simTex && simTex->mTexture) {
+            mDrawParams.image = simTex->mTexture;
+            mTextureSimID = texSimID;
+            return true;
+        }
+        return false;
+    }
+    // ------------------------------------------------------------------------.
     bool Sprite::onAdd(){
         if (!gMain)  return false;
 
-        if (*mTextureName) {
-            FluxTexture*  tex = gMain->loadTexture(mTextureName, mTexCols, mTexRows);
-            if (!tex) return false;
-            mDrawParams.image = tex;
-        }
+        setTextureBySimID(mTextureSimID);
+
 
         gMain->queueObject(this);
         Log("[info] Sprite %d queued.", getId());
@@ -26,19 +38,11 @@ namespace KorkFlux {
     }
     // ------------------------------------------------------------------------.
     // FluxTexture* loadTexture(std::string filename, int cols = 1, int rows = 1, bool setColorKeyAtZeroPixel = false, bool usePixelPerfect  = false);
-    ConsoleMethod(Sprite, setTexture, bool, 3, 5, "(string filename),  int rows = 1 , int cols = 1 "
-    "Set sprite setBitmap")
+    ConsoleMethod(Sprite, setTexture, bool, 3, 3, "Texture id "
+    "Set the Textue")
     {
+        return object->setTextureBySimID(dAtoi(argv[2]));
 
-        if (argc > 3) object->mTexCols = dAtoi(argv[3]);
-        if (argc > 4) object->mTexRows = dAtoi(argv[4]);
-        object->mTextureName = argv[2];
-
-        FluxTexture*  tex = gMain->loadTexture(object->mTextureName, object->mTexCols, object->mTexRows);
-        if (!tex) return false;
-        object->mDrawParams.image = tex;
-
-        return true;
     }
 
 
@@ -48,10 +52,7 @@ namespace KorkFlux {
         Parent::initPersistFields();
         addGroup("Texture");
 
-        addField("Texture", TypeString, Offset(mTextureName, Sprite));
-        addField("TexCols", TypeS32, Offset(mTexCols, Sprite));
-        addField("TexRows", TypeS32, Offset(mTexRows, Sprite));
-
+        addField("Texture", TypeS32, Offset(mTextureSimID, Sprite));
 
         endGroup("Texture");
 

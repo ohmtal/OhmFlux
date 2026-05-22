@@ -111,7 +111,8 @@ set(PROJECT_SOURCES
 
     ${KORK_DIR}/src/myPlatformProcess.cc
 
-
+    ${KORK_DIR}/src/render/Texture.h
+    ${KORK_DIR}/src/render/Texture.cpp
     ${KORK_DIR}/src/render/Sprite.h
     ${KORK_DIR}/src/render/Sprite.cpp
 

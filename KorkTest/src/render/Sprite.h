@@ -14,18 +14,16 @@ class Sprite : public SimObject, public FluxBaseObject {
 
 public:
     DrawParams2D mDrawParams;
-    StringTableEntry mTextureName;
-    U32 mTexCols;
-    U32 mTexRows;
+     U32 mTextureSimID = 0;
 
 
     Sprite()
     {
-        mTexCols = 1;
-        mTexRows = 1;
-        mTextureName = StringTable->insert("");
+        U32 mTextureID = 0;
 
     }
+
+    bool setTextureBySimID(U32 texSimID);
 
     virtual void Update(const double& dt) override;
     virtual void Draw() override;;
