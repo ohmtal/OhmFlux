@@ -6,8 +6,25 @@ set(KORK_DIR "${CMAKE_CURRENT_LIST_DIR}")
 option(ENABLE_KS "Enable korkscript" ON)
 
 if (true #[[ENABLE_KS]])
-
   set (KS_PATH "${KORK_DIR}/lib/korkscript")
+
+  find_package(Git REQUIRED)
+
+  # Check if the submodule's source files exist
+  if(NOT EXISTS "${$KS_PATH}/CMakeLists.txt" )
+      message(STATUS "Initializing Git submodules...")
+      execute_process(
+          COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+          RESULT_VARIABLE GIT_SUBMODULE_RESULT
+      )
+
+      if(NOT GIT_SUBMODULE_RESULT EQUAL 0)
+          message(FATAL_ERROR "git submodule update failed with code ${GIT_SUBMODULE_RESULT}")
+      endif()
+  endif()
+
+
 
   set (KS_INCLUDES
     ${KS_PATH}/
