@@ -89,7 +89,14 @@ set(PROJECT_SOURCES
     ${TORQUESIM_SRCS}
     # --- custom sources ---
     ${KORK_DIR}/src/main.cpp
+    ${KORK_DIR}/src/appMain.h
+    ${KORK_DIR}/src/appMain.cpp
+
     ${KORK_DIR}/src/myPlatformProcess.cc
+
+
+    ${KORK_DIR}/src/render/Sprite.h
+    ${KORK_DIR}/src/render/Sprite.cpp
 
     ${KORK_DIR}/src/totp/base32.cc
     ${KORK_DIR}/src/totp/base32.h

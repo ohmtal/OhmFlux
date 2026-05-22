@@ -519,7 +519,7 @@ void FluxRender2D::appendSpriteToBuffer(std::vector<Vertex2D>& buffer, const Dra
     if ( dp.useUV /*dp.u0 != 0.0f || dp.v0 != 0.0f || dp.u1 != 1.0f || dp.v1 != 1.0f*/) {
         umin = dp.u0; vmin = dp.v0; umax = dp.u1; vmax = dp.v1;
     } else {
-        Point2F lTexPos, lTexSize;
+        Point2F lTexPos = {}, lTexSize = {};
         dp.image->getTextureRectById(dp.imgId, lTexPos, lTexSize);
         umin = lTexPos.x; vmin = lTexPos.y;
         umax = lTexPos.x + lTexSize.x; vmax = lTexPos.y + lTexSize.y;
