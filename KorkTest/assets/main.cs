@@ -3,6 +3,7 @@
 echo ("------------------------------");
 echo ("STEPS for simple but usable:");
 echo ("[X] basic sprite. ");
+echo ("[ ] fix dumpConsoleClasses cause segFault => vec[i]->getUsage() is dangling pointer!")
 echo ("[ ] Input Keyboard and Mouse");
 echo ("[ ] write pong ...");
 echo ("[ ] Add Sound - need my SoundTestBed finished!! or simply use the current.");
@@ -21,7 +22,7 @@ if (!isObject($sprite)) {
     TexCols = 13;
   };
 
-  $texFaces.dump();
+  // $texFaces.dump();
 
   $sprite = new Sprite() {
     Texture = $texFaces;
@@ -64,3 +65,7 @@ function bla() {
 }
 
 //------------------------------
+function help() {
+  dumpConsoleFunctions();
+  // dumpConsoleClasses();
+}
