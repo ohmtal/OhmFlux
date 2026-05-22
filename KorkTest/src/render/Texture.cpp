@@ -51,11 +51,7 @@ namespace KorkFlux {
         addField("TexCols", TypeS32, Offset(mTexCols, Texture));
         addField("TexRows", TypeS32, Offset(mTexRows, Texture));
 
-
         endGroup("Texture");
-
-
-
 
     }
 
