@@ -98,7 +98,7 @@ public:
 	virtual bool Initialize();
 	virtual void Deinitialize();
 
-	virtual void onEvent(SDL_Event event) {};
+	//defined in base now  virtual void onEvent(SDL_Event event) {};
 	virtual void onKeyEvent(SDL_KeyboardEvent event) {};
 	virtual void onMouseButtonEvent(SDL_MouseButtonEvent event) {};
 	virtual void onWindowSizeChanged() {};

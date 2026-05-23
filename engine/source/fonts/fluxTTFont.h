@@ -2,9 +2,7 @@
 // Copyright (c) 2024 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// FIXME garbage collection like in FluxTexture >>
-// - maybe a new baseClass fluxResource
-//   this is added to garbagecollection and can be used for sounds too!
+// TODO: only support ASCII !!
 //-----------------------------------------------------------------------------
 #pragma once
 
@@ -23,6 +21,7 @@ struct FluxBakedChar {
 
 struct FontData {
     FluxBakedChar chardata[96]; // ASCII 32..126
+    U32 textureSize;
 };
 
 
@@ -37,8 +36,11 @@ public:
     const FontData* getFont() { return &mFont; }
     FluxTexture* getTexture() { return mTexture; }
 
-    FluxTTFont(const char* filename, U32 fontSize = 32);
+    FluxTTFont(const char* filename = nullptr, U32 fontSize = 32);
     ~FluxTTFont();
 
+
+    bool LoadFont(const char* filename, F32 fontSize = 32.0f, U32 textureSize = 512);
+    bool LoadFontFromMemory(const unsigned char* fontData, unsigned int dataLen, F32 fontSize, U32 textureSize = 512);
 
 };

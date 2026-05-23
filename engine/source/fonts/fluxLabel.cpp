@@ -57,7 +57,7 @@ void FluxLabel::setCaption(const char *szFormat, ...)
 }
 
 //-----------------------------------------------------------------------------
-
+//FIXME align!
 const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
 {
     Point2F result = Point2F(0.f,0.f);
@@ -81,7 +81,7 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
             float nextX = 0, nextY = 0;
             STB_Internal::stbtt_GetBakedQuad(
                 reinterpret_cast<STB_Internal::stbtt_bakedchar*>(fontData.chardata),
-                                             512, 512, text[i] - 32, &nextX, &nextY, &q, 1);
+                                             fontData.textureSize, fontData.textureSize, text[i] - 32, &nextX, &nextY, &q, 1);
 
             DrawParams2D dp;
             dp.useUV = true;

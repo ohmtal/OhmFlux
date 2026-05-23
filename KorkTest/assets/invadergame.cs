@@ -23,7 +23,7 @@ function invaderGame::writeText(%x, %y, %text, %align, %profile) {
 
 function initInvader(%force) {
 
-  $Game = new ScriptObject(invaderGame) {};
+  $Game = new GameCtrl(invaderGame) {};
   CleanupSet.add($Game);
 
 // if (%force)
@@ -999,3 +999,4 @@ function cheatme() {
 //------------------------------------------------------------------------------
 initInvader();
 
+error("you can call resetGame(); but then korkscript crash .... ");

@@ -591,6 +591,11 @@ void FluxMain::IterateFrame()
 
 		}
 		onEvent(E);
+		for (auto* obj : mQueueObjects) {
+			if (obj && obj->isEventListener()) obj->onEvent(E);
+		}
+
+
 	}
 
 	//  Quit check for Emscripten

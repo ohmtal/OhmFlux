@@ -18,13 +18,15 @@
 
 class FluxBaseObject
 {
-private:
-	bool mVisible;
+protected:
+	bool mVisible = true;
 	bool mScheduleUsed = false;
+	bool mEventListener = false;
 public:
 	FluxBaseObject() {
 		mVisible=true;
 		mScheduleUsed = false;
+		mEventListener = false;
 	};
 
 	void setScheduleUsed( bool value = true )  { mScheduleUsed = value; }
@@ -43,8 +45,11 @@ public:
 	virtual void Deinitialize() {};
 	virtual void Update(const double& dt) {};
 	virtual void Draw() {};
+	virtual void onEvent(SDL_Event event) {};
 
 	void  setVisible(bool value) {mVisible = value;}
 	bool  getVisible() {return mVisible; }
+
+	bool  isEventListener() {return mEventListener; }
 };
 #endif
