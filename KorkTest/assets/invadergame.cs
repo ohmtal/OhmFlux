@@ -251,7 +251,7 @@ function invaderGame::onRender(%this,%dt) {
 
   //drawBackground
   %this.drawstretch(invaderGame.img_back,0,400,300,99,800,600,0,false,false);
-  
+
   %this.writeText(5,5,"Score:" SPC invaderGame.score, 0);
   %this.writeText(400,5,"HI:" SPC  invaderGame.hiscore, 1);
   %this.writeText(795,5,"LIVES:" SPC invaderGame.lives, 2);
@@ -1000,3 +1000,5 @@ function cheatme() {
 initInvader();
 
 error("you can call resetGame(); but then korkscript crash .... ");
+error("i also do not get working: Con::executef( this, \"onInputEvent\" ");
+// make a break some days ;) maybe i should better use lua or chaiscript <<< error(".... may try to rip out the original Torque2D console / script code. ");
