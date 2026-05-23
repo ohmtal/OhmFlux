@@ -34,6 +34,9 @@ namespace KorkFlux {
 
     public:
         DrawParams2D mDrawParams;
+
+
+        DECLARE_CONOBJECT(tom2DCtrl);
     };
 
 
