@@ -1,7 +1,5 @@
 #pragma once
 
-#include "core/Globals.h"
-
 #include "sim/simBase.h"
 #include "console/consoleTypes.h"
 #include <core/fluxTexture.h>
@@ -14,7 +12,7 @@ class Texture : public SimObject {
 
 public:
 
-    StringTableEntry mTextureName;
+    StringTableEntry mFileName;
     U32 mTexCols;
     U32 mTexRows;
 
@@ -24,7 +22,7 @@ public:
     {
         mTexCols = 1;
         mTexRows = 1;
-        mTextureName = StringTable->insert("");
+        mFileName = StringTable->insert("");
         mTexture = nullptr;
     }
 

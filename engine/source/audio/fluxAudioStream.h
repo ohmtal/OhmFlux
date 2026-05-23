@@ -52,7 +52,9 @@ protected:
     bool loadOGG(const char* lFilename);
 
 public:
-    FluxAudioStream( const char* lFilename);
+    FluxAudioStream( const char* lFilename = nullptr);
+    bool LoadFile(const char* lFilename);
+
     ~FluxAudioStream();
 
     bool play();

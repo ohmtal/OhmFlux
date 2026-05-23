@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/Globals.h"
 #include "core/fluxBaseObject.h"
 #include "render/fluxRender2D.h"
 #include "sim/simBase.h"
@@ -19,11 +18,10 @@ public:
 
     Sprite()
     {
-        U32 mTextureID = 0;
-
+        mTextureSimID = 0;
     }
 
-    bool setTextureBySimID(U32 texSimID);
+    bool setTextureBySimID(const char* consoleobject );
 
     virtual void Update(const double& dt) override;
     virtual void Draw() override;;

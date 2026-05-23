@@ -111,13 +111,20 @@ set(PROJECT_SOURCES
 
     ${KORK_DIR}/src/myPlatformProcess.cc
 
+
     ${KORK_DIR}/src/consoleFunctions/app.cpp
     ${KORK_DIR}/src/consoleFunctions/math.cpp
+
+    ${KORK_DIR}/src/audio/AudioProfile.h
+    ${KORK_DIR}/src/audio/AudioProfile.cpp
+
 
     ${KORK_DIR}/src/render/Texture.h
     ${KORK_DIR}/src/render/Texture.cpp
     ${KORK_DIR}/src/render/Sprite.h
     ${KORK_DIR}/src/render/Sprite.cpp
+    ${KORK_DIR}/src/render/tom2DCtrl.h
+    ${KORK_DIR}/src/render/tom2DCtrl.cpp
 
     ${KORK_DIR}/src/totp/base32.cc
     ${KORK_DIR}/src/totp/base32.h

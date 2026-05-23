@@ -9,8 +9,8 @@ namespace KorkFlux {
     bool Texture::onAdd(){
         if (!gMain)  return false;
 
-        if (*mTextureName) {
-            mTexture =  gMain->loadTexture(mTextureName, mTexCols, mTexRows);
+        if (*mFileName) {
+            mTexture =  gMain->loadTexture(mFileName, mTexCols, mTexRows);
             if (!mTexture) return false;
 
         }
@@ -21,7 +21,7 @@ namespace KorkFlux {
     }
     // ------------------------------------------------------------------------.
     void Texture::onRemove() {
-
+        Parent::onRemove();
     }
     // ------------------------------------------------------------------------.
     // FluxTexture* loadTexture(std::string filename, int cols = 1, int rows = 1, bool setColorKeyAtZeroPixel = false, bool usePixelPerfect  = false);
@@ -31,9 +31,9 @@ namespace KorkFlux {
 
         if (argc > 3) object->mTexCols = dAtoi(argv[3]);
         if (argc > 4) object->mTexRows = dAtoi(argv[4]);
-        object->mTextureName = argv[2];
+        object->mFileName = argv[2];
 
-        object->mTexture =  gMain->loadTexture(object->mTextureName, object->mTexCols, object->mTexRows);
+        object->mTexture =  gMain->loadTexture(object->mFileName, object->mTexCols, object->mTexRows);
         if (!object->mTexture) return false;
 
 
@@ -47,7 +47,7 @@ namespace KorkFlux {
         Parent::initPersistFields();
         addGroup("Texture");
 
-        addField("Texture", TypeString, Offset(mTextureName, Texture));
+        addField("filename", TypeString, Offset(mFileName, Texture));
         addField("TexCols", TypeS32, Offset(mTexCols, Texture));
         addField("TexRows", TypeS32, Offset(mTexRows, Texture));
 

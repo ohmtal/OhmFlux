@@ -4,23 +4,27 @@ echo ("------------------------------");
 echo ("STEPS for simple but usable:");
 echo ("[X] basic Sprite and Texture ");
 echo ("[X] fix dumpConsoleClasses cause segFault => vec[i]->getUsage() is dangling pointer! Namespace::mUsage was not initialized");
+echo ("[ ] Add Sound - need my SoundTestBed finished!! or simply use the current.");
+echo ("[ ]  add init/shutdown funcs -- mhh how to name  ");
 echo ("[ ] Input Keyboard and Mouse");
 echo ("[ ] write pong ...");
-echo ("[ ] Add Sound - need my SoundTestBed finished!! or simply use the current.");
 echo ("[ ] Add collision or better Box2D");
 echo ("------------------------------");
 
-//------------------------------
-function clean() {
-  $sprite.delete();
-  $texFaces.delete();
-}
 
-if (!isObject($sprite)) {
-    $texBack = new Texture() {
-    Texture = "assets/texture/nebulapurple_sky_back.png";
+//------------------------------
+
+if (!isObject(CleanupSet)) new SimSet(CleanupSet);
+else CleanupSet.deleteObjects();
+
+//------------------------------
+
+  $texBack = new Texture() {
+    fileName = "assets/texture/nebulapurple_sky_back.png";
 
   };
+  CleanupSet.add($texBack);
+
   $background = new Sprite() {
     Texture = $texBack;
     x = getScreenWidth() / 2.0;
@@ -28,12 +32,13 @@ if (!isObject($sprite)) {
     w = getScreenWidth();
     h = getScreenHeight();
   };
-
-
+  CleanupSet.add($background);
+  // ------
   $texFaces = new Texture() {
-    Texture = "assets/texture/faces.png";
+    fileName = "assets/texture/faces.png";
     TexCols = 13;
   };
+  CleanupSet.add($texFaces);
 
   // $texFaces.dump();
 
@@ -45,9 +50,11 @@ if (!isObject($sprite)) {
     h = 64;
     imgId = 3;
   };
+  CleanupSet.add($sprite);
+  // ------
+  $sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; };
+  CleanupSet.add($sndPling);
 
-  echo("$sprite created");
-}
 
 
 
@@ -84,7 +91,7 @@ function help() {
 }
 
 function c(%p) {
-  if (!isObject(CloneSet)) new SimSet(CloneSet);
+  alxPlay(SndPling.getId());
   if (!%p)  %p = $sprite;
   if (!%p) return 0;
   // clone does NOT work with drawparams ?! %clone = %p.clone();
@@ -100,7 +107,8 @@ function c(%p) {
       y = getRandom(400) + %p.h;
   };
 
-  CloneSet.add(%clone);
+
+  CleanupSet.add(%clone);
 
 
   // CloneSet.listObjects();

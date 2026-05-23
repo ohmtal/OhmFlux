@@ -21,7 +21,13 @@ FluxAudioStream::FluxAudioStream( const char* lFilename)
         return;
     }
 
+    if (lFilename) LoadFile(lFilename);
+
+}
+
+bool FluxAudioStream::LoadFile(const char* lFilename) {
     mFileName = "";
+    mInitDone = false;
     // Determine file type and load accordingly
     std::string path = lFilename;
 
@@ -40,6 +46,7 @@ FluxAudioStream::FluxAudioStream( const char* lFilename)
         dLog("Audio stream loaded for file: %s", mFileName.c_str());
 
     }
+    return mInitDone;
 }
 //-----------------------------------------------------------------------------
 FluxAudioStream::~FluxAudioStream()

@@ -7,15 +7,15 @@ namespace KorkFlux {
 
     IMPLEMENT_CONOBJECT(Sprite);
     // ------------------------------------------------------------------------.
-    bool Sprite::setTextureBySimID(U32 texSimID) {
-        mTextureSimID = 0; //reset
+    bool Sprite::setTextureBySimID(const char* consoleobject) {
 
-        if (texSimID == 0) return false;
+        if (!consoleobject) return false;
 
-        Texture* simTex = (Texture*)Sim::findObject(texSimID);
+        Texture* simTex = dynamic_cast<Texture*>(Sim::findObject(consoleobject));
+
         if (simTex && simTex->mTexture) {
             mDrawParams.image = simTex->mTexture;
-            mTextureSimID = texSimID;
+            mTextureSimID = simTex->getId();
             return true;
         }
         return false;
@@ -24,7 +24,7 @@ namespace KorkFlux {
     bool Sprite::onAdd(){
         if (!gMain)  return false;
 
-        setTextureBySimID(mTextureSimID);
+        setTextureBySimID(std::to_string(mTextureSimID).c_str());
 
 
         gMain->queueObject(this);
@@ -35,13 +35,14 @@ namespace KorkFlux {
     // ------------------------------------------------------------------------.
     void Sprite::onRemove() {
         gMain->unQueueObject(this);
+        Parent::onRemove();
     }
     // ------------------------------------------------------------------------.
     // FluxTexture* loadTexture(std::string filename, int cols = 1, int rows = 1, bool setColorKeyAtZeroPixel = false, bool usePixelPerfect  = false);
     ConsoleMethod(Sprite, setTexture, bool, 3, 3, "Texture id "
     "Set the Textue")
     {
-        return object->setTextureBySimID(dAtoi(argv[2]));
+        return object->setTextureBySimID(argv[2]);
 
     }
 
