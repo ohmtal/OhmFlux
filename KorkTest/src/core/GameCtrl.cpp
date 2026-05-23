@@ -1,0 +1,258 @@
+#include "GameCtrl.h"
+
+#include "appMain.h"
+#include "core/Globals.h"
+#include <platform/platformString.h>
+#include "render/Texture.h"
+
+#include "fonts/fluxTTFont.h"
+#include "fonts/fluxLabel.h"
+#include "gui/fonts/HackNerdFontPropo-Regular.h"
+
+
+namespace KorkFlux {
+
+    IMPLEMENT_CONOBJECT(GameCtrl);
+
+    //--------------------------------------------------------------------------
+    bool GameCtrl::Initialize() {
+        //FIXME setup default font
+        mDefaultFont = new FluxTTFont();
+        if (mDefaultFont->LoadFontFromMemory(HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 16))
+        {
+            mLabel = new FluxLabel(mDefaultFont);
+        }
+        return true;
+    }
+    //--------------------------------------------------------------------------
+    void GameCtrl::Deinitialize() {
+        if (mDefaultFont) SAFE_DELETE(mDefaultFont);
+        mDefaultFont = nullptr;
+        if (mLabel) SAFE_DELETE(mLabel);
+        mLabel = nullptr;
+    }
+
+    //--------------------------------------------------------------------------
+    void GameCtrl::initPersistFields()   {
+        Parent::initPersistFields();
+    }
+    //--------------------------------------------------------------------------
+    bool GameCtrl::onAdd(){
+        if (!gMain)  return false;
+        mEventListener = true;
+        gMain->queueObject(this);
+        return Parent::onAdd();
+    }
+    //--------------------------------------------------------------------------
+    void GameCtrl::onRemove() {
+        mEventListener = false;
+        gMain->unQueueObject(this);
+        Parent::onRemove();
+    }
+    //--------------------------------------------------------------------------
+    void GameCtrl::onEvent(SDL_Event event) {
+        // static std::string deviceString = "unknown";
+
+        switch (event.type) {
+            case SDL_EVENT_KEY_UP:
+            case SDL_EVENT_KEY_DOWN:
+
+
+                 static std::string keyName = "";
+                 keyName = SDL_GetKeyName(event.key.key);
+
+                 // keyname is only without modifierts like shift so a "(" becomes a 9 (qwertz)
+
+                 // dLog("KEY pressed: %s", keyName.c_str());
+
+//FIXME ret is nullptr == crash!
+                 // KorkApi::ConsoleValue getReturnBuffer( const char *stringToCopy )
+                 // {
+                 //     KorkApi::ConsoleValue retV = sVM->getStringReturnBuffer( dStrlen( stringToCopy ) + 1 );
+                 //     char *ret = (char*)retV.ptr();
+                 //     dStrcpy( ret, stringToCopy );
+                 //     ret[dStrlen( stringToCopy )] = '\0';
+                 //     return retV;
+                 // }
+
+
+                 // function invaderGame::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
+                // Con::executef( this, "onInputEvent"
+                //                , Con::getReturnBuffer("keyboard")
+                //                , Con::getReturnBuffer(keyName.c_str())
+                //                , Con::getFloatArg(gAppStatus.MousePos.x)
+                //                , Con::getFloatArg(gAppStatus.MousePos.y)
+                //                , Con::getBoolArg(event.type == SDL_EVENT_KEY_DOWN )//FIXME check true == up or down
+                //             );
+                break;
+        }
+
+        //FIXME
+        // if ( isMethod( "onInputEvent" ) )
+        // Con::executef( this, 6, "onInputEvent", deviceString, actionString, Con::getIntArg(mMousePos.x), Con::getIntArg(mMousePos.y), [bool up or down || axis value] );
+
+    }
+    //--------------------------------------------------------------------------
+    void GameCtrl::Draw() {
+        //FIXME what is the dt here ?
+        // Con::executef( this, 3, "onRender", getScreen()->getIdString(), Con::getIntArg(dt)); NOTE: INT???
+        // function invaderGame::onRender(%this,%dt) {
+        if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime * 1000.f));
+    }
+    //--------------------------------------------------------------------------
+    void GameCtrl::Update(const double& dt) {
+        if ( isMethod( "onUpdate" ) ) Con::executef( this, "onUpdate", Con::getFloatArg(dt));
+    }
+    //--------------------------------------------------------------------------
+
+
+
+
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// ConsoleMethod( tom2DCtrl, draw, void, 6, 6, "(Texture,x,y,layer)"
+// "draw a image, Layer 1-99 possible.")
+// {
+//     Texture* simTex = dynamic_cast<Texture*>(Sim::findObject(consoleobject));
+//     F32 z = dAtof(argv[5]) / HS2D_MAXLAYERS;
+//     Render2D.uglyDraw2DStretch(simTex, dAtof(argv[3]),dAtof(argv[4]),z);
+// }
+
+ConsoleMethod( GameCtrl, drawstretch, ConsoleBool, 9, 14,
+               "(Texture,imgId,x,y,layer,w,h,[rotation,flipX,flipY, alpha channel default 0.1], optimizetransparent)"
+                "draw a image, Layer 1-99 possible.")
+{
+    Texture* simTex = dynamic_cast<Texture*>(Sim::findObject(argv[2]));
+    if (!simTex || !simTex->mTexture) return false;
+
+    DrawParams2D params;
+    params.image = simTex->mTexture;
+    params.imgId = dAtoi(argv[3]);
+
+    params.x = dAtof(argv[4]);
+    params.y = dAtof(argv[5]);
+    params.z = dAtof(argv[6]) / HS2D_MAXLAYERS;
+
+    params.w = dAtof(argv[7]);
+    params.h = dAtof(argv[8]);
+
+    if (argc > 9)
+        params.rotation = dAtof(argv[9]);
+    if (argc > 10)
+        params.flipX = dAtob(argv[10]);
+    if (argc > 11)
+        params.flipY = dAtob(argv[11]);
+    if (argc > 12)
+        params.alpha = dAtof(argv[12]);
+    // if (argc > 13)
+    //     ldoBlend = dAtob(argv[13]);
+
+    Render2D.drawSprite(params);
+    return true;
+}
+
+ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=left,1=middle,2=right,3=center), profile, fontcolortype (0=normal,1=NA,2=HL)"
+"write text on screen.")
+{
+    //FIXME align is unused int Print !!
+    // const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
+    Point2F pos = { dAtof(argv[2]), dAtof(argv[3]) };
+    const char* text = argv[4];
+    if (!object->mLabel || !text) return false;
+    object->mLabel->Print(text, pos);
+
+    // object->writeText(argv[4],lProfile, dAtoi(argv[2]),dAtoi(argv[3]),dAtoi(argv[5]), lFontColorType);
+    return true;
+}
+
+
+// //---------
+// ConsoleMethod( tom2DCtrl, drawRect, void, 10, 11, "(tom2DTexture,imgId,x,y,layer,w,h,srcRect,(optimizetransparent)"
+// "draw a image from srcRect, Layer 1-99 possible.")
+// {
+//     tom2DTexture* obj = (tom2DTexture*)Sim::findObject(dAtoi(argv[2]));
+//     F32 z = dAtof(argv[6]) / HS2D_MAXLAYERS;
+//
+//     F32  rot   = 0;
+//     bool flipX = false;
+//     bool flipY = false;
+//     F32  lAlpha = 0.1f;
+//     bool ldoBlend=false;
+//     if (argc > 10)
+//         ldoBlend = dAtob(argv[10]);
+//
+//     RectF lsrcRect;
+//     dSscanf(argv[9],"%g %g %g %g",
+//             &lsrcRect.point.x,&lsrcRect.point.y,&lsrcRect.extent.x,&lsrcRect.extent.y);
+//
+//
+//     // void tom2DCtrl::drawRect(tom2DTexture* img, U32 imgId, Point3F worldPos,RectF lSrc, Point2I dimension, bool doBlend
+//     object->drawRect(obj, dAtoi(argv[3]), Point3F(dAtof(argv[4]),dAtof(argv[5]),z), lsrcRect, Point2I(dAtoi(argv[7]),dAtoi(argv[8])),ldoBlend);
+// }
+//
+//
+//
+// ConsoleMethod( tom2DCtrl, writeText, void, 6, 8, "(x,y,string, align (0=left,1=middle,2=right,3=center), profile, fontcolortype (0=normal,1=NA,2=HL)"
+// "write text on screen.")
+// {
+//     GuiControlProfile *lProfile =  object->mProfile;
+//     if (argc > 6)
+//     {
+//         SimObject *obj = Sim::findObject(argv[6]);
+//         if(obj)
+//             lProfile = static_cast<GuiControlProfile*>(obj);
+//     }
+//     U8 lFontColorType = 0;
+//     if (argc > 7)
+//         lFontColorType = dAtoi( argv[7] );
+//
+//     object->writeText(argv[4],lProfile, dAtoi(argv[2]),dAtoi(argv[3]),dAtoi(argv[5]), lFontColorType);
+// }
+// //------------------------------------------------------------------------------
+//
+// ConsoleMethod( tom2DCtrl, writeCustomText, void, 9, 9, "(x,y,text, align (0=left,1=middle,2=right,3=center), fontName, fontSize, fontColor ==> like 200 200 200 [255])"
+// "write text on screen with font / fontsize and fontcolor.")
+// {
+//     //void tom2DCtrl::writeCustomText(const char* text, U32 x, U32 y, U32 align, const char* fontFace, U32 fontSize, const char* FontColorString)
+//     object->writeCustomText(argv[4],dAtoi(argv[2]),dAtoi(argv[3]),dAtoi(argv[5]),argv[6],dAtoi(argv[7]),argv[8]);
+//
+// }
+//
+// //------------------------------------------------------------------------------
+// // 2.24  writeColoredText
+// ConsoleMethod(tom2DCtrl, writeColoredText, void, 8, 8,
+//               "(x,y,text, align (0=left,1=middle,2=right,3=center), profile, fontColor ==> like 200 200 200 [255])"
+//               "write text on screen with  fontcolor.")
+// {
+//     GuiControlProfile* lProfile = object->mProfile;
+//     SimObject* obj = Sim::findObject(argv[6]);
+//     if (obj)
+//         lProfile = static_cast<GuiControlProfile*>(obj);
+//
+//
+//     object->writeColoredText(argv[4], lProfile, dAtoi(argv[2]), dAtoi(argv[3]), dAtoi(argv[5]), object->scanColorText(argv[7]));
+// }
+// //------------------------------------------------------------------------------
+// // 2.24  writeColoredText
+// ConsoleMethod(tom2DCtrl, writeColoredShadowText, void, 11, 11,
+//               "(x,y,text, align (0=left,1=middle,2=right,3=center), profile, xoffset,yoffset, fontColor ==> like 200 200 200 [255], shadowcolor)"
+//               "write text on screen with  fontcolor.")
+// {
+//     GuiControlProfile* lProfile = object->mProfile;
+//     SimObject* obj = Sim::findObject(argv[6]);
+//     if (obj)
+//         lProfile = static_cast<GuiControlProfile*>(obj);
+//
+//     int x = dAtoi(argv[2]);
+//     int y = dAtoi(argv[3]);
+//     int xoffset = dAtoi(argv[7]);
+//     int yoffset = dAtoi(argv[8]);
+//     ColorI fontColor = object->scanColorText(argv[9]);
+//     ColorI shadowColor = object->scanColorText(argv[10]);
+//
+//     object->writeColoredText(argv[4], lProfile, x+xoffset,y+yoffset, dAtoi(argv[5]), shadowColor);
+//     object->writeColoredText(argv[4], lProfile, x, y, dAtoi(argv[5]), fontColor);
+// }
+//------------------------------------------------------------------------------
+} //namespace
