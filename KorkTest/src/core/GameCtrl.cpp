@@ -17,19 +17,20 @@ namespace KorkFlux {
     //--------------------------------------------------------------------------
     bool GameCtrl::Initialize() {
         //FIXME setup default font
-        mDefaultFont = new FluxTTFont();
-        if (mDefaultFont->LoadFontFromMemory(HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 16))
-        {
-            mLabel = new FluxLabel(mDefaultFont);
-        }
+        // mDefaultFont = new FluxTTFont();
+        // if (mDefaultFont->LoadFontFromMemory(HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 16))
+        // {
+        //     mLabel = new FluxLabel(mDefaultFont);
+        // }
+        dLog("GameCtrl::Initialize calles");
         return true;
     }
     //--------------------------------------------------------------------------
     void GameCtrl::Deinitialize() {
-        if (mDefaultFont) SAFE_DELETE(mDefaultFont);
-        mDefaultFont = nullptr;
-        if (mLabel) SAFE_DELETE(mLabel);
-        mLabel = nullptr;
+        // if (mDefaultFont) SAFE_DELETE(mDefaultFont);
+        // mDefaultFont = nullptr;
+        // if (mLabel) SAFE_DELETE(mLabel);
+        // mLabel = nullptr;
     }
 
     //--------------------------------------------------------------------------
@@ -39,13 +40,28 @@ namespace KorkFlux {
     //--------------------------------------------------------------------------
     bool GameCtrl::onAdd(){
         if (!gMain)  return false;
+
+        mDefaultFont = new FluxTTFont();
+        if (mDefaultFont->LoadFontFromMemory(HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 32))
+        {
+            mLabel = new FluxLabel(mDefaultFont);
+        }
+
+
         mEventListener = true;
         gMain->queueObject(this);
+
         return Parent::onAdd();
     }
     //--------------------------------------------------------------------------
     void GameCtrl::onRemove() {
         mEventListener = false;
+
+        if (mDefaultFont) SAFE_DELETE(mDefaultFont);
+        mDefaultFont = nullptr;
+        if (mLabel) SAFE_DELETE(mLabel);
+        mLabel = nullptr;
+
         gMain->unQueueObject(this);
         Parent::onRemove();
     }
@@ -97,6 +113,10 @@ namespace KorkFlux {
         //FIXME what is the dt here ?
         // Con::executef( this, 3, "onRender", getScreen()->getIdString(), Con::getIntArg(dt)); NOTE: INT???
         // function invaderGame::onRender(%this,%dt) {
+        // mLabel->Print("TEST1", { 10.f,100.f });
+        // mLabel->Print("TEST2", { 10.f,140.f });
+
+
         if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime * 1000.f));
     }
     //--------------------------------------------------------------------------

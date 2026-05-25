@@ -16,9 +16,7 @@ $textAlignCenter = 3;
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
 else CleanupSet.deleteObjects();
 
-function invaderGame::writeText(%x, %y, %text, %align, %profile) {
-  //FIXME
-}
+
 
 
 function initInvader(%force) {
