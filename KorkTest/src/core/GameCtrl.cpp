@@ -131,13 +131,27 @@ namespace KorkFlux {
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-// ConsoleMethod( tom2DCtrl, draw, void, 6, 6, "(Texture,x,y,layer)"
-// "draw a image, Layer 1-99 possible.")
-// {
-//     Texture* simTex = dynamic_cast<Texture*>(Sim::findObject(consoleobject));
-//     F32 z = dAtof(argv[5]) / HS2D_MAXLAYERS;
-//     Render2D.uglyDraw2DStretch(simTex, dAtof(argv[3]),dAtof(argv[4]),z);
-// }
+ConsoleMethod( GameCtrl, draw, ConsoleBool, 6, 6, "(Texture,x,y,layer)"
+"draw a image, Layer 1-99 possible.")
+{
+    Texture* simTex = dynamic_cast<Texture*>(Sim::findObject(argv[2]));
+    if (!simTex || !simTex->mTexture) return false;
+
+    DrawParams2D params;
+    params.image = simTex->mTexture;
+
+    params.x = dAtof(argv[3]);
+    params.y = dAtof(argv[4]);
+    params.z = dAtof(argv[5]) / HS2D_MAXLAYERS;
+
+    params.w = simTex->mTexture->getWidth();
+    params.h = simTex->mTexture->getHeight();
+
+    Render2D.drawSprite(params);
+    return true;
+}
+
+
 
 ConsoleMethod( GameCtrl, drawstretch, ConsoleBool, 9, 14,
                "(Texture,imgId,x,y,layer,w,h,[rotation,flipX,flipY, alpha channel default 0.1], optimizetransparent)"

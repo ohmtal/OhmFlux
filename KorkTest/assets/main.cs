@@ -116,3 +116,37 @@ function c(%p) {
 
   return %clone;
  }
+
+ function test() {
+    $foo = new ScriptObject();
+    $bar = new ScriptObject();
+    $foo.bar = $bar;
+    $foo.bar.counter = 0; //OK
+    $bar.counter++; //OK
+    $foo.bar.counter = $foo.bar.counter + 1; //OK
+    // $foo.bar.counter+=1; // cause parse error: token is opPLASN
+    // $foo.bar.counter++; //cause parse error: token is opPLUSPLUS
+    echo ("COUNTER IS:" SPC $foo.bar.counter SPC "/" SPC $bar.counter);
+ }
+
+
+
+//------------- try to find out why invaderGame crash ......
+
+ // testing crash minimal setup
+ // this was also before you latest changes!
+ // crash at  StringStack::getArgcArgv << mNumFrames is 0 !
+ function crash() {
+    %player =  new ScriptObject() ;
+    %player.FooBar(1,2,3,4,5,6,7,8,9,10); //OK
+    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11); //OK
+    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12); //OK
+    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12,13); //OK
+    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12,13,14); //OK
+    echo ("HERE IT COMES!!!!!:");
+    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); //crash
+    // in my test project it crashed at the 10th parameter
+ }
+
+
+

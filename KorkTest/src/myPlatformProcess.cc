@@ -50,23 +50,23 @@ namespace Platform
       return false;
    }
    //---------------------------------------------------------------------------
-   // U32 => U64!
-   U64 getTime( void )
+   // FIXME U32 => U64!
+   U32 getTime( void )
    {
       SDL_Time nanoSeconds;
       if (SDL_GetCurrentTime(&nanoSeconds)) {
-         return (U64)(nanoSeconds / SDL_NS_PER_SECOND);
+         return (U32)(nanoSeconds / SDL_NS_PER_SECOND);
       }
       Con::warnf("%s failed!", __func__);
       return 0;
    }
    //---------------------------------------------------------------------------
-   // U32 => U64!
-   U64 getRealMilliseconds( void )
+   // FIXME U32 => U64!
+   U32 getRealMilliseconds( void )
    {
       SDL_Time nanoSeconds;
       if (SDL_GetCurrentTime(&nanoSeconds)) {
-         return (U64)(nanoSeconds / SDL_NS_PER_MS);
+         return (U32)(nanoSeconds / SDL_NS_PER_MS);
       }
       Con::warnf("%s failed!", __func__);
       return 0;
@@ -124,8 +124,8 @@ StringTableEntry getUserDataDirectory()
 }
 
 
-// XXTH U64!
-U64 getVirtualMilliseconds( void )
+// FIXME U64!
+U32 getVirtualMilliseconds( void )
 {
    Con::warnf("%s not implemented", __func__);
    return 0;

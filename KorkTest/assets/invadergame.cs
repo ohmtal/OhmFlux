@@ -256,10 +256,12 @@ function invaderGame::onRender(%this,%dt) {
     
   if (!invaderGame.GameOver) {
     invaderGame.player.process(%dt);
+
+    //FIXME TEST
     processAliens(%dt);
     processbonusAlien(%dt);
     processMissiles(%dt);
-    
+
     drawBlocks();
     drawAliens();
   
@@ -423,7 +425,7 @@ function doGameOver() {
 //------------------------------------------------------------------------------
 // player stuff:
 //------------------------------------------------------------------------------
-// FIXME need to be called from APP!!
+
 function InvPlayer::process(%this,%dt) {
 
   if (%this.damage == 0) {
@@ -471,10 +473,14 @@ function InvPlayer::process(%this,%dt) {
      %this.damage += 0.07 * %dt;  
    }
    
-  %this.draw(%img);      
+   // echo("CALL PLAYER DRAW");
 
-  //FIXME SHIELD
-  %this.drawShield(%dt);
+  %this.draw(%img);
+
+  // echo("done player draw, call shield draw:");
+
+
+  //ALSO CRASH: %this.drawShield(%dt);
 }
 //-------------------------------------------------------------
 function resetPlayer() {
@@ -498,9 +504,11 @@ function resetPlayer() {
 }
 //-------------------------------------------------------------
 function invPlayer::draw(%this, %img) {
-//error("invPlayer::draw" SPC %this);
-  //invaderGame.draw(%img,%this.x,%this.y, %this.layer);
-  invaderGame.drawstretch(%img ,0,%this.x,%this.y,%this.layer,32,32,0, false,false);
+
+
+  invaderGame.drawstretch(%img ,0,%this.x,%this.y,%this.layer,32,32 ,0, false,false);
+
+
 }
 //-------------------------------------------------------------
 function invPlayer::drawShield(%this, %dt) {
@@ -647,7 +655,7 @@ function processAliens(%dt){
 
   if (!isObject(invaderGame.aliens)) return;
   //move speed 
-  invaderGame.aliens.lastalienmove += %dt;
+  invaderGame.aliens.lastalienmove =  invaderGame.aliens.lastalienmove + %dt;
   %cnt = invaderGame.aliens.getCount();
   
   if (%cnt == 0) {
@@ -661,7 +669,7 @@ function processAliens(%dt){
         return;
         
   //sound
-  invaderGame.aliens.idxsnd++;
+  invaderGame.aliens.idxsnd = invaderGame.aliens.idxsnd + 1;
   if (invaderGame.aliens.idxsnd > 4) 
         invaderGame.aliens.idxsnd = 1;
   
@@ -997,6 +1005,4 @@ function cheatme() {
 //------------------------------------------------------------------------------
 initInvader();
 
-error("you can call resetGame(); but then korkscript crash .... ");
-error("i also do not get working: Con::executef( this, \"onInputEvent\" ");
-// make a break some days ;) maybe i should better use lua or chaiscript <<< error(".... may try to rip out the original Torque2D console / script code. ");
+error("FIXME INPUT");

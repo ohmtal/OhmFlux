@@ -3,26 +3,34 @@ set(KORK_DIR "${CMAKE_CURRENT_LIST_DIR}")
 #--------------------------
 
 # ----------------- korkscript Test
-option(ENABLE_KS "Enable korkscript" ON)
+# option(ENABLE_KS "Enable korkscript" ON)
 
-if (true #[[ENABLE_KS]])
-  set (KS_PATH "${KORK_DIR}/lib/korkscript")
+set(KS_PATH "/opt/korkscript" CACHE PATH "Path to KorkScript")
 
-  find_package(Git REQUIRED)
+if(NOT EXISTS "${KS_PATH}/CMakeLists.txt")
+    message(FATAL_ERROR
+        "\n KorkScript path is not set! "
+        "\n Please provide the path using: "
+        "\n cmake -B build -DKS_PATH=/path/to/KorkScript"
+    )
+else()
 
-  # Check if the submodule's source files exist
-  if(NOT EXISTS "${$KS_PATH}/CMakeLists.txt" )
-      message(STATUS "Initializing Git submodules...")
-      execute_process(
-          COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
-          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-          RESULT_VARIABLE GIT_SUBMODULE_RESULT
-      )
-
-      if(NOT GIT_SUBMODULE_RESULT EQUAL 0)
-          message(FATAL_ERROR "git submodule update failed with code ${GIT_SUBMODULE_RESULT}")
-      endif()
-  endif()
+  # removed submodule!
+  # find_package(Git REQUIRED)
+  #
+  # # Check if the submodule's source files exist
+  # if(NOT EXISTS "${$KS_PATH}/CMakeLists.txt" )
+  #     message(STATUS "Initializing Git submodules...")
+  #     execute_process(
+  #         COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+  #         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  #         RESULT_VARIABLE GIT_SUBMODULE_RESULT
+  #     )
+  #
+  #     if(NOT GIT_SUBMODULE_RESULT EQUAL 0)
+  #         message(FATAL_ERROR "git submodule update failed with code ${GIT_SUBMODULE_RESULT}")
+  #     endif()
+  # endif()
 
 
 
@@ -142,5 +150,8 @@ set(PROJECT_SOURCES
 
 
 configure_project_target(KorkTestBed ${KORK_DIR} "${KORK_DIR}/assets@assets" "${PROJECT_SOURCES}")
+
+target_compile_definitions(KorkTestBed PUBLIC TORQUE_ENABLE_ASSERTS)
+
 target_include_directories(KorkTestBed PRIVATE ${KORK_DIR}/src)
 target_include_directories(KorkTestBed PRIVATE ${KS_INCLUDES})
