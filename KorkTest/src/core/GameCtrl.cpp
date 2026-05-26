@@ -84,14 +84,6 @@ namespace KorkFlux {
 
                 }
             }
-
-
-
-
-
-
-
-
         } //switch
 
     }
@@ -102,7 +94,6 @@ namespace KorkFlux {
         // function invaderGame::onRender(%this,%dt) {
         // mLabel->Print("TEST1", { 10.f,100.f });
         // mLabel->Print("TEST2", { 10.f,140.f });
-
 
         if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime * 1000.f));
     }
