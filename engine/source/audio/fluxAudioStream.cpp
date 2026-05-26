@@ -103,7 +103,7 @@ void FluxAudioStream::Update(const double& dt)
 {
     if (!mInitDone || !mPlaying) return;
 
-    if (mUsePostion) {
+    if (mUsePosition) {
         auto camera = Render2D.getCamera();
         RectF view = camera->getVisibleWorldRect(false);
         float zoom = camera->getZoom(); // 1.0 = Default, 0.1 = Far, 5.0 = Close
@@ -149,7 +149,9 @@ void FluxAudioStream::Update(const double& dt)
         if (totalRemaining <= 0)
         {
             if (mLooping) {
+                SDL_ClearAudioStream(mStream);
                 SDL_PutAudioStreamData(mStream, mWavData, (int)mWaveDataLen);
+                SDL_FlushAudioStream(mStream);
             } else {
                 if (mPlaying) {
                     mPlaying = false;
@@ -258,9 +260,9 @@ bool FluxAudioStream::play()
             Log("Failed to put WAV data: %s", SDL_GetError());
             return false;
         }
-        if (! mLooping ) {
+        // if (! mLooping ) {
             return SDL_FlushAudioStream(mStream);
-        }
+        // }
     }
 
     return SDL_ResumeAudioStreamDevice(mStream);

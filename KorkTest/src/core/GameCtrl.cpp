@@ -17,24 +17,6 @@ namespace KorkFlux {
 
     IMPLEMENT_CONOBJECT(GameCtrl);
 
-    //--------------------------------------------------------------------------
-    bool GameCtrl::Initialize() {
-        //FIXME setup default font
-        // mDefaultFont = new FluxTTFont();
-        // if (mDefaultFont->LoadFontFromMemory(HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 16))
-        // {
-        //     mLabel = new FluxLabel(mDefaultFont);
-        // }
-        dLog("GameCtrl::Initialize calles");
-        return true;
-    }
-    //--------------------------------------------------------------------------
-    void GameCtrl::Deinitialize() {
-        // if (mDefaultFont) SAFE_DELETE(mDefaultFont);
-        // mDefaultFont = nullptr;
-        // if (mLabel) SAFE_DELETE(mLabel);
-        // mLabel = nullptr;
-    }
 
     //--------------------------------------------------------------------------
     void GameCtrl::initPersistFields()   {
@@ -83,16 +65,6 @@ namespace KorkFlux {
                     static std::string keyName = "";
                     keyName = SDL_GetKeyName(event.key.key);
                     // dLog("KEY pressed: %s", keyName.c_str());
-
-
-                    // const char* str = "keyboard";
-                    // U32 len =  dStrlen( str );
-                    // KorkApi::ConsoleValue retV = Con::getReturnBuffer(len + 1 );
-                    // char *ret = (char*)retV.evaluatePtr(sVM->getAllocBase());
-                    // dStrncpy(ret, "keyboard", len);
-                    // ret[len] = '\0';
-                    // KorkApi::ConsoleValue deviceString = KorkApi::ConsoleValue::makeString(ret);
-
 
                     KorkApi::ConsoleValue deviceString =  Con::getReturnBuffer("keyboard");
                     KorkApi::ConsoleValue actionString = Con::getReturnBuffer(keyName.c_str());

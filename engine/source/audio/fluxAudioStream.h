@@ -24,7 +24,7 @@ private:
     std::string mFileName = "";
     bool mInitDone = false;
     bool mPlaying = false;
-    bool mLooping = false;
+
     SDL_AudioStream *mStream = nullptr;
     Uint8 *mWavData = nullptr;
     Uint32 mWaveDataLen = 0;
@@ -32,9 +32,6 @@ private:
     float mGain = 1.f; //volume 0.f..1.f
 
 
-    // position
-    bool mUsePostion = false;
-    Point2F mPosition = { 0.f, 0.f };
 
     //OGG
     stb_vorbis* mVorbis = nullptr;
@@ -57,6 +54,12 @@ public:
 
     ~FluxAudioStream();
 
+    bool mLooping = false;
+    // position
+    bool mUsePosition = false;
+    Point2F mPosition = { 0.f, 0.f };
+
+
     bool play();
     bool stop();
     bool resume();
@@ -68,7 +71,7 @@ public:
 
     void setPositon( Point2F lPos)  {
         mPosition = lPos;
-        mUsePostion = true;
+        mUsePosition = true;
     }
     bool getInitDone() { return mInitDone; }
     bool IsInitialized() { return mInitDone; }

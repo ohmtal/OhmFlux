@@ -14,8 +14,9 @@ namespace KorkFlux {
 class AudioProfile: public SimObject, public FluxBaseObject {
     typedef SimObject Parent;
 public:
-    FluxAudioStream* mAudioStream;
+    FluxAudioStream mAudioStream;
     StringTableEntry mFileName;
+
 
     static void initPersistFields();
 

@@ -1,9 +1,9 @@
-
 //------------------------------------------------------------------------------
 // InvaderGame ported from TGE to OGE To KorkFlux
-// FIXME TODO
-// function InvPlayer::process(%this,%dt)
-// invaderGame.writeText(%x+50,%y,"Highscores Top" SPC %this.highScores.maxScores, $textAlignLeft,LCDTextProfile,0);
+//------------------------------------------------------------------------------
+// NOTE: This is not a good example to demonstrate How to use KorkFlux
+//       using Sprite Objects is much better than GameCtrl with onRender callback
+//       I added this script to test KorkScript itself.
 //------------------------------------------------------------------------------
 // FIXME  exec("common/highscore.cs");
 
@@ -92,7 +92,7 @@ function initInvader(%force) {
   invaderGame.limitY2     = 520+32;
   
   invaderGame.fastshoot = 1;
-  invaderGame.enableBlockade = 0;
+  invaderGame.enableBlockade = true;
 
   invaderGame.score   = 0;
   invaderGame.lives   = 0;
@@ -179,11 +179,13 @@ function loadGraphics() {
 
 }
 //------------------------------------------------------------------------------
-function loadSound(%name,%filename,%desc) {
+function loadSound(%name,%filename,%looping) {
 
+  // if (%looping $= "") %looping = false;
   %profile = new AudioProfile(%name)
   {
     filename = "assets/sound/" @ %filename;
+    looping = %looping;
   };
   CleanupSet.add(%profile);
 
@@ -200,7 +202,7 @@ function loadSounds() {
 
   loadSound(AlienShootSound,"alien_shoot.wav");
   loadSound(BonusAlienExplosionSound,"bonusalien_explosion.wav");
-  loadSound(BonusAlienLoopSound,"bonusalien_loop.wav",AD_LOOP);
+  loadSound(BonusAlienLoopSound,"bonusalien_loop.wav",true);
 
   loadSound(PlayerExplosionSound,"player_explosion.wav");
   loadSound(PlayerShootSound,"player_shoot.wav");
@@ -507,7 +509,7 @@ function resetPlayer() {
 //-------------------------------------------------------------
 function invPlayer::draw(%this, %img) {
 
-
+// echo("layer is " SPC %this.layer);
   invaderGame.drawstretch(%img ,0,%this.x,%this.y,%this.layer,32,32 ,0, false,false);
 
 
@@ -769,7 +771,7 @@ function spawnBonusAlien() {
     layer = 10;
     r = 16;
   };
-  invaderGame.bonusAlienSound = alxPlay(BonusAlienLoopSound);
+  invaderGame.bonusAlienSound =  alxPlay(BonusAlienLoopSound);
 }
 //-------------------------------------------------------------
 function processbonusAlien(%dt) {
@@ -781,8 +783,9 @@ function processbonusAlien(%dt) {
   
    %a = invaderGame.bonusAlien;
   if (%a.damage >= 100) {
-         if (alxIsPlaying(invaderGame.bonusAlienSound)) 
-             alxStop(invaderGame.bonusAlienSound);
+         if (alxIsPlaying(invaderGame.bonusAlienSound))
+                alxStop(invaderGame.bonusAlienSound);
+
          %a.damage += 0.05 * %dt;
          if ( %a.damage> 200) {
              %a.schedule(0,delete);
@@ -1007,4 +1010,3 @@ function cheatme() {
 //------------------------------------------------------------------------------
 initInvader();
 
-error("FIXME INPUT");

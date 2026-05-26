@@ -8,15 +8,15 @@ namespace KorkFlux {
 
     bool AudioProfile::onAdd(){
         if (!*mFileName) return false;
-        mAudioStream = new FluxAudioStream();
-        if (!mAudioStream->LoadFile(mFileName)) return false;
-        gMain->queueObject(mAudioStream);
-        Log("[info] AudioProfile %d created.", getId());
+        // mAudioStream = new FluxAudioStream();
+        if (!mAudioStream.LoadFile(mFileName)) return false;
+        gMain->queueObject(&mAudioStream);
+        Log("[info] AudioProfile %d created. (file:%s, looping:%d)", getId(), mFileName, mAudioStream.mLooping);
         return Parent::onAdd();
     }
 
     void AudioProfile::onRemove(){
-        gMain->unQueueObject(mAudioStream);
+        gMain->unQueueObject(&mAudioStream);
         Parent::onRemove();
     }
 
@@ -24,6 +24,11 @@ namespace KorkFlux {
         Parent::initPersistFields();
         addGroup("Audio");
         addField("filename", TypeString, Offset(mFileName, AudioProfile));
+        addField("looping", TypeBool, Offset(mAudioStream.mLooping, AudioProfile));
+        // usePosition will become better when i finished the the audio system with panning
+        addField("usePosition", TypeBool, Offset(mAudioStream.mUsePosition, AudioProfile));
+        addField("x", TypeF32, Offset(mAudioStream.mPosition.x, AudioProfile));
+        addField("y", TypeF32, Offset(mAudioStream.mPosition.y, AudioProfile));
         // fixme more ... :P we dont use description
         endGroup("Audio");
     }
@@ -33,41 +38,69 @@ namespace KorkFlux {
     // --------------------------------------------------
     // alx compat
 
-    ConsoleFunction(alxPlay, ConsoleBool, 2, 2, "AudioProfile") {
+    // return the id of the profile
+    ConsoleFunction(alxPlay, ConsoleInt, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
 
-        if (!profile || !profile->mAudioStream->IsInitialized()) return false;
-        return profile->mAudioStream->play();
+        if (!profile || !profile->mAudioStream.IsInitialized()) return false;
+        if (profile->mAudioStream.play()) return profile->getId();
+
+        return 0;
     }
+
+    ConsoleFunction(alxIsPlaying, ConsoleBool, 2, 2, "AudioProfile") {
+        AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
+
+        if (!profile || !profile->mAudioStream.IsInitialized()) return false;
+        return profile->mAudioStream.isPlaying();
+    }
+
 
     ConsoleFunction(alxStop, ConsoleBool, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
 
-        if (!profile || !profile->mAudioStream->IsInitialized()) return false;
-        return profile->mAudioStream->stop();
+        if (!profile || !profile->mAudioStream.IsInitialized()) return false;
+        return profile->mAudioStream.stop();
     }
     ConsoleFunction(alxPause, ConsoleBool, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
 
-        if (!profile || !profile->mAudioStream->IsInitialized()) return false;
-        return profile->mAudioStream->stop();
+        if (!profile || !profile->mAudioStream.IsInitialized()) return false;
+        return profile->mAudioStream.stop();
     }
     ConsoleFunction(alxUnPause, ConsoleBool, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
-        if (!profile || !profile->mAudioStream->IsInitialized()) return false;
-        return profile->mAudioStream->resume();
+        if (!profile || !profile->mAudioStream.IsInitialized()) return false;
+        return profile->mAudioStream.resume();
     }
 
     ConsoleFunction(alxStopAll, void, 1, 1, "") {
         for (auto& obj:  gMain->getQueueObjects() ) {
-            AudioProfile* profile = dynamic_cast<AudioProfile*>(obj);
-            if (profile && profile->mAudioStream) profile->mAudioStream->stop();
+            FluxAudioStream* as = dynamic_cast<FluxAudioStream*>(obj);
+            if (as) {
+                as->stop();
+            }
         }
     }
 
-    //     void alxPauseAll();
-    //     void alxUnPauseAll();
-    //     void alxStopAll();
+    //same as stop
+    ConsoleFunction(alxPauseAll, void, 1, 1, "") {
+        for (auto& obj:  gMain->getQueueObjects() ) {
+            FluxAudioStream* as = dynamic_cast<FluxAudioStream*>(obj);
+            if (as) {
+                as->stop();
+            }
+        }
+    }
+    ConsoleFunction(alxUnPauseAll, void, 1, 1, "") {
+        for (auto& obj:  gMain->getQueueObjects() ) {
+            FluxAudioStream* as = dynamic_cast<FluxAudioStream*>(obj);
+            if (as) {
+                as->resume();
+            }
+        }
+    }
+
 
 
 }
