@@ -40,9 +40,6 @@ namespace KorkFlux {
         DrawParams2D mDrawParams;
         FluxLabel* mLabel = nullptr;
 
-        bool Initialize() override;
-        void Deinitialize() override;
-
         void onEvent(SDL_Event event) override;
         void Update(const double& dt) override;
         void Draw() override;
