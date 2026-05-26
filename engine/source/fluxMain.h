@@ -37,7 +37,8 @@ extern FluxScreen* g_CurrentScreen;
 class FluxMain : public FluxBaseObject
 {
 protected:
-	// static FluxMain* _instance;
+	std::vector<FluxBaseObject*> mQueueObjects;
+	bool mOverwriteEventListener = false; //let the child handle the event listener
 
 private:
 	// added prevent of multiple Texture loadings.
@@ -48,7 +49,6 @@ private:
 	typedef std::tuple<std::string, int, int, bool, bool> TextureKey;
 	std::map<TextureKey, FluxTexture*, std::less<>> mTextureCache;
 
-	std::vector<FluxBaseObject*> mQueueObjects;
 	std::vector<FluxBaseObject*> mDeletedObjects;
 
 

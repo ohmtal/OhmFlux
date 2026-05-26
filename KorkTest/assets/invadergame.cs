@@ -285,7 +285,9 @@ function invaderGame::onInputEvent( %this, %deviceString, %actionString, %mouseX
 
   // FIXME !!!
 
-// error("invaderGame::onInputEvent Device:" SPC %deviceString SPC "action:" SPC %actionString SPC "mx/my:" SPC %mouseX SPC %mouseY SPC "DOWN:" SPC %keyValue);
+ error("invaderGame::onInputEvent Device:" SPC %deviceString SPC "action:" SPC %actionString SPC "mx/my:" SPC %mouseX SPC %mouseY SPC "DOWN:" SPC %keyValue);
+
+
 
  if (%deviceString $= "keyboard") {
    invaderGame.Keys[%actionString] = %keyValue;

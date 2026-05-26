@@ -687,6 +687,8 @@ int main(int argc, char *argv[])
 
 	lDemoGame->mSettings.maxSprites = 100000;
 
+	lDemoGame->mSettings.maxFPS = 200.f;
+
 	// testing quadTreee with click!
 	// while the quadTree should speed up
 	// it's slower because of the updates

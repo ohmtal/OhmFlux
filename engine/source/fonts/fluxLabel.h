@@ -73,6 +73,7 @@ public:
 
 
     virtual void Draw() override;
+    Point2F getStringSize(const char* text);
     const Point2F Print(const char* text, Point2F pos, FontAlign align = FontAlign_Left );
 
     RectI getRectI() const override;

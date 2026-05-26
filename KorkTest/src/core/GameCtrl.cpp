@@ -9,6 +9,9 @@
 #include "fonts/fluxLabel.h"
 #include "gui/fonts/HackNerdFontPropo-Regular.h"
 
+#include <console/console.h>
+
+extern KorkApi::Vm* sVM;
 
 namespace KorkFlux {
 
@@ -49,6 +52,7 @@ namespace KorkFlux {
 
 
         mEventListener = true;
+
         gMain->queueObject(this);
 
         return Parent::onAdd();
@@ -71,41 +75,52 @@ namespace KorkFlux {
 
         switch (event.type) {
             case SDL_EVENT_KEY_UP:
-            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_DOWN: {
 
 
-                 static std::string keyName = "";
-                 keyName = SDL_GetKeyName(event.key.key);
-
-                 // keyname is only without modifierts like shift so a "(" becomes a 9 (qwertz)
-
-                 // dLog("KEY pressed: %s", keyName.c_str());
-
-//FIXME ret is nullptr == crash!
-                 // KorkApi::ConsoleValue getReturnBuffer( const char *stringToCopy )
-                 // {
-                 //     KorkApi::ConsoleValue retV = sVM->getStringReturnBuffer( dStrlen( stringToCopy ) + 1 );
-                 //     char *ret = (char*)retV.ptr();
-                 //     dStrcpy( ret, stringToCopy );
-                 //     ret[dStrlen( stringToCopy )] = '\0';
-                 //     return retV;
-                 // }
+                if ( isMethod( "onInputEvent" ) ) {
+                    // NOTE: keyname is only without modifierts like shift so a "(" becomes a 9 (qwertz)
+                    static std::string keyName = "";
+                    keyName = SDL_GetKeyName(event.key.key);
+                    // dLog("KEY pressed: %s", keyName.c_str());
 
 
-                 // function invaderGame::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
-                // Con::executef( this, "onInputEvent"
-                //                , Con::getReturnBuffer("keyboard")
-                //                , Con::getReturnBuffer(keyName.c_str())
-                //                , Con::getFloatArg(gAppStatus.MousePos.x)
-                //                , Con::getFloatArg(gAppStatus.MousePos.y)
-                //                , Con::getBoolArg(event.type == SDL_EVENT_KEY_DOWN )//FIXME check true == up or down
-                //             );
-                break;
-        }
+                    // const char* str = "keyboard";
+                    // U32 len =  dStrlen( str );
+                    // KorkApi::ConsoleValue retV = Con::getReturnBuffer(len + 1 );
+                    // char *ret = (char*)retV.evaluatePtr(sVM->getAllocBase());
+                    // dStrncpy(ret, "keyboard", len);
+                    // ret[len] = '\0';
+                    // KorkApi::ConsoleValue deviceString = KorkApi::ConsoleValue::makeString(ret);
 
-        //FIXME
-        // if ( isMethod( "onInputEvent" ) )
-        // Con::executef( this, 6, "onInputEvent", deviceString, actionString, Con::getIntArg(mMousePos.x), Con::getIntArg(mMousePos.y), [bool up or down || axis value] );
+
+                    KorkApi::ConsoleValue deviceString =  Con::getReturnBuffer("keyboard");
+                    KorkApi::ConsoleValue actionString = Con::getReturnBuffer(keyName.c_str());
+                    KorkApi::ConsoleValue mouseX = Con::getFloatArg(gAppStatus.MousePos.x);
+                    KorkApi::ConsoleValue mouseY =  Con::getFloatArg(gAppStatus.MousePos.y);
+                    KorkApi::ConsoleValue keyValue = Con::getBoolArg(event.type == SDL_EVENT_KEY_DOWN );
+
+                    // function invaderGame::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
+                    Con::executef( this, "onInputEvent"
+                    , deviceString
+                    , actionString
+                    , mouseX
+                    , mouseY
+                    , keyValue
+                    );
+                    break;
+
+                }
+            }
+
+
+
+
+
+
+
+
+        } //switch
 
     }
     //--------------------------------------------------------------------------
@@ -186,15 +201,19 @@ ConsoleMethod( GameCtrl, drawstretch, ConsoleBool, 9, 14,
     return true;
 }
 
-ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=left,1=middle,2=right,3=center), profile, fontcolortype (0=normal,1=NA,2=HL)"
+ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=left,2=right,3=center)"
 "write text on screen.")
 {
     //FIXME align is unused int Print !!
     // const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
     Point2F pos = { dAtof(argv[2]), dAtof(argv[3]) };
     const char* text = argv[4];
+    FontAlign align = FontAlign_Left;
+    if (argc > 5) align = (FontAlign)dAtoi(argv[5]);
+
+
     if (!object->mLabel || !text) return false;
-    object->mLabel->Print(text, pos);
+    object->mLabel->Print(text, pos, align);
 
     // object->writeText(argv[4],lProfile, dAtoi(argv[2]),dAtoi(argv[3]),dAtoi(argv[5]), lFontColorType);
     return true;

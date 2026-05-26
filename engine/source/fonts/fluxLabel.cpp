@@ -57,6 +57,30 @@ void FluxLabel::setCaption(const char *szFormat, ...)
 }
 
 //-----------------------------------------------------------------------------
+Point2F FluxLabel::getStringSize(const char* text)  {
+    Point2F result = {0.f, 0.f};
+    Point2F cur = {0.f, 0.f};
+    STB_Internal::stbtt_aligned_quad q;
+    FontData fontData = *mTTFont->getFont();
+
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (text[i] < 32 || text[i] > 126) continue;
+
+        STB_Internal::stbtt_GetBakedQuad(
+            reinterpret_cast<STB_Internal::stbtt_bakedchar*>(fontData.chardata),
+                                         fontData.textureSize, fontData.textureSize, text[i] - 32, &cur.x, &cur.y, &q, 1);
+
+
+        if (( q.y1 - q.y0) * mScale > result.y )
+            result.y = ( q.y1 - q.y0) * mScale;
+
+    }
+
+    result.x = cur.x * mScale;
+    return result;
+}
+//-----------------------------------------------------------------------------
+
 //FIXME align!
 const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
 {
@@ -68,8 +92,20 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
 
     float startX = pos.x;
     float startY = pos.y;
+
+    result = getStringSize(text); //FIXME cache this
+
+    if ( align == FontAlign_Center ) {
+        startX -= result.x / 2.f;
+    }
+    else if ( align == FontAlign_Right )
+    {
+        startX -= result.x;
+    }
+
     float currentX = startX;
-    float currentY = startY;
+    float currentY = startY += result.y ;
+
 
     S32 lMaxHeight = 0;
     for (int i = 0; text[i]; ++i)
@@ -144,4 +180,5 @@ RectI FluxLabel::getRectI() const
 
     return lResult;
 }
+
 

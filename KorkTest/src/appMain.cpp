@@ -47,7 +47,12 @@ namespace KorkFlux {
                     }
             }
         }
-        // other stuff...
+
+        for (auto* obj : mQueueObjects) {
+            if (obj && obj->isEventListener()) obj->onEvent(event);
+        }
+
+
 
     }
 
@@ -161,6 +166,8 @@ namespace KorkFlux {
     bool Main::Initialize()
     {
         if (!Parent::Initialize()) return false;
+
+        mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
         mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, "KorkTestBed.ini");

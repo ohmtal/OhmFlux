@@ -591,8 +591,10 @@ void FluxMain::IterateFrame()
 
 		}
 		onEvent(E);
-		for (auto* obj : mQueueObjects) {
-			if (obj && obj->isEventListener()) obj->onEvent(E);
+		if (!mOverwriteEventListener) {
+			for (auto* obj : mQueueObjects) {
+				if (obj && obj->isEventListener()) obj->onEvent(E);
+			}
 		}
 
 
@@ -646,14 +648,18 @@ void FluxMain::IterateFrame()
 		lFpsTimer -= 1.0f;
 
 		// auto slow down cpu load saving - it's usually lower then maxFPS !
-		if ( mSettings.maxFPS > 0 && mFPS >= mSettings.maxFPS && mSettings.frameLimiter < 3.f) {
-			if (mSettings.frameLimiter < 1.f) {
-				mSettings.frameLimiter = 1.f;
-				Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating", mFPS);
-			}
-			else {
-				mSettings.frameLimiter += 0.5;
-			}
+		if ( mSettings.maxFPS > 0 && mFPS >= mSettings.maxFPS && mSettings.frameLimiter == 0.f) {
+			mSettings.frameLimiter = 1000.f / (F32)mSettings.maxFPS;
+
+			Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating", mFPS);
+
+			// if (mSettings.frameLimiter < 1.f) {
+			// 	mSettings.frameLimiter = 1.f;
+			// 	Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating", mFPS);
+			// }
+			// else {
+			// 	mSettings.frameLimiter += 0.5;
+			// }
 
 		} else if ( mFPS < 25 && mSettings.frameLimiter > 0.f) {
 			if (mSettings.maxFPS < 60)  {
