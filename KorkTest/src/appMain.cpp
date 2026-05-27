@@ -143,6 +143,10 @@ namespace KorkFlux {
     void Main::Deinitialize()
     {
 
+        Con::removeConsumer(MyLogger, NULL);
+        Sim::shutdown();
+        Con::shutdown();
+
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
 
