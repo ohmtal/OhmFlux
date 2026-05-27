@@ -130,11 +130,19 @@ set(PROJECT_SOURCES
     ${KORK_DIR}/src/audio/AudioProfile.h
     ${KORK_DIR}/src/audio/AudioProfile.cpp
 
+    ${KORK_DIR}/src/render/Camera.cpp
+    ${KORK_DIR}/src/render/Camera.h
+    ${KORK_DIR}/src/render/Light.cpp
+    ${KORK_DIR}/src/render/Light.h
+    ${KORK_DIR}/src/render/Particle.cpp
+    ${KORK_DIR}/src/render/Particle.h
+
 
     ${KORK_DIR}/src/render/Texture.h
     ${KORK_DIR}/src/render/Texture.cpp
     ${KORK_DIR}/src/render/Sprite.h
     ${KORK_DIR}/src/render/Sprite.cpp
+
 
 
     ${KORK_DIR}/src/totp/base32.cc
