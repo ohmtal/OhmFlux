@@ -52,7 +52,7 @@ else CleanupSet.deleteObjects();
   };
   CleanupSet.add($sprite);
   // ------
-  $sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; };
+  $sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.5; };
   CleanupSet.add($sndPling);
 
 

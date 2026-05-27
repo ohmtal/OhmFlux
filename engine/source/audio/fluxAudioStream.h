@@ -28,8 +28,6 @@ private:
     SDL_AudioStream *mStream = nullptr;
     Uint8 *mWavData = nullptr;
     Uint32 mWaveDataLen = 0;
-    // SDL_AudioDeviceID mAudioDevice;
-    float mGain = 1.f; //volume 0.f..1.f
 
 
 
@@ -55,9 +53,11 @@ public:
     ~FluxAudioStream();
 
     bool mLooping = false;
+    float mGain = 1.f; //volume 0.f..1.f
+
     // position
     bool mUsePosition = false;
-    Point2F mPosition = { 0.f, 0.f };
+    Point3F mPosition = { 0.f, 0.f, 0.f };
 
 
     bool play();
@@ -70,7 +70,9 @@ public:
     float getGain() { return mGain; }
 
     void setPositon( Point2F lPos)  {
-        mPosition = lPos;
+        mPosition.x = lPos.x;
+        mPosition.y = lPos.y;
+        mPosition.z = 0.f;
         mUsePosition = true;
     }
     bool getInitDone() { return mInitDone; }

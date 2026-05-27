@@ -24,12 +24,14 @@ namespace KorkFlux {
         Parent::initPersistFields();
         addGroup("Audio");
         addField("filename", TypeString, Offset(mFileName, AudioProfile));
+        addField("Volume", TypeF32, Offset(mAudioStream.mGain, AudioProfile));
         addField("looping", TypeBool, Offset(mAudioStream.mLooping, AudioProfile));
         // usePosition will become better when i finished the the audio system with panning
         addField("usePosition", TypeBool, Offset(mAudioStream.mUsePosition, AudioProfile));
         addField("x", TypeF32, Offset(mAudioStream.mPosition.x, AudioProfile));
         addField("y", TypeF32, Offset(mAudioStream.mPosition.y, AudioProfile));
-        // fixme more ... :P we dont use description
+        addField("z", TypeF32, Offset(mAudioStream.mPosition.z, AudioProfile));
+
         endGroup("Audio");
     }
 

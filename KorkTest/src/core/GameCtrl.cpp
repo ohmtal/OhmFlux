@@ -11,6 +11,9 @@
 
 #include <console/console.h>
 
+
+
+
 extern KorkApi::Vm* sVM;
 
 namespace KorkFlux {
@@ -53,7 +56,6 @@ namespace KorkFlux {
     }
     //--------------------------------------------------------------------------
     void GameCtrl::onEvent(SDL_Event event) {
-        // static std::string deviceString = "unknown";
 
         switch (event.type) {
             case SDL_EVENT_KEY_UP:
@@ -62,12 +64,12 @@ namespace KorkFlux {
 
                 if ( isMethod( "onInputEvent" ) ) {
                     // NOTE: keyname is only without modifierts like shift so a "(" becomes a 9 (qwertz)
-                    static std::string keyName = "";
-                    keyName = SDL_GetKeyName(event.key.key);
+
+                    const char* keyName = SDL_GetKeyName(event.key.key);
                     // dLog("KEY pressed: %s", keyName.c_str());
 
                     KorkApi::ConsoleValue deviceString =  Con::getReturnBuffer("keyboard");
-                    KorkApi::ConsoleValue actionString = Con::getReturnBuffer(keyName.c_str());
+                    KorkApi::ConsoleValue actionString = Con::getReturnBuffer(keyName);
                     KorkApi::ConsoleValue mouseX = Con::getFloatArg(gAppStatus.MousePos.x);
                     KorkApi::ConsoleValue mouseY =  Con::getFloatArg(gAppStatus.MousePos.y);
                     KorkApi::ConsoleValue keyValue = Con::getBoolArg(event.type == SDL_EVENT_KEY_DOWN );
@@ -81,9 +83,27 @@ namespace KorkFlux {
                     , keyValue
                     );
                     break;
-
                 }
+                break;
             }
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			case SDL_EVENT_MOUSE_BUTTON_UP:   if ( isMethod( "onInputEvent" ) ) {
+                char buttonNameBuf[32];
+                dSprintf( buttonNameBuf, sizeof(buttonNameBuf), "button%d", event.button.button );
+                KorkApi::ConsoleValue mouseX = Con::getFloatArg(gAppStatus.MousePos.x);
+                KorkApi::ConsoleValue mouseY =  Con::getFloatArg(gAppStatus.MousePos.y);
+                KorkApi::ConsoleValue keyValue = Con::getBoolArg(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN );
+
+                Con::executef( this, "onInputEvent"
+                , Con::getReturnBuffer("mouse0") // mouse0 for TGE compat!
+                , Con::getReturnBuffer(buttonNameBuf)
+                , mouseX
+                , mouseY
+                , keyValue
+                );
+            }
+            break;
+            //FIXME mouse0 / button0,1,2,3,4 ....
         } //switch
 
     }

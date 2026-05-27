@@ -2,6 +2,10 @@
 // Copyright (c) 2025 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
+// FIXME 3D ready:
+//          Zoom should be mPosition.z << Point3F!, so mMoveVector
+//          also Point3F
+//-----------------------------------------------------------------------------
 #pragma once
 #include "core/fluxGlobals.h"
 

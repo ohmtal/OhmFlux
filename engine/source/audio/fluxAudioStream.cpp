@@ -104,6 +104,7 @@ void FluxAudioStream::Update(const double& dt)
     if (!mInitDone || !mPlaying) return;
 
     if (mUsePosition) {
+        // FIXME Point3F
         auto camera = Render2D.getCamera();
         RectF view = camera->getVisibleWorldRect(false);
         float zoom = camera->getZoom(); // 1.0 = Default, 0.1 = Far, 5.0 = Close
@@ -113,7 +114,7 @@ void FluxAudioStream::Update(const double& dt)
         // Calculate the "Hearing Range" based on the current view
         // As you zoom out, view.w increases, naturally expanding the hearing area.
         float maxDist = (view.w * 0.5f) * 1.5f;
-        float distSq = camCenter.distSq(mPosition);
+        float distSq = camCenter.distSq({mPosition.x, mPosition.y});
         float maxDistSq = maxDist * maxDist;
 
         if (distSq > maxDistSq) {
@@ -246,6 +247,8 @@ bool FluxAudioStream::play()
         dLog("Cant play audio Stream. initDone:%d, stream:%d", mInitDone, mStream != 0 );
         return false;
     }
+
+    SDL_SetAudioStreamGain(mStream, mGain);
 
     mPlaying = true;
     SDL_ClearAudioStream(mStream);
