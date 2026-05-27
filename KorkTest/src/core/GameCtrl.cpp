@@ -18,117 +18,105 @@ extern KorkApi::Vm* sVM;
 
 namespace KorkFlux {
 
-    IMPLEMENT_CONOBJECT(GameCtrl);
+IMPLEMENT_CONOBJECT(GameCtrl);
 
 
-    //--------------------------------------------------------------------------
-    void GameCtrl::initPersistFields()   {
-        Parent::initPersistFields();
+//--------------------------------------------------------------------------
+void GameCtrl::initPersistFields()   {
+    Parent::initPersistFields();
+}
+//--------------------------------------------------------------------------
+bool GameCtrl::onAdd(){
+    if (!gMain)  return false;
+
+    mDefaultFont = new FluxTTFont();
+    if (mDefaultFont->LoadFontFromMemory(HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 32))
+    {
+        mLabel = new FluxLabel(mDefaultFont);
     }
-    //--------------------------------------------------------------------------
-    bool GameCtrl::onAdd(){
-        if (!gMain)  return false;
 
-        mDefaultFont = new FluxTTFont();
-        if (mDefaultFont->LoadFontFromMemory(HackNerdFontPropo_Regular_ttf, HackNerdFontPropo_Regular_ttf_len, 32))
-        {
-            mLabel = new FluxLabel(mDefaultFont);
+
+    mEventListener = true;
+
+    gMain->queueObject(this);
+
+    return Parent::onAdd();
+}
+//--------------------------------------------------------------------------
+void GameCtrl::onRemove() {
+    mEventListener = false;
+
+    if (mDefaultFont) SAFE_DELETE(mDefaultFont);
+    mDefaultFont = nullptr;
+    if (mLabel) SAFE_DELETE(mLabel);
+    mLabel = nullptr;
+
+    gMain->unQueueObject(this);
+    Parent::onRemove();
+}
+//--------------------------------------------------------------------------
+void GameCtrl::onEvent(SDL_Event event) {
+
+    switch (event.type) {
+        case SDL_EVENT_KEY_UP:
+        case SDL_EVENT_KEY_DOWN:  if ( isMethod( "onInputEvent" ) ) {
+            // NOTE: keyname is only without modifierts like shift so a "(" becomes a 9 (qwertz)
+
+            const char* keyName = SDL_GetKeyName(event.key.key);
+            // dLog("KEY pressed: %s", keyName.c_str());
+
+            KorkApi::ConsoleValue deviceString =  Con::getReturnBuffer("keyboard");
+            KorkApi::ConsoleValue actionString = Con::getReturnBuffer(keyName);
+            KorkApi::ConsoleValue mouseX = Con::getFloatArg(gAppStatus.MousePos.x);
+            KorkApi::ConsoleValue mouseY =  Con::getFloatArg(gAppStatus.MousePos.y);
+            KorkApi::ConsoleValue keyValue = Con::getBoolArg(event.type == SDL_EVENT_KEY_DOWN );
+
+            // function invaderGame::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
+            Con::executef( this, "onInputEvent"
+            , deviceString
+            , actionString
+            , mouseX
+            , mouseY
+            , keyValue
+            );
         }
+        break;
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:   if ( isMethod( "onInputEvent" ) ) {
+            char buttonNameBuf[32];
+            dSprintf( buttonNameBuf, sizeof(buttonNameBuf), "button%d", event.button.button );
+            KorkApi::ConsoleValue mouseX = Con::getFloatArg(gAppStatus.MousePos.x);
+            KorkApi::ConsoleValue mouseY =  Con::getFloatArg(gAppStatus.MousePos.y);
+            KorkApi::ConsoleValue keyValue = Con::getBoolArg(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN );
 
+            Con::executef( this, "onInputEvent"
+            , Con::getReturnBuffer("mouse0") // mouse0 for TGE compat!
+            , Con::getReturnBuffer(buttonNameBuf)
+            , mouseX
+            , mouseY
+            , keyValue
+            );
+        }
+        break;
 
-        mEventListener = true;
+    } //switch
 
-        gMain->queueObject(this);
+}
+//--------------------------------------------------------------------------
+void GameCtrl::Draw() {
+    //FIXME what is the dt here ?
+    // Con::executef( this, 3, "onRender", getScreen()->getIdString(), Con::getIntArg(dt)); NOTE: INT???
+    // function invaderGame::onRender(%this,%dt) {
+    // mLabel->Print("TEST1", { 10.f,100.f });
+    // mLabel->Print("TEST2", { 10.f,140.f });
 
-        return Parent::onAdd();
-    }
-    //--------------------------------------------------------------------------
-    void GameCtrl::onRemove() {
-        mEventListener = false;
-
-        if (mDefaultFont) SAFE_DELETE(mDefaultFont);
-        mDefaultFont = nullptr;
-        if (mLabel) SAFE_DELETE(mLabel);
-        mLabel = nullptr;
-
-        gMain->unQueueObject(this);
-        Parent::onRemove();
-    }
-    //--------------------------------------------------------------------------
-    void GameCtrl::onEvent(SDL_Event event) {
-
-        switch (event.type) {
-            case SDL_EVENT_KEY_UP:
-            case SDL_EVENT_KEY_DOWN: {
-
-
-                if ( isMethod( "onInputEvent" ) ) {
-                    // NOTE: keyname is only without modifierts like shift so a "(" becomes a 9 (qwertz)
-
-                    const char* keyName = SDL_GetKeyName(event.key.key);
-                    // dLog("KEY pressed: %s", keyName.c_str());
-
-                    KorkApi::ConsoleValue deviceString =  Con::getReturnBuffer("keyboard");
-                    KorkApi::ConsoleValue actionString = Con::getReturnBuffer(keyName);
-                    KorkApi::ConsoleValue mouseX = Con::getFloatArg(gAppStatus.MousePos.x);
-                    KorkApi::ConsoleValue mouseY =  Con::getFloatArg(gAppStatus.MousePos.y);
-                    KorkApi::ConsoleValue keyValue = Con::getBoolArg(event.type == SDL_EVENT_KEY_DOWN );
-
-                    // function invaderGame::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
-                    Con::executef( this, "onInputEvent"
-                    , deviceString
-                    , actionString
-                    , mouseX
-                    , mouseY
-                    , keyValue
-                    );
-                    break;
-                }
-                break;
-            }
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-			case SDL_EVENT_MOUSE_BUTTON_UP:   if ( isMethod( "onInputEvent" ) ) {
-                char buttonNameBuf[32];
-                dSprintf( buttonNameBuf, sizeof(buttonNameBuf), "button%d", event.button.button );
-                KorkApi::ConsoleValue mouseX = Con::getFloatArg(gAppStatus.MousePos.x);
-                KorkApi::ConsoleValue mouseY =  Con::getFloatArg(gAppStatus.MousePos.y);
-                KorkApi::ConsoleValue keyValue = Con::getBoolArg(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN );
-
-                Con::executef( this, "onInputEvent"
-                , Con::getReturnBuffer("mouse0") // mouse0 for TGE compat!
-                , Con::getReturnBuffer(buttonNameBuf)
-                , mouseX
-                , mouseY
-                , keyValue
-                );
-            }
-            break;
-            //FIXME mouse0 / button0,1,2,3,4 ....
-        } //switch
-
-    }
-    //--------------------------------------------------------------------------
-    void GameCtrl::Draw() {
-        //FIXME what is the dt here ?
-        // Con::executef( this, 3, "onRender", getScreen()->getIdString(), Con::getIntArg(dt)); NOTE: INT???
-        // function invaderGame::onRender(%this,%dt) {
-        // mLabel->Print("TEST1", { 10.f,100.f });
-        // mLabel->Print("TEST2", { 10.f,140.f });
-
-        if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime * 1000.f));
-    }
-    //--------------------------------------------------------------------------
-    void GameCtrl::Update(const double& dt) {
-        if ( isMethod( "onUpdate" ) ) Con::executef( this, "onUpdate", Con::getFloatArg(dt));
-    }
-    //--------------------------------------------------------------------------
-
-
-
-
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
+    if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime * 1000.f));
+}
+//--------------------------------------------------------------------------
+void GameCtrl::Update(const double& dt) {
+    if ( isMethod( "onUpdate" ) ) Con::executef( this, "onUpdate", Con::getFloatArg(dt));
+}
+//--------------------------------------------------------------------------
 ConsoleMethod( GameCtrl, draw, ConsoleBool, 6, 6, "(Texture,x,y,layer)"
 "draw a image, Layer 1-99 possible.")
 {

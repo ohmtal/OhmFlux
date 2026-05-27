@@ -6,11 +6,12 @@
 //       I added this script to test KorkScript itself.
 //------------------------------------------------------------------------------
 // FIXME  exec("common/highscore.cs");
+$align::left = 0;
+$align::center = 1;
+$align::right = 2;
 
-$textAlignLeft = 0;
-$textAlignMiddle = 1;
-$textAlignRight = 2;
-$textAlignCenter = 3;
+
+
 
 
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
@@ -252,9 +253,9 @@ function invaderGame::onRender(%this,%dt) {
   //drawBackground
   %this.drawstretch(invaderGame.img_back,0,400,300,99,800,600,0,false,false);
 
-  %this.writeText(5,5,"Score:" SPC invaderGame.score, 0);
-  %this.writeText(400,5,"HI:" SPC  invaderGame.hiscore, 1);
-  %this.writeText(795,5,"LIVES:" SPC invaderGame.lives, 2);
+  %this.writeText(5,5,"Score:" SPC invaderGame.score, $align::left );
+  %this.writeText(400,5,"HI:" SPC  invaderGame.hiscore, $align::center );
+  %this.writeText(795,5,"LIVES:" SPC invaderGame.lives, $align::right);
     
   if (!invaderGame.GameOver) {
     invaderGame.player.process(%dt);
@@ -269,7 +270,7 @@ function invaderGame::onRender(%this,%dt) {
   
   } else {
   
-    %this.writeText(400,100,"Game Over",3);
+    %this.writeText(400,100,"Game Over",$align::center);
     %this.drawHigh(%this,%dt);
     
   }
@@ -279,7 +280,7 @@ function invaderGame::onRender(%this,%dt) {
   */
     
   if (invaderGame.escapeHit == 1)
-        %this.writeText(400,200,"Hit again to quit the game.",3);
+        %this.writeText(400,200,"Hit again to quit the game.",$align::center);
 }
 
 //------------------------------------------------------------------------------
@@ -791,7 +792,7 @@ function processbonusAlien(%dt) {
              %a.schedule(0,delete);
              return;
          }
-        invaderGame.writeText(%a.x,%a.y,%a.score,3);         
+        invaderGame.writeText(%a.x,%a.y,%a.score,$align::center);
         return;
   }
   
