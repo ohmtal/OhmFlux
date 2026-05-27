@@ -151,6 +151,12 @@ set(PROJECT_SOURCES
     ${KORK_DIR}/src/totp/hmac-sha1.h
     ${KORK_DIR}/src/totp/totp.cc
 
+    # ${KORK_DIR}/src/network/
+    # ${KORK_DIR}/src/network/tcpObject.cc
+    # ${KORK_DIR}/src/network/tcpObject.h
+    # ${KORK_DIR}/src/network/tcpObject_ScriptBinding.h
+
+
     # testing math from OGE/Torque2D
     # too many changes needed ... ${KORK_DIR}/src/math/mathTypes.cc
 
