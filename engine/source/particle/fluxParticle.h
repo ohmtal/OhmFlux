@@ -17,6 +17,7 @@ struct FluxParticle
     F32 rotation;
     F32 rotationSpeed;
     F32 scale;
+    F32 endScale;
     F32 lifetime; // Total lifetime
     F32 lifeRemaining; // Current life remaining
     Color4F startColor;
@@ -27,10 +28,12 @@ struct FluxParticle
     {
         if (lifeRemaining > 0.0f)
         {
+            mLifeRatio =  1.0f - getNormalizedLife();
             velocity += acceleration * dt;
             position += velocity * dt;
             rotation += rotationSpeed * dt;
             lifeRemaining -= dt;
+
         }
     }
 
@@ -39,11 +42,21 @@ struct FluxParticle
         return lifeRemaining / lifetime;
     }
 
+    F32 getCurrentScale() const
+    {
+        F32 t = mLifeRatio;
+        F32 exponentialT = t * t * t; // Cubic curve for aggressive forward motion
+
+        return scale * (1.0f - exponentialT) + endScale * exponentialT;
+    }
+
     Color4F getCurrentColor() const
     {
-        F32 lifeRatio = 1.0f - getNormalizedLife();
-        return startColor * (1.0f - lifeRatio) + endColor * lifeRatio;
+        return startColor * (1.0f - mLifeRatio) + endColor * mLifeRatio;
     }
+
+private:
+    F32 mLifeRatio = 0.0f;
 };
 
 #endif // _FLUX_PARTICLE_H

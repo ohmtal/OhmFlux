@@ -39,6 +39,7 @@ struct EmitterProperties
     F32 maxRotationSpeed = 2.0f;
 
     // Visuals
+    bool doGrow = false; //grow over time minScale/maxScale
     F32 minScale = 1.0f;
     F32 maxScale = 1.0f;
     Color4F startColorMin = cl_White; // Changed to white so they are visible
@@ -64,7 +65,11 @@ struct EmitterProperties
         endColorMax   = lEndMax;
         return *this;
     }
-    EmitterProperties& setScaleMinMax( F32 lMin, F32 lMax ) { minScale = lMin;  maxScale = lMax; return *this;}
+    EmitterProperties& setScaleMinMax( F32 lMin, F32 lMax ) {
+        minScale = lMin;
+        maxScale = lMax;
+        return *this;
+    }
     EmitterProperties& setTexture( FluxTexture* lTexture ) { texture = lTexture; return *this;}
 
 };

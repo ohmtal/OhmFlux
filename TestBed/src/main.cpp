@@ -49,6 +49,7 @@ private:
 
     FluxParticleEmitter* mFireEmitter;
     FluxParticleEmitter* mSparkEmitter;
+    FluxParticleEmitter* mStarFieldEmitter;
 
     FluxTTFont* mMonoFont;
     FluxLabel* mLabel;
@@ -166,7 +167,8 @@ public:
         lFireProps.endColorMax   = Color4F::FromHex(0x55000000);
         // -----
 
-         // mFireEmitter = new FluxParticleEmitter(lFireProps);
+
+
          mFireEmitter = ParticleManager.addEmitter(lFireProps);
 
          // SnowFlake1
@@ -176,6 +178,20 @@ public:
                         .setTexture(loadTexture( "assets/particles/SnowFlake1.png" ))
                         // .setScaleMinMax( 0.01f, 0.1f)
          );
+
+         // ------------------------
+
+
+       mStarFieldEmitter = ParticleManager.addEmitter(
+                        ParticlePresets::starfield
+                        .setTexture(loadTexture( "assets/particles/Star-Texture.png" ))
+                        .setScaleMinMax( 0.1f, 1.f)
+                        .setSpeedMinMax(50.f, 150.f)
+         );
+      mStarFieldEmitter->setPosition({ 300.f, 300.f, 0.5f});
+
+         // -------------------------
+
 
          FluxTexture* lBubble = loadTexture( "assets/particles/Skull.png" );
          ParticleManager.addEmitter(
@@ -437,7 +453,7 @@ public:
     //--------------------------------------------------------------------------------------
     void Update(const double& dt) override
     {
-        mLabel->setCaption("%d fps, mouse grabbed:%d ,dT:%.4f fT:%.5f", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()), dt, getFrameTime());
+        mLabel->setCaption("%d fps, mouse grabbed:%d ,dT:%.2fms fT:%.5f", getFPS(), (S32)SDL_GetWindowMouseGrab(getScreen()->getWindow()), dt * 1000.f, getFrameTime());
 
         const float camSpeed  = 100.f * getFrameTime();
         const float zoomSpeed = 0.1f  * getFrameTime();
@@ -468,9 +484,8 @@ public:
 
 
         // emitter test
-        // FIXME emitter need a manager!
+
         mFireEmitter->getProperties().position = { getStatus().getWorldMousePos().x, getStatus().getWorldMousePos().y, 0.f};
-        // mFireEmitter->update(dt / 1000.f);
 
         //OPL3 Test  Siren in Main fixed 60fps loop all
         // In your Main Loop (60 FPS)
@@ -557,8 +572,7 @@ public:
             Render2D.drawSprite(dp);
         }
 
-        // FIXME emitter need a manager!
-        // mFireEmitter->render();
+
     } //Draw
 
 

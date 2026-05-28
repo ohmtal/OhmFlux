@@ -680,7 +680,7 @@ void FluxMain::IterateFrame()
 
 	while (accumulator >= mSettings.updateDt) {
 		Update( accumulator );
-		accumulator = 0; //-= mSettings.updateDt;
+		accumulator -= mSettings.updateDt;
 	}
 
 	//  Render

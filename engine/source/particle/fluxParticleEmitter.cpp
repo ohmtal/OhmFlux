@@ -120,7 +120,7 @@ void FluxParticleEmitter::Draw()
             particle.texture,
             particle.position,
             particle.rotation,
-            particle.scale,
+            mProperties.doGrow ? particle.getCurrentScale() : particle.scale,
             currentColor
         );
     }
@@ -196,7 +196,10 @@ void FluxParticleEmitter::initializeParticle(FluxParticle& particle)
     else
         particle.rotation = RandFloat() * 2.0f * FLUX_PI ;
 
-    particle.scale = RandInRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
+    particle.scale = mProperties.doGrow
+        ? mProperties.minScale / 10.f
+        : RandInRange(mProperties.minScale / 10.f , mProperties.maxScale / 10.f );
+    particle.endScale = mProperties.doGrow ? mProperties.maxScale / 10.f : particle.scale;
 
     // Initializing Colors
     if (mProperties.startColorMin == mProperties.startColorMax)

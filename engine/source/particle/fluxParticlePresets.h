@@ -143,4 +143,27 @@ namespace ParticlePresets
         .endColorMax = cl_White
     };
 
+
+    EmitterProperties starfield = {
+        .spawnRate = 100.0f,
+        .maxParticles = 500,
+        .playOnce = false,
+        .minLifetime = 4.5f,   .maxLifetime = 4.5f,
+
+        // Fast speeds create the illusion of rushing past
+        .minSpeed = 100.0f,    .maxSpeed = 250.0f,
+
+        // Complete 360-degree circle in radians (-PI to PI)
+        .minAngle = -3.1416f,  .maxAngle = 3.1416f,
+
+        // Start tiny in the distance, grow huge as they get close
+        .doGrow = true,
+        .minScale = 0.1f,      .maxScale = 1.0f,
+
+        // Bright white/blue stars that stay bright until they leave the screen
+        .startColorMin = {0.8f, 0.9f, 1.0f, 1.0f}, // Pale Blue/White
+        .startColorMax = {1.0f, 1.0f, 1.0f, 1.0f}, // Pure White
+        .endColorMin = {1.0f, 1.0f, 1.0f, 1.0f},
+        .endColorMax = {1.0f, 1.0f, 1.0f, 1.0f},
+    };
 } //nameSpace

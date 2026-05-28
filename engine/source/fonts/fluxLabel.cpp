@@ -104,7 +104,7 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
     }
 
     float currentX = startX;
-    float currentY = startY += result.y ;
+    float currentY = startY += result.y * 0.5f;
 
 
     S32 lMaxHeight = 0;
