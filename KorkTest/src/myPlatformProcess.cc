@@ -163,34 +163,16 @@ void outputDebugString(const char *string)
 /// File IO.
 StringTableEntry getWorkingDirectory()
 {
-#ifdef TORQUE_USE_STD_FILESYSTEM
-   static std::string sWorkingDirectory;
-
-   std::error_code ec;
-   fs::path cwd = fs::current_path(ec);
-   if (ec)
-      return nullptr;
-
-   sWorkingDirectory = cwd.generic_string();
-   return StringTable->insert(sWorkingDirectory.c_str());
-#else
+   Con::warnf("%s not implemented", __func__);
    return nullptr;
-#endif
 }
 
 bool setWorkingDirectory(StringTableEntry newDir)
 {
-#ifdef TORQUE_USE_STD_FILESYSTEM
-   if (newDir == nullptr || *newDir == '\0')
-      return false;
-
-   std::error_code ec;
-   fs::current_path(fs::path(newDir), ec);
-   return !ec;
-#else
+   Con::warnf("%s not implemented", __func__);
    (void)newDir;
    return false;
-#endif
+
 }
 
 StringTableEntry getCurrentDirectory()

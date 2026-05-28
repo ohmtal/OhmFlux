@@ -3,12 +3,6 @@
 #include "luabind/luaBindings.h"
 #include <sol/sol.hpp>
 #include "SDL3/SDL.h"
-/*
- Binding Lua is much more headache than i thought when i read:
-    It is the industry standard for "I just want to add scripts to my C++ project without a headache".
-
- I guess i will stay with c++ for the moment :P
-*/
 
 
 class LuaTestGame : public FluxMain
@@ -22,17 +16,6 @@ public:
 
     std::function<bool()> onInitialize;
 
-    // virtual bool Initialize() override {
-    //     if (!Parent::Initialize()) {
-    //         return false;
-    //     }
-    //     // Look for "Initialize" in the Lua object
-    //     sol::optional<sol::function> lua_init = lua_self["Initialize"];
-    //     if (lua_init) {
-    //         return (*lua_init)(lua_self); // Call Lua version
-    //     }
-    //     return true; //??
-    // }
 
     virtual bool Initialize() override {
         if (!Parent::Initialize()) return false;
@@ -79,12 +62,10 @@ public:
                 const char* keyName = SDL_GetKeyName(event.key);
                 bool isDown = event.down;
 
-                // SDL3: Check modifiers using the 'mod' field and bitwise AND
                 bool isAlt   = (event.mod & SDL_KMOD_ALT) != 0;
                 bool isCtrl  = (event.mod & SDL_KMOD_CTRL) != 0;
                 bool isShift = (event.mod & SDL_KMOD_SHIFT) != 0;
 
-                // Call Lua with modifiers: myLogic:onKeyEvent(key, isDown, alt, ctrl, shift)
                 sol::state_view lua(mLuaSelf.lua_state());
                 fx.set_error_handler(lua["debug"]["traceback"]);
 
@@ -108,7 +89,6 @@ public:
 
         if (result.valid()) {
             printf("Lua Script Reloaded Successfully!\n");
-            // Re-assign the new logic table to ensure C++ has the latest references
             this->mLuaSelf = lua["Game"];
         } else {
             sol::error err = result;
@@ -149,21 +129,14 @@ int main(int argc, char* argv[]) {
 
     BindLuaTestGame(lua);
 
-    // 2. Create the C++ game instance
     LuaTestGame game;
-
-    // 3. CRITICAL: Inject the 'game' pointer into Lua's global scope FIRST
     lua["app"] = &game;
-
-    // 4. Load the script NOW. The script can now safely access the global 'app'.
     auto result = lua.script_file("assets/main.lua");
     if (!result.valid()) {
         sol::error err = result;
         printf("SCRIPT LOAD ERROR: %s\n", err.what());
         return 1;
     }
-
-    // 5. Run the engine (which calls your Lua Initialize function)
     game.Execute();
 
     return 0;

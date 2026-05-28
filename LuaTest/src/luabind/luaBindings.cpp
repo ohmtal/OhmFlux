@@ -30,17 +30,10 @@ namespace OhmFlux::Lua {
     }
     //==============================================================================
     void bindFluxMain(sol::state& lua) {
-        // 1. Create the usertype with ONLY base classes.
-        // This defines the inheritance without triggering the complex argument-pairing check.
         auto type = lua.new_usertype<FluxMain>("FluxMain",
                                                sol::base_classes, sol::bases<FluxBaseObject>()
         );
-
-        // 2. Manually set the constructor.
-        // This bypasses the variadic constructor logic entirely.
         type.set(sol::call_constructor, sol::constructors<FluxMain()>());
-
-        // 3. Optional: Bind your logic as you did before.
         type["initialize"] = &FluxMain::Initialize;
         type["update"] = &FluxMain::Update;
         type["loadTexture"] = sol::overload(
@@ -431,62 +424,29 @@ namespace OhmFlux::Lua {
             type["setScale"] = &FluxLabel::setScale;
         }
     }
-    // //==============================================================================
-    // void bindFluxTrueTypeFont(sol::state& lua) {
-    //     auto type = lua.new_usertype<FluxTrueTypeFont>("FluxTrueTypeFont",
-    //                                                  sol::base_classes, sol::bases<FluxRenderObject, FluxBaseObject>()
-    //     );
-    //
-    //     // Use sol::factories with stack_object for maximum debuggability
-    //     type["new"] = sol::factories(
-    //         [](const char* filename, uint32_t fontsize ) -> FluxTrueTypeFont* {
-    //             return new FluxTrueTypeFont( filename,  fontsize );
-    //         }
-    //     );
-    //
-    //     type["setCaption"] = [](FluxTrueTypeFont& self, std::string text) {
-    //         self.setCaption("%s", text.c_str());
-    //     };
-    //
-    //     // void set(
-    //     //     const char* lCaption,
-    //     //     Point2F lPos,
-    //     //     Color4F lColor = cl_White,
-    //     //     F32     lScale = 1.f
-    //     // )
-    //
-    //
-    // }
+
     //==============================================================================
     void bindFluxAudioStream(sol::state& lua) {
-        // 1. Create usertype with inheritance
         auto type = lua.new_usertype<FluxAudioStream>("FluxAudioStream",
                                                       sol::base_classes, sol::bases<FluxBaseObject>()
         );
-
-        // 2. Define .new() explicitly - This fixes the nil error
         type["new"] = sol::factories(
             [](const char* filename) {
                 return new FluxAudioStream(filename);
             }
         );
-
-        // 3. Playback Controls
         type["play"] = &FluxAudioStream::play;
         type["stop"] = &FluxAudioStream::stop;
         type["resume"] = &FluxAudioStream::resume;
         type["isPlaying"] = &FluxAudioStream::isPlaying;
 
-        // 4. Settings
         type["setLooping"] = &FluxAudioStream::setLooping;
         type["setGain"] = &FluxAudioStream::setGain;
         type["getGain"] = &FluxAudioStream::getGain;
         type["getInitDone"] = &FluxAudioStream::getInitDone;
 
-        // 5. Position
         type["setPosition"] = &FluxAudioStream::setPositon;
 
-        // 6. Logic
         type["update"] = &FluxAudioStream::Update;
     }
     //==============================================================================
@@ -551,34 +511,8 @@ namespace OhmFlux::Lua {
         }
 
 
-
-
-        // make write protected:
-        // lua.script(R"(
-        //     local protected_table = sdl
-        //     local mt = {
-        //         __newindex = function(t, k, v)
-        //             error("you can not change a constant value " .. tostring(k), 2)
-        //         end
-        //     }
-        //     setmetatable(protected_table, mt)
-        // )");
-
         sol::table c = lua.create_named_table("color");
 
-//         // 1. Color4F für Lua bekannt machen (einmalig)
-//         lua.new_usertype<Color4F>("Color",
-//                                   sol::constructors<Color4F(), Color4F(float, float, float, float)>(),
-//                                   "r", &Color4F::r,
-//                                   "g", &Color4F::g,
-//                                   "b", &Color4F::b,
-//                                   "a", &Color4F::a
-//         );
-//
-//         // 2. Farbtabelle erstellen
-//         sol::table c = lua.create_named_table("color");
-
-        // Basis Farben
         c["white"]       = cl_White;
         c["black"]       = cl_Black;
         c["red"]         = cl_Red;
@@ -612,53 +546,13 @@ namespace OhmFlux::Lua {
         c["sand"]        = cl_Sand;
         c["kelp"]        = cl_Kelp;
 
-        // Debug / FX
+        // FX
         c["neonpink"]     = cl_NeonPink;
         c["electricblue"] = cl_ElectricBlue;
         c["acidgreen"]    = cl_AcidGreen;
         c["glass"]        = cl_Glass;
         c["shadow"]       = cl_Shadow;
         c["ghost"]        = cl_Ghost;
-
-//         const Color4F cl_White        = { 1.0f, 1.0f, 1.0f, 1.0f };
-//         const Color4F cl_Black        = { 0.0f, 0.0f, 0.0f, 1.0f };
-//         const Color4F cl_Red          = { 1.0f, 0.0f, 0.0f, 1.0f };
-//         const Color4F cl_Green        = { 0.0f, 1.0f, 0.0f, 1.0f };
-//         const Color4F cl_Blue         = { 0.0f, 0.0f, 1.0f, 1.0f };
-//         const Color4F cl_Yellow       = { 1.0f, 1.0f, 0.0f, 1.0f };
-//         const Color4F cl_Cyan         = { 0.0f, 1.0f, 1.0f, 1.0f };
-//         const Color4F cl_Magenta      = { 1.0f, 0.0f, 1.0f, 1.0f };
-//         const Color4F cl_Gray         = { 0.5f, 0.5f, 0.5f, 1.0f };
-//         const Color4F cl_LightGray    = { 0.75f, 0.75f, 0.75f, 1.0f };
-//         const Color4F cl_DarkGray     = { 0.25f, 0.25f, 0.25f, 1.0f };
-//         const Color4F cl_Orange       = { 1.0f, 0.5f, 0.0f, 1.0f };
-//         const Color4F cl_Purple       = { 0.5f, 0.0f, 0.5f, 1.0f };
-//         const Color4F cl_Brown        = { 0.6f, 0.3f, 0.0f, 1.0f };
-//         const Color4F cl_Lime         = { 0.75f, 1.0f, 0.0f, 1.0f };
-//         const Color4F cl_Pink         = { 1.0f, 0.4f, 0.7f, 1.0f };
-//
-//         //------------------------------------- Some more Colors
-//         const Color4F cl_Crimson      = { 0.86f, 0.08f, 0.24f, 1.0f }; // Modern Alert/Red
-//         const Color4F cl_Emerald      = { 0.16f, 0.71f, 0.44f, 1.0f }; // Pleasant Success/Green
-//         const Color4F cl_SkyBlue      = { 0.53f, 0.81f, 0.98f, 1.0f }; // UI Accent
-//         const Color4F cl_Slate        = { 0.18f, 0.24f, 0.31f, 1.0f }; // Modern Dark Background
-//         const Color4F cl_Gold         = { 1.00f, 0.84f, 0.00f, 1.0f }; // Pickups/Rare items
-//         const Color4F cl_Transparent   = { 0.00f, 0.00f, 0.00f, 0.00f }; // Invisible/Default
-//
-//         const Color4F cl_Aquamarine   = { 0.50f, 1.00f, 0.83f, 1.0f }; // Tropical Water
-//         const Color4F cl_Coral        = { 1.00f, 0.50f, 0.31f, 1.0f }; // Warm Reef color
-//         const Color4F cl_DeepSea      = { 0.00f, 0.08f, 0.20f, 1.0f }; // Background Depths
-//         const Color4F cl_Seafoam      = { 0.60f, 0.85f, 0.75f, 1.0f }; // Bubbles/Foam
-//         const Color4F cl_Sand         = { 0.76f, 0.70f, 0.50f, 1.0f }; // Floor/Dirt
-//         const Color4F cl_Kelp         = { 0.13f, 0.29f, 0.13f, 1.0f }; // Dark Underwater Plant
-//
-//         const Color4F cl_NeonPink     = { 1.00f, 0.00f, 0.50f, 1.0f }; // Physics Hitboxes
-//         const Color4F cl_ElectricBlue = { 0.00f, 1.00f, 1.00f, 1.0f }; // Pathfinding nodes
-//         const Color4F cl_AcidGreen    = { 0.50f, 1.00f, 0.00f, 1.0f }; // Collision triggers
-//
-//         const Color4F cl_Glass        = { 1.00f, 1.00f, 1.00f, 0.25f }; // Semi-transparent White
-//         const Color4F cl_Shadow       = { 0.00f, 0.00f, 0.00f, 0.40f }; // Shadow Overlay
-//         const Color4F cl_Ghost        = { 0.70f, 0.70f, 1.00f, 0.50f }; // Semi-transparent Blue
 
 
     }

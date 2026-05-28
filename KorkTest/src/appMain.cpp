@@ -34,7 +34,7 @@ namespace KorkFlux {
         snprintf(lBuffer, sizeof(lBuffer), "%s", message);
         console->AddLog("%s", message);
     }
-
+    //-----------------------------------------------------------------------------
     void Main::onEvent(SDL_Event event)
     {
         if (mGuiGlue) {
@@ -51,11 +51,8 @@ namespace KorkFlux {
         for (auto* obj : mQueueObjects) {
             if (obj && obj->isEventListener()) obj->onEvent(event);
         }
-
-
-
     }
-
+    //-----------------------------------------------------------------------------
     bool Main::fetchScriptFiles() {
         std::string path = getGamePath() + "assets/";
         scriptFiles.clear();
@@ -78,7 +75,7 @@ namespace KorkFlux {
         }
         return true;
     }
-
+    //-----------------------------------------------------------------------------
     void Main::onDrawTopMost() {
         Parent::onDrawTopMost();
 
@@ -120,11 +117,10 @@ namespace KorkFlux {
         if (ImGui::IsKeyPressed(ImGuiKey_F10)) showMenu = !showMenu;
         if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
         console.Draw("Console",&showConsole);
-        // if (showFileBrowser) DrawFileBrowser();
         // ------
         mGuiGlue->DrawEnd();
     }
-
+    //-----------------------------------------------------------------------------
     void Main::Update(const double& dt)
     {
 
@@ -133,9 +129,6 @@ namespace KorkFlux {
         Sim::advanceTime(SDL_GetTicks() - lastTick);
         lastTick = SDL_GetTicks();
         // ----
-
-
-
 
         Parent::Update(dt);
     }
@@ -154,19 +147,9 @@ namespace KorkFlux {
     }
 
     void Main::OnConsoleCommand(ImConsole* console, const char* command_line) {
-        std::string cmdLineStr = command_line;
-        // std::string cmd = FluxStr::getWord(cmdLineStr, 0);
-
-        // add (); this may fail on "bla() ;" but i dont care ;)
-        // not in this way!! if (!cmdLineStr.ends_with(");")) cmdLineStr += "();";
-
-        Con::evaluate(cmdLineStr.c_str());
-
-
+        Con::evaluate(command_line);
     }
-
-
-
+    //-----------------------------------------------------------------------------
     bool Main::Initialize()
     {
         if (!Parent::Initialize()) return false;
@@ -198,9 +181,9 @@ namespace KorkFlux {
 
         fetchScriptFiles();
 
-
         return true;
     }
+    //-----------------------------------------------------------------------------
 
 }
 

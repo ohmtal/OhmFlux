@@ -2,16 +2,9 @@
 // ohmFlux KorkScript Testing
 // Issues:
 //  [ ] myPlatfromProcess needs to be filled
-//  [ ] Script parse error when using id like : 1029.dump();
-//       ==> Error parsing ("; expected"; token is dump) at 1:5
-//       << error is from astGen.processTokens() cause a exception
 //-----------------------------------------------------------------------------
 #include <SDL3/SDL_main.h>
-
 #include "appMain.h"
-
-
-
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 

@@ -12,10 +12,6 @@
 #include <console/console.h>
 
 
-
-
-extern KorkApi::Vm* sVM;
-
 namespace KorkFlux {
 
 IMPLEMENT_CONOBJECT(GameCtrl);
@@ -175,7 +171,7 @@ ConsoleMethod( GameCtrl, drawstretch, ConsoleBool, 9, 14,
 ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=left,2=right,3=center)"
 "write text on screen.")
 {
-    //FIXME align is unused int Print !!
+
     // const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
     Point2F pos = { dAtof(argv[2]), dAtof(argv[3]) };
     const char* text = argv[4];
