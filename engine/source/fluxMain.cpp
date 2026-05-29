@@ -215,7 +215,11 @@ void FluxMain::queueObject(FluxBaseObject* lObject)
 	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
 
 	if (it == mQueueObjects.end()) {
-		mQueueObjects.push_back(lObject);
+		// deffered add on next tick
+		FluxSchedule.add(0.f, this, [this,  lObject]() {
+			this->mQueueObjects.push_back(lObject);
+		});
+
 	} else {
 		Log(">>>>>>>>>>> FluxMain::queueObject :: Object already queued, skipping. <<<<<<<<<<<<<<<<<<<<<<");
 	}

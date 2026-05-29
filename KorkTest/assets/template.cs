@@ -58,7 +58,7 @@ function Game::LoadAssets(%this) {
 function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
   if (%keyValue ) {
     echo("ACTION=" SPC %actionString);
-    if (%actionString $= "button3" ) %this.schedule(0,c); //defered
+    if (%actionString $= "button3" ) %this.c();  // )%this.schedule(0,c); //defered
   }
 
 }
