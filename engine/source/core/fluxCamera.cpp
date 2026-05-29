@@ -18,7 +18,7 @@ void FluxCamera::update()
 {
     if (!mDirty) return;
 
-    static bool lOverWriteDirty = false;
+    bool lOverWriteDirty = false;
     if ( mObjectToFollow != nullptr )
     {
         mPosition = mObjectToFollow->getPosition();
