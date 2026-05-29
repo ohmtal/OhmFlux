@@ -55,7 +55,7 @@ public:
     void setIsGuiElement( bool value ) override { mIsGuiElement = value; }
     bool getIsGuiElement() override { return mIsGuiElement; }
 
-    void setScale( F32 value ) { mScale = value; }
+    void setScale( F32 value ) { if (value > 0.f) mScale = value; }
     F32 getScale () { return mScale; }
 
     void set(

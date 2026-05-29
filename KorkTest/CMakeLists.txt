@@ -119,10 +119,8 @@ set(PROJECT_SOURCES
 
     ${KORK_DIR}/src/myPlatformProcess.cc
 
-
     ${KORK_DIR}/src/core/GameCtrl.h
     ${KORK_DIR}/src/core/GameCtrl.cpp
-
 
     ${KORK_DIR}/src/consoleFunctions/app.cpp
     ${KORK_DIR}/src/consoleFunctions/math.cpp
@@ -132,18 +130,18 @@ set(PROJECT_SOURCES
 
     ${KORK_DIR}/src/render/Camera.cpp
     ${KORK_DIR}/src/render/Camera.h
+    ${KORK_DIR}/src/render/Font.h
+    ${KORK_DIR}/src/render/Font.cpp
+    ${KORK_DIR}/src/render/Label.h
+    ${KORK_DIR}/src/render/Label.cpp
     ${KORK_DIR}/src/render/Light.cpp
     ${KORK_DIR}/src/render/Light.h
     ${KORK_DIR}/src/render/Particle.cpp
     ${KORK_DIR}/src/render/Particle.h
-
-
-    ${KORK_DIR}/src/render/Texture.h
-    ${KORK_DIR}/src/render/Texture.cpp
     ${KORK_DIR}/src/render/Sprite.h
     ${KORK_DIR}/src/render/Sprite.cpp
-
-
+    ${KORK_DIR}/src/render/Texture.h
+    ${KORK_DIR}/src/render/Texture.cpp
 
     ${KORK_DIR}/src/totp/base32.cc
     ${KORK_DIR}/src/totp/base32.h

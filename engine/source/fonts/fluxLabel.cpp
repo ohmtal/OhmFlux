@@ -80,8 +80,6 @@ Point2F FluxLabel::getStringSize(const char* text)  {
     return result;
 }
 //-----------------------------------------------------------------------------
-
-//FIXME align!
 const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
 {
     Point2F result = Point2F(0.f,0.f);

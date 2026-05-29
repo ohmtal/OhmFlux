@@ -19,11 +19,24 @@ else CleanupSet.deleteObjects();
 
 //------------------------------
 
+
   $texBack = new Texture() {
     fileName = "assets/texture/nebulapurple_sky_back.png";
 
   };
   CleanupSet.add($texBack);
+
+  $FontJetBrains = new Font() {
+    fileName = "assets/font/JetBrainsMono-Regular.ttf";
+  };
+  CleanupSet.add($FontJetBrains);
+  $Label1 = new Label()  {
+    Font = $FontJetBrains;
+    x = 20;
+    y = 40;
+    Caption = "Hello World";
+  };
+  CleanupSet.add($Label1);
 
   $background = new Sprite() {
     Texture = $texBack;
