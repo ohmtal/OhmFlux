@@ -142,7 +142,7 @@ void FluxAudioStream::Update(const double& dt)
             int totalBuffered = SDL_GetAudioStreamAvailable(mStream) + SDL_GetAudioStreamQueued(mStream);
             if (totalBuffered <= 0) {
                 mPlaying = false;
-                dLog("[info] OGG song:%s stopped.", mFileName.c_str());
+                // dLog("[info] OGG song:%s stopped.", mFileName.c_str());
             }
         }
     } else {

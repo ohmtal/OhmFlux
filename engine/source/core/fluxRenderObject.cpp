@@ -45,7 +45,7 @@ void FluxRenderObject::Update(const double& dt)
 //--------------------------------------------------------------------------------------
 void FluxRenderObject::Draw()
 {
-	if (!getVisible())
+	if (!getVisible() || !mDrawParams.image)
 		return;
 
 	Render2D.drawSprite(mDrawParams);

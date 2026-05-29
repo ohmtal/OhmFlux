@@ -38,20 +38,24 @@ ConsoleFunctionWithDocs(getRandom, ConsoleInt, 1, 3, ([ min ]?,[ max ]?))
     @param max The maximum range of the random floating-point number.
     @return A random floating-point number from min to max.
 */
-ConsoleFunctionWithDocs(getRandomF, ConsoleFloat, 3, 3, (min, max))
+ConsoleFunctionWithDocs(getRandomF, ConsoleFloat, 1, 3, (min, max))
 {
-    F32 min = dAtof(argv[1]);
-    F32 max = dAtof(argv[2]);
-    
-    if ( min > max )
-    {
-        const F32 temp = min;
-        min = max;
-        max = temp;
+    if (argc == 3) {
+          F32 min = dAtof(argv[1]);
+        F32 max = dAtof(argv[2]);
+
+        if ( min > max )
+        {
+            const F32 temp = min;
+            min = max;
+            max = temp;
+        }
+
+        return RandInRange(min, max);
     }
-    
-    return RandInRange(min, max);
-    
+
+    return RandFloat();
+
 }
 
 //------------------------------------------------------------------------------

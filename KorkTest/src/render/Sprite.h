@@ -4,6 +4,7 @@
 #include "render/fluxRender2D.h"
 #include "sim/simBase.h"
 #include "console/consoleTypes.h"
+#include "core/fluxRenderObject.h"
 
 namespace KorkFlux {
 
@@ -12,8 +13,8 @@ class Sprite : public SimObject, public FluxBaseObject {
     typedef SimObject Parent;
 
 public:
-    DrawParams2D mDrawParams;
-     U32 mTextureSimID = 0;
+    FluxRenderObject mRenderObject;
+    U32 mTextureSimID = 0;
 
 
     Sprite()

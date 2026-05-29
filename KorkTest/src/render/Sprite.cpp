@@ -3,6 +3,8 @@
 #include <platform/platformString.h>
 #include "Texture.h"
 
+
+
 namespace KorkFlux {
 
     IMPLEMENT_CONOBJECT(Sprite);
@@ -14,7 +16,7 @@ namespace KorkFlux {
         Texture* simTex = dynamic_cast<Texture*>(Sim::findObject(consoleobject));
 
         if (simTex && simTex->mTexture) {
-            mDrawParams.image = simTex->mTexture;
+            mRenderObject.mDrawParams.image = simTex->mTexture;
             mTextureSimID = simTex->getId();
             return true;
         }
@@ -52,26 +54,20 @@ namespace KorkFlux {
     {
         Parent::initPersistFields();
         addGroup("Texture");
-
         addField("Texture", TypeS32, Offset(mTextureSimID, Sprite));
-
         endGroup("Texture");
 
 
         addGroup("Params");
-        // TypeReqFloat << cause crash becuause storageRegister is nullptr
-        // TypeS32 works
-        // TypeF32 not because outputStorage->data.storageRegister it nullptr
-
-        addField("imgId", TypeS32 , Offset(mDrawParams.imgId, Sprite) );
-        addField("x", TypeF32, Offset(mDrawParams.x, Sprite));
-        addField("y", TypeF32, Offset(mDrawParams.y, Sprite));
-        addField("z", TypeF32, Offset(mDrawParams.z, Sprite));
-        addField("w", TypeF32, Offset(mDrawParams.w, Sprite));
-        addField("h", TypeF32, Offset(mDrawParams.h, Sprite));
-        addField("rotation", TypeF32, Offset(mDrawParams.rotation, Sprite));
-        addField("flipX", TypeBool, Offset(mDrawParams.flipX, Sprite));
-        addField("flipY", TypeBool, Offset(mDrawParams.flipY, Sprite));
+        addField("imgId", TypeS32 , Offset(mRenderObject.mDrawParams.imgId, Sprite) );
+        addField("x", TypeF32, Offset(mRenderObject.mDrawParams.x, Sprite));
+        addField("y", TypeF32, Offset(mRenderObject.mDrawParams.y, Sprite));
+        addField("z", TypeF32, Offset(mRenderObject.mDrawParams.z, Sprite));
+        addField("w", TypeF32, Offset(mRenderObject.mDrawParams.w, Sprite));
+        addField("h", TypeF32, Offset(mRenderObject.mDrawParams.h, Sprite));
+        addField("rotation", TypeF32, Offset(mRenderObject.mDrawParams.rotation, Sprite));
+        addField("flipX", TypeBool, Offset(mRenderObject.mDrawParams.flipX, Sprite));
+        addField("flipY", TypeBool, Offset(mRenderObject.mDrawParams.flipY, Sprite));
         endGroup("Params");
 
     }
@@ -81,10 +77,7 @@ namespace KorkFlux {
     }
     // ------------------------------------------------------------------------.
     void Sprite::Draw() {
-        if (!getVisible())
-            return;
-
-        Render2D.drawSprite(mDrawParams);
+        mRenderObject.Draw();
     }
     // ------------------------------------------------------------------------.
 

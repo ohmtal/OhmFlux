@@ -27,7 +27,7 @@ struct FluxNode; // If you made Node a standalone struct or public
 class FluxRenderObject : public FluxBaseObject
 {
 
-protected:
+public:
 	DrawParams2D mDrawParams;
 	F32 mSpeed;
 	Point2F mVelocity;
@@ -37,13 +37,11 @@ protected:
 
 private:
 	//quadtree support
-	// Use a pointer to an incomplete type.
-	// The compiler doesn't need to know the size of the struct to store a poin
 	void* myQuadNode = nullptr;
 
 public:
 
-	FluxRenderObject(FluxTexture* lTexture, S32 framesStart = 0, S32 framesEnd = 0)
+	FluxRenderObject(FluxTexture* lTexture = nullptr, S32 framesStart = 0, S32 framesEnd = 0)
 	:
 	 mSpeed(0.0f)
 	, mVelocity(0.0f,0.0f)
@@ -66,6 +64,16 @@ public:
 		mDrawParams.isGuiElement = false;
 	}
 
+	bool  setTexture( FluxTexture* texture,  S32 framesStart = -1, S32 framesEnd = -1)  {
+		if (texture) {
+			mDrawParams.image = texture;
+			if (framesStart >= 0) mFramesStart = framesStart;
+			if (framesEnd >= 0) mFramesEnd = framesEnd;
+			return true;
+		}
+
+		return false;
+	}
 	virtual ~FluxRenderObject();
 	FluxScreen* getScreen() { return getScreenObject(); } // only for compat.
 	FluxTexture* getTexture() { return mDrawParams.image; }
@@ -121,7 +129,7 @@ public:
 	void setFramesStart(const S32& framesStart)  { mFramesStart = framesStart; }
 	void setFramesEnd( const S32& framesEnd)  { mFramesEnd = framesEnd; }
 	void setAnimationDelay(const S32& animationDelay)  { mAnimationDelay = animationDelay; }
-	void setTexture( FluxTexture* texture)  { mDrawParams.image = texture; }
+
 
 	virtual void setIsGuiElement( bool value ) { mDrawParams.isGuiElement = value; }
 	virtual bool getIsGuiElement() { return mDrawParams.isGuiElement; }
