@@ -10,12 +10,12 @@ function Game::LoadAssets(%this) {
   %this.texBack =  new Texture() {
     fileName = "assets/texture/nebulapurple_sky_back.png";
   };
-  CleanupSet.add(%this.texBack);
+  %this.add(%this.texBack);
   // ------
   %this.fontJet = new Font() {
     fileName = "assets/font/JetBrainsMono-Regular.ttf";
   };
-  CleanupSet.add(%this.fontJet);
+  %this.add(%this.fontJet);
   // ------
  %this.Label1 = new Label()  {
     Font = %this.fontJet;
@@ -23,7 +23,7 @@ function Game::LoadAssets(%this) {
     y = 40;
     Caption = "Hello World";
   };
-  CleanupSet.add(%this.Label1);
+  %this.add(%this.Label1);
   // ------
  %this.background = new Sprite() {
     Texture = %this.texBack;
@@ -33,13 +33,13 @@ function Game::LoadAssets(%this) {
     w = getScreenWidth();
     h = getScreenHeight();
   };
-  CleanupSet.add(%this.background);
+  %this.add(%this.background);
   // ------
   $texFaces = new Texture() {
     fileName = "assets/texture/faces.png";
     TexCols = 13;
   };
-  CleanupSet.add($texFaces);
+  %this.add($texFaces);
   // ------
   %this.sprite = new Sprite() {
     Texture = $texFaces;
@@ -50,10 +50,10 @@ function Game::LoadAssets(%this) {
     h = 64;
     imgId = 3;
   };
-  CleanupSet.add(%this.sprite);
+  %this.add(%this.sprite);
   // ------
   %this.sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.2; };
-  CleanupSet.add(%this.sndPling);
+  %this.add(%this.sndPling);
 
 }
 
@@ -93,17 +93,22 @@ function Game::c(%this, %mx, %my, %p) {
   };
 
 
-  CleanupSet.add(%clone);
+  %this.add(%clone);
 
 
   return %clone;
  }
 
+function Game::onRemove(%this) {
+  error("GAME ONREMOVE!");
+  %this.deleteObjects();
+}
 
 //FIXME class does NOT work!
 $Game = new GameCtrl() {
   class = "Game";
 };
-$game.LoadAssets();
+$Game.LoadAssets();
+CleanupSet.add($Game);
 
 

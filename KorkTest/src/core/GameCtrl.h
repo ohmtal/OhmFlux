@@ -30,9 +30,9 @@ class FluxTTFont;
 class FluxLabel;
 namespace KorkFlux {
 
-    class GameCtrl : public SimObject, public FluxBaseObject {
+    class GameCtrl : public SimSet, public FluxBaseObject {
 
-        typedef SimObject Parent;
+        typedef SimSet Parent;
         FluxTTFont* mDefaultFont = nullptr;
 
 
