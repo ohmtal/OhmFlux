@@ -110,6 +110,17 @@ namespace KorkFlux {
                     }
                     ImGui::EndMenu();
                 }
+                if (ImGui::BeginMenu("Gui Scale")) {
+                    if (ImGui::MenuItem("0.75")) mGuiGlue->setScale(0.75f);
+                    if (ImGui::MenuItem("1.00")) mGuiGlue->setScale(1.00f);
+                    if (ImGui::MenuItem("1.25")) mGuiGlue->setScale(1.25f);
+                    if (ImGui::MenuItem("1.50")) mGuiGlue->setScale(1.50f);
+                    if (ImGui::MenuItem("1.75")) mGuiGlue->setScale(1.75f);
+                    if (ImGui::MenuItem("2.00")) mGuiGlue->setScale(2.00f);
+
+                    ImGui::EndMenu();
+                }
+
                 ImGui::EndMainMenuBar();
             }
         }
