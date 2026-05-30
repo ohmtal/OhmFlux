@@ -84,7 +84,6 @@ bool FluxRender2D::init(U32 maxSprites)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, quadIndices.size() * sizeof(U32), quadIndices.data(), GL_STATIC_DRAW);
 #endif
 
-
     //--------
 
     // Initialize the dynamic line mesh
@@ -428,9 +427,12 @@ void FluxRender2D::renderLights()
 //-------------------------------------------------------------------------------
 void FluxRender2D::beginFrame() //FluxCamera* cam)
 {
-
-    mActiveCamera->update();
-    setViewMatrix(mActiveCamera->getViewMatrix());
+    if (mActiveCamera) {
+        mActiveCamera->update();
+        setViewMatrix(mActiveCamera->getViewMatrix());
+    } else {
+        setViewMatrix(IDENTITY_MATRIX);
+    }
 
     // Bind the shader once
     mDefaultShader.use();

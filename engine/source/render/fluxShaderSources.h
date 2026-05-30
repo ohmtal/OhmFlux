@@ -177,8 +177,8 @@ void main() {
             texColor.rgb = pow(texColor.rgb, vec3(2.2));
             vec3 lightAccum = uAmbientColor;
 
-
-            for (int i = 0; i < uNumLights; ++i) {
+            for (int i = 0; i < MAX_LIGHTS; ++i) {
+                if (i >= uNumLights) break;
                 vec2 lightToFrag = fragWorldPos.xy - uLights[i].position.xy;
                 float dist = length(lightToFrag);
 
