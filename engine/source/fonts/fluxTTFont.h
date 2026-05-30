@@ -29,7 +29,7 @@ class FluxTTFont
 {
 protected:
     FontData mFont;
-    FluxTexture* mTexture;
+    FluxTexture* mTexture = nullptr;
 
 public:
 

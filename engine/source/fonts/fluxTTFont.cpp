@@ -105,6 +105,7 @@ bool FluxTTFont::LoadFontFromMemory(const unsigned char* fontData, unsigned int 
 
 FluxTTFont::FluxTTFont(const char* filename, U32 fontSize)
 {
+    mTexture = nullptr;
     if (filename) LoadFont(filename, (F32)fontSize);
 
 }

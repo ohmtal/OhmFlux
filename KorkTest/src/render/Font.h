@@ -18,6 +18,7 @@ public:
 
     Font()
     {
+        mFont = nullptr;
         mFileName = StringTable->insert("");
         mFontSize = 32.f;
         mTextureSize = 512;
