@@ -44,6 +44,7 @@ else CleanupSet.deleteObjects();
     y = getScreenHeight() / 2.0;
     w = getScreenWidth();
     h = getScreenHeight();
+    z = 1.0;
   };
   CleanupSet.add($background);
   // ------
@@ -61,6 +62,7 @@ else CleanupSet.deleteObjects();
     y = 100;
     w = 64;
     h = 64;
+    z = 0.5;
     imgId = 3;
   };
   CleanupSet.add($sprite);
@@ -68,6 +70,14 @@ else CleanupSet.deleteObjects();
   $sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.5; };
   CleanupSet.add($sndPling);
 
+   $testWorld = new TestWorld(){
+     x = 200;
+     y = 100;
+     w = 300;
+     h = 300;
+     // gravity = .0;
+   };
+   CleanupSet.add($testWorld);
 
 
 
@@ -84,6 +94,8 @@ function Sprite::foo(%this) {
   echo(%this@".foo!" SPC getSimTime());
 
 }
+
+
 //------------------------------
 // TOTP (2FA):
 // for testing script / platform: i copied my totp code from auteria :

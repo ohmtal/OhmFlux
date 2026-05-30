@@ -179,7 +179,7 @@ void FluxRender2D::executeDrawLine(const PrimitiveCommand& cmd)
 
 
 //-------------------------------------------------------------------------------
-void FluxRender2D::drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color, bool filled) {
+void FluxRender2D::drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color, bool filled, F32 z) {
     if (!filled) {
         // Draw 4 lines using your existing drawLine
         drawLine(x, y, x + w, y, color);         // Top
@@ -194,7 +194,7 @@ void FluxRender2D::drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color, bo
     DrawParams2D dp;
     dp.x = x + w * 0.5f; // Center X
     dp.y = y + h * 0.5f; // Center Y
-    dp.z = 0.0f;         // Or a specific layer
+    dp.z = z;         //  layer
     dp.w = w;
     dp.h = h;
     dp.color = color;

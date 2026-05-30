@@ -171,8 +171,16 @@ public:
 
     // primitives
     void drawLine(F32 x1, F32 y1, F32 x2, F32 y2, const Color4F& color = cl_White);
+    void drawLine(Point2F p1, Point2F p2, const Color4F& color = cl_White) {
+        drawLine(p1.x,p1.y,p2.x,p2.y,color);
+    }
+    FluxTexture* getWhiteTexture() { return mWhiteTextureWrapper; }
+
     void executeDrawLine(const PrimitiveCommand& cmd);
-    void drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color = cl_White, bool filled = true);
+    void drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color = cl_White, bool filled = true, F32 z = 0.f);
+    void drawRect(RectF rect, const Color4F& color = cl_White, bool filled = true, F32 z = 0.f) {
+        drawRect(rect.x,rect.y,rect.w,rect.h, color, filled, z);
+    }
     void drawCircle(F32 cx, F32 cy, F32 radius, const Color4F& color =cl_White, U32 segments = 32);
     void executeDrawCircle(const PrimitiveCommand& cmd);
     void drawTriangle(Point3F p1, Point3F p2, Point3F p3, const Color4F& color = cl_White, bool filled = true);
