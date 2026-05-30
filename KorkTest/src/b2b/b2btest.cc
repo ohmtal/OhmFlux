@@ -32,7 +32,7 @@ namespace b2bTest
         // ----------------------------
         //Creating a World
         mGravity = b2Vec2(0.f, mGroundGravity);
-        mWorld = new b2World();
+        mWorld = new b2World(mGravity);
         // Create edge around entire screen
         b2BodyDef groundBodyDef;
         groundBodyDef.position.Set(0, 0);
