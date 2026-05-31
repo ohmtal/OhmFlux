@@ -178,6 +178,10 @@ set(PROJECT_SOURCES
 
     ${KORK_DIR}/src/b2b/b2btest.cc
     ${KORK_DIR}/src/b2b/b2btest.h
+    ${KORK_DIR}/src/b2b/b2Objects.cc
+    ${KORK_DIR}/src/b2b/b2Objects.h
+    ${KORK_DIR}/src/b2b/b2Joints.cc
+    ${KORK_DIR}/src/b2b/b2Joints.h
 
     ${KORK_DIR}/src/core/GameCtrl.h
     ${KORK_DIR}/src/core/GameCtrl.cpp
@@ -208,6 +212,9 @@ set(PROJECT_SOURCES
     ${KORK_DIR}/src/totp/hmac-sha1.cc
     ${KORK_DIR}/src/totp/hmac-sha1.h
     ${KORK_DIR}/src/totp/totp.cc
+
+    ${KORK_DIR}/src/math/mMathFn.h
+    # ${KORK_DIR}/src/math/mMath_C.cc
 
     # ${KORK_DIR}/src/network/
     # ${KORK_DIR}/src/network/tcpObject.cc

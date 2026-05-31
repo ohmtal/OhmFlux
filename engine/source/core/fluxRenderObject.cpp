@@ -20,9 +20,7 @@ FluxRenderObject::~FluxRenderObject() {
 	}
 }
 //--------------------------------------------------------------------------------------
-void FluxRenderObject::Update(const double& dt)
-{
-
+void FluxRenderObject::updateAnimation(const double& dt) {
 	if (mFramesEnd - mFramesStart > 0){
 		mAnimationTime += (int) dt;
 		if ( mAnimationTime  > mAnimationDelay){
@@ -33,14 +31,17 @@ void FluxRenderObject::Update(const double& dt)
 			mAnimationTime = 0;
 		}
 	}
-
-
+}
+void FluxRenderObject::updatePosition(const double& dt){
 	if (mSpeed > 0.f && !mVelocity.isZero()  ){
 		mDrawParams.x += mSpeed * mVelocity.x * dt ;
 		mDrawParams.y += mSpeed * mVelocity.y * dt ;
 	}
-
-
+}
+void FluxRenderObject::Update(const double& dt)
+{
+	updateAnimation(dt);
+	updatePosition(dt);
 }
 //--------------------------------------------------------------------------------------
 void FluxRenderObject::Draw()

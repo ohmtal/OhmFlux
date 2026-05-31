@@ -1,3 +1,33 @@
+/* FIXME:
+  Test Script ..... b2devel is to heavy to port at the moment
+ Console constants:
+  //box2d BodyTypes
+ $ staticBody       = 0;* //does not move and receive collisions
+ $kinematicBody    = 1; //manually move and receive collisions
+ $dynamicBody      = 2; //dynamic move, send and receive collisions
+
+ //box2d ShapeTypes
+ $PolygonShape = 0;
+ $CircleShape  = 1;
+ $EdgeShape    = 2;
+ $ChainShape   = 3;
+
+ //Box2d JointTypes
+ $unknownJoint    =  0;
+ $revoluteJoint   =  1;
+ $prismaticJoint  =  2;
+ $distanceJoint   =  3;
+ $pulleyJoint     =  4;
+ $mouseJoint      =  5;
+ $gearJoint       =  6;
+ $wheelJoint      =  7;
+ $weldJoint       =  8;
+ $frictionJoint   =  9;
+ $ropeJoint       = 10;
+ $motorJoint      = 11;
+ */
+
+
 //-----------------------------------------------------------------------------
 // Ohmtal Game Engine
 //-----------------------------------------------------------------------------
@@ -6,6 +36,8 @@
 
   @author T.Huehn (XXTH)
   @since  2021-03-24
+
+  @2026-05-31 ported to KorkFlux
 
  Todo: 
     [?] EdgeShape SetOneSided / SetTwoSided ?? seams i've a old box2d version ^^ 
@@ -37,19 +69,17 @@
 #include "console/console.h"
 #include "console/consoleTypes.h"
 #include "platform/platform.h"
-#include "memory/safeDelete.h"
-#include "graphics/dgl.h"
-#include "core/Utility.h"
 #include "Box2D/Box2D.h"
-#include "tom2D.h"
 #include "b2Objects.h"
-
+#include <core/safeDelete.h>
+#include "platform/platformString.h"
+#include "math/mMathFn.h"
 
 
 // global ratio for pixel to meters can be changed with World2b::setRatio console method
 U32 gB2ratio = 32;
 
-
+namespace KorkFlux {
 //=================================================================================================
 // World2b
 //=================================================================================================
@@ -83,18 +113,19 @@ U32 gB2ratio = 32;
      {
          if (A->isMethod("onCollisionIgnore"))
          {
-             doIgnore = dAtob(Con::executef(A, 6, "onCollisionIgnore",
+             doIgnore = Con::executef(A,  "onCollisionIgnore",
                  Con::getIntArg(B->getId())
-             ));
+             ).getInt();
          }
      }
      if (B->getSendCollision())
      {
          if (B->isMethod("onCollisionIgnore"))
          {
-             doIgnore = dAtob(Con::executef(B, 6, "onCollisionIgnore",
+             // FIXME TEST with getInt!!
+             doIgnore = Con::executef(B,  "onCollisionIgnore",
                  Con::getIntArg(A->getId())
-             ));
+             ).getInt() == 1;
          }
      }
      if (doIgnore)
@@ -127,7 +158,7 @@ U32 gB2ratio = 32;
 
          if (A->getSendCollision() && A->isMethod("onCollision"))
          {
-             Con::executef(A, 6, "onCollision",
+             Con::executef(A, "onCollision",
                  Con::getIntArg(B->getId()),
                  Con::getFloatArg(normal.x),
                  Con::getFloatArg(normal.y),
@@ -137,7 +168,7 @@ U32 gB2ratio = 32;
          }
          if (B->getSendCollision() && B->isMethod("onCollision"))
          {
-             Con::executef(B, 6, "onCollision",
+             Con::executef(B,  "onCollision",
                  Con::getIntArg(A->getId()),
                  Con::getFloatArg(normal.x),
                  Con::getFloatArg(normal.y),
@@ -184,13 +215,13 @@ U32 gB2ratio = 32;
 
          if (A->getSendCollision() && A->isMethod("onCollisionEnd"))
          {
-             Con::executef(A, 2, "onCollisionEnd",
+             Con::executef(A,  "onCollisionEnd",
                  Con::getIntArg(B->getId())
              );
          }
          if (B->getSendCollision() && B->isMethod("onCollisionEnd"))
          {
-             Con::executef(B, 2, "onCollisionEnd",
+             Con::executef(B,  "onCollisionEnd",
                  Con::getIntArg(A->getId())
             );
          }
@@ -303,7 +334,7 @@ U32 gB2ratio = 32;
  {
      if (object->mShapeType != PolygonShape)
          return false;
-    const U32 pointElements = Utility::mGetStringElementCount(argv[2]);
+    const U32 pointElements = FluxStr::getWordCount(argv[2]);
 
     // Check even number of elements and at least 6 (3 points) exist.
     if ((pointElements % 2) != 0 || pointElements < 6 || pointElements >(2 * b2_maxPolygonVertices))
@@ -316,7 +347,11 @@ U32 gB2ratio = 32;
     Point2F tmpPoint;
     for (U32 elementIndex = 0, pointIndex = 0; elementIndex < pointElements; elementIndex += 2, pointIndex++)
     {
-        tmpPoint = Utility::mGetStringElementVector(argv[2], elementIndex);
+        // tmpPoint = Utility::mGetStringElementVector(argv[2], elementIndex);
+        tmpPoint.x = dAtof(FluxStr::getWord(argv[2], elementIndex).c_str());
+        if (elementIndex + 1 > pointElements) tmpPoint.y =   dAtof(FluxStr::getWord(argv[2], elementIndex + 1).c_str());
+        else tmpPoint.y = tmpPoint.x;
+
         localPoints[pointIndex].x = tmpPoint.x / gB2ratio;
         localPoints[pointIndex].y = tmpPoint.y / gB2ratio;
     }
@@ -400,7 +435,7 @@ U32 gB2ratio = 32;
  {
 
 //funzt so net !!!! 
-     Shape2b* lShape = (Shape2b*)Sim::findObject(dAtoi(argv[2]));
+     Shape2b* lShape = dynamic_cast<Shape2b*>(Sim::findObject(dAtoi(argv[2])));
      if (lShape) {
          object->mFixtureDef.shape = lShape->getShape();
          return true;
@@ -414,33 +449,34 @@ U32 gB2ratio = 32;
 //=================================================================================================
 IMPLEMENT_CONOBJECT(Body2b);
 
-Body2b::Body2b()
-{
+
+bool  Body2b::onAdd(){
+    if ( !Parent::onAdd()) return false;
     mAxisVector = Point2F(0.f, 0.f);
     mAxisVectorAngle = 0.f;
 
+    return true;
 }
-
-Body2b::~Body2b() 
-{
-
-    
-
-    if (mBody)
-    {
-        
+void  Body2b::onRemove() {
+    if (mBody) {
         b2World* lWorld = mBody->GetWorld();
-        if (lWorld)
-        {
+        if (lWorld) {
             lWorld->DestroyBody(mBody);
         }
-        mBody = NULL;
+        mBody = nullptr;
     }
-    
+    Parent::onRemove();
 }
 
-void Body2b::onUpdate(F32 fDt)
-{
+void  Body2b::initPersistFields() {
+    addField("SendCollision",TypeBool,Offset(mSendCollision, Body2b), "bool object checks if it collide with a receiver.");
+    Parent::initPersistFields();
+
+}
+
+
+
+void Body2b::Update(const double& dt) {
 
     if (mBody->GetType() != b2_staticBody)
     {
@@ -450,20 +486,23 @@ void Body2b::onUpdate(F32 fDt)
         mAxisVector = Point2F(axis.x, axis.y);
         mAxisVectorAngle = mRadToDeg(mAtan(axis.x, axis.y)); //mAtan
 
-        mX = transform.p.x * gB2ratio;
-        mY = transform.p.y * gB2ratio;
-        mRotation = mAxisVectorAngle; // +90.f;
+        mRenderObject.getDrawParams().x =transform.p.x * gB2ratio;
+        mRenderObject.getDrawParams().y = transform.p.y * gB2ratio;
+        mRenderObject.getDrawParams().rotation = mAxisVectorAngle; // +90.f;
     }
 
-    updateAnimation(fDt);
+     mRenderObject.updateAnimation(dt);
 
-    Con::executef(this, 2, "onUpdate", Con::getFloatArg(fDt));
+    // FIXME ? Con::executef(this,  "onUpdate", Con::getFloatArg(fDt));
    
+}
 
+void Body2b::Draw() {
+    if (mDebugRender) debugRender();
 }
 
 //------------------------------------------------------------------------------
-void Body2b::debugRender(U32 dt, Point3F lOffset)
+void Body2b::debugRender()
 {
     if (!mDebugRender)
         return;
@@ -508,15 +547,24 @@ void Body2b::debugRenderShape(b2Fixture* fixture, const b2Transform& xf, const b
 
         b2Vec2 center = b2Mul(xf, circle->m_p);
         center *= gB2ratio;
-        float radius = circle->m_radius * gB2ratio;
+        F32 radius = circle->m_radius * gB2ratio;
         b2Vec2 axis = b2Mul(xf.q, b2Vec2(1.0f, 0.0f));
-        dglDrawSolidCircle(
-            Point2F(center.x, center.y), 
-            radius, 
-            Point2F(axis.x,axis.y),
-            ColorF(color.r, color.g, color.b)
+//         dglDrawSolidCircle(
+//             Point2F(center.x, center.y),
+//             radius,
+//             Point2F(axis.x,axis.y),
+//             Color4F(color.r, color.g, color.b)
+//         );
+        Render2D.drawCircle( center.x, center.y,
+                           radius,
+                           // ??  Point2F(axis.x,axis.y),
+                           Color4F(color.r, color.g, color.b)
         );
-        
+        b2Vec2 p = center + radius * axis;
+        //dglDrawLine(Point2I(center.x, center.y), Point2I(p.x, p.y), fillColor);
+        Render2D.drawLine(center.x, center.y, p.x, p.y, cl_Red);
+
+
     }
     break;
 
@@ -531,7 +579,7 @@ void Body2b::debugRenderShape(b2Fixture* fixture, const b2Transform& xf, const b
 
         //dglDrawRect(Point2I(v1.x, v1.y), Point2I(v2.x, v2.y), ColorF(color.r,color.g,color.b));
 
-        dglDrawLine(Point2I(v1.x, v1.y), Point2I(v2.x, v2.y), ColorF(color.r, color.g, color.b));
+        Render2D.drawLine(v1.x, v1.y, v2.x, v2.y, Color4F(color.r, color.g, color.b));
 
 
         /* 
@@ -557,7 +605,7 @@ void Body2b::debugRenderShape(b2Fixture* fixture, const b2Transform& xf, const b
             b2Vec2 v2 = b2Mul(xf, vertices[i]);
             //m_debugDraw->DrawSegment(v1, v2, color);
             v2 *= gB2ratio;
-            dglDrawRect(Point2I(v1.x, v1.y), Point2I(v2.x, v2.y), ColorF(color.r, color.g, color.b));
+            Render2D.drawRect(v1.x, v1.y, v2.x, v2.y, Color4F(color.r, color.g, color.b), false);
             v1 = v2;
         }
     }
@@ -573,18 +621,18 @@ void Body2b::debugRenderShape(b2Fixture* fixture, const b2Transform& xf, const b
         {
             b2Vec2 vertices[b2_maxPolygonVertices];
             b2Vec2 tmp = b2Mul(xf, poly->m_vertices[0]);
-            Point2I first = Point2I(tmp.x * gB2ratio, tmp.y * gB2ratio);
-            Point2I cur;
-            Point2I last = first;
+            Point2F first = { tmp.x * gB2ratio, tmp.y * gB2ratio };
+            Point2F cur;
+            Point2F last = first;
 
             for (int32 i = 1; i < vertexCount; ++i)
             {
                 tmp = b2Mul(xf, poly->m_vertices[i]);
-                cur = Point2I(tmp.x * gB2ratio, tmp.y * gB2ratio);
-                dglDrawLine(last ,cur , ColorF(color.r, color.g, color.b));
+                cur = { tmp.x * gB2ratio, tmp.y * gB2ratio };
+                Render2D.drawLine(last ,cur , Color4F(color.r, color.g, color.b));
                 last = cur;
             }
-            dglDrawLine(last , first , ColorF(color.r, color.g, color.b));
+            Render2D.drawLine(last , first , Color4F(color.r, color.g, color.b));
 
         }
 
@@ -601,56 +649,14 @@ void Body2b::debugRenderShape(b2Fixture* fixture, const b2Transform& xf, const b
 }
 
 
-/*
-void Body2b::copyFrom(Body2b* object, bool copyDynamicFields )
-{
-    Parent::copyFrom(object);
-
-    //bodies
-
-    there id not fuction to clone the body!!!!
-
-    object->mBody->
-    object->mBody->GetWorld
-    
-    //fixture
-    for (b2Fixture* pFixture = object->mBody->GetFixtureList(); pFixture; pFixture = pFixture->GetNext())
-    {
-        b2FixtureDef fixtureDef;
-        
-        fixtureDef.density = pFixture->GetDensity();
-        fixtureDef.friction = pFixture->GetFriction();
-        fixtureDef.restitution = pFixture->GetRestitution();
-        fixtureDef.isSensor = pFixture->IsSensor();
-        fixtureDef.shape = pFixture->GetShape();
-    
-        mBody->CreateFixture(&fixtureDef);
-    }
-
-    
-
-
-}
-
-Body2b* Body2b::clone(bool attachToScreen, bool copyDynamicFields)
-{
-    Body2b* result = new Body2b();
-
-    result->copyFrom(this);
-
-    if (attachToScreen && mScreen)
-        mScreen->addObject(result);
-
-    return result;
-}
-*/
-
 ConsoleMethod(Body2b, CreateBody, bool, 4, 4, "(World2b world, BodyDef2b bodydef)"
     "")
 {
 
-    World2b* lWorld = (World2b*)Sim::findObject(dAtoi(argv[2]));
-    BodyDef2b* lBodydef = (BodyDef2b*)Sim::findObject(dAtoi(argv[3]));
+    World2b* lWorld = dynamic_cast<World2b*>(Sim::findObject(dAtoi(argv[2])));
+    BodyDef2b* lBodydef = dynamic_cast<BodyDef2b*>(Sim::findObject(dAtoi(argv[3])));
+    if (!lWorld || !lBodydef) return false;
+
     //fixme vector of boddies ? 
     object->mBody = lWorld->mWorld->CreateBody(& lBodydef->mBodyDef);
     
@@ -670,7 +676,7 @@ ConsoleMethod(Body2b, CreateFixture, bool, 3, 3, "(FixtureDef2b fixtureDef)"
     "")
 {
 
-    FixtureDef2b* lFixtureDef2b = (FixtureDef2b*)Sim::findObject(dAtoi(argv[2]));
+    FixtureDef2b* lFixtureDef2b = dynamic_cast<FixtureDef2b*>(Sim::findObject(dAtoi(argv[2])));
 
     b2FixtureDef lFixtureDef = lFixtureDef2b->mFixtureDef;
 
@@ -696,30 +702,37 @@ ConsoleMethod(Body2b, SetActive, void, 3, 3, "params: bool active"
 ConsoleMethod(Body2b, getTransform, const char *, 2, 2, "return x y angle"
 "")
 {
-    char* rbuf = Con::getReturnBuffer(256);
-    //b2Vec2 pos = object->mBody->GetPosition() * gB2ratio;
-    //F32 angle = object->mBody->GetAngle();
-    Point2F pos = object->get2DPosition();
-    dSprintf(rbuf, 256, "%f %f %f", pos.x, pos.y, object->getAxisVectorAngle());
-    return rbuf;
+    Point3F tmpVec = {
+        object->mRenderObject.getDrawParams().x,
+        object->mRenderObject.getDrawParams().y,
+        object->getAxisVectorAngle()
+    };
+    std::string out = tmpVec.to_string().c_str();
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
 ConsoleMethod(Body2b, getPosition, const char*, 2, 2, "return x y"
     "")
 {
-    char* rbuf = Con::getReturnBuffer(256);
-    b2Vec2 pos = object->mBody->GetPosition() * gB2ratio;
-    dSprintf(rbuf, 256, "%f %f", pos.x, pos.y);
-    return rbuf;
+    std::string out =  object->mRenderObject.getPosition().to_string();
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
 ConsoleMethod(Body2b, GetLinearVelocity, const char*, 2, 2, "return x y"
     "")
 {
-    char* rbuf = Con::getReturnBuffer(256);
     b2Vec2 pos = object->mBody->GetLinearVelocity() ;
-    dSprintf(rbuf, 256, "%f %f", pos.x, pos.y);
-    return rbuf;
+    std::string out =  std::format("{} {}", pos.x, pos.y);
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
 ConsoleMethod(Body2b, GetActive, bool, 2, 2, "return isActive"
@@ -734,7 +747,7 @@ ConsoleMethod(Body2b, setPosition, void, 3, 3, "params: x y"
     "")
 {
     F32 x, y, angle = 0.f;
-    dSscanf(argv[2], "%g %g %g", &x, &y);
+    dSscanf(argv[2], "%g %g", &x, &y);
 
     object->mBody->SetTransform(b2Vec2(x / gB2ratio, y / gB2ratio), mDegToRad(angle));
 }
@@ -853,13 +866,14 @@ ConsoleMethod(Body2b, SetFixedRotation, void, 3, 3, "params: bool fixedRotation"
 }
 
 //------------------------------------------------------------------------------
-ConsoleMethod(Body2b, getAxisVector, const char*, 2, 2, "(return Point2F)"
+ConsoleMethod(Body2b, getAxisVector, ConsoleString, 2, 2, "(return Point2F)"
     "return the normalized axis Vector")
 {
-    char* returnBuffer = Con::getReturnBuffer(256);
-    const Point2F& vec = object->getAxisVector();
-    dSprintf(returnBuffer, 256, "%g %g", vec.x, vec.y);
-    return returnBuffer;
+    std::string out = object->getAxisVector().to_string().c_str();
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
-
+} //namespace

@@ -46,6 +46,8 @@ namespace b2bTest
 		virtual void Draw() override;;
 
 		
+		RectF getRect() {  return  { mX, mY, mW, mH };}
+
 		static void initPersistFields();
 		bool onAdd() override;
 		void onRemove() override;

@@ -10,17 +10,11 @@
 #include "console/consoleObject.h"
 #endif
 
-#ifndef _MPOINT_H_
-#include "math/mPoint.h"
-#endif
-
-#ifndef _TOM2D_H_
-#include "tom2D.h"
-#endif
-
 #ifndef BOX2D_H
 #include "Box2D/Box2D.h"
 #endif
+
+namespace KorkFlux {
 
 //=================================================================================================
 // Joint2b ==>  b2Joint
@@ -172,5 +166,5 @@ public:
 
 }; //class RevoluteJoint2b
 
-
+} //namespace
 #endif //_B2JOINTS_H_

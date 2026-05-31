@@ -119,6 +119,21 @@ namespace b2bTest
     }
 
 
+    ConsoleMethod(TestWorld, getRect, ConsoleString, 2, 2, "(return RectF)"
+    "return the normalized axis Vector")
+    {
+
+        std::string out = object->getRect().to_string();
+        KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+        char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+        if (!ret) {
+            Con::errorf("i dont get how Con::getReturnBuffer works ^^");
+            return "";
+        }
+        dStrcpy(ret, out.c_str());
+        return ret;
+    }
+
     void TestWorld::Update(const double& dt)
     {
         U32 velocityIterations = 8;

@@ -24,6 +24,7 @@
 #include <vector>
 #include <optional>
 #include <array>
+#include <format>
 
 #include "utils/fluxStr.h"
 #ifdef FLUX_GLES2
@@ -221,7 +222,7 @@ struct Color4F {
         // Bit-shift into the 0xRRGGBBAA pattern
         return (rr << 24) | (gg << 16) | (bb << 8) | aa;
     }
-
+    std::string to_string() { return std::format("{} {} {} {}", r,g,b,a);}
 };
 
 //------------------------------------- Default Colors
@@ -340,6 +341,8 @@ struct Point2F {
 
     Point2I toPoint2I() const { return { static_cast<S32>(x), static_cast<S32>(y)  };}
 
+    std::string to_string() { return std::format("{} {}", x,y);}
+
 }; //Point2F
 
 
@@ -373,6 +376,8 @@ struct Point3F {
 
     Point2F toPoint2F() const { return { x,y}; }
 
+     std::string to_string() { return std::format("{} {} {}", x,y,z);}
+
 };
 //------------------------------------- Rects
 
@@ -401,7 +406,7 @@ struct RectI{
         y < other.y + other.h &&
         y + h > other.y);
     }
-
+    std::string to_string() { return std::format("{} {} {} {}", x,y,w,h);}
 };
 
 struct RectF
@@ -439,6 +444,7 @@ struct RectF
         y + h > other.y);
     }
 
+    std::string to_string() { return std::format("{} {} {} {}", x,y,w,h);}
 };
 
 

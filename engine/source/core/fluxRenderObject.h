@@ -138,6 +138,8 @@ public:
 	bool pointCollide(const F32& lX, const F32& lY);
 
 	virtual void Update(const double& dt) override;
+	void updateAnimation(const double& dt);
+	void updatePosition(const double& dt);
 	virtual void Draw() override;
 
 	//quadtree container

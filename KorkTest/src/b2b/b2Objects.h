@@ -1,41 +1,27 @@
+#include <core/fluxGlobals.h>
 //-----------------------------------------------------------------------------
 // Ohmtal Game Engine
 //-----------------------------------------------------------------------------
 // Box2D Objects / OGE Glue
 //-----------------------------------------------------------------------------
-#ifndef _B2OBJECTS_H_
-#define _B2OBJECTS_H_
+#pragma once
 
-#ifndef _CONSOLEOBJECT_H_
-#include "console/consoleObject.h"
-#endif
-
-#ifndef _MPOINT_H_
-#include "math/mPoint.h"
-#endif
-
-#ifndef _TOM2D_H_
-#include "tom2D.h"
-#endif
-
-#ifndef _TOM2DRENDEROBJ_H_
-#include "tom2DRenderObject.h"
-#endif
-
-#ifndef _TOM2DSPRITEOBJ_H_
-#include "tom2DSprite.h"
-#endif
-
-#ifndef BOX2D_H
+#include "sim/simBase.h"
+#include "console/consoleTypes.h"
+#include "core/fluxGlobals.h"
+#include "core/fluxBaseObject.h"
 #include "Box2D/Box2D.h"
-#endif
+#include "render/Sprite.h"
+
 
 //=================================================================================================
 // World2b
 //=================================================================================================
 
+
 extern U32 gB2ratio;
 
+namespace KorkFlux {
 class Body2b;
 
 class World2b : 
@@ -57,9 +43,9 @@ public:
     void setGravity(b2Vec2 lGravitiy);
     b2Vec2 getGravity(); 
 
-    void PreSolve(b2Contact* contact, const b2Manifold* oldManifold);
-    void BeginContact(b2Contact* contact);
-    void EndContact(b2Contact* contact);
+    void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) override;
+    void BeginContact(b2Contact* contact) override;
+    void EndContact(b2Contact* contact) override;
 
 }; //class
 
@@ -176,22 +162,24 @@ public:
 //=================================================================================================
 // Body2b ==>  b2Body
 //=================================================================================================
-class Body2b : public tom2DSprite
+class Body2b : public Sprite
 {
 private:
-    typedef tom2DSprite Parent;
+    typedef Sprite Parent;
 protected:
-    Point2F mAxisVector;
-    F32     mAxisVectorAngle;
+    Point2F mAxisVector = {0.f,0.f};
+    F32     mAxisVectorAngle = 0.f;
 
 public:
     DECLARE_CONOBJECT(Body2b);
-    Body2b();
-    ~Body2b();
 
-    b2Body* mBody;
-    b2Fixture* mFixture;
 
+    bool mDebugRender = true;
+    b2Body* mBody = nullptr;
+    b2Fixture* mFixture = nullptr;
+
+    bool mSendCollision = false;
+    bool getSendCollision() { return mSendCollision; }
 
     Point2F getAxisVector() { return mAxisVector; }
     F32 getAxisVectorAngle() { return mAxisVectorAngle; }
@@ -200,12 +188,19 @@ public:
 
     // void copyFrom(Body2b* object, bool copyDynamicFields = true);
     // virtual Body2b* clone(bool attachToScreen = true, bool copyDynamicFields = true);
-    virtual void onUpdate(F32 fDt);
-    virtual void debugRender(U32 dt, Point3F lOffset);
+
+    virtual void debugRender();
     virtual void debugRenderShape(b2Fixture* fixture, const b2Transform& xf, const b2Color& color);
     
 
+    virtual void Update(const double& dt) override;
+    virtual void Draw() override;
+
+
+    static void initPersistFields();
+    bool onAdd() override;
+    void onRemove() override;
+
+
 };
-
-
-#endif //_B2OBJECTS_H_
+} //namespace

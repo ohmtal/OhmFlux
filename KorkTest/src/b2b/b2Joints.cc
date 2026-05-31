@@ -22,49 +22,17 @@
 #include "console/console.h"
 #include "console/consoleTypes.h"
 #include "platform/platform.h"
-#include "memory/safeDelete.h"
-#include "graphics/dgl.h"
-#include "core/Utility.h"
+
 #include "Box2D/Box2D.h"
 
-#include "tom2D.h"
+
 #include "b2Objects.h"
 #include "b2Joints.h"
+#include <platform/platformString.h>
+
+namespace KorkFlux {
 
 
-//=================================================================================================
-// Joint2b
-//=================================================================================================
-//?? IMPLEMENT_CONOBJECT(Joint2b);
-
-/* default defs ... easier to copy for each jointDef!
-void JointDef2b::initPersistFields()
-{
-    Parent::initPersistFields();
-    //addField("JointType", TypeS32, Offset(mJointType, JointDef2b));
-    addField("collideConnected", TypeBool, Offset(mJointDef.collideConnected, JointDef2b));
-    
-
-}
-
-ConsoleMethod(JointDef2b, setBodyA, bool, 3, 3, "(Body2b object)")
-{
-    Body2b* lBody = (Body2b*)Sim::findObject(dAtoi(argv[2]));
-    if (!lBody || !lBody->mBody)
-        return false;
-    object->mJointDef.bodyA = lBody->mBody;
-    return true;
-}
-
-ConsoleMethod(JointDef2b, setBodyB, bool, 3, 3, "(Body2b object)")
-{
-    Body2b* lBody = (Body2b*)Sim::findObject(dAtoi(argv[2]));
-    if (!lBody || !lBody->mBody)
-        return false;
-    object->mJointDef.bodyB = lBody->mBody;
-    return true;
-}
-*/
 
 //-------------------------------------------------------------------------------------
 // Joint Tools
@@ -82,17 +50,25 @@ ConsoleFunction(linearStiffness2b, const char*, 5, 5,
     F32 damping = 0;
     F32 frequencyHertz = dAtof(argv[1]);
     F32 dampingRatio   = dAtof(argv[2]);
-    Body2b* lBodyA = (Body2b*)Sim::findObject(dAtoi(argv[3]));
-    Body2b* lBodyB = (Body2b*)Sim::findObject(dAtoi(argv[4]));
+
+
+    Body2b* lBodyA = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[3])));
+    Body2b* lBodyB = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[4])));
     //sanity
     if (!lBodyA || !lBodyB || !lBodyA->mBody || !lBodyB->mBody)
         return "";
     LinearStiffness2b(stiffness, damping, frequencyHertz, dampingRatio, 
         lBodyA->mBody, lBodyB->mBody);
 
-    char* returnBuffer = Con::getReturnBuffer(256);
-    dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
-    return returnBuffer;
+    // char* returnBuffer = Con::getReturnBuffer(256);
+    // dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
+    // return returnBuffer;
+
+    std::string out =  std::format("{} {}",stiffness, damping);
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 
 }
 /// Utility to compute rotational stiffness values frequency and damping ratio
@@ -107,17 +83,22 @@ ConsoleFunction(angularStiffness2b, const char*, 5, 5,
     F32 damping = 0;
     F32 frequencyHertz = dAtof(argv[1]);
     F32 dampingRatio = dAtof(argv[2]);
-    Body2b* lBodyA = (Body2b*)Sim::findObject(dAtoi(argv[3]));
-    Body2b* lBodyB = (Body2b*)Sim::findObject(dAtoi(argv[4]));
+    Body2b* lBodyA = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[3])));
+    Body2b* lBodyB = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[4])));
     //sanity
     if (!lBodyA || !lBodyB || !lBodyA->mBody || !lBodyB->mBody)
         return "";
     AngularStiffness2b(stiffness, damping, frequencyHertz, dampingRatio,
         lBodyA->mBody, lBodyB->mBody);
 
-    char* returnBuffer = Con::getReturnBuffer(256);
-    dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
-    return returnBuffer;
+    // char* returnBuffer = Con::getReturnBuffer(256);
+    // dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
+    // return returnBuffer;
+    std::string out =  std::format("{} {}",stiffness, damping);
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
 
@@ -178,7 +159,7 @@ void RevoluteJointDef2b::initPersistFields()
 
 ConsoleMethod(RevoluteJointDef2b, setBodyA, bool, 3, 3, "(Body2b object)")
 {
-    Body2b* lBody = (Body2b*)Sim::findObject(dAtoi(argv[2]));
+    Body2b* lBody = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[2])));
     if (!lBody || !lBody->mBody)
         return false;
     object->mJointDef.bodyA = lBody->mBody;
@@ -187,7 +168,7 @@ ConsoleMethod(RevoluteJointDef2b, setBodyA, bool, 3, 3, "(Body2b object)")
 
 ConsoleMethod(RevoluteJointDef2b, setBodyB, bool, 3, 3, "(Body2b object)")
 {
-    Body2b* lBody = (Body2b*)Sim::findObject(dAtoi(argv[2]));
+    Body2b* lBody = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[2])));
     if (!lBody || !lBody->mBody)
         return false;
     object->mJointDef.bodyB = lBody->mBody;
@@ -202,8 +183,9 @@ ConsoleMethod(RevoluteJointDef2b, setBodyB, bool, 3, 3, "(Body2b object)")
 ConsoleMethod(RevoluteJointDef2b, Initialize, bool, 5, 5, "(Body2b bodyA, Body2b bodyB, Point2F anchor)"
     "Initialize the bodies, anchors, and reference angle using a world")
 {
-    Body2b* lBodyA = (Body2b*)Sim::findObject(dAtoi(argv[2]));
-    Body2b* lBodyB = (Body2b*)Sim::findObject(dAtoi(argv[3]));
+    Body2b* lBodyA = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[2])));
+    Body2b* lBodyB = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[3])));
+
     //sanity
     if (!lBodyA || !lBodyB || !lBodyA->mBody || !lBodyB->mBody)
         return false;
@@ -266,11 +248,13 @@ ConsoleMethod(RevoluteJoint2b, createJoint, bool, 4, 4, "(World2b world, Revolut
     "")
 {
 
-    World2b* lWorld = (World2b*)Sim::findObject(dAtoi(argv[2]));
-    RevoluteJointDef2b* lJointdef = (RevoluteJointDef2b*)Sim::findObject(dAtoi(argv[3]));
-    
+    World2b* lWorld = dynamic_cast<World2b*>(Sim::findObject(dAtoi(argv[2])));
+    RevoluteJointDef2b* lJointdef = dynamic_cast<RevoluteJointDef2b*>(Sim::findObject(dAtoi(argv[3])));
+    if (!lWorld || !lJointdef) return false;
     object->mWorld = lWorld->mWorld;
     object->mJoint = (b2RevoluteJoint*)object->mWorld->CreateJoint(&lJointdef->mJointDef);
+
+    if (!object->mJoint) return false;
 
     //userdata 
     object->mJoint->SetUserData(object);
@@ -323,8 +307,8 @@ void DistanceJointDef2b::initPersistFields()
 ConsoleMethod(DistanceJointDef2b, Initialize, bool, 6, 6, "(Body2b bodyA, Body2b bodyB, Point2F anchorA, Point2F anchorB)"
     "Initialize the bodies, anchors, and reference angle using a world")
 {
-    Body2b* lBodyA = (Body2b*)Sim::findObject(dAtoi(argv[2]));
-    Body2b* lBodyB = (Body2b*)Sim::findObject(dAtoi(argv[3]));
+    Body2b* lBodyA = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[2])));
+    Body2b* lBodyB = dynamic_cast<Body2b*>(Sim::findObject(dAtoi(argv[3])));
     //sanity
     if (!lBodyA || !lBodyB || !lBodyA->mBody || !lBodyB->mBody)
         return false;
@@ -387,12 +371,14 @@ ConsoleMethod(DistanceJoint2b, createJoint, bool, 4, 4, "(World2b world, Revolut
     "")
 {
 
-    World2b* lWorld = (World2b*)Sim::findObject(dAtoi(argv[2]));
+    World2b* lWorld = dynamic_cast<World2b*>(Sim::findObject(dAtoi(argv[2])));
+
     RevoluteJointDef2b* lJointdef = (RevoluteJointDef2b*)Sim::findObject(dAtoi(argv[3]));
+     if (!lWorld || !lJointdef) return false;
 
     object->mWorld = lWorld->mWorld;
-    object->mJoint = (b2DistanceJoint*)object->mWorld->CreateJoint(&lJointdef->mJointDef);
-
+    object->mJoint = dynamic_cast<b2DistanceJoint*>(object->mWorld->CreateJoint(&lJointdef->mJointDef));
+    if (!object->mJoint) return false;
     //userdata 
     object->mJoint->SetUserData(object);
 
@@ -490,3 +476,6 @@ ConsoleMethod(DistanceJoint2b, setDamping, void, 3, 3,
 {
     object->mJoint->SetDamping(dAtof(argv[2]));
 }
+
+
+} //namespace
