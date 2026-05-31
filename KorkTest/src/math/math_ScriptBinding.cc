@@ -369,7 +369,6 @@ ConsoleFunctionWithDocs( bits, ConsoleString, 2, 2, ())
 }
 
 //-----------------------------------------------------------------------------
-
 /*! Converts a bit-position into a value.
 */
 ConsoleFunctionWithDocs( bit, ConsoleString, 2, 2, ())

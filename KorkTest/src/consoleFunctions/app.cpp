@@ -7,6 +7,13 @@
 namespace KorkFlux {
 ConsoleFunctionGroupBegin(App, "App Functions: getFPS, ...");
 
+ConsoleFunction(getFullScreen, ConsoleBool, 1,1, "") {
+    return getScreenObject()->getFullScreen();
+}
+ConsoleFunction(setFullScreen, ConsoleBool, 2,2, "bool value") {
+    return getScreenObject()->setFullScreen(dAtob(argv[1]));
+}
+
 ConsoleFunction(getFPS, ConsoleInt, 1,1, "") {
     return gMain->getFPS();
 }

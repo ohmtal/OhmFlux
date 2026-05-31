@@ -11,9 +11,15 @@ namespace KorkFlux {
 
         if (*mFileName) {
             mTexture =  gMain->loadTexture(mFileName, mTexCols, mTexRows);
-            if (!mTexture) return false;
+            // if (!mTexture) return false;
+
+
 
         }
+        // fallback to one pixel white texture
+        // 1 pixel have no cols or rows ;)
+        if (!mTexture) mTexture = Render2D.getWhiteTexture();
+
 
         Log("[info] Texture %d created.", getId());
 
@@ -47,7 +53,7 @@ namespace KorkFlux {
         Parent::initPersistFields();
         addGroup("Texture");
 
-        addField("filename", TypeString, Offset(mFileName, Texture));
+        addField("filename", TypeString, Offset(mFileName, Texture), "If not set White Texture (one pixel is used");
         addField("TexCols", TypeS32, Offset(mTexCols, Texture));
         addField("TexRows", TypeS32, Offset(mTexRows, Texture));
 
