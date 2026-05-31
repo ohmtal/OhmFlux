@@ -23,8 +23,14 @@
 #include "platform/platform.h"
 #include "console/console.h"
 #include "math/mMathFn.h"
-#include "math/mRandom.h"
-#include "string/stringUnit.h"
+#include <platform/platformString.h>
+#include <string>
+#include <format>
+#include <core/stringUnit.h>
+
+
+namespace KorkFlux {
+
 
 ConsoleFunctionGroupBegin( GeneralMath, "General math functions. Use these whenever possible, as they'll run much faster than script equivalents.");
 
@@ -39,14 +45,22 @@ ConsoleFunctionGroupBegin( GeneralMath, "General math functions. Use these whene
      solutions (being 0, 1, or 2), and x0 and x1 are the solutions, if any.
      Unused x's are undefined.
 */
-ConsoleFunctionWithDocs( mSolveQuadratic, ConsoleString, 4, 4, (float a, float b, float c))
-{
-   char * retBuffer = Con::getReturnBuffer(256);
-   F32 x[2];
-   U32 sol = mSolveQuadratic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), x);
-   dSprintf(retBuffer, 256, "%d %g %g", sol, x[0], x[1]);
-   return retBuffer;
-}
+// ConsoleFunctionWithDocs( mSolveQuadratic, ConsoleString, 4, 4, (float a, float b, float c))
+// {
+//    // char * retBuffer = Con::getReturnBuffer(256);
+//    // F32 x[2];
+//    // U32 sol = mSolveQuadratic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), x);
+//    // dSprintf(retBuffer, 256, "%d %g %g", sol, x[0], x[1]);
+//    // return retBuffer;
+//
+//    F32 x[2];
+//    U32 sol = mSolveQuadratic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), x);
+//    std::string out = std::format("{} {} {}", sol,x[0],x[1]);
+//    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+//    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+//    dStrcpy(ret, out.c_str());
+//    return ret;
+// }
 
 /*! 
     Solve a cubic equation of form a*x^3 + b*x^2 + c*x + d = 0.
@@ -54,14 +68,22 @@ ConsoleFunctionWithDocs( mSolveQuadratic, ConsoleString, 4, 4, (float a, float b
      solutions (being 0, 1, 2, or 3), and x0, x1, x2 are the solutions, if any.
      Unused x's are undefined.
 */
-ConsoleFunctionWithDocs( mSolveCubic, ConsoleString, 5, 5, (float a, float b, float c, float d))
-{
-   char * retBuffer = Con::getReturnBuffer(256);
-   F32 x[3];
-   U32 sol = mSolveCubic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), dAtof(argv[4]), x);
-   dSprintf(retBuffer, 256, "%d %g %g %g", sol, x[0], x[1], x[2]);
-   return retBuffer;
-}
+// ConsoleFunctionWithDocs( mSolveCubic, ConsoleString, 5, 5, (float a, float b, float c, float d))
+// {
+//    // char * retBuffer = Con::getReturnBuffer(256);
+//    // F32 x[3];
+//    // U32 sol = mSolveCubic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), dAtof(argv[4]), x);
+//    // dSprintf(retBuffer, 256, "%d %g %g %g", sol, x[0], x[1], x[2]);
+//    // return retBuffer;
+//
+//    F32 x[3];
+//    U32 sol = mSolveCubic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), dAtof(argv[4]), x);
+//    std::string out = std::format("{} {} {} {}", sol,x[0],x[1], x[2]);
+//    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+//    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+//    dStrcpy(ret, out.c_str());
+//    return ret;
+// }
 
 /*! 
     Solve a quartic equation of form a*x^4 + b*x^3 + c*x^2 + d*x + e = 0.
@@ -69,14 +91,23 @@ ConsoleFunctionWithDocs( mSolveCubic, ConsoleString, 5, 5, (float a, float b, fl
      solutions (ranging from 0-4), and x0, x1, x2 and x3 are the solutions, if any.
      Unused x's are undefined.
 */
-ConsoleFunctionWithDocs( mSolveQuartic, ConsoleString, 6, 6, (float a, float b, float c, float d, float e))
-{
-   char * retBuffer = Con::getReturnBuffer(256);
-   F32 x[4];
-   U32 sol = mSolveQuartic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), dAtof(argv[4]), dAtof(argv[5]), x);
-   dSprintf(retBuffer, 256, "%d %g %g %g %g", sol, x[0], x[1], x[2], x[3]);
-   return retBuffer;
-}
+// ConsoleFunctionWithDocs( mSolveQuartic, ConsoleString, 6, 6, (float a, float b, float c, float d, float e))
+// {
+//    // char * retBuffer = Con::getReturnBuffer(256);
+//    // F32 x[4];
+//    // U32 sol = mSolveQuartic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), dAtof(argv[4]), dAtof(argv[5]), x);
+//    // dSprintf(retBuffer, 256, "%d %g %g %g %g", sol, x[0], x[1], x[2], x[3]);
+//    // return retBuffer;
+//
+//    F32 x[4];
+//    U32 sol = mSolveQuartic(dAtof(argv[1]), dAtof(argv[2]), dAtof(argv[3]), dAtof(argv[4]), dAtof(argv[5]), x);
+//
+//    std::string out = std::format("{} {} {} {} {}", sol,x[0],x[1], x[2], x[4]);
+//    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+//    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+//    dStrcpy(ret, out.c_str());
+//    return ret;
+// }
 
 /*! Use the mFloor function to calculate the next lowest integer value from val.
     @param val A floating-point value.
@@ -113,18 +144,21 @@ ConsoleFunctionWithDocs( mCeil, ConsoleInt, 2, 2, ( val ))
     @param numDecimals An integer between 0 and inf representing the number of decimal places to allow val to have.
     @return Returns a floating-point value equivalent to a truncated version of val, where the new version has numDecimals decimal places
 */
-ConsoleFunctionWithDocs( mFloatLength, ConsoleString, 3, 3, ( val , numDecimals ))
-{
-   char * outBuffer = Con::getReturnBuffer(256);
-   char fmtString[8] = "%.0f";
-   U32 precision = dAtoi(argv[2]);
-   if (precision > 9)
-      precision = 9;
-   fmtString[2] = '0' + precision;
-
-   dSprintf(outBuffer, 255, fmtString, dAtof(argv[1]));
-   return outBuffer;
-}
+// ConsoleFunctionWithDocs( mFloatLength, ConsoleString, 3, 3, ( val , numDecimals ))
+// {
+//    char * outBuffer = Con::getReturnBuffer(256);
+//    char fmtString[8] = "%.0f";
+//    U32 precision = dAtoi(argv[2]);
+//    if (precision > 9)
+//       precision = 9;
+//    fmtString[2] = '0' + precision;
+//
+//    dSprintf(outBuffer, 255, fmtString, dAtof(argv[1]));
+//    return outBuffer;
+//
+//
+//
+// }
 
 //------------------------------------------------------------------------------
 /*! Use the mAbs function to get the magnitude of val.
@@ -229,7 +263,7 @@ ConsoleFunctionWithDocs( mAtan, ConsoleFloat, 2, 3, ( val ))
       xRun = dAtof( argv[1] );
       yRise = dAtof( argv[2] );
    }
-   else if( StringUnit::getUnitCount( argv[1], " " ) == 2 )
+   else if(  StringUnit::getUnitCount( argv[1], " " ) == 2 )
    {
      dSscanf( argv[1], "%g %g", &xRun, &yRise );
    }
@@ -320,12 +354,18 @@ ConsoleFunctionWithDocs( bits, ConsoleString, 2, 2, ())
         bitValue |= (U32)BIT(dAtoi(StringUnit::getUnit(argv[1], n, " \t\n")));
     }
 
-    // Create Returnable Buffer.
-    char* pBuffer = Con::getReturnBuffer(16);
-    // Format Output.
-    dSprintf( pBuffer, 16, "%u", bitValue );
-    // Return Buffer.
-    return pBuffer;
+    // // Create Returnable Buffer.
+    // char* pBuffer = Con::getReturnBuffer(16);
+    // // Format Output.
+    // dSprintf( pBuffer, 16, "%u", bitValue );
+    // // Return Buffer.
+    // return pBuffer;
+
+    std::string out = std::format("{}", bitValue);
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
 //-----------------------------------------------------------------------------
@@ -335,13 +375,19 @@ ConsoleFunctionWithDocs( bits, ConsoleString, 2, 2, ())
 ConsoleFunctionWithDocs( bit, ConsoleString, 2, 2, ())
 {
     // Create Returnable Buffer.
-    char* pBuffer = Con::getReturnBuffer(16);
+    // char* pBuffer = Con::getReturnBuffer(16);
+    //
+    // // Format Output.
+    // dSprintf( pBuffer, 16, "%u", U32(BIT(dAtoi(argv[1]))) );
+    //
+    // // Return Buffer.
+    // return pBuffer;
 
-    // Format Output.
-    dSprintf( pBuffer, 16, "%u", U32(BIT(dAtoi(argv[1]))) );
-
-    // Return Buffer.
-    return pBuffer;
+    std::string out = std::format("{}", U32(BIT(dAtoi(argv[1]))));
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
 /*! Returns the ones complement of a bit.
@@ -349,13 +395,19 @@ ConsoleFunctionWithDocs( bit, ConsoleString, 2, 2, ())
 ConsoleFunctionWithDocs( bitInverse, ConsoleString, 2, 2, ())
 {
     // Create Returnable Buffer.
-    char* pBuffer = Con::getReturnBuffer(16);
+    // char* pBuffer = Con::getReturnBuffer(16);
+    //
+    // // Format Output.
+    // dSprintf( pBuffer, 16, "%u", U32(~BIT(dAtoi(argv[1]))) );
+    //
+    // // Return Buffer.
+    // return pBuffer;
 
-    // Format Output.
-    dSprintf( pBuffer, 16, "%u", U32(~BIT(dAtoi(argv[1]))) );
-
-    // Return Buffer.
-    return pBuffer;
+    std::string out = std::format("{}", U32(~BIT(dAtoi(argv[1]))));
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
+    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    dStrcpy(ret, out.c_str());
+    return ret;
 }
 
 /*! Returns the mask with a bit added to it
@@ -383,3 +435,4 @@ ConsoleFunctionWithDocs( removeBitFromMask, ConsoleInt, 3, 3, ( mask, bit ))
 ConsoleFunctionGroupEnd(GeneralMath)
 
 /*! @} */ // group MathFunctions
+} //namespace

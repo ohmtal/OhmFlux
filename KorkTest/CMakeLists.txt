@@ -214,6 +214,7 @@ set(PROJECT_SOURCES
     ${KORK_DIR}/src/totp/totp.cc
 
     ${KORK_DIR}/src/math/mMathFn.h
+    ${KORK_DIR}/src/math/math_ScriptBinding.cc
     # ${KORK_DIR}/src/math/mMath_C.cc
 
     # ${KORK_DIR}/src/network/
