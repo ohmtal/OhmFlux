@@ -39,7 +39,7 @@ else CleanupSet.deleteObjects();
     color = "0.8 0.8 0.1 1";
     Caption = "Hello World";
     shadowColor="0.1 0.1 0.1 1";
-    /*/*shadowOffset*/*/ = 0.9;
+    shadowOffset = 0.9;
     shadow = true;
   };
   CleanupSet.add($Label1);
