@@ -16,7 +16,6 @@ public:
     FluxRenderObject mRenderObject;
     U32 mTextureSimID = 0;
 
-
     Sprite()
     {
         mTextureSimID = 0;

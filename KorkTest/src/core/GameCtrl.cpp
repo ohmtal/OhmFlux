@@ -168,7 +168,7 @@ ConsoleMethod( GameCtrl, drawstretch, ConsoleBool, 9, 14,
     return true;
 }
 
-ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=left,2=right,3=center)"
+ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=left,2=right,3=center, color, bool do shadow"
 "write text on screen.")
 {
 
@@ -176,11 +176,16 @@ ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=le
     Point2F pos = { dAtof(argv[2]), dAtof(argv[3]) };
     const char* text = argv[4];
     FontAlign align = FontAlign_Left;
+    Color4F color = cl_White;
+    bool doShadow = false;
     if (argc > 5) align = (FontAlign)dAtoi(argv[5]);
+    if (argc > 6) {
+        dAtoColor4F(color, argv[6]);
+    }
 
 
     if (!object->mLabel || !text) return false;
-    object->mLabel->Print(text, pos, align);
+    object->mLabel->Print(text, pos, align, color, doShadow);
 
     // object->writeText(argv[4],lProfile, dAtoi(argv[2]),dAtoi(argv[3]),dAtoi(argv[5]), lFontColorType);
     return true;

@@ -18,17 +18,27 @@ class FluxLabel : public FluxRenderObject
     typedef FluxRenderObject Parent;
 protected:
     char  mCaption[256];
-    Color4F mColor;
-    FontAlign mAlign;
-    bool mIsGuiElement;
-    F32 mScale = 1.f;
-    FluxTTFont* mTTFont;
+
+    bool mIsGuiElement = true;
+
+    FluxTTFont* mTTFont = nullptr;
 private:
     using Parent::getDrawParams;
 
 public:
-    FluxLabel(FluxTTFont* ttfont);
+    FluxLabel(FluxTTFont* ttfont = nullptr);
+    bool setFont(FluxTTFont* ttfont);
+    bool isInitialized() { return mTTFont != nullptr; }
     ~FluxLabel();
+
+    // const char* mCaptionP = mCaption;
+    Color4F mColor = cl_White;
+    FontAlign mAlign = FontAlign_Left;
+    F32 mScale = 1.f;
+
+    bool mShadow = false;
+    Color4F mShadowColor = cl_Black;
+    F32 mShadowOffset = 1.2f;
 
 
     void setCaption(const char *szFormat, ...) PRINTF_CHECK(2, 3);
@@ -74,7 +84,9 @@ public:
 
     virtual void Draw() override;
     Point2F getStringSize(const char* text);
-    const Point2F Print(const char* text, Point2F pos, FontAlign align = FontAlign_Left );
+    const Point2F Print(const char* text, Point2F pos, FontAlign align = FontAlign_Left
+        , Color4F color = cl_White
+        , bool shadow = false);
 
     RectI getRectI() const override;
 

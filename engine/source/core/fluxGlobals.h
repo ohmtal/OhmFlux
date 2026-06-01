@@ -193,6 +193,13 @@ struct Color4F {
         return r == other.r && g == other.g && b == other.b && a == other.a;
     }
 
+    void normalize() {
+        if (r > 1.f) r /= 255.f;
+        if (g > 1.f) g /= 255.f;
+        if (b > 1.f) b /= 255.f;
+        if (a > 1.f) a /= 255.f;
+    }
+
     // Helper to create a color from a Hex integer (e.g., 0xFF5733)
     static Color4F FromHex(U32 hex) {
         Color4F c;

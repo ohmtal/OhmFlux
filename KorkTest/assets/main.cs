@@ -35,6 +35,8 @@ else CleanupSet.deleteObjects();
     x = 20;
     y = 40;
     Caption = "Hello World";
+    shadowColor="1 0 0 1";
+    shadow = true;
   };
   CleanupSet.add($Label1);
 

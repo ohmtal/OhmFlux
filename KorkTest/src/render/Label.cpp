@@ -2,6 +2,7 @@
 #include "appMain.h"
 #include <platform/platformString.h>
 #include "Font.h"
+#include "core/Globals.h"
 
 namespace KorkFlux {
 
@@ -15,8 +16,7 @@ namespace KorkFlux {
         Font* simFont = dynamic_cast<Font*>(Sim::findObject(consoleobject));
 
         if (simFont && simFont->mFont) {
-
-            mLabel = new FluxLabel(simFont->mFont);
+           if (!mLabel.setFont(simFont->mFont)) return false;
             mFontSimID = simFont->getId();
             return true;
         }
@@ -35,7 +35,6 @@ namespace KorkFlux {
     // ------------------------------------------------------------------------.
     void Label::onRemove() {
         gMain->unQueueObject(this);
-        SAFE_DELETE(mLabel);
         mLabel = nullptr;
         Parent::onRemove();
     }
@@ -47,11 +46,17 @@ namespace KorkFlux {
         addGroup("Label");
         addField("Font", TypeS32, Offset(mFontSimID, Label));
 
+        //FIXME set caption here ... addProtectedField("caption", TypeSting, );
         addField("caption", TypeString, Offset(mCaption, Label));
-        addField("x", TypeF32, Offset(mPosition.x,Label));
-        addField("y", TypeF32, Offset(mPosition.y,Label));
-        addField("scale", TypeF32, Offset(mScale,Label));
-        addField("align", TypeS32, Offset(mAlign,Label), "0=left, 1=center, 2=right");
+        addField("x", TypeF32, Offset(mLabel.mDrawParams.x,Label));
+        addField("y", TypeF32, Offset(mLabel.mDrawParams.y,Label));
+        addField("color", TypeColor4F, Offset(mLabel.mColor, Label));
+        addField("scale", TypeF32, Offset(mLabel.mScale,Label));
+        addField("align", TypeS32, Offset(mLabel.mAlign,Label), "0=left, 1=center, 2=right");
+
+        addField("shadow", TypeBool, Offset(mLabel.mShadow, Label));
+        addField("shadowColor", TypeColor4F, Offset(mLabel.mShadowColor, Label));
+        addField("shadowOffset", TypeF32, Offset(mLabel.mShadowOffset, Label));
         endGroup("Label");
 
 
@@ -62,11 +67,13 @@ namespace KorkFlux {
     }
     // ------------------------------------------------------------------------.
     void Label::Draw() {
-        if (!getVisible() || !mLabel)
+        if (!getVisible() || !mLabel.isInitialized())
             return;
 
-        mLabel->setScale(mScale);
-        mLabel->Print(mCaption, mPosition, mAlign);
+        // mLabel->setScale(mScale);
+        // mLabel->Print(mCaption, mPosition, mAlign, mColor);
+        mLabel.setCaption("%s", mCaption); // FIXME really every draw
+        mLabel.Draw();
     }
     // ------------------------------------------------------------------------.
 

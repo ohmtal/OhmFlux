@@ -270,7 +270,7 @@ function invaderGame::onRender(%this,%dt) {
   
   } else {
   
-    %this.writeText(400,100,"Game Over",$align::center);
+    %this.writeText(400,100,"Game Over",$align::center, "0.9 0.1 0.1 0.7");
     %this.drawHigh(%this,%dt);
     
   }

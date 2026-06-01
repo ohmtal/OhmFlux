@@ -26,9 +26,14 @@ namespace STB_Internal {
 FluxLabel::FluxLabel(FluxTTFont* ttfont)
 : Parent(nullptr)
 {
+    memset(mCaption, 0, sizeof(mCaption));
+    if (ttfont) setFont(ttfont);
+}
+
+bool FluxLabel::setFont(FluxTTFont* ttfont) {
     if (!ttfont || !ttfont->getTexture() || !ttfont->getFont()) {
         Log("[error] FluxLabel invalid TrueType Font Object!");
-        return;
+        return false;
     }
     mTTFont = ttfont;
 
@@ -37,8 +42,9 @@ FluxLabel::FluxLabel(FluxTTFont* ttfont)
     mColor = {1.0f, 1.0f, 1.0f, 1.0f};
 
 
-    setTexture(mTTFont->getTexture());
+    return  setTexture(mTTFont->getTexture());
 }
+
 
 FluxLabel::~FluxLabel(void)
 {
@@ -80,7 +86,7 @@ Point2F FluxLabel::getStringSize(const char* text)  {
     return result;
 }
 //-----------------------------------------------------------------------------
-const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
+const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align, Color4F color , bool shadow)
 {
     Point2F result = Point2F(0.f,0.f);
     if (text[0] == '\0') return result;
@@ -121,7 +127,7 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
             dp.useUV = true;
             dp.image = getTexture();
             dp.z = getLayer();
-            dp.color = mColor;
+            dp.color = color;
             dp.isGuiElement = mIsGuiElement;
 
             // Apply Scale to Dimensions
@@ -142,6 +148,13 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align )
 
             Render2D.drawSprite(dp);
 
+            if ( shadow ) {
+                dp.color = mShadowColor;
+                dp.x += mShadowOffset;
+                dp.y += mShadowOffset;
+                dp.z = getLayer() + 0.001f;
+                Render2D.drawSprite(dp);
+            }
             currentX += (nextX * mScale);
         }
     }
@@ -156,7 +169,7 @@ void FluxLabel::Draw()
     if (mCaption[0] == '\0') return;
     if (!mTTFont || !mTTFont->getFont()) return;
 
-    Point2F size = Print(mCaption, getPosition(), mAlign);
+    Point2F size = Print(mCaption, getPosition(), mAlign, mColor, mShadow);
 
     getDrawParams().w = size.x;
     getDrawParams().h = size.y;

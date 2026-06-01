@@ -2,6 +2,10 @@
 #include "appMain.h"
 #include <platform/platformString.h>
 #include "Texture.h"
+#include "core/Globals.h"
+
+
+#include <sim/dynamicTypes.h> //TEST MOVE ME
 
 
 
@@ -26,8 +30,9 @@ namespace KorkFlux {
     bool Sprite::onAdd(){
         if (!gMain)  return false;
 
-        setTextureBySimID(std::to_string(mTextureSimID).c_str());
-
+        bool useWhiteTexure = mTextureSimID == 0; //fallback or lazy add ...
+        if (!useWhiteTexure) useWhiteTexure = !setTextureBySimID(std::to_string(mTextureSimID).c_str());
+        if (useWhiteTexure) mRenderObject.mDrawParams.image = Render2D.getWhiteTexture();
 
         gMain->queueObject(this);
         Log("[info] Sprite %d queued.", getId());
@@ -65,6 +70,7 @@ namespace KorkFlux {
         addField("z", TypeF32, Offset(mRenderObject.mDrawParams.z, Sprite));
         addField("w", TypeF32, Offset(mRenderObject.mDrawParams.w, Sprite));
         addField("h", TypeF32, Offset(mRenderObject.mDrawParams.h, Sprite));
+        addField("color", TypeColor4F, Offset(mRenderObject.mDrawParams.color, Sprite));
         addField("rotation", TypeF32, Offset(mRenderObject.mDrawParams.rotation, Sprite));
         addField("flipX", TypeBool, Offset(mRenderObject.mDrawParams.flipX, Sprite));
         addField("flipY", TypeBool, Offset(mRenderObject.mDrawParams.flipY, Sprite));
