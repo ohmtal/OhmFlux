@@ -31,7 +31,6 @@ public:
     bool isInitialized() { return mTTFont != nullptr; }
     ~FluxLabel();
 
-    // const char* mCaptionP = mCaption;
     Color4F mColor = cl_White;
     FontAlign mAlign = FontAlign_Left;
     F32 mScale = 1.f;
@@ -40,6 +39,7 @@ public:
     Color4F mShadowColor = cl_Black;
     F32 mShadowOffset = 1.2f;
 
+    const char* getCaption() { return mCaption; }
 
     void setCaption(const char *szFormat, ...) PRINTF_CHECK(2, 3);
 

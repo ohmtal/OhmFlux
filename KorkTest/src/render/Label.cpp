@@ -45,8 +45,7 @@ namespace KorkFlux {
         Parent::initPersistFields();
         addGroup("Label");
         addField("Font", TypeS32, Offset(mFontSimID, Label));
-
-        //FIXME set caption here ... addProtectedField("caption", TypeSting, );
+ //FIXME        addProtectedField("caption", TypeString,&setCaption, &getCaption, &defaultProtectedWriteFn);
         addField("caption", TypeString, Offset(mCaption, Label));
         addField("x", TypeF32, Offset(mLabel.mDrawParams.x,Label));
         addField("y", TypeF32, Offset(mLabel.mDrawParams.y,Label));
