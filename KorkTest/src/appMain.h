@@ -19,6 +19,7 @@ namespace KorkFlux {
         std::unique_ptr<FluxGuiGlue> mGuiGlue;
 
         void OnConsoleCommand(ImConsole* console, const char* command_line);
+        void OnConsoleTAB(ImConsole* console,  ImGuiInputTextCallbackData* data, bool forward);
 
     public:
         bool Initialize() override;

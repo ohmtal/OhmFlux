@@ -6,7 +6,8 @@
 #include "sim/simBase.h"
 #include "sim/dynamicTypes.h"
 #include "core/fileStream.h"
-
+#include <platform/platformString.h>
+#include "gui/ImConsole.h"
 
 namespace KorkFlux {
 
@@ -157,6 +158,23 @@ namespace KorkFlux {
         Parent::Deinitialize();
     }
 
+    void  Main::OnConsoleTAB(ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
+
+
+       char buffer[256] = {0};
+       snprintf(buffer, sizeof(buffer), "%s", data->Buf);
+       U32 newCursorPos = Con::tabComplete(buffer, data->CursorPos, sizeof(buffer) - 1, forward);
+        // Log("TESTTAB: %s (%d)", buffer, newCursorPos);
+
+       data->DeleteChars(0, data->BufTextLen);
+       data->InsertChars(0, buffer);
+       data->CursorPos = newCursorPos;
+       data->SelectionStart = newCursorPos;
+       data->SelectionEnd = newCursorPos;
+       data->BufDirty = true;
+
+    }
+
     void Main::OnConsoleCommand(ImConsole* console, const char* command_line) {
         Con::evaluate(command_line);
     }
@@ -175,9 +193,13 @@ namespace KorkFlux {
 
 
         SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
-        console.OnCommand = [&](ImConsole* console, const char* command_line) {
+        console.OnCommand = [this](ImConsole* console, const char* command_line) {
             OnConsoleCommand(console, command_line);
         };
+        console.OnTabCompletion = [this](ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
+            OnConsoleTAB(console, data, forward);
+        };
+
 
 
         // korkscript >>>

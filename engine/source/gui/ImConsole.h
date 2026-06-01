@@ -5,6 +5,10 @@
 // mConsole.OnCommand =  [&](ImConsole* console, const char* cmd) { OnConsoleCommand(console, cmd); };
 // ==>     void OnConsoleCommand(ImConsole* console, const char* cmd) {}
 //
+// NOTE: forward needs to be fixed
+// console.OnTabCompletion = [this](ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
+//     OnConsoleTAB(console, data, forward);
+// };
 // To redirect use:  SDL_SetLogOutputFunction(MyLogCallback, optionalUserdataPointer)
 //
 // NOTE: to claim focus on open you have call draw always!!!
@@ -34,8 +38,11 @@ private:
     bool mDirty = true;
 
     bool mReclaim_focus = false;
+
+    // bool mIsReverseTab = false;
 public:
     std::function<void(ImConsole*, const char*)> OnCommand;
+    std::function<void(ImConsole*, ImGuiInputTextCallbackData*, const bool)> OnTabCompletion;
 
     ImVector<const char*> Commands;
     ImGuiTextFilter       Filter;
@@ -335,8 +342,18 @@ public:
 
 
 
-        ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
+        ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue
+            | ImGuiInputTextFlags_EscapeClearsAll
+            | ImGuiInputTextFlags_CallbackHistory
+            ;
+
+            // hack in shift TAB (backward auto complete ) finally using
+            // ImGuiInputTextFlags_CallbackAlways
+         if (OnTabCompletion) input_text_flags |= ImGuiInputTextFlags_CallbackAlways;
+         else if (Commands.Size > 0) input_text_flags |= ImGuiInputTextFlags_CallbackCompletion;
+
         ImGui::SetNextItemWidth(-FLT_MIN);
+
         if (ImGui::InputText("##Input", InputBuf, IM_ARRAYSIZE(InputBuf), input_text_flags, &TextEditCallbackStub, (void*)this))
         {
             char* s = InputBuf;
@@ -391,8 +408,19 @@ public:
         //AddLog("cursor: %d, selection: %d-%d", data->CursorPos, data->SelectionStart, data->SelectionEnd);
         switch (data->EventFlag)
         {
+
+            case ImGuiInputTextFlags_CallbackAlways: {
+                if (ImGui::IsKeyPressed(ImGuiKey_Tab) && OnTabCompletion) {
+                          OnTabCompletion(this, data, !ImGui::GetIO().KeyShift);
+                          return 1;
+                }
+                break;
+            }
+
+
             case ImGuiInputTextFlags_CallbackCompletion:
             {
+
                 // Example of TEXT COMPLETION
 
                 // Locate beginning of current word
