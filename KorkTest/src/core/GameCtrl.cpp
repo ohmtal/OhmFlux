@@ -100,19 +100,16 @@ void GameCtrl::onEvent(SDL_Event event) {
 }
 //--------------------------------------------------------------------------
 void GameCtrl::Draw() {
-    //FIXME what is the dt here ?
-    // Con::executef( this, 3, "onRender", getScreen()->getIdString(), Con::getIntArg(dt)); NOTE: INT???
-    // function invaderGame::onRender(%this,%dt) {
-    // mLabel->Print("TEST1", { 10.f,100.f });
-    // mLabel->Print("TEST2", { 10.f,140.f });
-
+    //NOTE dt = ms! only for compat
     if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime * 1000.f));
 }
 //--------------------------------------------------------------------------
 void GameCtrl::Update(const double& dt) {
+    //NOTE dt = ms! only for compat - bad or medicore performance
     if ( isMethod( "onUpdate" ) ) Con::executef( this, "onUpdate", Con::getFloatArg(dt));
 }
 //--------------------------------------------------------------------------
+// NOTE: only for Compat! - use Sprite!
 ConsoleMethod( GameCtrl, draw, ConsoleBool, 6, 6, "(Texture,x,y,layer)"
 "draw a image, Layer 1-99 possible.")
 {
@@ -134,7 +131,7 @@ ConsoleMethod( GameCtrl, draw, ConsoleBool, 6, 6, "(Texture,x,y,layer)"
 }
 
 
-
+// NOTE: only for Compat! - use Sprite!
 ConsoleMethod( GameCtrl, drawstretch, ConsoleBool, 9, 14,
                "(Texture,imgId,x,y,layer,w,h,[rotation,flipX,flipY, alpha channel default 0.1], optimizetransparent)"
                 "draw a image, Layer 1-99 possible.")
@@ -167,7 +164,7 @@ ConsoleMethod( GameCtrl, drawstretch, ConsoleBool, 9, 14,
     Render2D.drawSprite(params);
     return true;
 }
-
+// NOTE: only for Compat! - use Label!
 ConsoleMethod( GameCtrl, writeText, ConsoleBool, 6, 8, "(x,y,string, align (0=left,2=right,3=center, color, bool do shadow"
 "write text on screen.")
 {

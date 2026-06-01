@@ -26,6 +26,9 @@ namespace STB_Internal {
 FluxLabel::FluxLabel(FluxTTFont* ttfont)
 : Parent(nullptr)
 {
+    mAlign = FontAlign_Left;
+    mIsGuiElement = true;
+    mColor = {1.0f, 1.0f, 1.0f, 1.0f};
     memset(mCaption, 0, sizeof(mCaption));
     if (ttfont) setFont(ttfont);
 }
@@ -36,11 +39,6 @@ bool FluxLabel::setFont(FluxTTFont* ttfont) {
         return false;
     }
     mTTFont = ttfont;
-
-    mAlign = FontAlign_Left;
-    mIsGuiElement = true;
-    mColor = {1.0f, 1.0f, 1.0f, 1.0f};
-
 
     return  setTexture(mTTFont->getTexture());
 }
@@ -88,6 +86,8 @@ Point2F FluxLabel::getStringSize(const char* text)  {
 //-----------------------------------------------------------------------------
 const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align, Color4F color , bool shadow)
 {
+    // FIXME for performance this should be cached to a texture !!!
+
     Point2F result = Point2F(0.f,0.f);
     if (text[0] == '\0') return result;
     if (!mTTFont || !mTTFont->getFont()) return result;
@@ -150,8 +150,8 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align, C
 
             if ( shadow ) {
                 dp.color = mShadowColor;
-                dp.x += mShadowOffset;
-                dp.y += mShadowOffset;
+                dp.x += mShadowOffset * mScale;
+                dp.y += mShadowOffset * mScale;
                 dp.z = getLayer() + 0.001f;
                 Render2D.drawSprite(dp);
             }

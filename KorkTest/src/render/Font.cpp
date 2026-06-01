@@ -47,7 +47,7 @@ namespace KorkFlux {
         addGroup("Font");
 
         addField("fileName", TypeString, Offset(mFileName, Font));
-        addField("fontSize", TypeS32, Offset(mFontSize, Font));
+        addField("fontSize", TypeF32, Offset(mFontSize, Font));
         addField("textureSize", TypeS32, Offset(mTextureSize, Font));
 
         endGroup("Font");

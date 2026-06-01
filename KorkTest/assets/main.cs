@@ -28,14 +28,18 @@ else CleanupSet.deleteObjects();
 
   $FontJetBrains = new Font() {
     fileName = "assets/font/JetBrainsMono-Regular.ttf";
+    fontSize = 64.0;
   };
   CleanupSet.add($FontJetBrains);
   $Label1 = new Label()  {
     Font = $FontJetBrains;
     x = 20;
     y = 40;
+    scale = 2.0;
+    color = "0.8 0.8 0.1 1";
     Caption = "Hello World";
-    shadowColor="1 0 0 1";
+    shadowColor="0.1 0.1 0.1 1";
+    /*/*shadowOffset*/*/ = 0.9;
     shadow = true;
   };
   CleanupSet.add($Label1);
@@ -174,6 +178,8 @@ function c(%p) {
     %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); //crash
     // in my test project it crashed at the 10th parameter
  }
+
+ // ParseError(
 
 
 
