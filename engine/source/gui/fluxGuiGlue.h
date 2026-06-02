@@ -182,7 +182,7 @@ public:
     }
 
 
-    void onEvent(SDL_Event event)
+    void onEvent(SDL_Event event) override
     {
         if (event.type ==  FLUX_EVENT_SCALE_CHANGED)
         {

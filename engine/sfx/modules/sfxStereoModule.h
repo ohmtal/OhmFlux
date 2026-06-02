@@ -530,10 +530,7 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    void onEvent(SDL_Event event) {
 
-    }
-    //--------------------------------------------------------------------------
 
     #if defined(__ANDROID__)
     void FileDialog(SFXGEN_FILE_ACTION_TYPE action)

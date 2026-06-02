@@ -23,7 +23,7 @@ public:
 	virtual void onEnter() {};
 	virtual void onExit() {};
 
-	virtual void onEvent(SDL_Event event) {};
+	// virtual void onEvent(SDL_Event event) {};
 	virtual void onKeyEvent(SDL_KeyboardEvent event) {};
 	virtual void onMouseButtonEvent(SDL_MouseButtonEvent event) {};
 
