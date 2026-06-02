@@ -5,8 +5,16 @@
 #include "Globals.h"
 #include <console/console.h>
 
-// namespace KorkFlux {
+namespace KorkFlux {
 
+    // Wrapper for Con::getReturnBuffer
+    const char * getReturnString(const std::string& str, KorkApi::Vm* vmPtr) {
+        KorkApi::ConsoleValue retV = Con::getReturnBuffer(str.length() + 1);
+        char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+        dStrcpy(ret, str.c_str());
+        return ret;
+    }
+}
 // ---------------------------- Point2F ---------------------------------------
 
 ConsoleType( Point2F, TypePoint2F, sizeof(Point2F), sizeof(Point2F), "" )

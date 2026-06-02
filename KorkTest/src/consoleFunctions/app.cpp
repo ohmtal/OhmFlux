@@ -3,6 +3,7 @@
 #include "appMain.h"
 #include "core/fluxGlue.h"
 #include <string>
+#include "core/Globals.h"
 
 namespace KorkFlux {
 ConsoleFunctionGroupBegin(App, "App Functions: getFPS, ...");
@@ -35,6 +36,14 @@ ConsoleFunction(quit, void, 1,1, "") {
 }
 
 
+#ifdef FLUX_DEBUG
+ConsoleFunction(testString, ConsoleString, 1,1,"TEST lazy string"){
+    // return getReturnString("Hello String", vmPtr);
+    char rbuf[256] = {0};
+    dSprintf(rbuf, 256, "%d %d",815, 4711);
+    return getReturnString(rbuf, vmPtr);
+}
+#endif
 //------------------------------------------------------------------------------
 
 ConsoleFunctionGroupEnd(App)

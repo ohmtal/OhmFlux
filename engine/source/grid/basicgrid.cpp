@@ -85,6 +85,7 @@ void BasicGrid::init(RectI lArea, F32 lSquareSize)
 //-----------------------------------------------------------------------------------------------------
 S32 BasicGrid::getNodeIndex(F32 x, F32 y, bool lPrec)
 {
+	if (!isInitialized()) return -1;
 	// 1. Check if the point is within the general area first
 	if (!mArea.pointInRect({ static_cast<S32>(x), static_cast<S32>(y) }))
 		return -1;
@@ -108,6 +109,7 @@ S32 BasicGrid::getNodeIndex(F32 x, F32 y, bool lPrec)
 //-----------------------------------------------------------------------------------------------------
 BasicGridNode* BasicGrid::findNode(F32 x, F32 y, S32 &nodeIndex)
 {
+	if (!isInitialized()) return nullptr;
 	nodeIndex = getNodeIndex(x, y, true);
 	if (nodeIndex >= 0)
 		return &mNodes[nodeIndex];
@@ -118,6 +120,7 @@ BasicGridNode* BasicGrid::findNode(F32 x, F32 y, S32 &nodeIndex)
 
 BasicGridNode* BasicGrid::findNode(F32 x, F32 y)
 {
+	if (!isInitialized()) return nullptr;
 	S32 lNodeIndex = getNodeIndex(x,y, true);
 	if (lNodeIndex >= 0)
 		return &mNodes[lNodeIndex];
@@ -130,6 +133,7 @@ BasicGridNode* BasicGrid::findNode(F32 x, F32 y)
 //-----------------------------------------------------------------------------------------------------
 bool BasicGrid::getNodesByRect(const RectF &lRect, std::vector<S32> &lList, bool lCanOverlap)
 {
+	if (!isInitialized()) return false;
 	if (!lRect.isValidRect())
 		return false;
 
@@ -181,6 +185,7 @@ bool BasicGrid::getNodesByRect(const RectF &lRect, std::vector<S32> &lList, bool
 
 BasicGridNode* BasicGrid::getNeighbour(BasicGridNode* startNode, U8 direction, S32 &nodeIndex)
 {
+	if (!isInitialized()) return nullptr;
 	// Get the current index of the startNode
 	S32 startIdx = (startNode - mNodes); // Pointer arithmetic to get index
 	S32 sX = startIdx % mNodesX;
@@ -226,6 +231,7 @@ static S32 BINARYHEAP_COMPARE pathNodeFitnessCompare(const void* a, const void* 
 
 // Simple greedy path smoothing
 void BasicGrid::smoothPath(std::vector<BasicGridNode*>& path) {
+	if (!isInitialized()) return ;
 	if (path.size() < 3) return;
 
 	for (size_t i = 0; i + 2 < path.size(); ) {
@@ -244,6 +250,7 @@ void BasicGrid::smoothPath(std::vector<BasicGridNode*>& path) {
 //-----------------------------------------------------------------------------
 // Basic implementation of line-of-sight
 bool BasicGrid::checkLineOfSight(Point2F start, Point2F end) {
+	if (!isInitialized()) return false;
 	// Simple version: check if any grid square between points is unwalkable (Flag 0)
 	// For production, use a Bresenham's line algorithm or DDA
 	F32 dist = start.dist(end);
@@ -263,8 +270,11 @@ bool BasicGrid::checkLineOfSight(Point2F start, Point2F end) {
 // Change return type to a vector of points
 std::vector<Point2F> BasicGrid::getPath(Point2F start, Point2F end, bool smoothPath)
 {
+
 	std::vector<Point2F> path;
 	std::vector<BasicGridNode*> replyList;
+
+	if (!isInitialized()) return path;
 
 	BasicGridNode* startNode = findNode(start.x, start.y);
 	BasicGridNode* goalNode = findNode(end.x, end.y);
@@ -288,6 +298,7 @@ std::vector<Point2F> BasicGrid::getPath(Point2F start, Point2F end, bool smoothP
 //-----------------------------------------------------------------------------
 S32 BasicGrid::getPathCosts(Point2F start, Point2F end)
 {
+	if (!isInitialized()) return -1;
 	S32 startIndex, goalIndex;
 	BasicGridNode* startNode = findNode(start.x, start.y, startIndex);
 	BasicGridNode* goalNode = findNode(end.x, end.y, goalIndex);
@@ -312,11 +323,13 @@ S32 BasicGrid::getPathCosts(Point2F start, Point2F end)
 //-----------------------------------------------------------------------------------------------------
 std::vector<std::vector<U32>> BasicGrid::CreateAllPairsCostsTable()
 {
+
 	U32 numNodes = getNodeCount();
 	// Initialize matrix with a large value representing "infinity"
 	// Use M_MAXS32/2 to prevent overflow during addition
 	const U32 INF = 1000000;
 	std::vector<std::vector<U32>> pathCosts(numNodes, std::vector<U32>(numNodes, INF));
+	if (!isInitialized()) return pathCosts;
 
 	// Initialize direct edges from neighbors
 	for (U32 i = 0; i < numNodes; ++i) {
@@ -348,6 +361,7 @@ std::vector<std::vector<U32>> BasicGrid::CreateAllPairsCostsTable()
 //-----------------------------------------------------------------------------------------------------
 S32 BasicGrid::getNodeToNodeCosts(Point2F from, Point2F to)
 {
+	if (!isInitialized()) return -1;
 	// Ensure table exists
 	if (mPathCosts.empty()) {
 		return -1;
@@ -386,7 +400,7 @@ bool BasicGrid::generatePath(BasicGridNode* startNode,
 				  std::vector<BasicGridNode*> &replyList,
 				  const bool smoothPath)
 {
-	
+	if (!isInitialized()) return false;
 	//F32 lCostToGoal = 0.f;
 
 	//ignore unwalkable or same node
@@ -517,6 +531,7 @@ bool BasicGrid::generatePath(BasicGridNode* startNode,
 //-----------------------------------------------------------------------------
 void BasicGrid::resetNodeVariables(std::vector<BasicGridNode*> &affectedList)
 {
+	if (!isInitialized()) return;
 	// iterate over the affected list and reset the path finding variables
 	for (U32 i = 0; i < affectedList.size(); i++)
 	{
@@ -531,5 +546,6 @@ void BasicGrid::resetNodeVariables(std::vector<BasicGridNode*> &affectedList)
 //-----------------------------------------------------------------------------
 F32 BasicGrid::estimateCostToGoal(BasicGridNode* from, BasicGridNode* goal)
 {
+	if (!isInitialized()) return 0.f;
 	return (goal->getPos() - from->getPos()).len();
 }

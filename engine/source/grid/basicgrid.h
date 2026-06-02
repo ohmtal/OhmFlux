@@ -23,7 +23,7 @@ private:
    Point2F mPos;
    // Flag 0 = unwalkable!
    U32  mFlags;
-   U8  mWeight; 
+   U8  mWeight;
    S32 mIntValues[BASIC_GRID_NODE_INTVALUES_COUNT];
 
 public:
@@ -137,6 +137,7 @@ protected:
 
 
 public:
+   bool isInitialized() { return mInitDone; }
 
    bool generatePath(BasicGridNode* startNode,
                      BasicGridNode* goalNode,

@@ -185,7 +185,10 @@ set(PROJECT_SOURCES
 
     ${KORK_DIR}/src/core/GameCtrl.h
     ${KORK_DIR}/src/core/GameCtrl.cpp
-     ${KORK_DIR}/src/core/ConsoleTypes.cpp
+    ${KORK_DIR}/src/core/ConsoleTypes.cpp
+    ${KORK_DIR}/src/core/ConsoleTypes.h
+    ${KORK_DIR}/src/core/Grid.cpp
+    ${KORK_DIR}/src/core/Grid.h
 
     ${KORK_DIR}/src/consoleFunctions/app.cpp
     ${KORK_DIR}/src/consoleFunctions/math.cpp

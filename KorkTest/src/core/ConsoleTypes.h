@@ -2,6 +2,9 @@
 #ifndef _DYNAMIC_CONSOLETYPES_H_
 #include "sim/dynamicTypes.h"
 #endif
+namespace KorkFlux {
+const char * getReturnString(const std::string& str, KorkApi::Vm* vmPtr);
+} //namespace
 
 DefineConsoleType( TypePoint2F )
 struct Point2F;
