@@ -75,7 +75,7 @@ public:
 	bool toggleFullScreen();
 	FluxSettings mSettings;
 
-	void TerminateApplication();
+	virtual void TerminateApplication();
 
 	FluxAppStatus getStatus() { return gAppStatus; }
 

@@ -717,11 +717,8 @@ void FluxMain::TerminateApplication(void)
 	static SDL_Event Q;					
 
 	Q.type = SDL_EVENT_QUIT;
+	if(!SDL_PushEvent(&Q)) exit(1);
 
-	if(!SDL_PushEvent(&Q))
-	{
-		exit(1);
-	}
 	return;
 }
 //--------------------------------------------------------------------------------------
