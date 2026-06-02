@@ -215,9 +215,10 @@ endif()
 
 
 if(EMSCRIPTEN)
-    add_compile_options("-sUSE_SDL=3")
+    add_compile_options("-sUSE_SDL=3" "-pthread")
     # add_link_options("-sUSE_SDL=3" "-sFULL_ES3=1" "-sUSE_WEBGL2=1" "-sALLOW_MEMORY_GROWTH=1")
     add_link_options(
+        "-pthread"
         "-sUSE_SDL=3"
         "-sFULL_ES3=1"
         "-sUSE_WEBGL2=1"
