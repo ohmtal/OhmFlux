@@ -21,6 +21,7 @@ Objects Demo:
 - Font
 - Label
 - Sprite
+- AudioProfile
 
 Show how to:
 - Input: Right click to add a Sprite. 
