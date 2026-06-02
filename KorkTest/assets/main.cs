@@ -180,6 +180,7 @@ function c(%p) {
  }
 
  // ParseError(
+ function a() { echo ("a"); schedule(100,0,"a"); }
 
 
 

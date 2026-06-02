@@ -100,8 +100,8 @@ void GameCtrl::onEvent(SDL_Event event) {
 }
 //--------------------------------------------------------------------------
 void GameCtrl::Draw() {
-    //NOTE dt = ms! only for compat
-    if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime * 1000.f));
+    //NOTE old dt was ms! so it's 0.016 instead of 16.6 now!
+    if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime ));
 }
 //--------------------------------------------------------------------------
 void GameCtrl::Update(const double& dt) {
