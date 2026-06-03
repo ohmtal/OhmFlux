@@ -100,8 +100,8 @@ function Game::c(%this, %mx, %my, %p) {
 
       imgId = getRandom(13);
 
-      x = %mx; //getRandom(1000) + %p.w;
-      y = %my; //getRandom(400) + %p.h;
+      x = %mx !$= "" ?  %mx : getRandom(getScreenWidth() - %p.w) + %p.w;
+      y = %my !$= "" ? %my : getRandom(getScreenHeight() - %p.h) + %p.h;
       z = %layer;
   };
 

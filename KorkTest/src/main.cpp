@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     KorkFlux::gMain->mSettings.Caption = "KorkTestBed";
     KorkFlux::gMain->mSettings.enableLogFile = true;
     KorkFlux::gMain->mSettings.IconFilename = "assets/icon.png";
+    KorkFlux::gMain->mSettings.maxFPS = 240;
     // game->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";
     // game->mSettings.cursorHotSpotX = 10;
     // game->mSettings.cursorHotSpotY = 10;
