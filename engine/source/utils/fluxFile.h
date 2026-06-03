@@ -2,16 +2,6 @@
 // Copyright (c) 2025 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-// Example:
-//
-// char* prefPath = SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ) ;
-// std::string savePath = std::string(prefPath) + "savegame.txt";
-//
-// FluxTextFile::Save(savePath, myLines);
-//
-// SDL_free(prefPath); // Always free the prefPath string
-//-----------------------------------------------------------------------------
-
 #pragma once
 
 #include <SDL3/SDL.h>
