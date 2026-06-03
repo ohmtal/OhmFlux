@@ -31,3 +31,8 @@ Show how to:
 
 
 ![Template Screen](./res/Screenshot_2026-06-02_02-24-48.png)
+
+Note: Android and Emscripten build not working so far:
+- /opt/korkscript/engine/platform/types.gcc.h:91:4: error: "GCC: Unsupported Target
+- /opt/korkscript/engine/platform/types.h:131:4: error: "Unsupported Operating System"
+
