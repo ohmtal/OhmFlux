@@ -1,5 +1,5 @@
-// FIXME DEBUG RENDER
-// TODO TEST consoleFunctions
+// FIXME DEBUG RENDER / Tilemap like rendering
+
 #include "Grid.h"
 #include <platform/platformString.h>
 #include "core/Globals.h"
@@ -199,7 +199,7 @@ ConsoleMethod(Grid, getNodeByPos, ConsoleString, 4,4, "x,y; return nodeidx x y f
 {
 
     BasicGridNode *lNode;
-    S32 lNodeIndex = object->mGrid.getNodeIndex(dAtof(argv[2]),dAtof(argv[3]), true);
+    S32 lNodeIndex = object->mGrid.getNodeIndex(dAtof(argv[2]),dAtof(argv[3]));
     if (lNodeIndex >= 0)
         lNode = object->mGrid.getNodeById(lNodeIndex);
     else
@@ -219,7 +219,7 @@ ConsoleMethod(Grid, getNodeByPos, ConsoleString, 4,4, "x,y; return nodeidx x y f
 ConsoleMethod(Grid, getNodeIdByPos, ConsoleInt, 4, 4, "x,y; return S32 nodeidx ")
 {
     BasicGridNode* lNode;
-    S32 lNodeIndex = object->mGrid.getNodeIndex(dAtof(argv[2]), dAtof(argv[3]), true);
+    S32 lNodeIndex = object->mGrid.getNodeIndex(dAtof(argv[2]), dAtof(argv[3]));
     if (lNodeIndex >= 0)
         lNode = object->mGrid.getNodeById(lNodeIndex);
     else
@@ -259,7 +259,7 @@ ConsoleMethod(Grid, getNode, ConsoleString, 3,3, "S32 NodeIndex,  return nodeidx
 
 //BasicGridNode * BasicGrid::getNeighbour(BasicGridNode * startNode, U8 direction)
 
-ConsoleMethod(Grid, getNeighbour, ConsoleString, 4, 4, "S32 NodeIndex, S32 Direction,  return nodeidx x y z flags "
+ConsoleMethod(Grid, getNeighbour, ConsoleString, 4, 4, "S32 NodeIndex, S32 Direction,  return nodeidx x y flags "
 "Directions:"
 "1  2  3"
 "4  X  5"
@@ -328,7 +328,7 @@ ConsoleMethod(Grid, getNodesByRect ,ConsoleString, 3,3, "x y w h,  return nodeid
 
 
 
-ConsoleMethod(Grid, setFlags,ConsoleBool, 5, 5, "x,y; set flags ")
+ConsoleMethod(Grid, setFlags,ConsoleBool, 5, 5, "x,y; U32 flags ")
 {
     BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
 
@@ -344,7 +344,7 @@ ConsoleMethod(Grid, setFlags,ConsoleBool, 5, 5, "x,y; set flags ")
 ConsoleMethod(Grid, setIntValue,ConsoleBool, 6, 6, "x,y, idx[0..9], Value; set flags ")
 {
     S32 idx = dAtoi(argv[4]);
-    if (idx > 9)
+    if (idx > BASIC_GRID_NODE_INTVALUES_COUNT)
         return false;
     BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
 
@@ -403,7 +403,7 @@ ConsoleMethod(Grid, setWeightByNodeId, ConsoleBool, 4,4, "nodeId, U8 weight")
 ConsoleMethod(Grid, getIntValue,ConsoleInt, 5, 5, "x,y, idx[0..9]")
 {
     S32 idx = dAtoi(argv[4]);
-    if (idx > 9)
+    if (idx > BASIC_GRID_NODE_INTVALUES_COUNT)
         return 0;
     BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
 

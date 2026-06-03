@@ -83,14 +83,14 @@ void BasicGrid::init(RectI lArea, F32 lSquareSize)
 }
 
 //-----------------------------------------------------------------------------------------------------
-S32 BasicGrid::getNodeIndex(F32 x, F32 y, bool lPrec)
+S32 BasicGrid::getNodeIndex(F32 x, F32 y)
 {
 	if (!isInitialized()) return -1;
-	// 1. Check if the point is within the general area first
+	//  Check if the point is within the general area first
 	if (!mArea.pointInRect({ static_cast<S32>(x), static_cast<S32>(y) }))
 		return -1;
 
-	// 2. Calculate the "relative" grid position
+	//  Calculate the "relative" grid position
 	F32 fx = (x - mArea.getPoint().x) / mSquareSize;
 	F32 fy = (y - mArea.getPoint().y) / mSquareSize;
 
@@ -110,7 +110,7 @@ S32 BasicGrid::getNodeIndex(F32 x, F32 y, bool lPrec)
 BasicGridNode* BasicGrid::findNode(F32 x, F32 y, S32 &nodeIndex)
 {
 	if (!isInitialized()) return nullptr;
-	nodeIndex = getNodeIndex(x, y, true);
+	nodeIndex = getNodeIndex(x, y);
 	if (nodeIndex >= 0)
 		return &mNodes[nodeIndex];
 	else
@@ -121,7 +121,7 @@ BasicGridNode* BasicGrid::findNode(F32 x, F32 y, S32 &nodeIndex)
 BasicGridNode* BasicGrid::findNode(F32 x, F32 y)
 {
 	if (!isInitialized()) return nullptr;
-	S32 lNodeIndex = getNodeIndex(x,y, true);
+	S32 lNodeIndex = getNodeIndex(x,y);
 	if (lNodeIndex >= 0)
 		return &mNodes[lNodeIndex];
 	else

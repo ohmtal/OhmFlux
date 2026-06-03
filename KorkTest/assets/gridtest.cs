@@ -1,39 +1,82 @@
 exec("assets/tools.cs"); //need absolute path! FIXME? nah
+// -----------------------------------------------------------------------------
+// Demo cleanup
+if (!isObject(CleanupSet)) new SimSet(CleanupSet);
+else CleanupSet.deleteObjects();
+// -----------------------------------------------------------------------------
+function GridTest::Init(%this) {
+    // Setup Grid
+    %this.grid = new Grid();
+    %x = 0; %y = 0;
+    %w = 16; %h = 16;
+    %this.grid.start = %x SPC %y;
+    %this.grid.end  = %x + %w -1 SPC %y + %w - 1;
+    %area  = %this.grid.start SPC %w SPC %h;
+    %this.grid.squareSize = 1.0;
+    echo("INIT:" SPC  %this.grid.init(%area, %this.grid.squareSize));
+    %this.grid.getinfo();
+    %this.add(%this.grid);
+    %this.grid.addRandomMud();
 
-//FIXME for a real test i need to render a grid with weight, path, neighbour check and so on
-
-$g = new Grid();
-$start = "1 1"; // "0 0" is a problem on path ?!
-$end   = "120 240";
-echo("INIT:" SPC $g.init($start SPC $end, 8));
-echo("NODECOUNT " SPC $g.getNodeCount());
-$g.getinfo();
-
-//random mud
-for( $i = 0; $i < $g.getNodeCount() / 3; $i++ ) {
-    $n = getRandom($g.getNodeCount() - 1);
-    $w = getRandom(50,255);
-    // echo("set NODE" SPC $n SPC "to" SPC byteToHex($w));
-    $g.setWeightByNodeId($n, $w);
+    %this.path = %this.grid.findPath( %this.grid.start, %this.grid.end, true);
+    if ( isObject(%this.path) ) %this.add( %this.path );
 }
 
-// draw grid ...
-$vert = $g.getNodeCountY();
-$hor  = $g.getNodeCountX();
-echo("GRID IS:" SPC $hor SPC "x" SPC $vert );
-for ($i = 0; $i < $vert; $i++) {
-    $line = "";
-    for ($j=0; $j < $hor; $j++) {
-        $line = $line SPC byteToHex($g.getWeightByNodeId( $i * $j));
+
+function Grid::addRandomMud(%this) {
+    %cnt = %this.getNodeCount();
+    for( %i = 0; %i < %cnt / 3; %i++ ) {
+        %n = getRandom(%cnt - 1);
+        %w = getRandom(50,255);
+        %this.setWeightByNodeId(%n, %w);
     }
-    echo ($line);
+}
+
+
+function GridTest::onRender(%this,%dt) {
+    %vert = %this.grid.getNodeCountY();
+    %hor  = %this.grid.getNodeCountX();
+    // echo("GRID IS:" SPC %hor SPC "x" SPC %vert );
+    %idx = 0;
+    for (%i = 0; %i < %vert; %i++) {
+        %line = "";
+        for (%j=0; %j < %hor; %j++) {
+            %line = %line SPC byteToHex(%this.grid.getWeightByNodeId( %idx ));
+            %idx++;
+        }
+        // echo (%line);
+        %this.writeText(50,%i*30 + 50,%line, $align::left );
+    }
+    // path
+    if ( isObject(%this.path) ) {
+        %cnt = %this.path.getDynamicFieldCount();
+        for (%i = 0; %i < %cnt; %i++) {
+            %pos = %this.path.getFieldValue("node" @ %i);
+            if ( %pos !$= "" ) {
+                //FIXME calc pos to text position
+                %this.writeText(getWord(%pos,0) * 50  + 52, getWord(%pos,1) * 30 + 50,"x", $align::left, "0 0 1" );
+            }
+        }
+    }
 }
 
 
 
-// path test .......
-$path = $g.findPath($start, $end, true);
-if (!isObject($path)) error("PATH FAILED FROM " SPC $start SPC "TO" SPC $end);
+function GridTest::onRemove(%this) {
+    %this.deleteObjects();
+}
+
+
+
+// -------- --------- ----------
+$game = new GameCtrl() { class = "GridTest"; };
+$game.init();
+CleanupSet.add($Game);
+
+
+
+// -----------------------------------------------------------------------------
+//FIXME for a real test i need to render a grid with weight, path, neighbour check and so on
 function walk(%path)
 {
     if (!isObject(%path))
@@ -57,9 +100,48 @@ function walk(%path)
 
     return true;
 }
+function TestGrid() {
+    $g = new Grid();
+    %x = 0; %y = 0;
+    %w = 9; %h = 9;
+    $start = %x SPC %y;
+    $end   = %x + %w -1 SPC %y + %w - 1;
+    $size  = %w SPC %h;
+    echo("INIT:" SPC $g.init($start SPC $size, 1));
+    echo("NODECOUNT " SPC $g.getNodeCount());
+    $g.getinfo();
 
-while (isObject($path)) walk($path);
+    //random mud
+    for( $i = 0; $i < $g.getNodeCount() / 3; $i++ ) {
+        $n = getRandom($g.getNodeCount() - 1);
+        $w = getRandom(50,255);
+        // echo("set NODE" SPC $n SPC "to" SPC byteToHex($w));
+        $g.setWeightByNodeId($n, $w);
+    }
 
-//...... cleanup
-$g.delete();
-// $path.delete();
+    // draw grid ...
+    $vert = $g.getNodeCountY();
+    $hor  = $g.getNodeCountX();
+    echo("GRID IS:" SPC $hor SPC "x" SPC $vert );
+    $idx = 0;
+    for ($i = 0; $i < $vert; $i++) {
+        $line = "";
+        for ($j=0; $j < $hor; $j++) {
+            $line = $line SPC byteToHex($g.getWeightByNodeId( $idx ));
+            $idx++;
+        }
+        echo ($line);
+    }
+
+    // path test .......
+    $path = $g.findPath($start, $end, true);
+    if (!isObject($path)) error("PATH FAILED FROM " SPC $start SPC "TO" SPC $end);
+
+
+    while (isObject($path)) walk($path);
+
+    //...... cleanup
+    $g.delete();
+}
+
+ // TestGrid();

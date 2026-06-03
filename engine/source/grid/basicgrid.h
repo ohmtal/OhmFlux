@@ -158,7 +158,7 @@ public:
    S32 getNodeToNodeCosts(Point2F from, Point2F to);
 
 
-   S32  getNodeIndex(F32 x, F32 y, bool lPrec = false); //lPrec = more precise by float params, but slower
+   S32  getNodeIndex(F32 x, F32 y);
    BasicGridNode* getNeighbour(BasicGridNode* startNode, U8 direction, S32 &nodeIndex);
 
    bool getNodesByRect(const RectF &lRect, std::vector<S32> &lList, bool lCanOverlap = false);
