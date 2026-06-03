@@ -1,36 +1,29 @@
-function byteToHex(%value)
-{
-    %value = %value & 0xFF;
-    %map = "0123456789ABCDEF"; // Uppercase variant
-
-    %high = getSubStr(%map, (%value >> 4), 1);
-    %low  = getSubStr(%map, (%value & 0xF), 1);
-
-    return %high @ %low;
-}
-
-
-
-
+exec("assets/tools.cs"); //need absolute path! FIXME? nah
 
 //FIXME for a real test i need to render a grid with weight, path, neighbour check and so on
+
 $g = new Grid();
-echo("INIT:" SPC $g.init("0 0 512 512", 32));// 32 =>16x16
+$start = "1 1"; // "0 0" is a problem on path ?!
+$end   = "120 240";
+echo("INIT:" SPC $g.init($start SPC $end, 8));
 echo("NODECOUNT " SPC $g.getNodeCount());
 $g.getinfo();
 
 //random mud
-for( $i = 0; $i < 50; $i++ ) {
+for( $i = 0; $i < $g.getNodeCount() / 3; $i++ ) {
     $n = getRandom($g.getNodeCount() - 1);
     $w = getRandom(50,255);
     // echo("set NODE" SPC $n SPC "to" SPC byteToHex($w));
     $g.setWeightByNodeId($n, $w);
 }
 
-// draw grid
-for ($i = 0; $i < 16; $i++) {
+// draw grid ...
+$vert = $g.getNodeCountY();
+$hor  = $g.getNodeCountX();
+echo("GRID IS:" SPC $hor SPC "x" SPC $vert );
+for ($i = 0; $i < $vert; $i++) {
     $line = "";
-    for ($j=0; $j<16; $j++) {
+    for ($j=0; $j < $hor; $j++) {
         $line = $line SPC byteToHex($g.getWeightByNodeId( $i * $j));
     }
     echo ($line);
@@ -39,7 +32,8 @@ for ($i = 0; $i < 16; $i++) {
 
 
 // path test .......
-$path = $g.findPath("16 16", "500 500", true);
+$path = $g.findPath($start, $end, true);
+if (!isObject($path)) error("PATH FAILED FROM " SPC $start SPC "TO" SPC $end);
 function walk(%path)
 {
     if (!isObject(%path))

@@ -99,11 +99,16 @@ ConsoleMethod(Grid,init, ConsoleBool, 4, 4, "param: area: x y w h, F32 SquareSiz
 
 ConsoleMethod(Grid,getNodeCount, ConsoleInt, 2, 2, "get count of nodes")
 {
-
     return object->mGrid.getNodeCount();
 }
-
-
+ConsoleMethod(Grid,getNodeCountX, ConsoleInt, 2, 2, "get horizontal count of nodes")
+{
+    return object->mGrid.getNodesX();
+}
+ConsoleMethod(Grid,getNodeCountY, ConsoleInt, 2, 2, "get vertical count of nodes")
+{
+    return object->mGrid.getNodesY();
+}
 
 ConsoleMethod(Grid, getPos, ConsoleString, 4, 4, "x,y; return pos ")
 {
