@@ -195,7 +195,8 @@ namespace KorkFlux {
             return false;
 
 
-
+        // SDL_SetLogPriorities(SDL_LOG_PRIORITY_VERBOSE);  //emscript redirect test
+        // NOTE: does NOT work with emscritpen !!!!
         SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
         console.OnCommand = [this](ImConsole* console, const char* command_line) {
             OnConsoleCommand(console, command_line);

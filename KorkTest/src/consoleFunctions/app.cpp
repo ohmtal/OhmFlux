@@ -15,6 +15,10 @@ ConsoleFunction(setFullScreen, ConsoleBool, 2,2, "bool value") {
     return getScreenObject()->setFullScreen(dAtob(argv[1]));
 }
 
+ConsoleFunction(getFrameTime, ConsoleFloat, 1,1, "") {
+    return getFrameTime();
+}
+
 ConsoleFunction(getFPS, ConsoleInt, 1,1, "") {
     return gMain->getFPS();
 }

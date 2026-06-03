@@ -249,7 +249,8 @@ function invaderGame::drawHigh(%this,%dt)
 
 
 function invaderGame::onRender(%this,%dt) {
-
+  // compat
+  %dt *= 1000;
   //drawBackground
   %this.drawstretch(invaderGame.img_back,0,400,300,99,800,600,0,false,false);
 
