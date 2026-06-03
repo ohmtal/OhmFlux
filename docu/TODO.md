@@ -1,6 +1,10 @@
 # TODO
 
-- [ ] Sound + TTF-Font + Texture should be (a FluxResource and )  added to GarbageCollection 
+- [ ] Emscripten with pthread - failed and rolled back because it was too late at night ;)
+
+---
+
+- [?] Sound + TTF-Font + Texture should be (a FluxResource and )  added to GarbageCollection 
 
 - [ ] write a docu about setup android project / grade / icons / and so on 
   - Tools: make_android_icons.py, make_windows_icon.py

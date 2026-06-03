@@ -215,10 +215,12 @@ endif()
 
 
 if(EMSCRIPTEN)
-    add_compile_options("-sUSE_SDL=3" "-pthread")
-    # add_link_options("-sUSE_SDL=3" "-sFULL_ES3=1" "-sUSE_WEBGL2=1" "-sALLOW_MEMORY_GROWTH=1")
+ # FIXME threaded
+    add_compile_options("-sUSE_SDL=3" #[["-pthread"]])
     add_link_options(
-        "-pthread"
+        # "-pthread"
+        "-sOFFSCREEN_FRAMEBUFFER=1"
+
         "-sUSE_SDL=3"
         "-sFULL_ES3=1"
         "-sUSE_WEBGL2=1"
@@ -366,6 +368,8 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
             RUNTIME_OUTPUT_DIRECTORY "${ABS_OUT_DIR}"
         )
 
+        # FIXME threaded
+        # target_compile_options(${TARGET_NAME} PRIVATE "-pthread")
         target_link_options(${TARGET_NAME} PRIVATE
             "-sUSE_SDL=3"
             "-sMAX_WEBGL_VERSION=2"
@@ -374,6 +378,16 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
             "-sALLOW_MEMORY_GROWTH=1"
             "-sNO_EXIT_RUNTIME=1"
             "-sMINIFY_HTML=1"
+
+            # "-pthread"
+            # "-sPTHREAD_POOL_SIZE=4"
+            # "-sEXIT_RUNTIME=0"
+            # "-sFULL_ES3=1"
+            # "-sUSE_WEBGL2=1"
+            # # "-sPROXY_TO_PTHREAD=1"
+            # "-sOFFSCREEN_FRAMEBUFFER=1"
+            # "-sEMULATE_FUNCTION_POINTER_CASTS=1"
+
         )
 
         if(CMAKE_BUILD_TYPE STREQUAL "Release")

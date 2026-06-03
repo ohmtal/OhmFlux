@@ -417,13 +417,30 @@ void HandleAudioResume() {
 //-------------------------------------------------------------------------------
 // webGL main loop:
 //-------------------------------------------------------------------------------
+// FIXME threaded
+// void EMSCRIPTEN_KEEPALIVE emscripten_loop_wrapper(void* arg)
+// {
+// 	if (!arg) return;
+//
+// 	FluxMain* app = static_cast<FluxMain*>(arg);
+// 	app->IterateFrame();
+// }
+
+
 // This wrapper bridges the C-style callback to your C++ class instance
 void emscripten_loop_wrapper(void* arg)
 {
+
+
+	if (!arg) {
+		SDL_Log("[error] emscripten_loop_wrapper arg is null!")	;
+		return;
+	}
 	// On the first mouse click or key press, try to resume
 	static bool audioResumed = false;
 	if (!audioResumed) {
 		// Check for any SDL input event
+		SDL_PumpEvents();
 		SDL_Event event;
 		if (SDL_PeepEvents(&event, 1, SDL_PEEKEVENT, SDL_EVENT_MOUSE_BUTTON_DOWN, SDL_EVENT_KEY_DOWN) > 0) {
 			HandleAudioResume();
@@ -450,6 +467,11 @@ void FluxMain::Execute() {
 	// 0 = use requestAnimationFrame, 1 = simulate infinite loop
 	emscripten_set_main_loop_arg(emscripten_loop_wrapper, this, 0, 1);
 	emscripten_set_main_loop_timing(EM_TIMING_RAF, 1); //force RAF
+
+	// FIXME threaded
+	// switched to thread 0.260602
+	// emscripten_set_main_loop_arg(emscripten_loop_wrapper, this, 0, 0);
+	// emscripten_set_main_loop_timing(EM_TIMING_RAF, 1); //force RAF
 	#else
 	while (mRunning) {
 		IterateFrame();
