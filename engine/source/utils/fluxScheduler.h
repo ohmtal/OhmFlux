@@ -18,6 +18,7 @@
 // });
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
+// NOTE: this break EMSCRIPTEN BUILD !!!
 // threaded single schedule example :
 // std::thread([this, delay]() {
 //     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(delay * 1000)));

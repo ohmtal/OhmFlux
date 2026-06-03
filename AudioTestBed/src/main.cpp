@@ -104,32 +104,33 @@ void SDLCALL ConsoleLogFunction(void *userdata, int category, SDL_LogPriority pr
 }
 
 //--------------------------------------------------------------------------------------
-struct StreamWorkerThreadData {
-    std::unordered_map<std::string, std::unique_ptr<FluxAudio::AudioInstance>>* instanceMap;
-    SDL_AtomicInt running;
-    SDL_AtomicInt locked;
-};
-
-// SDL_Thread test:
-int SDLCALL streamWorkerThread(void* userData) {
-    auto* data = static_cast<StreamWorkerThreadData*>(userData);
-    if (!data || !data->instanceMap) return -1;
-
-    while (SDL_GetAtomicInt(&data->running)) {
-        if ( SDL_GetAtomicInt(&data->locked) != 1)
-        {
-            for (auto& [filename, instance] : *(data->instanceMap)) {
-                if (instance) {
-                    instance->UpdateStream();
-                }
-            }
-        }
-
-        SDL_Delay(32);
-    }
-
-    return 0;
-}
+// NOTE Emscripten and threads => Bad idea
+// struct StreamWorkerThreadData {
+//     std::unordered_map<std::string, std::unique_ptr<FluxAudio::AudioInstance>>* instanceMap;
+//     SDL_AtomicInt running;
+//     SDL_AtomicInt locked;
+// };
+//
+// // SDL_Thread test:
+// int SDLCALL streamWorkerThread(void* userData) {
+//     auto* data = static_cast<StreamWorkerThreadData*>(userData);
+//     if (!data || !data->instanceMap) return -1;
+//
+//     while (SDL_GetAtomicInt(&data->running)) {
+//         if ( SDL_GetAtomicInt(&data->locked) != 1)
+//         {
+//             for (auto& [filename, instance] : *(data->instanceMap)) {
+//                 if (instance) {
+//                     instance->UpdateStream();
+//                 }
+//             }
+//         }
+//
+//         SDL_Delay(32);
+//     }
+//
+//     return 0;
+// }
 //-----------------------------------------------------------------------------
 class AudioTestBed : public FluxMain
 {
@@ -159,8 +160,8 @@ class AudioTestBed : public FluxMain
     std::unordered_map<std::string, std::unique_ptr<FluxAudio::AudioInstance>> mInstanceMap;
 
 
-     SDL_Thread* mWorkerThreadID = nullptr;
-     StreamWorkerThreadData mWorkerThreadData;
+     // SDL_Thread* mWorkerThreadID = nullptr;
+     // StreamWorkerThreadData mWorkerThreadData;
 
 public:
     bool Initialize() override
@@ -201,8 +202,8 @@ public:
         AudioResourceManager.Initialize(); //FIXME move to Ohmflux
 
 
-        mWorkerThreadData = { &mInstanceMap, {1}, {0} }; // Start with running = 1 and locked = 0
-        mWorkerThreadID = SDL_CreateThread(streamWorkerThread, "AudioWorker", &mWorkerThreadData);
+        // mWorkerThreadData = { &mInstanceMap, {1}, {0} }; // Start with running = 1 and locked = 0
+        // mWorkerThreadID = SDL_CreateThread(streamWorkerThread, "AudioWorker", &mWorkerThreadData);
 
 
         mAudioRecorder.OnRecordingDone = [this]() { this->OnRecordingDone(); };
@@ -219,8 +220,8 @@ public:
         mGuiGlue->Deinitialize();
 
         // stop thread
-        SDL_SetAtomicInt(&mWorkerThreadData.running, 0);
-        SDL_WaitThread( mWorkerThreadID, NULL );
+        // SDL_SetAtomicInt(&mWorkerThreadData.running, 0);
+        // SDL_WaitThread( mWorkerThreadID, NULL );
 
         Parent::Deinitialize();
     }
@@ -255,10 +256,9 @@ public:
     {
 
         // update audio instances
-        // for (auto& [filename, instance] : mInstanceMap) {
-        //     // instance->Update(dt, nullptr);
-        //     instance->UpdateStream();
-        // }
+        for (auto& [filename, instance] : mInstanceMap) {
+            instance->UpdateStream();
+        }
 
 
         Parent::Update(dt);
@@ -356,7 +356,7 @@ public:
 
 
 
-        SDL_SetAtomicInt(&mWorkerThreadData.locked, 1);
+        // SDL_SetAtomicInt(&mWorkerThreadData.locked, 1);
 
         if (!SDL_SetAudioPostmixCallback(AudioManager.getDeviceID(), FinalMixCallback, &mAudioRecorder)) {
             dLog("[error] can NOT open PostMix Device !!! %s", SDL_GetError());
@@ -372,7 +372,7 @@ public:
         }
         mAudioRecorder.active = true;
 
-        SDL_SetAtomicInt(&mWorkerThreadData.locked, 0);
+        // SDL_SetAtomicInt(&mWorkerThreadData.locked, 0);
 
     }
 
