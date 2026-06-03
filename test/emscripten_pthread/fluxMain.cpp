@@ -1,0 +1,688 @@
+//-----------------------------------------------------------------------------
+// // Copyright (c) 2012 Thomas Hühn (XXTH)
+// SPDX-License-Identifier: MIT
+//-----------------------------------------------------------------------------
+
+#include "core/fluxGlobals.h"
+#include <SDL3/SDL.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
+#include <assert.h>
+#include <vector>
+#include <time.h>
+#include <algorithm>
+#include <filesystem>
+
+#include "fluxMain.h"
+#include "core/fluxMath.h"
+#include "utils/fluxStr.h"
+#include "utils/errorlog.h"
+#include "render/fluxRender2D.h"
+#include "particle/fluxParticleManager.h"
+#include "utils/fluxScheduler.h"
+
+double gFrameTime = 0.f; // we need that Global for timming
+double gGameTime  = 0.f;
+
+extern FluxQuadtree* g_CurrentQuadTree;
+//--------------------------------------------------------------------------------------
+FluxMain::FluxMain()
+{
+	 // _instance = this;
+
+	FluxBaseObject();
+	mSettings.ScreenWidth  = 1152; //800;
+	mSettings.ScreenHeight = 648; //600;
+	mSettings.FullScreen   = false;
+	mSettings.initialVsync = true;
+	mSettings.ScaleScreen  = true;
+
+	mSettings.Caption        = "Flux";
+	mSettings.Version        = "0.260104";
+	mSettings.IconFilename   = nullptr;
+	mSettings.CursorFilename = nullptr;
+	mSettings.cursorHotSpotX = 0;
+	mSettings.cursorHotSpotY = 0;
+
+
+
+}
+
+FluxMain::~FluxMain() {
+
+}
+
+
+//--------------------------------------------------------------------------------------
+bool FluxMain::Initialize()
+{
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+	if (mSettings.enableLogFile)
+	{
+#ifdef FLUX_DEBUG
+		std::string lLogFileString = FluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+#else 
+		std::string lLogFileString = mSettings.getPrefsPath() 
+				+ FluxStr::sanitizeFilenameWithUnderScores(mSettings.Caption) + ".log";
+#endif
+		InitErrorLog(lLogFileString.c_str(),this->mSettings.Caption,this->mSettings.Version);
+	}
+
+#endif
+	LogFMT("{} running on {}", mSettings.Caption, SDL_GetPlatform());
+
+	gAppStatus.Visible		 = true;
+	gAppStatus.Paused		 = false;
+	gAppStatus.MouseFocus	 = true;
+	gAppStatus.KeyboardFocus = true;
+
+	mLastTick = SDL_GetPerformanceCounter(); //SDL_GetTicks64();
+
+	//seed random number generator
+    srand((unsigned) time(nullptr));
+
+	g_CurrentScreen = new FluxScreen();
+	// mScreen = new FluxScreen();
+	if(getScreen()->getVideoFailed())
+	{
+		Log("Failed to init  Video / Audio  or Shader");
+		return false;
+	}
+	Log("Setup Screen: Resolution:%d x %d, FullScreen: %d"
+		,mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen);
+
+
+	if (!getScreen()->prepareMode(mSettings))
+	{
+		Log("Failed to prepareMode(%d,%d,%d,%d)",mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen, mSettings.initialVsync);
+		return false;
+	}
+	if (!getScreen()->init())
+		return false;
+
+
+	getScreen()->setVSync(mSettings.initialVsync);
+
+	getScreen()->setScaleScreen(mSettings.ScaleScreen);
+
+	if (mSettings.Caption)
+		getScreen()->setCaption(mSettings.Caption);
+
+	if (mSettings.IconFilename )
+		getScreen()->setIcon(mSettings.IconFilename);
+
+	if (mSettings.CursorFilename)
+		getScreen()->setCursor(mSettings.CursorFilename, mSettings.cursorHotSpotX, mSettings.cursorHotSpotY);
+
+
+	//some informations
+	Log("---------------------------------------");
+	Log("CPU Cores: %d with %dbytes cache, %dMiB RAM."
+	, SDL_GetNumLogicalCPUCores(), SDL_GetCPUCacheLineSize()
+	, SDL_GetSystemRAM());
+
+	// display
+	SDL_DisplayID lDisplayID = SDL_GetDisplayForWindow(getScreen()->getWindow());
+	const SDL_DisplayMode *  lDM = new SDL_DisplayMode();
+	lDM = SDL_GetCurrentDisplayMode(lDisplayID);
+	if (!lDM) {
+		Log("SDL failed to get Displaymode: %s", SDL_GetError());
+		lDM = SDL_GetDesktopDisplayMode(lDisplayID);
+	}
+	if (lDM)
+		Log("Display (%d) resolution: %dx%d, refresh rate: %6.2f)", lDisplayID, lDM->w, lDM->h, lDM->refresh_rate);
+	else
+		Log("SDL failed to get DesktopMode: %s", SDL_GetError());
+// #endif
+
+	Log( "Renderer  : %s",glGetString(GL_RENDERER));
+	Log( "Vendor    : %s",glGetString(GL_VENDOR));
+	Log( "GLVersion : %s",glGetString(GL_VERSION));
+	Log("---------------------------------------");
+
+	if (mSettings.useQuadTree) {
+		g_CurrentQuadTree = new FluxQuadtree(mSettings.WorldBounds);
+	}
+
+	// init custom SDL events
+	FLUX_EVENT_SCALE_CHANGED =  SDL_RegisterEvents(1);
+	if (FLUX_EVENT_SCALE_CHANGED == (Uint32)-1) {
+		Log("ERROR: Failed to register SDL/FLUX Event: FLUX_EVENT_SCALE_CHANGED !!!!");
+	}
+
+
+	return true;
+}
+//--------------------------------------------------------------------------------------
+bool FluxMain::CleanQueue(){
+	// Cleanup Game Objects
+	dLog("FluxMain: Cleaning up queued game objects");
+	for (auto* obj : mQueueObjects) {
+		auto* baseObj = static_cast<FluxBaseObject*>(obj); // Explicit cast if needed
+		SAFE_DELETE(baseObj);
+	}
+	mQueueObjects.clear();
+
+	// Cleanup Textures
+	dLog("FluxMain: Cleaning up Texture resources");
+	for (auto& [key, val] : mTextureCache) {
+		SAFE_DELETE(val);
+	}
+	mTextureCache.clear();
+
+	return true;
+}
+
+
+//--------------------------------------------------------------------------------------
+void FluxMain::Deinitialize()
+{
+	// Shutdown scheduler
+	dLog("FluxMain: shutdown FluxSchedule");
+	FluxSchedule.shutdown();
+
+	CleanQueue();
+
+	dLog("FluxMain: Cleaning up screen");
+	SAFE_DELETE(g_CurrentScreen);
+
+	if (g_CurrentQuadTree)
+	{
+		dLog("FluxMain: Cleaning up quad tree");
+		g_CurrentQuadTree->clear();
+		SAFE_DELETE(g_CurrentQuadTree);
+	}
+
+	CloseErrorLog();
+}
+//--------------------------------------------------------------------------------------
+/*
+ * add to queue
+ *
+ */
+// void FluxMain::queueObject(FluxBaseObject* lObject)
+// {
+// 	mQueueObjects.push_back(lObject);
+// }
+void FluxMain::queueObject(FluxBaseObject* lObject)
+{
+	if (lObject == nullptr) return;
+
+	// Check if it already exists in the queue
+	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
+
+	if (it == mQueueObjects.end()) {
+		// deffered add on next tick
+		FluxSchedule.add(0.f, this, [this,  lObject]() {
+			this->mQueueObjects.push_back(lObject);
+		});
+
+	} else {
+		Log(">>>>>>>>>>> FluxMain::queueObject :: Object already queued, skipping. <<<<<<<<<<<<<<<<<<<<<<");
+	}
+}
+
+/**
+ * only unqueue
+ */
+bool FluxMain::unQueueObject(FluxBaseObject* lObject)
+{
+
+	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
+	if (it != mQueueObjects.end()) {
+		mQueueObjects.erase(it);
+		return true;
+	}
+
+	return false;
+}
+/**
+ * unqueue from render Queue and add to mDeletedObjects
+ */
+bool FluxMain::queueDelete(FluxBaseObject* lObject)
+{
+	// 1. Find the object in the vector
+	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
+
+	// 2. If found, move to deleted list and erase from active queue
+	if (it != mQueueObjects.end())
+	{
+		mDeletedObjects.push_back(*it);
+		mQueueObjects.erase(it);
+		return true;
+	}
+
+	return false;
+}
+//--------------------------------------------------------------------------------------
+// Texture load wrapper
+// 2026-01-01 optimized with thread safety and prevent multiple loading
+FluxTexture* FluxMain::loadTexture(std::string filename, int cols, int rows, bool setColorKeyAtZeroPixel, bool usePixelPerfect)
+{
+	// Create a key using string_view to avoid allocation during the search
+	// Note: We use a helper auto-key to check existence
+	auto lookupKey = std::make_tuple(std::string_view(filename), cols, rows, setColorKeyAtZeroPixel, usePixelPerfect);
+
+	// Transparent Lookup
+	auto it = mTextureCache.find(lookupKey);
+	if (it != mTextureCache.end()) {
+		return it->second;
+	}
+
+	// --- Cache Miss: Now we proceed with loading ---
+	FluxTexture* result = new FluxTexture();
+	if (!usePixelPerfect) result->setUseTrilinearFiltering();
+
+
+	#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+	bool exits = std::filesystem::exists(filename);
+	if (!exits)  filename = getGamePath() + filename;
+	if (!std::filesystem::exists(filename)) {
+		LogFMT("[error]Unable to load Texture: File {} does not exists.", filename );
+		return nullptr;
+	}
+	#endif
+
+
+	bool success = (!setColorKeyAtZeroPixel)
+	? result->loadTextureDirect(filename.c_str())
+	: result->loadTexture(filename.c_str(), setColorKeyAtZeroPixel);
+
+	if (!success) {
+		LogFMT("[error] Cannot load graphic: {}", filename);
+		SAFE_DELETE(result);
+		return nullptr;
+	}
+
+	result->setParts(cols, rows);
+
+	// Store in cache: Only here is the string actually copied/allocated
+	mTextureCache.emplace(lookupKey, result);
+
+	return result;
+}
+
+
+// FluxTexture* FluxMain::loadTexture(const char* filename, int cols, int rows, bool setColorKeyAtZeroPixel, bool usePixelPerfect)
+// {
+// 	FluxTexture* result = new FluxTexture();
+// 	if (!usePixelPerfect) result->setUseTrilinearFiltering();
+//
+// 	bool success = false;
+//
+// 	// If no software-colorkeying is requested, use the Fast Path
+// 	if (!setColorKeyAtZeroPixel) {
+// 		success = result->loadTextureDirect(filename);
+// 	} else {
+// 		// Use the Surface-based path (Double-copy) because it's required for ColorKeying
+// 		success = result->loadTexture(filename, setColorKeyAtZeroPixel);
+// 	}
+//
+// 	if (!success) {
+// 		Log("Cannot load graphic: %s", filename);
+// 		SAFE_DELETE(result);
+// 		return nullptr;
+// 	}
+//
+// 	result->setParts(cols, rows);
+// 	mTextures.push_back(result);
+// 	return result;
+// }
+//--------------------------------------------------------------------------------------
+bool FluxMain::toggleFullScreen()
+{
+  gAppStatus.Visible = false;
+  bool result = getScreen()->toggleFullScreen();
+  gAppStatus.Visible = true;
+  return result;
+}
+//--------------------------------------------------------------------------------------
+void FluxMain::Update(const double& dt)
+{
+	FluxSchedule.update(dt);
+
+	for (U32 i = 0; i < mQueueObjects.size(); )
+	{
+		FluxBaseObject* obj = mQueueObjects[i];
+		if (obj)
+			obj->Update(dt);
+
+
+		if (i < mQueueObjects.size() && mQueueObjects[i] == obj)
+			++i;
+	}
+	ParticleManager.Update(dt);
+}
+//--------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------
+void FluxMain::Draw() {
+	assert(getScreen());
+    /* layers ... init */
+	// disabled for batch rendering
+	// glEnable(GL_DEPTH_TEST);
+	// glDepthFunc(GL_LEQUAL);
+
+	// Inside your main render loop, before drawing anything:
+	// glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	// ADD GL_DEPTH_BUFFER_BIT TO THE CLEAR COMMAND:
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//Camera
+	Render2D.beginFrame();
+
+	for (auto* obj : mQueueObjects)
+	{
+		if (obj && obj->getVisible())
+		{
+			obj->Draw();
+		}
+	}
+
+	onDraw();
+	ParticleManager.Draw();
+	/* layers ... end */ 
+	Render2D.renderBatch();
+
+	onDrawTopMost();
+
+	// disabled for batch rendering
+    // glClear(GL_DEPTH_BUFFER_BIT);
+    // glDisable(GL_DEPTH_TEST);
+}
+
+//--------------------------------------------------------------------------------------
+void FluxMain::Execute() {
+	if (!Initialize()) {
+		Log("App init failed: %s", SDL_GetError());
+		exit(1);
+	}
+
+	mPerformanceFrequency = SDL_GetPerformanceFrequency();
+	// INITIALIZE time once here before the loop starts
+	mLastTick = SDL_GetPerformanceCounter();
+	mRunning = true;
+
+#ifdef __EMSCRIPTEN__
+	mSettings.maxFPS = 120;
+#endif
+
+	while (mRunning) {
+		IterateFrame();
+	}
+	Deinitialize(); // Cleanup once on Desktop
+	// #endif
+}
+
+//--------------------------------------------------------------------------------------
+void FluxMain::setupMousePositions( F32 lX, F32 lY ) //SDL2 compat  SDL_MouseMotionEvent lMouseMotionEvent )
+{
+
+	gAppStatus.RealMousePos = { lX, lY };
+	gAppStatus.MousePos 	= { lX / getScreen()->getScaleX() , lY / getScreen()->getScaleY() };
+	setupWorldMousePositions( );
+
+}
+//--------------------------------------------------------------------------------------
+// i could also use but to make it more flexible i added the lMousePositon parameter
+void FluxMain::setupWorldMousePositions(  )
+{
+	float zoom = Render2D.getCamera()->getZoom();
+	Point2F cameraPos = Render2D.getCamera()->getPosition(); // Camera's world center
+	Point2F screenSize = getScreen()->getScreenSizeF();
+	Point2F screenCenter = screenSize / 2.0f;
+
+	// 2. Shift click to be relative to screen center (0, 0)
+	Point2F relativeClick = gAppStatus.MousePos - screenCenter;
+
+	// 3. Apply inverse zoom
+	// If zoom > 1 means "zoomed in", you divide. If zoom > 1 means "larger area", you multiply.
+	// Standard logic: worldPos = (screenCoord / zoom) + cameraPos
+	Point2F worldOffset = relativeClick / zoom;
+
+	// 4. Final World Position
+	gAppStatus.WorldMousePos = cameraPos + worldOffset;
+
+}
+//--------------------------------------------------------------------------------------
+void FluxMain::IterateFrame()
+{
+	SDL_Event E;
+
+	// 1. Process ALL pending events in a loop to avoid input lag
+	while (SDL_PollEvent(&E)) {
+		switch (E.type) {
+			case SDL_EVENT_QUIT:
+				mRunning = false;
+				break;
+			case SDL_EVENT_WINDOW_SHOWN:
+				gAppStatus.Visible = true;
+				getScreen()->updateWindowSize(getScreen()->getWidth(), getScreen()->getHeight());
+				break;
+			case SDL_EVENT_WINDOW_HIDDEN:
+				gAppStatus.Visible = false;
+				break;
+			case SDL_EVENT_WINDOW_MINIMIZED:
+				// 2026-05-21 ignore this flag if minimized we skip render!
+				// if (mSettings.PauseMainThreadOnWindowMinimized) {
+					// dLog("[warn]go into pause....");
+					gAppStatus.Visible = false;
+				// }
+				break;
+			case SDL_EVENT_WINDOW_RESTORED:
+				gAppStatus.Visible = true;
+				break;
+			case SDL_EVENT_WINDOW_FOCUS_GAINED:
+				gAppStatus.KeyboardFocus = true;
+				break;
+			case SDL_EVENT_WINDOW_FOCUS_LOST:
+				gAppStatus.KeyboardFocus = false;
+				break;
+			case SDL_EVENT_WINDOW_RESIZED:
+				getScreen()->updateWindowSize((int)E.window.data1, (int)E.window.data2);
+				onWindowSizeChanged();
+				break;
+
+			// case SDL_EVENT_MOUSE_WHEEL:  ==> overwrite  onEvent in you game
+			// 	onMouseWheelEvent(E);
+			// 	break;
+			case SDL_EVENT_MOUSE_MOTION:
+				//  setupMousePositions( E.motion );
+				setupMousePositions( E.motion.x, E.motion.y  );
+
+				break;
+			case SDL_EVENT_KEY_UP:
+			case SDL_EVENT_KEY_DOWN:
+				onKeyEvent(E.key);
+				break;
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
+				onMouseButtonEvent(E.button);
+				break;
+
+			// ~~~ GamePads and JoySticks
+			case SDL_EVENT_JOYSTICK_ADDED: {
+				SDL_Joystick * joystick = SDL_OpenJoystick(E.gdevice.which);
+				if (joystick) {
+					gAppStatus.JoySticks.push_back(joystick);
+					Log("[info] JoyStick connected: %s", SDL_GetJoystickName(joystick));
+				}
+				break;
+			}
+
+			case SDL_EVENT_JOYSTICK_REMOVED: {
+				auto it = std::find_if(gAppStatus.JoySticks.begin(), gAppStatus.JoySticks.end(),
+									   [&](SDL_Joystick* p) {
+										   return SDL_GetJoystickID(p) == E.gdevice.which;
+									   });
+
+				if (it != gAppStatus.JoySticks.end()) {
+					SDL_Log("JoyStick removed: %s", SDL_GetJoystickName(*it));
+					SDL_CloseJoystick(*it);
+					gAppStatus.JoySticks.erase(it);
+				}
+				break;
+			}
+
+			case SDL_EVENT_GAMEPAD_ADDED: {
+				// E.gdevice.which is the instance ID
+				SDL_Gamepad* pad = SDL_OpenGamepad(E.gdevice.which);
+				if (pad) {
+					gAppStatus.Gamepads.push_back(pad);
+					Log("[info] Gamepad connected: %s", SDL_GetGamepadName(pad));
+				}
+				break;
+			}
+
+			case SDL_EVENT_GAMEPAD_REMOVED: {
+				// Find the gamepad by its instance ID
+				auto it = std::find_if(gAppStatus.Gamepads.begin(), gAppStatus.Gamepads.end(),
+										[&](SDL_Gamepad* p) {
+											return SDL_GetGamepadID(p) == E.gdevice.which;
+										});
+
+				if (it != gAppStatus.Gamepads.end()) {
+					SDL_Log("[info] Gamepad removed: %s", SDL_GetGamepadName(*it));
+					SDL_CloseGamepad(*it);
+					gAppStatus.Gamepads.erase(it);
+				}
+				break;
+			}
+
+		}
+		onEvent(E);
+		if (!mOverwriteEventListener) {
+			for (auto* obj : mQueueObjects) {
+				if (obj && obj->isEventListener()) obj->onEvent(E);
+			}
+		}
+
+
+	}
+
+	//  Quit check for Emscripten
+	// if (!mRunning) {
+	// 	#ifdef __EMSCRIPTEN__
+	// 	Deinitialize();
+	// 	emscripten_cancel_main_loop();
+	// 	#endif
+	// 	return;
+	// }
+
+	// Handle Pause
+	if (gAppStatus.Paused) {
+		// #ifndef __EMSCRIPTEN__
+		SDL_WaitEventTimeout(nullptr, 100);
+		// #endif
+		mLastTick = SDL_GetPerformanceCounter();
+		return;
+	}
+
+	//  Time Calculation
+	mTickCount = SDL_GetPerformanceCounter();
+	gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency;
+	//  Delta Time Cap (Prevent logic jumps if browser tab was suspended)
+	if (gFrameTime > 200.0f) gFrameTime = mSettings.updateDt;
+
+	//  Frame Limiter (Native only)
+	if (mSettings.frameLimiter > 0.f && gFrameTime < mSettings.frameLimiter) {
+		// #ifndef __EMSCRIPTEN__
+		SDL_Delay((Uint32)(mSettings.frameLimiter - gFrameTime));
+		// #endif
+		mTickCount = SDL_GetPerformanceCounter();
+		gFrameTime = (double)(mTickCount - mLastTick) / (double)mPerformanceFrequency ;
+	}
+
+	gGameTime += (double)gFrameTime;
+
+	// fps update every 1 second:
+	static double lFpsTimer = 0;
+	static S32 lFrameCounter = 0;
+
+	lFpsTimer += gFrameTime;
+	lFrameCounter++;
+
+	if (lFpsTimer >= 1.0f) { // Every 1 second
+		mFPS = lFrameCounter;
+		lFrameCounter = 0;
+		lFpsTimer -= 1.0f;
+
+		// auto slow down cpu load saving - it's usually lower then maxFPS !
+		if ( mSettings.maxFPS > 0 && mFPS >= mSettings.maxFPS && mSettings.frameLimiter == 0.f) {
+			mSettings.frameLimiter = 1000.f / (F32)mSettings.maxFPS;
+
+			Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating", mFPS);
+
+			// if (mSettings.frameLimiter < 1.f) {
+			// 	mSettings.frameLimiter = 1.f;
+			// 	Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating", mFPS);
+			// }
+			// else {
+			// 	mSettings.frameLimiter += 0.5;
+			// }
+
+		} else if ( mFPS < 25 && mSettings.frameLimiter > 0.f) {
+			if (mSettings.maxFPS < 60)  {
+				mSettings.maxFPS = 60;
+			}
+			Log("[info] Low FPS (%d) detected ... set frameLimiter to ZERO.", mFPS);
+			mSettings.frameLimiter = 0;
+			// FIXME call a low fps event ?! not every sek but we may handle this ....
+		}
+
+	}
+
+
+
+	// fixed update: >>>>>>>>>>>>>>>>>>>>>>>>>
+	static double accumulator = 0.0;
+	accumulator += gFrameTime;
+
+	while (accumulator >= mSettings.updateDt) {
+		Update( accumulator );
+		accumulator -= mSettings.updateDt;
+	}
+
+	//  Render
+	if ( gAppStatus.Visible ) {
+		Draw();
+		SDL_GL_SwapWindow(getScreen()->getWindow());
+		#ifdef __EMSCRIPTEN__
+		emscripten_webgl_commit_frame();
+		#endif
+	} else if (mSettings.frameLimiter < 32.f){
+		// #ifndef __EMSCRIPTEN__
+		SDL_Delay(16); // ~60fps
+		// #endif
+	}
+
+
+	//  Update LastTick AFTER the frame is finished
+	mLastTick = mTickCount;
+
+	//  Memory Cleanup
+	if (!mDeletedObjects.empty()) {
+		for (auto* obj : mDeletedObjects) {
+			delete obj;
+		}
+		mDeletedObjects.clear();
+	}
+}
+
+
+//--------------------------------------------------------------------------------------
+void FluxMain::TerminateApplication(void)
+{
+	static SDL_Event Q;					
+
+	Q.type = SDL_EVENT_QUIT;
+	if(!SDL_PushEvent(&Q)) exit(1);
+
+	return;
+}
+//--------------------------------------------------------------------------------------
