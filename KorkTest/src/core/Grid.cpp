@@ -41,7 +41,18 @@ SimObject * Grid::createPath(Point2F start, Point2F end, const bool smoothPath )
 
     if (result)
     {
+        //NOTE not as easy as in TGE but got it working
+        // 1. need registerObject directly not at the ConsoleMethod
+        // 2. need to set the flags of the VMObject to set the DataField's'
         SimObject * pathObject = new SimObject();
+        if (!pathObject->registerObject()) {
+            Con::errorf("Failed to register path object!");
+            SAFE_DELETE(pathObject);
+            return nullptr;
+        }
+        pathObject->getVMObject()->flags =  KorkApi::ModStaticFields | KorkApi::ModDynamicFields;
+
+        // pathObject->setupVM(vmPublic, ????);
 
         F32 halfSquareSize = mGrid.getSquareSize() / 2;
 
@@ -56,7 +67,10 @@ SimObject * Grid::createPath(Point2F start, Point2F end, const bool smoothPath )
                      (U32)(replyList[i]->getPos().y + halfSquareSize)
             );
 
-            pathObject->setDataField( fieldName, NULL, nbuf );
+            if (!pathObject->setDataField( fieldName, NULL, nbuf )) {
+                 SAFE_DELETE(pathObject);
+                return nullptr;
+            }
 
         }
         return pathObject;
@@ -93,8 +107,6 @@ ConsoleMethod(Grid,getNodeCount, ConsoleInt, 2, 2, "get count of nodes")
 
 ConsoleMethod(Grid, getPos, ConsoleString, 4, 4, "x,y; return pos ")
 {
-
-
     BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
 
     if (lNode)
@@ -437,7 +449,7 @@ ConsoleMethod(Grid, getIntValueByNodeId, ConsoleInt, 4, 4, "nodeId, idx[0..9]")
 
 ConsoleMethod(Grid,getinfo,ConsoleVoid,2,2,"Display Infos on Console")
 {
-    Con::printf("BASIC Grid - id:%d, Area: %d,%d %d,%d NodeCount:%d SquareSize:%f",
+    Con::printf("Grid - id:%d, Area: %d,%d %d,%d NodeCount:%d SquareSize:%f",
                 object->getId(),
                 object->mGrid.getArea().x, object->mGrid.getArea().y,
                 object->mGrid.getArea().w, object->mGrid.getArea().h,
@@ -464,7 +476,7 @@ ConsoleMethod(Grid,findPath,ConsoleInt,4,5,"findPath (Point2F start, Point2F goa
         SimObject * result = object->createPath(start,goal,smooth);
         if (result)
         {
-            result->registerObject();
+            // moved up result->registerObject();
             return result->getId();
         } else
             return 0;

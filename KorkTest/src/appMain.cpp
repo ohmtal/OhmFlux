@@ -61,7 +61,11 @@ namespace KorkFlux {
             if (fs::exists(path) && fs::is_directory(path)) {
                 for (const auto& entry : fs::recursive_directory_iterator(path)) {
                     if (entry.is_regular_file()
-                        &&  ( entry.path().extension() == ".cs" || entry.path().extension() == ".tscript")
+                        &&  (
+                        entry.path().extension() == ".cs"
+                        || entry.path().extension() == ".tscript"
+                        || entry.path().extension() == ".korkscript"
+                        )
 
                     ) {
                         // Full path: luaFiles.push_back(entry.path());
