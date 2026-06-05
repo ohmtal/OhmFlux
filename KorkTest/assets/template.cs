@@ -76,7 +76,7 @@ function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mous
 function Game::onUpdate(%this,%dt) {
   %this.Label1.Caption = getFPS() SPC "FPS";
 
-  %this.label1.shift = ( %this.label1.shift + 0.2) % 360;
+  %this.label1.shift = ( %this.label1.shift + %dt * 10) % 360;
   // modulo now rocks ;) if (%this.label1.shift >= 360) %this.label1.shift = 0;
   %this.Label1.color = shiftColorHue("0 1 0",%this.label1.shift );
 

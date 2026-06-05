@@ -159,9 +159,6 @@ function c(%p) {
     // $foo.bar.counter++; //cause parse error: token is opPLUSPLUS
     echo ("COUNTER IS:" SPC $foo.bar.counter SPC "/" SPC $bar.counter);
  }
-
-
-
 //------------- try to find out why invaderGame crash ......
 
  // testing crash minimal setup
@@ -180,7 +177,6 @@ function c(%p) {
  }
 
  // ParseError(
- function a() { echo ("a"); schedule(100,0,"a"); }
+ function a() { echo ("a");totp(); $ashed = schedule(5000,0,"a"); }
 
-
-
+ function b() { echo("b - a cancel"); cancel ($ashed);}

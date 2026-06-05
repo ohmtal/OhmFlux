@@ -25,7 +25,7 @@ function GridTest::Init(%this) {
 
 function Grid::addRandomMud(%this) {
     %cnt = %this.getNodeCount();
-    for( %i = 0; %i < %cnt / 3; %i++ ) {
+    for( %i = 0; %i < %cnt / 1.5; %i++ ) {
         %n = getRandom(%cnt - 1);
         %w = getRandom(50,255);
         %this.setWeightByNodeId(%n, %w);
@@ -34,7 +34,7 @@ function Grid::addRandomMud(%this) {
 
 
 function GridTest::onRender(%this,%dt) {
-	%this.writeText(5,20, getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
+	%this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
     %vert = %this.grid.getNodeCountY();
     %hor  = %this.grid.getNodeCountX();
     // echo("GRID IS:" SPC %hor SPC "x" SPC %vert );
@@ -42,11 +42,14 @@ function GridTest::onRender(%this,%dt) {
     for (%i = 0; %i < %vert; %i++) {
         %line = "";
         for (%j=0; %j < %hor; %j++) {
-            %line = %line SPC byteToHex(%this.grid.getWeightByNodeId( %idx ));
+        	
+            // %line = %line SPC byteToHex(%this.grid.getWeightByNodeId( %idx ));
+            %weight = %this.grid.getWeightByNodeId( %idx );
+            %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left , %weight SPC "64 64");
             %idx++;
         }
         // echo (%line);
-        %this.writeText(50,%i*30 + 50,%line, $align::left );
+        // %this.writeText(50,%i*30 + 50,%line, $align::left );
     }
     // path
     if ( isObject(%this.path) ) {
@@ -55,7 +58,7 @@ function GridTest::onRender(%this,%dt) {
             %pos = %this.path.getFieldValue("node" @ %i);
             if ( %pos !$= "" ) {
                 //FIXME calc pos to text position
-                %this.writeText(getWord(%pos,0) * 50  + 52, getWord(%pos,1) * 30 + 50,"x", $align::left, "0 0 1" );
+                %this.writeText(getWord(%pos,0) * 50  + 52, getWord(%pos,1) * 30 + 50,"x", $align::left, "0 0 255" );
             }
         }
     }
@@ -146,7 +149,7 @@ function TestGrid() {
 }
 
  // TestGrid();
- // echo("HELLO EDITOR!");
+ echo("HELLO EDITOR!");
 
 
 
