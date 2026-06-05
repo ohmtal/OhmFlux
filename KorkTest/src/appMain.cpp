@@ -92,6 +92,7 @@ namespace KorkFlux {
 
         static bool showConsole = true;
         static bool showMenu = true;
+        static bool openScriptEditor = false; //FIXME settings ?
 
         if (showMenu) {
             if (ImGui::BeginMainMenuBar()) {
@@ -101,7 +102,7 @@ namespace KorkFlux {
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Scripts")) {
-                    static bool openScriptEditor = false; //FIXME settings ?
+
                     ImGui::Checkbox("Open Script Editor", &openScriptEditor);
 
                     ImGui::SeparatorText("Files");
@@ -140,7 +141,7 @@ namespace KorkFlux {
         if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
         console.Draw("Console",&showConsole);
         // ------
-        if (mScriptEditor) mScriptEditor->renderEditors();
+        if (openScriptEditor && mScriptEditor) mScriptEditor->renderEditors();
         // ------
 
         mGuiGlue->DrawEnd();
