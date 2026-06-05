@@ -233,6 +233,7 @@ struct Color4F {
 };
 
 //------------------------------------- Default Colors
+const Color4F cl_NONE        = { -1.0f, -1.0f, -1.0f, -1.0f };
 const Color4F cl_White        = { 1.0f, 1.0f, 1.0f, 1.0f };
 const Color4F cl_Black        = { 0.0f, 0.0f, 0.0f, 1.0f };
 const Color4F cl_Red          = { 1.0f, 0.0f, 0.0f, 1.0f };

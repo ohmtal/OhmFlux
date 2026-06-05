@@ -93,6 +93,7 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align, C
     if (!mTTFont || !mTTFont->getFont()) return result;
     FontData fontData = *mTTFont->getFont();
 
+    if ( color == cl_NONE ) color = mColor;
 
     float startX = pos.x;
     float startY = pos.y;

@@ -34,6 +34,7 @@ function Grid::addRandomMud(%this) {
 
 
 function GridTest::onRender(%this,%dt) {
+	%this.writeText(5,20, getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
     %vert = %this.grid.getNodeCountY();
     %hor  = %this.grid.getNodeCountX();
     // echo("GRID IS:" SPC %hor SPC "x" SPC %vert );
@@ -146,6 +147,7 @@ function TestGrid() {
 
  // TestGrid();
  // echo("HELLO EDITOR!");
+
 
 
 
