@@ -19,6 +19,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+// WARNING! Sin/Cos... are in degrees NOT radian - WHY is Torque2D different ?!
+#define TGE_MATH_COMPAT
+//-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
 #include "console/console.h"
@@ -197,7 +200,86 @@ ConsoleFunctionWithDocs( mLog, ConsoleFloat, 2, 2, ( val ))
 {
    return(mLog(dAtof(argv[1])));
 }
+#ifdef TGE_MATH_COMPAT //---------------------------------------------------
+/*! Use the mSin function to get the sine of the angle val.
+ *   @param val A value in radians.
+ *   @return Returns the sine of val. This value will be in the range [ -1.0 , 1.0 ].
+ *   @sa mAsin
+ */
+ConsoleFunctionWithDocs( mSin, ConsoleFloat, 2, 2, ( val ))
+{
+    return(mSin(dAtof(argv[1])));
+}
 
+/*! Use the mCos function to get the cosine of the angle val.
+ *   @param val A value in radians.
+ *   @return Returns the cosine of val. This value will be in the range [ -1.0 , 1.0 ].
+ *   @sa mAcos
+ */
+ConsoleFunctionWithDocs( mCos, ConsoleFloat, 2, 2, ( val ))
+{
+    return(mCos(dAtof(argv[1])));
+}
+
+/*! Use the mTan function to get the tangent of the angle val.
+ *   @param val A value in radians.
+ *   @return Returns the tangent of val. This value will be in the range [ -inf.0 , inf.0 ].
+ *   @sa mAtan
+ */
+ConsoleFunctionWithDocs( mTan, ConsoleFloat, 2, 2, ( val ))
+{
+    return(mTan(dAtof(argv[1])));
+}
+
+
+/*! Use the mAsin function to get the inverse sine of val in radians.
+ *   @param val A value between -1.0 and 1.0 equal to the sine of some angle theta.
+ *   @return Returns the inverse sine of val in radians. This value will be in the range [ -90, 90 ].
+ *   @sa mSin
+ */
+ConsoleFunctionWithDocs( mAsin, ConsoleFloat, 2, 2, ( val ))
+{
+    return(mAsin(dAtof(argv[1])));
+}
+
+/*! Use the mAcos function to get the inverse cosine of val in radians.
+ *   @param val A value between -1.0 and 1.0 equal to the cosine of some angle theta.
+ *   @return Returns the inverse cosine of val in radians. This value will be in the range [ 0 , 180 ].
+ *   @sa mCos
+ */
+ConsoleFunctionWithDocs( mAcos, ConsoleFloat, 2, 2, ( val ))
+{
+    return(mAcos(dAtof(argv[1])));
+}
+
+/*! Use the mAtan function to get the inverse tangent of rise/run in radians.
+ *   May be called as mAtan( deltaX, deltaY ) or mAtan( "deltaX deltaY" ).
+ *   @param x-axis run Horizontal component of a line.
+ *   @param y-axis rise Vertical component of a line.
+ *   @return Returns the slope in radians (the arc-tangent) of a line with the given run and rise.
+ *   @sa mTan
+ */
+ConsoleFunctionWithDocs( mAtan, ConsoleFloat, 2, 3, ( val ))
+{
+    F32 xRun, yRise;
+    if( argc == 3 )
+    {
+        xRun = dAtof( argv[1] );
+        yRise = dAtof( argv[2] );
+    }
+    else if(  StringUnit::getUnitCount( argv[1], " " ) == 2 )
+    {
+        dSscanf( argv[1], "%g %g", &xRun, &yRise );
+    }
+    else
+    {
+        Con::warnf( "mAtan - Invalid parameters." );
+        return 0;
+    }
+    return(mAtan(xRun, yRise));
+}
+
+#else // -------------------- DEGREES ---------------------
 /*! Use the mSin function to get the sine of the angle val.
     @param val A value in degrees.
     @return Returns the sine of val. This value will be in the range [ -1.0 , 1.0 ].
@@ -227,6 +309,7 @@ ConsoleFunctionWithDocs( mTan, ConsoleFloat, 2, 2, ( val ))
 {
    return(mTan(mDegToRad(dAtof(argv[1]))));
 }
+
 
 /*! Use the mAsin function to get the inverse sine of val in degrees.
     @param val A value between -1.0 and 1.0 equal to the sine of some angle theta.
@@ -274,6 +357,7 @@ ConsoleFunctionWithDocs( mAtan, ConsoleFloat, 2, 3, ( val ))
    }
    return(mRadToDeg(mAtan(xRun, yRise)));
 }
+#endif // -------------------- END OF SPECIAL TGE COMPAT --------------------
 
 /*! Use the mRadToDeg function to convert radians to degrees.
     @param val A floating-point number representing some number of radians.

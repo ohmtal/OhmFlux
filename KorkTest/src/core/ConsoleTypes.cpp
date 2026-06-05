@@ -7,7 +7,12 @@
 
 namespace KorkFlux {
 
-    // Wrapper for Con::getReturnBuffer
+    /* Wrapper for Con::getReturnBuffer
+     * Example usage;
+          char rbuf[256] = {0};
+          dSprintf(rbuf, 256, "%d %d",815, 4711);
+          return getReturnString(rbuf, vmPtr);
+     */
     const char * getReturnString(const std::string& str, KorkApi::Vm* vmPtr) {
         KorkApi::ConsoleValue retV = Con::getReturnBuffer(str.length() + 1);
         char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());

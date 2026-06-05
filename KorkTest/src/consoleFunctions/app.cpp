@@ -19,6 +19,10 @@ ConsoleFunction(getFrameTime, ConsoleFloat, 1,1, "") {
     return getFrameTime();
 }
 
+ConsoleFunction(getRealTime, ConsoleInt, 1,1, "") {
+    return Sim::getCurrentTime();
+}
+
 ConsoleFunction(getFPS, ConsoleInt, 1,1, "") {
     return gMain->getFPS();
 }
@@ -39,6 +43,63 @@ ConsoleFunction(quit, void, 1,1, "") {
     return gMain->TerminateApplication();
 }
 
+
+ConsoleFunction(dEcho, void, 2, 0, "echo(text [, ... ])")
+{
+#ifdef FLUX_DEBUG
+    U32 len = 0;
+    S32 i;
+    for(i = 1; i < argc; i++)
+        len += dStrlen(argv[i]);
+
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(len + 1);
+    char *ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    ret[0] = 0;
+    for(i = 1; i < argc; i++)
+        dStrcat(ret, argv[i]);
+
+    Con::printf("%s", ret);
+    ret[0] = 0;
+#endif
+}
+
+ConsoleFunction(dWarn, void, 2, 0, "warn(text [, ... ])")
+{
+#ifdef FLUX_DEBUG
+    U32 len = 0;
+    S32 i;
+    for(i = 1; i < argc; i++)
+        len += dStrlen(argv[i]);
+
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(len + 1);
+    char *ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    ret[0] = 0;
+    for(i = 1; i < argc; i++)
+        dStrcat(ret, argv[i]);
+
+    Con::warnf(ConsoleLogEntry::General, "%s", ret);
+    ret[0] = 0;
+#endif
+}
+
+ConsoleFunction(dError, void, 2, 0, "error(text [, ... ])")
+{
+#ifdef FLUX_DEBUG
+    U32 len = 0;
+    S32 i;
+    for(i = 1; i < argc; i++)
+        len += dStrlen(argv[i]);
+
+    KorkApi::ConsoleValue retV = Con::getReturnBuffer(len + 1);
+    char *ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
+    ret[0] = 0;
+    for(i = 1; i < argc; i++)
+        dStrcat(ret, argv[i]);
+
+    Con::errorf(ConsoleLogEntry::General, "%s", ret);
+    ret[0] = 0;
+#endif
+}
 
 #ifdef FLUX_DEBUG
 ConsoleFunction(testString, ConsoleString, 1,1,"TEST lazy string"){

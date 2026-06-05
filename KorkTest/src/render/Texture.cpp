@@ -1,6 +1,7 @@
 #include "Texture.h"
 #include "appMain.h"
 #include <platform/platformString.h>
+#include "core/Globals.h"
 
 namespace KorkFlux {
 
@@ -46,6 +47,17 @@ namespace KorkFlux {
         return true;
     }
 
+
+    // int getWidth() const       { if (mLoaded) return(mW); else return -1; }
+    // int getHeight() const      { if (mLoaded) return(mH); else return -1; }
+
+    ConsoleMethod(Texture, getSize, ConsoleString, 2,2,"get the size of the texture")
+    {
+        if (!object->mTexture) return "";
+        char rbuf[256] = {0};
+        dSprintf(rbuf, 256, "%d %d",object->mTexture->getWidth(),object->mTexture->getWidth() );
+        return getReturnString(rbuf, vmPtr);
+    }
 
     // ------------------------------------------------------------------------.
     void Texture::initPersistFields()

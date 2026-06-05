@@ -1,4 +1,5 @@
 // echo("Hello MAIN.CS");
+include("./flyingText.cs");
 //------------------------------
 echo ("------------------------------");
 echo ("STEPS for simple but usable:");
@@ -180,3 +181,12 @@ function c(%p) {
  function a() { echo ("a");totp(); $ashed = schedule(5000,0,"a"); }
 
  function b() { echo("b - a cancel"); cancel ($ashed);}
+
+
+function realtime() {
+	if ($time !$= "") echo("ellapsed:" SPC (GetRealTime()-$time) SPC "time:" SPC $time);
+	$time = GetRealTime();
+	schedule(1000,0,realtime);
+}
+
+schedule(500,0,ft);
