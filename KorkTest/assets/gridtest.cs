@@ -1,4 +1,4 @@
-exec("assets/tools.cs"); //need absolute path! FIXME? nah
+exec("./tools.cs"); 
 // -----------------------------------------------------------------------------
 // Demo cleanup
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
@@ -145,3 +145,7 @@ function TestGrid() {
 }
 
  // TestGrid();
+ // echo("HELLO EDITOR!");
+
+
+

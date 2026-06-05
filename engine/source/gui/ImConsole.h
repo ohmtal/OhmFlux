@@ -36,7 +36,7 @@ private:
     bool   mCopyOnlyVisible = true;
     ImVector<int> mFilterIndices;
     bool mDirty = true;
-
+    // bool mDoSearch = false;
     bool mReclaim_focus = false;
 
     // bool mIsReverseTab = false;
@@ -116,47 +116,47 @@ public:
         mDirty = true;
     }
     //--------------------------------------------------------------------------
-    bool SearchPopup() //return true if closed
-    {
-        bool result = false;
-
-
-        // Set position to center of the current window
-        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-        if (ImGui::BeginPopup("SearchPopup"))
-        {
-            // Focus the input field automatically when the popup appears
-            if (ImGui::IsWindowAppearing())
-                ImGui::SetKeyboardFocusHere();
-
-            // The filter input
-            // If Filter.Draw returns true, it means the text changed -> set Dirty
-            if (Filter.Draw("##FilterInput", 200.0f))
-            {
-                mDirty = true;
-            }
-
-            // Close button
-            ImGui::SameLine();
-            if ( ImGui::Button("Close") ||
-                 ImGui::IsKeyPressed(ImGuiKey_Enter)
-                 || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)
-            ) {
-                ImGui::CloseCurrentPopup();
-                result = true;
-            }
-
-
-            ImGui::EndPopup();
-        }
-
-        if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_F))
-            ImGui::OpenPopup("SearchPopup");
-
-        return result;
-    }
+    // bool SearchPopup() //return true if closed
+    // {
+    //     bool result = false;
+    //
+    //
+    //     // Set position to center of the current window
+    //     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    //     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    //
+    //     if (ImGui::BeginPopup("SearchPopup"))
+    //     {
+    //         // Focus the input field automatically when the popup appears
+    //         if (ImGui::IsWindowAppearing())
+    //             ImGui::SetKeyboardFocusHere();
+    //
+    //         // The filter input
+    //         // If Filter.Draw returns true, it means the text changed -> set Dirty
+    //         if (Filter.Draw("##FilterInput", 200.0f))
+    //         {
+    //             mDirty = true;
+    //         }
+    //
+    //         // Close button
+    //         ImGui::SameLine();
+    //         if ( ImGui::Button("Close") ||
+    //              ImGui::IsKeyPressed(ImGuiKey_Enter)
+    //              || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)
+    //         ) {
+    //             ImGui::CloseCurrentPopup();
+    //             result = true;
+    //         }
+    //
+    //
+    //         ImGui::EndPopup();
+    //     }
+    //      collide with other windows ctrl+f
+    //     if ( mDoSearch /*ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_F)*/)
+    //         ImGui::OpenPopup("SearchPopup");
+    //
+    //     return result;
+    // }
     //--------------------------------------------------------------------------
 
     void Draw(const char* title, bool* p_open)
@@ -194,7 +194,7 @@ public:
             if (ImGui::Selectable("Clear")) ClearLog();
             loDoCopyToClipboard = ImGui::Selectable("Copy");
             if (ImGui::Selectable("Show Menu Buttons", mShowButtons)) mShowButtons = !mShowButtons;
-
+            // mDoSearch = ImGui::Selectable("Search in Log");
 
             ImGui::EndPopup();
         }
@@ -235,8 +235,8 @@ public:
 
         // Reserve enough left-over height for 1 separator + 1 input text
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-        bool openOpt = false;
-        bool openSearch = false;
+        // bool openOpt = false;
+        // bool openSearch = false;
         if (ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), ImGuiChildFlags_NavFlattened, ImGuiWindowFlags_HorizontalScrollbar))
         {
             if (ImGui::BeginPopupContextWindow())
@@ -248,7 +248,7 @@ public:
                 if (ImGui::Selectable("Clear")) ClearLog();
                 loDoCopyToClipboard = ImGui::Selectable("Copy");
                 if (ImGui::Selectable("Show Menu Buttons", mShowButtons)) mShowButtons = !mShowButtons;
-
+                // mDoSearch = ImGui::Selectable("Search in Log");
                 ImGui::Separator();
 
                 ImGui::EndPopup();
@@ -334,11 +334,11 @@ public:
         ImGui::Separator();
 
         // Command-line && search PopUp
-        if (SearchPopup())
-        {
-            // next one is focused :D
-            ImGui::SetKeyboardFocusHere();
-        }
+        // if (SearchPopup())
+        // {
+        //     mDoSearch = false;
+        //     ImGui::SetKeyboardFocusHere();
+        // }
 
 
 

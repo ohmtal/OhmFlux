@@ -230,6 +230,11 @@ set(PROJECT_SOURCES
     # testing math from OGE/Torque2D
     # too many changes needed ... ${KORK_DIR}/src/math/mathTypes.cc
 
+    # ---- editor
+    ${KORK_DIR}/src/scriptEditor/scriptEditor.cpp
+    ${KORK_DIR}/src/scriptEditor/scriptEditor.h
+    ${KORK_DIR}/src/scriptEditor/ImGuiColorTextEdit/TextEditor.cpp
+    ${KORK_DIR}/src/scriptEditor/ImGuiColorTextEdit/TextEditor.h
 )
 
 

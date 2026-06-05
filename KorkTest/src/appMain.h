@@ -6,15 +6,18 @@
 #include "gui/ImConsole.h"
 
 namespace fs = std::filesystem;
-
+class ScriptEditor;
 
 namespace KorkFlux {
+
 
     //-----------------------------------------------------------------------------
     class Main : public FluxMain
     {
         typedef FluxMain Parent;
         ImConsole console;
+        ScriptEditor* mScriptEditor;
+
         std::vector<fs::path> scriptFiles;
         std::unique_ptr<FluxGuiGlue> mGuiGlue;
 

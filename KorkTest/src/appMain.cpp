@@ -8,8 +8,10 @@
 #include "core/fileStream.h"
 #include <platform/platformString.h>
 #include "gui/ImConsole.h"
+#include "scriptEditor/scriptEditor.h"
 
 namespace KorkFlux {
+
 
 
     //------------------------------------------------------------------------------
@@ -87,6 +89,7 @@ namespace KorkFlux {
         if (!mGuiGlue) return;
         mGuiGlue->DrawBegin();
 
+
         static bool showConsole = true;
         static bool showMenu = true;
 
@@ -98,10 +101,9 @@ namespace KorkFlux {
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Scripts")) {
-                    //FIXME current script ?!
-                    // if (ImGui::MenuItem(std::format("Hot Reload {}", getScript()).c_str(),"CTRL+R")) {
-                    //     LoadScript();
-                    // }
+                    static bool openScriptEditor = false; //FIXME settings ?
+                    ImGui::Checkbox("Open Script Editor", &openScriptEditor);
+
                     ImGui::SeparatorText("Files");
                     bool selected = false;
                     for (const auto& f : scriptFiles) {
@@ -111,6 +113,10 @@ namespace KorkFlux {
                             std::string cmd = std::format("exec(\"assets/{}\");", f.string());
                             // Log("Loading with command: %s", cmd.c_str());
                             Con::evaluate(cmd.c_str());
+
+                            //FIXME TEST only this add a new object which is not freed!
+                            if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
+
                         }
                     }
                     ImGui::EndMenu();
@@ -134,6 +140,9 @@ namespace KorkFlux {
         if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
         console.Draw("Console",&showConsole);
         // ------
+        if (mScriptEditor) mScriptEditor->renderEditors();
+        // ------
+
         mGuiGlue->DrawEnd();
     }
     //-----------------------------------------------------------------------------
@@ -155,6 +164,9 @@ namespace KorkFlux {
         Con::removeConsumer(MyLogger, NULL);
         Sim::shutdown();
         Con::shutdown();
+
+        SAFE_DELETE(mScriptEditor);
+        mScriptEditor = nullptr;
 
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
@@ -195,6 +207,7 @@ namespace KorkFlux {
             return false;
 
 
+
         // SDL_SetLogPriorities(SDL_LOG_PRIORITY_VERBOSE);  //emscript redirect test
         // NOTE: does NOT work with emscritpen !!!!
         SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
@@ -217,7 +230,9 @@ namespace KorkFlux {
         )");
         // <<<<
 
+
         fetchScriptFiles();
+        mScriptEditor = new ScriptEditor();
 
         return true;
     }

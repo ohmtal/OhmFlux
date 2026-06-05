@@ -1,5 +1,5 @@
 //------------------------------
-exec("assets/tools.cs");
+exec("./tools.cs");
 
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
 else CleanupSet.deleteObjects();
@@ -129,9 +129,12 @@ $Game = new GameCtrl() {
   class = "Game";
 };
 
-
 $Game.LoadAssets();
 CleanupSet.add($Game);
 $game.ml(); //scrolling using schedule ..
+
+
+
+
 
 

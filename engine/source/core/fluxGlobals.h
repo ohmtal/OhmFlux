@@ -279,6 +279,30 @@ const Color4F cl_Ghost        = { 0.70f, 0.70f, 1.00f, 0.50f }; // Semi-transpar
 //------------------------------------- Points
 struct  Point2I{
     S32 x, y;
+    // --- Scalar Operators ---
+    Point2I operator-(S32 v) const { return {x - v, y - v}; }
+    Point2I operator+(S32 v) const { return {x + v, y + v}; }
+    Point2I operator*(S32 v) const { return {x * v, y * v}; }
+    Point2I operator/(S32 v) const { return {x / v, y / v}; }
+
+    // --- Point Operators ---
+    Point2I operator-(const Point2I& v) const { return {x - v.x, y - v.y}; }
+    Point2I operator+(const Point2I& v) const { return {x + v.x, y + v.y}; }
+    Point2I operator*(const Point2I& v) const { return {x * v.x, y * v.y}; }
+    Point2I operator/(const Point2I& v) const { return {x / v.x, y / v.y}; }
+
+    bool operator==(const Point2I& v) const { return (x == v.x && y == v.y); }
+
+    // --- Compound Assignment Operators ---
+    Point2I& operator+=(S32 v) { x += v; y += v; return *this; }
+    Point2I& operator-=(S32 v) { x -= v; y -= v; return *this; }
+    Point2I& operator*=(S32 v) { x *= v; y *= v; return *this; }
+    Point2I& operator/=(S32 v) { x /= v; y /= v; return *this; }
+
+    Point2I& operator+=(const Point2I& v) { x += v.x; y += v.y; return *this; }
+    Point2I& operator-=(const Point2I& v) { x -= v.x; y -= v.y; return *this; }
+    Point2I& operator*=(const Point2I& v) { x *= v.x; y *= v.y; return *this; }
+    Point2I& operator/=(const Point2I& v) { x /= v.x; y /= v.y; return *this; }
 };
 
 struct Point2F {

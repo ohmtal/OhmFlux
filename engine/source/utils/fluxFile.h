@@ -62,6 +62,15 @@ namespace FluxFile {
         return true;
     }
    // --------------------------------------------------------------------------
+   // Saves string
+   static bool SaveTextFile(const std::string& path, const std::string& content) {
+       SDL_IOStream* io = SDL_IOFromFile(path.c_str(), "w");
+       if (!io) return false;
+       SDL_WriteIO(io, content.c_str(), content.size());
+       SDL_CloseIO(io);
+       return true;
+   }
+   // --------------------------------------------------------------------------
    static bool SaveBufferToFile(const char* filename, const uint8_t* data, size_t size) {
         FILE* file = fopen(filename, "wb");
         if (!file) return false;
