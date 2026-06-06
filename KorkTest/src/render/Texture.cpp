@@ -55,7 +55,7 @@ namespace KorkFlux {
     {
         if (!object->mTexture) return "";
         char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %d",object->mTexture->getWidth(),object->mTexture->getWidth() );
+        dSprintf(rbuf, 256, "%d %d",object->mTexture->getWidth(),object->mTexture->getHeight() );
         return getReturnString(rbuf, vmPtr);
     }
 

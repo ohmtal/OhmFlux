@@ -168,8 +168,8 @@ function FlyingText::onAdd(%this)
    if (%this.fontPath $= "")
       %this.fontPath = $flyingText::LetterImages;
 
-   if (%this.charSpaceing $= "")
-      %this.charSpaceing = 0;
+   if (%this.charSpaceing * 1 == 0 )
+      %this.charSpaceing = 10;
       
    // ... text ...   
    %this.numChars = 0;
@@ -341,11 +341,14 @@ function FlyingText::setText(%this, %text, %color)
             //else it's invalid keep default color
          }
 
-         %this.control[%i].w = getWord(%this.control[%i].Texture.getSize(),0) + %this.charSpaceing;
+         %this.control[%i].w = getWord(%this.control[%i].Texture.getSize(),0);
          %this.control[%i].h = getWord(%this.control[%i].Texture.getSize(),1);
+
+         %this.control[%i].width =  %this.control[%i].w + %this.charSpaceing;
+         %this.control[%i].height = %this.control[%i].h;
          
          
-         %width = %this.control[%i].w;
+         %width = %this.control[%i].width;
          
       }
       else
@@ -385,7 +388,7 @@ function FlyingText::setText(%this, %text, %color)
          %this.setPuStartPos(%i);
 
          // Width of this bitmap
-         %width = %this.control[%i].w;// getWord(%this.control[%i].extent,0);
+         %width = %this.control[%i].width;// getWord(%this.control[%i].extent,0);
       }
       else
       {
@@ -608,10 +611,10 @@ function FlyingText::setPuStartPos( %this, %i )
       {
          case 0:
             %this.PuPt1x[%i] = %this.parentWidth;
-            %this.PuPt1y[%i] = %this.parentHeight - %this.control[%i].h; //getWord(%this.control[%i].extent,1);
+            %this.PuPt1y[%i] = %this.parentHeight - %this.control[%i].height; //getWord(%this.control[%i].extent,1);
 
          case 1:
-            %this.PuPt1x[%i] = %this.parentWidth - %this.control[%i].w; //getWord(%this.control[%i].extent,0);
+            %this.PuPt1x[%i] = %this.parentWidth - %this.control[%i].width; //getWord(%this.control[%i].extent,0);
             %this.PuPt1y[%i] = %this.parentHeight;
 
          case 2:
@@ -619,23 +622,23 @@ function FlyingText::setPuStartPos( %this, %i )
             %this.PuPt1y[%i] = 0;
 
          case 3:
-            %this.PuPt1x[%i] = %this.parentWidth - %this.control[%i].w; //getWord(%this.control[%i].extent,0);
-            %this.PuPt1y[%i] = 0 - %this.control[%i].h; //getWord(%this.control[%i].extent,1);
+            %this.PuPt1x[%i] = %this.parentWidth - %this.control[%i].width; //getWord(%this.control[%i].extent,0);
+            %this.PuPt1y[%i] = 0 - %this.control[%i].height; //getWord(%this.control[%i].extent,1);
 
          case 4:
             %this.PuPt1x[%i] = 0;
             %this.PuPt1y[%i] = %this.parentHeight;
 
          case 5:
-            %this.PuPt1x[%i] = 0 - %this.control[%i].w; //getWord(%this.control[%i].extent,0);
-            %this.PuPt1y[%i] = %this.parentHeight - %this.control[%i].h; //getWord(%this.control[%i].extent,1);
+            %this.PuPt1x[%i] = 0 - %this.control[%i].width; //getWord(%this.control[%i].extent,0);
+            %this.PuPt1y[%i] = %this.parentHeight - %this.control[%i].height; //getWord(%this.control[%i].extent,1);
 
          case 6:
             %this.PuPt1x[%i] = 0;
-            %this.PuPt1y[%i] = 0 - %this.control[%i].h; //getWord(%this.control[%i].extent,1);
+            %this.PuPt1y[%i] = 0 - %this.control[%i].height; //getWord(%this.control[%i].extent,1);
 
          case 7:
-            %this.PuPt1x[%i] = 0 - %this.control[%i].w; //getWord(%this.control[%i].extent,0);
+            %this.PuPt1x[%i] = 0 - %this.control[%i].width; //getWord(%this.control[%i].extent,0);
             %this.PuPt1y[%i] = 0;
       }
    }
