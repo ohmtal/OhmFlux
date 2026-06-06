@@ -242,6 +242,7 @@ configure_project_target(KorkTestBed ${KORK_DIR} "${KORK_DIR}/assets@assets" "${
 
 # target_compile_definitions(KorkTestBed PUBLIC TORQUE_ENABLE_ASSERTS)
 
+
 target_include_directories(KorkTestBed PRIVATE ${KORK_DIR}/src)
 target_include_directories(KorkTestBed PRIVATE ${KS_INCLUDES})
 

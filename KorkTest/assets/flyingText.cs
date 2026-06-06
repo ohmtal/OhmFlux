@@ -452,8 +452,10 @@ function FlyingText::reset(%this, %ignoreDelete)
       return;
    }
 
-   if (!%ignoreDelete && %this.deleteOnDone)
+   if (!%ignoreDelete && %this.deleteOnDone) {
       %this.schedule(0,"delete");
+   }
+
       
 }
 //------------------------------------------------------------------------------

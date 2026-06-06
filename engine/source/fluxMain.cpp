@@ -700,14 +700,6 @@ void FluxMain::IterateFrame()
 
 
 
-	// fixed update: >>>>>>>>>>>>>>>>>>>>>>>>>
-	static double accumulator = 0.0;
-	accumulator += gFrameTime;
-
-	while (accumulator >= mSettings.updateDt) {
-		Update( accumulator );
-		accumulator -= mSettings.updateDt;
-	}
 
 	//  Render
 	if ( gAppStatus.Visible ) {
@@ -717,6 +709,15 @@ void FluxMain::IterateFrame()
 		#ifndef __EMSCRIPTEN__
 		SDL_Delay(16); // ~60fps
 		#endif
+	}
+
+	//  update: after render
+	static double accumulator = 0.0;
+	accumulator += gFrameTime;
+
+	while (accumulator >= mSettings.updateDt) {
+		Update( accumulator );
+		accumulator -= mSettings.updateDt;
 	}
 
 
