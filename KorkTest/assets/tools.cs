@@ -59,3 +59,5 @@ function hsvToRGB(%h, %s, %v)
     else if (%i == 4) return %t SPC %p SPC %v;
     else              return %v SPC %p SPC %q;
 }
+
+echo("~~~~~~~~ Tools loaded. ~~~~~~~~~~~~~");

@@ -1,5 +1,5 @@
 // echo("Hello MAIN.CS");
-include("./flyingText.cs");
+include("./flyingText.cs"); // like a exec with no calls!
 //------------------------------
 echo ("------------------------------");
 echo ("STEPS for simple but usable:");
@@ -189,4 +189,4 @@ function realtime() {
 	schedule(1000,0,realtime);
 }
 
-schedule(500,0,ft);
+schedule(1000,0,ft);

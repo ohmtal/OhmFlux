@@ -11,9 +11,6 @@ $align::center = 1;
 $align::right = 2;
 
 
-
-
-
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
 else CleanupSet.deleteObjects();
 
@@ -289,7 +286,7 @@ function invaderGame::onInputEvent( %this, %deviceString, %actionString, %mouseX
 
   // FIXME !!!
 
- error("invaderGame::onInputEvent Device:" SPC %deviceString SPC "action:" SPC %actionString SPC "mx/my:" SPC %mouseX SPC %mouseY SPC "DOWN:" SPC %keyValue);
+ dEcho("invaderGame::onInputEvent Device:" SPC %deviceString SPC "action:" SPC %actionString SPC "mx/my:" SPC %mouseX SPC %mouseY SPC "DOWN:" SPC %keyValue);
 
 
 

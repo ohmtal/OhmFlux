@@ -110,14 +110,11 @@ namespace KorkFlux {
                     for (const auto& f : scriptFiles) {
                         // selected = getScript() == f.string();
                         if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
-                            // setScript(f.string());
-                            std::string cmd = std::format("exec(\"assets/{}\");", f.string());
-                            // Log("Loading with command: %s", cmd.c_str());
-                            Con::evaluate(cmd.c_str());
 
-                            //FIXME TEST only this add a new object which is not freed!
-                            if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
-
+                            std::string fileName = "assets/" +  f.string();
+                            if (Con::exec(fileName.c_str(), false, false)) {
+                                if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
+                            }
                         }
                     }
                     ImGui::EndMenu();
@@ -225,10 +222,11 @@ namespace KorkFlux {
         Con::init();
         Sim::init();
         Con::addConsumer(MyLogger, NULL);
-        Con::evaluate( R"(
-            echo("Testing kork script with OhmFlux ...");
-            exec("assets/main.cs");
-        )");
+        std::string fileName = "assets/main.cs"; //fixme command line parameter for file
+        if (!Con::exec(fileName.c_str(), false, false)) {
+            return false;
+        }
+
         // <<<<
 
 

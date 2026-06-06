@@ -42,8 +42,14 @@ ConsoleFunction(setVSync, void, 2,2, "bool value") {
 ConsoleFunction(quit, void, 1,1, "") {
     return gMain->TerminateApplication();
 }
+// ----------------- include = exec with nocalls ----------------------
 
-
+ConsoleFunctionValue(include, 2, 2, "include(fileName) //exec a file without calls")
+{
+    const char* fileName = vmPtr->valueAsString(argv[1]);
+    return KorkApi::ConsoleValue::makeUnsigned(Con::exec(fileName, true, false));
+}
+// ----------------- debuglog ----------------------
 ConsoleFunction(dEcho, void, 2, 0, "echo(text [, ... ])")
 {
 #ifdef FLUX_DEBUG
