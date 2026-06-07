@@ -37,7 +37,7 @@
   @author T.Huehn (XXTH)
   @since  2021-03-24
 
-  @2026-05-31 ported to KorkFlux
+  @2026-05-31 ported to ElfFlux
 
  Todo: 
     [?] EdgeShape SetOneSided / SetTwoSided ?? seams i've a old box2d version ^^ 
@@ -45,7 +45,7 @@
     [X] PreSolve - for ignore collision
 
        maybe also ?? 
-      [?]  Fließband : look at demo: Conveyor Belt 
+      [?]  Flieï¿½band : look at demo: Conveyor Belt 
          ==> contact SetTangentSpeed
 
     [X] b2PolygonShape Points 
@@ -79,7 +79,7 @@
 // global ratio for pixel to meters can be changed with World2b::setRatio console method
 U32 gB2ratio = 32;
 
-namespace KorkFlux {
+namespace ElfFlux {
 //=================================================================================================
 // World2b
 //=================================================================================================

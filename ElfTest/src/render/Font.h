@@ -4,7 +4,7 @@
 #include "console/consoleTypes.h"
 #include <fonts/fluxTTFont.h>
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 class Font : public SimObject {
 

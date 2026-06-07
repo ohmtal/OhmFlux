@@ -42,7 +42,7 @@
 #undef max
 #endif
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 
 

@@ -10,7 +10,7 @@
 #include "console/consoleTypes.h"
 #include <audio/fluxAudioStream.h>
 
-namespace KorkFlux {
+namespace ElfFlux {
 class AudioProfile: public SimObject, public FluxBaseObject {
     typedef SimObject Parent;
 public:

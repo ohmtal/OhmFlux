@@ -3,7 +3,7 @@
 #include <platform/platformString.h>
 #include "core/Globals.h"
 
-namespace KorkFlux {
+namespace ElfFlux {
 
     IMPLEMENT_CONOBJECT(Texture);
     // ------------------------------------------------------------------------.

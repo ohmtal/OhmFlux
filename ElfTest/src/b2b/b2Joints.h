@@ -14,7 +14,7 @@
 #include "Box2D/Box2D.h"
 #endif
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 //=================================================================================================
 // Joint2b ==>  b2Joint

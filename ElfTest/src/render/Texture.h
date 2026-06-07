@@ -4,7 +4,7 @@
 #include "console/consoleTypes.h"
 #include <core/fluxTexture.h>
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 class Texture : public SimObject {
 

@@ -30,7 +30,7 @@
 #include "b2Joints.h"
 #include <platform/platformString.h>
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 
 

@@ -4,7 +4,7 @@
 #include "Font.h"
 #include "core/Globals.h"
 
-namespace KorkFlux {
+namespace ElfFlux {
 
     IMPLEMENT_CONOBJECT(Label);
     // ------------------------------------------------------------------------.

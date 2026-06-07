@@ -107,7 +107,6 @@ namespace FluxMath {
 
     // Optimized Float Range
     inline float RandInRange(float min, float max) {
-        // Falls min > max, werden sie hier automatisch getauscht
         auto range = std::minmax(min, max);
 
         static thread_local std::mt19937 gen(std::random_device{}());

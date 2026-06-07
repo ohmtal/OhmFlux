@@ -6,7 +6,7 @@
  * Box2D Test 
  * @author T.Huehn
  * @since  2021-03-18
- * 2026-05-30 ported to KorkFlux
+ * 2026-05-30 ported to ElfFlux
 
  $testWorld = new TestWorld(){x=300; y=300;};
 
@@ -27,7 +27,7 @@ namespace b2bTest
 
     // ------------------------------------------------------------------------.
     bool TestWorld::onAdd(){
-        if (!KorkFlux::gMain)  return false;
+        if (!ElfFlux::gMain)  return false;
 
         // ----------------------------
         //Creating a World
@@ -94,14 +94,14 @@ namespace b2bTest
 
 
 
-        KorkFlux::gMain->queueObject(this);
+        ElfFlux::gMain->queueObject(this);
         Log("[info] TestWorld %d queued.", getId());
 
         return Parent::onAdd();
     }
     // ------------------------------------------------------------------------.
     void TestWorld::onRemove() {
-        KorkFlux::gMain->unQueueObject(this);
+        ElfFlux::gMain->unQueueObject(this);
         SAFE_DELETE(mWorld);
         mWorld = nullptr;
         Parent::onRemove();

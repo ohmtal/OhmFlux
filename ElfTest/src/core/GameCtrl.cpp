@@ -12,7 +12,7 @@
 #include <console/console.h>
 
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 IMPLEMENT_CONOBJECT(GameCtrl);
 

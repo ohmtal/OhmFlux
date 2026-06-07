@@ -5,7 +5,7 @@
 #include "Globals.h"
 #include <console/console.h>
 
-namespace KorkFlux {
+namespace ElfFlux {
 
     /* Wrapper for Con::getReturnBuffer
      * Example usage;

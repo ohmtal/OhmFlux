@@ -5,7 +5,7 @@
 #include <string>
 #include "core/Globals.h"
 
-namespace KorkFlux {
+namespace ElfFlux {
 ConsoleFunctionGroupBegin(App, "App Functions: getFPS, ...");
 
 ConsoleFunction(getFullScreen, ConsoleBool, 1,1, "") {

@@ -9,7 +9,7 @@
 
 
 
-namespace KorkFlux {
+namespace ElfFlux {
 
     IMPLEMENT_CONOBJECT(Sprite);
     // ------------------------------------------------------------------------.

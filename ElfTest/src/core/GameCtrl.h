@@ -28,7 +28,7 @@
 
 class FluxTTFont;
 class FluxLabel;
-namespace KorkFlux {
+namespace ElfFlux {
 
     class GameCtrl : public SimSet, public FluxBaseObject {
 

@@ -11,20 +11,20 @@
 int main(int argc, char* argv[])
 {
     (void)argc; (void)argv;
-    KorkFlux::gMain = new KorkFlux::Main();
-    KorkFlux::gMain->mSettings.Company = "Ohmtal";
-    KorkFlux::gMain->mSettings.Caption = "KorkTestBed";
-    KorkFlux::gMain->mSettings.enableLogFile = true;
-    KorkFlux::gMain->mSettings.IconFilename = "assets/icon.png";
-    KorkFlux::gMain->mSettings.maxFPS = 240;
+    ElfFlux::gMain = new ElfFlux::Main();
+    ElfFlux::gMain->mSettings.Company = "Ohmtal";
+    ElfFlux::gMain->mSettings.Caption = "KorkTestBed";
+    ElfFlux::gMain->mSettings.enableLogFile = true;
+    ElfFlux::gMain->mSettings.IconFilename = "assets/icon.png";
+    ElfFlux::gMain->mSettings.maxFPS = 240;
     // game->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";
     // game->mSettings.cursorHotSpotX = 10;
     // game->mSettings.cursorHotSpotY = 10;
 
     // LogFMT("TEST: My pref path would be:{}", SDL_GetPrefPath(game->mSettings.Company, game->mSettings.Caption ));
 
-    KorkFlux::gMain->Execute();
-    SAFE_DELETE(KorkFlux::gMain);
+    ElfFlux::gMain->Execute();
+    SAFE_DELETE(ElfFlux::gMain);
     return 0;
 }
 

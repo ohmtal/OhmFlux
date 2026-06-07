@@ -1,7 +1,7 @@
 #include "Font.h"
 #include <platform/platformString.h>
 
-namespace KorkFlux {
+namespace ElfFlux {
 
     IMPLEMENT_CONOBJECT(Font);
     // ------------------------------------------------------------------------.

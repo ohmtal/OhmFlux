@@ -6,9 +6,9 @@
 #include "gui/ImConsole.h"
 
 namespace fs = std::filesystem;
-class ScriptEditor;
+//FIXME class ScriptEditor;
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 
     //-----------------------------------------------------------------------------
@@ -16,7 +16,7 @@ namespace KorkFlux {
     {
         typedef FluxMain Parent;
         ImConsole console;
-        ScriptEditor* mScriptEditor;
+        //FIXME ScriptEditor* mScriptEditor;
 
         std::vector<fs::path> scriptFiles;
         std::unique_ptr<FluxGuiGlue> mGuiGlue;
@@ -45,5 +45,5 @@ namespace KorkFlux {
     //--------------------------------
     inline Main* gMain = nullptr;
     //--------------------------------
-} //namespace KorkFlux
+} //namespace ElfFlux
 

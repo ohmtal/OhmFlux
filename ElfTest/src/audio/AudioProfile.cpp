@@ -3,7 +3,7 @@
 #include <platform/platformString.h>
 
 
-namespace KorkFlux {
+namespace ElfFlux {
     IMPLEMENT_CONOBJECT(AudioProfile);
 
     bool AudioProfile::onAdd(){

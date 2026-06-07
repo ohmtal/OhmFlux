@@ -7,9 +7,51 @@
 
 
 #include "gui/ImConsole.h"
-#include "scriptEditor/scriptEditor.h"
+// #include "scriptEditor/scriptEditor.h"
 
-namespace KorkFlux {
+namespace engineAPI
+{
+    bool gUseConsoleInterop = true;
+    bool gIsInitialized = false;
+
+// -----------------------------------------------------------------------------
+void init()
+{
+    // Asserts should be created FIRST
+    PlatformAssert::create();
+    // ManagedSingleton< ThreadManager >::createSingleton();
+    FrameAllocator::init(TORQUE_FRAME_SIZE);      // See comments in torqueConfig.h
+    _StringTable::create();
+    Con::init();
+    // Platform::initConsole();
+    NetStringTable::create();
+    Platform::init();    // platform specific initialization
+    // Set engineAPI initialized to true
+    engineAPI::gIsInitialized = true;
+    Sim::init();
+}
+
+void shutDown() {
+    Platform::shutdown();
+    NetStringTable::destroy();
+    Con::shutdown();
+
+    _StringTable::destroy();
+    FrameAllocator::destroy();
+    // asserts should be destroyed LAST
+    PlatformAssert::destroy();
+
+    Sim::shutdown();
+
+    engineAPI::gIsInitialized = false;
+}
+}
+//------------------------------------------------------------------------------
+
+
+
+
+namespace ElfFlux {
 
     //------------------------------------------------------------------------------
     void MyLogger(U32 level, const char *consoleLine, void*)
@@ -98,24 +140,25 @@ namespace KorkFlux {
                     ImGui::MenuItem("Console", "GraveAccent", &showConsole);
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Scripts")) {
-
-                    ImGui::Checkbox("Open Script Editor", &openScriptEditor);
-
-                    ImGui::SeparatorText("Files");
-                    bool selected = false;
-                    for (const auto& f : scriptFiles) {
-                        // selected = getScript() == f.string();
-                        if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
-
-                            std::string fileName = "assets/" +  f.string();
-                            if (Con::exec(fileName.c_str(), false, false)) {
-                                if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
-                            }
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
+ //FIXME
+                // if (ImGui::BeginMenu("Scripts")) {
+                //
+                //     ImGui::Checkbox("Open Script Editor", &openScriptEditor);
+                //
+                //     ImGui::SeparatorText("Files");
+                //     bool selected = false;
+                //     for (const auto& f : scriptFiles) {
+                //         // selected = getScript() == f.string();
+                //         if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
+                //
+                //             std::string fileName = "assets/" +  f.string();
+                //             if (Con::exec(fileName.c_str(), false, false)) {
+                //                 if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
+                //             }
+                //         }
+                //     }
+                //     ImGui::EndMenu();
+                // }
                 if (ImGui::BeginMenu("Gui Scale")) {
                     if (ImGui::MenuItem("0.75")) mGuiGlue->setScale(0.75f);
                     if (ImGui::MenuItem("1.00")) mGuiGlue->setScale(1.00f);
@@ -135,7 +178,7 @@ namespace KorkFlux {
         if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
         console.Draw("Console",&showConsole);
         // ------
-        if (openScriptEditor && mScriptEditor) mScriptEditor->renderEditors();
+        //FIXME if (openScriptEditor && mScriptEditor) mScriptEditor->renderEditors();
         // ------
 
         mGuiGlue->DrawEnd();
@@ -150,18 +193,36 @@ namespace KorkFlux {
         lastTick = SDL_GetTicks();
         // ----
 
+        // here we go lets fetch the log
+        // ------ output log entries:
+        ConsoleLogEntry *log;
+        U32 size;
+        static U32 lastLogEntry = 0;
+        Con::getLockLog(log, size);
+        if (lastLogEntry < size) {
+            for (U32 i = lastLogEntry; i < size; i++)
+            {
+                ConsoleLogEntry &entry = log[i];
+                MyLogger(entry.mLevel, entry.mString, nullptr);
+            }
+            lastLogEntry = size;
+        }
+        Con::unlockLog();
+
+        // -------- finallize
+
+        // <<< log
+
         Parent::Update(dt);
     }
 
     void Main::Deinitialize()
     {
 
-        Con::removeConsumer(MyLogger, NULL);
-        Sim::shutdown();
-        Con::shutdown();
+       engineAPI::shutDown();
 
-        SAFE_DELETE(mScriptEditor);
-        mScriptEditor = nullptr;
+        //FIXME SAFE_DELETE(mScriptEditor);
+        //FIXME mScriptEditor = nullptr;
 
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
@@ -216,19 +277,21 @@ namespace KorkFlux {
 
 
         // korkscript >>>
-        Con::init();
-        Sim::init();
-        Con::addConsumer(MyLogger, NULL);
+        engineAPI::init();
+
+
+       //FIXME  Con::addConsumer(MyLogger, NULL);
         std::string fileName = "assets/main.cs"; //fixme command line parameter for file
-        if (!Con::exec(fileName.c_str(), false, false)) {
-            return false;
-        }
+        //FIXME
+        // if (!Con::exec(fileName.c_str(), false, false)) {
+        //     return false;
+        // }
 
         // <<<<
 
 
         fetchScriptFiles();
-        mScriptEditor = new ScriptEditor();
+        //FIXME mScriptEditor = new ScriptEditor();
 
         return true;
     }

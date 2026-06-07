@@ -5,7 +5,7 @@
 #include "console/consoleTypes.h"
 #include "grid/basicgrid.h"
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 class Grid : public SimSet, public FluxBaseObject {
      typedef SimObject Parent;

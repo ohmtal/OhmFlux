@@ -21,7 +21,7 @@
 
 extern U32 gB2ratio;
 
-namespace KorkFlux {
+namespace ElfFlux {
 class Body2b;
 
 class World2b : 

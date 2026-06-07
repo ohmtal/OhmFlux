@@ -6,7 +6,7 @@
 #include "console/consoleTypes.h"
 #include "core/fluxRenderObject.h"
 
-namespace KorkFlux {
+namespace ElfFlux {
 
 class Sprite : public SimObject, public FluxBaseObject {
 
