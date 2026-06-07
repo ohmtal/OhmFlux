@@ -92,7 +92,7 @@ set(PROJECT_SOURCES
     ${ELF_DIR}/src/main.cpp
     ${ELF_DIR}/src/appMain.h
     ${ELF_DIR}/src/appMain.cpp
-    # ${ELF_DIR}/src/myPlatformProcess.cc
+    ${ELF_DIR}/src/myPlatformProcess.cc
 
     # ${ELF_DIR}/src/b2b/b2btest.cc
     # ${ELF_DIR}/src/b2b/b2btest.h

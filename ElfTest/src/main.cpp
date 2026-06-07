@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
     (void)argc; (void)argv;
     ElfFlux::gMain = new ElfFlux::Main();
     ElfFlux::gMain->mSettings.Company = "Ohmtal";
-    ElfFlux::gMain->mSettings.Caption = "KorkTestBed";
+    ElfFlux::gMain->mSettings.Caption = "ElfTestBed";
     ElfFlux::gMain->mSettings.enableLogFile = true;
     ElfFlux::gMain->mSettings.IconFilename = "assets/icon.png";
     ElfFlux::gMain->mSettings.maxFPS = 240;

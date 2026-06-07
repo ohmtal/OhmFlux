@@ -105,6 +105,7 @@ namespace ElfFlux {
                         &&  (
                         entry.path().extension() == ".cs"
                         || entry.path().extension() == ".tscript"
+                        || entry.path().extension() == ".elfscript"
                         || entry.path().extension() == ".korkscript"
                         )
 
@@ -258,7 +259,7 @@ namespace ElfFlux {
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
-        mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, "KorkTestBed.ini");
+        mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, "ElfTestBed.ini");
         if (!mGuiGlue->Initialize())
             return false;
 
@@ -276,7 +277,43 @@ namespace ElfFlux {
 
 
 
-        // korkscript >>>
+        // script >>>
+
+        Log("[error]  bool TorqueScriptRuntime:: is called on exec and think it's a compiled file replace the extension with .dso");
+        Log("[error] --> it's Torque::FS::GetFileNode(scriptFileName); because we have no mounted filesystem!");
+        Log("[info] add or replace platform/platformVolume.cpp");
+
+
+//FileSystemRef MountSystem::_getFileSystemFromList(const Path& path) const
+        //MISSING:
+        //  Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
+        // Platform::FS::MountDefaults();
+// POSIX:
+//         bool Platform::FS::InstallFileSystems()
+//         {
+//             Platform::FS::Mount( "/", Platform::FS::createNativeFS( String() ) );
+//
+//             // Setup the current working dir.
+//             char buffer[PATH_MAX];
+//             if (::getcwd(buffer,sizeof(buffer)))
+//             {
+//                 // add trailing '/' if it isn't there
+//                 if (buffer[dStrlen(buffer) - 1] != '/')
+//                     dStrcat(buffer, "/", PATH_MAX);
+//
+//                 Platform::FS::SetCwd(buffer);
+//             }
+//
+//             // Mount the home directory
+//             if (char* home = getenv("HOME"))
+//                 Platform::FS::Mount( "home", Platform::FS::createNativeFS(home) );
+//
+//             return true;
+//         }
+//<<<<<<<
+
+
+
         engineAPI::init();
 
 

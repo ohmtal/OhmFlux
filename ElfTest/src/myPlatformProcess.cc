@@ -8,31 +8,16 @@
 // ORIG: torqueSim/platform/basicPlatformProcess.cc
 //-----------------------------------------------------------------------------
 
-// ~~~ 1. remove unused includes... ~~~
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include "platform/platform.h"
-// #include "platform/platformProcess.h"
-// #include "platform/platformFileIO.h"
-// #include "platform/threads/thread.h"
-// #include "platform/threads/mutex.h"
-// #include "platform/threads/semaphore.h"
-// #include "core/stringTable.h"
-// #include "core/safeDelete.h"
-//
-// #include <mutex>
-// #include <string>
-//
-// #ifdef TORQUE_USE_STD_FILESYSTEM
-// #include <filesystem>
-// namespace fs = std::filesystem;
-// #endif
-
-// ~~~ 1. add includes... ~~~
 #include <SDL3/SDL.h>
 #include <console/console.h>
-#include <platform/platformProcess.h>
+#include <string>
+#include "core/fluxGlobals.h"
 
+
+StringTableEntry osGetTemporaryDirectory(){
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+   return StringTable->insert("");
+}
 
 namespace Platform
 {
@@ -50,8 +35,7 @@ namespace Platform
       return false;
    }
    //---------------------------------------------------------------------------
-   // FIXME U32 => U64!
-   U32 getTime( void )
+   U64 getTime( void )
    {
       SDL_Time nanoSeconds;
       if (SDL_GetCurrentTime(&nanoSeconds)) {
@@ -61,8 +45,7 @@ namespace Platform
       return 0;
    }
    //---------------------------------------------------------------------------
-   // FIXME U32 => U64!
-   U32 getRealMilliseconds( void )
+   U64 getRealMilliseconds( void )
    {
       SDL_Time nanoSeconds;
       if (SDL_GetCurrentTime(&nanoSeconds)) {
@@ -101,7 +84,7 @@ void restartInstance()
    Con::warnf("%s not implemented", __func__);
 }
 
-void postQuitMessage(const U32 in_quitVal)
+void postQuitMessage(const S32 in_quitVal)
 {
    Con::warnf("%s not implemented", __func__);
 }
@@ -124,8 +107,8 @@ StringTableEntry getUserDataDirectory()
 }
 
 
-// FIXME U64!
-U32 getVirtualMilliseconds( void )
+
+U64 getVirtualMilliseconds( void )
 {
    Con::warnf("%s not implemented", __func__);
    return 0;
@@ -140,6 +123,10 @@ void advanceTime(U32 delta)
 void getLocalTime(LocalTime &)
 {
    Con::warnf("%s not implemented", __func__);
+}
+String localTimeToString(Platform::LocalTime const&) {
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+   return "";
 }
 
 S32 compareFileTimes(const FileTime &a, const FileTime &b)
@@ -159,12 +146,15 @@ void outputDebugString(const char *string)
 {
    Con::warnf("%s not implemented", __func__);
 }
+void outputDebugString(const char *string, ...) {
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
 
+}
 /// File IO.
 StringTableEntry getWorkingDirectory()
 {
-   Con::warnf("%s not implemented", __func__);
-   return nullptr;
+
+   return StringTable->insert(getGamePath().c_str());
 }
 
 bool setWorkingDirectory(StringTableEntry newDir)
@@ -188,24 +178,24 @@ bool setCurrentDirectory(StringTableEntry newDir)
 StringTableEntry getExecutableName()
 {
    Con::warnf("%s not implemented", __func__);
-   return nullptr;
+   return StringTable->insert("");
 }
 
 StringTableEntry getExecutablePath()
 {
-   Con::warnf("%s not implemented", __func__);
-   return nullptr;
+   return StringTable->insert(getGamePath().c_str());
 }
 
-bool dumpPath(const char *in_pBasePath, std::vector<FileInfo>& out_rFileVector, S32 recurseDepth)
+
+bool dumpPath(const char *in_pBasePath, Vector<FileInfo>& out_rFileVector, S32 recurseDepth )
 {
-   Con::warnf("%s not implemented", __func__);
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
    return false;
 }
 
-bool dumpDirectories( const char *path, std::vector<StringTableEntry> &directoryVector, S32 depth, bool noBasePath )
+bool dumpDirectories( const char *path, Vector<StringTableEntry> &directoryVector, S32 depth, bool noBasePath )
 {
-   Con::warnf("%s not implemented", __func__);
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
    return false;
 }
 
@@ -271,4 +261,37 @@ bool pathCopy(const char *fromName, const char *toName, bool nooverwrite)
    return false;
 }
 
+void debugBreak()
+{
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
 }
+bool setClipboard(const char* text)
+{
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+   return false;
+}
+
+const char* getClipboard() {
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+   return nullptr;
+}
+
+void AlertOK(const char *windowTitle, const char *message) {
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+
+}
+bool AlertOKCancel(const char *windowTitle, const char *message) {
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+   return false;
+}
+bool AlertRetry(const char *windowTitle, const char *message) {
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+   return false;
+}
+ALERT_ASSERT_RESULT AlertAssert(const char *windowTitle, const char *message)
+{
+   Con::warnf(" %s not implemented (%s:%d)", __func__, __FILE__, __LINE__);
+   return ALERT_ASSERT_IGNORE;
+}
+
+} //namespace
