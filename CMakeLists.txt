@@ -524,6 +524,12 @@ if(BUILD_KORKTEST)
     add_subdirectory(KorkTest)
 endif()
 
+# --- ElfTestBed ---
+option(BUILD_ELFTEST "Build ElfTestBed application" OFF)
+
+if(BUILD_ELFTEST)
+    add_subdirectory(ElfTest)
+endif()
 
 # =============================================================================
 # <<<<< PROJECTS SECTION

@@ -69,7 +69,9 @@ enum FontAlign {
     FontAlign_Right
 };
 
-
+#ifdef SAFE_DELETE
+#undef SAFE_DELETE
+#endif
 // For standard objects
 template<typename T>
 inline void SAFE_DELETE(T*& ptr) {
@@ -79,7 +81,9 @@ inline void SAFE_DELETE(T*& ptr) {
     }
 }
 
-
+#ifdef SAFE_DELETE_ARRAY
+#undef SAFE_DELETE_ARRAY
+#endif
 // For arrays (delete [])
 template<typename T>
 inline void SAFE_DELETE_ARRAY(T*& ptr) {
@@ -88,7 +92,9 @@ inline void SAFE_DELETE_ARRAY(T*& ptr) {
         ptr = nullptr;
     }
 }
-
+#ifdef SAFE_FREE
+#undef SAFE_FREE
+#endif
 // For C-style allocations (malloc/free)
 template<typename T>
 inline void SAFE_FREE(T*& ptr) {
@@ -99,8 +105,9 @@ inline void SAFE_FREE(T*& ptr) {
 }
 
 
-
+#ifndef BIT
 #define BIT(x) (1 << (x))           ///< Returns value with bit x set (2^x)
+#endif
 #ifndef FLUX_PI
 #define FLUX_PI 3.14159265358979323846f
 #endif
@@ -129,7 +136,7 @@ typedef unsigned short     U16;     ///< Compiler independent Unsigned 16-bit sh
 
 typedef signed int         S32;     ///< Compiler independent Signed 32-bit integer
 typedef unsigned int       U32;     ///< Compiler independent Unsigned 32-bit integer
-typedef unsigned long long  U64;    ///< Compiler independent Unsigned 64-bit integer
+
 
 typedef float              F32;     ///< Compiler independent 32-bit float
 typedef double             F64;     ///< Compiler independent 64-bit float
