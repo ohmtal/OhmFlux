@@ -5,7 +5,7 @@ set(ELF_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 set(ELFSCRIPT_PATH "/opt/TorqueScript" CACHE PATH "Path to TorqueScript")
 
-if(NOT EXISTS "${ELFSCRIPT_PATH}/TorqueScript.cmake")
+if(NOT EXISTS "${ELFSCRIPT_PATH}/Engine/TorqueScript.cmake")
     message(FATAL_ERROR
         "\n TorqueScript path is not set! "
         "\n Please provide the path using: "
@@ -13,10 +13,10 @@ if(NOT EXISTS "${ELFSCRIPT_PATH}/TorqueScript.cmake")
     )
 else()
  #  defines TORQUESCRIPT_SRC
- include("${ELFSCRIPT_PATH}/TorqueScript.cmake")
+ include("${ELFSCRIPT_PATH}/Engine/TorqueScript.cmake")
 
   set (ELFSCRIPT_INCLUDES
-    ${ELFSCRIPT_PATH}/
+    ${ELFSCRIPT_PATH}/Engine
   )
 endif()
 
