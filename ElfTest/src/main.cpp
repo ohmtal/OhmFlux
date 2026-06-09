@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     ElfFlux::gMain->mSettings.Caption = "ElfTestBed";
     ElfFlux::gMain->mSettings.enableLogFile = true;
     ElfFlux::gMain->mSettings.IconFilename = "assets/icon.png";
-    ElfFlux::gMain->mSettings.maxFPS = 240;
+    ElfFlux::gMain->mSettings.maxFPS = 0;
     // game->mSettings.CursorFilename = "assets/particles/BloodHand.bmp";
     // game->mSettings.cursorHotSpotX = 10;
     // game->mSettings.cursorHotSpotY = 10;

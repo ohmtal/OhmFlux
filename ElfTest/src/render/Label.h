@@ -15,13 +15,13 @@ class Label : public SimObject, public FluxBaseObject {
 public:
     FluxLabel mLabel;
     U32 mFontSimID = 0;
-    StringTableEntry mCaption;
+    // StringTableEntry mCaption;
 
 
     Label()
     {
         mFontSimID = 0;
-        mCaption =  StringTable->insert("");
+        // mCaption =  StringTable->insert("");
     }
 
     bool setFontBySimID(const char* consoleobject );
@@ -35,12 +35,16 @@ public:
     bool onAdd() override;
     void onRemove() override;
 
-    static bool setCaption(void* obj, const char* data) {
-        static_cast<Label*>(obj)->mLabel.setCaption("%s",data);
-        return false;
+
+    static bool setCaption(void* obj,const char* ,  const char* data) {
+        Label* l = static_cast<Label*>(obj);
+        if (!l) return false; //better an assert ?
+        l->mLabel.setCaption("%s",data);
+        return false; //return false => do not update the offset
     }
-    static StringTableEntry getCaption(void* obj) {
-       Label* l=  static_cast<Label*>(obj);
+    static const char *getCaption(void* obj, const char* data) {
+       Label* l = static_cast<Label*>(obj);
+       if (!l) return "";
        return StringTable->insert(l->mLabel.getCaption());
 
     }

@@ -4,16 +4,6 @@ Flying Text
  based on the flying_text resouce on  garagegames.com
 
  2026-06-05 ported from auteria
-    OK timinging seams to be wrong
-    	It's much slower than original
-    	Math ?!  OGE/Torque2D sin/con/tan is in degrees not radians!
-    OK create fragments of textures
-    OK cleanup does not work
-    FIXME should textrues only once!
-
-
-exec("common/client/flyingText.cs");
-
 
 --------------------------------------------------------------------------------
 //short 

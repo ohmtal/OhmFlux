@@ -113,19 +113,19 @@ namespace ElfFlux {
      {
          if (A->isMethod("onCollisionIgnore"))
          {
+
              doIgnore = Con::executef(A,  "onCollisionIgnore",
                  Con::getIntArg(B->getId())
-             ).getInt();
+             ).getBool();
          }
      }
      if (B->getSendCollision())
      {
          if (B->isMethod("onCollisionIgnore"))
          {
-             // FIXME TEST with getInt!!
              doIgnore = Con::executef(B,  "onCollisionIgnore",
                  Con::getIntArg(A->getId())
-             ).getInt() == 1;
+             ).getBool();
          }
      }
      if (doIgnore)

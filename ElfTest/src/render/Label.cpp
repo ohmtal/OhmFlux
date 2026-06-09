@@ -12,7 +12,6 @@ namespace ElfFlux {
 
         if (!consoleobject) return false;
 
-
         Font* simFont = dynamic_cast<Font*>(Sim::findObject(consoleobject));
 
         if (simFont && simFont->mFont) {
@@ -44,18 +43,19 @@ namespace ElfFlux {
     {
         Parent::initPersistFields();
         addGroup("Label");
-        addField("Font", TypeS32, Offset(mFontSimID, Label));
- //FIXME        addProtectedField("caption", TypeString,&setCaption, &getCaption, &defaultProtectedWriteFn);
-        addField("caption", TypeString, Offset(mCaption, Label));
-        addField("x", TypeF32, Offset(mLabel.mDrawParams.x,Label));
-        addField("y", TypeF32, Offset(mLabel.mDrawParams.y,Label));
-        addField("color", TypeColorF, Offset(mLabel.mColor, Label));
-        addField("scale", TypeF32, Offset(mLabel.mScale,Label));
+        addField("Font", TypeS32, Offset(mFontSimID, Label), "SimId of the Font - NOTE only set on Create");
+        // addProtectedField("caption", TypeString, Offset(mCaption, Label), &setCaption,&getCaption, "Set the caption.");
+        // test with offset 0 . i done need a offset here using getter/setter
+        addProtectedField("caption", TypeString, 0, &setCaption,&getCaption, "Set the caption.");
+        addField("x", TypeF32, Offset(mLabel.mDrawParams.x,Label), "x position of the label");
+        addField("y", TypeF32, Offset(mLabel.mDrawParams.y,Label), "x position of the label");
+        addField("color", TypeColorF, Offset(mLabel.mColor, Label), "color of the label");
+        addField("scale", TypeF32, Offset(mLabel.mScale,Label), "scale  the label");
         addField("align", TypeS32, Offset(mLabel.mAlign,Label), "0=left, 1=center, 2=right");
 
-        addField("shadow", TypeBool, Offset(mLabel.mShadow, Label));
-        addField("shadowColor", TypeColorF, Offset(mLabel.mShadowColor, Label));
-        addField("shadowOffset", TypeF32, Offset(mLabel.mShadowOffset, Label));
+        addField("shadow", TypeBool, Offset(mLabel.mShadow, Label), "bool - render shadow ");
+        addField("shadowColor", TypeColorF, Offset(mLabel.mShadowColor, Label), "Color of the shadow");
+        addField("shadowOffset", TypeF32, Offset(mLabel.mShadowOffset, Label), "float offset of the shadow");
         endGroup("Label");
 
 
@@ -69,9 +69,6 @@ namespace ElfFlux {
         if (!getVisible() || !mLabel.isInitialized())
             return;
 
-        // mLabel->setScale(mScale);
-        // mLabel->Print(mCaption, mPosition, mAlign, mColor);
-        mLabel.setCaption("%s", mCaption); // FIXME really every draw
         mLabel.Draw();
     }
     // ------------------------------------------------------------------------.

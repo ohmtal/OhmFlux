@@ -119,5 +119,20 @@ DefineEngineStringlyVariadicFunction( dError, void, 2, 0, "(debug error  string 
 
 //------------------------------------------------------------------------------
 
+#ifdef FLUX_DEBUG
+DefineEngineFunction(testExec, void,() , , "Test an exec return") {
+    Con::evaluate( R"(
+            function onDebugTest() {
+                %res = getRandom(1);
+                echo("should be" SPC %res);
+                return %res ? "true" : "false";
+            }
+        )"
+    );
+    ConsoleValue result = Con::executef("onDebugTest");
+    Con::printf("Test result is %d, as string: %s", result.getBool(), result.getString());
+}
+#endif
+
 ConsoleFunctionGroupEnd(App);
 }
