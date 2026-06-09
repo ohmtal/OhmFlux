@@ -2,14 +2,13 @@
 include("./flyingText.cs"); // like a exec with no calls!
 //------------------------------
 echo ("------------------------------");
-echo ("STEPS for simple but usable:");
-echo ("[X] basic Sprite and Texture ");
-echo ("[X] fix dumpConsoleClasses cause segFault => vec[i]->getUsage() is dangling pointer! Namespace::mUsage was not initialized");
-echo ("[ ] Add Sound - need my SoundTestBed finished!! or simply use the current.");
-echo ("[ ]  add init/shutdown funcs -- mhh how to name  ");
-echo ("[ ] Input Keyboard and Mouse");
-echo ("[ ] write pong ...");
-echo ("[ ] Add collision or better Box2D");
+echo ("Porting from KorkTest to ElfTest");
+echo ("[X] cleanup does not work! << it did?!");
+echo ("[X] mouse does not work");
+echo ("[X] cleanup on object (template) does not work. << onRemove is not called!!!!");
+echo ("[X] flyingText does not work - fixed Point2I");
+echo ("[X] include (noCalls) does not work. i actived it but now it does nowthing!! << fixed in compiledEval");
+echo ("[X] add Box2D again: wild merge OGE+OGE3D+OhmFlux *haha*");
 echo ("------------------------------");
 
 

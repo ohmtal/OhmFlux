@@ -6,7 +6,7 @@
 #include "gui/ImConsole.h"
 
 namespace fs = std::filesystem;
-//FIXME class ScriptEditor;
+class ScriptEditor;
 
 namespace ElfFlux {
 
@@ -16,7 +16,7 @@ namespace ElfFlux {
     {
         typedef FluxMain Parent;
         ImConsole console;
-        //FIXME ScriptEditor* mScriptEditor;
+        ScriptEditor* mScriptEditor;
 
         std::vector<fs::path> scriptFiles;
         std::unique_ptr<FluxGuiGlue> mGuiGlue;

@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#include "sim/simBase.h"
+#include "console/simBase.h"
 #include "console/consoleTypes.h"
 #include "core/fluxGlobals.h"
 #include "core/fluxBaseObject.h"

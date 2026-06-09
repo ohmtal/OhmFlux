@@ -23,7 +23,7 @@
 
 #include "core/fluxBaseObject.h"
 #include "render/fluxRender2D.h"
-#include "sim/simBase.h"
+#include "console/simBase.h"
 #include "console/consoleTypes.h"
 
 class FluxTTFont;

@@ -2,9 +2,7 @@
 #include "hmac-sha1.h"
 #include "platform/platform.h"
 #include "console/console.h"
-#include <platform/platformString.h>
-#include <platform/platformProcess.h>
-// #include "math/mMathFn.h"
+#include "console/engineAPI.h"
 
 namespace TOTP
 {

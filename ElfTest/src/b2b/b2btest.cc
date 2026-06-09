@@ -15,9 +15,7 @@
 
 #include "b2btest.h"
 
-#include "platform/platform.h"
-#include "console/console.h"
-#include "platform/platformString.h"
+#include "console/engineAPI.h"
 #include "appMain.h"
 #include "Box2D/Box2D.h"
 
@@ -119,20 +117,6 @@ namespace b2bTest
     }
 
 
-    ConsoleMethod(TestWorld, getRect, ConsoleString, 2, 2, "(return RectF)"
-    "return the normalized axis Vector")
-    {
-
-        std::string out = object->getRect().to_string();
-        KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
-        char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
-        if (!ret) {
-            Con::errorf("i dont get how Con::getReturnBuffer works ^^");
-            return "";
-        }
-        dStrcpy(ret, out.c_str());
-        return ret;
-    }
 
     void TestWorld::Update(const double& dt)
     {
@@ -232,11 +216,6 @@ namespace b2bTest
 } //namespace b2bTest
 
 
-//===========================================================================
-ConsoleFunction(b2bTest_Hello, ConsoleVoid, 1, 1, "")
-{
-    b2bTest::hello();
-}
 
 /*
 

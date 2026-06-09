@@ -1,7 +1,7 @@
 // FIXME DEBUG RENDER / Tilemap like rendering
 
 #include "Grid.h"
-#include <platform/platformString.h>
+#include "console/engineAPI.h"
 #include "core/Globals.h"
 namespace ElfFlux {
 
@@ -41,165 +41,95 @@ SimObject * Grid::createPath(Point2F start, Point2F end, const bool smoothPath )
 
     if (result)
     {
-        //NOTE not as easy as in TGE but got it working
-        // 1. need registerObject directly not at the ConsoleMethod
-        // 2. need to set the flags of the VMObject to set the DataField's'
+
         SimObject * pathObject = new SimObject();
-        if (!pathObject->registerObject()) {
-            Con::errorf("Failed to register path object!");
-            SAFE_DELETE(pathObject);
-            return nullptr;
-        }
-        pathObject->getVMObject()->flags =  KorkApi::ModStaticFields | KorkApi::ModDynamicFields;
-
-        // pathObject->setupVM(vmPublic, ????);
-
-        F32 halfSquareSize = mGrid.getSquareSize() / 2;
+        F32 halfSquareSize = mGrid.getHalfSquareSize();
 
         for (U32 i = 0; i < replyList.size(); i++)
         {
-            char nbuf[64];memset(nbuf,0,64);
+            char nbuf[64];dMemset(nbuf,0,64);
             dSprintf(nbuf,20,"node%d",i);
             const char *fieldName = StringTable->insert(nbuf);
 
+
+            //XXTH 2021-04-24 / OGE3D 2024-01-04 changed to center and Point2I
             dSprintf(nbuf, 64, "%d %d",
                      (U32)(replyList[i]->getPos().x + halfSquareSize),
                      (U32)(replyList[i]->getPos().y + halfSquareSize)
             );
-
-            if (!pathObject->setDataField( fieldName, NULL, nbuf )) {
-                 SAFE_DELETE(pathObject);
-                return nullptr;
-            }
+            /*
+             *	dSprintf(nbuf,64,"%f %f %f",
+             *          replyList[i]->getPos().x,
+             *          replyList[i]->getPos().y,
+             *          replyList[i]->getPos().z);
+             */
+            pathObject->setDataField( fieldName, NULL, nbuf );
 
         }
         return pathObject;
     }
+
     return NULL;
 }
-
+// ----------------------------------------------------------------
 // ------------------------ Console -------------------------------
-
-ConsoleMethod(Grid,init, ConsoleBool, 4, 4, "param: area: x y w h, F32 SquareSize")
+// ----------------------------------------------------------------
+DefineEngineMethod(Grid, init, bool, (RectI area, F32 squareSize), , "param: area: x y w h, F32 SquareSize")
 {
-    F32 lSquareSize;
-    RectI area;
-
-    dSscanf(argv[2], "%d %d %d %d", &area.x, &area.y, &area.w, &area.h);
-    lSquareSize = dAtof(argv[3]);
-
     if (!area.isValidRect())
         return false;
-
-    object->mGrid.init(area,lSquareSize);
+    object->mGrid.init(area, squareSize);
 
     return true;
 }
 
 
-ConsoleMethod(Grid,getNodeCount, ConsoleInt, 2, 2, "get count of nodes")
+DefineEngineMethod(Grid, getNodeCount, S32, (), , "get count of nodes")
 {
     return object->mGrid.getNodeCount();
 }
-ConsoleMethod(Grid,getNodeCountX, ConsoleInt, 2, 2, "get horizontal count of nodes")
+
+DefineEngineMethod(Grid, getNodeCountX, S32, (), , "get count of horizontal nodes ")
 {
     return object->mGrid.getNodesX();
 }
-ConsoleMethod(Grid,getNodeCountY, ConsoleInt, 2, 2, "get vertical count of nodes")
+DefineEngineMethod(Grid, getNodeCountY, S32, (), , "get count of vertical nodes ")
 {
     return object->mGrid.getNodesY();
 }
 
-ConsoleMethod(Grid, getPos, ConsoleString, 4, 4, "x,y; return pos ")
+
+DefineEngineMethod(Grid, getPos, Point2F, (F32 x, F32 y), , "x,y; return top left pos of a node by the world values ")
 {
-    BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
+    BasicGridNode *lNode = object->mGrid.findNode(x,y);
+    Point2F lResult = {0.f, 0.f};
 
     if (lNode)
     {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %d", (U32)lNode->getPos().x,(U32)lNode->getPos().y);
-        return getReturnString(rbuf,vmPtr);
+        lResult.x = (U32)lNode->getPos().x;
+        lResult.y = (U32)lNode->getPos().y;
     }
-
-    return "";
+    return lResult;
 }
 
-ConsoleMethod(Grid, getNodeCenter, ConsoleString, 4, 4, "x,y; return centered Point2I pos ")
-{
+DefineEngineMethod(Grid, getFlags, S32, (F32 x, F32 y), , "x,y; return flags ") {
 
-    BasicGridNode* lNode = object->mGrid.findNode(dAtof(argv[2]), dAtof(argv[3]));
+    BasicGridNode* lNode = object->mGrid.findNode(x, y);
+    U32 lResult = 0;
 
     if (lNode)
     {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %d",
-                 (U32)(lNode->getPos().x + object->mGrid.getSquareSize() / 2),
-                 (U32)(lNode->getPos().y + object->mGrid.getSquareSize() / 2)
-        );
-        return getReturnString(rbuf, vmPtr);
+        lResult = (U32)lNode->getFlags();
     }
 
-    return "";
+    return lResult;
 }
 
-
-ConsoleMethod(Grid, getNodeCenterbyId, ConsoleString, 3, 3, "return centered Point2I pos ")
+DefineEngineMethod(Grid, getNodeByPos, const char*, (F32 x, F32 y), , "x,y; return nodeidx x y z flags ")
 {
-
-
-    BasicGridNode* lNode = object->mGrid.getNodeById(dAtoi(argv[2]));
-    if (lNode)
-    {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %d",
-                 (U32)(lNode->getPos().x + object->mGrid.getSquareSize() / 2),
-                 (U32)(lNode->getPos().y + object->mGrid.getSquareSize() / 2)
-        );
-        return getReturnString(rbuf, vmPtr);
-    }
-
-    return "";
-}
-
-ConsoleMethod(Grid, getNodeRectbyId, ConsoleString, 3, 3, "return centered rectI pos / extent ")
-{
-    BasicGridNode* lNode = object->mGrid.getNodeById(dAtoi(argv[2]));
-    if (lNode)
-    {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %d %d %d",
-                 (U32)(lNode->getPos().x),
-                 (U32)(lNode->getPos().y),
-                 (U32)(object->mGrid.getSquareSize()),
-                 (U32)(object->mGrid.getSquareSize())
-        );
-        return getReturnString(rbuf,vmPtr);
-    }
-
-    return "";
-}
-
-
-
-ConsoleMethod(Grid, getFlags, ConsoleString, 4, 4, "x,y; return flags ")
-{
-    BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
-
-    if (lNode)
-    {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d", (U32)lNode->getFlags());
-        return getReturnString(rbuf,vmPtr);
-    }
-
-    return "";
-}
-
-ConsoleMethod(Grid, getNodeByPos, ConsoleString, 4,4, "x,y; return nodeidx x y flags ")
-{
-
+    char* rbuf = Con::getReturnBuffer(256);
     BasicGridNode *lNode;
-    S32 lNodeIndex = object->mGrid.getNodeIndex(dAtof(argv[2]),dAtof(argv[3]));
+    S32 lNodeIndex = object->mGrid.getNodeIndex(x,y);
     if (lNodeIndex >= 0)
         lNode = object->mGrid.getNodeById(lNodeIndex);
     else
@@ -208,18 +138,17 @@ ConsoleMethod(Grid, getNodeByPos, ConsoleString, 4,4, "x,y; return nodeidx x y f
     // getNodeIndex
     if (lNode)
     {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %f %f %d", lNodeIndex, lNode->getPos().x, lNode->getPos().y, (U32)lNode->getFlags());
-        return getReturnString(rbuf,vmPtr);
+        dSprintf(rbuf, 256, "%d %f %f %d", lNodeIndex, lNode->getPos().x, lNode->getPos().y,  (U32)lNode->getFlags());
+        return rbuf;
     }
 
     return "";
 }
 
-ConsoleMethod(Grid, getNodeIdByPos, ConsoleInt, 4, 4, "x,y; return S32 nodeidx ")
+DefineEngineMethod(Grid, getNodeIdByPos, S32, (F32 x, F32 y), ,  "x,y; return S32 nodeidx ")
 {
     BasicGridNode* lNode;
-    S32 lNodeIndex = object->mGrid.getNodeIndex(dAtof(argv[2]), dAtof(argv[3]));
+    S32 lNodeIndex = object->mGrid.getNodeIndex(x,y);
     if (lNodeIndex >= 0)
         lNode = object->mGrid.getNodeById(lNodeIndex);
     else
@@ -234,12 +163,11 @@ ConsoleMethod(Grid, getNodeIdByPos, ConsoleInt, 4, 4, "x,y; return S32 nodeidx "
     return -1;
 }
 
-
-
-ConsoleMethod(Grid, getNode, ConsoleString, 3,3, "S32 NodeIndex,  return nodeidx x y flags ")
+DefineEngineMethod(Grid, getNode, const char*, (S32 nodeIndex), , "S32 NodeIndex,  return nodeidx x y z flags ")
 {
+    char* rbuf = Con::getReturnBuffer(256);
     BasicGridNode *lNode;
-    S32 lNodeIndex = dAtof(argv[2]);
+    S32 lNodeIndex = nodeIndex;
     if (lNodeIndex >= 0)
         lNode = object->mGrid.getNodeById(lNodeIndex);
     else
@@ -248,30 +176,49 @@ ConsoleMethod(Grid, getNode, ConsoleString, 3,3, "S32 NodeIndex,  return nodeidx
     // getNodeIndex
     if (lNode)
     {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %f %f %f %d", lNodeIndex, lNode->getPos().x, lNode->getPos().y, (U32)lNode->getFlags());
-        return getReturnString(rbuf,vmPtr);
-
+        dSprintf(rbuf, 256, "%d %f %f %d", lNodeIndex, lNode->getPos().x, lNode->getPos().y, (U32)lNode->getFlags());
+        return rbuf;
     }
 
     return "";
 }
 
-//BasicGridNode * BasicGrid::getNeighbour(BasicGridNode * startNode, U8 direction)
+DefineEngineMethod(Grid, getNodesByRect, const char*, (RectF area), , "x y w h,  return nodeidx nodeidx .. ")
+{
+    std::vector<S32> lVisRadiusList;
 
-ConsoleMethod(Grid, getNeighbour, ConsoleString, 4, 4, "S32 NodeIndex, S32 Direction,  return nodeidx x y flags "
+    object->mGrid.getNodesByRect(area,lVisRadiusList,true);
+
+    if (lVisRadiusList.size() == 0)
+        return "";
+
+    char* rbuf = Con::getReturnBuffer(1024);
+    for (S32 i = 0; i < lVisRadiusList.size() ; i++)
+    {
+        if (i == 0)
+            dSprintf(rbuf, 1024, "%d",lVisRadiusList[i]);
+        else
+            dSprintf(rbuf, 1024, "%s %d", rbuf,lVisRadiusList[i]);
+    }
+
+    return rbuf;
+
+}
+
+DefineEngineMethod(Grid, getNeighbour, const char*, (S32 nodeIndex, S32 direction), , "S32 NodeIndex, S32 Direction,  return nodeidx x y z flags "
 "Directions:"
 "1  2  3"
 "4  X  5"
 "6  7  8"
 )
 {
+    char* rbuf = Con::getReturnBuffer(256);
     BasicGridNode* lstartNode;
     BasicGridNode* lNode;
     S32 lNodeIndex = 0;
-    S32 lStartNodeIndex = dAtof(argv[2]);
-    S32 lDirection = dAtof(argv[3]);
-    if (lNodeIndex >= 0 && (lDirection>0 && lDirection < 9))
+    S32 lStartNodeIndex = nodeIndex;
+    S32 lDirection = direction;
+    if (lNodeIndex >= 0 && (lDirection > 0 && lDirection < 9))
     {
         lstartNode = object->mGrid.getNodeById(lStartNodeIndex);
         lNode = object->mGrid.getNeighbour(lstartNode, lDirection, lNodeIndex);
@@ -282,130 +229,62 @@ ConsoleMethod(Grid, getNeighbour, ConsoleString, 4, 4, "S32 NodeIndex, S32 Direc
     // getNodeIndex
     if (lNode)
     {
-        char rbuf[256] = {0};
-        dSprintf(rbuf, 256, "%d %f %f %d", lNodeIndex, lNode->getPos().x, lNode->getPos().y, (U32)lNode->getFlags());
-        return getReturnString(rbuf,vmPtr);
-
+        dSprintf(rbuf, 256, "%d %f %f %d", lNodeIndex, lNode->getPos().x, lNode->getPos().y,  (U32)lNode->getFlags());
+        return rbuf;
     }
 
     return "";
 }
 
-
-ConsoleMethod(Grid, getNodesByRect ,ConsoleString, 3,3, "x y w h,  return nodeidx nodeidx .. ")
+DefineEngineMethod(Grid, setFlags, bool, (F32 x, F32 y, U32 flags), , "x,y; set flags ")
 {
-    RectF area;
-
-    //
-    if(argc == 3)
-        dSscanf(argv[2], "%f %f %f %f", &area.x, &area.y, &area.w, &area.h);
-    else if(argc == 6)
-    {
-        area.x = dAtof(argv[2]);
-        area.y = dAtof(argv[3]);
-        area.w = dAtof(argv[4]);
-        area.h = dAtof(argv[5]);
-    }
-    std::vector<S32> lVisRadiusList;
-
-    object->mGrid.getNodesByRect(area,lVisRadiusList,true);
-
-
-    if (lVisRadiusList.size() == 0)
-        return "";
-
-    char rbuf[1024] = {0};
-    for (S32 i = 0; i < lVisRadiusList.size() ; i++)
-    {
-        if (i == 0)
-            dSprintf(rbuf, 1024, "%d",lVisRadiusList[i]);
-        else
-            dSprintf(rbuf, 1024, "%s %d", rbuf,lVisRadiusList[i]);
-    }
-    return getReturnString(rbuf,vmPtr);
-}
-
-
-
-
-ConsoleMethod(Grid, setFlags,ConsoleBool, 5, 5, "x,y; U32 flags ")
-{
-    BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
+    BasicGridNode *lNode = object->mGrid.findNode(x,y);
 
     if (lNode)
     {
-        lNode->setFlags(dAtoi(argv[4]));
+        //done at the node object->mGrid.setDirty();
+        lNode->setFlags(flags);
         return true;
     }
 
     return false;
 }
 
-ConsoleMethod(Grid, setIntValue,ConsoleBool, 6, 6, "x,y, idx[0..9], Value; set flags ")
+DefineEngineMethod(Grid, setIntValue, bool, (F32 x, F32 y, S32 idx, S32 value), , "x,y, idx[0..9], Value; set flags ")
 {
-    S32 idx = dAtoi(argv[4]);
-    if (idx > BASIC_GRID_NODE_INTVALUES_COUNT)
+    if (idx > 9 || idx < 0)
         return false;
-    BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
+    BasicGridNode *lNode = object->mGrid.findNode(x,y);
 
     if (lNode)
     {
-        lNode->setIntValue(idx,dAtoi(argv[5]));
+        //done at the node ..not atm but when used it will ...object->mGrid.setDirty();
+        lNode->setIntValue(idx,value);
         return true;
     }
 
     return false;
 }
 
-ConsoleMethod(Grid, setWeight,ConsoleBool, 5, 5, "x,y, U8 weight")
+DefineEngineMethod(Grid, setWeight, bool, (F32 x, F32 y, S32 weigth), , "x,y, U8 weight")
 {
-    BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
+    BasicGridNode *lNode = object->mGrid.findNode(x,y);
 
     if (lNode)
     {
-        lNode->setWeight(dAtoi(argv[4]));
+        //done at the node ..not atm but when used it will ...object->mGrid.setDirty();
+        lNode->setWeight(weigth);
         return true;
     }
 
     return false;
 }
 
-
-ConsoleMethod(Grid, getWeightByNodeId, ConsoleInt, 3, 3, "nodeId")
+DefineEngineMethod(Grid, getIntValue,S32, (F32 x,F32 y,S32 idx), , "x,y, idx[0..9]")
 {
-
-    BasicGridNode* lNode = object->mGrid.getNodeById(dAtoi(argv[2]));
-
-    if (lNode)
-    {
-        return lNode->getWeight();
-
-    }
-
-    return -1;
-}
-
-ConsoleMethod(Grid, setWeightByNodeId, ConsoleBool, 4,4, "nodeId, U8 weight")
-{
-
-    BasicGridNode* lNode = object->mGrid.getNodeById(dAtoi(argv[2]));
-
-    if (lNode)
-    {
-        lNode->setWeight(dAtoi(argv[3]));
-        return true;
-    }
-
-    return false;
-}
-
-
-ConsoleMethod(Grid, getIntValue,ConsoleInt, 5, 5, "x,y, idx[0..9]")
-{
-    S32 idx = dAtoi(argv[4]);
-    if (idx > BASIC_GRID_NODE_INTVALUES_COUNT)
+    if (idx > 9 || idx < 0)
         return 0;
-    BasicGridNode *lNode = object->mGrid.findNode(dAtof(argv[2]),dAtof(argv[3]));
+    BasicGridNode *lNode = object->mGrid.findNode(x,y);
 
     if (lNode)
     {
@@ -416,28 +295,27 @@ ConsoleMethod(Grid, getIntValue,ConsoleInt, 5, 5, "x,y, idx[0..9]")
     return 0;
 }
 
-ConsoleMethod(Grid, setIntValueByNodeId, ConsoleBool, 5, 5, "nodeId, idx[0..9], S32 Value; store an integer value on a grid block ")
+DefineEngineMethod(Grid, setIntValueByNodeId, bool, (S32 nodeId, S32 idx, S32 value), , "x,y, U8 value")
 {
-    S32 idx = dAtoi(argv[3]);
     if (idx > 9)
         return false;
-    BasicGridNode* lNode = object->mGrid.getNodeById(dAtoi(argv[2]));
+    BasicGridNode* lNode = object->mGrid.getNodeById(nodeId);
 
     if (lNode)
     {
-        lNode->setIntValue(idx, dAtoi(argv[4]));
+        //done at the node ..not atm but when used it will ...object->mGrid.setDirty();
+        lNode->setIntValue(idx, value);
         return true;
     }
 
     return false;
 }
 
-ConsoleMethod(Grid, getIntValueByNodeId, ConsoleInt, 4, 4, "nodeId, idx[0..9]")
+DefineEngineMethod(Grid, getIntValueByNodeId, S32, (S32 nodeId, S32 idx), , "nodeId, idx[0..9]")
 {
-    S32 idx = dAtoi(argv[3]);
     if (idx > 9)
         return 0;
-    BasicGridNode* lNode = object->mGrid.getNodeById(dAtoi(argv[2]));
+    BasicGridNode* lNode = object->mGrid.getNodeById(nodeId);
 
     if (lNode)
     {
@@ -448,12 +326,9 @@ ConsoleMethod(Grid, getIntValueByNodeId, ConsoleInt, 4, 4, "nodeId, idx[0..9]")
     return 0;
 }
 
-
-
-
-
-ConsoleMethod(Grid,getinfo,ConsoleVoid,2,2,"Display Infos on Console")
+DefineEngineMethod(Grid, getinfo, void, (bool listNodes), (false), "Display Infos on Console")
 {
+
     Con::printf("Grid - id:%d, Area: %d,%d %d,%d NodeCount:%d SquareSize:%f",
                 object->getId(),
                 object->mGrid.getArea().x, object->mGrid.getArea().y,
@@ -461,84 +336,124 @@ ConsoleMethod(Grid,getinfo,ConsoleVoid,2,2,"Display Infos on Console")
                 object->mGrid.getNodeCount(),
                 object->mGrid.getSquareSize());
 
-}
 
-
-
-ConsoleMethod(Grid,findPath,ConsoleInt,4,5,"findPath (Point2F start, Point2F goal, bool smoothPath = true) - Create a path between the two points and Return the ID of path")
-{
-
-
-    if ((dStrlen(argv[2]) != 0) && (dStrlen(argv[3]) != 0))
+    if (listNodes)
     {
-        Point2F start;
-        Point2F goal;
-        bool smooth = false;
-        dSscanf(argv[2], "%f %f", &start.x, &start.y);
-        dSscanf(argv[3], "%f %f", &goal.x, &goal.y);
-        if (argc>5)
-            smooth = dAtob(argv[4]);
-        SimObject * result = object->createPath(start,goal,smooth);
-        if (result)
+        BasicGridNode* curNode;
+        for (U32 i = 0; i < object->mGrid.getNodeCount(); ++i)
         {
-            // moved up result->registerObject();
-            return result->getId();
-        } else
-            return 0;
-
-    } else {
-        return 0;
-    }
-}
-
-ConsoleMethod(Grid, getPathCost, ConsoleInt, 4, 5, "getPathCost (Point2F start, Point2F goal) - Create a path between the two points and Return the lenth of the path")
-{
-
-
-    if ((dStrlen(argv[2]) != 0) && (dStrlen(argv[3]) != 0))
-    {
-        Point2F start;
-        Point2F goal;
-        bool smooth = false;
-        dSscanf(argv[2], "%f %f", &start.x, &start.y);
-        dSscanf(argv[3], "%f %f", &goal.x, &goal.y);
-        if (argc > 5)
-            smooth = dAtob(argv[4]);
-        S32 result = object->mGrid.getPathCosts(start, goal);
-        if (result)
-        {
-            return result;
+            curNode = object->mGrid.getNodeById(i);
+            Con::printf("node %d at %f,%f", i,
+                        curNode->getPos().x, curNode->getPos().y
+            );
         }
-        else
-            return 0;
+    }
 
-    }
-    else {
-        return 0;
-    }
 }
 
-//------------------------------------------------------------------------------------------------------------------
+DefineEngineMethod(Grid, findPath, S32, (Point2F start, Point2F goal, bool smoothPath), ( false)
+, "findPath (Point2F start, Point2F goal, bool smoothPath = false) - Create a path between the two points."
+  "Warning smoothPath use line of sight and ignore the weight !!!!!"
+)
+{
 
-ConsoleMethod(Grid, compilePathCosts, ConsoleVoid, 2, 2, "Fill the table with all path costs - expensive!")
+    SimObject * result = object->createPath(start,goal, smoothPath);
+    if (result)
+    {
+        result->registerObject();
+        return result->getId();
+    }
+
+    return 0;
+}
+
+
+
+DefineEngineMethod(Grid, getWeightByNodeId, S32, (S32 nodeId), , "")
+{
+    BasicGridNode* lNode = object->mGrid.getNodeById(nodeId);
+    if (lNode)
+    {
+        return lNode->getWeight();
+
+    }
+    return -1;
+}
+
+
+DefineEngineMethod(Grid, setWeightByNodeId, bool, (S32 nodeId, S32 weight), , "nodeId, U8 weight")
+{
+    BasicGridNode* lNode = object->mGrid.getNodeById(nodeId);
+    if (lNode)
+    {
+        lNode->setWeight(weight);
+        return true;
+    }
+    return false;
+}
+
+
+// DefineEngineMethod(Grid, getNodeCenter, Point2I, (F32 x, F32 y), , "x,y; return centerPos Point2I of a node by the world values (see also getCenterPos)")
+// {
+//     BasicGridNode* lNode = object->mGrid.findNode(x, y);
+//
+//     Point2I lResult = Point2I(0, 0);
+//
+//     if (lNode)
+//     {
+//         Point3F lCenterPos = lNode->getCenterPos();
+//         lResult.x = (U32)lCenterPos.x;
+//         lResult.y = (U32)lCenterPos.y;
+//     }
+//
+//     return lResult;
+// }
+
+
+// DefineEngineMethod(Grid, getNodeCenterbyId, Point2I, (S32 nodeId), , "return centered Point2I pos  ")
+// {
+//     BasicGridNode* lNode = object->mGrid.getNodeById(nodeId);
+//     if (lNode)
+//     {
+//         return lNode->getPos2I();
+//     }
+//     return Point2I(0,0);
+// }
+
+
+DefineEngineMethod(Grid, getNodeRectbyId, RectI, (S32 nodeId), , "return centered rectI pos / extent ")
+{
+    BasicGridNode* lNode = object->mGrid.getNodeById(nodeId);
+    if (lNode)
+    {
+        return RectI(
+            (U32)(lNode->getPos().x),
+                     (U32)(lNode->getPos().y),
+                     (U32)(object->mGrid.getSquareSize()),
+                     (U32)(object->mGrid.getSquareSize())
+        );
+    }
+
+    return RectI(0,0,0,0);
+}
+
+// ----------------------------------------------------------------------------
+DefineEngineMethod(Grid, getPathCost, S32, (Point2F start, Point2F goal, bool smoothPath), ( true)
+, "getPathCost (Point2F start, Point2F goal) - Create a path between the two points and Return the lenth of the path")
+{
+    return object->mGrid.getPathCosts(start, goal);
+}
+//------------------------------------------------------------------------------------------------------------------
+DefineEngineMethod(Grid, compilePathCosts, void,() , , "Fill the table with all path costs - expensive!")
 {
     object->mGrid.mPathCosts = object->mGrid.CreateAllPairsCostsTable();
 }
 
-ConsoleMethod(Grid, getNodeToNodeCosts, ConsoleInt, 4, 4, "(param Point2F from,  Point2F to;	return F32 distance)"
-"return nodecount of to points to calculated closed path it -1 then it failed")
-{
-
-    Point2F lFrom;
-    Point2F lTo;
-    dSscanf(argv[2], "%g %g", &lFrom.x, &lFrom.y);
-    dSscanf(argv[2], "%g %g", &lTo.x, &lTo.y);
-    S32 result = object->mGrid.getNodeToNodeCosts(lFrom, lTo);
-
-    return result;
+DefineEngineMethod(Grid, getNodeToNodeCosts, S32, (Point2F start, Point2F goal, bool smoothPath), ( true)
+, "(param Point2F from,  Point2F to;	return F32 distance)"
+  "return nodecount of to points to calculated closed path it -1 then it failed") {
+    return object->mGrid.getNodeToNodeCosts(start, goal);
 }
 
 
-
-
-}
+} //namespace

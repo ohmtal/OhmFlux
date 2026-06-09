@@ -1,8 +1,8 @@
 #include "Label.h"
 #include "appMain.h"
-#include <platform/platformString.h>
 #include "Font.h"
 #include "core/Globals.h"
+#include "console/engineAPI.h"
 
 namespace ElfFlux {
 
@@ -49,12 +49,12 @@ namespace ElfFlux {
         addField("caption", TypeString, Offset(mCaption, Label));
         addField("x", TypeF32, Offset(mLabel.mDrawParams.x,Label));
         addField("y", TypeF32, Offset(mLabel.mDrawParams.y,Label));
-        addField("color", TypeColor4F, Offset(mLabel.mColor, Label));
+        addField("color", TypeColorF, Offset(mLabel.mColor, Label));
         addField("scale", TypeF32, Offset(mLabel.mScale,Label));
         addField("align", TypeS32, Offset(mLabel.mAlign,Label), "0=left, 1=center, 2=right");
 
         addField("shadow", TypeBool, Offset(mLabel.mShadow, Label));
-        addField("shadowColor", TypeColor4F, Offset(mLabel.mShadowColor, Label));
+        addField("shadowColor", TypeColorF, Offset(mLabel.mShadowColor, Label));
         addField("shadowOffset", TypeF32, Offset(mLabel.mShadowOffset, Label));
         endGroup("Label");
 

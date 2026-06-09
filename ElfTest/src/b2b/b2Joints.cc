@@ -18,17 +18,10 @@
 */
 
 
-
-#include "console/console.h"
-#include "console/consoleTypes.h"
-#include "platform/platform.h"
-
 #include "Box2D/Box2D.h"
-
-
 #include "b2Objects.h"
 #include "b2Joints.h"
-#include <platform/platformString.h>
+#include "console/engineAPI.h"
 
 namespace ElfFlux {
 
@@ -60,15 +53,10 @@ ConsoleFunction(linearStiffness2b, const char*, 5, 5,
     LinearStiffness2b(stiffness, damping, frequencyHertz, dampingRatio, 
         lBodyA->mBody, lBodyB->mBody);
 
-    // char* returnBuffer = Con::getReturnBuffer(256);
-    // dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
-    // return returnBuffer;
+    char* returnBuffer = Con::getReturnBuffer(256);
+    dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
+    return returnBuffer;
 
-    std::string out =  std::format("{} {}",stiffness, damping);
-    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
-    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
-    dStrcpy(ret, out.c_str());
-    return ret;
 
 }
 /// Utility to compute rotational stiffness values frequency and damping ratio
@@ -91,14 +79,10 @@ ConsoleFunction(angularStiffness2b, const char*, 5, 5,
     AngularStiffness2b(stiffness, damping, frequencyHertz, dampingRatio,
         lBodyA->mBody, lBodyB->mBody);
 
-    // char* returnBuffer = Con::getReturnBuffer(256);
-    // dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
-    // return returnBuffer;
-    std::string out =  std::format("{} {}",stiffness, damping);
-    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
-    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
-    dStrcpy(ret, out.c_str());
-    return ret;
+    char* returnBuffer = Con::getReturnBuffer(256);
+    dSprintf(returnBuffer, 256, "%g %g", stiffness, damping);
+    return returnBuffer;
+
 }
 
 

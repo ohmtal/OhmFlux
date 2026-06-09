@@ -8,13 +8,13 @@
 #include <gui/ImFlux/led.h>
 #include "scriptEditor.h"
 #include "gui/fonts/HackNerdFontPropo-Regular.h"
+#include <console/consoleObject.h>
+#include <platform/platformString.h>
 #include <fluxFile.h>
 
 #include <string>
 #include <algorithm>
 #include <cctype>
-
-#include "console/script.h" //executeFile
 
 
 void ScriptEditor::updateFontSize() {
@@ -202,7 +202,7 @@ void ScriptEditor::renderEditors()
                     if (ImGui::MenuItem("Hot RELOAD","ctrl r")) {
                         if (!saveEditor(editorState)) {
                             //handle fail saving
-                        } else if (!Con::executeFile(editorState.fullPath.c_str(), false, false)) {
+                        } else if (!Con::exec(editorState.fullPath.c_str(), false, false)) {
                             //FIXME handle exec fail!
                         }
                     }
@@ -312,7 +312,8 @@ void ScriptEditor::renderEditors()
                     }
                 }
                 if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_R)) {
-                    if (saveEditor(editorState)) Con::executeFile(editorState.fullPath.c_str(), false, false);;
+                    std::string cmd = std::format("exec(\"{}\");", editorState.fullPath.c_str());
+                    Con::evaluate(cmd.c_str());
                 }
                 if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_F)) {
                     editorState.mReclaimFocus2 = true;

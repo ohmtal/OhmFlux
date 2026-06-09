@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/fluxBaseObject.h"
-#include "sim/simBase.h"
+#include "console/simBase.h"
 #include "console/consoleTypes.h"
 #include <fonts/fluxTTFont.h>
 #include <fonts/fluxLabel.h>

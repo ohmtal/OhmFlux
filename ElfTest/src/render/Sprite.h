@@ -1,9 +1,10 @@
 #pragma once
 
+#include "console/simBase.h"
+#include "console/consoleTypes.h"
+
 #include "core/fluxBaseObject.h"
 #include "render/fluxRender2D.h"
-#include "sim/simBase.h"
-#include "console/consoleTypes.h"
 #include "core/fluxRenderObject.h"
 
 namespace ElfFlux {

@@ -71,9 +71,9 @@
 #include "platform/platform.h"
 #include "Box2D/Box2D.h"
 #include "b2Objects.h"
-#include <core/safeDelete.h>
-#include "platform/platformString.h"
+#include "console/engineAPI.h"
 #include "math/mMathFn.h"
+#include "core/Utility.h"
 
 
 // global ratio for pixel to meters can be changed with World2b::setRatio console method
@@ -317,8 +317,8 @@ namespace ElfFlux {
      return NULL; //??
  }
 
- ConsoleMethod(Shape2b, setAsBox, bool, 3, 3, "(b2Vec2 x y)"
-     "set as box by x and y" )
+ DefineEngineStringlyVariadicMethod(Shape2b, setAsBox, bool, 3, 3, "(b2Vec2 x y)"
+ "set as box by x and y" )
  {
      if (object->mShapeType != PolygonShape)
          return false;
@@ -329,40 +329,36 @@ namespace ElfFlux {
      return true;
  }
 
- ConsoleMethod(Shape2b, setPoints, bool, 3, 3, "(b2Vec2 x y SPC b2Vec2 x y SPC ...) closed automaticly!!"
-     "set as box by x and y")
+ DefineEngineStringlyVariadicMethod(Shape2b, setPoints, bool, 3, 3, "(b2Vec2 x y SPC b2Vec2 x y SPC ...) closed automaticly!!"
+ "set as box by x and y")
  {
      if (object->mShapeType != PolygonShape)
          return false;
-    const U32 pointElements = FluxStr::getWordCount(argv[2]);
+     const U32 pointElements = Utility::mGetStringElementCount(argv[2]);
 
-    // Check even number of elements and at least 6 (3 points) exist.
-    if ((pointElements % 2) != 0 || pointElements < 6 || pointElements >(2 * b2_maxPolygonVertices))
-    {
-        Con::warnf("SceneObject::createPolygonCollisionShape() - Invalid number of parameters!");
-        return false;
-    }
+     // Check even number of elements and at least 6 (3 points) exist.
+     if ((pointElements % 2) != 0 || pointElements < 6 || pointElements >(2 * b2_maxPolygonVertices))
+     {
+         Con::warnf("SceneObject::createPolygonCollisionShape() - Invalid number of parameters!");
+         return false;
+     }
 
-    b2Vec2 localPoints[b2_maxPolygonVertices];
-    Point2F tmpPoint;
-    for (U32 elementIndex = 0, pointIndex = 0; elementIndex < pointElements; elementIndex += 2, pointIndex++)
-    {
-        // tmpPoint = Utility::mGetStringElementVector(argv[2], elementIndex);
-        tmpPoint.x = dAtof(FluxStr::getWord(argv[2], elementIndex).c_str());
-        if (elementIndex + 1 > pointElements) tmpPoint.y =   dAtof(FluxStr::getWord(argv[2], elementIndex + 1).c_str());
-        else tmpPoint.y = tmpPoint.x;
+     b2Vec2 localPoints[b2_maxPolygonVertices];
+     Point2F tmpPoint;
+     for (U32 elementIndex = 0, pointIndex = 0; elementIndex < pointElements; elementIndex += 2, pointIndex++)
+     {
+         tmpPoint = Utility::mGetStringElementVector(argv[2], elementIndex);
+         localPoints[pointIndex].x = tmpPoint.x / gB2ratio;
+         localPoints[pointIndex].y = tmpPoint.y / gB2ratio;
+     }
 
-        localPoints[pointIndex].x = tmpPoint.x / gB2ratio;
-        localPoints[pointIndex].y = tmpPoint.y / gB2ratio;
-    }
-
-    const U32 pointCount = pointElements / 2;
-    object->mPoligonShape.Set(localPoints, pointCount);
-    return true;
+     const U32 pointCount = pointElements / 2;
+     object->mPoligonShape.Set(localPoints, pointCount);
+     return true;
  }
 
- ConsoleMethod(Shape2b, setRadius, bool, 3, 3, "(F32 r)"
-     "set circle radius")
+ DefineEngineStringlyVariadicMethod(Shape2b, setRadius, bool, 3, 3, "(F32 r)"
+ "set circle radius")
  {
      if (object->mShapeType != CircleShape)
          return false;
@@ -372,8 +368,8 @@ namespace ElfFlux {
 
  }
 
- ConsoleMethod(Shape2b, setEdge, bool, 3, 3, "(x y w h)"
-     "set as box by x and y")
+ DefineEngineStringlyVariadicMethod(Shape2b, setEdge, bool, 3, 3, "(x y w h)"
+ "set as box by x and y")
  {
      if (object->mShapeType != EdgeShape)
          return false;
@@ -648,23 +644,20 @@ void Body2b::debugRenderShape(b2Fixture* fixture, const b2Transform& xf, const b
 
 }
 
-
-ConsoleMethod(Body2b, CreateBody, bool, 4, 4, "(World2b world, BodyDef2b bodydef)"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, CreateBody, bool, 4, 4, "(World2b world, BodyDef2b bodydef)"
+"")
 {
 
-    World2b* lWorld = dynamic_cast<World2b*>(Sim::findObject(dAtoi(argv[2])));
-    BodyDef2b* lBodydef = dynamic_cast<BodyDef2b*>(Sim::findObject(dAtoi(argv[3])));
-    if (!lWorld || !lBodydef) return false;
-
-    //fixme vector of boddies ? 
+    World2b* lWorld = (World2b*)Sim::findObject(dAtoi(argv[2]));
+    BodyDef2b* lBodydef = (BodyDef2b*)Sim::findObject(dAtoi(argv[3]));
+    //fixme vector of boddies ?
     object->mBody = lWorld->mWorld->CreateBody(& lBodydef->mBodyDef);
-    
-    //userdata for collisions 
+
+    //userdata for collisions
     object->mBody->SetUserData(object);
 
     return true;
-    
+
 }
 
 
@@ -672,11 +665,11 @@ ConsoleMethod(Body2b, CreateBody, bool, 4, 4, "(World2b world, BodyDef2b bodydef
 
 
 
-ConsoleMethod(Body2b, CreateFixture, bool, 3, 3, "(FixtureDef2b fixtureDef)"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, CreateFixture, bool, 3, 3, "(FixtureDef2b fixtureDef)"
+"")
 {
 
-    FixtureDef2b* lFixtureDef2b = dynamic_cast<FixtureDef2b*>(Sim::findObject(dAtoi(argv[2])));
+    FixtureDef2b* lFixtureDef2b = (FixtureDef2b*)Sim::findObject(dAtoi(argv[2]));
 
     b2FixtureDef lFixtureDef = lFixtureDef2b->mFixtureDef;
 
@@ -691,100 +684,93 @@ ConsoleMethod(Body2b, CreateFixture, bool, 3, 3, "(FixtureDef2b fixtureDef)"
 
 
 
-ConsoleMethod(Body2b, SetActive, void, 3, 3, "params: bool active"
-    "default true")
+DefineEngineStringlyVariadicMethod(Body2b, SetActive, void, 3, 3, "params: bool active"
+"default true")
 {
     object->mBody->SetActive(dAtob(argv[2]));
 }
 
 
 
-ConsoleMethod(Body2b, getTransform, const char *, 2, 2, "return x y angle"
+DefineEngineStringlyVariadicMethod(Body2b, getTransform, const char *, 2, 2, "return x y angle"
 "")
 {
-    Point3F tmpVec = {
-        object->mRenderObject.getDrawParams().x,
-        object->mRenderObject.getDrawParams().y,
-        object->getAxisVectorAngle()
-    };
-    std::string out = tmpVec.to_string().c_str();
-    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
-    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
-    dStrcpy(ret, out.c_str());
-    return ret;
+    char* rbuf = Con::getReturnBuffer(256);
+    //b2Vec2 pos = object->mBody->GetPosition() * gB2ratio;
+    //F32 angle = object->mBody->GetAngle();
+    Point2F pos = object->mRenderObject.getPosition();
+    dSprintf(rbuf, 256, "%f %f %f", pos.x, pos.y, object->getAxisVectorAngle());
+    return rbuf;
 }
 
-ConsoleMethod(Body2b, getPosition, const char*, 2, 2, "return x y"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, getPosition, const char*, 2, 2, "return x y"
+"")
 {
-    std::string out =  object->mRenderObject.getPosition().to_string();
-    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
-    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
-    dStrcpy(ret, out.c_str());
-    return ret;
+    char* rbuf = Con::getReturnBuffer(256);
+    b2Vec2 pos = object->mBody->GetPosition() * gB2ratio;
+    dSprintf(rbuf, 256, "%f %f", pos.x, pos.y);
+    return rbuf;
 }
 
-ConsoleMethod(Body2b, GetLinearVelocity, const char*, 2, 2, "return x y"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, GetLinearVelocity, const char*, 2, 2, "return x y"
+"")
 {
+    char* rbuf = Con::getReturnBuffer(256);
     b2Vec2 pos = object->mBody->GetLinearVelocity() ;
-    std::string out =  std::format("{} {}", pos.x, pos.y);
-    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
-    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
-    dStrcpy(ret, out.c_str());
-    return ret;
+    dSprintf(rbuf, 256, "%f %f", pos.x, pos.y);
+    return rbuf;
 }
 
-ConsoleMethod(Body2b, GetActive, bool, 2, 2, "return isActive"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, GetActive, bool, 2, 2, "return isActive"
+"")
 {
-    
+
     return object->mBody->IsActive();
 }
 
 
-ConsoleMethod(Body2b, setPosition, void, 3, 3, "params: x y"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, setPosition, void, 3, 3, "params: x y"
+"")
 {
     F32 x, y, angle = 0.f;
-    dSscanf(argv[2], "%g %g", &x, &y);
+    dSscanf(argv[2], "%g %g %g", &x, &y);
 
     object->mBody->SetTransform(b2Vec2(x / gB2ratio, y / gB2ratio), mDegToRad(angle));
 }
 
 
-ConsoleMethod(Body2b, setTransform, void, 3, 3, "params: x y angle"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, setTransform, void, 3, 3, "params: x y angle"
+"")
 {
     F32 x, y, angle;
     dSscanf(argv[2], "%g %g %g", &x, &y, &angle);
-     
+
     object->mBody->SetTransform(b2Vec2(x / gB2ratio, y / gB2ratio), mDegToRad(angle));
 }
 
-ConsoleMethod(Body2b, SetLinearVelocity, void, 3, 3, "params: x y"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, SetLinearVelocity, void, 3, 3, "params: x y"
+"")
 {
     F32 x, y;
     dSscanf(argv[2], "%g %g", &x, &y);
     object->mBody->SetLinearVelocity(b2Vec2(x, y));
 
-    
+
 }
 
 /// Set the angular velocity.
 /// @param omega the new angular velocity in radians/second.
 /// void SetAngularVelocity(float32 omega);
-ConsoleMethod(Body2b, SetAngularVelocity, void, 3, 3, "params: F32 velocity in radians/second"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, SetAngularVelocity, void, 3, 3, "params: F32 velocity in radians/second"
+"")
 {
     object->mBody->SetAngularVelocity(dAtof(argv[2]));
 }
 
 
 
-ConsoleMethod(Body2b, ApplyLinearImpulse, void, 5, 5, "params: Point2I impulse, Point2I point, bool wake"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, ApplyLinearImpulse, void, 5, 5, "params: Point2I impulse, Point2I point, bool wake"
+"")
 {
     b2Vec2 impulse;
     b2Vec2 point;
@@ -796,8 +782,8 @@ ConsoleMethod(Body2b, ApplyLinearImpulse, void, 5, 5, "params: Point2I impulse, 
     object->mBody->ApplyLinearImpulse(impulse, point, wake);
 }
 
-ConsoleMethod(Body2b, ApplyLinearImpulseToCenter, void, 4, 4, "params: Point2I impulse,  bool wake"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, ApplyLinearImpulseToCenter, void, 4, 4, "params: Point2I impulse,  bool wake"
+"")
 {
     b2Vec2 impulse;
     b2Vec2 point;
@@ -809,8 +795,8 @@ ConsoleMethod(Body2b, ApplyLinearImpulseToCenter, void, 4, 4, "params: Point2I i
 }
 
 
-ConsoleMethod(Body2b, ApplyForce, void, 5, 5, "params: Point2I force, Point2I point, bool wake"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, ApplyForce, void, 5, 5, "params: Point2I force, Point2I point, bool wake"
+"")
 {
     b2Vec2 force;
     b2Vec2 point;
@@ -822,8 +808,8 @@ ConsoleMethod(Body2b, ApplyForce, void, 5, 5, "params: Point2I force, Point2I po
     object->mBody->ApplyForce(force, point, wake);
 }
 
-ConsoleMethod(Body2b, ApplyForceToCenter, void, 4, 4, "params: Point2I force,  bool wake"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, ApplyForceToCenter, void, 4, 4, "params: Point2I force,  bool wake"
+"")
 {
     b2Vec2 force;
     bool wake;
@@ -833,8 +819,8 @@ ConsoleMethod(Body2b, ApplyForceToCenter, void, 4, 4, "params: Point2I force,  b
 }
 
 
-ConsoleMethod(Body2b, ApplyAngularImpulse, void, 4, 4, "params: F32 impulse, bool wake"
-    "")
+DefineEngineStringlyVariadicMethod(Body2b, ApplyAngularImpulse, void, 4, 4, "params: F32 impulse, bool wake"
+"")
 {
     F32 impulse = dAtof(argv[2]);
     bool  wake = dAtob(argv[3]);
@@ -843,37 +829,36 @@ ConsoleMethod(Body2b, ApplyAngularImpulse, void, 4, 4, "params: F32 impulse, boo
 
 
 
-ConsoleMethod(Body2b, SetGravityScale, void, 3, 3, "params: F32 scale"
-    "default 1.0, 0=ignore gravity")
+DefineEngineStringlyVariadicMethod(Body2b, SetGravityScale, void, 3, 3, "params: F32 scale"
+"default 1.0, 0=ignore gravity")
 {
     object->mBody->SetGravityScale(dAtof(argv[2]));
 }
-ConsoleMethod(Body2b, SetLinearDamping, void, 3, 3, "params: F32 value"
-    "default 0, 0..1")
+DefineEngineStringlyVariadicMethod(Body2b, SetLinearDamping, void, 3, 3, "params: F32 value"
+"default 0, 0..1")
 {
     object->mBody->SetLinearDamping(dAtof(argv[2]));
 }
-ConsoleMethod(Body2b, SetAngularDamping, void, 3, 3, "params: F32 value"
-    "default 0, 0..1")
+DefineEngineStringlyVariadicMethod(Body2b, SetAngularDamping, void, 3, 3, "params: F32 value"
+"default 0, 0..1")
 {
     object->mBody->SetAngularDamping(dAtof(argv[2]));
 }
 
-ConsoleMethod(Body2b, SetFixedRotation, void, 3, 3, "params: bool fixedRotation"
-    "default false")
+DefineEngineStringlyVariadicMethod(Body2b, SetFixedRotation, void, 3, 3, "params: bool fixedRotation"
+"default false")
 {
     object->mBody->SetFixedRotation(dAtob(argv[2]));
 }
 
 //------------------------------------------------------------------------------
-ConsoleMethod(Body2b, getAxisVector, ConsoleString, 2, 2, "(return Point2F)"
-    "return the normalized axis Vector")
+DefineEngineStringlyVariadicMethod(Body2b, getAxisVector, const char*, 2, 2, "(return Point2F)"
+"return the normalized axis Vector")
 {
-    std::string out = object->getAxisVector().to_string().c_str();
-    KorkApi::ConsoleValue retV = Con::getReturnBuffer(out.length()+1);
-    char* ret = (char*)retV.evaluatePtr(vmPtr->getAllocBase());
-    dStrcpy(ret, out.c_str());
-    return ret;
+    char* returnBuffer = Con::getReturnBuffer(256);
+    const Point2F& vec = object->getAxisVector();
+    dSprintf(returnBuffer, 256, "%g %g", vec.x, vec.y);
+    return returnBuffer;
 }
 
 } //namespace

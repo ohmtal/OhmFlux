@@ -21,6 +21,7 @@ class BasicGridNode
 {
 private:
    Point2F mPos;
+   F32 mZ; //when using Terrain
    // Flag 0 = unwalkable!
    U32  mFlags;
    U8  mWeight;
@@ -38,8 +39,13 @@ public:
 
 public:
    void setPos(Point2F lPos) { mPos = lPos; }
+   void setPos(Point3F lPos) { mPos.x = lPos.x; mPos.y = lPos.y; mZ=lPos.z; }
+   void setZ( F32 value ) { mZ = value; }
    Point2F getPos() { return mPos;}
-   Point2F getPos2F() { return { mPos.x, mPos.y };}
+   Point2F getPos2F() { return { mPos.x, mPos.y };} //COMPAT
+   Point3F getPos3F() { return { mPos.x, mPos.y, mZ};}
+   F32 getZ() { return mZ;}
+
 
    void setIntValue(S32 idx,S32 lValue)
    {

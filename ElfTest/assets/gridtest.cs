@@ -18,7 +18,7 @@ function GridTest::Init(%this) {
     %this.add(%this.grid);
     %this.grid.addRandomMud();
 
-    %this.path = %this.grid.findPath( %this.grid.start, %this.grid.end, true);
+    %this.path = %this.grid.findPath( %this.grid.start, %this.grid.end, false);
     if ( isObject(%this.path) ) %this.add( %this.path );
 }
 

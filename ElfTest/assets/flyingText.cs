@@ -98,7 +98,6 @@ function ft(%text) {
     // $flyingText::LetterImages = "assets/texture/letters/nice/";
     %result  = new ScriptGroup() {
         class = "FlyingText";
-        color = %color;
         text = %text $= "" ? "Hello World" : %text;
         appearance = 1;
         showMethod = 1;
@@ -197,7 +196,7 @@ function FlyingText::onAdd(%this)
 function FlyingText::onRemove(%this)
 {
    %this.removeControls();
-   %this.cleanup.delete();
+   if (isObject(%this.cleanup)) %this.cleanup.delete();
    dEcho("FlyingText::onRemove(%this)");
 }
 //------------------------------------------------------------------------------
@@ -343,12 +342,14 @@ function FlyingText::setText(%this, %text, %color)
 
          %this.control[%i].w = getWord(%this.control[%i].Texture.getSize(),0);
          %this.control[%i].h = getWord(%this.control[%i].Texture.getSize(),1);
+		 
 
          %this.control[%i].width =  %this.control[%i].w + %this.charSpaceing;
          %this.control[%i].height = %this.control[%i].h;
          
          
          %width = %this.control[%i].width;
+         echo("texture size:" SPC %this.control[%i].Texture.getSize());	
          
       }
       else
@@ -436,7 +437,8 @@ function FlyingText::removeControls(%this)
 //------------------------------------------------------------------------------
 function FlyingText::reset(%this, %ignoreDelete)
 {
-   dWarn("~~~~~ RESET - ignore:" SPC %ignoreDelete);
+ 
+   dWarn("~~~~~ RESET - ignore:" SPC 1 * %ignoreDelete);
    %this.stop();
    %this.removeControls();
    
@@ -703,6 +705,6 @@ function FlyingText::computePopupShowAdjust( %this, %i, %percent, %percentToUse 
 }
 
 
-
+echo("flyingText loaded...");
 
 

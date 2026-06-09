@@ -4,10 +4,11 @@
 #include "console/script.h"
 #include "sim/netStringTable.h"
 #include "console/engineAPI.h"
+#include <platform/platformVolume.h>
 
 
 #include "gui/ImConsole.h"
-// #include "scriptEditor/scriptEditor.h"
+#include "scriptEditor/scriptEditor.h"
 
 namespace engineAPI
 {
@@ -25,6 +26,12 @@ void init()
     Con::init();
     // Platform::initConsole();
     NetStringTable::create();
+
+    Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
+    Platform::FS::MountDefaults();
+    Torque::FS::SetCwd( "assets:/" );
+    Platform::setCurrentDirectory( Platform::getMainDotCsDir() );
+
     Platform::init();    // platform specific initialization
     // Set engineAPI initialized to true
     engineAPI::gIsInitialized = true;
@@ -141,25 +148,25 @@ namespace ElfFlux {
                     ImGui::MenuItem("Console", "GraveAccent", &showConsole);
                     ImGui::EndMenu();
                 }
- //FIXME
-                // if (ImGui::BeginMenu("Scripts")) {
-                //
-                //     ImGui::Checkbox("Open Script Editor", &openScriptEditor);
-                //
-                //     ImGui::SeparatorText("Files");
-                //     bool selected = false;
-                //     for (const auto& f : scriptFiles) {
-                //         // selected = getScript() == f.string();
-                //         if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
-                //
-                //             std::string fileName = "assets/" +  f.string();
-                //             if (Con::exec(fileName.c_str(), false, false)) {
-                //                 if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
-                //             }
-                //         }
-                //     }
-                //     ImGui::EndMenu();
-                // }
+
+                if (ImGui::BeginMenu("Scripts")) {
+
+                    ImGui::Checkbox("Open Script Editor", &openScriptEditor);
+
+                    ImGui::SeparatorText("Files");
+                    bool selected = false;
+                    for (const auto& f : scriptFiles) {
+                        // selected = getScript() == f.string();
+                        if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
+
+                            std::string fileName = "assets/" +  f.string();
+                            if (Con::executeFile(fileName.c_str(), false, false)) {
+                                if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
+                            }
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
                 if (ImGui::BeginMenu("Gui Scale")) {
                     if (ImGui::MenuItem("0.75")) mGuiGlue->setScale(0.75f);
                     if (ImGui::MenuItem("1.00")) mGuiGlue->setScale(1.00f);
@@ -179,7 +186,7 @@ namespace ElfFlux {
         if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
         console.Draw("Console",&showConsole);
         // ------
-        //FIXME if (openScriptEditor && mScriptEditor) mScriptEditor->renderEditors();
+        if (openScriptEditor && mScriptEditor) mScriptEditor->renderEditors();
         // ------
 
         mGuiGlue->DrawEnd();
@@ -222,8 +229,8 @@ namespace ElfFlux {
 
        engineAPI::shutDown();
 
-        //FIXME SAFE_DELETE(mScriptEditor);
-        //FIXME mScriptEditor = nullptr;
+        SAFE_DELETE(mScriptEditor);
+        mScriptEditor = nullptr;
 
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
@@ -278,57 +285,21 @@ namespace ElfFlux {
 
 
         // script >>>
-
-        Log("[error]  bool TorqueScriptRuntime:: is called on exec and think it's a compiled file replace the extension with .dso");
-        Log("[error] --> it's Torque::FS::GetFileNode(scriptFileName); because we have no mounted filesystem!");
-        Log("[info] add or replace platform/platformVolume.cpp");
-
-
-//FileSystemRef MountSystem::_getFileSystemFromList(const Path& path) const
-        //MISSING:
-        //  Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
-        // Platform::FS::MountDefaults();
-// POSIX:
-//         bool Platform::FS::InstallFileSystems()
-//         {
-//             Platform::FS::Mount( "/", Platform::FS::createNativeFS( String() ) );
-//
-//             // Setup the current working dir.
-//             char buffer[PATH_MAX];
-//             if (::getcwd(buffer,sizeof(buffer)))
-//             {
-//                 // add trailing '/' if it isn't there
-//                 if (buffer[dStrlen(buffer) - 1] != '/')
-//                     dStrcat(buffer, "/", PATH_MAX);
-//
-//                 Platform::FS::SetCwd(buffer);
-//             }
-//
-//             // Mount the home directory
-//             if (char* home = getenv("HOME"))
-//                 Platform::FS::Mount( "home", Platform::FS::createNativeFS(home) );
-//
-//             return true;
-//         }
-//<<<<<<<
-
-
-
         engineAPI::init();
 
 
        //FIXME  Con::addConsumer(MyLogger, NULL);
         std::string fileName = "assets/main.cs"; //fixme command line parameter for file
-        //FIXME
-        // if (!Con::exec(fileName.c_str(), false, false)) {
-        //     return false;
-        // }
 
-        // <<<<
+        if (!Con::executeFile(fileName.c_str(), false, false)) {
+            return false;
+        }
+
+
 
 
         fetchScriptFiles();
-        //FIXME mScriptEditor = new ScriptEditor();
+        mScriptEditor = new ScriptEditor();
 
         return true;
     }

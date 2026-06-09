@@ -1,5 +1,5 @@
 #include "Font.h"
-#include <platform/platformString.h>
+#include "console/engineAPI.h"
 
 namespace ElfFlux {
 

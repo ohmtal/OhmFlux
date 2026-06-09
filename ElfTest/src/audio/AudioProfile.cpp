@@ -1,6 +1,6 @@
 #include "AudioProfile.h"
 #include "appMain.h"
-#include <platform/platformString.h>
+#include "console/engineAPI.h"
 
 
 namespace ElfFlux {
@@ -41,7 +41,7 @@ namespace ElfFlux {
     // alx compat
 
     // return the id of the profile
-    ConsoleFunction(alxPlay, ConsoleInt, 2, 2, "AudioProfile") {
+    ConsoleFunction(alxPlay, S32, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
 
         if (!profile || !profile->mAudioStream.IsInitialized()) return false;
@@ -50,7 +50,7 @@ namespace ElfFlux {
         return 0;
     }
 
-    ConsoleFunction(alxIsPlaying, ConsoleBool, 2, 2, "AudioProfile") {
+    ConsoleFunction(alxIsPlaying, bool, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
 
         if (!profile || !profile->mAudioStream.IsInitialized()) return false;
@@ -58,19 +58,19 @@ namespace ElfFlux {
     }
 
 
-    ConsoleFunction(alxStop, ConsoleBool, 2, 2, "AudioProfile") {
+    ConsoleFunction(alxStop, bool, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
 
         if (!profile || !profile->mAudioStream.IsInitialized()) return false;
         return profile->mAudioStream.stop();
     }
-    ConsoleFunction(alxPause, ConsoleBool, 2, 2, "AudioProfile") {
+    ConsoleFunction(alxPause, bool, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
 
         if (!profile || !profile->mAudioStream.IsInitialized()) return false;
         return profile->mAudioStream.stop();
     }
-    ConsoleFunction(alxUnPause, ConsoleBool, 2, 2, "AudioProfile") {
+    ConsoleFunction(alxUnPause, bool, 2, 2, "AudioProfile") {
         AudioProfile* profile = dynamic_cast<AudioProfile*>(Sim::findObject(argv[1]));
         if (!profile || !profile->mAudioStream.IsInitialized()) return false;
         return profile->mAudioStream.resume();

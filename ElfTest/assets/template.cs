@@ -117,7 +117,7 @@ function Game::onRemove(%this) {
   %this.deleteObjects();
 }
 
-function Game::ml(%this, $stop) {
+function Game::ml(%this, %stop) {
 
   %this.label1.x =  (%this.label1.x + 1.4) % 1200 ;
   // echo("X is" SPC %this.label1.x);
@@ -132,9 +132,4 @@ $Game = new GameCtrl() {
 $Game.LoadAssets();
 CleanupSet.add($Game);
 $game.ml(); //scrolling using schedule ..
-
-
-
-
-
 

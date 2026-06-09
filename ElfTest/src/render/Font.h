@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sim/simBase.h"
+#include "console/simBase.h"
 #include "console/consoleTypes.h"
 #include <fonts/fluxTTFont.h>
 
