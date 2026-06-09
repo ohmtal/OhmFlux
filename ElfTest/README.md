@@ -1,10 +1,9 @@
-# 🌶️ Ohmflux KorkScript implementation
+# 🌶️ Ohmflux ElfScript implementation
 
 
 <img src="./res/icon.png" align="left" width="128" style="margin-right: 10px;">
-Using: <a href="https://github.com/ohmtal/korkscript">https://github.com/ohmtal/korkscript</a> based on the great work by James: <a href="https://github.com/jamesu/korkscript"> https://github.com/jamesu/korkscript </a> 
+Using: <a href="https://github.com/ohmtal/TorqueScript">https://github.com/ohmtal/TorqueScript</a>
 
-korkscript is am embeddable scripting language based on TorqueScript. It is intended for use in videogames and other related software written in C++.
 <div style="clear: both;"></div>
 
 ---
@@ -12,7 +11,7 @@ korkscript is am embeddable scripting language based on TorqueScript. It is inte
 ## development Gui 
 - ImGui Console: testing code snippets, modify objects and see or copy  the log entries
 - Scripts are looked up in assets for (re)loading via Menu. 
-- May also add an script editor but not sure about this, because external Tools are more powerful.
+- a small ScriptEditor 
 
 ## template.cs 
 Objects Demo:
@@ -32,7 +31,4 @@ Show how to:
 
 ![Template Screen](./res/Screenshot_2026-06-02_02-24-48.png)
 
-Note: Android and Emscripten build not working so far:
-- /opt/korkscript/engine/platform/types.gcc.h:91:4: error: "GCC: Unsupported Target
-- /opt/korkscript/engine/platform/types.h:131:4: error: "Unsupported Operating System"
 

@@ -2,14 +2,15 @@
 
 function byteToHex(%value)
 {
-    if (%value > 255 || %value < 0) return "?" @ %value;
-    %value = %value & 0xFF;
-    %map = "0123456789ABCDEF"; // Uppercase variant
+	return strFormat("%02x", %value);
+//    if (%value > 255 || %value < 0) return "?" @ %value;
+//    %value = %value & 0xFF;
+//    %map = "0123456789ABCDEF"; // Uppercase variant
 
-    %high = getSubStr(%map, (%value >> 4), 1);
-    %low  = getSubStr(%map, (%value & 0xF), 1);
+//    %high = getSubStr(%map, (%value >> 4), 1);
+//    %low  = getSubStr(%map, (%value & 0xF), 1);
 
-    return %high @ %low;
+//    return %high @ %low;
 }
 
 

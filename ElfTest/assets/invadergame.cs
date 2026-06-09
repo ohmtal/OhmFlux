@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
 // InvaderGame ported from TGE to OGE To KorkFlux
 //------------------------------------------------------------------------------
-// NOTE: This is not a good example to demonstrate How to use KorkFlux
+// NOTE: This is not a good example to demonstrate How to use ElfScript
 //       using Sprite Objects is much better than GameCtrl with onRender callback
-//       I added this script to test KorkScript itself.
+//       I added this script to test ElfScript itself.
 //------------------------------------------------------------------------------
 // FIXME  exec("common/highscore.cs");
 $align::left = 0;

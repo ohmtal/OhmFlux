@@ -161,20 +161,6 @@ function c(%p) {
  }
 //------------- try to find out why invaderGame crash ......
 
- // testing crash minimal setup
- // this was also before you latest changes!
- // crash at  StringStack::getArgcArgv << mNumFrames is 0 !
- function crash() {
-    %player =  new ScriptObject() ;
-    %player.FooBar(1,2,3,4,5,6,7,8,9,10); //OK
-    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11); //OK
-    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12); //OK
-    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12,13); //OK
-    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12,13,14); //OK
-    echo ("HERE IT COMES!!!!!:");
-    %player.FooBar(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15); //crash
-    // in my test project it crashed at the 10th parameter
- }
 
  // ParseError(
  function a() { echo ("a");totp(); $ashed = schedule(5000,0,"a"); }
