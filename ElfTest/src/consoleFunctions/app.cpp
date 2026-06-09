@@ -8,6 +8,9 @@
 #include <string>
 
 namespace ElfFlux {
+
+
+
 ConsoleFunctionGroupBegin(App, "App Functions: getFPS, ...");
 
 ConsoleFunction(getFullScreen, bool, 1,1, "") {

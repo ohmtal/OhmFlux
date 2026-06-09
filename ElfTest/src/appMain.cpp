@@ -16,7 +16,7 @@ namespace engineAPI
     bool gIsInitialized = false;
 
 // -----------------------------------------------------------------------------
-void init()
+void init(FluxMain* main)
 {
     // Asserts should be created FIRST
     PlatformAssert::create();
@@ -36,6 +36,10 @@ void init()
     // Set engineAPI initialized to true
     engineAPI::gIsInitialized = true;
     Sim::init();
+    // Variables:
+   //FIXME .... Con::setFloatVariable("frameLimit", main->mSettings.frameLimiter);
+
+
 }
 
 void shutDown() {
@@ -285,7 +289,7 @@ namespace ElfFlux {
 
 
         // script >>>
-        engineAPI::init();
+        engineAPI::init(this);
 
 
        //FIXME  Con::addConsumer(MyLogger, NULL);
