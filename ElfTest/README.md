@@ -7,8 +7,9 @@ Using: <a href="https://github.com/ohmtal/TorqueScript">https://github.com/ohmta
 <br />
 <br />
 <br />
+<br />
+<br />
 <div style="clear: both;"></div>
-
 ---
 
 ## development Gui 
@@ -32,6 +33,6 @@ Show how to:
 
 
 
-![Template Screen](./res/Screenshot_2026-06-02_02-24-48.png)
+<!-- ![Template Screen](./res/Screenshot_2026-06-02_02-24-48.png) -->
 
 
