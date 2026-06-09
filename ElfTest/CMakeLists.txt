@@ -141,6 +141,11 @@ set(PROJECT_SOURCES
 
 
 
+    # basic math
+    ${ELF_DIR}/src/math/mMathFn.h
+    ${ELF_DIR}/src/math/mConsoleFunctions.cpp
+
+
     # ---- editor
     ${ELF_DIR}/src/scriptEditor/scriptEditor.cpp
     ${ELF_DIR}/src/scriptEditor/scriptEditor.h
