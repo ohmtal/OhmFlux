@@ -144,7 +144,10 @@ namespace FluxNet {
                     curl_easy_cleanup(mCurlHandle);
                      mCurlHandle = nullptr;
                 }
-                if (headers) curl_slist_free_all(headers);
+                if (headers) {
+                    curl_slist_free_all(headers);
+                    headers = nullptr;
+                }
                 stop();
                 mRunning.store(false);
                 if (onDisConnected) onDisConnected();

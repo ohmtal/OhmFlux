@@ -71,17 +71,15 @@ namespace FluxAudio {
         SDL_AudioDeviceID getDeviceID() const { return mAudioDevice; }
         const SDL_AudioSpec getAudioSpec() { return mOutputSpec; }
 
-        bool bindStream(SDL_AudioStream* stream)
+        bool bindStream(SDL_AudioStream* stream, bool isNewStream = true)
         {
             if (!mAudioDevice || !stream)
                 return false;
-            SDL_AudioDeviceID currentDevice = SDL_GetAudioStreamDevice(stream);
 
-            if (currentDevice == mAudioDevice) {
-                return true;
-            }
-            if (currentDevice != 0) {
-                SDL_UnbindAudioStream(stream);
+            if (!isNewStream) { //added because SDL push an error which cause a leak
+                SDL_AudioDeviceID currentDevice = SDL_GetAudioStreamDevice(stream);
+                if (currentDevice == mAudioDevice) return true;
+                if (currentDevice != 0) SDL_UnbindAudioStream(stream);
             }
             return SDL_BindAudioStream(mAudioDevice, stream);
         }
