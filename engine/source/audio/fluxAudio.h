@@ -71,7 +71,7 @@ namespace FluxAudio {
         SDL_AudioDeviceID getDeviceID() const { return mAudioDevice; }
         const SDL_AudioSpec getAudioSpec() { return mOutputSpec; }
 
-        bool bindStream(SDL_AudioStream* stream, bool isNewStream = true)
+        bool bindStream(SDL_AudioStream* stream, bool isNewStream = false)
         {
             if (!mAudioDevice || !stream)
                 return false;
