@@ -22,6 +22,11 @@
 
 #pragma once
 
+#ifdef FLUX_DEBUG
+#define TORQUE_DEBUG
+#endif
+
+
 #define TORQUE_SCRIPT_EXTENSION   "cs"
 #define TORQUE_APP_NAME            "ElfTestBed"
 #define TORQUE_APP_VERSION         1000
