@@ -16,6 +16,16 @@
 
 #include "console/script.h" //executeFile
 
+ScriptEditor::~ScriptEditor() {
+    for (auto& editor :mEditors) {
+        if (editor.instance) {
+            SAFE_DELETE(editor.instance);
+            editor.instance = nullptr;
+        }
+    }
+    mEditors.clear();
+}
+
 
 void ScriptEditor::updateFontSize() {
         switch (mCurrentFontSize) {

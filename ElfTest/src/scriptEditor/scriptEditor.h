@@ -67,7 +67,7 @@ public:
     ScriptEditor() {
         init();
     }
-    ~ScriptEditor() = default;
+    ~ScriptEditor();
 
     void onImGuiRender(Point2I offset, const RectI& updateRect);
     void init();

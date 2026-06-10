@@ -58,10 +58,10 @@ ConsoleFunction(setVSync, void, 2,2, "bool value") {
 //     const char* fileName = vmPtr->valueAsString(argv[1]);
 //     return KorkApi::ConsoleValue::makeUnsigned(Con::exec(fileName, true, false));
 // }
-
-DefineEngineFunction(include,bool, (String fileName),, "include(fileName)" "exec a file without calls" ){
-    return Con::executeFile(fileName, true);
-}
+// XXTH deaktivates again <<< aSan memleak
+// DefineEngineFunction(include,bool, (String fileName),, "include(fileName)" "exec a file without calls" ){
+//     return Con::executeFile(fileName, true);
+// }
 
 // ----------------- debuglog ----------------------
 //-----------------------------------------------------------------------------

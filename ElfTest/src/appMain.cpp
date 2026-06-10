@@ -150,6 +150,9 @@ namespace ElfFlux {
                 if (ImGui::BeginMenu("Window")) {
                     ImGui::MenuItem("Main Menu", "F10", &showMenu);
                     ImGui::MenuItem("Console", "GraveAccent", &showConsole);
+                    if (ImGui::MenuItem("calling shutdown test")) {
+                        Con::executef(this, "ShutDown");
+                    }
                     ImGui::EndMenu();
                 }
 
@@ -230,7 +233,13 @@ namespace ElfFlux {
 
     void Main::Deinitialize()
     {
-        // this->unregisterObject(); //Console
+        // ------------------------
+        // Tell console we are shutting down!
+        Con::executef(this, "ShutDown");
+        Update(0.f); // << add a tick so shutdown is executed!
+        Update(0.f); // << once again
+        // ------------------------
+
 
 
         SAFE_DELETE(mScriptEditor);

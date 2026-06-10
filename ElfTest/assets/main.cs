@@ -17,6 +17,15 @@ echo ("------------------------------");
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
 else CleanupSet.deleteObjects();
 
+function Main::shutdown(%this) {
+  echo("Main shutdown cleanup........");
+  if (isObject(CleanupSet)) {
+    CleanupSet.deleteObjects();
+    CleanupSet.delete();
+  }
+}
+
+
 //------------------------------
 
 

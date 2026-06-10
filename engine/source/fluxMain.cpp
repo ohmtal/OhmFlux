@@ -687,9 +687,6 @@ void FluxMain::IterateFrame()
 
 	}
 
-
-
-
 	//  Render
 	if ( gAppStatus.Visible ) {
 		Draw();

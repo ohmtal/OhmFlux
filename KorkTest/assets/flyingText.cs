@@ -196,8 +196,8 @@ function FlyingText::onAdd(%this)
 //------------------------------------------------------------------------------
 function FlyingText::onRemove(%this)
 {
-   %this.removeControls();
-   %this.cleanup.delete();
+   %this.schedule(10, removeControls);
+   %this.cleanup.schedule(100,delete);
    dEcho("FlyingText::onRemove(%this)");
 }
 //------------------------------------------------------------------------------
