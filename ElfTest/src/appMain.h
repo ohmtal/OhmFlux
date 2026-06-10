@@ -1,9 +1,10 @@
-// FIXME separate console/Menu from "Main"
 #pragma once
 
 #include "fluxMain.h"
 #include "gui/fluxGuiGlue.h"
 #include "gui/ImConsole.h"
+
+#include "console/simBase.h"
 
 namespace fs = std::filesystem;
 class ScriptEditor;
@@ -12,9 +13,10 @@ namespace ElfFlux {
 
 
     //-----------------------------------------------------------------------------
-    class Main : public FluxMain
+    class Main : public SimSet, public FluxMain
     {
-        typedef FluxMain Parent;
+        typedef SimSet Parent;
+
         ImConsole console;
         ScriptEditor* mScriptEditor;
 
@@ -39,6 +41,11 @@ namespace ElfFlux {
         virtual void onDrawTopMost() override;
         bool fetchScriptFiles();
 
+
+        // ------------- Console -------------
+        DECLARE_CONOBJECT(Main);
+        static void initPersistFields();
+        virtual void deleteObject() override {}
     };
 
 

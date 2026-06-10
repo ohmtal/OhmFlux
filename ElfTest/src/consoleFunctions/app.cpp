@@ -10,7 +10,11 @@
 namespace ElfFlux {
 
 
-
+// --------------------------------------------------------------------------
+void foo() {
+    Con::setVariable("foo", "bar");
+}
+// --------------------------------------------------------------------------
 ConsoleFunctionGroupBegin(App, "App Functions: getFPS, ...");
 
 ConsoleFunction(getFullScreen, bool, 1,1, "") {

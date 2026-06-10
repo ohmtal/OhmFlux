@@ -81,7 +81,7 @@ public:
 
 	// SDL_AudioDeviceID getAudioDevice() { return mAudioDevice; }
 
-	void queueObject(FluxBaseObject* lObject);
+	void queueObject(FluxBaseObject* lObject, bool autoDelete = true);
 	bool unQueueObject(FluxBaseObject* lObject);
 
 	bool queueDelete(FluxBaseObject* lObject); //<< this rock :D

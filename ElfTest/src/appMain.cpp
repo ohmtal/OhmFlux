@@ -1,69 +1,69 @@
 #include "appMain.h"
 
+#include "console/script.h"
+#include "console/engineAPI.h"
+
+#include "gui/ImConsole.h"
+#include "scriptEditor/scriptEditor.h"
+
+//------------------------------------------------------------------------------
+//
+// NOTE: On Console it's: $Main
+//
+//------------------------------------------------------------------------------
 #include "console/console.h"
 #include "console/script.h"
 #include "sim/netStringTable.h"
 #include "console/engineAPI.h"
 #include <platform/platformVolume.h>
-
-
-#include "gui/ImConsole.h"
-#include "scriptEditor/scriptEditor.h"
-
+//--------------------------------------------------------------------------------------
 namespace engineAPI
 {
     bool gUseConsoleInterop = true;
     bool gIsInitialized = false;
 
-// -----------------------------------------------------------------------------
-void init(FluxMain* main)
-{
-    // Asserts should be created FIRST
-    PlatformAssert::create();
-    // ManagedSingleton< ThreadManager >::createSingleton();
-    FrameAllocator::init(TORQUE_FRAME_SIZE);      // See comments in torqueConfig.h
-    _StringTable::create();
-    Con::init();
-    // Platform::initConsole();
-    NetStringTable::create();
+    // -----------------------------------------------------------------------------
+    void init()
+    {
+        // Asserts should be created FIRST
+        PlatformAssert::create();
+        // ManagedSingleton< ThreadManager >::createSingleton();
+        FrameAllocator::init(TORQUE_FRAME_SIZE);      // See comments in torqueConfig.h
+        _StringTable::create();
+        Con::init();
+        // Platform::initConsole();
+        NetStringTable::create();
 
-    Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
-    Platform::FS::MountDefaults();
-    Torque::FS::SetCwd( "assets:/" );
-    Platform::setCurrentDirectory( Platform::getMainDotCsDir() );
+        Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
+        Platform::FS::MountDefaults();
+        Torque::FS::SetCwd( "assets:/" );
+        Platform::setCurrentDirectory( Platform::getMainDotCsDir() );
 
-    Platform::init();    // platform specific initialization
-    // Set engineAPI initialized to true
-    engineAPI::gIsInitialized = true;
-    Sim::init();
-    // Variables:
-   //FIXME .... Con::setFloatVariable("frameLimit", main->mSettings.frameLimiter);
+        Platform::init();    // platform specific initialization
+        // Set engineAPI initialized to true
+        engineAPI::gIsInitialized = true;
+        Sim::init();
+    }
 
+    void shutDown() {
+        Sim::shutdown();
 
+        Platform::shutdown();
+
+        NetStringTable::destroy();
+        Con::shutdown();
+
+        _StringTable::destroy();
+        FrameAllocator::destroy();
+        // asserts should be destroyed LAST
+        PlatformAssert::destroy();
+
+        engineAPI::gIsInitialized = false;
+    }
 }
-
-void shutDown() {
-    Platform::shutdown();
-    NetStringTable::destroy();
-    Con::shutdown();
-
-    _StringTable::destroy();
-    FrameAllocator::destroy();
-    // asserts should be destroyed LAST
-    PlatformAssert::destroy();
-
-    Sim::shutdown();
-
-    engineAPI::gIsInitialized = false;
-}
-}
-//------------------------------------------------------------------------------
-
-
-
 
 namespace ElfFlux {
-
+    IMPLEMENT_CONOBJECT(Main);
     //------------------------------------------------------------------------------
     void MyLogger(U32 level, const char *consoleLine, void*)
     {
@@ -135,7 +135,7 @@ namespace ElfFlux {
     }
     //-----------------------------------------------------------------------------
     void Main::onDrawTopMost() {
-        Parent::onDrawTopMost();
+        FluxMain::onDrawTopMost();
 
         if (!mGuiGlue) return;
         mGuiGlue->DrawBegin();
@@ -225,13 +225,13 @@ namespace ElfFlux {
 
         // <<< log
 
-        Parent::Update(dt);
+        FluxMain::Update(dt);
     }
 
     void Main::Deinitialize()
     {
+        // this->unregisterObject(); //Console
 
-       engineAPI::shutDown();
 
         SAFE_DELETE(mScriptEditor);
         mScriptEditor = nullptr;
@@ -239,7 +239,9 @@ namespace ElfFlux {
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
 
-        Parent::Deinitialize();
+        engineAPI::shutDown(); //Before Deinitialize else crash!
+        FluxMain::Deinitialize();
+
     }
 
     void  Main::OnConsoleTAB(ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
@@ -265,8 +267,8 @@ namespace ElfFlux {
     //-----------------------------------------------------------------------------
     bool Main::Initialize()
     {
-        if (!Parent::Initialize()) return false;
-
+        if (!FluxMain::Initialize()) return false;
+        engineAPI::init();
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
@@ -288,10 +290,6 @@ namespace ElfFlux {
 
 
 
-        // script >>>
-        engineAPI::init(this);
-
-
        //FIXME  Con::addConsumer(MyLogger, NULL);
         std::string fileName = "assets/main.cs"; //fixme command line parameter for file
 
@@ -299,15 +297,32 @@ namespace ElfFlux {
             return false;
         }
 
-
-
-
         fetchScriptFiles();
         mScriptEditor = new ScriptEditor();
+
+        // ---- console
+        this->registerObject(); //make available on Console
+        Con::setIntVariable("$Main", this->getId());
+        // -----
 
         return true;
     }
     //-----------------------------------------------------------------------------
+    // Console
+    //-----------------------------------------------------------------------------
+    void Main::initPersistFields() {
+        Parent::initPersistFields();
+        addField("maxFPS", TypeS32, Offset(mSettings.maxFPS, Main), "maximum fps - using frameLimiter");
+        addField("frameLimit", TypeF64, Offset(mSettings.frameLimiter, Main), "Frame Limiter - default 0");
 
+    }
+
+
+    DefineEngineMethod(Main, delete, void, (), , "Override Delete ... this would be a bad idea on Main object") {
+        Con::errorf("Delete not allowed on Main Object");
+    }
+    DefineEngineMethod(Main, clone, void, (), , "Override Clone ... this would be a bad idea on Main object") {
+        Con::errorf("Clone not allowed on Main Object");
+    }
 }
 

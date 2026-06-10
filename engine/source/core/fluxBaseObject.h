@@ -22,6 +22,7 @@ protected:
 	bool mVisible = true;
 	bool mScheduleUsed = false;
 	bool mEventListener = false;
+
 public:
 	FluxBaseObject() {
 		mVisible=true;
@@ -50,6 +51,9 @@ public:
 	void  setVisible(bool value) {mVisible = value;}
 	bool  getVisible() {return mVisible; }
 
+
 	bool  isEventListener() {return mEventListener; }
+
+	bool mAutoDelete = true;
 };
 #endif

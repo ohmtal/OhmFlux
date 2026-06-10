@@ -17,7 +17,6 @@ public:
     FluxAudioStream mAudioStream;
     StringTableEntry mFileName;
 
-
     static void initPersistFields();
 
     bool onAdd() override;

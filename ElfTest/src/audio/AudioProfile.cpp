@@ -10,7 +10,8 @@ namespace ElfFlux {
         if (!*mFileName) return false;
         // mAudioStream = new FluxAudioStream();
         if (!mAudioStream.LoadFile(mFileName)) return false;
-        gMain->queueObject(&mAudioStream);
+        gMain->queueObject(&mAudioStream, false);
+
         Log("[info] AudioProfile %d created. (file:%s, looping:%d)", getId(), mFileName, mAudioStream.mLooping);
         return Parent::onAdd();
     }

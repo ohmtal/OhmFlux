@@ -12,7 +12,7 @@
 #include <console/console.h>
 #include <string>
 #include "core/fluxGlobals.h"
-#include "appMain.h"
+
 
 
 StringTableEntry osGetTemporaryDirectory(){
@@ -87,12 +87,16 @@ void restartInstance()
 
 void postQuitMessage(const S32 in_quitVal)
 {
-  return ElfFlux::gMain->TerminateApplication();
+  SDL_Quit();
+  // if (!ElfFlux::gMain) return;
+  // return ElfFlux::gMain->TerminateApplication();
 }
 
 void forceShutdown(S32 returnValue)
 {
-    return ElfFlux::gMain->TerminateApplication();
+   SDL_Quit();
+   // if (!ElfFlux::gMain) return;
+   //  return ElfFlux::gMain->TerminateApplication();
 }
 
 StringTableEntry getUserHomeDirectory()
@@ -155,7 +159,7 @@ void outputDebugString(const char *string, ...) {
 StringTableEntry getWorkingDirectory()
 {
 
-   return StringTable->insert(getGamePath().c_str());
+   return StringTable->insert(SDL_GetBasePath());
 }
 
 bool setWorkingDirectory(StringTableEntry newDir)
@@ -184,7 +188,7 @@ StringTableEntry getExecutableName()
 
 StringTableEntry getExecutablePath()
 {
-   return StringTable->insert(getGamePath().c_str());
+   return StringTable->insert(SDL_GetBasePath());
 }
 
 

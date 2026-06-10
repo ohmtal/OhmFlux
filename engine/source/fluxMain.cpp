@@ -162,7 +162,7 @@ bool FluxMain::CleanQueue(){
 	dLog("FluxMain: Cleaning up queued game objects");
 	for (auto* obj : mQueueObjects) {
 		auto* baseObj = static_cast<FluxBaseObject*>(obj); // Explicit cast if needed
-		SAFE_DELETE(baseObj);
+		if (obj->mAutoDelete) SAFE_DELETE(baseObj);
 	}
 	mQueueObjects.clear();
 
@@ -187,7 +187,7 @@ void FluxMain::Deinitialize()
 	CleanQueue();
 
 	dLog("FluxMain: Cleaning up screen");
-	SAFE_DELETE(g_CurrentScreen);
+	if (g_CurrentScreen) SAFE_DELETE(g_CurrentScreen);
 
 	if (g_CurrentQuadTree)
 	{
@@ -207,7 +207,7 @@ void FluxMain::Deinitialize()
 // {
 // 	mQueueObjects.push_back(lObject);
 // }
-void FluxMain::queueObject(FluxBaseObject* lObject)
+void FluxMain::queueObject(FluxBaseObject* lObject, bool autoDelete)
 {
 	if (lObject == nullptr) return;
 
@@ -216,6 +216,7 @@ void FluxMain::queueObject(FluxBaseObject* lObject)
 
 	if (it == mQueueObjects.end()) {
 		// deffered add on next tick
+		lObject->mAutoDelete = autoDelete;
 		FluxSchedule.add(0.f, this, [this,  lObject]() {
 			this->mQueueObjects.push_back(lObject);
 		});
@@ -680,7 +681,7 @@ void FluxMain::IterateFrame()
 			Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating FrameLimiter. (%.2f)", mFPS, mSettings.frameLimiter);
 
 		} else if ( mFPS < 25 && mSettings.frameLimiter > 0.f) {
-			if (mSettings.maxFPS < 60)  {
+			if ( mSettings.maxFPS > 25 && mSettings.maxFPS < 60)  {
 				mSettings.maxFPS = 60;
 			}
 			Log("[info] Low FPS (%d) detected ... set frameLimiter to ZERO.", mFPS);
