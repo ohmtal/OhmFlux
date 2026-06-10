@@ -167,5 +167,5 @@ target_include_directories(ElfTestBed PRIVATE ${ELF_DIR}/src)
 target_include_directories(ElfTestBed PRIVATE ${ELFSCRIPT_INCLUDES})
 
 # it's no fun ^^
-# target_compile_options(ElfTestBed PRIVATE -fsanitize=address -g)
-# target_link_options(ElfTestBed PRIVATE -fsanitize=address)
+target_compile_options(ElfTestBed PRIVATE -fsanitize=address -g)
+target_link_options(ElfTestBed PRIVATE -fsanitize=address)

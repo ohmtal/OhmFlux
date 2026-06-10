@@ -109,7 +109,7 @@ public:
         vsnprintf(buf, IM_ARRAYSIZE(buf), fmt, args);
         buf[IM_ARRAYSIZE(buf)-1] = 0;
         va_end(args);
-        std::string line = removePart(Strdup(buf),"\r\n");
+        std::string line = removePart(buf,"\r\n");
         line = removePart(line,"\n");
         Items.push_back(Strdup(line.c_str()));
         // orig Items.push_back(Strdup(buf));

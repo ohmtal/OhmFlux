@@ -38,7 +38,6 @@ public:
 			mScheduleUsed = false;
 			FluxSchedule.cleanByOwner(this);
 		}
-
 	}
 
 	virtual void Execute() {};

@@ -63,7 +63,7 @@ private:
 	S32 mFPS = 60;
 public:
 	FluxMain();
-	~FluxMain();
+	virtual ~FluxMain() = default;
 
 	// FluxScreen* getScreen() { return mScreen; }
 	FluxScreen* getScreen() { return getScreenObject(); }

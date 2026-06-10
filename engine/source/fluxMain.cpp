@@ -51,10 +51,6 @@ FluxMain::FluxMain()
 
 }
 
-FluxMain::~FluxMain() {
-
-}
-
 
 //--------------------------------------------------------------------------------------
 bool FluxMain::Initialize()

@@ -388,6 +388,7 @@ bool FluxScreen::setIcon(const char* lFilename)
 	SDL_SetSurfaceColorKey(Icon, true, *((Uint8 *)Icon->pixels));
 
 	SDL_SetWindowIcon(mWindow, Icon);
+	SDL_DestroySurface(Icon);
 
 	return true;
 }
