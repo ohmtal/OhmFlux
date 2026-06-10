@@ -1,5 +1,5 @@
 // echo("Hello MAIN.CS");
-include("./flyingText.cs"); // like a exec with no calls!
+exec("./flyingText.cs"); // like a exec with no calls!
 //------------------------------
 echo ("------------------------------");
 echo ("Porting from KorkTest to ElfTest");
