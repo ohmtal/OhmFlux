@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+option(BUILD_WITH_SANITIZE "Build Applications with -fsanitize=address -g" OFF)
+
 # MinGW  release build disable optimation
 if(MINGW)
     add_compile_options("-mno-avx" "-mno-avx2")
@@ -431,6 +434,12 @@ macro(configure_project_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)
         #     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
         # endif()
     endif()
+
+    if (BUILD_WITH_SANITIZE)
+        target_compile_options(${TARGET_NAME} PRIVATE -fsanitize=address -g)
+        target_link_options(${TARGET_NAME} PRIVATE -fsanitize=address)
+    endif()
+
 endmacro()
 
 macro(configure_demo_target TARGET_NAME SOURCE_DIR PRELOAD_PATH)

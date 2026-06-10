@@ -296,11 +296,13 @@ void AppGui::Deinitialize()
     SDL_SetLogOutputFunction(nullptr, nullptr); // log must be unlinked first!! 
     // getMain()->unQueueObject(mInputModule);
     getMain()->unQueueObject(mWaveModule);
+    SAFE_DELETE(mInputModule);
     SAFE_DELETE(mWaveModule);
     SAFE_DELETE(mSfxModule);
     SAFE_DELETE(mSfxStereoModule);
     SAFE_DELETE(mSoundMixModule);
     SAFE_DELETE(mGuiGlue);
+
 
     if (SettingsManager().IsInitialized()) {
         SettingsManager().set("AppGui::mAppSettings", mAppSettings);

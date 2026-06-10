@@ -122,7 +122,7 @@ bool FluxMain::Initialize()
 
 	// display
 	SDL_DisplayID lDisplayID = SDL_GetDisplayForWindow(getScreen()->getWindow());
-	const SDL_DisplayMode *  lDM = new SDL_DisplayMode();
+	const SDL_DisplayMode *  lDM = SDL_GetCurrentDisplayMode(lDisplayID);
 	lDM = SDL_GetCurrentDisplayMode(lDisplayID);
 	if (!lDM) {
 		Log("SDL failed to get Displaymode: %s", SDL_GetError());
@@ -132,7 +132,7 @@ bool FluxMain::Initialize()
 		Log("Display (%d) resolution: %dx%d, refresh rate: %6.2f)", lDisplayID, lDM->w, lDM->h, lDM->refresh_rate);
 	else
 		Log("SDL failed to get DesktopMode: %s", SDL_GetError());
-// #endif
+	// if (lDM) delete lDM;
 
 	Log( "Renderer  : %s",glGetString(GL_RENDERER));
 	Log( "Vendor    : %s",glGetString(GL_VENDOR));

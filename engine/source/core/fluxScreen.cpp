@@ -419,6 +419,7 @@ bool FluxScreen::setCursor(const char* lFilename,  int hot_x, int hot_y)
 	}
 
 	SDL_Cursor *cursor = SDL_CreateColorCursor(myCursor, hot_x, hot_y);
+	SDL_DestroySurface(myCursor);
 	if (cursor == nullptr)
 	{
 		Log("failed to create cursor: %s", SDL_GetError() );
