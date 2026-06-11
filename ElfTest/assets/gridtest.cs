@@ -155,7 +155,10 @@ function TestGrid() {
 
  // TestGrid();
  
-
+function CrazyGrid() {
+	exec("assets/gridTest.cs");
+	schedule(32,0, CrazyGrid);
+}
 
 
 

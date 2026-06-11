@@ -39,6 +39,9 @@ bool GameCtrl::onAdd(){
     return Parent::onAdd();
 }
 //--------------------------------------------------------------------------
+GameCtrl::~GameCtrl() {
+    if (gMain) gMain->unQueueObject(this);
+}
 void GameCtrl::onRemove() {
     mEventListener = false;
 

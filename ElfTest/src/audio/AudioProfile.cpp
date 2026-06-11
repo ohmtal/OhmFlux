@@ -16,6 +16,12 @@ namespace ElfFlux {
         return Parent::onAdd();
     }
 
+    AudioProfile::~AudioProfile(){
+        // make sure we are removed !
+       if (gMain)  gMain->unQueueObject(&mAudioStream);
+    }
+
+
     void AudioProfile::onRemove(){
         gMain->unQueueObject(&mAudioStream);
         Parent::onRemove();

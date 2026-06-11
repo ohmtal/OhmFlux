@@ -14,6 +14,7 @@ class Label : public SimObject, public FluxBaseObject {
     typedef SimObject Parent;
 
 public:
+    ~Label();
     FluxLabel mLabel;
     U32 mFontSimID = 0;
     // StringTableEntry mCaption;

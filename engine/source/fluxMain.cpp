@@ -213,9 +213,11 @@ void FluxMain::queueObject(FluxBaseObject* lObject, bool autoDelete)
 	if (it == mQueueObjects.end()) {
 		// deffered add on next tick
 		lObject->mAutoDelete = autoDelete;
-		FluxSchedule.add(0.f, this, [this,  lObject]() {
-			this->mQueueObjects.push_back(lObject);
-		});
+		this->mQueueObjects.push_back(lObject);
+		// bad idea meanwhile i can be deleted!
+		// FluxSchedule.add(100.f, this, [this,  lObject]() {
+		// 	this->mQueueObjects.push_back(lObject);
+		// });
 
 	} else {
 		Log(">>>>>>>>>>> FluxMain::queueObject :: Object already queued, skipping. <<<<<<<<<<<<<<<<<<<<<<");

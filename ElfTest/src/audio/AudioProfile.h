@@ -14,6 +14,7 @@ namespace ElfFlux {
 class AudioProfile: public SimObject, public FluxBaseObject {
     typedef SimObject Parent;
 public:
+    ~AudioProfile();
     FluxAudioStream mAudioStream;
     StringTableEntry mFileName;
 

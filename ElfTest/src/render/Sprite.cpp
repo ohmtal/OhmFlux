@@ -37,6 +37,9 @@ namespace ElfFlux {
         return Parent::onAdd();
     }
     // ------------------------------------------------------------------------.
+    Sprite::~Sprite() {
+       if (gMain)  gMain->unQueueObject(this);
+    }
     void Sprite::onRemove() {
         gMain->unQueueObject(this);
         Parent::onRemove();
