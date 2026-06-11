@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 
-option(BUILD_WITH_SANITIZE "Build Applications with -fsanitize=address -g" OFF)
-
 # MinGW  release build disable optimation
 if(MINGW)
     add_compile_options("-mno-avx" "-mno-avx2")
@@ -26,6 +24,16 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
+
+# --- sanitize default on when debugging
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(SANITIZE_DEFAULT ON)
+else()
+    set(SANITIZE_DEFAULT OFF)
+endif()
+
+set(BUILD_WITH_SANITIZE ${SANITIZE_DEFAULT} CACHE BOOL "Build Applications with -fsanitize=address -g")
+# ----
 
 
 option(ANDROID_GLES2 "Use GLES2" OFF)

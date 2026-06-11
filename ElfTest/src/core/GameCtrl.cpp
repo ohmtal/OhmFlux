@@ -15,6 +15,14 @@
 namespace ElfFlux {
 
 IMPLEMENT_CONOBJECT(GameCtrl);
+IMPLEMENT_CALLBACK( GameCtrl, onRender, void, (  F32 DT), (  DT ),
+                    "Called on Render Loop, dt is only for compat with old scripts - better use onUpdate!\n"
+                    "@param DT FrameTime [deprectated] usually 0.016.. (60fps)\n"
+);
+IMPLEMENT_CALLBACK( GameCtrl, onUpdate, void, ( F32 DT), (  DT ),
+                    "Called on Update Loop - not as often calles as onRender.\n"
+                    "@param DT usually 0.016.. d \n"
+);
 
 
 //--------------------------------------------------------------------------
@@ -81,7 +89,7 @@ void GameCtrl::onEvent(SDL_Event event) {
             // Con::errorf("DEBUG: mouse action %s (%d)", buttonNameBuf, (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ));
             Con::executef( this, "onInputEvent"
             , "mouse0"
-            , Con::getReturnBuffer( buttonNameBuf )
+            , buttonNameBuf
             , gAppStatus.MousePos.x
             , gAppStatus.MousePos.y
             , (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN )
@@ -96,29 +104,14 @@ void GameCtrl::onEvent(SDL_Event event) {
 void GameCtrl::Draw() {
     //NOTE old dt was ms! so it's 0.016 instead of 16.6 now!
 
-    //FIXME
-    // Direct leak of 45 byte(s) in 5 object(s) allocated from:
-    // #0 0x7f042b12c161 in malloc (/usr/lib/libasan.so.8+0x12c161) (BuildId: ee5fbab73143ab257a66a33afe0f038a4af7a74e)
-    // #1 0x56212582dc93 in dMalloc_r(unsigned long, char const*, unsigned long) /opt/TorqueScript/TorqueScript/platform/platformMemory.cpp:69
-    // #2 0x5621257ab3db in ConsoleValue::setString(char const*, int) /opt/TorqueScript/TorqueScript/console/console.h:342
-    // #3 0x5621257ab3db in ConsoleValue::copyFrom(ConsoleValue const&) /opt/TorqueScript/TorqueScript/console/console.h:466
-    // #4 0x5621257aa4f6 in ConsoleValue::operator=(ConsoleValue const&) /opt/TorqueScript/TorqueScript/console/console.h:203
-    // #5 0x5621257a5a61 in ConsoleValueStack<4096>::push(ConsoleValue) /opt/TorqueScript/TorqueScript/console/consoleValueStack.h:95
-    // #6 0x5621257a5a61 in CodeBlock::exec(unsigned int, char const*, Namespace*, unsigned int, ConsoleValue*, bool, char const*, int) /opt/TorqueScript/TorqueScript/console/torquescript/compiledEval.cpp:2176
-    // #7 0x5621256594b6 in Namespace::Entry::execute(int, ConsoleValue*, SimObject*) /opt/TorqueScript/TorqueScript/console/consoleInternal.cpp:1177
-    // #8 0x5621255f248e in _internalExecute /opt/TorqueScript/TorqueScript/console/console.cpp:1276
-    // #9 0x5621255fa4a4 in _BaseEngineConsoleCallbackHelper::_exec() /opt/TorqueScript/TorqueScript/console/console.cpp:2328
-    // #10 0x562125389010 in ConsoleValue _EngineConsoleExecCallbackHelper<ElfFlux::GameCtrl*>::call<ConsoleValue, char const*, char*>(char const*, char*) /opt/TorqueScript/TorqueScript/console/engineAPI.h:1241
-    // #11 0x562125385881 in ConsoleValue Con::executef<ElfFlux::GameCtrl*, char const*, char*>(ElfFlux::GameCtrl*, char const*, char*) /opt/TorqueScript/TorqueScript/console/console.h:1128
-    // #12 0x56212537fea6 in ElfFlux::GameCtrl::Draw() /opt/OhmFlux/ElfTest/src/core/GameCtrl.cpp:96
-
-
-    if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime ));
+    // if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime ));
+    // -----------
+    onRender_callback((F32)gFrameTime );
 }
 //--------------------------------------------------------------------------
 void GameCtrl::Update(const double& dt) {
-    //NOTE dt = ms! only for compat - bad or medicore performance
-    if ( isMethod( "onUpdate" ) ) Con::executef( this, "onUpdate", Con::getFloatArg(dt));
+    onUpdate_callback((F32)dt);
+    // if ( isMethod( "onUpdate" ) ) Con::executef( this, "onUpdate", Con::getFloatArg(dt));
 }
 //--------------------------------------------------------------------------
 DefineEngineMethod(GameCtrl, draw, bool, (Texture* simTex, F32 x, F32 y, F32 layer),

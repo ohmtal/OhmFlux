@@ -52,16 +52,10 @@ ConsoleFunction(setVSync, void, 2,2, "bool value") {
 //     return gMain->TerminateApplication();
 // }
 // ----------------- include = exec with nocalls ----------------------
-// FIXME torqueScript not nocalls !!!
-// ConsoleFunctionValue(include, 2, 2, "include(fileName) //exec a file without calls")
-// {
-//     const char* fileName = vmPtr->valueAsString(argv[1]);
-//     return KorkApi::ConsoleValue::makeUnsigned(Con::exec(fileName, true, false));
-// }
-// XXTH deaktivates again <<< aSan memleak
-// DefineEngineFunction(include,bool, (String fileName),, "include(fileName)" "exec a file without calls" ){
-//     return Con::executeFile(fileName, true);
-// }
+
+DefineEngineFunction(include,bool, (String fileName),, "include(fileName)" "exec a file without calls" ){
+    return Con::executeFile(fileName, true);
+}
 
 // ----------------- debuglog ----------------------
 //-----------------------------------------------------------------------------

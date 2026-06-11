@@ -29,6 +29,7 @@ namespace ElfFlux {
     public:
         bool Initialize() override;
         void Deinitialize() override;
+        void IterateFrame() override;
 
         void onKeyEvent(SDL_KeyboardEvent event) override {  }
         void onMouseButtonEvent(SDL_MouseButtonEvent event) override { }

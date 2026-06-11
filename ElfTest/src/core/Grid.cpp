@@ -375,7 +375,6 @@ DefineEngineMethod(Grid, getWeightByNodeId, S32, (S32 nodeId), , "")
     if (lNode)
     {
         return lNode->getWeight();
-
     }
     return -1;
 }

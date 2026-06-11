@@ -1,5 +1,4 @@
-// exec("./tools.cs");
-exec("./flyingText.cs");
+include("./flyingText.cs");
 //------------------------------
 echo ("------------------------------");
 echo ("Porting from KorkTest to ElfTest");
@@ -183,4 +182,4 @@ function realtime() {
 	schedule(1000,0,realtime);
 }
 
-// schedule(1000,0,ft);
+schedule(1000,0,ft);

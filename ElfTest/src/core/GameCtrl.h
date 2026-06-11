@@ -52,6 +52,8 @@ namespace ElfFlux {
 
 
         DECLARE_CONOBJECT(GameCtrl);
+        DECLARE_CALLBACK(void, onRender, (F32 DT));
+        DECLARE_CALLBACK(void, onUpdate, (F32 DT));
     };
 
 

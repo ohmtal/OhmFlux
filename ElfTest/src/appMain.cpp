@@ -65,7 +65,7 @@ namespace engineAPI
 namespace ElfFlux {
     IMPLEMENT_CONOBJECT(Main);
     //------------------------------------------------------------------------------
-    void MyLogger(U32 level, const char *consoleLine, void*)
+    void MyLogger(U32 level, const char *consoleLine)
     {
         switch (level) {
             case 1: Log("[warn] %s",  consoleLine); break;
@@ -88,6 +88,7 @@ namespace ElfFlux {
         console->AddLog("%s", message);
     }
     //-----------------------------------------------------------------------------
+
     void Main::onEvent(SDL_Event event)
     {
         if (mGuiGlue) {
@@ -199,6 +200,10 @@ namespace ElfFlux {
         mGuiGlue->DrawEnd();
     }
     //-----------------------------------------------------------------------------
+    void  Main::IterateFrame() {
+        FluxMain::IterateFrame();
+        FrameAllocator::setWaterMark(0);  //NOTE: very important!!!
+    }
     void Main::Update(const double& dt)
     {
 
@@ -210,19 +215,20 @@ namespace ElfFlux {
 
         // here we go lets fetch the log
         // ------ output log entries:
-        ConsoleLogEntry *log;
-        U32 size;
-        static U32 lastLogEntry = 0;
-        Con::getLockLog(log, size);
-        if (lastLogEntry < size) {
-            for (U32 i = lastLogEntry; i < size; i++)
-            {
-                ConsoleLogEntry &entry = log[i];
-                MyLogger(entry.mLevel, entry.mString, nullptr);
-            }
-            lastLogEntry = size;
-        }
-        Con::unlockLog();
+        // not longer needed i use the consumer
+        // ConsoleLogEntry *log;
+        // U32 size;
+        // static U32 lastLogEntry = 0;
+        // Con::getLockLog(log, size);
+        // if (lastLogEntry < size) {
+        //     for (U32 i = lastLogEntry; i < size; i++)
+        //     {
+        //         ConsoleLogEntry &entry = log[i];
+        //         MyLogger(entry.mLevel, entry.mString);
+        //     }
+        //     lastLogEntry = size;
+        // }
+        // Con::unlockLog();
 
         // -------- finallize
 
@@ -248,8 +254,10 @@ namespace ElfFlux {
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
 
+
         unregisterObject(); // tell console we are off
         engineAPI::shutDown(); //Before Deinitialize else crash!
+        Con::removeConsumer(MyLogger); // remove the LogConsumer
         FluxMain::Deinitialize();
         // no need i called unregister :P _destroySelf(); // tell simset we are removed. it complains about is unregisted now ....
 
@@ -280,6 +288,7 @@ namespace ElfFlux {
     {
         if (!FluxMain::Initialize()) return false;
         engineAPI::init();
+        Con::addConsumer(MyLogger); // add the LogConsumer
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
