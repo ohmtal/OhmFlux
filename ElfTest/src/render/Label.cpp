@@ -32,9 +32,6 @@ namespace ElfFlux {
         return Parent::onAdd();
     }
     // ------------------------------------------------------------------------.
-    Label::~Label() {
-        if (gMain)  gMain->unQueueObject(this);
-    }
     void Label::onRemove() {
         gMain->unQueueObject(this);
         mLabel = nullptr;

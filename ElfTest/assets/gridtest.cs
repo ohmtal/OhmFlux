@@ -49,10 +49,8 @@ function Grid::addRandomMud(%this) {
 
 function GridTest::onRender(%this,%dt) {
 
-    %this.writeText(5, 100, "THIS EAT MEMORY LIKE HELL!", $align::left, "1 0 0");
-    %this.writeText(5, 120, "no leak and no fail in my writeText / grid source located",  $align::left, "1 0 0");
 
-   %this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
+  %this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
 
     %vert = %this.grid.getNodeCountY();
     %hor  = %this.grid.getNodeCountX();
@@ -61,7 +59,8 @@ function GridTest::onRender(%this,%dt) {
     for (%i = 0; %i < %vert; %i++) {
         // %line = "";
         for (%j=0; %j < %hor; %j++) {
-            %weight = %this.grid.getWeightByNodeId( %idx );
+
+       		%weight = %this.grid.getWeightByNodeId( %idx );
             %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left , %weight SPC "64 64");
             %idx++;
         }

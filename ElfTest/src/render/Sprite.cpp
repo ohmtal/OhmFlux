@@ -32,15 +32,13 @@ namespace ElfFlux {
         if (useWhiteTexure) mRenderObject.mDrawParams.image = Render2D.getWhiteTexture();
 
         gMain->queueObject(this);
-        Log("[info] Sprite %d queued.", getId());
+        dLog("[info] Sprite %d queued.", getId());
 
         return Parent::onAdd();
     }
     // ------------------------------------------------------------------------.
-    Sprite::~Sprite() {
-       if (gMain)  gMain->unQueueObject(this);
-    }
     void Sprite::onRemove() {
+        dLog("[info] Sprite %d unQueued.", getId());
         gMain->unQueueObject(this);
         Parent::onRemove();
     }

@@ -14,7 +14,6 @@ class Sprite : public SimObject, public FluxBaseObject {
     typedef SimObject Parent;
 
 public:
-    ~Sprite();
     FluxRenderObject mRenderObject;
     U32 mTextureSimID = 0;
 

@@ -118,7 +118,7 @@ namespace ElfFlux {
                         entry.path().extension() == ".cs"
                         || entry.path().extension() == ".tscript"
                         || entry.path().extension() == ".elfscript"
-                        || entry.path().extension() == ".korkscript"
+
                         )
 
                     ) {
@@ -202,7 +202,8 @@ namespace ElfFlux {
     //-----------------------------------------------------------------------------
     void  Main::IterateFrame() {
         FluxMain::IterateFrame();
-        FrameAllocator::setWaterMark(0);  //NOTE: very important!!!
+        FrameAllocator::setWaterMark(0);
+        ConsoleValue::resetConversionBuffer(); //NOTE very very important
     }
     void Main::Update(const double& dt)
     {
@@ -287,8 +288,11 @@ namespace ElfFlux {
     bool Main::Initialize()
     {
         if (!FluxMain::Initialize()) return false;
+        // Console >>>>
         engineAPI::init();
         Con::addConsumer(MyLogger); // add the LogConsumer
+        // <<<<<
+
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
@@ -308,9 +312,6 @@ namespace ElfFlux {
             OnConsoleTAB(console, data, forward);
         };
 
-
-
-       //FIXME  Con::addConsumer(MyLogger, NULL);
         std::string fileName = "assets/main.cs"; //fixme command line parameter for file
 
         if (!Con::executeFile(fileName.c_str(), false, false)) {
@@ -336,7 +337,6 @@ namespace ElfFlux {
         addField("frameLimit", TypeF64, Offset(mSettings.frameLimiter, Main), "Frame Limiter - default 0");
 
     }
-
 
     DefineEngineMethod(Main, delete, void, (), , "Override Delete ... this would be a bad idea on Main object") {
         Con::errorf("Delete not allowed on Main Object");

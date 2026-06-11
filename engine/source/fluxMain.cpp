@@ -47,7 +47,11 @@ FluxMain::FluxMain()
 	mSettings.cursorHotSpotX = 0;
 	mSettings.cursorHotSpotY = 0;
 
-
+	// reserve space in queues
+	// faster add, 200 should be ok
+	mQueueObjects.reserve(200);
+	mDeletePending.reserve(10);
+	mInsertPending.reserve(10);
 
 }
 
@@ -156,6 +160,8 @@ bool FluxMain::Initialize()
 bool FluxMain::CleanQueue(){
 	// Cleanup Game Objects
 	dLog("FluxMain: Cleaning up queued game objects");
+	mInsertPending.clear();
+	mDeletePending.clear();
 	for (auto* obj : mQueueObjects) {
 		auto* baseObj = static_cast<FluxBaseObject*>(obj); // Explicit cast if needed
 		if (obj->mAutoDelete) SAFE_DELETE(baseObj);
@@ -208,17 +214,13 @@ void FluxMain::queueObject(FluxBaseObject* lObject, bool autoDelete)
 	if (lObject == nullptr) return;
 
 	// Check if it already exists in the queue
-	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
+	auto it1 = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
+	auto it2 = std::find(mInsertPending.begin(), mInsertPending.end(), lObject);
 
-	if (it == mQueueObjects.end()) {
-		// deffered add on next tick
+	if (it1 == mQueueObjects.end() && it2 == mInsertPending.end()) {
 		lObject->mAutoDelete = autoDelete;
-		this->mQueueObjects.push_back(lObject);
-		// bad idea meanwhile i can be deleted!
-		// FluxSchedule.add(100.f, this, [this,  lObject]() {
-		// 	this->mQueueObjects.push_back(lObject);
-		// });
-
+		// add to pending queue
+		this->mInsertPending.push_back(lObject);
 	} else {
 		Log(">>>>>>>>>>> FluxMain::queueObject :: Object already queued, skipping. <<<<<<<<<<<<<<<<<<<<<<");
 	}
@@ -229,10 +231,17 @@ void FluxMain::queueObject(FluxBaseObject* lObject, bool autoDelete)
  */
 bool FluxMain::unQueueObject(FluxBaseObject* lObject)
 {
+	auto it1 = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
 
-	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
-	if (it != mQueueObjects.end()) {
-		mQueueObjects.erase(it);
+	if (it1 != mQueueObjects.end()) {
+		mQueueObjects.erase(it1);
+		return true;
+	}
+
+	// i also check the insert pending
+	auto it2 = std::find(mInsertPending.begin(), mInsertPending.end(), lObject);
+	if (it2 != mInsertPending.end()) {
+		mInsertPending.erase(it2);
 		return true;
 	}
 
@@ -241,18 +250,23 @@ bool FluxMain::unQueueObject(FluxBaseObject* lObject)
 /**
  * unqueue from render Queue and add to mDeletedObjects
  */
-bool FluxMain::queueDelete(FluxBaseObject* lObject)
-{
-	// 1. Find the object in the vector
-	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
+bool FluxMain::queueDelete(FluxBaseObject* lObject) {
 
-	// 2. If found, move to deleted list and erase from active queue
+	auto it = std::find(mQueueObjects.begin(), mQueueObjects.end(), lObject);
 	if (it != mQueueObjects.end())
 	{
-		mDeletedObjects.push_back(*it);
+		mDeletePending.push_back(*it);
 		mQueueObjects.erase(it);
 		return true;
 	}
+
+	auto it2 = std::find(mInsertPending.begin(), mInsertPending.end(), lObject);
+	if (it2 == mInsertPending.end()) {
+		mDeletePending.push_back(*it2);
+		mInsertPending.erase(it2);
+		return true;
+	}
+
 
 	return false;
 }
@@ -712,12 +726,18 @@ void FluxMain::IterateFrame()
 	//  Update LastTick AFTER the frame is finished
 	mLastTick = mTickCount;
 
+	// insert pending
+	if (!mInsertPending.empty()) {
+		mQueueObjects.insert(mQueueObjects.end(), mInsertPending.begin(), mInsertPending.end());
+		mInsertPending.clear();
+	}
+
 	//  Memory Cleanup
-	if (!mDeletedObjects.empty()) {
-		for (auto* obj : mDeletedObjects) {
+	if (!mDeletePending.empty()) {
+		for (auto* obj : mDeletePending) {
 			delete obj;
 		}
-		mDeletedObjects.clear();
+		mDeletePending.clear();
 	}
 }
 

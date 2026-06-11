@@ -119,8 +119,25 @@ DefineEngineStringlyVariadicFunction( dError, void, 2, 0, "(debug error  string 
 }
 
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #ifdef FLUX_DEBUG
+// ---- Foo
+static S32 myFoo = 0;
+DefineEngineFunction(getFoo, S32, (), , "you will get a foo.") {
+    return myFoo;
+}
+
+DefineEngineFunction(setFoo,  void, (S32 foo), , "you will set a foo.") {
+    myFoo = foo;
+}
+
+DefineEngineFunction(getFooToGlobal, void, (const char* globalVarName), , "") {
+    Con::setIntVariable(globalVarName, myFoo);
+}
+
+// ---- TestExec
 DefineEngineFunction(testExec, void,() , , "Test an exec return") {
     Con::evaluate( R"(
             function onDebugTest() {

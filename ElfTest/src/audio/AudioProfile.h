@@ -1,20 +1,15 @@
 #pragma once
-// NOTE: named it AudioProfile is use to make it compatible with old scripts ...
-
-// NOTE: too bad i did not finish my AudioResourceManager and AudioInstance so far
-// FIXME: so this will use fluxAudioStream ... wav and ogg only
-
-#pragma once
 
 #include "console/simBase.h"
 #include "console/consoleTypes.h"
 #include <audio/fluxAudioStream.h>
 
 namespace ElfFlux {
+
 class AudioProfile: public SimObject, public FluxBaseObject {
     typedef SimObject Parent;
 public:
-    ~AudioProfile();
+
     FluxAudioStream mAudioStream;
     StringTableEntry mFileName;
 

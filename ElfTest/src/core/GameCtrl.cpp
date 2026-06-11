@@ -47,9 +47,6 @@ bool GameCtrl::onAdd(){
     return Parent::onAdd();
 }
 //--------------------------------------------------------------------------
-GameCtrl::~GameCtrl() {
-    if (gMain) gMain->unQueueObject(this);
-}
 void GameCtrl::onRemove() {
     mEventListener = false;
 
@@ -106,6 +103,7 @@ void GameCtrl::Draw() {
 
     // if ( isMethod( "onRender" ) )  Con::executef( this, "onRender", Con::getFloatArg(gFrameTime ));
     // -----------
+
     onRender_callback((F32)gFrameTime );
 }
 //--------------------------------------------------------------------------

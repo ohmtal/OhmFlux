@@ -37,7 +37,6 @@ namespace ElfFlux {
 
 
     public:
-        ~GameCtrl();
         DrawParams2D mDrawParams;
         FluxLabel* mLabel = nullptr;
 

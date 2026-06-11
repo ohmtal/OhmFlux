@@ -49,7 +49,8 @@ private:
 	typedef std::tuple<std::string, int, int, bool, bool> TextureKey;
 	std::map<TextureKey, FluxTexture*, std::less<>> mTextureCache;
 
-	std::vector<FluxBaseObject*> mDeletedObjects;
+	std::vector<FluxBaseObject*> mDeletePending;
+	std::vector<FluxBaseObject*> mInsertPending;
 
 
 	// FluxAppStatus gAppStatus;
