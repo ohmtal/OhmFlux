@@ -24,7 +24,10 @@
 
 #ifdef FLUX_DEBUG
 #define TORQUE_DEBUG
+#define TORQUE_ENABLE_ASSERTS
 #endif
+//no idea what "new" means ;) but i try it out
+// #define USE_NEW_SIMDICTIONARY << not woking "objectName" missing
 
 
 #define TORQUE_SCRIPT_EXTENSION   "cs"

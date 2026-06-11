@@ -1,5 +1,5 @@
-// echo("Hello MAIN.CS");
-exec("./flyingText.cs"); // like a exec with no calls!
+// exec("./tools.cs");
+exec("./flyingText.cs");
 //------------------------------
 echo ("------------------------------");
 echo ("Porting from KorkTest to ElfTest");
@@ -183,4 +183,4 @@ function realtime() {
 	schedule(1000,0,realtime);
 }
 
-schedule(1000,0,ft);
+// schedule(1000,0,ft);

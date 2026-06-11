@@ -248,8 +248,10 @@ namespace ElfFlux {
         SDL_SetLogOutputFunction(nullptr, nullptr);
         mGuiGlue->Deinitialize();
 
+        unregisterObject(); // tell console we are off
         engineAPI::shutDown(); //Before Deinitialize else crash!
         FluxMain::Deinitialize();
+        // no need i called unregister :P _destroySelf(); // tell simset we are removed. it complains about is unregisted now ....
 
     }
 
