@@ -21,9 +21,18 @@ namespace engineAPI
 {
     bool gUseConsoleInterop = true;
     bool gIsInitialized = false;
-
     // -----------------------------------------------------------------------------
-    void init()
+    void DefaultLogger(U32 level, const char *consoleLine)
+    {
+        switch (level) {
+            case 1: dPrintf("[warn] %s",  consoleLine); break;
+            case 2: dPrintf("[error] %s",  consoleLine); break;
+            default: dPrintf("%s",  consoleLine); break;
+        }
+
+    }
+    // -----------------------------------------------------------------------------
+    void init( ConsumerCallback LogFunc = nullptr, String initialDirectory = "assets:/")
     {
         // Asserts should be created FIRST
         PlatformAssert::create();
@@ -36,14 +45,29 @@ namespace engineAPI
 
         Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
         Platform::FS::MountDefaults();
-        Torque::FS::SetCwd( "assets:/" );
+        Torque::FS::SetCwd( initialDirectory );
         Platform::setCurrentDirectory( Platform::getMainDotCsDir() );
 
         Platform::init();    // platform specific initialization
         // Set engineAPI initialized to true
         engineAPI::gIsInitialized = true;
         Sim::init();
+
+        // FIXME add logger
+        if (!LogFunc) {
+            Con::addConsumer(DefaultLogger);
+        } else {
+            Con::addConsumer(*LogFunc);
+        }
+
     }
+
+    // SimTime U32 ms since last Loop
+    void Process(SimTime delta) {
+        Sim::advanceTime(delta);
+        ConsoleValue::resetConversionBuffer();
+    }
+
 
     void shutDown() {
         Sim::shutdown();
@@ -201,16 +225,21 @@ namespace ElfFlux {
     }
     //-----------------------------------------------------------------------------
     void  Main::IterateFrame() {
+        // first the FluxMainLoop
         FluxMain::IterateFrame();
-        FrameAllocator::setWaterMark(0);
-        ConsoleValue::resetConversionBuffer(); //NOTE very very important
+
+        // FrameAllocator::setWaterMark(0);
+        //NOTE very very important to clear temp memory
+        //     maybe ok to put it in update
+        // ConsoleValue::resetConversionBuffer();
+
     }
     void Main::Update(const double& dt)
     {
 
         // advance Torque Time for schedule
         static U32 lastTick = 0;
-        Sim::advanceTime(SDL_GetTicks() - lastTick);
+        engineAPI::Process(SDL_GetTicks() - lastTick);
         lastTick = SDL_GetTicks();
         // ----
 
@@ -289,8 +318,8 @@ namespace ElfFlux {
     {
         if (!FluxMain::Initialize()) return false;
         // Console >>>>
-        engineAPI::init();
-        Con::addConsumer(MyLogger); // add the LogConsumer
+        engineAPI::init(MyLogger, "assets:/");
+        // Con::addConsumer(MyLogger); // add the LogConsumer
         // <<<<<
 
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
