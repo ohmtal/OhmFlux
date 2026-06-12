@@ -26,12 +26,13 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # --- sanitize default on when debugging
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(SANITIZE_DEFAULT ON)
-else()
-    set(SANITIZE_DEFAULT OFF)
-endif()
+# if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+#     set(SANITIZE_DEFAULT ON)
+# else()
+#     set(SANITIZE_DEFAULT OFF)
+# endif()
 
+set(SANITIZE_DEFAULT OFF)
 set(BUILD_WITH_SANITIZE ${SANITIZE_DEFAULT} CACHE BOOL "Build Applications with -fsanitize=address -g")
 # ----
 
