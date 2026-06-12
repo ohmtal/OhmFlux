@@ -16,11 +16,12 @@ function GridTest::Init(%this) {
     echo("INIT:" SPC  %this.grid.init(%area, %this.grid.squareSize));
     %this.grid.getinfo();
     %this.add(%this.grid);
-    // %this.grid.addRandomMud();
-    //
-    // %this.path = %this.grid.findPath( %this.grid.start, %this.grid.end, false);
-    // if ( isObject(%this.path) ) %this.add( %this.path );
-    // echo("PATH object is:" SPC %this.path);
+
+
+    %this.crazy  = false;
+    %this.hideTerrain = false;
+    %this.countX = %this.grid.getNodeCountY();
+    %this.countY = %this.grid.getNodeCountX();
     %this.newTerrain();
 }
 
@@ -29,7 +30,7 @@ function GridTest::newTerrain(%this) {
     if ( isObject(%this.path) ) %this.path.delete();
     %this.path = %this.grid.findPath( %this.grid.start, %this.grid.end, false);
     if ( isObject(%this.path) ) %this.add( %this.path );
-    echo("PATH object is:" SPC %this.path);
+    // echo("PATH object is:" SPC %this.path);
 }
 
 function Grid::addRandomMud(%this) {
@@ -52,17 +53,18 @@ function GridTest::onRender(%this,%dt) {
 
   %this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
 
-    %vert = %this.grid.getNodeCountY();
-    %hor  = %this.grid.getNodeCountX();
-    %idx = 0;
-    %weight = 0;
-    for (%i = 0; %i < %vert; %i++) {
-        // %line = "";
-        for (%j=0; %j < %hor; %j++) {
-
-       		%weight = %this.grid.getWeightByNodeId( %idx );
-            %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left , %weight SPC "64 64");
-            %idx++;
+    if (!%this.hideTerrain) {
+        %vert = %this.countX;
+        %hor  = %this.countY;
+        %idx = 0;
+        %weight = 0;
+        for (%i = 0; %i < %vert; %i++) {
+            // %line = "";
+            for (%j=0; %j < %hor; %j++) {
+                %weight = %this.grid.getWeightByNodeId( %idx );
+                %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left ,  %weight SPC "0.5 0.2");
+                %idx++;
+            }
         }
     }
 
@@ -78,27 +80,28 @@ function GridTest::onRender(%this,%dt) {
     }
 }
 
-
+function GridTest::onUpdate(%this, %dt) {
+    if (%this.crazy) %this.newTerrain();
+}
 
 function GridTest::onRemove(%this) {
     %this.deleteObjects();
 }
 
-
-
 // --------------- TEST update  all 32 ms --------
 function GridTest::start(%this) {
+    if (%this.crazy) return;
     %this.crazy = true;
-    %this.crazyLoop();
+    // %this.crazyLoop();
 }
 function GridTest::stop(%this) {
     %this.crazy = false;
 }
-function GridTest::crazyLoop(%this) {
-    if (!%this.crazy) return;
-    %this.newTerrain();
-    %this.schedule(32, crazyLoop);
-}
+// function GridTest::crazyLoop(%this) {
+//     if (!%this.crazy) return;
+//     %this.newTerrain();
+//     %this.schedule(32, crazyLoop);
+// }
 
 
 // -------- --------- ----------

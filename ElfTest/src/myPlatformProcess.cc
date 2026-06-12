@@ -12,7 +12,7 @@
 #include <console/console.h>
 #include <string>
 #include "core/fluxGlobals.h"
-
+#include "appMain.h"
 
 
 StringTableEntry osGetTemporaryDirectory(){
@@ -87,16 +87,16 @@ void restartInstance()
 
 void postQuitMessage(const S32 in_quitVal)
 {
-  SDL_Quit();
-  // if (!ElfFlux::gMain) return;
-  // return ElfFlux::gMain->TerminateApplication();
+  // SDL_Quit();
+  if (!ElfFlux::gMain) return;
+  return ElfFlux::gMain->TerminateApplication();
 }
 
 void forceShutdown(S32 returnValue)
 {
-   SDL_Quit();
-   // if (!ElfFlux::gMain) return;
-   //  return ElfFlux::gMain->TerminateApplication();
+   // SDL_Quit();
+   if (!ElfFlux::gMain) return;
+    return ElfFlux::gMain->TerminateApplication();
 }
 
 StringTableEntry getUserHomeDirectory()

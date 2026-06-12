@@ -26,12 +26,12 @@ ConsoleGetType( TypeColorF )
    // Fetch color.
    const Color4F* color = (Color4F*)dptr;
 
-   // Fetch stock color name.
-   StringTableEntry colorName = StringTable->insert("fixme color name"); //StockColor::name( *color );
-
-   // Write as color name if was found.
-   if ( colorName != StringTable->EmptyString() )
-      return colorName;
+   // // Fetch stock color name.
+   // StringTableEntry colorName = StringTable->insert("fixme color name"); //StockColor::name( *color );
+   //
+   // // Write as color name if was found.
+   // if ( colorName != StringTable->EmptyString() )
+   //    return colorName;
 
    // Format as color components.
    static const U32 bufSize = 256;
@@ -78,6 +78,11 @@ ConsoleSetType( TypeColorF )
    }
    else
       Con::printf("Color must be set as { r, g, b [,a] }, { r g b [b] } or { hexValue  }");
+
+    if (tmpColor->r > 1.f) tmpColor->r /= 255.f;
+    if (tmpColor->g > 1.f) tmpColor->g /= 255.f;
+    if (tmpColor->b > 1.f) tmpColor->b /= 255.f;
+    if (tmpColor->a > 1.f) tmpColor->a /= 255.f;
 }
 // -----------------------------------------------------------------------------
 // TypePoint2I

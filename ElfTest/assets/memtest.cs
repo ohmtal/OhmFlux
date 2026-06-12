@@ -7,6 +7,11 @@ else CleanupSet.deleteObjects();
 //------------------------------
 
 function MemTest::onRender(%this,%dt) {
+	%red = 128;
+	%this.writeText(20, 49,"Testing memory. Never do something like that in production ;)"
+	     , $align::left 
+	     ,  %red SPC "0.2 0.2"
+	);
     for (%i = 0; %i < 100; %i++){
     	 %bla = 1; // no mem raise
     	 $foo++; // no mem raise
@@ -42,3 +47,4 @@ function MemTest::onUpdate(%this,%dt) {
 $Game = new GameCtrl() {
     class = "MemTest";
 };
+CleanupSet.add($Game);
