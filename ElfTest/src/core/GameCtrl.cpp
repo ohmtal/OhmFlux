@@ -120,6 +120,17 @@ void GameCtrl::onEvent(SDL_Event event) {
     } //switch
 
 }
+
+// FIXME mouseMove for mouse over ....
+// void GameCtrl::sendMouseEvent(const char* name, const GuiEvent& event)
+// {
+//     char buf[3][32];
+//     dSprintf(buf[0], 32, "%d", event.modifier);
+//     dSprintf(buf[1], 32, "%d %d", mMousePos.x, mMousePos.y);
+//     dSprintf(buf[2], 32, "%d", event.mouseClickCount);
+//     //Con::executef(this, 4, name, buf[0], buf[1], buf[2]);
+//     Con::executef(this, name, buf[0], buf[1], buf[2]);
+// }
 //--------------------------------------------------------------------------
 void GameCtrl::Draw() {
     //NOTE old dt was ms! so it's 0.016 instead of 16.6 now!

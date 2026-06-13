@@ -292,7 +292,7 @@ namespace ElfFlux {
 
         unregisterObject(); // tell console we are off
         engineGlue::shutDown(); //Before Deinitialize else crash!
-        Con::removeConsumer(MyLogger); // remove the LogConsumer
+        // Con::removeConsumer(MyLogger); // remove the LogConsumer
         FluxMain::Deinitialize();
         // no need i called unregister :P _destroySelf(); // tell simset we are removed. it complains about is unregisted now ....
 
@@ -323,7 +323,7 @@ namespace ElfFlux {
     {
         if (!FluxMain::Initialize()) return false;
         // Console >>>>
-        engineGlue::init(MyLogger, "assets:/");
+        engineGlue::init(MyLogger, (getGamePath()+"/assets").c_str());
         // Con::addConsumer(MyLogger); // add the LogConsumer
         // <<<<<
 

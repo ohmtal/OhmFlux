@@ -52,6 +52,7 @@ function GridTest::onRender(%this,%dt) {
 
 
   %this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
+   // %this.Line("5 35", "595 35", "0 1 0");
 
     if (!%this.hideTerrain) {
         %vert = %this.countX;
@@ -62,20 +63,28 @@ function GridTest::onRender(%this,%dt) {
             // %line = "";
             for (%j=0; %j < %hor; %j++) {
                 %weight = %this.grid.getWeightByNodeId( %idx );
-                %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left ,  %weight SPC "0.5 0.2");
+                // %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left ,  %weight SPC "0.5 0.2");
+
+                %this.rect(65 + 50 * %j SPC %i*30 + 40 SPC 35 SPC 28,   %weight SPC "0.5 0", true);
+
                 %idx++;
             }
         }
     }
 
     // path
+    %lastPoint = "";
     if ( isObject(%this.path) ) {
         %cnt = %this.path.getDynamicFieldCount();
         for (%i = 0; %i < %cnt; %i++) {
             %pos = %this.path.getFieldValue("node" @ %i);
-            if ( %pos !$= "" ) {
-                %this.writeText(getWord(%pos,0) * 50  + 52, getWord(%pos,1) * 30 + 50,"x", $align::left, "0 0 255" );
-            }
+            %realPos = getWord(%pos,0) * 50  + 85 SPC  getWord(%pos,1) * 30 + 55;
+            if ( %lastPoint ) %this.Line(%lastPoint, %realPos  );
+            %lastPoint = %realPos;
+
+            // if ( %pos !$= "" ) {
+            //     %this.writeText(getWord(%pos,0) * 50  + 52, getWord(%pos,1) * 30 + 50,"x", $align::left, "0 0 255" );
+            // }
         }
     }
 }

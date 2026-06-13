@@ -1,0 +1,107 @@
+// FIXME untested on ElfFlux!!!
+
+exec("./tools.cs");
+//-----------------------------------------------------------------------------
+// Buttons 
+//-----------------------------------------------------------------------------
+function Buttons::draw(%GameObj) { //STATIC
+  for ( %i=0; %i<%GameObj.buttons.getCount(); %i++) {
+    %b = %GameObj.buttons.getObject(%i);
+    
+    %oldLayer = %GameObj.screen.TextLayer;
+    %GameObj.screen.TextLayer = %b.layer -1;
+    
+    %caption = T(%b.caption);
+    
+    if (!%b.active)
+    {
+      %GameObj.screen.drawstretch(%b.imgInactive,0,%b.x,%b.y,%b.layer,%b.w,%b.h,0,false,false);
+      %GameObj.screen.writeText(%b.x+1,%b.y+1,%caption, $textAlignCenter, %b.fontprofile, 1); //1=fontcolorNA
+    } else if (%b.mouseRegion.down[0] || %b.locked) { //clicked down or logged
+      %GameObj.screen.drawstretch(%b.imgdown,0,%b.x,%b.y,%b.layer,%b.w,%b.h,0,false,false);
+      %GameObj.screen.writeText(%b.x+1,%b.y+1,%caption, $textAlignCenter, %b.fontprofile);
+    } else {
+      %GameObj.screen.drawstretch(%b.imgNormal,0,%b.x,%b.y,%b.layer,%b.w,%b.h,0,false,false);
+      %GameObj.screen.writeText(%b.x,%b.y,%caption, $textAlignCenter, %b.fontprofile);
+    }
+  }
+  
+  %GameObj.screen.TextLayer = %oldLayer;
+}
+
+
+function Buttons::createButton(%GameObj,%imgNormal,%imgDown,%imgInactive,%fontprofile,%x,%y,%w,%h,%caption,%callback) { //STATIC
+
+  if (!isObject(%GameObj.buttons))
+  {
+        error("NEED A buttons object like this => %this.buttons = new SimGroup();");
+        return;
+  }
+  if (!isObject(%GameObj.mouseRegions))
+  {
+        error("NEED A mouseregion object !!!");
+        return;
+  }
+
+ %result = new ScriptObject() {
+   class = Button;
+   x = %x;
+   y = %y;
+   w = %w;
+   h = %h;
+   layer = 5;
+   caption = %caption;
+   imgNormal   = %imgNormal;
+   imgDown     = %imgDown;
+   imgInactive = %imgInactive;
+   fontprofile = %fontprofile;
+   active = true;
+   game = %GameObj;
+ };
+ 
+
+ %result.MouseRegion = MouseRegion_create(%GameObj,%x,%y,%w,%h, %callback );
+ %GameObj.mouseRegions.add(%result.MouseRegion);
+ 
+ %GameObj.buttons.add(%result);
+ 
+ return %result;
+}
+
+function Button::setX(%this,%x)
+{
+   %this.x = %x;
+   %this.mouseRegion.x = %x;
+}
+
+function Button::setY(%this,%y)
+{
+   %this.y = %y;
+   %this.mouseRegion.y = %y;
+}
+function Button::setW(%this,%w)
+{
+   %this.w = %w;
+   %this.mouseRegion.w = %w;
+}
+
+function Button::setH(%this,%h)
+{
+   %this.h = %h;
+   %this.mouseRegion.h = %h;
+}
+
+
+function Button::setActive(%this,%newState)
+{
+  %this.active = %newState;
+  %this.MouseRegion.active = %newState; 
+}
+
+function Button::setLocked(%this,%newState)
+{
+  %this.locked = %newState;
+}
+
+
+

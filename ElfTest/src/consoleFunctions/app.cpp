@@ -6,6 +6,7 @@
 #include "console/script.h"
 
 #include <string>
+#include <core/volume.h>
 
 namespace ElfFlux {
 
@@ -22,10 +23,7 @@ bool loadScript(String fileName) {
     return false;
 }
 
-// --------------------------------------------------------------------------
-void foo() {
-    Con::setVariable("foo", "bar");
-}
+
 // --------------------------------------------------------------------------
 ConsoleFunctionGroupBegin(App, "App Functions: getFPS, ...");
 
@@ -58,6 +56,10 @@ ConsoleFunction(getScreenHeight, S32, 1,1, "") {
 
 ConsoleFunction(setVSync, void, 2,2, "bool value") {
     return getScreenObject()->setVSync(dAtob(argv[1]));
+}
+
+DefineEngineFunction(getFullPath, String,(),, "get the current directory") {
+    return Torque::FS::GetCwd().getFullPath();
 }
 
 // ConsoleFunction(quit, void, 1,1, "") {
@@ -131,6 +133,7 @@ DefineEngineStringlyVariadicFunction( dError, void, 2, 0, "(debug error  string 
 }
 
 //------------------------------------------------------------------------------
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 

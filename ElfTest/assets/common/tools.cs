@@ -1,0 +1,296 @@
+// FIXME untested on ElfFlux!!!
+
+//------------------------------------------------------------------------------
+// Common Tools
+//
+// * Language
+// * safe Import / Export
+// * Tool: leadingChar
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Lang tool!
+//------------------------------------------------------------------------------
+/*
+initLangTable
+==============
+  Init LangTable and set $GLOBALS::LANGUAGES for use in gui.
+
+Example
+   exec("common/shared/misc.cs");
+   initLangTable("towers/shared/lang","english deutsch");
+
+*/
+
+//FIXME class LangTable ... can be simulated in script!!!
+
+function initLangTable(%path,%languages)
+{
+   $GLOBALS::LANGUAGES = %languages;
+   %cnt = getWordCount(%languages);
+   if (%cnt == 0)
+      return false;
+
+   // Init Language tool:
+   $I18N::DEFAULT = new LangTable();
+   
+   %default = getWord(%languages,0);
+   
+   exec(%path @ "/" @ %default @ ".cs");
+
+   for (%i=0; %i<%cnt; %i++)
+        $I18N::DEFAULT.addLanguage(%path @ "/" @ getWord(%languages,%i) @ ".lso", getWord(%languages,%i));
+        
+        
+   $I18N::DEFAULT.setDefaultLanguage(0);
+   $I18N::DEFAULT.setCurrentLanguage(0);
+   
+   if ($pref::langID $= "" || $pref::langID >= %cnt)
+        $pref::langID = 0;
+   
+   if ($pref::langID != 0 )
+        $I18N::DEFAULT.setCurrentLanguage($pref::langID);
+
+
+}
+//------------------------------------------------------------------------------
+function setNewCurrentLanguage(%id)
+{
+  if ($pref::langID == %id || !isObject($I18N::DEFAULT))
+        return false;
+  $pref::langID = %id;
+  $I18N::DEFAULT.setCurrentLanguage(%id);
+  return true;
+}
+//------------------------------------------------------------------------------
+// Translate! Stupid short Name *lol*
+function Tr(%id)
+{
+  $I18N::DEFAULT.getString(%id);
+}
+
+function T(%string)
+{
+  if (!isObject($I18N::DEFAULT))
+        return %string;
+  %id = getLangIDfromString(%string);
+  if (%id >= 0)
+      return $I18N::DEFAULT.getString(%id);
+  else if (isDebugBuild() && !$Game::DisableTranslationWarning )
+        error("CANT FIND TRANSLATION FOR:" SPC %string);
+   
+  return %string;
+}
+//------------------------------------------------------------------------------
+function getLangIDfromString(%string)
+{
+  return $I18N::DEFAULT.getIdFromString(%string);
+}
+//------------------------------------------------------------------------------
+// THIS MUST HAVE ALL VARIABLES IN STYLE $L_[NO] starting with 1!
+// can be called on GuiControl::OnAdd :D
+function LangPrepareSingleGuiControl(%gui)
+{
+  %gui.langTableMod = "DEFAULT";
+  if (%gui.text !$= "")
+  {
+    %id = getLangIdfromString(%gui.text);
+    if (%id >=0)
+      %gui.TextID = "L_" @ (%id+1);
+  }
+  // now look at tool tip:
+  if (%gui.tooltip !$= "")
+  {
+    %id = getLangIdfromString(%gui.tooltip);
+    if (%id >=0)
+      %gui.tooltip = Tr(%id);
+  }
+  
+
+}
+//------------------------------------------------------------------------------
+// THIS MUST HAVE ALL VARIABLES IN STYLE $L_[NO] starting with 1!
+function LangPrepareGui(%gui, %initial)
+{
+  if (%initial)
+      %gui.langTableMod = "DEFAULT";
+      
+  if (%gui.text !$= "")
+  {
+    %id = getLangIdfromString(%gui.text);
+    if (%id >=0)
+      %gui.TextID = "L_" @ (%id+1);
+  }
+
+  if (%gui.getCount() > 0) //recursive walk the gui!
+    for (%i = 0; %i< %gui.getCount(); %i++)
+        LangPrepareGui(%gui.getObject(%i), false);
+
+}
+//------------------------------------------------------------------------------
+// safe Import / Export
+//------------------------------------------------------------------------------
+// Common file function d
+// (c) t.huehn 2009
+// * movemap needs "useFunction" hack to work
+// * nocalls needs bugfix (http://www.garagegames.com/community/forums/viewthread/40031)
+//------------------------------------------------------------------------------
+// prefs
+//------------------------------------------------------------------------------
+function SafeIsFile(%filename)
+{
+   
+   %file = new FileObject();
+   if (!%file.openforRead(%filename)) {
+     %file.delete();
+     return false;
+   }
+   %file.close();%file.delete();
+   return true;
+
+}
+
+
+//param usual with cs extension but only works on dso and if NO cs exists!
+function DSOExec(%file, %nocalls)
+{
+  %dsoFile=%file @ ".dso";
+  //CHECK for cs file
+  if (!SafeIsFile(%dsoFile)) {
+        //we have no dso maybe fresh install ? bail out here
+        return false;
+  }
+  if (SafeIsFile(%file)) {
+      //we have a dso but also a cs which should not allowed here!
+      return false;
+  }          
+  exec(%file,%noCalls);
+  return true;
+}
+//------------------------------------------------------------------------------
+function SafeExport(%wildcard,%filename)
+{
+
+   %file = new FileObject();
+   if (%file.openforWrite(%filename)) {
+     %file.writeLine( "function load_exported_func() {" );
+   }  else {
+     error("Can't save file!" SPC %filename);
+     %file.delete();
+     return false;
+   }
+   %file.close();%file.delete();
+   
+  export(%wildcard,%filename,true);
+
+   %file = new FileObject();
+   if (%file.openforAppend(%filename)) {
+     %file.writeLine( "}" );
+   }
+   %file.close();%file.delete();
+
+  compile(%filename);
+  if ($TGE_198) //need 198 or higher!
+        fileDelete(%filename, true);
+  else
+        fileDelete(%filename);
+
+  return true;
+}
+//------------------------------------------------------------------------------
+function SafeImport(%filename)
+{
+
+  if (!DSOExec(%filename, true)) {
+        return false;
+  }
+  if (isFunction("load_exported_func"))
+        load_exported_func();
+}
+
+//------------------------------------------------------------------------------
+function fillLeadingChar(%base,%len, %char )
+{
+   %result = %base;
+   while (strlen(%result) < %len)
+       %result = %char @ %result;
+   
+   return %result;
+}
+//------------------------------------------------------------------------------
+function fillTrailingChar(%base,%len, %char )
+{
+   %result = %base;
+   while (strlen(%result) < %len)
+       %result = %result @ %char;
+   
+   return %result;
+}
+
+//------------------------------------------------------------------------------
+// prepare release files
+//------------------------------------------------------------------------------
+function compileAll(%pattern)
+{
+   echo(" --- Compiling all files ---");
+   compileFiles("*.cs");
+   compileFiles("*.gui");
+   echo(" --- Exiting after compile ---");
+}
+
+function compileFiles(%pattern)
+{  
+   %path = filePath(%pattern);
+
+   %mainCsFile = makeFullPath("main.cs");
+
+   for (%file = findFirstFileMultiExpr(%pattern); %file !$= ""; %file = findNextFileMultiExpr(%pattern))
+   {
+      // we don't want to try and compile the primary main.cs
+      if(%mainCsFile !$= %file)      
+         compile(%file);
+   }
+
+}
+
+
+
+
+
+//------------------------------------------------------------------------------
+// misc
+//------------------------------------------------------------------------------
+function safeDelete(%obj)
+{
+   if (isObject(%obj))
+   {
+     %obj.schedule(0,"delete");
+     %obj=0;
+   }
+
+}
+
+//special round
+function tomRound(%val, %prec)
+{
+   if (!%prec)
+      return mRound(%val);
+      
+   %n = "1";   
+   for(%i=0; %i<%prec; %i++)
+   {
+      %n = %n @ "0"; 
+   }   
+   return mRound(%val * %n) / %n;
+   
+}
+//special round words like vectors
+function tomRoundWords(%string, %prec)
+{
+   %result = "";
+   for(%i = 0; %i<getWordCount(%string); %i++)
+   {
+      %val = tomRound(getWord(%string,%i),%prec);
+      %result = %result SPC %val;
+   }
+   return %result;
+}
