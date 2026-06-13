@@ -82,8 +82,6 @@ set(BOX2D_SRCS
 )
 
 # -------------------
-set(ELF_DIR ./)
-
 set(PROJECT_SOURCES
 
     # FIXME port sources

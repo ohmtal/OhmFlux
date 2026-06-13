@@ -173,11 +173,11 @@ protected:
 };
 
 #endif
+
 /*
 #ifndef B2_DISTANCE_JOINT_H
 #define B2_DISTANCE_JOINT_H
 
-/*
 #include <Box2D/Dynamics/Joints/b2Joint.h>
 
 /// Distance joint definition. This requires defining an
