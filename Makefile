@@ -2,7 +2,7 @@
 
 # Configuration
 # --------------
-DEMO_DIRS := FishTankDemo TestBed LuaTest SoundStudio AudioTestBed KorkTest ElfTest
+DEMO_DIRS := FishTankDemo TestBed LuaTest SoundStudio AudioTestBed ElfTest
 
 BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web

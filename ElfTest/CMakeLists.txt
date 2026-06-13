@@ -156,14 +156,9 @@ set(PROJECT_SOURCES
 )
 
 
-configure_project_target(ElfTestBed ${ELF_DIR} "${ELF_DIR}/assets@assets" "${PROJECT_SOURCES}")
-
-# target_compile_definitions(KorkTestBed PUBLIC TORQUE_ENABLE_ASSERTS)
+configure_project_target(ElfTest ${ELF_DIR} "${ELF_DIR}/assets@assets" "${PROJECT_SOURCES}")
 
 
-target_include_directories(ElfTestBed PRIVATE ${ELF_DIR}/src)
-target_include_directories(ElfTestBed PRIVATE ${ELFSCRIPT_INCLUDES})
+target_include_directories(ElfTest PRIVATE ${ELF_DIR}/src)
+target_include_directories(ElfTest PRIVATE ${ELFSCRIPT_INCLUDES})
 
-# set flag in main cmake
-# target_compile_options(ElfTestBed PRIVATE -fsanitize=address -g)
-# target_link_options(ElfTestBed PRIVATE -fsanitize=address)

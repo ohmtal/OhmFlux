@@ -175,16 +175,16 @@ set(ENGINE_PRECOMPILED_HEADER
 # ------------ Dependencies (SDL3 & Graphics) --------------
 set(FLUX_LIBS "")
 
-# -- box2D
-option(WITH_BOX2D "with BOX2D Library" OFF)
-if(WITH_BOX2D)
-    set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
-    set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
-    set(BOX2D_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-    # add_subdirectory(engine/box2d)
-    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/box2d" "${CMAKE_CURRENT_BINARY_DIR}/lib/box2d")
-    list(APPEND FLUX_LIBS box2d)
-endif()
+# -- box2D  -disabled because it's untested
+# option(WITH_BOX2D "with BOX2D Library" OFF)
+# if(WITH_BOX2D)
+#     set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+#     set(BOX2D_BUILD_TESTBED OFF CACHE BOOL "" FORCE)
+#     set(BOX2D_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+#     # add_subdirectory(engine/box2d)
+#     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/lib/box2d" "${CMAKE_CURRENT_BINARY_DIR}/lib/box2d")
+#     list(APPEND FLUX_LIBS box2d)
+# endif()
 # <<<
 
 # -- Curl
