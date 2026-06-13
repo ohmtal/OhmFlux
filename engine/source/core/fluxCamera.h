@@ -33,7 +33,12 @@ public:
     void move(const Point2F& delta)      { mPosition.x += delta.x; mPosition.y += delta.y; mDirty = true; }
     void setZoom(F32 zoom)               { mZoom = (zoom > 0.01f) ? zoom : 0.01f; mDirty = true; }
     void moveZoom( F32 delta )           { setZoom(mZoom + delta);}
-    void onResize(F32 newWidth, F32 newHeight) { mWidth = newWidth; mHeight = newHeight; mDirty = true; }
+    void onResize(F32 newWidth, F32 newHeight, bool centerPosition = false) {
+        mWidth = newWidth;
+        mHeight = newHeight;
+        if (centerPosition ) mPosition = { mWidth * 0.5f, mHeight * 0.5f };
+        mDirty = true;
+    }
     // Update and Access
     void update();
     const float* getViewMatrix() const { return mViewMatrix; }

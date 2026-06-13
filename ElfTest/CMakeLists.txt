@@ -112,7 +112,7 @@ set(PROJECT_SOURCES
 
 
     ${ELF_DIR}/src/consoleFunctions/app.cpp
-    ${ELF_DIR}/src/consoleFunctions/math.cpp
+    # ${ELF_DIR}/src/consoleFunctions/math.cpp
 
     ${ELF_DIR}/src/audio/AudioProfile.h
     ${ELF_DIR}/src/audio/AudioProfile.cpp
@@ -141,9 +141,9 @@ set(PROJECT_SOURCES
 
 
 
-    # basic math
-    ${ELF_DIR}/src/math/mMathFn.h
-    ${ELF_DIR}/src/math/mConsoleFunctions.cpp
+    # # basic math move to TorqueScript
+    # ${ELF_DIR}/src/math/mMathFn.h
+    # ${ELF_DIR}/src/math/mConsoleFunctions.cpp
 
 
     # ---- editor

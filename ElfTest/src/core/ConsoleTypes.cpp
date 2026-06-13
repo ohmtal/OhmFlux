@@ -280,7 +280,7 @@ ConsoleSetType( TypePoint3F )
 //FIXME not sure about this works........
 namespace PropertyInfo
 {
-    using namespace ElfFlux; //mFloor
+    using namespace ElfMath; //mFloor
 
     bool default_scan(const String &data, Point2I & result)
     {
@@ -289,8 +289,8 @@ namespace PropertyInfo
         {
             Point2F tempResult;
             dSscanf(data.c_str(),"%f %f",&tempResult.x,&tempResult.y);
-            result.x = ElfFlux::mFloor(tempResult.x);
-            result.y = ElfFlux::mFloor(tempResult.y);
+            result.x = ElfMath::mFloor(tempResult.x);
+            result.y = ElfMath::mFloor(tempResult.y);
         }
         else
             dSscanf(data.c_str(),"%d %d",&result.x,&result.y);

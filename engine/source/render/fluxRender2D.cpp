@@ -143,11 +143,12 @@ void FluxRender2D::shutdown()
     }
 }
 //-------------------------------------------------------------------------------
-void FluxRender2D::drawLine(F32 x1, F32 y1, F32 x2, F32 y2, const Color4F& color) {
+// void FluxRender2D::drawLine(F32 x1, F32 y1, F32 x2, F32 y2, const Color4F& color) {
+void FluxRender2D::drawLine(Point3F p1, Point3F p2, const Color4F& color ) {
     PrimitiveCommand cmd;
     cmd.type = PrimitiveCommand::LINE;
-    cmd.p1 = {x1, y1, 0};
-    cmd.p2 = {x2, y2, 0};
+    cmd.p1 = p1;
+    cmd.p2 = p2;
     cmd.color = color;
     mPrimitiveList.push_back(cmd);
 }
@@ -182,10 +183,10 @@ void FluxRender2D::executeDrawLine(const PrimitiveCommand& cmd)
 void FluxRender2D::drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color, bool filled, F32 z) {
     if (!filled) {
         // Draw 4 lines using your existing drawLine
-        drawLine(x, y, x + w, y, color);         // Top
-        drawLine(x + w, y, x + w, y + h, color); // Right
-        drawLine(x + w, y + h, x, y + h, color); // Bottom
-        drawLine(x, y + h, x, y, color);         // Left
+        drawLine( { x, y, z }, { x + w, y, z}, color);         // Top
+        drawLine( { x + w, y, z}, { x + w, y + h, z}, color); // Right
+        drawLine( { x + w, y + h, z },  { x, y + h, z}, color); // Bottom
+        drawLine( { x, y + h, z}, { x, y, z}, color);         // Left
         return;
     }
 
@@ -209,13 +210,13 @@ void FluxRender2D::drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color, bo
 }
 
 //-------------------------------------------------------------------------------
-void FluxRender2D::drawCircle(F32 cx, F32 cy, F32 radius, const Color4F& color, U32 segments) {
+void FluxRender2D::drawEllipse(Point2F center, Point2F axes, const Color4F& color, U32 segments, F32 z) {
     if (mShaderFailed) return;
 
     PrimitiveCommand cmd;
     cmd.type = PrimitiveCommand::CIRCLE;
-    cmd.p1 = { cx, cy, 0.0f }; // Use p1 for center
-    cmd.radius = radius;
+    cmd.p1 = { center.x, center.y, z }; // Use p1 for center
+    cmd.axes = axes;
     cmd.segments = (segments > 128) ? 128 : segments; // Safety limit
     cmd.color = color;
 
@@ -227,20 +228,22 @@ void FluxRender2D::executeDrawCircle(const PrimitiveCommand& cmd)
     std::vector<Vertex2D> circleVerts;
     circleVerts.reserve(cmd.segments);
 
-    // 1. Generate the circle points
     for (U32 i = 0; i < cmd.segments; i++) {
         F32 theta = 2.0f * 3.1415926f * (F32(i) / F32(cmd.segments));
 
         Vertex2D v;
-        // cmd.p1 is our center (cx, cy)
-        v.pos = { cmd.p1.x + cosf(theta) * cmd.radius,
-            cmd.p1.y + sinf(theta) * cmd.radius, 0.0f };
-            v.uv  = { 0.0f, 0.0f };
-            v.color = cmd.color;
-            circleVerts.push_back(v);
+        v.pos = {
+            cmd.p1.x + cosf(theta) * cmd.axes.x,
+            cmd.p1.y + sinf(theta) * cmd.axes.y,
+            0.0f
+        };
+        v.uv  = { 0.0f, 0.0f };
+        v.color = cmd.color;
+        circleVerts.push_back(v);
     }
 
-    // 2. Setup Shader & Texture
+
+    // Setup Shader & Texture
     mDefaultShader.use();
     mDefaultShader.setMat4("projection", mOrtho);
     mDefaultShader.setMat4("view", mActiveCamera ? mActiveCamera->getViewMatrix() : IDENTITY_MATRIX);
@@ -248,7 +251,7 @@ void FluxRender2D::executeDrawCircle(const PrimitiveCommand& cmd)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mWhiteTextureHandle);
 
-    // 3. Update VBO and Draw
+    //  Update VBO and Draw
     // Note: We use mLineMesh which was reserved for 10,000 vertices
     mLineMesh.updateDynamic(circleVerts.data(), (U32)circleVerts.size());
 

@@ -7,6 +7,7 @@
 #include "scriptEditor/scriptEditor.h"
 
 #include "main/engineGlue.h"
+#include "core/Globals.h"
 //------------------------------------------------------------------------------
 //
 // NOTE: On Console it's: $Main
@@ -196,7 +197,7 @@ namespace ElfFlux {
                         if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
 
                             std::string fileName = "assets/" +  f.string();
-                            if (Con::executeFile(fileName.c_str(), false, false)) {
+                            if (loadScript(fileName.c_str())) {
                                 if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
                             }
                         }
@@ -344,10 +345,9 @@ namespace ElfFlux {
         console.OnTabCompletion = [this](ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
             OnConsoleTAB(console, data, forward);
         };
-
+        // FIXME parameters !!!
         std::string fileName = "assets/main.cs"; //fixme command line parameter for file
-
-        if (!Con::executeFile(fileName.c_str(), false, false)) {
+        if (!loadScript(fileName.c_str())) {
             return false;
         }
 
@@ -361,6 +361,7 @@ namespace ElfFlux {
 
         return true;
     }
+
     //-----------------------------------------------------------------------------
     // Console
     //-----------------------------------------------------------------------------
@@ -377,5 +378,15 @@ namespace ElfFlux {
     DefineEngineMethod(Main, clone, void, (), , "Override Clone ... this would be a bad idea on Main object") {
         Con::errorf("Clone not allowed on Main Object");
     }
+
+    DefineEngineMethod(Main, setScreenSize, void, (Point2I size), , "set the base screen size") {
+
+        if (size.isZero()) {
+            size.x =  object->mSettings.ScreenWidth;
+            size.y =  object->mSettings.ScreenHeight;
+        }
+        getScreenObject()->setNewScreenSize(size);
+    }
+
 }
 

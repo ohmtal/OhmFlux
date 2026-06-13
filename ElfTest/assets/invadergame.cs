@@ -14,6 +14,18 @@ $align::right = 2;
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
 else CleanupSet.deleteObjects();
 
+//------------- test new functions ---------------------
+function onEnterScript(%scriptFile) {
+   dWarn("onEnterScript" SPC %scriptFile);
+   if (%scriptFile $= "assets/invaderGame.cs") $Main.setScreenSize("800 600");
+}
+
+function onLeaveScript(%scriptFile) {
+    // reset to default
+    dError("CALLING ON LEAVE SCRIPT ....." SPC %scriptFile);
+    // if (%scriptFile $= "assets/invaderGame.cs")
+    $Main.setScreenSize("0 0");
+}
 
 
 

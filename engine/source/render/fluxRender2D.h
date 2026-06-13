@@ -100,7 +100,7 @@ struct PrimitiveCommand {
     Type type;
     Point3F points[3]; // Used for Triangle corners
     Point3F p1, p2;    // Used for Lines
-    F32 radius;      // For circles
+    Point2F axes;      // For circles: x/y radius
     U32 segments;
     Color4F color;
     bool filled;       // NEW: Toggle for Triangle fill mode
@@ -170,21 +170,30 @@ public:
     void shutdown();
 
     // primitives
-    void drawLine(F32 x1, F32 y1, F32 x2, F32 y2, const Color4F& color = cl_White);
-    void drawLine(Point2F p1, Point2F p2, const Color4F& color = cl_White) {
-        drawLine(p1.x,p1.y,p2.x,p2.y,color);
+    void drawLine(Point3F p1, Point3F p2, const Color4F& color = cl_White);
+    void drawLine(F32 x1, F32 y1, F32 x2, F32 y2, const Color4F& color = cl_White, F32 z = 0.f) {
+        drawLine({x1,y1, z}, {x2, y2, z}, color );
+    }
+    void drawLine(Point2F p1, Point2F p2, const Color4F& color = cl_White, F32 z = 0.f) {
+        drawLine( { p1.x,p1.y, z}, { p2.x,p2.y, z},color);
     }
     FluxTexture* getWhiteTexture() { return mWhiteTextureWrapper; }
 
-    void executeDrawLine(const PrimitiveCommand& cmd);
     void drawRect(F32 x, F32 y, F32 w, F32 h, const Color4F& color = cl_White, bool filled = true, F32 z = 0.f);
     void drawRect(RectF rect, const Color4F& color = cl_White, bool filled = true, F32 z = 0.f) {
         drawRect(rect.x,rect.y,rect.w,rect.h, color, filled, z);
     }
-    void drawCircle(F32 cx, F32 cy, F32 radius, const Color4F& color =cl_White, U32 segments = 32);
-    void executeDrawCircle(const PrimitiveCommand& cmd);
+    void drawEllipse(Point2F center, Point2F axes, const Color4F& color =cl_White, U32 segments = 32, F32 z=0.0f );
+    void drawCircle(F32 cx, F32 cy, F32 radius, const Color4F& color =cl_White, U32 segments = 32, F32 z=0.0f) {
+        drawEllipse( { cx, cy }, {radius, radius}, color, segments, z);
+    }
+    void drawCircle(Point2F center, F32 radius, const Color4F& color =cl_White, U32 segments = 32, F32 z=0.0f) {
+        drawEllipse(center,  { radius, radius }, color, segments, z);
+    }
     void drawTriangle(Point3F p1, Point3F p2, Point3F p3, const Color4F& color = cl_White, bool filled = true);
-    void executeDrawTriangle(const PrimitiveCommand& cmd);
+    void drawTriangle(Point2F p1, Point2F p2, Point2F p3, const Color4F& color = cl_White, bool filled = true, F32 z = 0.f) {
+        drawTriangle( { p1.x, p1.y, z}, { p2.x, p2.y, z}, { p3.x, p3.y, z}, color, filled);
+    }
 
     //quad render
     // bool loadDefaultShader();
@@ -237,6 +246,12 @@ public:
 private:
     FluxRender2D() : mShaderFailed(true) {}
     ~FluxRender2D() { shutdown(); } // Fallback cleanup
+
+    void executeDrawLine(const PrimitiveCommand& cmd);
+    void executeDrawCircle(const PrimitiveCommand& cmd);
+    void executeDrawTriangle(const PrimitiveCommand& cmd);
+
+
 };
 
 #define Render2D FluxRender2D::getInstance()

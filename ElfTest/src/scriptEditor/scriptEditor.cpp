@@ -9,12 +9,13 @@
 #include "scriptEditor.h"
 #include "gui/fonts/HackNerdFontPropo-Regular.h"
 #include <fluxFile.h>
+#include "core/Globals.h"
 
 #include <string>
 #include <algorithm>
 #include <cctype>
 
-#include "console/script.h" //executeFile
+
 
 ScriptEditor::~ScriptEditor() {
     for (auto& editor :mEditors) {
@@ -212,7 +213,7 @@ void ScriptEditor::renderEditors()
                     if (ImGui::MenuItem("Hot RELOAD","ctrl r")) {
                         if (!saveEditor(editorState)) {
                             //handle fail saving
-                        } else if (!Con::executeFile(editorState.fullPath.c_str(), false, false)) {
+                        } else if (!ElfFlux::loadScript(editorState.fullPath.c_str())) {
                             //FIXME handle exec fail!
                         }
                     }
@@ -322,7 +323,7 @@ void ScriptEditor::renderEditors()
                     }
                 }
                 if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_R)) {
-                    if (saveEditor(editorState)) Con::executeFile(editorState.fullPath.c_str(), false, false);;
+                    if (saveEditor(editorState))ElfFlux::loadScript(editorState.fullPath.c_str());
                 }
                 if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGuiKey_F)) {
                     editorState.mReclaimFocus2 = true;

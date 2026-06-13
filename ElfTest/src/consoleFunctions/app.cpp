@@ -10,6 +10,18 @@
 namespace ElfFlux {
 
 
+bool loadScript(String fileName) {
+    if (!gLastScriptFile.isEmpty() && Con::isFunction("onLeaveScript")) {
+      Con::executef("onLeaveScript",  gLastScriptFile);
+    }
+    if (Con::executeFile(fileName)) {
+        if (Con::isFunction("onEnterScript")) Con::executef("onEnterScript",  fileName);
+        gLastScriptFile = fileName;
+        return true;
+    }
+    return false;
+}
+
 // --------------------------------------------------------------------------
 void foo() {
     Con::setVariable("foo", "bar");

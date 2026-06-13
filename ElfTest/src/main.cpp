@@ -15,7 +15,10 @@ int main(int argc, char* argv[])
 
     auto obj = std::make_unique<ElfFlux::Main>();
     ElfFlux::gMain = obj.get();
-    // ElfFlux::gMain = new ElfFlux::Main();
+
+    // ElfFlux::gMain->mSettings.ScreenWidth = 800;
+    // ElfFlux::gMain->mSettings.ScreenHeight = 600;
+
     ElfFlux::gMain->mSettings.Company = "Ohmtal";
     ElfFlux::gMain->mSettings.Caption = "ElfTestBed";
     ElfFlux::gMain->mSettings.enableLogFile = true;
@@ -23,8 +26,7 @@ int main(int argc, char* argv[])
     ElfFlux::gMain->mSettings.maxFPS = 0;
     ElfFlux::gMain->Execute();
 
-    // if (ElfFlux::gMain) delete ElfFlux::gMain;
-    // ElfFlux::gMain = nullptr;
+
     return 0;
 }
 

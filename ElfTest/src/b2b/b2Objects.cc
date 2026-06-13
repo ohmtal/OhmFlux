@@ -79,7 +79,10 @@
 // global ratio for pixel to meters can be changed with World2b::setRatio console method
 U32 gB2ratio = 32;
 
+using namespace ElfMath;
 namespace ElfFlux {
+
+
 //=================================================================================================
 // World2b
 //=================================================================================================
@@ -480,7 +483,7 @@ void Body2b::Update(const double& dt) {
         b2Transform transform = mBody->GetTransform();
         b2Vec2 axis = b2Mul(transform.q, b2Vec2(1.0f, 0.0f));
         mAxisVector = Point2F(axis.x, axis.y);
-        mAxisVectorAngle = mRadToDeg(mAtan(axis.x, axis.y)); //mAtan
+        mAxisVectorAngle = ElfMath::mRadToDeg(ElfMath::mAtan(axis.x, axis.y)); //mAtan
 
         mRenderObject.getDrawParams().x =transform.p.x * gB2ratio;
         mRenderObject.getDrawParams().y = transform.p.y * gB2ratio;

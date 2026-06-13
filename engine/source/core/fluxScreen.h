@@ -69,6 +69,9 @@ public:
 	bool setCursor(const char* lFilename,  int hot_x = 0, int hot_y = 0);
 
 
+	// update the screen size while game is running
+	// camera will be centered new
+	void setNewScreenSize(Point2I value);
 
 	void setWidth(S32 value)  { _mWidth =  value; _mCenterX = (S32)(_mWidth/2.f); }
 	void setHeight(S32 value) { _mHeight = value; _mCenterY = (S32)(_mHeight/2.f);}

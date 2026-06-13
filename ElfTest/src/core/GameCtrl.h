@@ -53,6 +53,13 @@ namespace ElfFlux {
         DECLARE_CONOBJECT(GameCtrl);
         DECLARE_CALLBACK(void, onRender, (F32 DT));
         DECLARE_CALLBACK(void, onUpdate, (F32 DT));
+        //function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
+
+        DECLARE_CALLBACK(void, onInputEvent, (String device, String action, F32 mouseX, F32 mouseY, String keyValue ));
+
+
+
+
     };
 
 

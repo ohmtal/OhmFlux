@@ -160,6 +160,8 @@ bool  FluxScreen::prepareMode(const FluxSettings& lSettings )
 	// if(!mScreen->prepareMode(mSettings.ScreenWidth,mSettings.ScreenHeight, mSettings.FullScreen, mSettings.Vsync, mSettings.Fsaa))
 	setWidth(lSettings.ScreenWidth);
 	setHeight(lSettings.ScreenHeight);
+	mRealScreenSize.x = lSettings.ScreenWidth;
+	mRealScreenSize.y = lSettings.ScreenHeight;
 	mColor_depth = 32;
 	mFullScreen	 = lSettings.FullScreen;
 	mVsync = lSettings.initialVsync;
@@ -427,4 +429,16 @@ bool FluxScreen::setCursor(const char* lFilename,  int hot_x, int hot_y)
 	}
 	return SDL_SetCursor(cursor);
 }
+//-------------------------------------------------------------------------------
+void FluxScreen::setNewScreenSize(Point2I value) {
+	if (getScreenSize() == value) return;
+
+	setWidth(value.x);
+	setHeight(value.y);
+	updateWindowSize(mRealScreenSize.x,mRealScreenSize.y);
+	if (Render2D.getCamera()) {
+		Render2D.getCamera()->onResize(value.x, value.y, true);
+	}
+}
+
 //-------------------------------------------------------------------------------

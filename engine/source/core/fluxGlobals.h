@@ -311,6 +311,8 @@ struct  Point2I{
     Point2I& operator-=(const Point2I& v) { x -= v.x; y -= v.y; return *this; }
     Point2I& operator*=(const Point2I& v) { x *= v.x; y *= v.y; return *this; }
     Point2I& operator/=(const Point2I& v) { x /= v.x; y /= v.y; return *this; }
+
+     bool isZero() const { return (x == 0 && y == 0); }
 };
 
 struct Point2F {
@@ -359,7 +361,7 @@ struct Point2F {
     F32 lenSquared() const { return (x * x + y * y); }
 
     F32 len() const { return std::sqrt(lenSquared()); }
-    F32 isZero() const { return (x == 0.f && y == 0.f); }
+    bool isZero() const { return (x == 0.f && y == 0.f); }
 
     // --- Vector Operations ---
     void normalize() {
@@ -415,7 +417,9 @@ struct Point3F {
 
     Point2F toPoint2F() const { return { x,y}; }
 
-     std::string to_string() { return std::format("{} {} {}", x,y,z);}
+    std::string to_string() { return std::format("{} {} {}", x,y,z);}
+
+    bool isZero() const { return (x == 0.f && y == 0.f && z == 0.f); }
 
 };
 //------------------------------------- Rects
