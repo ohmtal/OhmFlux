@@ -1,0 +1,132 @@
+//------------------------------
+// named objects example
+// NOTE: you need to use .getId
+//------------------------------
+exec("./tools.cs");
+
+if (!isObject(CleanupSet)) new SimSet(CleanupSet);
+else CleanupSet.deleteObjects();
+
+//------------------------------
+function Game::LoadAssets(%this) {
+  echo("GAME ON ADD.....");
+  // ------
+  new Texture(texBack) {
+    fileName = "assets/texture/nebulapurple_sky_back.png";
+  };
+  %this.add(texBack);
+  // ------
+  new Font(fontJet) {
+    fileName = "assets/font/JetBrainsMono-Regular.ttf";
+  };
+  %this.add(fontJet);
+  // ------
+  new Label(Label1)  {
+    Font = fontJet.getId();  // named need to set ID !!
+    x = getScreenWidth() / 2.0;
+    y = 40;
+    shadow=1;
+    scale=2;
+    align = 1;
+    color = "1 0 0";
+    Caption = "Hello World";
+  };
+  %this.add(Label1);
+  // ------
+   new Sprite(background) {
+    Texture = texBack.getId();
+    x = getScreenWidth() / 2.0;
+    y = getScreenHeight() / 2.0;
+    z = 1.0; //layer
+    w = getScreenWidth();
+    h = getScreenHeight();
+  };
+  %this.add(background);
+  // ------
+  new Texture(texFaces) {
+    fileName = "assets/texture/faces.png";
+    TexCols = 13;
+  };
+  %this.add(texFaces);
+  // ------
+  new Sprite(SpriteFace) {
+    Texture = texFaces.getId();
+    x = 100;
+    y = 100;
+    z = 0.5;
+    w = 64;
+    h = 64;
+    imgId = 3;
+  };
+  %this.add(SpriteFace);
+  // ------
+  new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.2; };
+  %this.add(SndPling);
+
+}
+
+function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
+  if (%keyValue ) {
+    echo("ACTION=" SPC %actionString);
+    if (%actionString $= "button3" ) %this.c(%mouseX, %mouseY);  // )%this.schedule(0,c); //defered
+  }
+
+}
+
+
+function Game::onUpdate(%this,%dt) {
+  Label1.Caption = getFPS() SPC "FPS";
+
+  Label1.shift = mfMod( Label1.shift + %dt * 10 ,360);
+  Label1.color = shiftColorHue("0 1 0",Label1.shift );
+
+
+}
+
+function Game::c(%this, %mx, %my, %p) {
+  alxPlay(SndPling.getId());
+  if (!%p)  %p = SpriteFace.getId();
+  if (!%p) { error("No object found!"); return 0; }
+
+  %layer =  getRandom(1, 999) / 1000;
+
+  %clone = new Sprite() {
+
+      Texture = %p.Texture;
+      w = %p.w;
+      h = %p.h;
+
+      imgId = getRandom(13);
+
+      x = %mx !$= "" ?  %mx : getRandom(getScreenWidth() - %p.w) + %p.w;
+      y = %my !$= "" ? %my : getRandom(getScreenHeight() - %p.h) + %p.h;
+      z = %layer;
+  };
+
+
+  %this.add(%clone);
+
+
+  return %clone;
+ }
+
+function Game::onRemove(%this) {
+  error("GAME ONREMOVE!");
+  %this.deleteObjects();
+}
+
+function Game::ml(%this, %stop) {
+
+  Label1.x =  (Label1.x + 1.4) % 1200 ;
+  if (!%stop) %this.schedule(10,ml);
+}
+
+//FIXME class does NOT work!
+new GameCtrl(TemplateGame) {
+  class = "Game";
+};
+
+TemplateGame.LoadAssets();
+CleanupSet.add(TemplateGame);
+TemplateGame.ml(); //scrolling using schedule ..
+
