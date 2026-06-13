@@ -33,12 +33,14 @@ namespace ElfFlux {
     class GameCtrl : public SimSet, public FluxBaseObject {
 
         typedef SimSet Parent;
-        FluxTTFont* mDefaultFont = nullptr;
 
+         FluxTTFont* mDefaultFont = nullptr;
 
     public:
         DrawParams2D mDrawParams;
         FluxLabel* mLabel = nullptr;
+
+        FluxTTFont* getFont() { return mDefaultFont; }
 
         void onEvent(SDL_Event event) override;
         void Update(const double& dt) override;

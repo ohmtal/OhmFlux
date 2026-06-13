@@ -62,9 +62,6 @@ DefineEngineFunction(getFullPath, String,(),, "get the current directory") {
     return Torque::FS::GetCwd().getFullPath();
 }
 
-// ConsoleFunction(quit, void, 1,1, "") {
-//     return gMain->TerminateApplication();
-// }
 // ----------------- include = exec with nocalls ----------------------
 
 DefineEngineFunction(include,bool, (String fileName),, "include(fileName)" "exec a file without calls" ){
@@ -133,8 +130,34 @@ DefineEngineStringlyVariadicFunction( dError, void, 2, 0, "(debug error  string 
 }
 
 //------------------------------------------------------------------------------
+// Mouse
+//------------------------------------------------------------------------------
+DefineEngineFunction(getMousePos, Point2F, (),," MousePositon relative to screenSize") {
+    return (gAppStatus.getMousePos());
+}
+DefineEngineFunction(getRealMousePos, Point2F, (),,"real MousePositon reported by SDL") {
+    return (gAppStatus.getRealMousePos());
+}
+DefineEngineFunction(getWorldMousePos, Point2F, (),,"MousePositon based on MousePos and relative to Camera Postion and Zoom") {
+    return (gAppStatus.getWorldMousePos());
+}
 
 //------------------------------------------------------------------------------
+// Rect stuff
+//------------------------------------------------------------------------------
+DefineEngineFunction(PointInRect, bool, (RectF rect, Point2F point),, "check a point is in a rect") {
+    return rect.pointInRect(point);
+}
+
+DefineEngineFunction(RectAddSpacing, RectF, (RectF rect, F32 spacing),, "add a spacing to a Rext") {
+    rect.x -= spacing;
+    rect.y -= spacing;
+    rect.w += spacing * 2;
+    rect.h += spacing * 2;
+    return rect;
+}
+//------------------------------------------------------------------------------
+// DEBUG / Test stuff
 //------------------------------------------------------------------------------
 
 #ifdef FLUX_DEBUG

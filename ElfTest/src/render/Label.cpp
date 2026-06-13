@@ -3,6 +3,7 @@
 #include "Font.h"
 #include "core/Globals.h"
 #include "console/engineAPI.h"
+#include "core/GameCtrl.h"
 
 namespace ElfFlux {
 
@@ -19,6 +20,15 @@ namespace ElfFlux {
             mFontSimID = simFont->getId();
             return true;
         }
+        // it's allowed to add the GameCtrl as font object
+        GameCtrl* gameCtrl =  dynamic_cast<GameCtrl*>(Sim::findObject(consoleobject));
+        if (gameCtrl) {
+            if (! gameCtrl->getFont() || !mLabel.setFont(gameCtrl->getFont())) return false;
+            mFontSimID = gameCtrl->getId();
+            return true;
+        }
+
+
         return false;
     }
     // ------------------------------------------------------------------------.
@@ -71,7 +81,10 @@ namespace ElfFlux {
 
         mLabel.Draw();
     }
-    // ------------------------------------------------------------------------.
+    // ------------------------------------------------------------------------
+    DefineEngineMethod(Label, getRect, RectI, (),, "get the rect of the label") {
+        return object->mLabel.getRectI();
+    }
 
 } //namespace
 

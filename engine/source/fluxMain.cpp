@@ -528,7 +528,7 @@ void FluxMain::IterateFrame()
 {
 	SDL_Event E;
 
-	// 1. Process ALL pending events in a loop to avoid input lag
+	//  Process ALL pending events in a loop to avoid input lag
 	while (SDL_PollEvent(&E)) {
 		switch (E.type) {
 			case SDL_EVENT_QUIT:

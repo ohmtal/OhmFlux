@@ -429,6 +429,12 @@ struct RectI{
     Point2I getPoint() const { return {x,y}; }
     Point2I getExtent() const { return { w, h };}
 
+    void setPoint(const Point2I& value) {x = value.x; y = value.y; }
+    void setExtent(const Point2I& value)  { w = value.x; h = value.y; }
+    void setPoint(const Point2F& value) {x = (S32)value.x; y = (S32)value.y; }
+    void setExtent(const Point2F& value)  { w = (S32)value.x; h = (S32)value.y; }
+
+
     bool pointInRect(const Point2I& pt) const {
         return (pt.x >= x && pt.x < x + w && pt.y >= y && pt.y < y + h);
     }
@@ -458,6 +464,19 @@ struct RectF
 
     Point2F getPoint() const { return {x,y}; }
     Point2F getExtent() const { return { w, h };}
+
+    Point2F getCenterPoint() const {
+        return  { x + w / 2.f , y + h / 2.f };
+    }
+
+
+    void setPoint(const Point2I& value) {x = (F32)value.x; y = (F32)value.y; }
+    void setExtent(const Point2I& value)  { w = (F32)value.x; h = (F32)value.y; }
+    void setPoint(const Point2F& value) {x = value.x; y = value.y; }
+    void setExtent(const Point2F& value)  { w = value.x; h = value.y; }
+
+
+
     bool pointInRect(const Point2F& pt) const {
         return (pt.x >= x && pt.x < x + w && pt.y >= y && pt.y < y + h);
     }

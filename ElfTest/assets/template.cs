@@ -1,9 +1,7 @@
 //------------------------------
 exec("./tools.cs");
 
-if (!isObject(CleanupSet)) new SimSet(CleanupSet);
-else CleanupSet.deleteObjects();
-
+GarbageCollectionSet.deleteObjects();
 
 
 //------------------------------
@@ -130,6 +128,5 @@ $Game = new GameCtrl() {
 };
 
 $Game.LoadAssets();
-CleanupSet.add($Game);
 $game.ml(); //scrolling using schedule ..
 

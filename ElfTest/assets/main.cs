@@ -12,33 +12,18 @@ echo ("------------------------------");
 
 
 //------------------------------
-
-if (!isObject(CleanupSet)) new SimSet(CleanupSet);
-else CleanupSet.deleteObjects();
-
-function Main::shutdown(%this) {
-  echo("Main shutdown cleanup........");
-  if (isObject(CleanupSet)) {
-    CleanupSet.deleteObjects();
-    CleanupSet.delete();
-  }
-}
-
-
+GarbageCollectionSet.deleteObjects();
 //------------------------------
-
 
   $texBack = new Texture() {
     fileName = "assets/texture/nebulapurple_sky_back.png";
 
   };
-  CleanupSet.add($texBack);
 
   $FontJetBrains = new Font() {
     fileName = "assets/font/JetBrainsMono-Regular.ttf";
     fontSize = 64.0;
   };
-  CleanupSet.add($FontJetBrains);
   $Label1 = new Label()  {
     Font = $FontJetBrains;
     x = 20;
@@ -50,7 +35,6 @@ function Main::shutdown(%this) {
     shadowOffset = 0.9;
     shadow = true;
   };
-  CleanupSet.add($Label1);
 
   $background = new Sprite() {
     Texture = $texBack;
@@ -60,13 +44,11 @@ function Main::shutdown(%this) {
     h = getScreenHeight();
     z = 1.0;
   };
-  CleanupSet.add($background);
   // ------
   $texFaces = new Texture() {
     fileName = "assets/texture/faces.png";
     TexCols = 13;
   };
-  CleanupSet.add($texFaces);
 
   // $texFaces.dump();
 
@@ -79,10 +61,8 @@ function Main::shutdown(%this) {
     z = 0.5;
     imgId = 3;
   };
-  CleanupSet.add($sprite);
   // ------
   $sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.5; };
-  CleanupSet.add($sndPling);
 
    $testWorld = new TestWorld(){
      x = 200;
@@ -91,7 +71,6 @@ function Main::shutdown(%this) {
      h = 300;
      // gravity = .0;
    };
-   CleanupSet.add($testWorld);
 
 
 
@@ -147,7 +126,6 @@ function c(%p) {
   };
 
 
-  CleanupSet.add(%clone);
 
 
   // CloneSet.listObjects();

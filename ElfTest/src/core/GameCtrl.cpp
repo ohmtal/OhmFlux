@@ -235,12 +235,23 @@ DefineEngineMethod(GameCtrl, Circle, void
     Render2D.drawCircle(center, radius, color, segments, LAYER_F(layer));
 }
 
+
 DefineEngineMethod(GameCtrl, Elipse, void
 , (Point2F center, Point2F axes,  Color4F color, U32 segments, U32 layer )
 , (cl_White, 32, 0) , "draw a Circle")
 {
     Render2D.drawEllipse(center, axes, color, segments, LAYER_F(layer));
 }
+
+DefineEngineMethod(GameCtrl, ElipseRect, void
+, (RectF rect, Color4F color, U32 segments, U32 layer )
+, (cl_White, 32, 0) , "draw a Circle")
+{
+    Point2F center = rect.getCenterPoint();
+    Point2F axes = rect.getExtent() / 2.f;
+    Render2D.drawEllipse(center, axes, color, segments, LAYER_F(layer));
+}
+
 
 DefineEngineMethod(GameCtrl, Tringle, void
 , (Point2F p1, Point2F p2, Point2F p3, Color4F color, bool filled, U32 layer )

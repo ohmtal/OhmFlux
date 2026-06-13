@@ -1,9 +1,6 @@
 
 //------------------------------
-
-if (!isObject(CleanupSet)) new SimSet(CleanupSet);
-else CleanupSet.deleteObjects();
-
+GarbageCollectionSet.deleteObjects();
 //------------------------------
 
 function MemTest::onRender(%this,%dt) {
@@ -47,4 +44,3 @@ function MemTest::onUpdate(%this,%dt) {
 $Game = new GameCtrl() {
     class = "MemTest";
 };
-CleanupSet.add($Game);

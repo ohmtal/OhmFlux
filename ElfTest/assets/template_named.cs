@@ -4,8 +4,7 @@
 //------------------------------
 exec("./tools.cs");
 
-if (!isObject(CleanupSet)) new SimSet(CleanupSet);
-else CleanupSet.deleteObjects();
+GarbageCollectionSet.deleteObjects();
 
 //------------------------------
 function Game::LoadAssets(%this) {
@@ -127,6 +126,5 @@ new GameCtrl(TemplateGame) {
 };
 
 TemplateGame.LoadAssets();
-CleanupSet.add(TemplateGame);
 TemplateGame.ml(); //scrolling using schedule ..
 

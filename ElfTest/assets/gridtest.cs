@@ -1,8 +1,7 @@
 exec("./tools.cs"); 
 // -----------------------------------------------------------------------------
 // Demo cleanup
-if (!isObject(CleanupSet)) new SimSet(CleanupSet);
-else CleanupSet.deleteObjects();
+GarbageCollectionSet.deleteObjects();
 // -----------------------------------------------------------------------------
 function GridTest::Init(%this) {
     // Setup Grid
@@ -17,6 +16,18 @@ function GridTest::Init(%this) {
     %this.grid.getinfo();
     %this.add(%this.grid);
 
+    // setup a label
+    %this.LabelNew = new Label() {
+        Font = %this; //it's allowed to use GameCtrl's font
+        x = 880;
+        y = 50;
+        shadow = true;
+        scale = 0.75;
+        Caption = "New Terrain";
+    };
+    %this.LabelNew.ButtonRect =  RectAddSpacing(%this.LabelNew.getRect(), 10);
+    // error("rect is:" SPC %this.LabelNew.getRect() SPC "/" SPC %this.LabelNew.ButtonRect);
+
 
     %this.crazy  = false;
     %this.hideTerrain = false;
@@ -24,7 +35,7 @@ function GridTest::Init(%this) {
     %this.countY = %this.grid.getNodeCountX();
     %this.newTerrain();
 }
-
+// -----------------------------------------------------------------------------
 function GridTest::newTerrain(%this) {
     %this.grid.addRandomMud();
     if ( isObject(%this.path) ) %this.path.delete();
@@ -32,7 +43,7 @@ function GridTest::newTerrain(%this) {
     if ( isObject(%this.path) ) %this.add( %this.path );
     // echo("PATH object is:" SPC %this.path);
 }
-
+// -----------------------------------------------------------------------------
 function Grid::addRandomMud(%this) {
     %cnt = %this.getNodeCount();
     for( %i = 0; %i < %cnt / 1.5; %i++ ) {
@@ -46,8 +57,16 @@ function Grid::addRandomMud(%this) {
     }
    
 }
+// -----------------------------------------------------------------------------
+function GridTest::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
+    if (%keyValue == 0 && %actionString $= "button1" ) { //mouse up on left button
+        if (pointInRect( %this.LabelNew.ButtonRect, %mouseX SPC %mouseY)) {
+            %this.newTerrain();
+        }
+    }
 
-
+}
+// -----------------------------------------------------------------------------
 function GridTest::onRender(%this,%dt) {
 
 
@@ -87,12 +106,23 @@ function GridTest::onRender(%this,%dt) {
             // }
         }
     }
-}
 
+    %this.Rect( %this.LabelNew.ButtonRect,%this.labelNew.color , false);
+    // %this.ElipseRect( %this.LabelNew.ButtonRect,%this.labelNew.color );
+}
+// -----------------------------------------------------------------------------
 function GridTest::onUpdate(%this, %dt) {
     if (%this.crazy) %this.newTerrain();
-}
 
+    // not really good performance!! >> i need a mouse move event
+    // or better an object which track it on c++ like MouseRect ...
+    if (pointInRect( %this.LabelNew.ButtonRect,getMousePos())) {
+        %this.labelNew.color = "0.5 1 0.5";
+    } else {
+        %this.labelNew.color = "1 1 1";
+    }
+}
+// -----------------------------------------------------------------------------
 function GridTest::onRemove(%this) {
     %this.deleteObjects();
 }
@@ -106,15 +136,8 @@ function GridTest::start(%this) {
 function GridTest::stop(%this) {
     %this.crazy = false;
 }
-// function GridTest::crazyLoop(%this) {
-//     if (!%this.crazy) return;
-//     %this.newTerrain();
-//     %this.schedule(32, crazyLoop);
-// }
-
 
 // -------- --------- ----------
 $game = new GameCtrl() { class = "GridTest"; };
 $game.init();
-CleanupSet.add($Game);
 

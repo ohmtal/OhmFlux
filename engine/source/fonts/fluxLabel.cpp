@@ -61,7 +61,7 @@ void FluxLabel::setCaption(const char *szFormat, ...)
 }
 
 //-----------------------------------------------------------------------------
-Point2F FluxLabel::getStringSize(const char* text)  {
+Point2F FluxLabel::getStringSize(const char* text) const {
     Point2F result = {0.f, 0.f};
     Point2F cur = {0.f, 0.f};
     STB_Internal::stbtt_aligned_quad q;
@@ -160,7 +160,7 @@ const Point2F FluxLabel::Print(const char* text, Point2F pos, FontAlign align, C
         }
     }
     //updateSize
-    result.x = currentX;
+    result.x = currentX - startX;
     result.y = lMaxHeight;
     return result;
 }
@@ -179,7 +179,16 @@ void FluxLabel::Draw()
 //-----------------------------------------------------------------------------
 RectI FluxLabel::getRectI() const
 {
+
     RectI lResult = getDrawParams().getRectI();
+
+    if (( lResult.w == 0 || lResult.h == 0 )&&  (mCaption[0] != '\0') ) {
+        const char * text = mCaption;
+        Point2F size = getStringSize(text);
+        lResult.setExtent( size );
+        lResult.y -=  size.y * 0.5f;
+    }
+
     S32 halfWidth = static_cast<S32>(static_cast<F32>(getDrawParams().w) / 2.f);
 
     if ( mAlign == FontAlign_Left ) {

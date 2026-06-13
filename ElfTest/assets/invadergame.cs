@@ -10,9 +10,7 @@ $align::left = 0;
 $align::center = 1;
 $align::right = 2;
 
-
-if (!isObject(CleanupSet)) new SimSet(CleanupSet);
-else CleanupSet.deleteObjects();
+GarbageCollectionSet.deleteObjects();
 
 //------------- test new functions ---------------------
 function onEnterScript(%scriptFile) {
@@ -32,7 +30,6 @@ function onLeaveScript(%scriptFile) {
 function initInvader(%force) {
 
   $Game = new GameCtrl(invaderGame) {};
-  CleanupSet.add($Game);
 
 // if (%force)
 //       playGui.delete();
@@ -145,7 +142,6 @@ function loadTexture(%filename) {
   %result = new Texture() {
     fileName = "assets/texture/" @ %filename @ ".png";
   };
-  CleanupSet.add(%result);
   return %result;
   
 }
@@ -197,7 +193,6 @@ function loadSound(%name,%filename,%looping) {
     filename = "assets/sound/" @ %filename;
     looping = %looping;
   };
-  CleanupSet.add(%profile);
 
 }
 //------------------------------------------------------------------------------
