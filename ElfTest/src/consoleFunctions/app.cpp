@@ -193,6 +193,47 @@ DefineEngineFunction(testExec, void,() , , "Test an exec return") {
     ConsoleValue result = Con::executef("onDebugTest");
     Con::printf("Test result is %d, as string: %s", result.getBool(), result.getString());
 }
+
+// --------------------------------- VARIABLE TEST -----------------------------------
+/*
+   varTest(); echo($Global::IntVar); $Global::IntVar = 5; echo($PI);
+
+*/
+
+static S32 intVar = 4711;
+constexpr F32 myPI = M_PI;
+static F32 floatVar = 6.66f;
+static void intVarChanged() {
+    Con::warnf("IntVar changed: %d", intVar);
+}
+
+
+DefineEngineFunction(varTest, void, (),, "init the variable tests") {
+
+    // Add a variable with pointer and callback!
+    Con::addVariable(
+        "$Global::IntVar",
+        TypeS32,
+        &intVar,
+        "A integer Value with a pointer!"
+    );
+    Con::addVariableNotify( "$Global::IntVar", intVarChanged);
+
+    // addConstant must be a variable!! - guess i cant use enum..
+    // i also can use a non const variable so it may change
+    Con::addConstant(
+        "PI",
+        TypeF32,
+        &myPI,
+        "A PI"
+    );
+
+
+}
+
+
+
+
 #endif
 
 ConsoleFunctionGroupEnd(App);
