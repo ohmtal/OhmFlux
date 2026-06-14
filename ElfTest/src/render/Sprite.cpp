@@ -55,6 +55,10 @@ namespace ElfFlux {
         return object->mRenderObject.getRectF();
     }
 
+    DefineEngineMethod(Sprite, setRectF, void, (RectF rect),,"Set the Sprite Rect" ) {
+        object->mRenderObject.setRectF(rect);
+    }
+
     // ------------------------------------------------------------------------.
     void Sprite::initPersistFields()
     {
@@ -77,10 +81,21 @@ namespace ElfFlux {
         addField("flipY", TypeBool, Offset(mRenderObject.mDrawParams.flipY, Sprite));
         endGroup("Params");
 
+        addGroup("Action");
+        addField("Velocity", TypePoint2F, Offset(mRenderObject.mVelocity, Sprite));
+        addField("Speed", TypeF32, Offset(mRenderObject.mSpeed, Sprite));
+        endGroup("Action");
+
+        addGroup("Animation");
+        addField("FramesStart", TypeS32, Offset(mRenderObject.mFramesStart, Sprite));
+        addField("FramesEnd", TypeS32, Offset(mRenderObject.mFramesEnd, Sprite));
+        addField("AnimationDelay", TypeS32, Offset(mRenderObject.mAnimationDelay, Sprite));
+        addField("AnimationTime", TypeS32, Offset(mRenderObject.mAnimationTime, Sprite));
+        endGroup("Animation");
     }
     // ------------------------------------------------------------------------.
     void Sprite::Update(const double& dt){
-
+        mRenderObject.Update(dt);
     }
     // ------------------------------------------------------------------------.
     void Sprite::Draw() {

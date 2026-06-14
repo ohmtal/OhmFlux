@@ -1,0 +1,286 @@
+//------------------------------------------------------------------------------
+function loadSound(%name,%filename,%looping) {
+
+    // if (%looping $= "") %looping = false;
+    %profile = new AudioProfile(%name)
+    {
+        filename = "assets/sound/" @ %filename;
+        looping = %looping;
+    };
+
+}
+
+//------------------------------------------------------------------------------
+// function onEnterScript(%scriptFile) {
+//     dWarn("onEnterScript" SPC %scriptFile);
+//     if (%scriptFile $= "assets/pong.cs") $Main.setScreenSize("740 500");
+// }
+
+function onLeaveScript(%scriptFile) {
+    // reset to default
+    dError("CALLING ON LEAVE SCRIPT ....." SPC %scriptFile);
+    // if (%scriptFile $= "assets/invaderGame.cs")
+    $Main.setScreenSize("0 0");
+}
+
+//------------------------------------------------------------------------------
+function Pong::init(%this) {
+    $Main.setScreenSize("740 500");
+    // --- config ----
+    %this.x = 50;
+    %this.y = 50;
+    %this.w = 600;
+    %this.h = 400;
+    %this.thick = 10;
+    %this.rect = %this.x SPC %this.y SPC %this.w SPC %this.h;
+
+    %this.StartSpeed = 150;
+    %this.IncSpeed = 3;
+    %this.paddleHeight = 80;
+
+    %this.score = 0;
+
+    //--- borders ---
+    %this.borderTop = new Sprite();
+    %this.borderTop.setRectF(setWord(%this.rect, 3, %this.thick));
+
+    %this.borderLeft = new Sprite();
+    %this.borderLeft.setRectF(setWord(%this.rect, 2, %this.thick));
+
+    %this.borderBottom = new Sprite();
+    %y = %this.y + %this.h - %this.thick / 2;
+    %rect = %this.x SPC %y SPC %this.w SPC %this.thick;
+    %this.borderBottom.setRectF(%rect);
+
+    %this.borders = %this.borderTop SPC %this.borderLeft SPC %this.borderBottom;
+
+    for (%i = 0; %i < getWordCount(%this.borders); %i++) {
+        %b = getWord(%this.borders, %i);
+        echo(%b);
+        %b.Color = "0.5 0.7 0.5";
+    }
+
+    //--- paddle ---
+    %this.paddle = new Sprite() {
+        class = "Paddle";
+        parent = %this;
+        color  = "0 0 1";
+        Speed  = 200;
+    };
+
+    %this.paddle.reset();
+
+    // --- ball ----
+    %this.ball = new Sprite() {
+        class = "Ball";
+        parent = %this;
+        color = "1 0 0";
+        // Speed = 100;
+    };
+    %this.ball.reset();
+
+
+    // --- sounds -----
+    loadSound(AlienMoveSound1,"alien_move_1.wav");
+    loadSound(AlienMoveSound2,"alien_move_2.wav");
+    loadSound(AlienMoveSound3,"alien_move_3.wav");
+    loadSound(AlienMoveSound4,"alien_move_4.wav");
+
+    loadSound(AlienExplosionSound,"alien_explosion.wav");
+
+    loadSound(AlienShootSound,"alien_shoot.wav");
+    loadSound(BonusAlienExplosionSound,"bonusalien_explosion.wav");
+    loadSound(BonusAlienLoopSound,"bonusalien_loop.wav",true);
+
+    loadSound(PlayerExplosionSound,"player_explosion.wav");
+    loadSound(PlayerShootSound,"player_shoot.wav");
+
+
+    %this.texBack =  new Texture() {
+        fileName = "assets/texture/nebulapurple_sky_back.png";
+    };
+    %this.background = new Sprite() {
+        Texture = %this.texBack;
+        x = getScreenWidth() / 2.0;
+        y = getScreenHeight() / 2.0;
+        z = 1.0; //layer
+        w = getScreenWidth();
+        h = getScreenHeight();
+    };
+
+    %this.fontJet = new Font() {
+        fileName = "assets/font/JetBrainsMono-Regular.ttf";
+    };
+
+    %this.Label1 = new Label()  {
+        Font = %this.fontJet;
+        x = getScreenWidth() / 2.0;
+        y = 40;
+        shadow=1;
+        scale=1.2;
+        align = 1;
+        // color = "0.2 0.2 1";
+        Caption = "Score:" SPC %this.score;
+    };
+
+}
+
+function Pong::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
+    if ( %deviceString $= "keyboard") {
+        %this.paddle.dir = 0;
+        if (%keyValue == true) {
+            switch$ (%actionString) {
+                case "Up":  %this.paddle.dir = -1;
+                case "Down": %this.paddle.dir = 1;
+                case "Space":
+                    if (%this.ball.Speed == 0) {
+                        %this.ball.Speed = %this.StartSpeed;
+                        %this.score = 0;
+                        %this.label1.caption = "Score" SPC %this.score;
+                        alxPlay(BonusAlienExplosionSound);
+                    }
+            }
+        } else {
+           //Key up ...
+
+        }
+    }
+    // echo("velo" SPC %this.paddle.Velocity SPC "speed:" SPC %this.paddle.Speed);
+}
+
+// function Pong::onRender(%this,%dt) {
+//     //DEBUG
+//     %this.writeText(20,40, %this.ball.Velocity SPC %this.ball.speed SPC %this.score);
+// }
+
+// wallID 0 == paddle ;)
+function Pong::hit(%this, %wallId) {
+    if (%wallId == 0) {
+        %this.score ++;
+        %this.label1.caption = "Score" SPC %this.score;
+    }
+    //FIXME alxPlay()
+    %snd = PlayerShootSound;
+    if (%wallId > 0) %snd = ("AlienMoveSound" @ %wallId); //.getid();
+    alxPlay(%snd);
+
+    %this.ball.speed += %this.IncSpeed;
+}
+
+function Pong::onUpdate(%this,%dt) {
+    // paddle
+    %pad = %this.paddle;
+    if (%pad.dir == -1 &&  %pad.y > %pad.top ) %pad.y -= %pad.speed * %dt;
+    else if (%pad.dir == 1 &&  %pad.y < %pad.bottom ) %pad.y += %pad.speed * %dt;
+    else %pad.dir = 0;
+
+
+    // Ball NOTE: nicht besonders elegant ;)
+    %b = %this.ball;
+    if (%b.speed == 0) return;  //WARNING
+
+
+    // left border check
+    if (%b.x <= %b.left) {
+        %v = getWord(%b.Velocity,0);
+        if (%v <= 0) {
+            %this.hit(1);
+            %b.Velocity = setWord(%b.Velocity,0, %v * -1 /*+ getRandomF(0.0,0.1)*/);
+        }
+         // dEcho("HIT LEFT %v = " SPC %v SPC "new velo" SPC %b.Velocity );
+    }
+    if (%b.y <= %b.top) {
+        %v = getWord(%b.Velocity,1);
+        if (%v <= 0) {
+            %this.hit(2);
+            %b.Velocity = setWord(%b.Velocity,1, %v * -1 /*+ getRandomF(0.0,0.1)*/);
+        }
+        // dEcho("HIT TOP %v = " SPC %v SPC "new velo" SPC %b.Velocity );
+    }
+    if (%b.y >= %b.bottom) {
+        %v = getWord(%b.Velocity,1);
+        if (%v >= 0) {
+            %this.hit(3);
+            %b.Velocity = setWord(%b.Velocity,1, %v * -1 /*+ getRandomF(0.0,0.1)*/);
+        }
+        // dEcho("HIT BOTTOM %v = " SPC %v SPC "new velo" SPC %b.Velocity );
+    }
+
+    if (%b.x >= %b.paddleRight ) {
+        %v = getWord(%b.Velocity,0);
+        if (%v >= 0) {
+            if (RectIntersects(%this.paddle.getRectF(), %b.getRectF())) {
+                %vX = %v * -1;
+                if (%this.paddle.dir != 0)  %vY  = getWord(%b.Velocity,1) + %this.paddle.dir *  0.2;
+                else %vY  = getWord(%b.Velocity,1) * 0.75;
+                if (%vY > 1) %vY = 1;
+                else if (%vY < -1) %vY = -1;
+
+                %this.hit(0);
+                %b.Velocity = %vX SPC %vY;
+                // echo("HIT Paddle %v = " SPC %v SPC "new velo" SPC %b.Velocity );
+            } else {
+                // %ball.reset(); //missed
+                echo("MISSED ?!");
+            }
+
+        }
+    }
+
+    if (%b.x > %b.right) {
+            %b.reset();
+            echo("Game Over");
+            alxPlay(PlayerExplosionSound);
+    }
+
+
+}
+
+// ------------------- PADDLE -----------------------------
+function Paddle::reset(%this) {
+    %p = %this.parent;
+    %this.x = %p.x + %p.w - %p.thick;
+    %this.y = %p.y + %p.h / 2;
+    %this.w = %p.thick;
+    %this.h = %p.paddleHeight;
+
+    %this.top = %p.y + %p.thick + %this.h / 2;
+    %this.bottom = %p.y + %p.h - %this.h / 2 - %p.thick / 2;
+
+    echo(%this.getRectF());
+}
+
+// ------------------- Ball -----------------------------
+function Ball::reset(%this) {
+    %p = %this.parent;
+
+
+
+    %this.x = %p.x + %p.w / 2;
+    %this.y = %p.y + %p.h / 2;
+    %this.w = %p.thick;
+    %this.h = %p.thick;
+
+    %this.top    = %p.y + %p.thick + %this.h / 2;
+    %this.bottom = %p.y + %p.h - %this.h;
+    %this.left   = %p.x + %p.thick + %p.thick / 2;
+    //let it fly a bit longer (thick * 3)
+    %this.right  = %p.x + %p.w + %p.thick * 3;
+
+    %this.paddleRight = %p.paddle.x - %p.thick / 2;
+
+    %this.speed = 0;
+    %this.velocity = 1 SPC getRandomF(-0.5,0.5);
+
+
+    echo(%this.getRectF());
+}
+// ------------------- MAIN -----------------------------
+//------------------------------
+GarbageCollectionSet.deleteObjects();
+//------------------------------
+$Game = new GameCtrl() {
+    class = "Pong";
+};
+
+$Game.init();

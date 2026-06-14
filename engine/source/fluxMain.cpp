@@ -714,13 +714,15 @@ void FluxMain::IterateFrame()
 	}
 
 	//  update: after render
-	static double accumulator = 0.0;
-	accumulator += gFrameTime;
-
-	while (accumulator >= mSettings.updateDt) {
-		Update( accumulator );
-		accumulator -= mSettings.updateDt;
-	}
+	// static double accumulator = 0.0;
+	// accumulator += gFrameTime;
+ //
+	// while (accumulator >= mSettings.updateDt) {
+	// 	Update( mSettings.updateDt );
+	// 	accumulator -= mSettings.updateDt;
+	// }
+	// FIXME updateDT ... previous code sucks
+	Update( gFrameTime );
 
 
 	//  Update LastTick AFTER the frame is finished

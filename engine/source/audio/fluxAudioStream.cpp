@@ -156,7 +156,7 @@ void FluxAudioStream::Update(const double& dt)
             } else {
                 if (mPlaying) {
                     mPlaying = false;
-                    dLog("[info] song:%s finished playback.", mFileName.c_str());
+                    // dLog("[info] song:%s finished playback.", mFileName.c_str());
                     AudioManager.unBindStream(mStream);
                 }
             }
