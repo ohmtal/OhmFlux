@@ -43,13 +43,17 @@ namespace ElfFlux {
         Parent::onRemove();
     }
     // ------------------------------------------------------------------------.
-    // FluxTexture* loadTexture(std::string filename, int cols = 1, int rows = 1, bool setColorKeyAtZeroPixel = false, bool usePixelPerfect  = false);
-    ConsoleMethod(Sprite, setTexture, bool, 3, 3, "Texture id "
-    "Set the Textue")
+    DefineEngineMethod(Sprite, setTexture, bool, (String objectStr),,
+                       "@param Texture id "
+                        "Set the Textue"
+    )
     {
-        return object->setTextureBySimID(argv[2]);
+        return object->setTextureBySimID(objectStr);
     }
-
+    // ------------------------------------------------------------------------.
+    DefineEngineMethod(Sprite, getRectF, RectF, (),,"Get the Sprite Rect" ) {
+        return object->mRenderObject.getRectF();
+    }
 
     // ------------------------------------------------------------------------.
     void Sprite::initPersistFields()

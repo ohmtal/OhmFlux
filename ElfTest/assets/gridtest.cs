@@ -25,7 +25,7 @@ function GridTest::Init(%this) {
         scale = 0.75;
         Caption = "New Terrain";
     };
-    %this.LabelNew.ButtonRect =  RectAddSpacing(%this.LabelNew.getRect(), 10);
+    %this.LabelNew.ButtonRect =  RectInflate(%this.LabelNew.getRect(), 10, 10);
     // error("rect is:" SPC %this.LabelNew.getRect() SPC "/" SPC %this.LabelNew.ButtonRect);
 
 

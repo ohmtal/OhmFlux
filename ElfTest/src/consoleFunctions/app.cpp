@@ -148,13 +148,18 @@ DefineEngineFunction(getWorldMousePos, Point2F, (),,"MousePositon based on Mouse
 DefineEngineFunction(PointInRect, bool, (RectF rect, Point2F point),, "check a point is in a rect") {
     return rect.pointInRect(point);
 }
-
-DefineEngineFunction(RectAddSpacing, RectF, (RectF rect, F32 spacing),, "add a spacing to a Rext") {
-    rect.x -= spacing;
-    rect.y -= spacing;
-    rect.w += spacing * 2;
-    rect.h += spacing * 2;
+DefineEngineFunction(RectInflate, RectF, (RectF rect, F32 x, F32 y),, "add a spacing to a Rect (inflate)") {
+    rect.inflate(x, y);
     return rect;
+}
+DefineEngineFunction(RectContains, bool, (RectF rect, RectF other),, "check rect contains other") {
+    return rect.contains(other);
+}
+DefineEngineFunction(RectIntersects, bool, (RectF rect, RectF other),, "check rect intersects other") {
+    return rect.intersects(other);
+}
+DefineEngineFunction(RectGetCenter, Point2F, (RectF rect),, "get the center point of a rect") {
+    return rect.getCenterPoint();
 }
 //------------------------------------------------------------------------------
 // DEBUG / Test stuff
