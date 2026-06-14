@@ -200,7 +200,7 @@ DefineEngineMethod(GameCtrl, drawstretch, bool,
 DefineEngineMethod(GameCtrl, writeText, bool,
   (F32 x, F32 y, const char* text, S32 align, Color4F color, bool doShadow)
 , (0, cl_White, false)
-,"(x,y,string, align (0=left,1=center,2=right), profile, color, bool shadowColoer"
+,"(x,y,string, align ($FontAlign_left, $FontAlign_center, $FontAlign_right), profile, color, bool shadowColoer"
 "write text on screen.")
 {
 

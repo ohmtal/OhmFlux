@@ -8,7 +8,7 @@
 // ConsoleMethod( tom2DCtrl, drawstretch, void, 9, 9, "(tom2DTexture,imgId,x,y,layer,w,h,rotation,flipX,flipY, alpha channel default 0.1)"
 // "draw a image Note. Layer 1-9999 possible.")
 //
-// ConsoleMethod( tom2DCtrl, writeText, void, 5, 6, "(x,y,string, align (0=left,1=middle,2=right,3=center)"
+// ConsoleMethod( tom2DCtrl, writeText, void, 5, 6, "(x,y,string, align ($FontAlign_left, $FontAlign_center, $FontAlign_right)"
 // "write text on screen.")
 //
 // Events:

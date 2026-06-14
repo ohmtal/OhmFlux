@@ -324,6 +324,7 @@ namespace ElfFlux {
         if (!FluxMain::Initialize()) return false;
         // Console >>>>
         engineGlue::init(MyLogger, (getGamePath()+"/assets").c_str());
+        ElfFlux::init(); // init my stuff
         // Con::addConsumer(MyLogger); // add the LogConsumer
         // <<<<<
 

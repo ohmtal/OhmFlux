@@ -12,5 +12,6 @@ inline F32 LAYER_F(U32 layer) {
 namespace ElfFlux {
     static String gLastScriptFile = "";
     bool loadScript(String fileName);
+    void init();
 }
 

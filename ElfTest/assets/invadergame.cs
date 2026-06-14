@@ -6,9 +6,9 @@
 //       I added this script to test ElfScript itself.
 //------------------------------------------------------------------------------
 // FIXME  exec("common/highscore.cs");
-$align::left = 0;
-$align::center = 1;
-$align::right = 2;
+$align::left = $FontAlign_left;
+$align::center = $FontAlign_center;
+$align::right = $FontAlign_right;
 
 GarbageCollectionSet.deleteObjects();
 

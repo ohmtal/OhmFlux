@@ -61,7 +61,7 @@ namespace ElfFlux {
         addField("y", TypeF32, Offset(mLabel.mDrawParams.y,Label), "x position of the label");
         addField("color", TypeColorF, Offset(mLabel.mColor, Label), "color of the label");
         addField("scale", TypeF32, Offset(mLabel.mScale,Label), "scale  the label");
-        addField("align", TypeS32, Offset(mLabel.mAlign,Label), "0=left, 1=center, 2=right");
+        addField("align", TypeS32, Offset(mLabel.mAlign,Label), "engine constants: $FontAlign_left, $FontAlign_center, $FontAlign_right");
 
         addField("shadow", TypeBool, Offset(mLabel.mShadow, Label), "bool - render shadow ");
         addField("shadowColor", TypeColorF, Offset(mLabel.mShadowColor, Label), "Color of the shadow");

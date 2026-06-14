@@ -8,9 +8,27 @@
 #include <string>
 #include <core/volume.h>
 
+#include "console/consoleExtras.h"
+
+// enums Box2D
+#include "Box2D/Box2D.h"
+#include <b2b/b2Objects.h>
+
+
+
 namespace ElfFlux {
+// --------------------------------------------------------------------------
+void init() {
+     Con::registerEnumS32<b2BodyType>("$box2d::");
+     Con::registerEnumS32<Shape2bShapeTypes>("$box2d::");
+     Con::registerEnumS32<b2JointType>("$box2d::");
+
+     Con::registerEnumS32<FontAlign>("");
+
+}
 
 
+// --------------------------------------------------------------------------
 bool loadScript(String fileName) {
     if (!gLastScriptFile.isEmpty() && Con::isFunction("onLeaveScript")) {
       Con::executef("onLeaveScript",  gLastScriptFile);
@@ -228,6 +246,12 @@ DefineEngineFunction(varTest, void, (),, "init the variable tests") {
         "A PI"
     );
 
+    Con::addConstant(
+        "global::intvar",
+        TypeS32,
+        &intVar,
+        ""
+    );
 
 }
 

@@ -70,7 +70,7 @@ function GridTest::onInputEvent( %this, %deviceString, %actionString, %mouseX, %
 function GridTest::onRender(%this,%dt) {
 
 
-  %this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $align::left, "0.5 0.2 0.5" );
+  %this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $FontAlign_left, "0.5 0.2 0.5" );
    // %this.Line("5 35", "595 35", "0 1 0");
 
     if (!%this.hideTerrain) {

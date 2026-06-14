@@ -6,7 +6,7 @@ GarbageCollectionSet.deleteObjects();
 function MemTest::onRender(%this,%dt) {
 	%red = 128;
 	%this.writeText(20, 49,"Testing memory. Never do something like that in production ;)"
-	     , $align::left 
+	     , $FontAlign_left
 	     ,  %red SPC "0.2 0.2"
 	);
     for (%i = 0; %i < 100; %i++){
