@@ -18,16 +18,77 @@
 
 namespace ElfFlux {
 // --------------------------------------------------------------------------
+constexpr F32 gPI = M_PI;
+constexpr F32 g2PI = M_2PI;
+constexpr F32 gPI2 = M_PI_2;
+
 void init() {
+
+    Con::addConstant("FrameTime", TypeF64, &gFrameTime, "current FrameTime");
+    Con::addConstant("GameTime", TypeF64, &gGameTime, "current GameTime seconds since start");
+    Con::addConstant("FPS", TypeF64, &gFPS, "current FPS");
+
+    Con::addConstant("Paused", TypeBool, &gAppStatus.Paused, "game is paused");
+    Con::addConstant("Focused", TypeBool, &gAppStatus.KeyboardFocus, "game is mouse focused");
+    Con::addConstant("MousePos", TypePoint2F, &gAppStatus.MousePos, "mouse Postion (relative)");
+    Con::addConstant("RealMousePos", TypePoint2F, &gAppStatus.RealMousePos, "mouse Postion (OS)");
+    Con::addConstant("WorldMousePos", TypePoint2F, &gAppStatus.WorldMousePos, "mouse Postion in World");
+
+
+
+    // Enum Helper Box2D
      Con::registerEnumS32<b2BodyType>("$box2d::");
      Con::registerEnumS32<Shape2bShapeTypes>("$box2d::");
      Con::registerEnumS32<b2JointType>("$box2d::");
 
+     // Enum Font
      Con::registerEnumS32<FontAlign>("");
 
+     // Math
+     Con::addConstant("M_PI", TypeF32, &gPI,  "pi (3.14)");
+     Con::addConstant("M_2PI", TypeF32, &g2PI,"pi * 2 (6.28)");
+     Con::addConstant("M_PI2", TypeF32, &gPI2,"pi / 2 (1.57)");
+
+     // Colors:
+     Con::addConstant("Color::White", TypeColorF, &cl_White, "White");
+     Con::addConstant("Color::Black", TypeColorF, &cl_Black, "Black");
+     Con::addConstant("Color::Red", TypeColorF, &cl_Red, "Red");
+     Con::addConstant("Color::Green", TypeColorF, &cl_Green, "Green");
+     Con::addConstant("Color::Blue", TypeColorF, &cl_Blue, "Blue");
+     Con::addConstant("Color::Yellow", TypeColorF, &cl_Yellow, "Yellow");
+     Con::addConstant("Color::Cyan", TypeColorF, &cl_Cyan, "Cyan");
+     Con::addConstant("Color::Magenta", TypeColorF, &cl_Magenta, "Magenta");
+     Con::addConstant("Color::Gray", TypeColorF, &cl_Gray, "Gray");
+     Con::addConstant("Color::LightGray", TypeColorF, &cl_LightGray, "LightGray");
+     Con::addConstant("Color::DarkGray", TypeColorF, &cl_DarkGray, "DarkGray");
+     Con::addConstant("Color::Orange", TypeColorF, &cl_Orange, "Orange");
+     Con::addConstant("Color::Purple", TypeColorF, &cl_Purple, "Purple");
+     Con::addConstant("Color::Brown", TypeColorF, &cl_Brown, "Brown");
+     Con::addConstant("Color::Lime", TypeColorF, &cl_Lime, "Lime");
+     Con::addConstant("Color::Pink", TypeColorF, &cl_Pink, "Pink");
+
+     // Some more Colors
+     Con::addConstant("Color::Crimson", TypeColorF, &cl_Crimson, "Crimson");
+     Con::addConstant("Color::Emerald", TypeColorF, &cl_Emerald, "Emerald");
+     Con::addConstant("Color::SkyBlue", TypeColorF, &cl_SkyBlue, "SkyBlue");
+     Con::addConstant("Color::Slate", TypeColorF, &cl_Slate, "Slate");
+     Con::addConstant("Color::Gold", TypeColorF, &cl_Gold, "Gold");
+     Con::addConstant("Color::Transparent", TypeColorF, &cl_Transparent, "Transparent");
+     Con::addConstant("Color::Aquamarine", TypeColorF, &cl_Aquamarine, "Aquamarine");
+     Con::addConstant("Color::Coral", TypeColorF, &cl_Coral, "Coral");
+     Con::addConstant("Color::DeepSea", TypeColorF, &cl_DeepSea, "DeepSea");
+
+     Con::addConstant("Color::Seafoam", TypeColorF, &cl_Seafoam, "Bubbles/Foam");
+     Con::addConstant("Color::Sand", TypeColorF, &cl_Sand, "Floor/Dirt");
+     Con::addConstant("Color::Kelp", TypeColorF, &cl_Kelp, "Dark Underwater Plant");
+     Con::addConstant("Color::NeonPink", TypeColorF, &cl_NeonPink, "NeonPink");
+     Con::addConstant("Color::ElectricBlue", TypeColorF, &cl_ElectricBlue, "ElectricBlue");
+     Con::addConstant("Color::AcidGreen", TypeColorF, &cl_AcidGreen, "AcidGreen");
+     Con::addConstant("Color::Glass", TypeColorF, &cl_Glass, "Semi-transparent White");
+     Con::addConstant("Color::Shadow", TypeColorF, &cl_Shadow, "Shadow Overlay");
+     Con::addConstant("Color::Ghost", TypeColorF, &cl_Ghost, "Semi-transparent Blue");
+
 }
-
-
 // --------------------------------------------------------------------------
 bool loadScript(String fileName) {
     if (!gLastScriptFile.isEmpty() && Con::isFunction("onLeaveScript")) {
@@ -66,6 +127,24 @@ ConsoleFunction(getFPS, S32, 1,1, "") {
 
 ConsoleFunction(getScreenWidth, S32, 1,1, "") {
     return getScreenObject()->getWidth();
+}
+
+DefineEngineFunction(getScreenRect, RectF, (), , "") {
+    return {
+        0.f, 0.f, //usually
+        (F32)getScreenObject()->getWidth(),
+        (F32)getScreenObject()->getHeight()
+    };
+}
+
+DefineEngineFunction(getScreenCenterX, S32, (), , "") {
+    return getScreenObject()->getCenterX();
+}
+DefineEngineFunction(getScreenCenterY, S32, (), , "") {
+    return getScreenObject()->getCenterY();
+}
+DefineEngineFunction(getScreenCenter, Point2I, (), , "") {
+    return getScreenObject()->getCenter();
 }
 
 ConsoleFunction(getScreenHeight, S32, 1,1, "") {
@@ -179,6 +258,31 @@ DefineEngineFunction(RectIntersects, bool, (RectF rect, RectF other),, "check re
 DefineEngineFunction(RectGetCenter, Point2F, (RectF rect),, "get the center point of a rect") {
     return rect.getCenterPoint();
 }
+
+DefineEngineFunction(RectIsValid, bool, (RectF rect),, "return if the rect is valid") {
+    return rect.isValidRect();
+}
+//------------------------------------------------------------------------------
+// Point/Vector stuff
+//------------------------------------------------------------------------------
+DefineEngineFunction(Vector2Add, Point2F, (Point2F a, Point2F b),,"a + b"){ return a + b;}
+DefineEngineFunction(Vector2Sub, Point2F, (Point2F a, Point2F b),,"a - b"){ return a - b;}
+DefineEngineFunction(Vector2Mul, Point2F, (Point2F a, Point2F b),,"a * b"){ return a * b;}
+DefineEngineFunction(Vector2Div, Point2F, (Point2F a, Point2F b),,"a / b"){ return a / b;}
+
+DefineEngineFunction(Vector2AddScalar, Point2F, (Point2F a, F32 b),,"a + b"){ return a + b;}
+DefineEngineFunction(Vector2Subcalar, Point2F, (Point2F a, F32 b),,"a - b"){ return a - b;}
+DefineEngineFunction(Vector2Scale, Point2F, (Point2F a, F32 b),,"a * b"){ return a * b;}
+DefineEngineFunction(Vector2DivScalar, Point2F, (Point2F a, F32 b),,"a / b"){ return a / b;}
+
+DefineEngineFunction(Vector2Dot, F32, (Point2F a, Point2F b),,"a.x * b.x + a.y * b.y"){ return a.dot ( b );}
+DefineEngineFunction(Vector2Cross, F32, (Point2F a, Point2F b),,"a.x * b.x - a.y * b.y"){ return a.cross ( b );}
+DefineEngineFunction(Vector2Distance, F32, (Point2F a, Point2F b),,"distance a b"){ return a.dist( b );}
+DefineEngineFunction(Vector2Len, F32, (Point2F a),,"length of a"){ return a.len();}
+DefineEngineFunction(Vector2Normalized, Point2F, (Point2F a),,"normalized a"){ return a.normalized();}
+
+
+
 //------------------------------------------------------------------------------
 // DEBUG / Test stuff
 //------------------------------------------------------------------------------
@@ -262,3 +366,5 @@ DefineEngineFunction(varTest, void, (),, "init the variable tests") {
 
 ConsoleFunctionGroupEnd(App);
 }
+
+

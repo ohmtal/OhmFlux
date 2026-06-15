@@ -26,6 +26,7 @@
 
 double gFrameTime = 0.f; // we need that Global for timming
 double gGameTime  = 0.f;
+S32    gFPS = 60;
 
 extern FluxQuadtree* g_CurrentQuadTree;
 //--------------------------------------------------------------------------------------
@@ -682,21 +683,21 @@ void FluxMain::IterateFrame()
 	lFrameCounter++;
 
 	if (lFpsTimer >= 1.0f) { // Every 1 second
-		mFPS = lFrameCounter;
+		gFPS = lFrameCounter;
 		lFrameCounter = 0;
 		lFpsTimer -= 1.0f;
 
 		// auto slow down cpu load saving - it's usually lower then maxFPS !
-		if ( mSettings.maxFPS > 25 && mFPS >= mSettings.maxFPS && mSettings.frameLimiter == 0.f) {
+		if ( mSettings.maxFPS > 25 && gFPS >= mSettings.maxFPS && mSettings.frameLimiter == 0.f) {
 			mSettings.frameLimiter = 1000.f / (F32)mSettings.maxFPS;
 
-			Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating FrameLimiter. (%.2f)", mFPS, mSettings.frameLimiter);
+			Log("[info] High FPS (%d) detected ... saving CPU/GPU Load with auto activating FrameLimiter. (%.2f)", gFPS, mSettings.frameLimiter);
 
-		} else if ( mFPS < 25 && mSettings.frameLimiter > 0.f) {
+		} else if ( gFPS < 25 && mSettings.frameLimiter > 0.f) {
 			if ( mSettings.maxFPS > 25 && mSettings.maxFPS < 60)  {
 				mSettings.maxFPS = 60;
 			}
-			Log("[info] Low FPS (%d) detected ... set frameLimiter to ZERO.", mFPS);
+			Log("[info] Low FPS (%d) detected ... set frameLimiter to ZERO.", gFPS);
 			mSettings.frameLimiter = 0;
 			// FIXME call a low fps event ?! not every sek but we may handle this ....
 		}

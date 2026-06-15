@@ -1,5 +1,5 @@
 #include "core/fluxGlobals.h"
-#include "Globals.h"
+#include "core/Globals.h"
 #include <console/console.h>
 #include "ConsoleTypes.h"
 #include <core/strings/stringUnit.h>
@@ -341,7 +341,7 @@ namespace PropertyInfo
         return true;
     }
 
-
+// --------------------------------------------------------------------------------------------------
 
 
 } //namespace

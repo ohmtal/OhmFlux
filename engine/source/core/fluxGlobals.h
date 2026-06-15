@@ -108,6 +108,8 @@ inline void SAFE_FREE(T*& ptr) {
 #ifndef BIT
 #define BIT(x) (1 << (x))           ///< Returns value with bit x set (2^x)
 #endif
+
+// deprecated
 #ifndef FLUX_PI
 #define FLUX_PI 3.14159265358979323846f
 #endif
@@ -286,7 +288,7 @@ const Color4F cl_Ghost        = { 0.70f, 0.70f, 1.00f, 0.50f }; // Semi-transpar
 
 //------------------------------------- Points
 struct  Point2I{
-    S32 x, y;
+    S32 x = 0, y = 0;
     // --- Scalar Operators ---
     Point2I operator-(S32 v) const { return {x - v, y - v}; }
     Point2I operator+(S32 v) const { return {x + v, y + v}; }
@@ -316,19 +318,28 @@ struct  Point2I{
 };
 
 struct Point2F {
-    F32 x, y;
+    F32 x = 0.f, y = 0.f;
 
     // --- Scalar Operators ---
     Point2F operator-(F32 v) const { return {x - v, y - v}; }
     Point2F operator+(F32 v) const { return {x + v, y + v}; }
     Point2F operator*(F32 v) const { return {x * v, y * v}; }
-    Point2F operator/(F32 v) const { return {x / v, y / v}; }
+    Point2F operator/(F32 v) const {
+        if (v==0.f) v =  1e-9f;
+        return {x / v, y / v};
+    }
 
     // --- Point Operators ---
     Point2F operator-(const Point2F& v) const { return {x - v.x, y - v.y}; }
     Point2F operator+(const Point2F& v) const { return {x + v.x, y + v.y}; }
     Point2F operator*(const Point2F& v) const { return {x * v.x, y * v.y}; }
-    Point2F operator/(const Point2F& v) const { return {x / v.x, y / v.y}; }
+    Point2F operator/(const Point2F& v) const {
+        return {
+            x / v.x != 0.f ? v.x : 1e-9f,
+            y / v.y != 0.f ? v.y : 1e-9f,
+        };
+
+    }
 
     bool operator==(const Point2F& v) const { return (x == v.x && y == v.y); }
 
@@ -336,12 +347,21 @@ struct Point2F {
     Point2F& operator+=(F32 v) { x += v; y += v; return *this; }
     Point2F& operator-=(F32 v) { x -= v; y -= v; return *this; }
     Point2F& operator*=(F32 v) { x *= v; y *= v; return *this; }
-    Point2F& operator/=(F32 v) { x /= v; y /= v; return *this; }
+    Point2F& operator/=(F32 v) {
+        if (v==0.f) v =  1e-9f;
+        x /= v;
+        y /= v;
+        return *this;
+    }
 
     Point2F& operator+=(const Point2F& v) { x += v.x; y += v.y; return *this; }
     Point2F& operator-=(const Point2F& v) { x -= v.x; y -= v.y; return *this; }
     Point2F& operator*=(const Point2F& v) { x *= v.x; y *= v.y; return *this; }
-    Point2F& operator/=(const Point2F& v) { x /= v.x; y /= v.y; return *this; }
+    Point2F& operator/=(const Point2F& v) {
+        x /= v.x != 0.f ? v.x : 1e-9f;
+        y /= v.y != 0.f ? v.y : 1e-9f;
+        return *this;
+    }
 
     // --- Conversion ---
     explicit operator Point2I() const {
@@ -388,7 +408,7 @@ struct Point2F {
 
 
 struct Point3F {
-    F32 x, y, z;
+    F32 x = 0.f, y=0.f, z=0.f;
 
     F32 distSq(const Point3F& other) const {
         F32 dx = x - other.x;
@@ -407,7 +427,15 @@ struct Point3F {
     Point3F operator+(const Point3F& v) const { return {x + v.x, y + v.y, z + v.z}; }
     Point3F operator-(const Point3F& v) const { return {x - v.x, y - v.y, z - v.z}; }
     Point3F operator*(const Point3F& v) const { return {x * v.x, y * v.y, z * v.z}; }
-    Point3F operator/(const Point3F& v) const { return {x / v.x, y / v.y, z / v.z}; }
+    Point3F operator/(const Point3F& v) const {
+       return {
+           x / v.x != 0.f ? v.x : 1e-9f,
+           y / v.y != 0.f ? v.y : 1e-9f,
+           z / v.z != 0.f ? v.z : 1e-9f
+        };
+    }
+
+
 
     bool operator==(const Point3F& v) const { return (x == v.x && y == v.y && z == v.z); }
 
@@ -425,7 +453,7 @@ struct Point3F {
 //------------------------------------- Rects
 
 struct RectI{
-    S32 x, y, w, h;
+    S32 x= 0, y=0, w=0, h=0;
     Point2I getPoint() const { return {x,y}; }
     Point2I getExtent() const { return { w, h };}
 
@@ -460,7 +488,7 @@ struct RectI{
 
 struct RectF
 {
-    F32 x, y, w, h;
+    F32 x = 0.f, y=0.f, w=0.f, h=0.f;
 
     Point2F getPoint() const { return {x,y}; }
     Point2F getExtent() const { return { w, h };}
@@ -678,12 +706,17 @@ inline void dumpPathes(FluxSettings* settings=nullptr) {
 //-----------------------------------------------------------------------------
 extern double gFrameTime;
 extern double gGameTime;
+extern S32 gFPS;
 
 inline const double getFrameTime() {
     return gFrameTime;
 }
 inline const double getGameTime() {
     return gGameTime;
+}
+
+inline const S32 getFPS() {
+    return gFPS;
 }
 //-----------------------------------------------------------------------------
 

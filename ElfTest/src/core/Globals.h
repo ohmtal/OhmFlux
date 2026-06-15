@@ -1,5 +1,5 @@
 #pragma once
-#include "ConsoleTypes.h"
+#include "consoleFunctions/ConsoleTypes.h"
 #include "math/mMathFn.h"
 
 

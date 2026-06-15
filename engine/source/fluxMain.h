@@ -61,7 +61,7 @@ private:
 	Uint64 mTickCount;
 	Uint64 mPerformanceFrequency;
 
-	S32 mFPS = 60;
+	// S32 mFPS = 60;
 public:
 	FluxMain();
 	virtual ~FluxMain() = default;
@@ -110,7 +110,7 @@ public:
 
 	std::vector<FluxBaseObject*> getQueueObjects() { return mQueueObjects; }
 
-	S32 getFPS() const {return mFPS;}
+	S32 getFPS() const {return gFPS;}
 
 	void  setPause(bool value) {gAppStatus.Paused=value;}
 	bool  togglePause()  { gAppStatus.Paused = !gAppStatus.Paused; return gAppStatus.Paused;}

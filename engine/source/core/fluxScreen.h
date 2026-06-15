@@ -77,6 +77,7 @@ public:
 	void setHeight(S32 value) { _mHeight = value; _mCenterY = (S32)(_mHeight/2.f);}
 	S32  getWidth()		 const { return _mWidth; }
 	S32  getHeight()	 const { return _mHeight; }
+	Point2I getCenter()  const { return{ _mCenterX, _mCenterY };}
 	S32  getCenterX()	 const { return _mCenterX; }
 	S32  getCenterY()	 const { return _mCenterY; }
 

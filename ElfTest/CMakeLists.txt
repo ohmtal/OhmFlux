@@ -45,8 +45,6 @@ set(PROJECT_SOURCES
 
     ${ELF_DIR}/src/core/GameCtrl.h
     ${ELF_DIR}/src/core/GameCtrl.cpp
-    ${ELF_DIR}/src/core/ConsoleTypes.cpp
-    ${ELF_DIR}/src/core/ConsoleTypes.h
     ${ELF_DIR}/src/core/Grid.cpp
     ${ELF_DIR}/src/core/Grid.h
     ${ELF_DIR}/src/core/Utility.cpp
@@ -54,7 +52,10 @@ set(PROJECT_SOURCES
 
 
     ${ELF_DIR}/src/consoleFunctions/app.cpp
-    # ${ELF_DIR}/src/consoleFunctions/math.cpp
+    ${ELF_DIR}/src/consoleFunctions/objects.cpp
+    ${ELF_DIR}/src/consoleFunctions/ConsoleTypes.cpp
+    ${ELF_DIR}/src/consoleFunctions/ConsoleTypes.h
+
 
     ${ELF_DIR}/src/audio/AudioProfile.h
     ${ELF_DIR}/src/audio/AudioProfile.cpp

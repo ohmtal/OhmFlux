@@ -1,30 +1,6 @@
-/* FIXME:
-  Test Script ..... b2devel is to heavy to port at the moment
- Console constants:
-  //box2d BodyTypes
- $ staticBody       = 0;* //does not move and receive collisions
- $kinematicBody    = 1; //manually move and receive collisions
- $dynamicBody      = 2; //dynamic move, send and receive collisions
+/* FIXME: port to with engine methods!
 
- //box2d ShapeTypes
- $PolygonShape = 0;
- $CircleShape  = 1;
- $EdgeShape    = 2;
- $ChainShape   = 3;
-
- //Box2d JointTypes
- $unknownJoint    =  0;
- $revoluteJoint   =  1;
- $prismaticJoint  =  2;
- $distanceJoint   =  3;
- $pulleyJoint     =  4;
- $mouseJoint      =  5;
- $gearJoint       =  6;
- $wheelJoint      =  7;
- $weldJoint       =  8;
- $frictionJoint   =  9;
- $ropeJoint       = 10;
- $motorJoint      = 11;
+ NOTE all in constants now with pre: $box2d:: NOTE and they can be different !!
  */
 
 
@@ -74,6 +50,7 @@
 #include "console/engineAPI.h"
 #include "math/mMathFn.h"
 #include "core/Utility.h"
+#include <appMain.h>
 
 
 // global ratio for pixel to meters can be changed with World2b::setRatio console method
@@ -298,6 +275,8 @@ namespace ElfFlux {
      Parent::initPersistFields();
      addField("shapeType", TypeS32, Offset(mShapeType, Shape2b));
 
+
+
  }
 
  b2Shape* Shape2b::getShape()
@@ -454,6 +433,7 @@ bool  Body2b::onAdd(){
     mAxisVector = Point2F(0.f, 0.f);
     mAxisVectorAngle = 0.f;
 
+    // gMain->queueObject(this);
     return true;
 }
 void  Body2b::onRemove() {
@@ -464,11 +444,13 @@ void  Body2b::onRemove() {
         }
         mBody = nullptr;
     }
+    // gMain->unQueueObject(this);
     Parent::onRemove();
 }
 
 void  Body2b::initPersistFields() {
     addField("SendCollision",TypeBool,Offset(mSendCollision, Body2b), "bool object checks if it collide with a receiver.");
+    addField("debugRender", TypeBool, Offset(mDebugRender, Body2b));
     Parent::initPersistFields();
 
 }
@@ -490,14 +472,19 @@ void Body2b::Update(const double& dt) {
         mRenderObject.getDrawParams().rotation = mAxisVectorAngle; // +90.f;
     }
 
-     mRenderObject.updateAnimation(dt);
+    if (!mDebugRender) mRenderObject.updateAnimation(dt);
 
     // FIXME ? Con::executef(this,  "onUpdate", Con::getFloatArg(fDt));
    
 }
 
 void Body2b::Draw() {
-    if (mDebugRender) debugRender();
+    if (mDebugRender)
+    {
+        debugRender();
+        return;
+    }
+    Parent::Draw();
 }
 
 //------------------------------------------------------------------------------
