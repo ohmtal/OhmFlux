@@ -5,7 +5,7 @@ GarbageCollectionSet.deleteObjects();
 
 function MemTest::onRender(%this,%dt) {
 	%red = 128;
-	%this.writeText(20, 49,"Testing memory. Never do something like that in production ;)"
+	%this.writeText(20, 49,"Testing memory.... nothing to watch here."
 	     , $FontAlign_left
 	     ,  %red SPC "0.2 0.2"
 	);

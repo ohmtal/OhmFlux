@@ -116,17 +116,30 @@ function Ball::accelerate(%this, %scale)
    %this.ApplyLinearImpulseToCenter(%impulseVec,false);
 }
 //------------------------------------------------------------------------------
-function Ball::launch(%this)
+function Ball::imp(%this, %scale)
 {
-   if (%this.getactive())
-         return;
-   %scale = 3;      
-   %this.setactive(true);
+   if (%scale*1 == 0) %scale = 3;   
    %fV =  %this.getAxisVector();
    %fv = Vector2AddScalar(%fv, 0.001); // make sure its not 0 ?!
    %impulseVec = Vector2Scale(%fV,%scale);
    dEcho("launch: getAxisVector" SPC %fV SPC "impulse Vector:" SPC %impulseVec);
    %this.ApplyLinearImpulseToCenter(%impulseVec,false);
+}
+//------------------------------------------------------------------------------
+function Ball::launch(%this)
+{
+   if (%this.getactive())
+         return;
+      
+   %this.setactive(true);
+   %this.imp();
+   /*
+   %fV =  %this.getAxisVector();
+   %fv = Vector2AddScalar(%fv, 0.001); // make sure its not 0 ?!
+   %impulseVec = Vector2Scale(%fV,%scale);
+   dEcho("launch: getAxisVector" SPC %fV SPC "impulse Vector:" SPC %impulseVec);
+   %this.ApplyLinearImpulseToCenter(%impulseVec,false);
+   */
 }
 // //------------------------------------------------------------------------------
 // function Ball::onCollision(%this,%obj, %normalX, %normalY, %posX, %posY)
@@ -162,7 +175,7 @@ function Game::CreateBall(%this, %position, %class, %radius )
 {
 
  if (%class $= "") %class = "ball";
- if (%radius $= "") %radius = 20;
+ if (%radius $= "") %radius = 10;
 
 
       
@@ -196,8 +209,8 @@ function Game::CreateBall(%this, %position, %class, %radius )
  // 1, 0.5, 1 bouncing ball with bit of roll
  // 1, 0.5, 0.5 rolling ball with bit of bounce
  %fixtureDef.density = 1; //1; //mass multi
- %fixtureDef.friction = 1;  //glue on collision
- %fixtureDef.restitution = 1; //bounce from collision
+ %fixtureDef.friction = 0.1;  //glue on collision
+ %fixtureDef.restitution = 0.8; //bounce from collision
    
  %ball.CreateFixture(%fixtureDef);
 

@@ -17,7 +17,7 @@ function Game::Init(%this) {
 
   // we need a world
   %this.world = new World2b();
-  %this.world.setGravity("0 -5");
+  %this.world.setGravity("0 9.81");
   %this.world.setRatio(32);
 
 
@@ -37,6 +37,14 @@ function Game::Init(%this) {
 
   // LoadBall
   %this.ball = %this.createBall(getScreenCenter());
+  
+  %this.balls = new SimSet();
+  for (%i = 0; %i < 20; %i++) {
+  	%b= %this.createBall(getScreenCenter());
+  	%b.launch();
+  	%this.balls.add(%b);
+  }
+ 
 
 
   //LoadAssets
@@ -52,7 +60,11 @@ function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mous
     if (%keyValue == true) {
       switch$ (%actionString) {
         case "Space":
-          %this.ball.launch();
+          if (%this.ball.getactive()) %this.ball.stop();
+          else %this.ball.launch();
+        case "up":
+        	for (%i = 0; %i < %this.balls.getCount(); %i++)
+        		%this.balls.getObject(%i).imp();
       }
     } else {
       //Key up ...
