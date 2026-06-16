@@ -6,27 +6,6 @@
 
 namespace ElfFlux {
 
-
-    class Struct: public SimObject {
-        typedef SimObject Parent;
-    public:
-        Color4F mColor = {1.f,1.f,1.f,1.f};
-        Point2F mVector2f = {0.f,0.f};
-        Point3F mVector3f = {0.f,0.f,0.f};
-        // Point2I mVector2i = {0,0};
-        RectF mRectF = {0.f,0.f,0.f,0.f};
-        // RectI mRectI = {0,0,0,0}
-        static void initPersistFields();
-        DECLARE_CONOBJECT(Struct);
-    };
-    IMPLEMENT_CONOBJECT(Struct);
-    void Struct::initPersistFields() {
-        addField("Color", TypeColorF, Offset(mColor, Struct ), "floating point color ");
-        addField("Point2F", TypePoint2F, Offset(mVector2f, Struct ), "floating point struct (x,y)");
-        addField("Point3F", TypePoint3F, Offset(mVector3f, Struct ), "floating point struct (x,y)");
-        addField("RectF", TypeRectF, Offset(mRectF, Struct ), "floating point struct (x,y,w,h)");
-    };
-
     // -------------------- Vector2Object -----------------------------------------
     class Vector2Object: public SimObject {
         typedef SimObject Parent;
