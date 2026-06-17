@@ -214,6 +214,8 @@ DefineEngineMethod(GameCtrl, writeText, bool,
 //primitives:
 //------------------------------------------------------------------------------
 
+
+
 DefineEngineMethod(GameCtrl, Line, void
     , (Point2F startPt, Point2F endPt, Color4F color, U32 layer)
     , (cl_White, 0) , "draw a line")
@@ -253,9 +255,9 @@ DefineEngineMethod(GameCtrl, ElipseRect, void
 }
 
 
-DefineEngineMethod(GameCtrl, Tringle, void
+DefineEngineMethod(GameCtrl, Triangle, void
 , (Point2F p1, Point2F p2, Point2F p3, Color4F color, bool filled, U32 layer )
-, (cl_White, true, 0) , "draw a Tringle")
+, (cl_White, true, 0) , "draw a Triangle")
 {
     Render2D.drawTriangle( p1,  p2,  p3,  color ,  filled, LAYER_F(layer) );
 }

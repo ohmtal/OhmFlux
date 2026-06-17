@@ -79,10 +79,11 @@ ConsoleSetType( TypeColorF )
    else
       Con::printf("Color must be set as { r, g, b [,a] }, { r g b [b] } or { hexValue  }");
 
-    if (tmpColor->r > 1.f) tmpColor->r /= 255.f;
-    if (tmpColor->g > 1.f) tmpColor->g /= 255.f;
-    if (tmpColor->b > 1.f) tmpColor->b /= 255.f;
-    if (tmpColor->a > 1.f) tmpColor->a /= 255.f;
+    // it's float so i use it as float !
+    // if (tmpColor->r > 1.f) tmpColor->r /= 255.f;
+    // if (tmpColor->g > 1.f) tmpColor->g /= 255.f;
+    // if (tmpColor->b > 1.f) tmpColor->b /= 255.f;
+    // if (tmpColor->a > 1.f) tmpColor->a /= 255.f;
 }
 // -----------------------------------------------------------------------------
 // TypePoint2I

@@ -251,35 +251,26 @@ public:
 
          // values must be very low with the current tone mapping
          // alpha doesnt matter
-          Render2D.setAmbientColor({ 0.01f,0.03f,0.03f });
+          // LightManager.setAmbientColor({ 0.01f,0.03f,0.03f });
 
-          LightManager.addLight(FluxLight({100.0f, 400.0f, 0.0f}, cl_Red , 100.0f));
-          LightManager.addLight(FluxLight({250.0f, 400.0f, 0.0f}, cl_Green, 100.0f));
-          LightManager.addLight(FluxLight({175.0f, 450.0f, 10.0f}, { 0.f,0.f,1.f,10.f}, 100.0f));
+          LightManager.addLight(new FluxLight({100.0f, 400.0f, 0.0f}, cl_Red , 100.0f));
+          LightManager.addLight(new FluxLight({250.0f, 400.0f, 0.0f}, cl_Green, 100.0f));
+          LightManager.addLight(new FluxLight({175.0f, 450.0f, 10.0f}, { 0.f,0.f,1.f,10.f}, 100.0f));
 
          // FluxLight flashlight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f);
          // flashlight.setAsSpotlight({0.0f, 1.0f}, 45.0f); //
          // LightManager.addLight(flashlight);
-         LightManager.addLight(
-             FluxLight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f)
-             .setAsSpotlight({0.0f, 1.0f}, 45.0f)
-         );
-         LightManager.addLight(
-             FluxLight({ 900.0f, 0.0f,0.0f}, cl_White, 500.f)
-             .setAsSpotlight({0.0f, 1.0f}, 45.0f)
-         );
-         // LightManager.addLight(
-         //     FluxLight({ 1100.0f, 0.0f,0.0f}, cl_White, 500.f)
-         //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
-         // );
-         // LightManager.addLight(
-         //     FluxLight({ 1300.0f, 0.0f,0.0f}, cl_White, 500.f)
-         //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
-         // );
-         // LightManager.addLight(
-         //     FluxLight({ 1500.0f, 0.0f,0.0f}, cl_White, 500.f)
-         //     .setAsSpotlight({0.0f, 1.0f}, 45.0f)
-         // );
+
+          FluxLight* spot = nullptr;
+          spot = new FluxLight({ 700.0f, 0.0f,0.0f}, cl_White, 500.f);
+          spot->setAsSpotlight({0.0f, 1.0f}, 45.0f);
+         LightManager.addLight(spot);
+
+         spot =  new FluxLight({ 900.0f, 0.0f,0.0f}, cl_White, 500.f);
+         spot->setAsSpotlight({0.0f, 1.0f}, 45.0f);
+         LightManager.addLight( spot );
+
+
 
          // bind mouse to window:
          // use right mouse to test it ! SDL_SetWindowMouseGrab(getScreen()->getWindow(), true);
@@ -333,6 +324,7 @@ public:
 
         SAFE_DELETE(mMonoFont);
 
+        LightManager.clearLights();
         Parent::Deinitialize();
     }
     //--------------------------------------------------------------------------------------

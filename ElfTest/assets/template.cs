@@ -60,6 +60,13 @@ function Game::LoadAssets(%this) {
   %this.sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.2; };
   %this.add(%this.sndPling);
 
+  // ....
+  %this.light1 =   new Light() {
+    position = "450 350";
+    radius = 150;
+    color = "1.0 0.4 0.4 3.0";
+  };
+
 }
 
 function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
@@ -103,7 +110,7 @@ function Game::c(%this, %mx, %my, %p) {
       z = %layer;
   };
 
-
+  %this.light1.position = %clone.getPosition3F();
   %this.add(%clone);
 
 

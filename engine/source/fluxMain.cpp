@@ -23,6 +23,7 @@
 #include "render/fluxRender2D.h"
 #include "particle/fluxParticleManager.h"
 #include "utils/fluxScheduler.h"
+#include "lights/fluxLightManager.h"
 
 double gFrameTime = 0.f; // we need that Global for timming
 double gGameTime  = 0.f;
@@ -187,6 +188,7 @@ void FluxMain::Deinitialize()
 	dLog("FluxMain: shutdown FluxSchedule");
 	FluxSchedule.shutdown();
 
+	LightManager.clearLights();
 	CleanQueue();
 
 	dLog("FluxMain: Cleaning up screen");

@@ -141,6 +141,7 @@ void FluxRender2D::shutdown()
         // 3. Mark as uninitialized
         mShaderFailed = true;
     }
+    LightManager.clearLights();
 }
 //-------------------------------------------------------------------------------
 // void FluxRender2D::drawLine(F32 x1, F32 y1, F32 x2, F32 y2, const Color4F& color) {
@@ -354,7 +355,7 @@ bool FluxRender2D::uglyDraw2DStretch (
 //-------------------------------------------------------------------------------
 void FluxRender2D::renderLights()
 {
-    const std::vector<FluxLight>& lights = LightManager.getLights();
+    const std::vector<FluxLight*> lights = LightManager.getLights();
     RectF view = Render2D.getCamera()->getVisibleWorldRect(false);
 
     bool lSceneHaveLights = lights.size() > 0;
@@ -367,16 +368,16 @@ void FluxRender2D::renderLights()
     float lightRadii[MAX_LIGHTS];
 
     for (int i = 0; i < lights.size() && i < MAX_LIGHTS; ++i) {
-        lightPositions[i * 3 + 0] = lights[i].position.x;
-        lightPositions[i * 3 + 1] = lights[i].position.y;
-        lightPositions[i * 3 + 2] = lights[i].position.z;
+        lightPositions[i * 3 + 0] = lights[i]->position.x;
+        lightPositions[i * 3 + 1] = lights[i]->position.y;
+        lightPositions[i * 3 + 2] = lights[i]->position.z;
 
-        lightColors[i * 4 + 0] = lights[i].color.r;
-        lightColors[i * 4 + 1] = lights[i].color.g;
-        lightColors[i * 4 + 2] = lights[i].color.b;
-        lightColors[i * 4 + 3] = lights[i].color.a;
+        lightColors[i * 4 + 0] = lights[i]->color.r;
+        lightColors[i * 4 + 1] = lights[i]->color.g;
+        lightColors[i * 4 + 2] = lights[i]->color.b;
+        lightColors[i * 4 + 3] = lights[i]->color.a;
 
-        lightRadii[i] = lights[i].radius;
+        lightRadii[i] = lights[i]->radius;
 
         activeLightCount++;
     }
@@ -394,17 +395,17 @@ void FluxRender2D::renderLights()
             break;
         }
         //  Frustum/Visibility Culling
-        if (!checkAABBIntersectionF(view, lights[i].getRectF())) {
+        if (!checkAABBIntersectionF(view, lights[i]->getRectF())) {
             continue;
         }
         //  Pass data using the activeLightCount index, NOT the loop index i
         std::string lightPrefix = "uLights[" + std::to_string(activeLightCount) + "]";
 
-        mDefaultShader.setVec3((lightPrefix + ".position").c_str(), lights[i].position.x, lights[i].position.y, lights[i].position.z);
-        mDefaultShader.setVec4((lightPrefix + ".color").c_str(), lights[i].color);
-        mDefaultShader.setFloat((lightPrefix + ".radius").c_str(), lights[i].radius);
-        mDefaultShader.setVec2((lightPrefix + ".direction").c_str(), lights[i].direction.x, lights[i].direction.y);
-        mDefaultShader.setFloat((lightPrefix + ".cutoff").c_str(), lights[i].cutoff);
+        mDefaultShader.setVec3((lightPrefix + ".position").c_str(), lights[i]->position.x, lights[i]->position.y, lights[i]->position.z);
+        mDefaultShader.setVec4((lightPrefix + ".color").c_str(), lights[i]->color);
+        mDefaultShader.setFloat((lightPrefix + ".radius").c_str(), lights[i]->radius);
+        mDefaultShader.setVec2((lightPrefix + ".direction").c_str(), lights[i]->direction.x, lights[i]->direction.y);
+        mDefaultShader.setFloat((lightPrefix + ".cutoff").c_str(), lights[i]->cutoff);
 
         activeLightCount++;
     }

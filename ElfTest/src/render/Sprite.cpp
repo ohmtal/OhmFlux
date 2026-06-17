@@ -58,6 +58,13 @@ namespace ElfFlux {
     DefineEngineMethod(Sprite, setRectF, void, (RectF rect),,"Set the Sprite Rect" ) {
         object->mRenderObject.setRectF(rect);
     }
+    // ------------------------------------------------------------------------.
+    DefineEngineMethod(Sprite, getPosition3F, Point3F, (),, "get the position with layer") {
+        return object->mRenderObject.getPosition3F();
+    }
+    DefineEngineMethod(Sprite, getPosition, Point2F, (),, "get the position ") {
+        return object->mRenderObject.getPosition();
+    }
 
     // ------------------------------------------------------------------------.
     void Sprite::initPersistFields()

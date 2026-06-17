@@ -118,6 +118,7 @@ public:
 	void setPos( const Point2F lPos ) { setX(lPos.x); setY(lPos.y); }
 	void setPosition( const Point2F lPos ) { setPos(lPos); }
 	Point2F getPosition() const { return { mDrawParams.x, mDrawParams.y }; }
+	Point3F getPosition3F() const { return { mDrawParams.x, mDrawParams.y, mDrawParams.z }; }
 	void setRotation(const F32& rotation) { mDrawParams.rotation = rotation; }
 	void setLayer(const F32& layer) { mDrawParams.z = layer; }
 	void setSpeed(const F32& speed) { this->mSpeed = speed; }

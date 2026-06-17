@@ -7,7 +7,7 @@
 
 class FluxLightManager {
 private:
-    std::vector<FluxLight> mLights;
+   std::vector<FluxLight*> mLights;
 
 public:
     static FluxLightManager& getInstance() {
@@ -19,26 +19,35 @@ public:
     FluxLightManager(const FluxLightManager&) = delete;
     void operator=(const FluxLightManager&) = delete;
 
-    void addLight(const FluxLight& light)
+    void addLight(FluxLight* light, bool autoDelete = true)
     {
         auto it = std::find(mLights.begin(), mLights.end(), light);
-        if (it == mLights.end()) mLights.push_back(light);
+        if (it == mLights.end()) {
+            light->mAutoDelete = autoDelete;
+            mLights.push_back(light);
+        }
     }
 
-    void removeLight(S32 id) {
-        auto it = std::find_if(mLights.begin(), mLights.end(), [id](const FluxLight& light) {
-            return light.id == id;
-        });
+    void removeLight(FluxLight* light) {
+        auto it = std::find(mLights.begin(), mLights.end(), light);
         if ( it != mLights.end ()) mLights.erase(it);
     }
 
     void clearLights() {
+        for (auto* light : mLights) {
+            if (light->mAutoDelete) SAFE_DELETE(light);
+        }
         mLights.clear();
     }
 
-    const std::vector<FluxLight>& getLights() const {
+    const std::vector<FluxLight*> getLights()  {
         return mLights;
     }
+
+    // void setAmbientColor(Color4F color) {
+    //      Render2D.setAmbientColor(color);
+    // }
+
 
 private:
     FluxLightManager() {}

@@ -186,13 +186,14 @@ bool DemoGame::Initialize() {
 	const Point2F pt_LightVector = {0.15f, 0.25f};
 	const F32 f_LightAngle = 30.f; // 25.f;
 	const F32 f_LightRadius = 600.f;
+	FluxLight* spot = nullptr;
 
 	Render2D.setAmbientColor( { 0.05f,0.051f,0.15f,1.f} );
-	for ( S32 i = 880; i > -300; i -= 320)
-		LightManager.addLight(
-			FluxLight({ (F32)i, -100.0f,0.0f}, cl_seaLight, f_LightRadius)
-			.setAsSpotlight(pt_LightVector, f_LightAngle)
-		);
+	for ( S32 i = 880; i > -300; i -= 320) {
+		spot = new FluxLight({ (F32)i, -100.0f,0.0f}, cl_seaLight, f_LightRadius);
+		spot->setAsSpotlight(pt_LightVector, f_LightAngle);
+		LightManager.addLight(spot);
+	}
 
 	//<<< lights
 
@@ -315,7 +316,6 @@ void DemoGame::listFishes()
 //--------------------------------------------------------------------------------------
 void DemoGame::Deinitialize() {
 	Parent::Deinitialize();
-
 }
 //--------------------------------------------------------------------------------------
 void DemoGame::Update(const double& dt)
