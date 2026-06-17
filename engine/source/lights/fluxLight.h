@@ -1,8 +1,12 @@
 #pragma once
 #include "core/fluxGlobals.h" // For Point3F, Color4F
 
+
+static S32 LIGHT_IDS = 0;
+
 struct FluxLight
 {
+
     Point3F position = {0.f, 0.f, 0.f};
     Color4F color    = {1.f, 1.f, 1.f, 1.f}; // White at full intensity
     F32 radius     = 100.f;
@@ -11,11 +15,16 @@ struct FluxLight
     Point2F direction = {0.f, -1.f}; // Default pointing "down" or "forward"
     F32 cutoff      = -1.0f;       // -1.0 means 360 degrees (Omni-light)
 
+    S32 id = 0;
+
     // Standard constructor
     FluxLight(Point3F p = {0.f, 0.f, 0.f},
               Color4F c = {1.f, 1.f, 1.f, 1.f},
               F32 r = 100.f)
-    : position(p), color(c), radius(r) {}
+    : position(p), color(c), radius(r) {
+        LIGHT_IDS++;
+        id = LIGHT_IDS;
+    }
 
     // Helper to turn this light into a spotlight
     FluxLight& setAsSpotlight(Point2F dir, F32 angleInDegrees) {
@@ -37,4 +46,6 @@ struct FluxLight
             radius * 2.0f
         };
     }
+
+    bool operator==(const FluxLight& l) const { return ( id == l.id ); }
 };

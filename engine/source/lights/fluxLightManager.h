@@ -12,6 +12,7 @@ private:
 public:
     static FluxLightManager& getInstance() {
         static FluxLightManager instance;
+        instance.mLights.reserve(MAX_LIGHTS);
         return instance;
     }
 
@@ -20,8 +21,15 @@ public:
 
     void addLight(const FluxLight& light)
     {
-        mLights.push_back(light);
+        auto it = std::find(mLights.begin(), mLights.end(), light);
+        if (it == mLights.end()) mLights.push_back(light);
+    }
 
+    void removeLight(S32 id) {
+        auto it = std::find_if(mLights.begin(), mLights.end(), [id](const FluxLight& light) {
+            return light.id == id;
+        });
+        if ( it != mLights.end ()) mLights.erase(it);
     }
 
     void clearLights() {
