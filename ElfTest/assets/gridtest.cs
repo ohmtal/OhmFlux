@@ -46,6 +46,11 @@ function GridTest::newTerrain(%this) {
 // -----------------------------------------------------------------------------
 function Grid::addRandomMud(%this) {
     %cnt = %this.getNodeCount();
+    //reset grid
+    for( %i = 0; %i < %cnt; %i++ ) {
+        %this.setWeightByNodeId(%i, 0);
+    }  
+    
     for( %i = 0; %i < %cnt / 1.5; %i++ ) {
         %n = getRandom(%cnt - 1);
         // %w = getRandom(50,250);
@@ -84,7 +89,7 @@ function GridTest::onRender(%this,%dt) {
                 %weight = %this.grid.getWeightByNodeId( %idx );
                 // %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left ,  %weight SPC "0.5 0.2");
 
-                %this.rect(65 + 50 * %j SPC %i*30 + 40 SPC 35 SPC 28,   %weight SPC "0.5 0", true);
+                %this.rect(65 + 50 * %j SPC %i*30 + 40 SPC 35 SPC 28, (%weight / 255.0) SPC "0.5 0", true);
 
                 %idx++;
             }

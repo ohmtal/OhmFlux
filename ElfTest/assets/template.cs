@@ -62,9 +62,9 @@ function Game::LoadAssets(%this) {
 
   // ....
   %this.light1 =   new Light() {
-    position = "450 350";
-    radius = 150;
-    color = "1.0 0.4 0.4 3.0";
+    position =  %this.sprite.getPosition();
+    radius = 80;
+    color = "0.3 1.0 0.1 1.0";
   };
 
 }
@@ -77,6 +77,7 @@ function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mous
 
 }
 
+function Game::onRender(%this,%dt) {}
 
 function Game::onUpdate(%this,%dt) {
   %this.Label1.Caption = getFPS() SPC "FPS";
