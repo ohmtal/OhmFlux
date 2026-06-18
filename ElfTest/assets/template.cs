@@ -81,11 +81,11 @@ function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mous
 function Game::onUpdate(%this,%dt) {
   %this.Label1.Caption = getFPS() SPC "FPS";
 
-  %this.label1.shift = ( %this.label1.shift + %dt * 10) % 360;
-  // modulo now rocks ;) if (%this.label1.shift >= 360) %this.label1.shift = 0;
+  // i changed modulo in KorkScript but non in ElfScript ^
+  %this.label1.shift =  %this.label1.shift + %dt * 10;
+  if (%this.label1.shift >= 360) %this.label1.shift = 0;
   %this.Label1.color = shiftColorHue("0 1 0",%this.label1.shift );
-
-
+  
 }
 
 function Game::c(%this, %mx, %my, %p) {
