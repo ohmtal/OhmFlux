@@ -12,84 +12,7 @@
 //
 // NOTE: On Console it's: $Main
 //
-// //------------------------------------------------------------------------------
-// #include "console/console.h"
-// #include "console/script.h"
-// #include "sim/netStringTable.h"
-// #include "console/engineAPI.h"
-// #include <platform/platformVolume.h>
-// //--------------------------------------------------------------------------------------
-// namespace engineAPI
-// {
-//     bool gUseConsoleInterop = true;
-//     bool gIsInitialized = false;
-// }
-// namespace engineGlue
-// {
-//     // -----------------------------------------------------------------------------
-//     void DefaultLogger(U32 level, const char *consoleLine)
-//     {
-//         switch (level) {
-//             case 1: dPrintf("[warn] %s",  consoleLine); break;
-//             case 2: dPrintf("[error] %s",  consoleLine); break;
-//             default: dPrintf("%s",  consoleLine); break;
-//         }
-//
-//     }
-//     // -----------------------------------------------------------------------------
-//     void init( ConsumerCallback LogFunc = nullptr, String initialDirectory = "assets:/")
-//     {
-//         // Asserts should be created FIRST
-//         PlatformAssert::create();
-//         // ManagedSingleton< ThreadManager >::createSingleton();
-//         FrameAllocator::init(TORQUE_FRAME_SIZE);      // See comments in torqueConfig.h
-//         _StringTable::create();
-//         Con::init();
-//         // Platform::initConsole();
-//         NetStringTable::create();
-//
-//         Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
-//         Platform::FS::MountDefaults();
-//         Torque::FS::SetCwd( initialDirectory );
-//         Platform::setCurrentDirectory( Platform::getMainDotCsDir() );
-//
-//         Platform::init();    // platform specific initialization
-//         // Set engineAPI initialized to true
-//         engineAPI::gIsInitialized = true;
-//         Sim::init();
-//
-//         // FIXME add logger
-//         if (!LogFunc) {
-//             Con::addConsumer(DefaultLogger);
-//         } else {
-//             Con::addConsumer(*LogFunc);
-//         }
-//
-//     }
-//
-//     // SimTime U32 ms since last Loop
-//     void process(SimTime delta) {
-//         Sim::advanceTime(delta);
-//         ConsoleValue::resetConversionBuffer();
-//     }
-//
-//
-//     void shutDown() {
-//         Sim::shutdown();
-//
-//         Platform::shutdown();
-//
-//         NetStringTable::destroy();
-//         Con::shutdown();
-//
-//         _StringTable::destroy();
-//         FrameAllocator::destroy();
-//         // asserts should be destroyed LAST
-//         PlatformAssert::destroy();
-//
-//         engineAPI::gIsInitialized = false;
-//     }
-// } //engineGlue
+//------------------------------------------------------------------------------
 
 namespace ElfFlux {
     IMPLEMENT_CONOBJECT(Main);
@@ -323,7 +246,10 @@ namespace ElfFlux {
     {
         if (!FluxMain::Initialize()) return false;
         // Console >>>>
-        engineGlue::init(MyLogger, (getGamePath()+"/assets").c_str());
+        String workingDir = getGamePath().c_str();
+        workingDir += "assets";
+
+        engineGlue::init(MyLogger, workingDir);
         ElfFlux::init(); // init my stuff
         // Con::addConsumer(MyLogger); // add the LogConsumer
         // <<<<<
@@ -346,9 +272,8 @@ namespace ElfFlux {
         console.OnTabCompletion = [this](ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
             OnConsoleTAB(console, data, forward);
         };
-        // FIXME parameters !!!
-        std::string fileName = "assets/main.cs"; //fixme command line parameter for file
-        if (!loadScript(fileName.c_str())) {
+
+        if (!loadScript(mStartScript.c_str())) {
             return false;
         }
 

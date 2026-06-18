@@ -27,6 +27,9 @@ namespace ElfFlux {
         void OnConsoleTAB(ImConsole* console,  ImGuiInputTextCallbackData* data, bool forward);
 
     public:
+
+        String mStartScript = "assets/main.cs";
+
         bool Initialize() override;
         void Deinitialize() override;
         void IterateFrame() override;

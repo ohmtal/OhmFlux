@@ -13,6 +13,7 @@
 #include <string>
 #include "core/fluxGlobals.h"
 #include "appMain.h"
+#include <core/volume.h>
 
 
 StringTableEntry osGetTemporaryDirectory(){
@@ -156,29 +157,30 @@ void outputDebugString(const char *string, ...) {
 
 }
 /// File IO.
-StringTableEntry getWorkingDirectory()
-{
 
-   return StringTable->insert(SDL_GetBasePath());
-}
+// StringTableEntry getWorkingDirectory()
+// {
+//
+// }
 
-bool setWorkingDirectory(StringTableEntry newDir)
-{
-   Con::warnf("%s not implemented", __func__);
-   (void)newDir;
-   return false;
+// bool setWorkingDirectory(StringTableEntry newDir)
+// {
+//   if (newDir)  {
+//     gWorkingDirectory = newDir;
+//     return true;
+//   }
+//   return false;
+// }
 
-}
-
-StringTableEntry getCurrentDirectory()
-{
-   return getWorkingDirectory();
-}
-
-bool setCurrentDirectory(StringTableEntry newDir)
-{
-   return setWorkingDirectory(newDir);
-}
+// StringTableEntry getCurrentDirectory()
+// {
+//    return Torque::FS::GetCwd().getPath();
+// }
+//
+// bool setCurrentDirectory(StringTableEntry newDir)
+// {
+//    return Torque::FS::SetCwd(newDir);
+// }
 
 StringTableEntry getExecutableName()
 {
