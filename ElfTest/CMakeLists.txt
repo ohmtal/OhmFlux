@@ -4,8 +4,12 @@ set(ELF_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 
 set(ELFSCRIPT_PATH "/opt/TorqueScript" CACHE PATH "Path to TorqueScript")
+set(ELF_MODULE ${ELFSCRIPT_PATH}/ElfScript)
+set(ELF_CMAKE ${ELF_MODULE}/ElfScript.cmake)
+# set(ELF_MODULE ${ELFSCRIPT_PATH}/TorqueScript)
+# set(ELF_CMAKE ${ELF_MODULE}/TorqueScript.cmake)
 
-if(NOT EXISTS "${ELFSCRIPT_PATH}/TorqueScript/TorqueScript.cmake")
+if(NOT EXISTS ${ELF_CMAKE})
     message(FATAL_ERROR
         "\n TorqueScript path is not set! "
         "\n Please provide the path using: "
@@ -13,14 +17,12 @@ if(NOT EXISTS "${ELFSCRIPT_PATH}/TorqueScript/TorqueScript.cmake")
     )
 else()
  #  defines TORQUESCRIPT_SRC
- include("${ELFSCRIPT_PATH}/TorqueScript/TorqueScript.cmake")
+ include(${ELF_CMAKE})
 
   set (ELFSCRIPT_INCLUDES
-    ${ELFSCRIPT_PATH}/TorqueScript
+   ${ELF_MODULE}
   )
 endif()
-
-
 
 
 # ~~~ BOX2D (legacy version from OGE)~~~~
@@ -97,7 +99,8 @@ set(PROJECT_SOURCES
 
 
     ${BOX2D_SRCS}
-    ${TORQUESCRIPT_SRC}
+    # ${TORQUESCRIPT_SRC}
+    ${ELFSCRIPT_SRC}
 )
 
 
