@@ -119,9 +119,9 @@ namespace ElfFlux {
                         // selected = getScript() == f.string();
                         if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
 
-                            std::string fileName = "assets/" +  f.string();
+                            std::string fileName = /*"assets/" +*/  f.string();
                             if (loadScript(fileName.c_str())) {
-                                if (mScriptEditor) mScriptEditor->addTextEditor("assets/"+f.string());
+                                if (mScriptEditor) mScriptEditor->addTextEditor(fileName);
                             }
                         }
                     }
@@ -245,23 +245,12 @@ namespace ElfFlux {
     bool Main::Initialize()
     {
         if (!FluxMain::Initialize()) return false;
-        // Console >>>>
-        String workingDir = getGamePath().c_str();
-        workingDir += "assets";
-
-        engineGlue::init(MyLogger, workingDir);
-        ElfFlux::init(); // init my stuff
-        // Con::addConsumer(MyLogger); // add the LogConsumer
-        // <<<<<
-
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
         mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, "ElfTestBed.ini");
         if (!mGuiGlue->Initialize())
             return false;
-
-
 
         // SDL_SetLogPriorities(SDL_LOG_PRIORITY_VERBOSE);  //emscript redirect test
         // NOTE: does NOT work with emscritpen !!!!
@@ -273,6 +262,16 @@ namespace ElfFlux {
             OnConsoleTAB(console, data, forward);
         };
 
+        //  -------------- Console >>>>
+        String workingDir = getGamePath().c_str();
+        workingDir += "assets/";
+
+
+        engineGlue::init(MyLogger, workingDir);
+        ElfFlux::init(); // init my stuff
+
+        //TEST
+        mStartScript = "main.cs";
         if (!loadScript(mStartScript.c_str())) {
             return false;
         }

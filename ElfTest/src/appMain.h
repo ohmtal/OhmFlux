@@ -27,7 +27,7 @@ namespace ElfFlux {
         void OnConsoleTAB(ImConsole* console,  ImGuiInputTextCallbackData* data, bool forward);
 
     public:
-
+        // must have a directory!!!!
         String mStartScript = "assets/main.cs";
 
         bool Initialize() override;
