@@ -119,7 +119,7 @@ namespace ElfFlux {
                         // selected = getScript() == f.string();
                         if (ImGui::MenuItem(f.string().c_str(), nullptr, selected)) {
 
-                            std::string fileName = /*"assets/" +*/  f.string();
+                            std::string fileName = "assets/" +  f.string();
                             if (loadScript(fileName.c_str())) {
                                 if (mScriptEditor) mScriptEditor->addTextEditor(fileName);
                             }
@@ -264,14 +264,13 @@ namespace ElfFlux {
 
         //  -------------- Console >>>>
         String workingDir = getGamePath().c_str();
-        workingDir += "assets/";
+        // no :P - took me a night to get it work but the the editor is not longer ok
+        //          workingDir += "assets/";
 
 
         engineGlue::init(MyLogger, workingDir);
         ElfFlux::init(); // init my stuff
 
-        //TEST
-        mStartScript = "main.cs";
         if (!loadScript(mStartScript.c_str())) {
             return false;
         }

@@ -108,7 +108,7 @@ function Game::c(%this, %mx, %my, %p) {
 
   return %clone;
  }
-
+function Game::onRender(%this,%dt) {}
 function Game::onRemove(%this) {
   error("GAME ONREMOVE!");
   %this.deleteObjects();
