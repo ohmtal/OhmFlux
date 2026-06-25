@@ -5,6 +5,7 @@ function Game::CreateWallRect(%this, %edge, %class) {
         error("Game::CreateWallRect " SPC %class SPC "invalid Edge:" SPC %edge);
         return 0;
     }
+
     %bodyDef = new BodyDef2b() { type = $box2d::b2_staticBody; };
     %bodyDef.setPosition("0 0");
 
@@ -28,6 +29,6 @@ function Game::CreateWallRect(%this, %edge, %class) {
     %shape.delete();
     %fixtureDef.delete();
 
-    return wall;
+    return %wall;
 }
 

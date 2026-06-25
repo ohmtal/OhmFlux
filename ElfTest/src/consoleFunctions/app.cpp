@@ -37,12 +37,12 @@ void init() {
 
 
     // Enum Helper Box2D
-     Con::registerEnumS32<b2BodyType>("$box2d::");
-     Con::registerEnumS32<Shape2bShapeTypes>("$box2d::");
-     Con::registerEnumS32<b2JointType>("$box2d::");
+     Con::registerEnumS32<b2BodyType>("$box2d::", true);
+     Con::registerEnumS32<Shape2bShapeTypes>("$box2d::", true);
+     Con::registerEnumS32<b2JointType>("$box2d::", true);
 
      // Enum Font
-     Con::registerEnumS32<FontAlign>("");
+     Con::registerEnumS32<FontAlign>("", true);
 
      // Math
      Con::addConstant("M_PI", TypeF32, &gPI,  "pi (3.14)");

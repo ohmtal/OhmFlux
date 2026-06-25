@@ -7,10 +7,18 @@
 
 // ----------------------------------------------------------------------------
 // make slots type save but same slotname always have the same type
+
+// enable #define in torque script
+#define ELFSCRIPT_PREPROCESSOR
+
+// fields are stored in a map to save fieldtype on static fields
 // #define ELFSCRIPT_STRICT_SLOT_TYPE
 
 // cache function calls WARNING: inconsitent
 // #define ELFSCRIPT_CALLFUNC_CACHED
+
+// Fast Path static fields float/interger
+#define ELFSCRIPT_FASTPATH_FLD
 
 // ----------------------------------------------------------------------------
 #ifdef FLUX_DEBUG

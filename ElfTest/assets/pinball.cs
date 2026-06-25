@@ -9,6 +9,7 @@ function Game::Init(%this) {
     y = 50;
     w = 600;
     h = 400;
+
   };
 
   %this.thick = 10;
@@ -37,7 +38,7 @@ function Game::Init(%this) {
 
   // LoadBall
   %this.ball = %this.createBall(getScreenCenter());
-  
+
   %this.balls = new SimSet();
   for (%i = 0; %i < 20; %i++) {
   	%b= %this.createBall(getScreenCenter());
