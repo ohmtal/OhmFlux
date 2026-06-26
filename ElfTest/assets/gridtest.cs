@@ -64,23 +64,31 @@ function Grid::addRandomMud(%this) {
 }
 // -----------------------------------------------------------------------------
 function GridTest::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
-    if (%keyValue == 0 && %actionString $= "button1" ) { //mouse up on left button
-        if (pointInRect( %this.LabelNew.ButtonRect, %mouseX SPC %mouseY)) {
+    if (%keyValue == 0  ) { //mouse up on left button
+        if (%actionString $= "R") {
+            exec("./gridtest.cs");
+        }
+        else
+        if (%actionString $= "button1" && pointInRect( %this.LabelNew.ButtonRect, %mouseX SPC %mouseY)) {
             %this.newTerrain();
         }
     }
+
 
 }
 // -----------------------------------------------------------------------------
 function GridTest::onRender(%this,%dt) {
 
 
-  %this.writeText(5,20, "Grid + Pathfinding Demo -" SPC getFPS() @ "fps",  $FontAlign_left, "0.5 0.2 0.5" );
+  %this.writeText(5,25, "Grid + Pathfinding Demo ",  $FontAlign_left, "0.5 0.2 0.5" );
+  %this.writeText(900, 150, getFPS() @ "fps" );
    // %this.Line("5 35", "595 35", "0 1 0");
+
 
     if (!%this.hideTerrain) {
         %vert = %this.countX;
         %hor  = %this.countY;
+
         %idx = 0;
         %weight = 0;
         for (%i = 0; %i < %vert; %i++) {
@@ -89,7 +97,9 @@ function GridTest::onRender(%this,%dt) {
                 %weight = %this.grid.getWeightByNodeId( %idx );
                 // %this.writeText(65 + 50 * %j,%i*30 + 50,byteToHex(%weight), $align::left ,  %weight SPC "0.5 0.2");
 
-                %this.rect(65 + 50 * %j SPC %i*30 + 40 SPC 35 SPC 28, (%weight / 255.0) SPC "0.5 0", true);
+                %rect = 65 + 50 * %j SPC %i*30 + 40 SPC 35 SPC 28;
+                %color = (%weight / 255.0) SPC "0.5 0";
+                %this.rect(%rect, %color, true);
 
                 %idx++;
             }
@@ -102,7 +112,8 @@ function GridTest::onRender(%this,%dt) {
         %cnt = %this.path.getDynamicFieldCount();
         for (%i = 0; %i < %cnt; %i++) {
             %pos = %this.path.getFieldValue("node" @ %i);
-            %realPos = getWord(%pos,0) * 50  + 85 SPC  getWord(%pos,1) * 30 + 55;
+            // %realPos = getWord(%pos,0) * 50  + 85 SPC  getWord(%pos,1) * 30 + 55;
+            %realPos = %pos.x * 50  + 85 SPC  %pos.y * 30 + 55;
             if ( %lastPoint ) %this.Line(%lastPoint, %realPos  );
             %lastPoint = %realPos;
 
