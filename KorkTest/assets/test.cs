@@ -1,6 +1,6 @@
 echo("Hello from Test.cs");
 //------------------------------
-
+// NOTE KorkTest made on my i5 notebook running on battery
 if (!isObject(CleanupSet)) new SimSet(CleanupSet);
 else CleanupSet.deleteObjects();
 
@@ -40,6 +40,7 @@ function SpeedTest() {
 
     //  --- count up a member without TYPEDEF ---
     // .. object as global var
+    // KorkTest 200ms
     if ( $mode == 0 ) {
         for (%i =0 ; %i < 50000; %i++) {
             // $foo.bar += 0.1;
@@ -47,6 +48,7 @@ function SpeedTest() {
     }
     else
     // .. object as local var
+    // KorkTest 900ms
     if ( $mode == 1 ) {
         %foo = $foo;
         for (%i =0 ; %i < 50000; %i++) {
@@ -55,6 +57,8 @@ function SpeedTest() {
     }
     else
     // .. object as local var + typed
+    // KorkTest 1400ms
+
     if ( $mode == 2 ) {
         %foo = $foo;
         for (%i =0 ; %i < 50000; %i++) {
@@ -72,6 +76,9 @@ function SpeedTest() {
     else
     // .. object as local var + set X
     // NOTE: OMG is this slow !!!!!!!
+
+    // KorkTest 1500ms with parsing errors from time to time
+
     if ( $mode == 3 ) {
         %foo = $foo;
         for (%i =0 ; %i < 50000; %i++) {
@@ -103,6 +110,8 @@ function SpeedTest() {
         }
     }
     else
+    // KorkTest NOT IMPLEMENTED
+
     // .. object as local var + call walk
     if ( $mode == 4 ) {
         %foo = $foo;
@@ -111,6 +120,8 @@ function SpeedTest() {
         }
     }
     // .. object as local var + call getPos to a local var
+    // KorkTest not implemented
+
     if ( $mode == 5 ) {
         %foo = $foo;
         for (%i =0 ; %i < 50000; %i++) {
@@ -118,6 +129,8 @@ function SpeedTest() {
         }
     }
      // .. object as local var + call getx/y/z to a local vars
+     // KorkTest 1400ms
+
     if ( $mode == 6 ) {
         %foo = $foo;
         for (%i =0 ; %i < 50000; %i++) {
@@ -128,6 +141,7 @@ function SpeedTest() {
             // %z = %foo.getZ();
         }
     }
+    // KorkTest 2 ms :)
     if ($mode == 7) {
         $foo.testFloat += 0.1415  ;
         %a = $foo.testFloat;
@@ -135,6 +149,7 @@ function SpeedTest() {
         $foo.testFloat = %a;
         // echo($foo.x);
     }
+    // KorkTest 1300ms
     if ($mode == 8) {
         // $foo.testInt++;
         for (%i =0 ; %i < 50000; %i++) {
@@ -158,7 +173,7 @@ function TEST::onRender(%this,%dt) {
         $times += GetFrameTime();
         if ($i >= 10) {
             $i -= 10;
-            echo("Speedtest MODE:" SPC $mode SPC "avg time:" SPC $times / 10 SPC "testfloat/int/bool:" SPC $foo.testFloat SPC $foo.testInt SPC $foo.testBool);
+            echo("Speedtest MODE:" SPC $mode SPC "avg time:" SPC $times * 100 SPC "testfloat/int/bool:" SPC $foo.testFloat SPC $foo.testInt SPC $foo.testBool);
             $times = 0;
         }
     }

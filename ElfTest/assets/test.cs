@@ -1,7 +1,7 @@
 echo("Hello from Test.cs");
 //------------------------------
-if (!isObject(CleanupSet)) new SimSet(CleanupSet);
-else CleanupSet.deleteObjects();
+// NOTE ElfTest made on my i5 notebook running on battery
+GarbageCollectionSet.deleteObjects();
 
 new GameCtrl(TEST) {};
 CleanupSet.add($Game);
@@ -37,14 +37,14 @@ function SpeedTest() {
     %lS32 = 0;
 
     //  --- count up a member without TYPEDEF ---
-    // .. object as global var
+    // ElfTest 45ms
     if ( $mode == 0 ) {
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
-            // $foo.bar += 0.1;
         }
     }
     else
     // .. object as local var
+    // ElfTest 80ms
     if ( $mode == 1 ) {
         %foo = $foo;
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
@@ -53,6 +53,8 @@ function SpeedTest() {
     }
     else
     // .. object as local var + typed
+    // ElfTest 75ms
+
     if ( $mode == 2 ) {
         %foo = $foo;
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
@@ -70,6 +72,7 @@ function SpeedTest() {
     else
     // .. object as local var + set X
     // NOTE: OMG is this slow !!!!!!!
+    // ElfTest 35ms
     if ( $mode == 3 ) {
         %foo = $foo;
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
@@ -102,6 +105,7 @@ function SpeedTest() {
     }
     else
     // .. object as local var + call walk
+    // ElfTest 40ms
     if ( $mode == 4 ) {
         %foo = $foo;
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
@@ -109,6 +113,7 @@ function SpeedTest() {
         }
     }
     // .. object as local var + call getPos to a local var
+    // ElfTest 81ms
     if ( $mode == 5 ) {
         %foo = $foo;
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
@@ -116,7 +121,8 @@ function SpeedTest() {
         }
     }
      // .. object as local var + call getx/y/z to a local vars
-    if ( $mode == 6 ) {
+     // ElfTest 75ms
+     if ( $mode == 6 ) {
         %foo = $foo;
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
             // NOTE a bit slower than getPos: 122ms
@@ -126,6 +132,7 @@ function SpeedTest() {
             // %z = %foo.getZ();
         }
     }
+    // ElfTest 1ms
     if ($mode == 7) {
         $foo.testFloat += 0.1415  ;
         %a = $foo.testFloat;
@@ -133,6 +140,7 @@ function SpeedTest() {
         $foo.testFloat = %a;
         // echo($foo.x);
     }
+    // ElfTest 40ms
     if ($mode == 8) {
         // $foo.testInt++;
         for (%i =0 ; %i < LOOP_COUNT; %i++) {
@@ -156,7 +164,7 @@ function TEST::onRender(%this,%dt) {
         $times += GetFrameTime();
         if ($i >= 10) {
             $i -= 10;
-            echo("Speedtest MODE:" SPC $mode SPC "avg time:" SPC $times / 10 SPC "testfloat/int/bool:" SPC $foo.testFloat SPC $foo.testInt SPC $foo.testBool);
+            echo("Speedtest MODE:" SPC $mode SPC "avg time:" SPC $times * 100 SPC "testfloat/int/bool:" SPC $foo.testFloat SPC $foo.testInt SPC $foo.testBool);
             $times = 0;
         }
     }

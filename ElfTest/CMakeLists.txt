@@ -97,6 +97,8 @@ set(PROJECT_SOURCES
     ${ELF_DIR}/src/scriptEditor/ImGuiColorTextEdit/TextEditor.cpp
     ${ELF_DIR}/src/scriptEditor/ImGuiColorTextEdit/TextEditor.h
 
+    # --- testing
+    ${ELF_DIR}/src/test/testObj.cpp
 
     ${BOX2D_SRCS}
     # ${TORQUESCRIPT_SRC}
