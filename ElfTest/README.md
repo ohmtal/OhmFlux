@@ -2,7 +2,7 @@
 
 
 <img src="./res/icon.png" align="left" width="128" style="margin-right: 10px;">
-Using: <a href="https://github.com/ohmtal/TorqueScript">https://github.com/ohmtal/TorqueScript</a>
+Using: <a href="https://github.com/ohmtal/TorqueScript">https://github.com/ohmtal/ElfScript</a>
 <br />
 <br />
 <br />
@@ -15,55 +15,6 @@ Using: <a href="https://github.com/ohmtal/TorqueScript">https://github.com/ohmta
 ## how to use 
 
 Add this to your code (where assets the folder where my scripts live):
-
-```
-//--------------------------------------------------------------------------------------
-namespace engineAPI
-{
-    bool gUseConsoleInterop = true;
-    bool gIsInitialized = false;
-
-    // -----------------------------------------------------------------------------
-    void init()
-    {
-        // Asserts should be created FIRST
-        PlatformAssert::create();
-        // ManagedSingleton< ThreadManager >::createSingleton();
-        FrameAllocator::init(TORQUE_FRAME_SIZE);      // See comments in torqueConfig.h
-        _StringTable::create();
-        Con::init();
-        // Platform::initConsole();
-        NetStringTable::create();
-
-        Platform::FS::InstallFileSystems(); // install all drives for now until we have everything using the volume stuff
-        Platform::FS::MountDefaults();
-        Torque::FS::SetCwd( "assets:/" );
-        Platform::setCurrentDirectory( Platform::getMainDotCsDir() );
-
-        Platform::init();    // platform specific initialization
-        // Set engineAPI initialized to true
-        engineAPI::gIsInitialized = true;
-        Sim::init();
-    }
-
-    void shutDown() {
-        Sim::shutdown();
-
-        Platform::shutdown();
-
-        NetStringTable::destroy();
-        Con::shutdown();
-
-        _StringTable::destroy();
-        FrameAllocator::destroy();
-        // asserts should be destroyed LAST
-        PlatformAssert::destroy();
-
-        engineAPI::gIsInitialized = false;
-    }
-}
-
-```
 
 MyLogger example, where ***Log*** is my Log function:
 ```
@@ -79,8 +30,10 @@ MyLogger example, where ***Log*** is my Log function:
 
 When you startup (Init) add:
 ```
-        engineAPI::init();
-        Con::addConsumer(MyLogger); // add the LogConsumer
+    #include "main/engineGlue.h"
+    .....
+    String workingDir = getGamePath().c_str();
+    engineGlue::init(MyLogger, workingDir);
 
 ```
 
@@ -111,19 +64,17 @@ Execute inline code example:
 
 on the end of your program (Shutdown):
 ```
-        engineAPI::shutDown(); //Before Deinitialize else crash!
-        Con::removeConsumer(MyLogger); // remove the LogConsumer
+        engineGlue::shutDown(); //Before Deinitialize else crash!
+        FluxMain::Deinitialize();
 ```
 
 In your Mainloop:
 ```
-//Time if you use SDL it's somethink like that:
-    static U32 lastTick = 0;
-    Sim::advanceTime(SDL_GetTicks() - lastTick);
-    lastTick = SDL_GetTicks();
-// This is very important, else your programm eats all memory
-    ConsoleValue::resetConversionBuffer();
-...
+        // advance Torque Time for schedule
+        static U32 lastTick = 0;
+        engineGlue::process(SDL_GetTicks() - lastTick);
+        lastTick = SDL_GetTicks();
+
 ```
 
 ## development Gui 
