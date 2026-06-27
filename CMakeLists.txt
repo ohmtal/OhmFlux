@@ -71,7 +71,7 @@ set(DSP_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/dsp")
 set(SFX_DIR    "${CMAKE_CURRENT_LIST_DIR}/engine/sfx")
 
 set(STB_DIR    "${CMAKE_CURRENT_LIST_DIR}/lib/stb")
-set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/lib/box2d")
+# set(BOX2D_DIR  "${CMAKE_CURRENT_LIST_DIR}/lib/box2d")
 set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/ymfm/src")
 set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/lib/imgui")
 set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/json/single_include")
@@ -175,7 +175,7 @@ set(ENGINE_PRECOMPILED_HEADER
 # ------------ Dependencies (SDL3 & Graphics) --------------
 set(FLUX_LIBS "")
 
-# -- box2D  -disabled because it's untested
+# -- box2D  -disabled because it's untested and unused!
 # option(WITH_BOX2D "with BOX2D Library" OFF)
 # if(WITH_BOX2D)
 #     set(BOX2D_BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
@@ -306,7 +306,7 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${ENGINE_DIR}/utils>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/engine>
     $<BUILD_INTERFACE:${STB_DIR}>
-    $<BUILD_INTERFACE:${BOX2D_DIR}/include>
+    # $<BUILD_INTERFACE:${BOX2D_DIR}/include>
     $<BUILD_INTERFACE:${YMFM_DIR}>
     $<BUILD_INTERFACE:${OPL3_DIR}>
     $<BUILD_INTERFACE:${DSP_DIR}>
