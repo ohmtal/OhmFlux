@@ -10,6 +10,9 @@ setVSync(false);
 //------------------------------
 
 function rl(%mode) {
+	
+	echo("reload not supported...does NOT overwrite!!");
+	return;
     exec("./test.cs");
 
     if (%mode !$= "") {
@@ -40,7 +43,7 @@ function SpeedTest() {
 
     //  --- count up a member without TYPEDEF ---
     // .. object as global var
-    // KorkTest 200ms
+    // KorkTest 55ms
     if ( $mode == 0 ) {
         for (%i =0 ; %i < 50000; %i++) {
             // $foo.bar += 0.1;
@@ -48,7 +51,7 @@ function SpeedTest() {
     }
     else
     // .. object as local var
-    // KorkTest 900ms
+    // KorkTest 195ms
     if ( $mode == 1 ) {
         %foo = $foo;
         for (%i =0 ; %i < 50000; %i++) {
@@ -57,7 +60,7 @@ function SpeedTest() {
     }
     else
     // .. object as local var + typed
-    // KorkTest 1400ms
+    // KorkTest 210ms
 
     if ( $mode == 2 ) {
         %foo = $foo;
@@ -141,7 +144,7 @@ function SpeedTest() {
             // %z = %foo.getZ();
         }
     }
-    // KorkTest 2 ms :)
+    // KorkTest 3.3 ms :)
     if ($mode == 7) {
         $foo.testFloat += 0.1415  ;
         %a = $foo.testFloat;
@@ -149,7 +152,7 @@ function SpeedTest() {
         $foo.testFloat = %a;
         // echo($foo.x);
     }
-    // KorkTest 1300ms
+    // KorkTest 136ms
     if ($mode == 8) {
         // $foo.testInt++;
         for (%i =0 ; %i < 50000; %i++) {
