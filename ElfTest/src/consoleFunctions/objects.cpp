@@ -10,7 +10,7 @@ namespace ElfFlux {
     class Vector2Object: public SimObject {
         typedef SimObject Parent;
     public:
-        Point2F mVector;
+        Point2F mVector = {0};
         static void initPersistFields();
         DECLARE_CONOBJECT(Vector2Object);
     };
@@ -21,6 +21,10 @@ namespace ElfFlux {
         addField("y", TypeF32, Offset(mVector.y, Vector2Object ), "");
     }
 
+    DefineEngineMethod(Vector2Object, set, void, (F32 x, F32 y),,""){
+        object->mVector.x = x;
+        object->mVector.y = y;
+    }
 
     DefineEngineMethod(Vector2Object, add, Point2F, (Point2F b),,"+ b")
     {
@@ -106,7 +110,7 @@ namespace ElfFlux {
     class RectObject: public SimObject {
         typedef SimObject Parent;
     public:
-        RectF mRect;
+        RectF mRect = {0};
         static void initPersistFields();
         DECLARE_CONOBJECT(RectObject);
     };
@@ -119,6 +123,12 @@ namespace ElfFlux {
         addField("h", TypeF32, Offset(mRect.h, RectObject ), "");
     }
 
+    DefineEngineMethod(RectObject, set, void, (F32 x, F32 y, F32 w, F32 h),,""){
+        object->mRect.x = x;
+        object->mRect.y = y;
+        object->mRect.w = w;
+        object->mRect.h = h;
+    }
 
      DefineEngineMethod(RectObject, isValid, bool, ( ),, "check rect is valid") {
          return object->mRect.isValidRect();
