@@ -239,7 +239,7 @@ namespace ElfFlux {
     }
 
     void Main::OnConsoleCommand(ImConsole* console, const char* command_line) {
-        Con::evaluate(command_line);
+        Con::evalAutoComplete(command_line);
     }
     //-----------------------------------------------------------------------------
     bool Main::Initialize()
