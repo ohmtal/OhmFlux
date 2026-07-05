@@ -43,7 +43,8 @@ function Pong:Initialize()
     -- Render Objects
     for key, wall in pairs(borders) do
         local tmpWall = FluxRenderObject.new(self.tex_white, wall)
-        app:queueObject(tmpWall)
+        print ("DEBUG:",app, key, wall, tmpWall)
+        app:queueObject(tmpWall, true)
     end
 
     self.paddle = FluxRenderObject.new(self.tex_white, paddle)

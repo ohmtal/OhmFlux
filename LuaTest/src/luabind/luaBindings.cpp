@@ -51,7 +51,16 @@ namespace OhmFlux::Lua {
         type["setPause"] = &FluxMain::setPause;
         type["togglePause"] = &FluxMain::togglePause;
         type["getPause"] = &FluxMain::getPause;
-        type["queueObject"] = &FluxMain::queueObject;
+        // type["queueObject"] = &FluxMain::queueObject;
+        type["queueObject"] = sol::overload(
+            [](FluxMain& self, FluxBaseObject* lObject) {
+                self.queueObject(lObject);
+            },
+            [](FluxMain& self, FluxBaseObject* lObject, bool autoDelete) {
+                self.queueObject(lObject, autoDelete);
+            }
+        );
+
         type["unQueueObject"] = &FluxMain::unQueueObject;
         type["queueDelete"] = &FluxMain::queueDelete;
         type["getQueueObjects"] = &FluxMain::getQueueObjects;
