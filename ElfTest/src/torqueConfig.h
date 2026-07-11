@@ -11,6 +11,9 @@
 // enable #define in torque script
 #define ELFSCRIPT_PREPROCESSOR
 
+// Autodelete objects on shutdown - this can slowdown delete on many objects
+// #define ELFSCRIPT_GARBAGECOLLECTION
+
 // fields are stored in a map to save fieldtype on static fields
 // #define ELFSCRIPT_STRICT_SLOT_TYPE
 
