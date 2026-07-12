@@ -279,70 +279,67 @@ ConsoleSetType( TypePoint3F )
 
 // =============================================================================
 //FIXME not sure about this works........
-namespace PropertyInfo
-{
-    using namespace ElfMath; //mFloor
-
-    bool default_scan(const String &data, Point2I & result)
-    {
-        // Handle passed as floating point from script
-        if(data.find('.') != String::NPos)
-        {
-            Point2F tempResult;
-            dSscanf(data.c_str(),"%f %f",&tempResult.x,&tempResult.y);
-            result.x = ElfMath::mFloor(tempResult.x);
-            result.y = ElfMath::mFloor(tempResult.y);
-        }
-        else
-            dSscanf(data.c_str(),"%d %d",&result.x,&result.y);
-        return true;
-    }
-
-    bool default_print(String & result, Point2I const & data)
-    {
-        result = String::ToString("%d %d",data.x,data.y);
-        return true;
-    }
-
-
-    //-----------------------------------------------------------------------------
-    // Math - Rectangles and boxes
-    //-----------------------------------------------------------------------------
-    bool default_scan( const String &data, RectI & result )
-    {
-        // Handle passed as floating point from script
-        if(data.find('.') != String::NPos)
-        {
-            RectF tempResult;
-            dSscanf(data.c_str(),"%f %f %f %f",&tempResult.x,&tempResult.y,&tempResult.w,&tempResult.h);
-            result.x = mFloor(tempResult.x);
-            result.y = mFloor(tempResult.y);
-            result.w = mFloor(tempResult.w);
-            result.h = mFloor(tempResult.h);
-        }
-        else
-            dSscanf(data.c_str(),"%d %d %d %d",&result.x,&result.y,&result.w,&result.h);
-        return true;
-    }
-    bool default_print( String & result, const RectI & data )
-    {
-        result = String::ToString("%i %i %i %i",data.x,data.y,data.w,data.h);
-        return true;
-    }
-
-    bool default_scan(const String &data, RectF & result)
-    {
-        dSscanf(data.c_str(),"%g %g %g %g",&result.x,&result.y,&result.w,&result.h);
-        return true;
-    }
-
-    bool default_print(String & result, const RectF & data)
-    {
-        result = String::ToString("%g %g %g %g",data.x,data.y,data.w,data.h);
-        return true;
-    }
-
+// namespace PropertyInfo
+// {
+//     using namespace ElfMath; //mFloor
+//
+//     bool default_scan(const String &data, Point2I & result)
+//     {
+//         // Handle passed as floating point from script
+//         if(data.find('.') != String::NPos)
+//         {
+//             Point2F tempResult;
+//             dSscanf(data.c_str(),"%f %f",&tempResult.x,&tempResult.y);
+//             result.x = ElfMath::mFloor(tempResult.x);
+//             result.y = ElfMath::mFloor(tempResult.y);
+//         }
+//         else
+//             dSscanf(data.c_str(),"%d %d",&result.x,&result.y);
+//         return true;
+//     }
+//
+//     bool default_print(String & result, Point2I const & data)
+//     {
+//         result = String::ToString("%d %d",data.x,data.y);
+//         return true;
+//     }
+//
+//
+//     //-----------------------------------------------------------------------------
+//     // Math - Rectangles and boxes
+//     //-----------------------------------------------------------------------------
+//     bool default_scan( const String &data, RectI & result )
+//     {
+//         // Handle passed as floating point from script
+//         if(data.find('.') != String::NPos)
+//         {
+//             RectF tempResult;
+//             dSscanf(data.c_str(),"%f %f %f %f",&tempResult.x,&tempResult.y,&tempResult.w,&tempResult.h);
+//             result.x = mFloor(tempResult.x);
+//             result.y = mFloor(tempResult.y);
+//             result.w = mFloor(tempResult.w);
+//             result.h = mFloor(tempResult.h);
+//         }
+//         else
+//             dSscanf(data.c_str(),"%d %d %d %d",&result.x,&result.y,&result.w,&result.h);
+//         return true;
+//     }
+//     bool default_print( String & result, const RectI & data )
+//     {
+//         result = String::ToString("%i %i %i %i",data.x,data.y,data.w,data.h);
+//         return true;
+//     }
+//
+//     bool default_scan(const String &data, RectF & result)
+//     {
+//         dSscanf(data.c_str(),"%g %g %g %g",&result.x,&result.y,&result.w,&result.h);
+//         return true;
+//     }
+//
+//     bool default_print(String & result, const RectF & data)
+//     {
+//         result = String::ToString("%g %g %g %g",data.x,data.y,data.w,data.h);
+//         return true;
+//     }
 // --------------------------------------------------------------------------------------------------
-
-
-} //namespace
+// } //namespace
