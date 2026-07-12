@@ -594,7 +594,7 @@ struct FluxSettings
     bool initialVsync = true; //only used when screen starts
     bool ScaleScreen = true;
     U32  maxFPS      = 500; // limit high fps: 0 means no limit
-    double updateDt    = 0.016666f; // minimum update Dt - the default is at ~60fps
+    double updateDt    = 0.016f; //666f; // minimum update Dt - the default is at ~60fps
     double frameLimiter = 0.f; //sleep milliseconds
 
 

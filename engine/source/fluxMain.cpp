@@ -717,15 +717,17 @@ void FluxMain::IterateFrame()
 	}
 
 	//  update: after render
-	// static double accumulator = 0.0;
-	// accumulator += gFrameTime;
- //
-	// while (accumulator >= mSettings.updateDt) {
-	// 	Update( mSettings.updateDt );
-	// 	accumulator -= mSettings.updateDt;
-	// }
-	// FIXME updateDT ... previous code sucks
-	Update( gFrameTime );
+	static double accumulator = 0.0;
+	accumulator += gFrameTime;
+
+	while (accumulator >= mSettings.updateDt) {
+		// Update( mSettings.updateDt );
+		// accumulator -= mSettings.updateDt;
+
+		// 2026-07-12 using the real time ellapsed
+		Update(accumulator);
+		accumulator = 0.f;
+	}
 
 
 	//  Update LastTick AFTER the frame is finished
