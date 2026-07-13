@@ -2,6 +2,7 @@
 
 #include "console/script.h"
 #include "console/engineAPI.h"
+#include "core/strings/stringUnit.h"
 
 #include "gui/ImConsole.h"
 #include "scriptEditor/scriptEditor.h"
@@ -10,6 +11,7 @@
 #include "core/Globals.h"
 //------------------------------------------------------------------------------
 //
+// NOTE: On Console it's: $Main
 // NOTE: On Console it's: $Main
 //
 //------------------------------------------------------------------------------
@@ -34,10 +36,15 @@ namespace ElfFlux {
         if (!userdata) return;
         auto* console = static_cast<ImConsole*>(userdata);
         if (!console) return;
+        U32 count = StringUnit::getUnitCount(message, "\n");
 
-        char lBuffer[1024];
-        snprintf(lBuffer, sizeof(lBuffer), "%s", message);
-        console->AddLog("%s", message);
+        if (count < 2) {
+             console->AddLog("%s", message);
+        } else {
+            for (U32 i = 0; i < count; i++) {
+                 console->AddLog("%s", StringUnit::getUnit(message, i, "\n"));
+            }
+        }
     }
     //-----------------------------------------------------------------------------
 
