@@ -435,8 +435,6 @@ struct Point3F {
         };
     }
 
-
-
     bool operator==(const Point3F& v) const { return (x == v.x && y == v.y && z == v.z); }
 
     Point3F& operator+=(const Point2F& v) { x += v.x; y += v.y; return *this; }
@@ -449,6 +447,10 @@ struct Point3F {
 
     bool isZero() const { return (x == 0.f && y == 0.f && z == 0.f); }
 
+    void normalize() {
+        F32 l = len();
+        if (l > 0.0f) { x /= l; y /= l; z /= l;}
+    }
 };
 //------------------------------------- Rects
 
