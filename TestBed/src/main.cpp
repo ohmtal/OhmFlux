@@ -17,7 +17,6 @@
 #include <utils/fluxScheduler.h>
 #include <lights/fluxLight.h>
 #include <lights/fluxLightManager.h>
-#include "box2d/box2d.h"
 #include <OPL3Controller.h>
 #include <SFXGenerator.h>
 #include <utils/FileSearcher.h>
