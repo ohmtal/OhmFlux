@@ -126,14 +126,13 @@ android:
 
 	cmake --build $(BASE_BUILD_DIR)/android $(JOBS)
 
-# 2026-07-17 disabled again ... maybe back later...
-# 	cmake -S . -B $(BASE_BUILD_DIR)/androidv7a \
-# 		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
-# 		-DANDROID_ABI=armeabi-v7a \
-# 		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
-# 		-DCMAKE_BUILD_TYPE=Release \
-#  		-DANDROID_GLES2=1 \
-# 		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both"
+	cmake -S . -B $(BASE_BUILD_DIR)/androidv7a \
+		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=armeabi-v7a \
+		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
+		-DCMAKE_BUILD_TYPE=Release \
+ 		-DANDROID_GLES2=1 \
+		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both"
 
 
 
