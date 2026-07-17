@@ -2,11 +2,13 @@
 // Copyright (c) 2012/2025 Thomas Hühn (XXTH) 
 // SPDX-License-Identifier: MIT
 //-----------------------------------------------------------------------------
-#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-#include <GLES3/gl3.h>
-#else
-#include <GL/glew.h>
-#endif
+// #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+// // #include <GLES3/gl3.h>
+// #else
+// #include <GL/glew.h>
+// #endif
+//
+#include <glad/glad.h>
 
 #include <cmath>
 #include <algorithm>

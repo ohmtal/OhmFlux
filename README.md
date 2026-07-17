@@ -27,7 +27,7 @@
 - **Tilemap**: methods for loading and saving tilemaps from filesystem.
 - **Header-Only Loaders**: Native PNG, JPG, and TGA support via `stb_image` and TrueType font support via `stb_truetype`. 
 - **Advanced Particle System**: High-performance "Swap-and-Pop" particle management with dedicated presets for Fire, Explosions, and Sparks and some more. 
-- **Hybrid Build System**: Unified CMake configuration for Native Desktop (OpenGL/GLEW) and WebAssembly (WebGL 2.0).
+- **Hybrid Build System**: Unified CMake configuration for Native Desktop (OpenGL/GLAD) and WebAssembly (WebGL 2.0).
 - **TrueType fonts**:  High-performance text rendering via stb_truetype with dynamic atlas baking, proportional kerning, and batch-optimized UV mapping.
 - **Audio**: High-performance SDL3 streaming with OGG/WAV support, 2D spatial attenuation, and distance-based CPU culling.
 - **Lights**
@@ -42,7 +42,7 @@
 
 ## 📎 Libraries used in this project: 
 - OpenGL
-- Glew
+- Glad
 - SDL3 ( require version 3.4 or higher! ) 
 - ImGui
 - nlohmann json 
@@ -55,7 +55,7 @@
 
 ## 🏗 Build Instructions (Native Desktop)
 
-Requires a C++20 compiler and **GLEW** installed:
+Requires a C++20 compiler :
 
 ```shell
 # 1. Configure the project

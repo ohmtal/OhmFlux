@@ -5,11 +5,13 @@
 #pragma once
 
 
-#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-#include <GLES3/gl3.h>
-#else
-#include <GL/glew.h>
-#endif
+// #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+// #include <GLES3/gl3.h>
+// #else
+// // #include <GL/glew.h>
+// #endif
+
+#include <glad/glad.h>
 
 #include <SDL3/SDL_opengl.h>
 

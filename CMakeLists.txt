@@ -76,6 +76,7 @@ set(YMFM_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/ymfm/src")
 set(IMGGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/lib/imgui")
 set(JSON_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/json/single_include")
 set(MINIAUDIO_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/miniaudio")
+set(GLAD_DIR   "${CMAKE_CURRENT_LIST_DIR}/lib/glad")
 
 
 # =============================================================================
@@ -200,7 +201,7 @@ include(FetchContent)
 # -- SDL3
 if(MSVC)
     find_package(SDL3 REQUIRED)
-    find_package(GLEW REQUIRED)
+    # find_package(GLEW REQUIRED)
 else()
     FetchContent_Declare(
         SDL3
@@ -257,20 +258,19 @@ elseif(WIN32 AND NOT MSVC)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 
 
-    add_definitions(-DGLEW_STATIC)
-    # find_library(GLEW_STATIC_LIB NAMES glew32s glew32 glew32.a)
-    find_library(GLEW_STATIC_LIB
-        NAMES libglew32s.a glew32s glew32s.lib libglew32.a glew32.lib
-    )
+    # add_definitions(-DGLEW_STATIC)
+    # find_library(GLEW_STATIC_LIB
+    #     NAMES libglew32s.a glew32s glew32s.lib libglew32.a glew32.lib
+    # )
 
-    if(NOT GLEW_STATIC_LIB)
-        message(FATAL_ERROR "GLEW not found! Build-Typ: ${CMAKE_BUILD_TYPE}")
-    endif()
+    # if(NOT GLEW_STATIC_LIB)
+    #     message(FATAL_ERROR "GLEW not found! Build-Typ: ${CMAKE_BUILD_TYPE}")
+    # endif()
 
 
     list(APPEND FLUX_LIBS
         SDL3::SDL3-static
-        ${GLEW_STATIC_LIB}
+        # ${GLEW_STATIC_LIB}
         opengl32
         glu32
         dinput8
@@ -293,12 +293,18 @@ else()
     list(APPEND FLUX_LIBS SDL3::SDL3)
     find_package(OpenGL REQUIRED)
     list(APPEND FLUX_LIBS OpenGL::GL)
-    find_package(GLEW REQUIRED)
-    list(APPEND FLUX_LIBS GLEW::GLEW)
+    # find_package(GLEW REQUIRED)
+    # list(APPEND FLUX_LIBS GLEW::GLEW)
 endif()
 
 # --- Engine Target ---
 add_library(ohmFlux_engine STATIC ${ENGINE_SOURCES})
+
+
+# --- glad ------
+add_library(glad STATIC ${GLAD_DIR}/src/glad.c)
+target_include_directories(glad PUBLIC ${GLAD_DIR}/include)
+list(APPEND FLUX_LIBS glad)
 
 
 target_include_directories(ohmFlux_engine PUBLIC
@@ -314,13 +320,14 @@ target_include_directories(ohmFlux_engine PUBLIC
     $<BUILD_INTERFACE:${IMGGUI_DIR}>
     $<BUILD_INTERFACE:${JSON_DIR}>
     $<BUILD_INTERFACE:${MINIAUDIO_DIR}>
+    $<BUILD_INTERFACE:${GLAD_DIR}/include>
 )
 
 # Apply Static Interface Properties for Windows/MinGW
 if(WIN32 AND NOT MSVC AND NOT EMSCRIPTEN AND NOT ANDROID)
     set_property(TARGET ohmFlux_engine PROPERTY INTERFACE_SDL3_SHARED FALSE)
-    target_compile_definitions(ohmFlux_engine PUBLIC GLEW_STATIC)
-    target_link_libraries(ohmFlux_engine PRIVATE ${GLEW_STATIC_LIB})
+    # target_compile_definitions(ohmFlux_engine PUBLIC GLEW_STATIC)
+    # target_link_libraries(ohmFlux_engine PRIVATE ${GLEW_STATIC_LIB})
 endif()
 
 target_link_libraries(ohmFlux_engine PUBLIC ${FLUX_LIBS} flux_speed_profile)

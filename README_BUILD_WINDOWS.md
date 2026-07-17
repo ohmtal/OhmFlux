@@ -37,7 +37,7 @@ Before you begin, ensure you have the following installed:
 
 ```powershell
 cd C:\dev\vcpkg
-.\vcpkg install sdl3 glew opengl 
+.\vcpkg install sdl3 opengl 
 ```
 
 In OhmFlux directory you can now do: 

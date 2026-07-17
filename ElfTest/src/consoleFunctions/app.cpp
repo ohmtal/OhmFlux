@@ -99,6 +99,7 @@ bool loadScript(String fileName) {
         gLastScriptFile = fileName;
         return true;
     }
+    Log("[error] ElfTest:: FAILED TO LOAD SCRIPT: %s" , fileName.c_str());
     return false;
 }
 

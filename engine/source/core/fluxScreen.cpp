@@ -32,8 +32,18 @@
 //Con/Destructor
 FluxScreen::FluxScreen(VideoMode lVM)
 {
+	#if defined(__ANDROID__)
+	// set to Landscape
+	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+	// force FullScreen
+	mFullScreen = true;
+	#endif
+
+	Log("[info] SDL_Init...");
+
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD) ) {
 		mSDLVideoFailed = true;
+		Log("[error] SDL_Init failed: (%s)", SDL_GetError());
 		return;
 	}
 
@@ -178,12 +188,7 @@ bool  FluxScreen::prepareMode(const FluxSettings& lSettings )
 bool FluxScreen::init()
 {
 	Log("[info] init Screen....");
-	#if defined(__ANDROID__)
-	// set to Landscape
-	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
-	// force FullScreen
-	mFullScreen = true;
-	#endif
+
 
 	S32 sdlflags = mScreenFlags;
 	if (mFullScreen) {
@@ -213,28 +218,62 @@ bool FluxScreen::init()
 		return false;
 	}
 
-#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
-	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
-	if (GLEW_OK != err) {
-		Log("CRITICAL: Failed to init glew!! (%s)", glewGetErrorString(err));
-	}
+// NOTE: glad porting:
 
-	#ifdef FLUX_DEBUG
-		// catch OpenGL Errors - Enable it after glewInit()
-		#define GL_CHECK_ERROR() checkGLError(__FILE__, __LINE__)
-		if (glDebugMessageCallback) {
-			glEnable(GL_DEBUG_OUTPUT);
-			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Ensures error is reported exactly when it happens
-			glDebugMessageCallback(glDebugOutput, nullptr);
-			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-			Log("Debug Mode: OpenGL Error Logging Enabled");
-		}
-	#else
-		#define GL_CHECK_ERROR()
-		Log("Release Mode: Performance Optimized");
-	#endif
-#endif //#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+// Initialize GLAD on ALL platforms (including Emscripten/Android)
+#if defined(__ANDROID__) || defined(__EMSCRIPTEN__)
+    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+    Log("[info] GLAD loaded on Android (Soft-Load)");
+#else
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+        Log("[error]: Failed to initialize GLAD on Desktop!");
+        return false;
+    }
+#endif
+
+#ifdef FLUX_DEBUG
+    #define GL_CHECK_ERROR() checkGLError(__FILE__, __LINE__)
+
+    #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && !defined(FLUX_GLES2)
+    if (glDebugMessageCallbackARB) {
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+        glDebugMessageCallbackARB(glDebugOutput, nullptr);
+        glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+        Log("Debug Mode: OpenGL ARB Error Logging Enabled");
+    }
+    #else
+        Log("Debug Mode: Platform does not support native debug callbacks");
+    #endif
+#else
+    #define GL_CHECK_ERROR()
+    Log("Release Mode: Performance Optimized");
+#endif
+
+
+
+
+// #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+// 	glewExperimental = GL_TRUE;
+// 	GLenum err = glewInit();
+// 	if (GLEW_OK != err) {
+// 		Log("CRITICAL: Failed to init glew!! (%s)", glewGetErrorString(err));
+// 	}
+//
+// 	#ifdef FLUX_DEBUG
+// 		// catch OpenGL Errors - Enable it after glewInit()
+// 		#define GL_CHECK_ERROR() checkGLError(__FILE__, __LINE__)
+// 		if (glDebugMessageCallback) {
+// 			glEnable(GL_DEBUG_OUTPUT);
+// 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Ensures error is reported exactly when it happens
+// 			glDebugMessageCallback(glDebugOutput, nullptr);
+// 			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+// 			Log("Debug Mode: OpenGL Error Logging Enabled");
+// 		}
+// 	#else
+// 		#define GL_CHECK_ERROR()
+// 		Log("Release Mode: Performance Optimized");
+// 	#endif
+// #endif //#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 
 	//************ DEFAULT VM_OPENGL2D ********
 	if (mScreenMode == VM_OPENGL2D) {

@@ -2,7 +2,7 @@
 
 # Configuration
 # --------------
-DEMO_DIRS := FishTankDemo TestBed LuaTest SoundStudio AudioTestBed ElfTest
+DEMO_DIRS ?= FishTankDemo TestBed LuaTest SoundStudio AudioTestBed ElfTest
 
 BASE_BUILD_DIR := _build
 WEBDIST_DIR := dist_web
@@ -10,8 +10,9 @@ EMSCRIPTEN_TOOLCHAIN := /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cm
 
 # Android config:
 # Your assets must be in subdirectory assets!
-#TODO: Change the path /opt/android to where you installed android studio !
-NDK_DIRS := $(wildcard /opt/android/sdk/ndk/*/)
+# defaults to /opt/android/sdk if ANDROID_SDK_ROOT is not set
+ANDROID_SDK_ROOT ?= /opt/android/sdk
+NDK_DIRS := $(wildcard $(ANDROID_SDK_ROOT)/ndk/*/)
 ANDROID_PROJ_DIR := android
 ANDROID_NDK_HOME := $(lastword $(sort $(NDK_DIRS)))
 # ANDROID_NDK_HOME := $(shell @ls -d /opt/android/sdk/ndk/*/ | sort -V | tail -n 1)
@@ -61,11 +62,9 @@ info:
 	@echo "Nativ:      sudo pacman -S sdl3 glew opengl-headers"
 	@echo "Windows:    yay -S mingw-w64-sdl3 mingw-w64-glew"
 	@echo "Android:    download and install Android Studio and set the pathes like:"
+	@echo "            NOTE: you need to install NDK(side by side) and CMake in Android Studio"
+	@echo "            NOTE: use the path you installed SDK in the following lines:"
 	@echo "            export ANDROID_HOME=/opt/android/sdk"
-	@echo "            export ANDROID_SDK_ROOT=/opt/android/sdk"
-	@echo "            export ANDROID_NDK_HOME=/opt/android/sdk/ndk/28.2.13676358  # Update version if different"
-	@echo "            export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"
-	@echo "            sudo pacman -S gradle"
 	@echo "Emscripten: sudo pacman -S emscripten"
 	@echo "            testing @bash:"
 	@echo "            source /etc/profile.d/emscripten.sh"
@@ -87,12 +86,28 @@ release:
 
 # ---------- C R O S S C O M P I L E for W I N ----------------
 windebug:
-	x86_64-w64-mingw32-cmake -S . -B $(BASE_BUILD_DIR)/win_debug -DCMAKE_BUILD_TYPE=Debug
+	x86_64-w64-mingw32-gcc  --version >/dev/null 2>&1 || echo "MinGW gcc missing"
+	cmake -S . -B $(BASE_BUILD_DIR)/win_debug \
+	  -DCMAKE_BUILD_TYPE=Debug \
+	  -DCMAKE_SYSTEM_NAME=Windows \
+	  -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
+	  -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++
 	cmake --build $(BASE_BUILD_DIR)/win_debug $(JOBS)
 
+# 	x86_64-w64-mingw32-cmake -S . -B $(BASE_BUILD_DIR)/win_debug -DCMAKE_BUILD_TYPE=Debug
+# 	cmake --build $(BASE_BUILD_DIR)/win_debug $(JOBS)
+
 winrelease:
-	x86_64-w64-mingw32-cmake -S . -B $(BASE_BUILD_DIR)/win_release -DCMAKE_BUILD_TYPE=Release
+	x86_64-w64-mingw32-gcc  --version >/dev/null 2>&1 || echo "MinGW gcc missing"
+	cmake -S . -B $(BASE_BUILD_DIR)/win_release \
+	  -DCMAKE_BUILD_TYPE=Release \
+	  -DCMAKE_SYSTEM_NAME=Windows \
+	  -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
+	  -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++
 	cmake --build $(BASE_BUILD_DIR)/win_release $(JOBS)
+
+# 	x86_64-w64-mingw32-cmake -S . -B $(BASE_BUILD_DIR)/win_release -DCMAKE_BUILD_TYPE=Release
+# 	cmake --build $(BASE_BUILD_DIR)/win_release $(JOBS)
 
 # --------- experimental ANDROID -------------
 # Ensure ANDROID_NDK_HOME and ANDROID_HOME ate set in your environment
@@ -111,14 +126,14 @@ android:
 
 	cmake --build $(BASE_BUILD_DIR)/android $(JOBS)
 
-
-	cmake -S . -B $(BASE_BUILD_DIR)/androidv7a \
-		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
-		-DANDROID_ABI=armeabi-v7a \
-		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
-		-DCMAKE_BUILD_TYPE=Release \
- 		-DANDROID_GLES2=1 \
-		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both"
+# 2026-07-17 disabled again ... maybe back later...
+# 	cmake -S . -B $(BASE_BUILD_DIR)/androidv7a \
+# 		-DCMAKE_TOOLCHAIN_FILE=$(ANDROID_NDK_HOME)/build/cmake/android.toolchain.cmake \
+# 		-DANDROID_ABI=armeabi-v7a \
+# 		-DANDROID_PLATFORM=$(ANDROID_PLATFORM) \
+# 		-DCMAKE_BUILD_TYPE=Release \
+#  		-DANDROID_GLES2=1 \
+# 		-DCMAKE_SHARED_LINKER_FLAGS="-Wl,--hash-style=both"
 
 
 
@@ -149,6 +164,8 @@ android:
 		mkdir -p $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/; \
 		rm -rf $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/*; \
 		mkdir -p $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/; \
+		cp $(BASE_BUILD_DIR)/android/$$target/lib$$target.so $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/libmain.so; \
+		cp $(BASE_BUILD_DIR)/androidv7a/$$target/lib$$target.so $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/libmain.so; \
 		cp $(BASE_BUILD_DIR)/android/lib$$target.so $(ANDROID_PROJ_DIR)/app/libs/arm64-v8a/libmain.so; \
 		cp $(BASE_BUILD_DIR)/androidv7a/lib$$target.so $(ANDROID_PROJ_DIR)/app/libs/armeabi-v7a/libmain.so; \
 		echo "----- copy assets ----"; \

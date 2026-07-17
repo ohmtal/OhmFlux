@@ -251,16 +251,22 @@ namespace ElfFlux {
     //-----------------------------------------------------------------------------
     bool Main::Initialize()
     {
-        if (!FluxMain::Initialize()) return false;
+        Log("[info] ElfTest:: Main::Initialize start");
+        if (!FluxMain::Initialize()) {
+            Log("[error] ElfTest:: FluxMain::Initialize FAILED!!");
+            return false;
+        }
+        Log("[debug] ElfTest::2");
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
         mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, "ElfTestBed.ini");
         if (!mGuiGlue->Initialize())
             return false;
+        Log("[debug] ElfTest::3");
 
-        // SDL_SetLogPriorities(SDL_LOG_PRIORITY_VERBOSE);  //emscript redirect test
-        // NOTE: does NOT work with emscritpen !!!!
+#if !defined(__ANDROID__)
+        //Android crash 1 somewhere here .....
         SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
         console.OnCommand = [this](ImConsole* console, const char* command_line) {
             OnConsoleCommand(console, command_line);
@@ -268,19 +274,26 @@ namespace ElfFlux {
         console.OnTabCompletion = [this](ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
             OnConsoleTAB(console, data, forward);
         };
-
+#endif
+        Log("[debug] ElfTest::4");
         //  -------------- Console >>>>
         String workingDir = getGamePath().c_str();
         // no :P - took me a night to get it work but the the editor is not longer ok
-        //          workingDir += "assets/";
+#if defined(__ANDROID__)
+        // need one more assets
+        // FIXME TorqueFS does not load the file from the apk!!!!!!!!!!!!!!!
+        workingDir += "assets/";
+#endif
 
-
+        Log("[debug] ElfTest::5 workingDir is: %s", workingDir.c_str());
         engineGlue::init(MyLogger, workingDir);
+        Log("[debug] ElfTest::6");
         ElfFlux::init(); // init my stuff
-
+        Log("[debug] ElfTest::7");
         if (!loadScript(mStartScript.c_str())) {
             return false;
         }
+        Log("[debug] ElfTest::8");
 
         fetchScriptFiles();
         mScriptEditor = new ScriptEditor();

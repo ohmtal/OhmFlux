@@ -40,7 +40,8 @@
 
 #ifdef __EMSCRIPTEN__
 
-#include <GLES3/gl3.h>
+// #include <GLES3/gl3.h>
+#include <glad/glad.h>
 #include <emscripten.h>
 #include <emscripten/html5.h>
 #include <emscripten/em_js.h>
