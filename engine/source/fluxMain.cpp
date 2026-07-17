@@ -470,7 +470,6 @@ void emscripten_loop_wrapper(void* arg)
 //--------------------------------------------------------------------------------------
 void FluxMain::Execute() {
 	if (!Initialize()) {
-		Log("App init failed: %s", SDL_GetError());
 		exit(1);
 	}
 

@@ -101,15 +101,13 @@ namespace ElfFlux {
         mGuiGlue->DrawBegin();
 
 
-        static bool showConsole = true;
-        static bool showMenu = true;
-        static bool openScriptEditor = false; //FIXME settings ?
 
-        if (showMenu) {
+
+        if (mShowMenu) {
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("Window")) {
-                    ImGui::MenuItem("Main Menu", "F10", &showMenu);
-                    ImGui::MenuItem("Console", "GraveAccent", &showConsole);
+                    ImGui::MenuItem("Main Menu", "F10", &mShowMenu);
+                    ImGui::MenuItem("Console", "GraveAccent", &mShowConsole);
                     if (ImGui::MenuItem("calling shutdown test")) {
                         Con::executef(this, "ShutDown");
                     }
@@ -118,7 +116,7 @@ namespace ElfFlux {
 
                 if (ImGui::BeginMenu("Scripts")) {
 
-                    ImGui::Checkbox("Open Script Editor", &openScriptEditor);
+                    ImGui::Checkbox("Open Script Editor", &mOpenScriptEditor);
 
                     ImGui::SeparatorText("Files");
                     bool selected = false;
@@ -141,6 +139,7 @@ namespace ElfFlux {
                     if (ImGui::MenuItem("1.50")) mGuiGlue->setScale(1.50f);
                     if (ImGui::MenuItem("1.75")) mGuiGlue->setScale(1.75f);
                     if (ImGui::MenuItem("2.00")) mGuiGlue->setScale(2.00f);
+                    if (ImGui::MenuItem("3.00")) mGuiGlue->setScale(3.00f);
 
                     ImGui::EndMenu();
                 }
@@ -149,11 +148,11 @@ namespace ElfFlux {
             }
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_F10)) showMenu = !showMenu;
-        if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) showConsole = !showConsole;
-        console.Draw("Console",&showConsole);
+        if (ImGui::IsKeyPressed(ImGuiKey_F10)) mShowMenu = !mShowMenu;
+        if (ImGui::IsKeyPressed(ImGuiKey_GraveAccent)) mShowConsole = !mShowConsole;
+        console.Draw("Console",&mShowConsole);
         // ------
-        if (openScriptEditor && mScriptEditor) mScriptEditor->renderEditors();
+        if (mOpenScriptEditor && mScriptEditor) mScriptEditor->renderEditors();
         // ------
 
         mGuiGlue->DrawEnd();
@@ -248,25 +247,25 @@ namespace ElfFlux {
     void Main::OnConsoleCommand(ImConsole* console, const char* command_line) {
         Con::evalAutoComplete(command_line);
     }
-    //-----------------------------------------------------------------------------
+    // //----------------------------------------------------------------------------
     bool Main::Initialize()
     {
-        Log("[info] ElfTest:: Main::Initialize start");
+        Log("[info] Main::Initialize start");
         if (!FluxMain::Initialize()) {
-            Log("[error] ElfTest:: FluxMain::Initialize FAILED!!");
             return false;
         }
-        Log("[debug] ElfTest::2");
         mOverwriteEventListener = true; //THIS class handle the eventlistener!
 
         // setting ini here is ok for a testBed
         mGuiGlue = std::make_unique<FluxGuiGlue>(true, false, "ElfTestBed.ini");
         if (!mGuiGlue->Initialize())
             return false;
-        Log("[debug] ElfTest::3");
 
-#if !defined(__ANDROID__)
-        //Android crash 1 somewhere here .....
+#if defined(__ANDROID__)
+         mGuiGlue->setScale(2.00f);
+         mShowConsole = false;
+#endif
+        //note does not work on android
         SDL_SetLogOutputFunction(ConsoleLogFunction, &console);
         console.OnCommand = [this](ImConsole* console, const char* command_line) {
             OnConsoleCommand(console, command_line);
@@ -274,26 +273,16 @@ namespace ElfFlux {
         console.OnTabCompletion = [this](ImConsole* console, ImGuiInputTextCallbackData* data, bool forward) {
             OnConsoleTAB(console, data, forward);
         };
-#endif
-        Log("[debug] ElfTest::4");
         //  -------------- Console >>>>
+        // NOTE used since my ElfFlux::executeFile android hack!!!!!
         String workingDir = getGamePath().c_str();
-        // no :P - took me a night to get it work but the the editor is not longer ok
-#if defined(__ANDROID__)
-        // need one more assets
-        // FIXME TorqueFS does not load the file from the apk!!!!!!!!!!!!!!!
-        workingDir += "assets/";
-#endif
 
-        Log("[debug] ElfTest::5 workingDir is: %s", workingDir.c_str());
+
         engineGlue::init(MyLogger, workingDir);
-        Log("[debug] ElfTest::6");
         ElfFlux::init(); // init my stuff
-        Log("[debug] ElfTest::7");
         if (!loadScript(mStartScript.c_str())) {
             return false;
         }
-        Log("[debug] ElfTest::8");
 
         fetchScriptFiles();
         mScriptEditor = new ScriptEditor();

@@ -13,8 +13,11 @@
 // enums Box2D
 #include "Box2D/Box2D.h"
 #include <b2b/b2Objects.h>
+#include <fluxFile.h>
+#include <console/torquescript/codeBlock.h>
 
 
+// --------------------------------------------------------------------------
 
 namespace ElfFlux {
 // --------------------------------------------------------------------------
@@ -23,6 +26,15 @@ constexpr F32 g2PI = M_2PI;
 constexpr F32 gPI2 = M_PI_2;
 
 void init() {
+
+    // NOTE: overwrite exec for android loading hackfest
+    Con::evaluate( R"(
+        function exec(%filename) {
+            return include(%filename, false);
+        }
+    )"
+    );
+
 
     Con::addConstant("FrameTime", TypeF64, &gFrameTime, "current FrameTime");
     Con::addConstant("GameTime", TypeF64, &gGameTime, "current GameTime seconds since start");
@@ -89,17 +101,39 @@ void init() {
      Con::addConstant("Color::Ghost", TypeColorF, &cl_Ghost, "Semi-transparent Blue");
 
 }
+
+// --------------------------------------------------------------------------
+// NOTE: Android hackfest use this instead of Con::executeFile
+bool executeFile(const char* fileName, bool noCalls , bool journalScript)  {
+    if (!fileName) return false;
+
+    // expand ./ and ~/, ^ will not work i guess
+    char scriptFilenameBuffer[1024];
+    Con::expandScriptFilename(scriptFilenameBuffer, sizeof(scriptFilenameBuffer), fileName);
+
+
+    std::string script = "";
+    if (FluxFile::LoadTextFile(scriptFilenameBuffer, script)) {
+        if (script.empty()) return false;
+        // TODO? Con::EvalResult
+        StringTableEntry _fileName = StringTable->insert((scriptFilenameBuffer));
+        CodeBlock* newCodeBlock = new CodeBlock();
+        newCodeBlock->compileExec(_fileName, script.c_str(), false,  -1);
+        return true;
+    }
+    return false;
+}
 // --------------------------------------------------------------------------
 bool loadScript(String fileName) {
     if (!gLastScriptFile.isEmpty() && Con::isFunction("onLeaveScript")) {
       Con::executef("onLeaveScript",  gLastScriptFile);
     }
-    if (Con::executeFile(fileName)) {
+    if (ElfFlux::executeFile(fileName)) {
         if (Con::isFunction("onEnterScript")) Con::executef("onEnterScript",  fileName);
         gLastScriptFile = fileName;
         return true;
     }
-    Log("[error] ElfTest:: FAILED TO LOAD SCRIPT: %s" , fileName.c_str());
+    Log("[error] FAILED TO LOAD SCRIPT: %s" , fileName.c_str());
     return false;
 }
 
@@ -162,8 +196,9 @@ DefineEngineFunction(getFullPath, String,(),, "get the current directory") {
 
 // ----------------- include = exec with nocalls ----------------------
 
-DefineEngineFunction(include,bool, (String fileName),, "include(fileName)" "exec a file without calls" ){
-    return Con::executeFile(fileName, true);
+DefineEngineFunction(include,bool, (String fileName, bool nocalls),(true), "include(fileName)" "exec a file without calls" ){
+    //ELFFLUX!!
+    return ElfFlux::executeFile(fileName, true);
 }
 
 // ----------------- debuglog ----------------------

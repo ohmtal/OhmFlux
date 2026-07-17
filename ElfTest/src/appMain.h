@@ -47,6 +47,9 @@ namespace ElfFlux {
 
 
 
+        bool mShowConsole = true;
+        bool mShowMenu = true;
+        bool mOpenScriptEditor = false;
 
         // ------------- Console -------------
         DECLARE_CONOBJECT(Main);
