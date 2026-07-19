@@ -1,4 +1,4 @@
-exec("./tools.cs"); 
+exec("./tools.elf");
 // -----------------------------------------------------------------------------
 // Demo cleanup
 GarbageCollectionSet.deleteObjects();
@@ -66,7 +66,7 @@ function Grid::addRandomMud(%this) {
 function GridTest::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mouseY, %keyValue ) {
     if (%keyValue == 0  ) { //mouse up on left button
         if (%actionString $= "R") {
-            exec("./gridtest.cs");
+            exec("./gridtest.elf");
         }
         else
         if (%actionString $= "button1" && pointInRect( %this.LabelNew.ButtonRect, %mouseX SPC %mouseY)) {

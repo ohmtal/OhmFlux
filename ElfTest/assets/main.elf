@@ -1,4 +1,4 @@
-include("./flyingText.cs");
+include("./flyingText.elf");
 //------------------------------
 echo ("------------------------------");
 echo ("Porting from KorkTest to ElfTest");

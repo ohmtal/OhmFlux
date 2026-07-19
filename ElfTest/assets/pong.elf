@@ -13,13 +13,13 @@ function loadSound(%name,%filename,%looping) {
 //------------------------------------------------------------------------------
 // function onEnterScript(%scriptFile) {
 //     dWarn("onEnterScript" SPC %scriptFile);
-//     if (%scriptFile $= "assets/pong.cs") $Main.setScreenSize("740 500");
+//     if (%scriptFile $= "assets/pong.elf") $Main.setScreenSize("740 500");
 // }
 
 function onLeaveScript(%scriptFile) {
     // reset to default
     dError("CALLING ON LEAVE SCRIPT ....." SPC %scriptFile);
-    // if (%scriptFile $= "assets/invaderGame.cs")
+    // if (%scriptFile $= "assets/invaderGame.elf")
     $Main.setScreenSize("0 0");
 }
 

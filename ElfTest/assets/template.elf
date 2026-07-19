@@ -1,27 +1,25 @@
 //------------------------------
-// named objects example
-// NOTE: you need to use .getId
-//------------------------------
-exec("./tools.cs");
+exec("./tools.elf");
 
 GarbageCollectionSet.deleteObjects();
+
 
 //------------------------------
 function Game::LoadAssets(%this) {
   echo("GAME ON ADD.....");
   // ------
-  new Texture(texBack) {
+  %this.texBack =  new Texture() {
     fileName = "assets/texture/nebulapurple_sky_back.png";
   };
-  %this.add(texBack);
+  %this.add(%this.texBack);
   // ------
-  new Font(fontJet) {
+  %this.fontJet = new Font() {
     fileName = "assets/font/JetBrainsMono-Regular.ttf";
   };
-  %this.add(fontJet);
+  %this.add(%this.fontJet);
   // ------
-  new Label(Label1)  {
-    Font = fontJet.getId();  // named need to set ID !!
+ %this.Label1 = new Label()  {
+    Font = %this.fontJet;
     x = getScreenWidth() / 2.0;
     y = 40;
     shadow=1;
@@ -30,26 +28,26 @@ function Game::LoadAssets(%this) {
     color = "1 0 0";
     Caption = "Hello World";
   };
-  %this.add(Label1);
+  %this.add(%this.Label1);
   // ------
-   new Sprite(background) {
-    Texture = texBack.getId();
+ %this.background = new Sprite() {
+    Texture = %this.texBack;
     x = getScreenWidth() / 2.0;
     y = getScreenHeight() / 2.0;
     z = 1.0; //layer
     w = getScreenWidth();
     h = getScreenHeight();
   };
-  %this.add(background);
+  %this.add(%this.background);
   // ------
-  new Texture(texFaces) {
+  $texFaces = new Texture() {
     fileName = "assets/texture/faces.png";
     TexCols = 13;
   };
-  %this.add(texFaces);
+  %this.add($texFaces);
   // ------
-  new Sprite(SpriteFace) {
-    Texture = texFaces.getId();
+  %this.sprite = new Sprite() {
+    Texture = $texFaces;
     x = 100;
     y = 100;
     z = 0.5;
@@ -57,10 +55,17 @@ function Game::LoadAssets(%this) {
     h = 64;
     imgId = 3;
   };
-  %this.add(SpriteFace);
+  %this.add(%this.sprite);
   // ------
-  new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.2; };
-  %this.add(SndPling);
+  %this.sndPling = new AudioProfile(SndPling) { fileName = "assets/sound/pling.ogg"; Volume = 0.2; };
+  %this.add(%this.sndPling);
+
+  // ....
+  %this.light1 =   new Light() {
+    position =  %this.sprite.getPosition();
+    radius = 80;
+    color = "0.3 1.0 0.1 1.0";
+  };
 
 }
 
@@ -72,22 +77,26 @@ function Game::onInputEvent( %this, %deviceString, %actionString, %mouseX, %mous
 
 }
 
+function Game::onRender(%this,%dt) {}
 
 function Game::onUpdate(%this,%dt) {
-  Label1.Caption = getFPS() SPC "FPS";
+  %this.Label1.Caption = getFPS() SPC "FPS";
 
-  Label1.shift = mfMod( Label1.shift + %dt * 10 ,360);
-  Label1.color = shiftColorHue("0 1 0",Label1.shift );
-
-
+  // i changed modulo in KorkScript but non in ElfScript ^
+  %this.label1.shift =  %this.label1.shift + %dt * 10;
+  if (%this.label1.shift >= 360) %this.label1.shift = 0;
+  %this.Label1.color = shiftColorHue("0 1 0",%this.label1.shift );
+  
 }
 
 function Game::c(%this, %mx, %my, %p) {
   alxPlay(SndPling.getId());
-  if (!%p)  %p = SpriteFace.getId();
-  if (!%p) { error("No object found!"); return 0; }
+  if (!%p)  %p = %this.sprite;
+  if (!%p) { error("No object %this.sprite!"); return 0; }
+  // clone does NOT work with drawparams ?! %clone = %p.clone();
 
   %layer =  getRandom(1, 999) / 1000;
+  // echo("LAYER:" SPC %layer);
 
   %clone = new Sprite() {
 
@@ -102,13 +111,13 @@ function Game::c(%this, %mx, %my, %p) {
       z = %layer;
   };
 
-
+  %this.light1.position = %clone.getPosition3F();
   %this.add(%clone);
 
 
   return %clone;
  }
-function Game::onRender(%this,%dt) {}
+
 function Game::onRemove(%this) {
   error("GAME ONREMOVE!");
   %this.deleteObjects();
@@ -116,15 +125,16 @@ function Game::onRemove(%this) {
 
 function Game::ml(%this, %stop) {
 
-  Label1.x =  (Label1.x + 1.4) % 1200 ;
+  %this.label1.x =  (%this.label1.x + 1.4) % 1200 ;
+  // echo("X is" SPC %this.label1.x);
   if (!%stop) %this.schedule(10,ml);
 }
 
 //FIXME class does NOT work!
-new GameCtrl(TemplateGame) {
+$Game = new GameCtrl() {
   class = "Game";
 };
 
-TemplateGame.LoadAssets();
-TemplateGame.ml(); //scrolling using schedule ..
+$Game.LoadAssets();
+$game.ml(); //scrolling using schedule ..
 

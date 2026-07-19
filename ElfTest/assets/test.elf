@@ -1,4 +1,4 @@
-echo("Hello from Test.cs");
+echo("Hello from Test.elf");
 //------------------------------
 // NOTE ElfTest made on my i5 notebook running on battery
 GarbageCollectionSet.deleteObjects();
@@ -8,7 +8,7 @@ CleanupSet.add($Game);
 setVSync(false);
 //------------------------------
 function rl(%mode) {
-    exec("./test.cs");
+    exec("./test.elf");
 
     if (%mode !$= "") {
         $mode = %mode;

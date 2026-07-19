@@ -28,7 +28,7 @@ namespace ElfFlux {
 
     public:
         // must have a directory!!!!
-        String mStartScript = "assets/main.cs";
+        String mStartScript = "assets/main.elf";
 
         bool Initialize() override;
         void Deinitialize() override;

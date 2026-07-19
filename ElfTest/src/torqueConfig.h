@@ -32,10 +32,10 @@
 // #define USE_NEW_SIMDICTIONARY << not woking "objectName" missing
 
 
-#define TORQUE_SCRIPT_EXTENSION   "cs"
+#define TORQUE_SCRIPT_EXTENSION   "elf"
 #define TORQUE_APP_NAME            "ElfTestBed"
 #define TORQUE_APP_VERSION         1000
-#define TORQUE_APP_VERSION_STRING  "26.06.06.0"
+#define TORQUE_APP_VERSION_STRING  "26.07.20.0"
 #define TORQUE_DISABLE_MEMORY_MANAGER
 
 /* #undef TORQUE_DISABLE_VIRTUAL_MOUNT_SYSTEM */

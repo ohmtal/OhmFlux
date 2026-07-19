@@ -5,7 +5,7 @@
 //       using Sprite Objects is much better than GameCtrl with onRender callback
 //       I added this script to test ElfScript itself.
 //------------------------------------------------------------------------------
-// FIXME  exec("common/highscore.cs");
+// FIXME  exec("common/highscore.elf");
 $align::left = $FontAlign_left;
 $align::center = $FontAlign_center;
 $align::right = $FontAlign_right;
@@ -15,13 +15,13 @@ GarbageCollectionSet.deleteObjects();
 //------------- test new functions ---------------------
 function onEnterScript(%scriptFile) {
    dWarn("onEnterScript" SPC %scriptFile);
-   if (%scriptFile $= "assets/invaderGame.cs") $Main.setScreenSize("800 600");
+   if (%scriptFile $= "assets/invaderGame.elf") $Main.setScreenSize("800 600");
 }
 
 function onLeaveScript(%scriptFile) {
     // reset to default
     dError("CALLING ON LEAVE SCRIPT ....." SPC %scriptFile);
-    // if (%scriptFile $= "assets/invaderGame.cs")
+    // if (%scriptFile $= "assets/invaderGame.elf")
     $Main.setScreenSize("0 0");
 }
 
@@ -111,13 +111,13 @@ function initInvader(%force) {
   invaderGame.aliendownstep   = 16;
 
   // FIXME invaderGame.hiFile = getUserDataDirectory() @ "/Ohmtal Game Studio/OGE Invader/invaderGoWild";
-  //FIXME invaderGame.PrefsFile = getUserDataDirectory() @ "/Ohmtal Game Studio/OGE Invader/foo.cs";
+  //FIXME invaderGame.PrefsFile = getUserDataDirectory() @ "/Ohmtal Game Studio/OGE Invader/foo.elf";
   
   // FIXME read old
   // if ( exec(invaderGame.PrefsFile, true) )
   //       error("LAST START WAS ******************* " @ $foo::lastStart @ " *************************");
   // else
-  //       error("********************* CANT READ fOO.cs ************************");
+  //       error("********************* CANT READ fOO.elf ************************");
   
   // FIXME save new
   // $foo::lastStart=getLocalTimeFormated();

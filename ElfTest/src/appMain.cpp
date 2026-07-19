@@ -74,9 +74,9 @@ namespace ElfFlux {
                 for (const auto& entry : fs::recursive_directory_iterator(path)) {
                     if (entry.is_regular_file()
                         &&  (
-                        entry.path().extension() == ".cs"
+                        entry.path().extension() == ".elf"
                         || entry.path().extension() == ".tscript"
-                        || entry.path().extension() == ".elfscript"
+                        || entry.path().extension() == ".cs"
 
                         )
 

@@ -1,7 +1,7 @@
 // b2b Test ... unfinished !!!
 
-include("./physicObjects/wall.cs");
-include("./physicObjects/ball.cs");
+include("./physicObjects/wall.elf");
+include("./physicObjects/ball.elf");
 
 function Game::Init(%this) {
   %this.rect = new RectObject() {

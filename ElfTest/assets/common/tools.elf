@@ -16,7 +16,7 @@ initLangTable
   Init LangTable and set $GLOBALS::LANGUAGES for use in gui.
 
 Example
-   exec("common/shared/misc.cs");
+   exec("common/shared/misc.elf");
    initLangTable("towers/shared/lang","english deutsch");
 
 */
@@ -35,7 +35,7 @@ function initLangTable(%path,%languages)
    
    %default = getWord(%languages,0);
    
-   exec(%path @ "/" @ %default @ ".cs");
+   exec(%path @ "/" @ %default @ ".elf");
 
    for (%i=0; %i<%cnt; %i++)
         $I18N::DEFAULT.addLanguage(%path @ "/" @ getWord(%languages,%i) @ ".lso", getWord(%languages,%i));
@@ -232,7 +232,7 @@ function fillTrailingChar(%base,%len, %char )
 function compileAll(%pattern)
 {
    echo(" --- Compiling all files ---");
-   compileFiles("*.cs");
+   compileFiles("*.elf");
    compileFiles("*.gui");
    echo(" --- Exiting after compile ---");
 }
@@ -241,11 +241,11 @@ function compileFiles(%pattern)
 {  
    %path = filePath(%pattern);
 
-   %mainCsFile = makeFullPath("main.cs");
+   %mainCsFile = makeFullPath("main.elf");
 
    for (%file = findFirstFileMultiExpr(%pattern); %file !$= ""; %file = findNextFileMultiExpr(%pattern))
    {
-      // we don't want to try and compile the primary main.cs
+      // we don't want to try and compile the primary main.elf
       if(%mainCsFile !$= %file)      
          compile(%file);
    }
