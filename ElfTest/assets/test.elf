@@ -1,4 +1,6 @@
+include("./tools.elf");
 echo("Hello from Test.elf");
+xExec("./tools.elf");
 //------------------------------
 // NOTE ElfTest made on my i5 notebook running on battery
 GarbageCollectionSet.deleteObjects();

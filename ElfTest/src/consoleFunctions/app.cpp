@@ -15,26 +15,14 @@
 #include <b2b/b2Objects.h>
 #include <fluxFile.h>
 #include <console/torquescript/codeBlock.h>
-
-
 // --------------------------------------------------------------------------
-
 namespace ElfFlux {
-// --------------------------------------------------------------------------
+
 constexpr F32 gPI = M_PI;
 constexpr F32 g2PI = M_2PI;
 constexpr F32 gPI2 = M_PI_2;
 
 void init() {
-
-    // NOTE: overwrite exec for android loading hackfest
-    //FIXME relative exec does not work with my fix
-    // Con::evaluate( R"(
-    //     function exec(%filename) {
-    //         return include(%filename, false);
-    //     }
-    // )"
-    // );
 
 
     Con::addConstant("FrameTime", TypeF64, &gFrameTime, "current FrameTime");
@@ -109,6 +97,8 @@ void init() {
 // see also runtime ... this is NOT the fix for Android!
 bool executeFile(const char* fileName, bool noCalls , bool journalScript)  {
     if (!fileName) return false;
+
+
 
     // expand ./ and ~/, ^ will not work i guess
     char scriptFilenameBuffer[1024];
@@ -204,8 +194,17 @@ DefineEngineFunction(getFullPath, String,(),, "get the current directory") {
 
 DefineEngineFunction(include,bool, (String fileName, bool nocalls),(true), "include(fileName)" "exec a file without calls" ){
     //ELFFLUX!!
-    //return ElfFlux::executeFile(fileName, nocalls);
-    return Con::executeFile(fileName, nocalls);
+    // Con::warnf("Current scriptmodule path:%s Name: %s", Con::getCurrentScriptModulePath(), Con::getCurrentScriptModuleName());
+    return ElfFlux::executeFile(fileName, nocalls);
+    // return Con::executeFile(fileName, nocalls);
+}
+
+//exec overwrite using ELFSCRIPT_EXEC_OVERWRITE
+DefineEngineFunction( exec, bool, ( const char* fileName, bool noCalls, bool journalScript ), ( false, false ),
+    "exec(fileName)" "exec a script" ){
+    //ELFFLUX!!
+    // Con::warnf("Current scriptmodule path:%s Name: %s", Con::getCurrentScriptModulePath(), Con::getCurrentScriptModuleName());
+    return ElfFlux::executeFile(fileName, noCalls);
 }
 
 // ----------------- debuglog ----------------------

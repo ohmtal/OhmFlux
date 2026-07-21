@@ -8,6 +8,12 @@
 // ----------------------------------------------------------------------------
 // make slots type save but same slotname always have the same type
 
+// Fast Path static fields float/interger
+#define ELFSCRIPT_FASTPATH_FLD
+
+// overwrite the exec engine function (android hackfest)
+#define ELFSCRIPT_EXEC_OVERWRITE
+
 // enable #define in torque script
 #define ELFSCRIPT_PREPROCESSOR
 
@@ -20,8 +26,6 @@
 // cache function calls WARNING: inconsitent
 // #define ELFSCRIPT_CALLFUNC_CACHED
 
-// Fast Path static fields float/interger
-#define ELFSCRIPT_FASTPATH_FLD
 
 // ----------------------------------------------------------------------------
 #ifdef FLUX_DEBUG
