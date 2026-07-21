@@ -28,12 +28,13 @@ constexpr F32 gPI2 = M_PI_2;
 void init() {
 
     // NOTE: overwrite exec for android loading hackfest
-    Con::evaluate( R"(
-        function exec(%filename) {
-            return include(%filename, false);
-        }
-    )"
-    );
+    //FIXME relative exec does not work with my fix
+    // Con::evaluate( R"(
+    //     function exec(%filename) {
+    //         return include(%filename, false);
+    //     }
+    // )"
+    // );
 
 
     Con::addConstant("FrameTime", TypeF64, &gFrameTime, "current FrameTime");
@@ -104,6 +105,8 @@ void init() {
 
 // --------------------------------------------------------------------------
 // NOTE: Android hackfest use this instead of Con::executeFile
+// FIXME expandScriptFilename DOES NOT WORK HERE because getCurrentScriptModuleName is emtpy!
+// see also runtime ... this is NOT the fix for Android!
 bool executeFile(const char* fileName, bool noCalls , bool journalScript)  {
     if (!fileName) return false;
 
@@ -121,6 +124,7 @@ bool executeFile(const char* fileName, bool noCalls , bool journalScript)  {
         newCodeBlock->compileExec(_fileName, script.c_str(), false,  -1);
         return true;
     }
+    Con::errorf("Failed to load script %s", fileName);
     return false;
 }
 // --------------------------------------------------------------------------
@@ -128,7 +132,9 @@ bool loadScript(String fileName) {
     if (!gLastScriptFile.isEmpty() && Con::isFunction("onLeaveScript")) {
       Con::executef("onLeaveScript",  gLastScriptFile);
     }
-    if (ElfFlux::executeFile(fileName)) {
+
+    //FIXME android! if (ElfFlux::executeFile(fileName)) {
+    if (Con::executeFile(fileName)) {
         if (Con::isFunction("onEnterScript")) Con::executef("onEnterScript",  fileName);
         gLastScriptFile = fileName;
         return true;
@@ -198,7 +204,8 @@ DefineEngineFunction(getFullPath, String,(),, "get the current directory") {
 
 DefineEngineFunction(include,bool, (String fileName, bool nocalls),(true), "include(fileName)" "exec a file without calls" ){
     //ELFFLUX!!
-    return ElfFlux::executeFile(fileName, true);
+    //return ElfFlux::executeFile(fileName, nocalls);
+    return Con::executeFile(fileName, nocalls);
 }
 
 // ----------------- debuglog ----------------------
