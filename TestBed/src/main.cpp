@@ -44,6 +44,7 @@ private:
     // FluxTexture* mBasicGroundTiles = nullptr;
 
     FluxTilemap* mTileMap = nullptr;
+    FluxTexture* mTexOverWorld = nullptr;
 
 
     FluxParticleEmitter* mFireEmitter;
@@ -83,6 +84,8 @@ public:
         S32 mapSize =  squareSize * squareSize;
         RectI area = { 0,0, mapSize, mapSize };
 
+
+        mTexOverWorld =  loadTexture("assets/tiles/TilesetGrass/overworld_tileset_grass.png");
 
         //FluxTilemap(RectI area, F32 squareSize, U32 maxlayers,  F32 renderZ = 10.f)
         mTileMap = new FluxTilemap(area, static_cast<F32>(squareSize), 2);
@@ -536,15 +539,15 @@ public:
         }
 
 
-        // Debug Primitives:
-        // for (S32 i = 20 ; i < 100; i+=10 )
-        //     Render2D.drawCircle(getScreen()->getCenterX(),getScreen()->getCenterY(),i);
-        //
-        // Render2D.drawRect(100,100,200,200, { 0.3f, 0.3f,0.3f,0.7f});
-        // Render2D.drawRect(200,200,300,300, { 1.f, 0.f,0.f,1.f}, false);
-        // Render2D.drawLine(0,0,100,100, { 1.f, 0.3f,0.3f,1.f});
+        //  Primitives:
+        for (S32 i = 20 ; i < 100; i+=10 )
+            Render2D.drawCircle(getScreen()->getCenterX(),getScreen()->getCenterY(),i);
+
+        Render2D.drawRect(-300.f,-300.f,200.f,200.f, { 0.3f, 0.3f,0.3f,0.7f});
+        Render2D.drawRect(-300.f,-300.f,200.f,200.f, { 1.f, 0.f,0.f,1.f}, false);
+        Render2D.drawLine(0.f,0.f,-100.f,-100.f, { 1.f, 0.3f,0.3f,1.f});
         // drawTriangle(Point3F p1, Point3F p2, Point3F p3, const Color4F& color, bool filled = true);
-        // Render2D.drawTriangle( { 600,0 }, { 650, 20 }, { 400, 200 }, cl_Blue, false);
+        Render2D.drawTriangle( Point2F(-600.f,0.f), Point2F( -650.f, 20.f ), Point2F( -400.f, 200.f ), cl_Blue, false);
 
         DrawParams2D dp;
         dp.image = mTileMap->getImage();
@@ -563,6 +566,7 @@ public:
             Render2D.drawSprite(dp);
         }
 
+        Render2D.DrawSrcDstRect(mTexOverWorld, RectF(0.f,200.f,64.f, 56.f), RectF(0.f,0.f,128.f,128.f));
 
     } //Draw
 

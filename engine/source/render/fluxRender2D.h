@@ -38,8 +38,10 @@ struct DrawParams2D {
     // using UV instead of imageID!! >>>>
     // UV values are normalized!
     bool  useUV = false;
-    F32 u0 = 0.0f; F32 v0 = 0.0f;
-    F32 u1 = 1.0f; F32 v1 = 1.0f;
+    F32 u0 = 0.0f; // left
+    F32 v0 = 0.0f; // top
+    F32 u1 = 1.0f; // right
+    F32 v1 = 1.0f; // bottom
     // <<<
 
     const Point2F getPosition() { return { x, y};}
@@ -81,6 +83,23 @@ struct DrawParams2D {
         };
     }
     DrawParams2D& setPositionAndLayer( Point3F value ) { x=value.x, y=value.y; z=value.z; return *this; }
+
+    // image must be set before !
+    bool setUV(RectF srcRect) {
+        if (!image || !srcRect.isValidRect()) return false;
+        Point2F imgSize = image->getSizeF();
+        useUV = true;
+        u0 = srcRect.x / imgSize.x;                 // left
+        u1 = (srcRect.x + srcRect.w) / imgSize.x;   // right
+        v0 = srcRect.y / imgSize.y;                 // top
+        v1 = (srcRect.y + srcRect.h) / imgSize.y;   // bottom
+        if ( u0 < 0.f || v0 < 0.f || u1 > 1.f || v1 > 1.f) {
+            u0 = v0 = 0.f;
+            u1 = v1 = 1.f;
+            return false;
+        }
+        return true;
+    }
 };
 
 //batch rendering
@@ -209,6 +228,8 @@ public:
     void submitCustomCommand(const RenderCommand& cmd) { mCommandList.push_back(cmd); }
 
 
+    // this render NOT centered it render directly to dstRect!
+    bool DrawSrcDstRect(FluxTexture* texture,RectF srcRect, RectF dstRect, Color4F color=cl_White, bool drawCentered = false);
 
     //wrapper for drawSprite with ugly call ... parameters got added and added over time
     bool uglyDraw2DStretch(

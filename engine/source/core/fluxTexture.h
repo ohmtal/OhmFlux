@@ -52,6 +52,8 @@ public:
 	int getWidth() const       { if (mLoaded) return(mW); else return -1; }
     int getHeight() const      { if (mLoaded) return(mH); else return -1; }
 
+    Point2I getSize() {return {mW, mH};}
+    Point2F getSizeF() { return {(F32)mW, (F32) mH};}
 
     bool getTextureRectById( Uint32 lImgId, Point2F& position, Point2F& size );
 	void setManual(GLuint handle, int w, int h);

@@ -322,6 +322,59 @@ void FluxRender2D::updateOrtho(S32 width, S32 height)
     createOrthoMatrix(0.0f, width, height, 0.0f, -100.0f, 100.0f, mOrtho);
 }
 //-------------------------------------------------------------------------------
+bool FluxRender2D::DrawSrcDstRect(FluxTexture* texture,RectF srcRect, RectF dstRect, Color4F color, bool drawCentered) {
+    if (!texture) return false;
+
+    if (!srcRect.isValidRect() || !dstRect.isValidRect()) {
+        Log("[error] Invalid src or dst rect!");
+        return false;
+    }
+    Point2F size =  texture->getSizeF();
+    if (
+        srcRect.x + srcRect.w > size.x ||
+        srcRect.y + srcRect.h > size.y
+    ) {
+        Log("[error] srcRect overflow Texture size!");
+        return false;
+    }
+
+
+
+    DrawParams2D dp; // Creates the object
+    dp.image = texture;
+    dp.imgId = 0;
+    // we do not draw center
+    if (drawCentered) {
+        dp.x = dstRect.x + dstRect.w;
+        dp.y = dstRect.y + dstRect.h;
+    } else {
+        dp.x = dstRect.x + dstRect.w / 2.f;
+        dp.y = dstRect.y + dstRect.h / 2.f;
+    }
+    dp.z = 0.0f; //mhhh
+    dp.w = dstRect.w;
+    dp.h = dstRect.h;
+    dp.rotation = 0;
+    dp.flipX = false;
+    dp.flipY = false;
+    dp.alpha = 0.1f;
+    dp.color = color;
+
+    if (!dp.setUV(srcRect)) {
+        Log("[error] srcRect is invalid!");
+        return false;
+    }
+    // normalize src rect << set by setUV now!
+    // dp.useUV = true;
+    // dp.u0 = srcRect.x / size.x;                 // left
+    // dp.u1 = (srcRect.x + srcRect.w) / size.x;   // right
+    // dp.v0 = srcRect.y / size.y;                 // top
+    // dp.v1 = (srcRect.y + srcRect.h) / size.y;   // bottom
+
+
+    return drawSprite(dp);
+}
+//-------------------------------------------------------------------------------
 bool FluxRender2D::uglyDraw2DStretch (
     FluxTexture* limg,
     const S32& limgId,
