@@ -173,6 +173,15 @@ set(ENGINE_PRECOMPILED_HEADER
 )
 
 
+# ------------ Windows Settings --------------
+# added 2026-07-28
+if(WIN32 AND MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    
+    add_compile_options(/MP)
+    # add_compile_options(/permissive- /Zc:__cplusplus)
+endif()
+
 # ------------ Dependencies (SDL3 & Graphics) --------------
 set(FLUX_LIBS "")
 
@@ -352,13 +361,13 @@ endif()
 # speed up build
 target_precompile_headers(ohmFlux_engine PRIVATE ${ENGINE_PRECOMPILED_HEADER})
 
-
+# removed 2026-07-28
 if(WIN32 AND MSVC)
     target_compile_definitions(ohmFlux_engine PUBLIC NOMINMAX)
-    set_target_properties(ohmFlux_engine PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-	 add_compile_options(/MP)
-	# add_compile_options(/permissive- /Zc:__cplusplus)
-    
+#    set_target_properties(ohmFlux_engine PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+#	 add_compile_options(/MP)
+#	# add_compile_options(/permissive- /Zc:__cplusplus)
+#    
 endif()
 
 # ---------------- Macro for Projects ------------------
