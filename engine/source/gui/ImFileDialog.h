@@ -41,13 +41,21 @@
 //-----------------------------------------------------------------------------
 #pragma once
 #include "imgui.h"
-#include "ImFlux.h"
 #include <filesystem>
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <core/fluxGlobals.h>
 #include <imgui_internal.h>
+#include <format>
+
+#ifdef FLUX_ENGINE
+#include "ImFlux.h"
+#include <core/fluxGlobals.h>
+#else
+// Stubs
+#define dLog(fmt, ...) ((void)0)
+#define Log(fmt, ...) ((void)0)
+#endif
 
 namespace fs = std::filesystem;
 
@@ -301,7 +309,7 @@ private:
                 }
                 ImGui::Separator();
             }
-
+#ifdef FLUX_ENGINE
             if (ImGui::Selectable("App Directory"))  selectPath(getGamePath());
             if (ImGui::Selectable("Home"))           selectPath(getHomePath());
             if (ImGui::Selectable("Desktop"))        selectPath(getDesktopPath());
@@ -310,7 +318,7 @@ private:
             if (ImGui::Selectable("Music"))          selectPath(getMusicPath());
             if (ImGui::Selectable("Pictures"))       selectPath(getPicturesPath());
             if (ImGui::Selectable("Videos"))         selectPath(getVideosPath());
-
+#endif
 
 
             ImGui::EndPopup();
@@ -374,7 +382,7 @@ private:
                 mCurrentPath = pathInput;
                 mDirty = true;
             } else {
-                std::strncpy(pathInput, mCurrentPath.c_str(), sizeof(pathInput) - 1);
+                strncpy(pathInput, mCurrentPath.c_str(), sizeof(pathInput) - 1);
                 pathInput[sizeof(pathInput) - 1] = '\0';
 
             }
