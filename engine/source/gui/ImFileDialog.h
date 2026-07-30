@@ -436,7 +436,7 @@ public:
 
         std::string mWindowIdStr = mLabel+"##FileBrowser";
 
-        ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(520, 300), ImGuiCond_FirstUseEver);
 
         // if (ImGui::Begin(mWindowIdStr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         if (ImGui::Begin(mWindowIdStr.c_str()))
