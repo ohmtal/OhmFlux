@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <imgui_internal.h>
 #include <format>
+#include <map>
 
 #ifdef FLUX_ENGINE
 #include "ImFlux.h"
@@ -101,7 +102,7 @@ public:
     std::string mUserData = "";
     bool mWasOpen = true;
 
-    std::map<std::string /*caption*/, std::string /*path*/> mCustomQuckPathes;
+    std::map<std::string /*caption*/, std::string /*path*/> mCustomQuickPathes;
 
 
     //--------------------------------------------------------------------------
@@ -302,9 +303,9 @@ private:
                     ImGui::CloseCurrentPopup();
                 }
             };
-            if ( mCustomQuckPathes.size() > 0 ) {
+            if ( mCustomQuickPathes.size() > 0 ) {
 
-                for (auto& [caption,path] : mCustomQuckPathes) {
+                for (auto& [caption,path] : mCustomQuickPathes) {
                     if (ImGui::Selectable(caption.c_str())) selectPath(path);
                 }
                 ImGui::Separator();
