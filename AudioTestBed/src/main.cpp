@@ -192,7 +192,7 @@ public:
                 FluxFile::LoadTextFile(listFile, lines);
                 for (auto& line: lines) {
                     if (FluxStr::getWordCount(line, ';') == 2) {
-                        fileDialog.mCustomQuckPathes[FluxStr::getWord(line,0,';')] = FluxStr::getWord(line,1, ';');
+                        fileDialog.mCustomQuickPathes[FluxStr::getWord(line,0,';')] = FluxStr::getWord(line,1, ';');
                     }
 
                 }
