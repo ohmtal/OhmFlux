@@ -51,6 +51,11 @@ SimObject * Grid::createPath(Point2F start, Point2F end, const bool smoothPath )
             dSprintf(nbuf,20,"node%d",i);
             const char *fieldName = StringTable->insert(nbuf);
 
+            #ifdef ENABLE_CONSOLE_VECTOR
+            ConsoleValue myValue;
+            myValue.setVector({ replyList[i]->getPos().x + halfSquareSize, replyList[i]->getPos().y + halfSquareSize, 0.0,0.0 });
+            pathObject->pushDataField(fieldName, NULL, &myValue);
+            #else
 
             //XXTH 2021-04-24 / OGE3D 2024-01-04 changed to center and Point2I
             dSprintf(nbuf, 64, "%d %d",
@@ -64,6 +69,7 @@ SimObject * Grid::createPath(Point2F start, Point2F end, const bool smoothPath )
              *          replyList[i]->getPos().z);
              */
             pathObject->setDataField( fieldName, NULL, nbuf );
+            #endif
 
         }
         return pathObject;
