@@ -6,8 +6,6 @@ set(ELF_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set(ELFSCRIPT_PATH "/opt/ElfScript" CACHE PATH "Path to ElfScript")
 set(ELF_MODULE ${ELFSCRIPT_PATH}/ElfScript)
 set(ELF_CMAKE ${ELF_MODULE}/ElfScript.cmake)
-# set(ELF_MODULE ${ELFSCRIPT_PATH}/TorqueScript)
-# set(ELF_CMAKE ${ELF_MODULE}/TorqueScript.cmake)
 
 if(NOT EXISTS ${ELF_CMAKE})
     message(FATAL_ERROR
@@ -110,13 +108,17 @@ set(PROJECT_SOURCES
     ${ELF_DIR}/src/test/testObj.cpp
 
     ${BOX2D_SRCS}
-    # ${TORQUESCRIPT_SRC}
+
     ${ELFSCRIPT_SRC}
+    ${ELF_MODULE}/addons/SDL3/SDL3_PlatformProcess.cpp
 )
 
 
 configure_project_target(ElfTest ${ELF_DIR} "${ELF_DIR}/assets@assets" "${PROJECT_SOURCES}")
 
+target_compile_definitions(ElfTest PRIVATE
+  ELFSCRIPT_CUSTOM_SHUTDOWN_FUNC
+)
 
 target_include_directories(ElfTest PRIVATE ${ELF_DIR}/src)
 target_include_directories(ElfTest PRIVATE ${ELFSCRIPT_INCLUDES})
