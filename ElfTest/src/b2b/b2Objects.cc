@@ -245,7 +245,7 @@ namespace ElfFlux {
  }
 
 
- ConsoleMethod(World2b, step, void, 5, 5, "(float timeStep, int velocityIterations, int positionIterations)"
+ ConsoleMethod(World2b, doStep, void, 5, 5, "(float timeStep, int velocityIterations, int positionIterations)"
      "example .step(%fdt, 8, 3)")
  {
  

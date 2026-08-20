@@ -80,7 +80,7 @@ function Game::onRender(%this,%dt) {
 }
 
 function Game::onUpdate(%this,%dt) {
-  %this.world.step(%dt,8,2); //8,2 ??
+  %this.world.doStep(%dt,8,2); //8,2 ??
 }
 
 function Game::onRemove(%this) {
